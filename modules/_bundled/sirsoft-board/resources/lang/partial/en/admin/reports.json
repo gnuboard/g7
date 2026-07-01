@@ -86,6 +86,8 @@
     "view_detail": "User Info"
   },
   "modals": {
+    "status_action_editor_label": "Change report status",
+    "status_change_editor_label": "Bulk change report status",
     "status_change_pending_title": "Change to Received",
     "status_change_pending_confirm": "Change {{count}} selected item(s) to received status?",
     "status_change_pending_confirm_single": "Change this report to received status?",

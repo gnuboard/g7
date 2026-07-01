@@ -313,6 +313,11 @@ class BoardNotificationDataListener implements HookListenerInterface
                 return $this->emptyResult();
             }
 
+            // 수신자(작성자) 개인 알림 설정 체크
+            if (! $this->isUserNotificationEnabled($target->user_id, 'notify_post_complete')) {
+                return $this->emptyResult();
+            }
+
             $actionType = $this->resolveActionType($args);
             $targetTypeLabel = __('sirsoft-board::notification.report_action.target_types.post');
 
@@ -346,6 +351,11 @@ class BoardNotificationDataListener implements HookListenerInterface
 
             // 신고 기반 처리(수동/자동)는 report_action에서 처리 (admin 직권만 여기서 처리)
             if (in_array($target->trigger_type, [TriggerType::Report, TriggerType::AutoHide], true)) {
+                return $this->emptyResult();
+            }
+
+            // 수신자(댓글 작성자) 개인 알림 설정 체크
+            if (! $this->isUserNotificationEnabled($target->user_id, 'notify_post_complete')) {
                 return $this->emptyResult();
             }
 
@@ -676,10 +686,10 @@ class BoardNotificationDataListener implements HookListenerInterface
     /**
      * 사용자의 개인 알림 설정이 활성화되어 있는지 확인합니다.
      *
-     * 설정 레코드가 없으면 기본적으로 알림을 받는 것으로 간주합니다.
+     * 설정 레코드가 없으면 기본적으로 알림을 받지 않는 것으로 간주합니다.
      *
      * @param int $userId 사용자 ID
-     * @param string $field 알림 설정 필드명 (notify_comment, notify_reply_comment, notify_post_reply)
+     * @param string $field 알림 설정 필드명 (notify_comment, notify_reply_comment, notify_post_reply, notify_post_complete)
      * @return bool 알림 활성화 여부
      */
     private function isUserNotificationEnabled(int $userId, string $field): bool

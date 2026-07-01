@@ -11,7 +11,6 @@ use App\Models\User;
 use App\Services\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Mockery;
 use Tests\TestCase;
 
 /**
@@ -40,7 +39,6 @@ class DashboardControllerTest extends TestCase
      *
      * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
      * @param  string|null  $scopeType  권한 스코프 타입 (null: 전체, 'self': 본인, 'role': 역할)
-     * @return User
      */
     private function createAdminUser(array $permissions = ['core.dashboard.read'], ?string $scopeType = null): User
     {
@@ -265,8 +263,6 @@ class DashboardControllerTest extends TestCase
      *
      * 실제 시스템 명령(PowerShell, wmic 등) 호출을 피하고
      * 테스트 성능을 향상시키기 위해 모킹된 값을 반환합니다.
-     *
-     * @return void
      */
     private function mockDashboardResourceService(): void
     {
@@ -277,6 +273,35 @@ class DashboardControllerTest extends TestCase
                 'disk' => ['percentage' => 75, 'used' => '300 GB', 'total' => '500 GB', 'color' => 'yellow'],
             ]);
         });
+    }
+
+    /**
+     * 내부 probe 가 예외를 던져도 리소스 조회가 200 으로 응답하는지 테스트 (공개#40).
+     *
+     * getSystemResources 전체를 mock 하지 않고 내부 probe(getCpuUsage)만 throw 시켜
+     * safeProbe 격리가 실제로 동작하는지 검증한다.
+     */
+    public function test_resources_returns_200_when_probe_fails(): void
+    {
+        $this->partialMock(DashboardService::class, function ($mock) {
+            $mock->shouldAllowMockingProtectedMethods();
+            $mock->shouldReceive('getCpuUsage')->andThrow(new \ErrorException('open_basedir restriction in effect'));
+            // memory/disk 는 실제 실행 (Windows/Linux 무관 정상 구조 반환)
+        });
+
+        $response = $this->authRequest()->getJson('/api/admin/dashboard/resources');
+
+        $response->assertStatus(200);
+        $this->assertSame('gray', $response->json('data.cpu.color'));
+        $this->assertSame(0, $response->json('data.cpu.percentage'));
+        // memory/disk 구조는 정상 유지
+        $response->assertJsonStructure([
+            'data' => [
+                'cpu' => ['percentage', 'color'],
+                'memory' => ['percentage', 'used', 'total', 'color'],
+                'disk' => ['percentage', 'used', 'total', 'color'],
+            ],
+        ]);
     }
 
     public function test_resources_returns_correct_structure(): void

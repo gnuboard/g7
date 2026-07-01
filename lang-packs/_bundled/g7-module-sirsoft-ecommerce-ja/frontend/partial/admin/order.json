@@ -15,6 +15,7 @@
     "order_number": "注文番号",
     "order_date": "注文日時",
     "status": "ステータス",
+    "partial_cancelled_badge": "一部キャンセル",
     "order_info": {
       "title": "注文情報",
       "order_products": "注文商品",
@@ -85,7 +86,12 @@
         "address_detail": "詳細住所",
         "delivery_message": "配送メッセージ",
         "send": "送信",
-        "phone_or_tel_hint": "携帯電話または電話番号のいずれかは必須です。"
+        "phone_or_tel_hint": "携帯電話または電話番号のいずれかは必須です。",
+        "intl_address1_placeholder": "住所を入力してください (Street Address)",
+        "intl_address2_placeholder": "詳細住所 (Apt, Suite, Unit など)",
+        "intl_city_placeholder": "都市名を入力してください",
+        "intl_state_placeholder": "都道府県を入力してください",
+        "intl_postal_code_placeholder": "郵便番号を入力してください"
       },
       "admin_memo": {
         "title": "管理者メモ",
@@ -100,7 +106,21 @@
       "view_member_detail": "詳細情報を表示",
       "search_by_member": "会員で検索",
       "search_by_name": "注文者名で検索",
-      "search_by_phone": "連絡先で検索"
+      "search_by_phone": "連絡先で検索",
+      "reset_guest_password": "閲覧パスワード再設定",
+      "stock_status": {
+        "deducted": "在庫減",
+        "not_deducted": "在庫非減"
+      },
+      "earn_status": {
+        "earned": "積立完了",
+        "pending": "積立予定"
+      },
+      "cancel_reason": {
+        "title": "キャンセル理由",
+        "reason": "理由",
+        "detail": "詳細理由"
+      }
     },
     "tabs": {
       "order_info": "注文情報",
@@ -257,7 +277,9 @@
       "cancelled_amount": "キャンセル金額",
       "refunded_amount": "返金金額",
       "refund_status": "返金ステータス",
-      "refund_points_amount": "マイレージ返金"
+      "refund_points_amount": "マイレージ返金",
+      "payment_currency": "決済通貨: {{currency}}",
+      "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求"
     },
     "activity_log": {
       "title": "アクティビティログ",
@@ -360,6 +382,7 @@
         "refund_priority_label": "返金優先順位",
         "refund_priority_pg_first": "PG決済を優先的に返金",
         "refund_priority_points_first": "マイレージを優先的に返金",
+        "refund_priority_no_points_hint": "使用したマイレージがないため、返金優先順位を選択できません。",
         "refund_estimate_title": "返金予定金額",
         "refund_loading": "返金予定金額を計算中...",
         "refund_product_amount": "商品返金額",
@@ -397,6 +420,35 @@
         "estimate_failed": "返金予想金額の計算に失敗しました。",
         "cancel_success": "注文がキャンセルされました。",
         "cancel_failed": "注文のキャンセルに失敗しました。"
+      },
+      "reset_guest_password": {
+        "title": "非会員閲覧パスワード再設定",
+        "description": "非会員注文閲覧に使用する新しいパスワードを設定します。",
+        "order_number": "注文番号",
+        "orderer_name": "注文者",
+        "orderer_phone": "電話番号",
+        "new_password": "新しいパスワード",
+        "new_password_placeholder": "8文字以上入力",
+        "new_password_confirmation": "新しいパスワード確認",
+        "new_password_confirmation_placeholder": "新しいパスワードを再度入力してください",
+        "hint": "8文字以上入力してください。既存のパスワードは確認できず、新しい値でのみ再設定されます。",
+        "cancel": "キャンセル",
+        "reset": "再設定",
+        "reset_success": "非会員閲覧パスワードが再設定されました。"
+      },
+      "confirm_deposit": {
+        "title": "無通帳入金確認",
+        "description": "入金者名と入金額を確認して決済完了処理します。",
+        "depositor_name": "入金者名",
+        "depositor_name_placeholder": "入金者名を入力してください",
+        "amount": "入金額",
+        "amount_hint": "決済予定金額と正確に一致する必要があります。",
+        "due_amount": "決済予定金額",
+        "cancel": "キャンセル",
+        "confirm": "入金確認",
+        "confirm_success": "入金が確認され、決済完了処理されました。",
+        "mark_order_complete": "注文を決済完了として処理",
+        "mark_order_complete_hint": "チェックすると入金記録とともに注文ステータスを決済完了に変更します(ポイント積立·在庫減少·通知送信含む)。チェックしないと入金内訳のみ記録します。"
       }
     }
   },
@@ -548,7 +600,13 @@
     "orderer": "注文者",
     "orderer_select": "会員を選択",
     "orderer_search_placeholder": "名前またはメールアドレスで検索",
-    "orderer_search_initial": "会員を検索してください"
+    "orderer_search_initial": "会員を検索してください",
+    "member_type": "会員区分",
+    "member_type_option": {
+      "all": "すべて",
+      "member": "会員",
+      "guest": "非会員"
+    }
   },
   "action": {
     "search": "検索",
@@ -720,7 +778,9 @@
     "country": "配送国",
     "device": "購入環境",
     "first_order": "初回購入",
-    "action": "作業"
+    "action": "作業",
+    "mileage_used_short": "マイレージ -{{amount}}",
+    "points_earned_short": "ポイント +{{amount}}"
   },
   "device": {
     "mobile": "モバイル",

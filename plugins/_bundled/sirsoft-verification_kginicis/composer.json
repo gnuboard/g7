@@ -1,0 +1,24 @@
+{
+    "name": "plugins/sirsoft-verification_kginicis",
+    "description": "KG Inicis Identity Verification provider for G7",
+    "version": "1.0.0",
+    "type": "library",
+    "authors": [
+        {
+            "name": "sirsoft",
+            "email": "contact@sirsoft.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Sirsoft\\VerificationKginicis\\": ["src/", "./"]
+        },
+        "files": [
+            "src/Libs/INILib.php",
+            "src/Libs/KISA_SEED_CBC.php"
+        ]
+    }
+}

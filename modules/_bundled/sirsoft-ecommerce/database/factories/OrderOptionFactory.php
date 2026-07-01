@@ -19,8 +19,6 @@ class OrderOptionFactory extends Factory
 
     /**
      * 기본 정의
-     *
-     * @return array
      */
     public function definition(): array
     {
@@ -72,7 +70,7 @@ class OrderOptionFactory extends Factory
                 'brand_id' => null,
                 'list_price' => $unitPrice,
                 'selling_price' => $unitPrice,
-                'currency_code' => 'KRW',
+                'currency_code' => $this->defaultCurrency(),
                 'stock_quantity' => 100,
                 'tax_status' => 'taxable',
                 'tax_rate' => 10,
@@ -88,7 +86,7 @@ class OrderOptionFactory extends Factory
                 'price_adjustment' => 0,
                 'list_price' => $unitPrice,
                 'selling_price' => $unitPrice,
-                'currency_code' => 'KRW',
+                'currency_code' => $this->defaultCurrency(),
                 'stock_quantity' => 100,
                 'weight' => 0.5,
                 'volume' => 0.01,
@@ -115,9 +113,6 @@ class OrderOptionFactory extends Factory
 
     /**
      * 특정 주문의 옵션
-     *
-     * @param  Order  $order
-     * @return static
      */
     public function forOrder(Order $order): static
     {
@@ -128,8 +123,6 @@ class OrderOptionFactory extends Factory
 
     /**
      * 배송 중 상태
-     *
-     * @return static
      */
     public function shipped(): static
     {
@@ -140,8 +133,6 @@ class OrderOptionFactory extends Factory
 
     /**
      * 취소 상태
-     *
-     * @return static
      */
     public function cancelled(): static
     {
@@ -152,9 +143,6 @@ class OrderOptionFactory extends Factory
 
     /**
      * 교환 상품
-     *
-     * @param  OrderOption  $sourceOption
-     * @return static
      */
     public function exchangedFrom(OrderOption $sourceOption): static
     {
@@ -166,10 +154,20 @@ class OrderOptionFactory extends Factory
     }
 
     /**
-     * CurrencyConversionService를 사용하여 다중 통화 금액을 생성합니다.
-     * 서비스 사용 불가 시 KRW 단일 통화로 fallback합니다.
+     * 설정의 기본 통화 코드를 반환합니다 (KRW 하드코딩 제거 — base 추종).
      *
-     * @param  float  $amount  KRW 기준 금액
+     * @return string 기본 통화 코드
+     */
+    private function defaultCurrency(): string
+    {
+        return app(CurrencyConversionService::class)->getDefaultCurrency();
+    }
+
+    /**
+     * CurrencyConversionService를 사용하여 다중 통화 금액을 생성합니다.
+     * 서비스 사용 불가 시 기본 통화 단일 값으로 fallback합니다.
+     *
+     * @param  float  $amount  기본 통화 기준 금액
      * @return array 다중 통화 데이터
      */
     private function buildMcAmount(float $amount): array
@@ -183,9 +181,9 @@ class OrderOptionFactory extends Factory
                 $result[$code] = $data['price'];
             }
 
-            return ! empty($result) ? $result : ['KRW' => $amount];
+            return ! empty($result) ? $result : [$service->getDefaultCurrency() => $amount];
         } catch (\Exception $e) {
-            return ['KRW' => $amount];
+            return [app(CurrencyConversionService::class)->getDefaultCurrency() => $amount];
         }
     }
 }

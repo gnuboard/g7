@@ -24,22 +24,12 @@ class TemplateRouteResolver
      */
     public function resolve(string $url): ?array
     {
-        $activeTemplate = $this->templateManager->getActiveTemplate('user');
-        if (! $activeTemplate) {
+        $loaded = $this->loadActiveRoutes('user');
+        if ($loaded === null) {
             return null;
         }
 
-        $templateIdentifier = $activeTemplate['identifier'] ?? null;
-        if (! $templateIdentifier) {
-            return null;
-        }
-
-        $routesResult = $this->templateService->getRoutesDataWithModules($templateIdentifier);
-        if (! ($routesResult['success'] ?? false) || empty($routesResult['data']['routes'])) {
-            return null;
-        }
-
-        $routes = $routesResult['data']['routes'];
+        [$templateIdentifier, $routes] = $loaded;
 
         foreach ($routes as $route) {
             // auth_required 라우트 제외
@@ -88,6 +78,64 @@ class TemplateRouteResolver
         }
 
         return null;
+    }
+
+    /**
+     * URL이 활성 템플릿(+모듈/플러그인 병합)의 등록된 라우트에 존재하는지 판별합니다.
+     *
+     * resolve()와 달리 auth_required/guest_only 라우트도 "존재"로 인정합니다.
+     * 미등록 경로 catch-all 의 404 판별에 사용합니다 (공개#47).
+     *
+     * @param  string  $url  요청 URL 경로 (선행 '/' 포함)
+     * @param  string  $type  템플릿 타입 ('user' | 'admin')
+     * @return bool 등록 라우트면 true, 미등록이면 false. 템플릿 미설치/로드 실패 시 true(404 억제, 안전측).
+     */
+    public function routeExists(string $url, string $type = 'user'): bool
+    {
+        $loaded = $this->loadActiveRoutes($type);
+        // 템플릿 미설치/로드 실패 시 전 경로 404 차단 — 안전측 폴백 (D-47-3).
+        if ($loaded === null) {
+            return true;
+        }
+
+        [, $routes] = $loaded;
+
+        foreach ($routes as $route) {
+            // auth_required/guest_only 검사 없이 path 만 매칭 (resolve()와 차이 — 핵심).
+            $routePath = $this->resolveRoutePath($route['path'] ?? '');
+
+            if ($this->matchRoute($routePath, $url) !== null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 활성 템플릿($type)의 병합 routes 배열을 로드합니다.
+     *
+     * @param  string  $type  템플릿 타입 ('user' | 'admin')
+     * @return array{0: string, 1: array}|null [templateIdentifier, routes] 또는 실패 시 null
+     */
+    private function loadActiveRoutes(string $type): ?array
+    {
+        $activeTemplate = $this->templateManager->getActiveTemplate($type);
+        if (! $activeTemplate) {
+            return null;
+        }
+
+        $templateIdentifier = $activeTemplate['identifier'] ?? null;
+        if (! $templateIdentifier) {
+            return null;
+        }
+
+        $routesResult = $this->templateService->getRoutesDataWithModules($templateIdentifier);
+        if (! ($routesResult['success'] ?? false) || empty($routesResult['data']['routes'])) {
+            return null;
+        }
+
+        return [$templateIdentifier, $routesResult['data']['routes']];
     }
 
     /**

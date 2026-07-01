@@ -1,5 +1,8 @@
 {
-  "meta": { "is_partial": true, "description": "은행 관리 모달" },
+  "meta": {
+    "is_partial": true,
+    "description": "은행 관리 모달"
+  },
   "id": "bank_management_modal",
   "type": "composite",
   "name": "Modal",
@@ -11,7 +14,9 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex flex-col relative" },
+      "props": {
+        "className": "flex flex-col relative"
+      },
       "lifecycle": {
         "onMount": [
           {
@@ -30,15 +35,33 @@
           "type": "basic",
           "name": "Div",
           "if": "{{$parent._local.bankModalSaving}}",
-          "props": { "className": "absolute inset-0 bg-white/60 dark:bg-gray-900/60 z-10 flex items-center justify-center rounded-lg" },
+          "props": {
+            "className": "flex-center absolute inset-0 bg-white/60 dark:bg-gray-900/60 z-10 justify-center rounded-lg"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex flex-col items-center gap-2" },
+              "props": {
+                "className": "flex-center flex-col gap-2"
+              },
               "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "spinner", "className": "text-2xl text-blue-500 dark:text-blue-400 animate-spin" } },
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-300 font-medium" }, "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.saving" }
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "spinner",
+                    "className": "text-2xl text-blue-500 dark:text-blue-400 animate-spin"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-600 dark:text-gray-300 font-medium"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.saving"
+                }
               ]
             }
           ]
@@ -48,21 +71,38 @@
           "type": "basic",
           "name": "Div",
           "if": "{{$parent._local.bankModalErrors && Object.keys($parent._local.bankModalErrors).length > 0}}",
-          "props": { "className": "mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg" },
+          "props": {
+            "className": "alert-danger"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex items-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-1" },
+              "props": {
+                "className": "flex-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-1"
+              },
               "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "circle-exclamation", "className": "text-sm" } },
-                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.validation_error" }
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "circle-exclamation",
+                    "className": "text-sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.validation_error"
+                }
               ]
             },
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "text-red-600 dark:text-red-400 text-xs space-y-0.5 ml-6" },
+              "props": {
+                "className": "text-red-600 dark:text-red-400 text-xs space-y-0.5 ml-6"
+              },
               "children": [
                 {
                   "type": "basic",
@@ -82,12 +122,16 @@
           "comment": "은행 목록 테이블 (스크롤 영역)",
           "type": "basic",
           "name": "Div",
-          "props": { "className": "max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg" },
+          "props": {
+            "className": "max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Table",
-              "props": { "className": "table" },
+              "props": {
+                "className": "table"
+              },
               "children": [
                 {
                   "type": "basic",
@@ -97,9 +141,28 @@
                       "type": "basic",
                       "name": "Tr",
                       "children": [
-                        { "type": "basic", "name": "Th", "props": { "className": "w-28" }, "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.code" },
-                        { "type": "basic", "name": "Th", "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.name" },
-                        { "type": "basic", "name": "Th", "if": "{{!$parent._computed.isReadOnly}}", "props": { "className": "w-16 text-center" }, "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.delete" }
+                        {
+                          "type": "basic",
+                          "name": "Th",
+                          "props": {
+                            "className": "w-28"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.code"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Th",
+                          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.name"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Th",
+                          "if": "{{!$parent._computed.isReadOnly}}",
+                          "props": {
+                            "className": "w-16 text-center"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.delete"
+                        }
                       ]
                     }
                   ]
@@ -117,7 +180,10 @@
                         {
                           "type": "basic",
                           "name": "Td",
-                          "props": { "colSpan": 3, "className": "text-center py-8 text-tertiary" },
+                          "props": {
+                            "colSpan": 3,
+                            "className": "text-center py-8 text-tertiary"
+                          },
                           "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.empty"
                         }
                       ]
@@ -136,7 +202,9 @@
                           "comment": "은행 코드",
                           "type": "basic",
                           "name": "Td",
-                          "props": { "className": "align-top" },
+                          "props": {
+                            "className": "align-top"
+                          },
                           "children": [
                             {
                               "type": "basic",
@@ -145,7 +213,7 @@
                                 "type": "text",
                                 "value": "{{bank.code ?? ''}}",
                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.code_placeholder",
-                                "className": "{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code'] ? 'input w-full border-red-500 focus:border-red-500 focus:ring-red-500' : 'input w-full'}}",
+                                "className": "{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code'] ? 'input input-error' : 'input'}}",
                                 "disabled": "{{$parent._computed.isReadOnly}}"
                               },
                               "actions": [
@@ -163,7 +231,9 @@
                               "type": "basic",
                               "name": "Span",
                               "if": "{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code']}}",
-                              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+                              "props": {
+                                "className": "form-error-xs mt-1 block"
+                              },
                               "text": "{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code']?.[0] ?? ''}}"
                             }
                           ]
@@ -172,7 +242,9 @@
                           "comment": "은행명 (다국어)",
                           "type": "basic",
                           "name": "Td",
-                          "props": { "className": "align-top" },
+                          "props": {
+                            "className": "align-top"
+                          },
                           "children": [
                             {
                               "type": "basic",
@@ -208,7 +280,9 @@
                               "type": "basic",
                               "name": "Span",
                               "if": "{{Object.keys($parent._local.bankModalErrors ?? {}).some(k => k.startsWith('banks.' + bank._idx + '.name'))}}",
-                              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+                              "props": {
+                                "className": "form-error-xs mt-1 block"
+                              },
                               "text": "{{Object.entries($parent._local.bankModalErrors ?? {}).filter(([k]) => k.startsWith('banks.' + bank._idx + '.name')).map(([,v]) => v).flat()[0] ?? ''}}"
                             }
                           ]
@@ -218,12 +292,17 @@
                           "type": "basic",
                           "name": "Td",
                           "if": "{{!$parent._computed.isReadOnly}}",
-                          "props": { "className": "text-center align-top" },
+                          "props": {
+                            "className": "text-center align-top"
+                          },
                           "children": [
                             {
                               "type": "basic",
                               "name": "Button",
-                              "props": { "type": "button", "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" },
+                              "props": {
+                                "type": "button",
+                                "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                              },
                               "actions": [
                                 {
                                   "type": "click",
@@ -235,7 +314,14 @@
                                 }
                               ],
                               "children": [
-                                { "type": "basic", "name": "Icon", "props": { "name": "trash", "className": "text-sm" } }
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": {
+                                    "name": "trash",
+                                    "className": "text-sm"
+                                  }
+                                }
                               ]
                             }
                           ]
@@ -252,7 +338,9 @@
           "comment": "하단 버튼 영역",
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex gap-2 mt-4" },
+          "props": {
+            "className": "flex gap-2 mt-4"
+          },
           "children": [
             {
               "comment": "은행 추가 버튼",
@@ -274,8 +362,19 @@
                 }
               ],
               "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "plus", "className": "text-sm" } },
-                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.add_bank" }
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "plus",
+                    "className": "text-sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.add_bank"
+                }
               ]
             },
             {
@@ -319,7 +418,9 @@
                         },
                         {
                           "handler": "refetchDataSource",
-                          "params": { "dataSourceId": "settings" }
+                          "params": {
+                            "dataSourceId": "settings"
+                          }
                         },
                         {
                           "handler": "toast",
@@ -330,7 +431,9 @@
                         },
                         {
                           "handler": "closeModal",
-                          "params": { "id": "bank_management_modal" }
+                          "params": {
+                            "id": "bank_management_modal"
+                          }
                         }
                       ],
                       "errorHandling": {
@@ -365,7 +468,11 @@
                 }
               ],
               "children": [
-                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.confirm" }
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.confirm"
+                }
               ]
             }
           ]

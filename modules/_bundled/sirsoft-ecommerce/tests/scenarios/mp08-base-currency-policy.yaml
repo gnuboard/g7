@@ -1,0 +1,61 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
+#   base 통화 정책 axis 는 PHPUnit(OrderProcessingService/buildCurrencySnapshot/OrderAdjustmentService/
+#   StoreEcommerceSettingsRequest)·Playwright 가 커버하며 green 이다.
+feature: base 통화 정책 + 변경 가드 + 결제/통지/부분환불 base 기준 (A2 — PO 신규)
+
+description: |
+  기본통화 = 모든 금액 테이블의 base(진실값). 비-base 선택 시 base 정수 × 스냅샷 환율로 PG 청구·통지·환불.
+  부분환불은 원주문 스냅샷 환율 고정(현재 환율 재조회 금지 → 환차손 0). 상품/주문 1건이라도 있으면
+  base 통화 변경 영구 차단.
+
+axes:
+  base_currency:
+    - KRW
+    - USD
+  data_existence:
+    - product0_order0    # 상품 0 주문 0 (변경 가능)
+    - product1           # 상품 1건
+    - order1             # 주문 1건
+    - soft_deleted_only  # 소프트삭제만 (잠금 유지)
+  payment_currency:
+    - base               # 결제 통화 = base
+    - non_base_persisted # 유저 영속 통화(비-base)
+    - non_base_header    # 헤더 X-Currency(비-base)
+  stage:
+    - snapshot_build     # 스냅샷 생성
+    - pg_charge          # PG 청구
+    - partial_refund     # 부분환불
+    - notification       # 결제 통지
+    - mileage            # 마일리지
+  rate_change:
+    - same_after_order   # 주문 후 환율 동일
+    - changed_after_order # 주문 후 환율 변경
+
+effects:
+  # 스냅샷 (PHPUnit)
+  - order_currency_resolves_active_currency      # order_currency=유저 결제통화(영속>헤더>default, 표시헤더 단독 아님)
+  - base_currency_is_default                      # base_currency=getDefaultCurrency()
+  - base_column_integer_preserved_as_ssot        # base 컬럼 정수=SSoT 보존(환율로 안 덮어씀)
+  - pg_charge_is_base_times_snapshot_rate        # PG 청구=base 정수×스냅샷 환율(mc_*)
+  # 환불 불변식 (PHPUnit) — 핵심
+  - partial_refund_uses_snapshot_rate_not_current # 부분환불이 원주문 스냅샷 환율 사용
+  - refund_unchanged_after_rate_change           # 주문후 환율 변경해도 환불액 불변
+  - no_current_rate_requery_in_refund_path       # 환불 경로 현재 환율 재조회 0건
+  # 통지/마일리지 (PHPUnit)
+  - notification_amount_from_snapshot            # 통지 결제액 스냅샷 기준
+  - mileage_base_matches_order_base              # 마일리지 base = 주문 base_currency
+  # base 변경 후 기존 데이터 (PHPUnit)
+  - existing_order_snapshot_unchanged_after_base_change # base 변경 후 기존 주문 스냅샷 불변
+  # 변경 가드 (PHPUnit)
+  - base_change_allowed_when_no_data             # 상품/주문 0건 → default_currency 변경 통과
+  - base_change_blocked_when_product_exists      # 상품 1건 → 422 base_locked_after_data
+  - base_change_blocked_when_order_exists        # 주문 1건 → 422 base_locked_after_data
+  - base_change_blocked_with_soft_deleted        # 소프트삭제만 있어도 잠금(withTrashed)
+  - same_currency_resave_allowed                 # 동일 통화 재저장 통과(변경 아님)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingCurrencySnapshotTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentRefundSnapshotTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Requests/BaseCurrencyChangeGuardTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/mp08-base-currency-guard.spec.ts

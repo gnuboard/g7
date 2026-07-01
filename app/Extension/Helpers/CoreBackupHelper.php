@@ -33,9 +33,20 @@ class CoreBackupHelper
     public static function createBackup(array $targets, ?\Closure $onProgress = null, array $excludes = []): string
     {
         $timestamp = date('Ymd_His');
-        $backupPath = storage_path("app/core_backups/core_{$timestamp}");
+        $backupRoot = storage_path('app/core_backups');
+        $backupPath = $backupRoot.DIRECTORY_SEPARATOR."core_{$timestamp}";
 
-        File::ensureDirectoryExists($backupPath, 0770, true);
+        // 백업 루트(core_backups)를 php-fpm 그룹이 쓸 수 있도록 보장한 뒤 타임스탬프
+        // 디렉토리를 만든다. sudo 업데이트가 core_backups 를 root/운영자 소유 + g-w(0755)
+        // 로 만들어 두면 이후 www-data 가 그 안에 mkdir 하지 못해 백업 생성이 실패한다
+        // (mkdir(): Permission denied). 루트를 g+w(0775) 로 정상화하고 소유권을 부모에서
+        // 상속한다(소유자 아님 → chmod 불가 환경은 silent no-op, 멱등).
+        File::ensureDirectoryExists($backupRoot, 0775);
+        FilePermissionHelper::inheritOwnershipFromParent($backupRoot);
+        FilePermissionHelper::syncGroupWritability($backupRoot);
+
+        File::ensureDirectoryExists($backupPath, 0775, true);
+        FilePermissionHelper::inheritOwnershipFromParent($backupPath);
 
         foreach ($targets as $target) {
             $sourcePath = base_path($target);

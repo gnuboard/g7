@@ -1,13 +1,13 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 #347 활성 디렉토리 보존 + 단발성 복구 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 활성 디렉토리 보존 + 단발성 복구 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
 
-feature: 코어 업데이트 활성 확장 디렉토리 보존 + beta.5 단발성 복구
+feature: 코어 업데이트 활성 확장 디렉토리 보존 + _bundled 사용자 추가 항목 보존 + beta.5 단발성 복구
 
 description: |
   beta.4 의 `CoreUpdateService::applyDiscoveredTopLevelPaths` 가 `isCoveredByApplied`
   단방향 검사 결함으로 `applied=['templates/_bundled']` 일 때 source 의 `templates/`
   자체를 신규 항목으로 오인하여 `copyDirectory(removeOrphans:true)` 호출 → base 의
   활성 서브디렉토리(`templates/sirsoft-basic` 등) 가 orphan 으로 판정되어 삭제되던
-  회귀 (#347) 의 차단 + beta.4 → beta.5 1회성 자동 복구 인프라.
+  회귀 의 차단 + beta.4 → beta.5 1회성 자동 복구 인프라.
 
   근본 수정 (3건 trade-off 없는 구성):
     1. `isCoveredByApplied` 양방향 검사 — applied 가 path 의 자식일 때도 cover 판정.
@@ -39,6 +39,8 @@ axes:
   deactivated_columns: [present, absent]                                   # 마이그레이션 적용 여부 (graceful skip)
   pending_stub_state: [both_present, gitignore_missing, gitkeep_missing, both_missing, dir_missing]
   lang_packs_pending_depth: [depth_2, depth_3, depth_5, depth_unbounded]   # locatePendingLangPacksSourceDeep
+  user_added_bundled_entry: [dir_present, file_present, absent]            # _bundled/ 바로 아래 사용자 추가 항목
+  bundled_target_domain: [modules, plugins, templates, lang-packs]        # 보존 대상 4종
 
 exclusions:
   - { source_structure: empty_top_level, active_subdir_state: present, reason: "source 가 비었으면 자동 발견 폴백 자체가 트리거 안 됨 — 활성 서브디렉토리 보존 무조건 보장" }
@@ -64,9 +66,17 @@ effects:
   - recoverPendingStubFiles_creates_pending_dir_when_missing
   - verifyBundledLangPacksFallback_skips_when_active_bundled_present
   - verifyBundledLangPacksFallback_recovers_from_deep_pending_source_unbounded_depth
+  # 사용자가 _bundled/ 바로 아래 직접 만든 항목 보존 (확장 3종 + 언어팩).
+  # effect 명 = 실제 테스트 메서드명 (CoreUpdateServiceTest / FilePermissionHelperTest).
+  - test_apply_update_preserves_user_added_bundled_subdir_all_domains
+  - test_apply_update_still_cleans_stale_file_inside_bundled_extension
+  - test_preserve_top_level_orphans_keeps_top_level_dir_and_file
+  - test_preserve_top_level_orphans_still_cleans_nested_orphans
+  - test_preserve_top_level_orphans_defaults_to_existing_behavior
 
 test_files:
   - tests/Unit/Services/CoreUpdateServiceTest.php
+  - tests/Unit/Helpers/FilePermissionHelperTest.php
   - tests/Feature/Upgrades/Upgrade_7_0_0_beta_5RecoveryTest.php
 
 # 본 시나리오 매니페스트의 axes cross product 는 50+ 케이스이나, 실제 핵심 회귀 가드는

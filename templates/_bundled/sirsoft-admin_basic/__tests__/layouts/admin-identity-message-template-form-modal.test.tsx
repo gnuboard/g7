@@ -191,11 +191,14 @@ describe('IDV 메시지 미리보기 모달', () => {
         expect(subjectSpans.length).toBeGreaterThan(0);
     });
 
-    it('body 영역이 innerHTML 로 렌더된 본문을 표시', () => {
-        const bodyDivs = collectNodes(previewModal, (n) =>
-            typeof n.props?.innerHTML === 'string' && n.props.innerHTML.includes('identity_message_template_preview_modal?.body')
+    it('body 영역이 HtmlContent 로 렌더된 본문을 표시', () => {
+        const bodyNodes = collectNodes(previewModal, (n) =>
+            n.name === 'HtmlContent'
+            && n.props?.isHtml === true
+            && typeof n.props?.content === 'string'
+            && n.props.content.includes('identity_message_template_preview_modal?.body')
         );
-        expect(bodyDivs.length).toBeGreaterThan(0);
+        expect(bodyNodes.length).toBeGreaterThan(0);
     });
 
     it('닫기 버튼: closeModal target 패턴', () => {

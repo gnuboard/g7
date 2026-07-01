@@ -4,6 +4,7 @@ import { A } from '../basic/A';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import type { EditorAttrs } from '../../types';
 
 /**
  * 빠른 링크 인터페이스
@@ -25,6 +26,12 @@ export interface AdminFooterProps {
   className?: string;
   copyrightModalId?: string;
   changelogModalId?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -51,6 +58,8 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
   className = '',
   changelogModalId,
   copyrightModalId,
+  id,
+  editorAttrs,
 }) => {
   const handleVersionClick = useCallback(() => {
     if (changelogModalId) {
@@ -131,17 +140,12 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
   }, [copyrightModalId]);
 
   return (
-    <Div
-      className={`
-        bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4
-        ${className}
-      `}
-    >
-      <Div className="flex flex-col md:flex-row items-center justify-between gap-4">
+    <Div className={`admin-footer ${className}`} id={id} {...editorAttrs}>
+      <Div className="admin-footer-row">
         {/* 왼쪽: 저작권 및 버전 정보 */}
-        <Div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+        <Div className="admin-footer-group">
           <Span
-            className={copyrightModalId ? 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors' : ''}
+            className={copyrightModalId ? 'admin-footer-link-hover' : ''}
             onClick={copyrightModalId ? handleCopyrightClick : undefined}
           >
             {copyright}
@@ -150,7 +154,7 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
             <>
               <Span className="hidden md:inline">•</Span>
               <Span
-                className={`flex items-center gap-2 ${changelogModalId ? 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors' : ''}`}
+                className={`flex-center gap-2 ${changelogModalId ? 'admin-footer-link-hover' : ''}`}
                 onClick={changelogModalId ? handleVersionClick : undefined}
               >
                 <Icon name={IconName.Tag} className="w-4 h-4" />
@@ -162,16 +166,10 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
 
         {/* 오른쪽: 빠른 링크 */}
         {quickLinks.length > 0 && (
-          <Div className="flex items-center gap-4">
+          <Div className="flex-center gap-4">
             {quickLinks.map((link) => (
-              <A
-                key={link.id}
-                href={link.url}
-                className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                {link.iconName && (
-                  <Icon name={link.iconName} className="w-4 h-4" />
-                )}
+              <A key={link.id} href={link.url} className="admin-footer-link">
+                {link.iconName && <Icon name={link.iconName} className="w-4 h-4" />}
                 <Span>{link.label}</Span>
               </A>
             ))}

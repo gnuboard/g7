@@ -62,7 +62,7 @@ class ProductOption extends Model
     protected $casts = [
         'option_values' => 'array',
         'option_name' => 'array',
-        'price_adjustment' => 'integer',
+        'price_adjustment' => 'decimal:2',
         'stock_quantity' => 'integer',
         'safe_stock_quantity' => 'integer',
         'weight' => 'decimal:2',
@@ -77,7 +77,7 @@ class ProductOption extends Model
     /**
      * 상품 관계
      *
-     * @return BelongsTo
+     * @return BelongsTo 이 옵션이 속한 상품 관계
      */
     public function product(): BelongsTo
     {
@@ -87,29 +87,31 @@ class ProductOption extends Model
     /**
      * 최종 판매가 계산 (상품 판매가 + 옵션 조정액)
      *
-     * @return int
+     * 기본통화가 소수 통화(USD 등)일 수 있어 소수 가격을 보존합니다.
+     *
+     * @return float 옵션 최종 판매가 (소수 가격 보존)
      */
-    public function getFinalPrice(): int
+    public function getFinalPrice(): float
     {
-        return $this->product->selling_price + $this->price_adjustment;
+        return (float) $this->product->selling_price + (float) $this->price_adjustment;
     }
 
     /**
      * 최종 정가 계산 (상품 정가 + 옵션 조정액)
      *
-     * @return int
+     * @return float 옵션 최종 정가 (소수 가격 보존)
      */
-    public function getListPrice(): int
+    public function getListPrice(): float
     {
-        return $this->product->list_price + $this->price_adjustment;
+        return (float) $this->product->list_price + (float) $this->price_adjustment;
     }
 
     /**
      * 최종 판매가 계산 (상품 판매가 + 옵션 조정액) - getFinalPrice의 별칭
      *
-     * @return int
+     * @return float 옵션 최종 판매가 (소수 가격 보존)
      */
-    public function getSellingPrice(): int
+    public function getSellingPrice(): float
     {
         return $this->getFinalPrice();
     }
@@ -117,7 +119,7 @@ class ProductOption extends Model
     /**
      * 안전재고 이하 여부
      *
-     * @return bool
+     * @return bool 현재 재고가 안전재고 이하이면 true
      */
     public function isBelowSafeStock(): bool
     {

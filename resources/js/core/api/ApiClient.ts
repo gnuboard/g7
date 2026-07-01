@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
+import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import type { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 
 const logger = createLogger('ApiClient');
@@ -21,6 +22,12 @@ function getDevTools(): G7DevToolsCore | null {
 interface AxiosConfigWithDevTools extends InternalAxiosRequestConfig {
   _devToolsRequestId?: string | null;
   _retry?: boolean;
+  /**
+   * IDV 428 인터셉트 시 challenge 에 사용할 인증 대상(이메일·전화).
+   * axios(G7Core.api) 직접 호출 경로에서 호출자가 config 에 실어 보내면 인터셉터가 launcher 로 전달.
+   * apiCall(handleApiCall) 경로의 `identity_target` 액션 속성과 동일한 역할.
+   */
+  identity_target?: { email?: string; phone?: string };
 }
 
 /**
@@ -244,6 +251,71 @@ class ApiClient {
         if (error.response?.status === 401 && shouldSkipUnauthorized) {
           this.completeDevToolsRequest(originalRequest, error);
           return Promise.reject(error);
+        }
+
+        // 428 본인인증 필요 처리 (IDV) — apiCall(handleApiCall, native fetch) 경로는
+        // ActionDispatcher 가 IdentityGuardInterceptor 로 자동 인터셉트하지만, G7Core.api(axios)
+        // 직접 호출 경로(입금확인/주문취소 등 모듈 JS 핸들러)는 이 인터셉터를 거치지 않아 모듈마다
+        // 428 분기를 수동 추가해야 했고 누락 위험이 있었다(취소 핸들러 미노출 회귀). 여기서 중앙
+        // 처리하면 axios 를 쓰는 모든 호출이 본인인증 모달 → verify → 원 요청 재실행을 자동 수행한다.
+        if (IdentityGuardInterceptor.isIdentityRequired(error.response?.status, error.response?.data)) {
+          this.completeDevToolsRequest(originalRequest, error);
+
+          // 원 요청 헤더(Authorization 포함)/body 를 재실행에 그대로 재사용 — 누락 시 백엔드가
+          // 인증 실패(401) 또는 빈 body(422)로 응답할 수 있다.
+          const replayHeaders: Record<string, string> = {};
+          const rawHeaders = (originalRequest?.headers ?? {}) as Record<string, unknown>;
+          for (const [k, v] of Object.entries(rawHeaders)) {
+            if (typeof v === 'string') {
+              replayHeaders[k] = v;
+            }
+          }
+          let replayBody: BodyInit | undefined;
+          if (originalRequest?.data !== undefined && originalRequest?.data !== null) {
+            replayBody = typeof originalRequest.data === 'string'
+              ? originalRequest.data
+              : JSON.stringify(originalRequest.data);
+            replayHeaders['Content-Type'] = replayHeaders['Content-Type'] ?? 'application/json';
+          }
+
+          // 호출자가 config.identity_target 으로 선언한 인증 대상(비로그인 흐름) 을 launcher 로 전달.
+          const identityTarget = (originalRequest as AxiosConfigWithDevTools | undefined)
+            ?.identity_target;
+
+          const replayed = await IdentityGuardInterceptor.handle(
+            error.response.data,
+            {
+              headers: replayHeaders,
+              body: replayBody,
+              credentials: 'same-origin',
+            },
+            identityTarget
+          );
+
+          // 사용자 취소 / verify 실패 / return_request 없음 → 원 에러 그대로 전파
+          if (!replayed) {
+            return Promise.reject(error);
+          }
+
+          // 재실행 성공 → fetch Response 를 axios 응답 형태로 변환해 정상 흐름으로 반환.
+          let replayData: any = null;
+          try {
+            replayData = await replayed.json();
+          } catch {
+            replayData = null;
+          }
+          if (!replayed.ok) {
+            // 재실행이 또 실패하면 그 응답을 에러로 전파
+            return Promise.reject(Object.assign(new Error('replay failed'), {
+              response: { status: replayed.status, data: replayData },
+            }));
+          }
+
+          return {
+            ...error.response,
+            status: replayed.status,
+            data: replayData,
+          } as AxiosResponse;
         }
 
         // 403 Forbidden 처리 - onUnauthorized를 호출하지 않고 onError로 처리

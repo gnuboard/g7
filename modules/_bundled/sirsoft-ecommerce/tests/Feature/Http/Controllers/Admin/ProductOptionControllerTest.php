@@ -79,7 +79,6 @@ class ProductOptionControllerTest extends ModuleTestCase
 
     // ==================== 가격 일괄 변경 테스트 ====================
 
-    /**     */
     #[Test]
     public function test_bulk_price_increase_by_won(): void
     {
@@ -109,7 +108,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(1500, $this->option2->price_adjustment); // 1000 + 500
     }
 
-    /**     */
     #[Test]
     public function test_bulk_price_decrease_by_won(): void
     {
@@ -139,7 +137,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(1500, $this->option3->price_adjustment); // 2000 - 500
     }
 
-    /**     */
     #[Test]
     public function test_bulk_price_fixed_by_won(): void
     {
@@ -168,7 +165,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(3000, $this->option3->price_adjustment);
     }
 
-    /**     */
     #[Test]
     public function test_bulk_price_increase_by_percent(): void
     {
@@ -198,7 +194,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(2200, $this->option3->price_adjustment); // 2000 * 1.1
     }
 
-    /**     */
     #[Test]
     public function test_bulk_price_with_mixed_ids(): void
     {
@@ -248,7 +243,6 @@ class ProductOptionControllerTest extends ModuleTestCase
 
     // ==================== 재고 일괄 변경 테스트 ====================
 
-    /**     */
     #[Test]
     public function test_bulk_stock_increase(): void
     {
@@ -277,7 +271,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(40, $this->option2->stock_quantity); // 30 + 10
     }
 
-    /**     */
     #[Test]
     public function test_bulk_stock_decrease(): void
     {
@@ -306,7 +299,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(5, $this->option3->stock_quantity); // 20 - 15
     }
 
-    /**     */
     #[Test]
     public function test_bulk_stock_decrease_does_not_go_below_zero(): void
     {
@@ -330,7 +322,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $this->assertEquals(0, $this->option3->stock_quantity); // max(0, 20 - 100)
     }
 
-    /**     */
     #[Test]
     public function test_bulk_stock_set(): void
     {
@@ -360,7 +351,6 @@ class ProductOptionControllerTest extends ModuleTestCase
 
     // ==================== 유효성 검증 테스트 ====================
 
-    /**     */
     #[Test]
     public function test_bulk_price_requires_at_least_one_id_type(): void
     {
@@ -379,7 +369,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $response->assertStatus(422);
     }
 
-    /**     */
     #[Test]
     public function test_bulk_price_validates_option_id_format(): void
     {
@@ -400,7 +389,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['option_ids.0', 'option_ids.1']);
     }
 
-    /**     */
     #[Test]
     public function test_bulk_stock_validates_method(): void
     {
@@ -420,7 +408,6 @@ class ProductOptionControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['method']);
     }
 
-    /**     */
     #[Test]
     public function test_unauthenticated_user_cannot_access(): void
     {
@@ -561,6 +548,40 @@ class ProductOptionControllerTest extends ModuleTestCase
 
         // items의 다른 필드는 적용됨
         $this->assertEquals(['ko' => '이름은 적용됨', 'en' => 'Name Applied'], $this->option1->option_name);
+    }
+
+    /**     * 옵션 통합 일괄 업데이트 - option_name 의 비필수 로케일이 null 이어도 수정 성공 (회귀)
+     *
+     * 인라인으로 한국어 옵션명만 수정하면 프론트엔드가 저장된 다국어 객체
+     * { ko: "...", en: null, ja: null } 를 그대로 전송한다. 비필수 로케일의 null 값이
+     * per-locale 규칙(`option_name.*`)에서 거부되어 422 가 발생하던 회귀.
+     */
+    #[Test]
+    public function test_bulk_update_option_name_allows_null_locales(): void
+    {
+        // Given: 한국어만 입력하고 en/ja 는 null 인 옵션명 (실제 저장 형태)
+        $data = [
+            'ids' => [
+                "{$this->product->id}-{$this->option1->id}",
+            ],
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'option_id' => $this->option1->id,
+                    'option_name' => ['ko' => '레드11', 'en' => null, 'ja' => null],
+                ],
+            ],
+        ];
+
+        // When: 통합 일괄 업데이트 API 호출
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson('/api/modules/sirsoft-ecommerce/admin/options/bulk-update', $data);
+
+        // Then: 검증 통과 및 한국어 옵션명 반영
+        $response->assertStatus(200);
+
+        $this->option1->refresh();
+        $this->assertEquals('레드11', $this->option1->option_name['ko']);
     }
 
     /**     * 옵션 통합 일괄 업데이트 - add 메서드로 가격 증가

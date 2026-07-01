@@ -191,6 +191,44 @@ class AdminIdentityMessageControllerTest extends TestCase
         $this->assertTrue($template->is_default);
     }
 
+    public function test_template_reset_restores_definition_is_default_flag(): void
+    {
+        // 시드 정의(is_default=true)의 템플릿을 운영자가 편집하면 definition.is_default 가 false 로 내려간다.
+        $template = IdentityMessageTemplate::whereHas('definition', fn ($q) => $q
+            ->where('scope_value', 'signup')
+        )->firstOrFail();
+
+        $definitionId = $template->definition_id;
+        $this->assertTrue(
+            IdentityMessageDefinition::findOrFail($definitionId)->is_default,
+            '시드 정의는 초기 상태에서 is_default=true 여야 합니다.'
+        );
+
+        // 운영자 편집 → definition.is_default false 로 하강
+        $this->authRequest()->patchJson(
+            '/api/admin/identity/messages/templates/'.$template->id,
+            [
+                'subject' => ['ko' => '커스텀', 'en' => 'Custom'],
+                'body' => ['ko' => '커스텀 본문', 'en' => 'Custom body'],
+            ],
+        )->assertStatus(200);
+
+        $this->assertFalse(
+            IdentityMessageDefinition::findOrFail($definitionId)->is_default,
+            '편집 후 definition.is_default 가 false 로 전환되어야 합니다 (결함 C 전제).'
+        );
+
+        // reset → definition.is_default 가 true 로 복원되어야 한다 ('기본' 배지/reset 버튼 노출 조건 정상화)
+        $this->authRequest()->postJson(
+            '/api/admin/identity/messages/templates/'.$template->id.'/reset',
+        )->assertStatus(200);
+
+        $this->assertTrue(
+            IdentityMessageDefinition::findOrFail($definitionId)->is_default,
+            'reset 후 시드 정의의 definition.is_default 가 true 로 복원되어야 합니다 (결함 C).'
+        );
+    }
+
     public function test_definition_toggle_active_flips_state(): void
     {
         $definition = IdentityMessageDefinition::where('scope_value', 'signup')->firstOrFail();

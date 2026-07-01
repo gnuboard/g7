@@ -15,3 +15,6 @@ export type { FlexProps } from './Flex';
 
 export { SectionLayout } from './SectionLayout';
 export type { SectionLayoutProps } from './SectionLayout';
+
+export { ThreeColumnLayout } from './ThreeColumnLayout';
+export type { ThreeColumnLayoutProps } from './ThreeColumnLayout';

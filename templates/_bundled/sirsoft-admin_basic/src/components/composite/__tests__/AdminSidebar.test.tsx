@@ -251,9 +251,9 @@ describe('AdminSidebar', () => {
       const boardReports = screen.getByText('게시판 신고 관리');
 
       // "게시판 관리" 버튼에 활성 스타일 적용
-      expect(boardMgmt.closest('button')).toHaveClass('bg-blue-50');
+      expect(boardMgmt.closest('button')).toHaveClass('admin-sidebar-item-active');
       // "게시판 신고 관리" 버튼에 활성 스타일 미적용
-      expect(boardReports.closest('button')).not.toHaveClass('bg-blue-50');
+      expect(boardReports.closest('button')).not.toHaveClass('admin-sidebar-item-active');
     });
 
     it('접두사 충돌 해결: /admin/boards/reports에서 "게시판 신고 관리"만 활성화', () => {
@@ -264,9 +264,9 @@ describe('AdminSidebar', () => {
       const boardReports = screen.getByText('게시판 신고 관리');
 
       // "게시판 신고 관리"만 활성 스타일 적용
-      expect(boardReports.closest('button')).toHaveClass('bg-blue-50');
+      expect(boardReports.closest('button')).toHaveClass('admin-sidebar-item-active');
       // "게시판 관리"는 비활성
-      expect(boardMgmt.closest('button')).not.toHaveClass('bg-blue-50');
+      expect(boardMgmt.closest('button')).not.toHaveClass('admin-sidebar-item-active');
     });
 
     it('하위 경로에서 가장 가까운 메뉴 활성화: /admin/boards/123', () => {
@@ -277,9 +277,9 @@ describe('AdminSidebar', () => {
       const boardReports = screen.getByText('게시판 신고 관리');
 
       // "게시판 관리" (/admin/boards)가 가장 긴 접두사 매칭
-      expect(boardMgmt.closest('button')).toHaveClass('bg-blue-50');
+      expect(boardMgmt.closest('button')).toHaveClass('admin-sidebar-item-active');
       // "게시판 신고 관리" (/admin/boards/reports)는 매칭 안됨
-      expect(boardReports.closest('button')).not.toHaveClass('bg-blue-50');
+      expect(boardReports.closest('button')).not.toHaveClass('admin-sidebar-item-active');
     });
 
     it('부모 메뉴 자동 펼침: 활성 자식이 있으면 부모 펼침', () => {
@@ -297,7 +297,7 @@ describe('AdminSidebar', () => {
 
       // "설정" 메뉴만 활성
       const settings = screen.getByText('설정');
-      expect(settings.closest('button')).toHaveClass('bg-blue-50');
+      expect(settings.closest('button')).toHaveClass('admin-sidebar-item-active');
 
       // 게시판 관련 하위 메뉴는 부모가 펼쳐지지 않아 DOM에 없음
       expect(screen.queryByText('게시판 관리')).not.toBeInTheDocument();

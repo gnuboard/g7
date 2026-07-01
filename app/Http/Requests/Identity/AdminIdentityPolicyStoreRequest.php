@@ -5,7 +5,9 @@ namespace App\Http\Requests\Identity;
 use App\Enums\IdentityPolicyAppliesTo;
 use App\Enums\IdentityPolicyFailMode;
 use App\Enums\IdentityPolicyScope;
+use App\Extension\HookManager;
 use App\Models\IdentityPolicy;
+use App\Rules\UniquePolicyPriorityPerTarget;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,7 +21,7 @@ class AdminIdentityPolicyStoreRequest extends FormRequest
     /**
      * 요청 권한 — 라우트 permission 미들웨어가 담당하므로 true 고정.
      *
-     * @return bool
+     * @return bool 항상 true (권한 판정은 미들웨어 책임)
      */
     public function authorize(): bool
     {
@@ -33,7 +35,7 @@ class AdminIdentityPolicyStoreRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'key' => ['required', 'string', 'max:120', Rule::unique(IdentityPolicy::class, 'key')],
             'scope' => ['required', Rule::enum(IdentityPolicyScope::class)],
             'target' => ['required', 'string', 'max:255'],
@@ -41,7 +43,18 @@ class AdminIdentityPolicyStoreRequest extends FormRequest
             'provider_id' => ['nullable', 'string', 'max:64'],
             'grace_minutes' => ['required', 'integer', 'min:0', 'max:43200'],
             'enabled' => ['boolean'],
-            'priority' => ['integer', 'min:0', 'max:65535'],
+            // priority 동률 차단 — 같은 scope+target 에 동일 priority 활성 정책이 이미 있으면 거부.
+            // 동률 시 적용 순서 비결정성 을 저장 시점에 원천 봉쇄.
+            'priority' => [
+                'integer',
+                'min:0',
+                'max:65535',
+                new UniquePolicyPriorityPerTarget(
+                    scope: (string) $this->input('scope', ''),
+                    target: (string) $this->input('target', ''),
+                    enabled: $this->boolean('enabled'),
+                ),
+            ],
             'conditions' => ['nullable', 'array'],
             'applies_to' => ['required', Rule::enum(IdentityPolicyAppliesTo::class)],
             'fail_mode' => ['required', Rule::enum(IdentityPolicyFailMode::class)],
@@ -50,6 +63,8 @@ class AdminIdentityPolicyStoreRequest extends FormRequest
             // 모듈/플러그인 sync 경로 및 목록 필터가 모두 raw identifier 컨벤션을 사용하므로 동일하게 통일.
             'source_identifier' => ['nullable', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_\-]*$/'],
         ];
+
+        return HookManager::applyFilters('core.identity_policy.store_validation_rules', $rules, $this);
     }
 
     /**

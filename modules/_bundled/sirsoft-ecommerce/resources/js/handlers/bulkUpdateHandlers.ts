@@ -135,6 +135,42 @@ interface G7CoreInterface {
 }
 
 /**
+ * 일괄 업데이트 실패 처리
+ *
+ * 서버가 내려준 실제 메시지/검증 에러를 토스트와 모달에 그대로 노출한다.
+ * 기존에는 catch 에서 error 를 버리고 고정 t 문자열만 토스트로 띄워
+ * "왜 실패했는지" 를 확인할 수 없었다 (모달에도 상세 미표시).
+ *
+ * - 토스트: 서버 message → error.message → 폴백 t 문자열 순으로 정확한 문구 표시
+ * - 모달: validation errors 를 평탄화하여 `_global.bulkUpdateErrors` 에 저장하고
+ *   모달을 닫지 않아 사용자가 어떤 필드가 거부됐는지 확인 가능
+ *
+ * @param G7Core G7Core 인스턴스
+ * @param error catch 로 전달된 에러 (axios 에러: error.response.data 에 본문)
+ * @param fallbackKey 서버 메시지가 없을 때 사용할 다국어 키
+ * @return void
+ */
+function handleBulkUpdateError(G7Core: G7CoreInterface, error: any, fallbackKey: string): void {
+    const data = error?.response?.data ?? {};
+    const serverMessage: string = data?.message || error?.message || '';
+
+    // validation errors 평탄화 (필드별 첫 메시지 목록)
+    const errorsObj = data?.errors;
+    const detailMessages: string[] = errorsObj && typeof errorsObj === 'object'
+        ? Object.values(errorsObj).map((msgs: any) => (Array.isArray(msgs) ? msgs[0] : String(msgs)))
+        : [];
+
+    // 토스트: 정확한 서버 메시지 우선
+    const toastMessage = serverMessage || G7Core.t(fallbackKey);
+    G7Core.toast.error(toastMessage);
+
+    // 모달: 상세 에러를 노출하고 닫지 않음
+    G7Core.state.set({
+        bulkUpdateErrors: detailMessages.length > 0 ? detailMessages : (toastMessage ? [toastMessage] : []),
+    });
+}
+
+/**
  * 다국어 객체에서 로컬라이즈된 문자열 추출
  * option_name, product name 등 {en: "...", ko: "..."} 형태의 객체 처리
  */
@@ -144,6 +180,29 @@ function localizeValue(value: any): string {
         return value.ko || value.en || JSON.stringify(value);
     }
     return String(value ?? '');
+}
+
+/**
+ * 판매/전시 상태 enum 값을 다국어 라벨로 변환
+ *
+ * 일괄 변경 확인 모달에서 raw enum 값(on_sale, visible 등)이 그대로 노출되던 결함을 해결한다.
+ * 드롭다운 옵션과 동일한 SSoT(`enums.{sales_status,display_status}.*`)를 참조하여
+ * 표시 라벨을 통일한다. 미정의 키는 원본 값으로 폴백한다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @param type 상태 종류 ('sales_status' | 'display_status')
+ * @param value 변환할 enum 값
+ * @return 다국어 라벨 (미정의 시 원본 값)
+ */
+function localizeStatus(
+    G7Core: G7CoreInterface,
+    type: 'sales_status' | 'display_status',
+    value: string
+): string {
+    if (!value) return String(value ?? '');
+    const label = G7Core.t(`sirsoft-ecommerce.enums.${type}.${value}`);
+    // t()가 키를 찾지 못하면 빈 문자열을 반환하므로 원본 값으로 폴백
+    return label || value;
 }
 
 /**
@@ -372,7 +431,8 @@ function bulkUpdateProductsInternal(
     }
 
     // 처리 중 상태 표시
-    G7Core.state.set({ isProcessing: true });
+    // 재시도 시 이전 실패 상세를 초기화하여 stale 에러가 모달에 남지 않도록 한다
+    G7Core.state.set({ isProcessing: true, bulkUpdateErrors: [] });
 
     G7Core.api.patch('/api/modules/sirsoft-ecommerce/admin/products/bulk-update', payload)
         .then((response: any) => {
@@ -391,7 +451,7 @@ function bulkUpdateProductsInternal(
         })
         .catch((error: any) => {
             logger.error('[bulkUpdateProducts] Error:', error);
-            G7Core.toast.error(G7Core.t('sirsoft-ecommerce.admin.product.bulk.update_error'));
+            handleBulkUpdateError(G7Core, error, 'sirsoft-ecommerce.admin.product.bulk.update_error');
         })
         .finally(() => {
             G7Core.state.set({ isProcessing: false });
@@ -498,7 +558,8 @@ function bulkUpdateOptionsInternal(
     }
 
     // 처리 중 상태 표시
-    G7Core.state.set({ isProcessing: true });
+    // 재시도 시 이전 실패 상세를 초기화하여 stale 에러가 모달에 남지 않도록 한다
+    G7Core.state.set({ isProcessing: true, bulkUpdateErrors: [] });
 
     G7Core.api.patch('/api/modules/sirsoft-ecommerce/admin/options/bulk-update', payload)
         .then((response: any) => {
@@ -516,7 +577,7 @@ function bulkUpdateOptionsInternal(
         })
         .catch((error: any) => {
             logger.error('[bulkUpdateOptions] Error:', error);
-            G7Core.toast.error(G7Core.t('sirsoft-ecommerce.admin.product.bulk.option_update_error'));
+            handleBulkUpdateError(G7Core, error, 'sirsoft-ecommerce.admin.product.bulk.option_update_error');
         })
         .finally(() => {
             G7Core.state.set({ isProcessing: false });
@@ -544,6 +605,7 @@ function resetBulkState(G7Core: G7CoreInterface): void {
         bulkPriceCondition: null,
         bulkStockCondition: null,
         bulkConfirmData: null,
+        bulkUpdateErrors: [],
     });
 }
 
@@ -562,8 +624,11 @@ export function buildConfirmDataHandler(action: ActionWithParams, context: Actio
     const dataSource = G7Core.dataSource.get('products');
     const products = dataSource?.data?.data || [];
 
-    const selectedItems: number[] = localState.selectedItems || [];
-    const selectedOptionIds: string[] = localState.selectedOptionIds || [];
+    // 단일 SSoT: 실제 API 호출(bulkUpdateHandler)과 동일하게 _global 우선으로 선택 소스를 읽는다.
+    // 적용 sequence 가 setState(target:global) 로 _local.selected* → _global.bulkSelected* 복사 후
+    // buildConfirmData 를 호출하므로, _local 만 읽으면 전체선택 경로에서 빈 모달이 떠 표시↔동작이 어긋났다.
+    const selectedItems: number[] = globalState.bulkSelectedItems || localState.selectedItems || [];
+    const selectedOptionIds: string[] = globalState.bulkSelectedOptionIds || localState.selectedOptionIds || [];
 
     const confirmData: BulkConfirmData = {
         products: [],
@@ -603,18 +668,22 @@ export function buildConfirmDataHandler(action: ActionWithParams, context: Actio
         const optModifiedFields = modifiedOptionFieldsMap[optionKey] || [];
 
         // 옵션 일괄 변경 표시
+        // bulkPriceCondition / bulkStockCondition 은 레이아웃이 만든 표시용 문자열("+1000원", "+10개")이다.
+        // 객체(.method/.value)로 접근하면 "재고: undefined undefined" 가 되므로 문자열을 그대로 사용
         if (globalState.bulkPriceCondition) {
-            const pc = globalState.bulkPriceCondition;
             optChanges.push(
-                G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_price_adjustment', { method: pc.method, value: pc.value })
-                || `Price adjustment: ${pc.method} ${pc.value}`
+                G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_price_adjustment_inline', {
+                    value: globalState.bulkPriceCondition,
+                })
+                || `Price adjustment: ${globalState.bulkPriceCondition}`
             );
         }
         if (globalState.bulkStockCondition) {
-            const sc = globalState.bulkStockCondition;
             optChanges.push(
-                G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_stock', { method: sc.method, value: sc.value })
-                || `Stock: ${sc.method} ${sc.value}`
+                G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_stock_inline', {
+                    value: globalState.bulkStockCondition,
+                })
+                || `Stock: ${globalState.bulkStockCondition}`
             );
         }
 
@@ -668,10 +737,20 @@ export function buildConfirmDataHandler(action: ActionWithParams, context: Actio
                 );
             }
             if (optModifiedFields.includes('safe_stock_quantity')) {
-                optChanges.push(`안전재고: ${opt.safe_stock_quantity}`);
+                optChanges.push(
+                    G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_safe_stock', {
+                        value: opt.safe_stock_quantity,
+                    })
+                    || `Safe stock: ${opt.safe_stock_quantity}`
+                );
             }
             if (optModifiedFields.includes('is_active')) {
-                optChanges.push(`사용: ${opt.is_active ? 'ON' : 'OFF'}`);
+                optChanges.push(
+                    G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_is_active', {
+                        value: opt.is_active ? 'ON' : 'OFF',
+                    })
+                    || `Active: ${opt.is_active ? 'ON' : 'OFF'}`
+                );
             }
             confirmData.summary.hasInlineChanges = true;
         }
@@ -690,30 +769,34 @@ export function buildConfirmDataHandler(action: ActionWithParams, context: Actio
 
                 // 일괄 변경 표시
                 if (globalState.bulkSalesStatus) {
+                    const salesLabel = localizeStatus(G7Core, 'sales_status', globalState.bulkSalesStatus);
                     changes.push(
-                        G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_sales_status', { status: globalState.bulkSalesStatus })
-                        || `Sales status: ${globalState.bulkSalesStatus}`
+                        G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_sales_status', { status: salesLabel })
+                        || `Sales status: ${salesLabel}`
                     );
                 }
                 if (globalState.bulkDisplayStatus) {
+                    const displayLabel = localizeStatus(G7Core, 'display_status', globalState.bulkDisplayStatus);
                     changes.push(
-                        G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_display_status', { status: globalState.bulkDisplayStatus })
-                        || `Display status: ${globalState.bulkDisplayStatus}`
+                        G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_display_status', { status: displayLabel })
+                        || `Display status: ${displayLabel}`
                     );
                 }
 
                 // 인라인 수정 표시 (실제 수정된 필드만 보고)
                 if (isProductModified) {
                     if (!globalState.bulkSalesStatus && pModifiedFields.includes('sales_status')) {
+                        const salesLabel = localizeStatus(G7Core, 'sales_status', p.sales_status);
                         changes.push(
-                            G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_sales_status', { status: p.sales_status })
-                            || `Sales status: ${p.sales_status}`
+                            G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_sales_status', { status: salesLabel })
+                            || `Sales status: ${salesLabel}`
                         );
                     }
                     if (!globalState.bulkDisplayStatus && pModifiedFields.includes('display_status')) {
+                        const displayLabel = localizeStatus(G7Core, 'display_status', p.display_status);
                         changes.push(
-                            G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_display_status', { status: p.display_status })
-                            || `Display status: ${p.display_status}`
+                            G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_display_status', { status: displayLabel })
+                            || `Display status: ${displayLabel}`
                         );
                     }
                     if (pModifiedFields.includes('name')) {

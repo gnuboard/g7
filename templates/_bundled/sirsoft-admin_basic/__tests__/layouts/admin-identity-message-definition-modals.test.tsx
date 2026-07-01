@@ -165,9 +165,9 @@ describe('IDV 메시지 정의 — 추가 모달 (알림 템플릿 패리티)', 
 });
 
 describe('IDV 메시지 정의 — 삭제 모달', () => {
-    it('Modal id + small + 경고 메시지', () => {
+    it('Modal id + sm + 경고 메시지', () => {
         expect(deleteModal.id).toBe('modal_identity_message_definition_delete');
-        expect(deleteModal.props.size).toBe('small');
+        expect(deleteModal.props.size).toBe('sm');
         const warnings = collectNodes(deleteModal, (n) =>
             n.text === '$t:admin.settings.identity.messages.delete_modal.warning_message'
         );
@@ -197,9 +197,9 @@ describe('IDV 메시지 정의 — 삭제 모달', () => {
 });
 
 describe('IDV 메시지 정의 — 기본값 복원 모달', () => {
-    it('Modal id + small + 경고 메시지', () => {
+    it('Modal id + sm + 경고 메시지', () => {
         expect(resetModal.id).toBe('modal_identity_message_definition_reset');
-        expect(resetModal.props.size).toBe('small');
+        expect(resetModal.props.size).toBe('sm');
     });
 
     it('Confirm Button — apiCall POST /reset + onSuccess(refetch+toast+closeModal)', () => {

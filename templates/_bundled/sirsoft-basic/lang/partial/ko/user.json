@@ -60,6 +60,7 @@
     "change_password_title": "비밀번호 변경",
     "orders_title": "주문내역",
     "order_detail_title": "주문 상세",
+    "mileage_title": "마일리지",
     "wishlist_title": "찜 목록",
     "addresses_title": "배송지 관리",
     "notifications_title": "알림",
@@ -88,5 +89,88 @@
       "manual_redirect": "수동으로 이동하기",
       "error_generic": "인증에 실패했습니다. 다시 시도해주세요."
     }
+  },
+  "home": {
+    "page_title": "홈"
+  },
+  "auth": {
+    "login_title": "로그인",
+    "register_title": "회원가입",
+    "forgot_password_title": "비밀번호 찾기",
+    "reset_password_title": "비밀번호 재설정"
+  },
+  "board": {
+    "boards_title": "게시판 목록",
+    "popular_title": "인기 게시글",
+    "list_title": "게시판",
+    "show_title": "게시글",
+    "write_title": "글쓰기",
+    "edit_title": "글 수정"
+  },
+  "shop": {
+    "list_title": "상품 목록",
+    "show_title": "상품 상세",
+    "category_title": "카테고리",
+    "cart_title": "장바구니",
+    "checkout_title": "주문서 작성",
+    "order_complete_title": "주문 완료",
+    "guest_order_form_title": "비회원 주문 조회",
+    "guest_order_show_title": "비회원 주문 상세"
+  },
+  "search": {
+    "page_title": "검색"
+  },
+  "errors": {
+    "not_found_title": "404 — 페이지 없음",
+    "forbidden_title": "403 — 접근 금지",
+    "server_error_title": "500 — 서버 오류"
+  },
+  "modal_label": {
+    "auth": {
+      "privacyModal": "개인정보처리방침",
+      "termsModal": "이용약관"
+    },
+    "shop_detail": {
+      "coupon_download_confirm_modal": "쿠폰 다운로드 확인",
+      "inquiry_delete_modal": "상품 문의 삭제 확인",
+      "login_required_modal": "로그인 필요 안내",
+      "qna_reply_modal": "상품 문의 답변",
+      "qna_write_modal": "상품 문의 작성",
+      "review_image_modal": "리뷰 이미지 보기",
+      "cart_added_modal": "장바구니 담기 완료"
+    },
+    "board_form": {
+      "password_verify_modal": "비밀번호 확인"
+    },
+    "board_show": {
+      "board_delete_modal": "게시글/댓글 삭제",
+      "board_report_modal": "게시글/댓글 신고",
+      "board_guest_password_modal": "비회원 비밀번호 확인"
+    },
+    "mypage_addresses": {
+      "addressModal": "배송지 등록/수정",
+      "confirmDeleteAddressModal": "배송지 삭제 확인",
+      "confirmOverwriteModal": "배송지 덮어쓰기 확인"
+    },
+    "shop": {
+      "addressManageModal": "배송지 관리",
+      "cart_delete_confirm_modal": "장바구니 삭제 확인",
+      "cart_option_change_modal": "장바구니 옵션 변경",
+      "cart_unavailable_modal": "구매불가 상품 안내",
+      "coupon_download_modal": "쿠폰 다운로드",
+      "exclusiveCouponConfirm": "중복 불가 쿠폰 적용 확인",
+      "tempOrderNotFoundModal": "주문 정보 없음 안내"
+    },
+    "mypage_orders": {
+      "modal_cancel_order": "주문 취소",
+      "changeAddressModal": "배송지 변경",
+      "modal_confirm_purchase": "구매 확정",
+      "modal_write_review": "리뷰 작성"
+    },
+    "mypage_profile": {
+      "withdrawModal": "회원 탈퇴 확인"
+    },
+    "identity_challenge_modal": "본인인증",
+    "notification_delete_all_confirm_modal": "알림 전체 삭제 확인"
   }
 }

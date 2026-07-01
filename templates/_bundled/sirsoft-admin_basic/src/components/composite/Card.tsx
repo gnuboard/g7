@@ -3,6 +3,7 @@ import { Div } from '../basic/Div';
 import { H2 } from '../basic/H2';
 import { P } from '../basic/P';
 import { Img } from '../basic/Img';
+import type { EditorAttrs } from '../../types';
 
 export interface CardProps {
   title?: string;
@@ -12,6 +13,12 @@ export interface CardProps {
   className?: string;
   onClick?: () => void;
   style?: React.CSSProperties;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -40,32 +47,35 @@ export const Card: React.FC<CardProps> = ({
   className = '',
   onClick,
   style,
+  id,
+  editorAttrs,
 }) => {
   return (
     <Div
-      className={`rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}
+      className={`card-clickable ${className}`}
       onClick={onClick}
       style={style}
+      id={id} {...editorAttrs}
     >
       {imageUrl && (
         <Div className="w-full">
           <Img
             src={imageUrl}
             alt={imageAlt}
-            className="w-full h-48 object-cover"
+            className="card-image"
           />
         </Div>
       )}
 
       <Div className="p-4">
         {title && (
-          <H2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+          <H2 className="card-title">
             {title}
           </H2>
         )}
 
         {content && (
-          <P className="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-line">
+          <P className="card-content">
             {content}
           </P>
         )}

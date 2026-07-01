@@ -4,6 +4,7 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
+import type { EditorAttrs } from '../../types';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:LanguageSelector')) ?? {
@@ -49,6 +50,17 @@ export interface LanguageSelectorProps {
   className?: string;
   /** 인라인 모드 (드롭다운 메뉴 내에서 사용) */
   inline?: boolean;
+  /**
+   * 독립 모드 버튼에 현재 선택 언어 코드를 globe 아이콘 옆에 표시한다.
+   * 유저 템플릿 헤더 언어 버튼과 동일한 표기(아이콘 + 로케일 코드)를 위해 사용.
+   */
+  showCode?: boolean;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -82,6 +94,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onLanguageChange,
   className = '',
   inline = false,
+  showCode = false,
+  id,
+  editorAttrs,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
@@ -182,7 +197,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   // 인라인 모드: 접기/펼치기 가능한 뱃지 방식
   if (inline) {
     return (
-      <Div className={`${className}`}>
+      <Div className={`${className}`} id={id} {...editorAttrs}>
         <Button
           onClick={() => setShowMenu(!showMenu)}
           disabled={isChanging}
@@ -231,16 +246,28 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   // 독립 모드: 드롭다운 버튼과 메뉴
   return (
-    <Div ref={menuRef} className={`relative ${className}`}>
+    <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs}>
       <Button
         onClick={() => setShowMenu(!showMenu)}
-        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        className={
+          showCode
+            ? 'flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer'
+            : 'p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors'
+        }
+        aria-haspopup="listbox"
+        aria-expanded={showMenu}
         aria-label={languageText}
       >
         <Icon
           name={IconName.Globe}
-          className="w-5 h-5 text-gray-600 dark:text-gray-400"
+          className={showCode ? 'w-4 h-4' : 'w-5 h-5 text-gray-600 dark:text-gray-400'}
         />
+        {showCode && (
+          <Span className="font-medium uppercase">{currentLocale}</Span>
+        )}
+        {showCode && (
+          <Icon name={IconName.ChevronDown} className="w-3 h-3" />
+        )}
       </Button>
 
       {showMenu && (

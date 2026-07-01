@@ -8,12 +8,14 @@ use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\Concerns\ValidatesCouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 
@@ -22,8 +24,12 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
  */
 class StoreCouponRequest extends FormRequest
 {
+    use ValidatesCouponTargetScope;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * @return bool 권한 미들웨어가 처리하므로 항상 true
      */
     public function authorize(): bool
     {
@@ -31,9 +37,47 @@ class StoreCouponRequest extends FormRequest
     }
 
     /**
+     * 추가 검증을 등록합니다. (적용대상 미선택 차단 — A16①/A17①)
+     *
+     * @param  Validator  $validator  검증기 인스턴스
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $this->validateTargetScopeSelection($validator);
+    }
+
+    /**
+     * 검증 전 입력값을 정규화합니다.
+     *
+     * nullable 숫자 필드(discount_max_amount/total_quantity)와 NOT NULL default 0 인
+     * min_order_amount 의 빈 문자열 입력을 각각 null / 0 으로 변환해
+     * decimal/integer cast 오류(빈 문자열 → 저장 500)를 차단합니다.
+     */
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+
+        // nullable 숫자 → 빈 문자열이면 null
+        foreach (['discount_max_amount', 'total_quantity'] as $field) {
+            if ($this->input($field) === '') {
+                $merge[$field] = null;
+            }
+        }
+
+        // min_order_amount 는 NOT NULL default 0 → 빈 문자열/ null 이면 0("최소금액 없음")
+        if (in_array($this->input('min_order_amount'), ['', null], true)) {
+            $merge['min_order_amount'] = 0;
+        }
+
+        if ($merge) {
+            $this->merge($merge);
+        }
+    }
+
+    /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array
+     * @return array 검증 규칙 배열
      */
     public function rules(): array
     {
@@ -86,8 +130,6 @@ class StoreCouponRequest extends FormRequest
 
     /**
      * 할인값 검증 규칙을 반환합니다.
-     *
-     * @return array
      */
     protected function discountValueRules(): array
     {
@@ -95,7 +137,8 @@ class StoreCouponRequest extends FormRequest
             return ['required', 'numeric', 'min:1', 'max:100'];
         }
 
-        return ['required', 'numeric', 'min:0'];
+        // 정액(fixed): 1원 이상 (0/음수 차단 — A14)
+        return ['required', 'numeric', 'min:1'];
     }
 
     /**
@@ -106,7 +149,7 @@ class StoreCouponRequest extends FormRequest
      *
      * @param  string|null  $key  특정 키만 반환
      * @param  mixed  $default  기본값
-     * @return mixed
+     * @return mixed 타임존 변환된 검증 데이터
      */
     public function validated($key = null, $default = null): mixed
     {
@@ -142,10 +185,13 @@ class StoreCouponRequest extends FormRequest
     /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array
+     * @return array 필드별 오류 메시지 배열
      */
     public function messages(): array
     {
+        // 정액/정률에 따라 discount_value.min 메시지를 분기 (A14 — 정액 음수에 정률 메시지 노출 회피)
+        $isRate = $this->input('discount_type') === CouponDiscountType::RATE->value;
+
         return [
             'name.required' => __('sirsoft-ecommerce::validation.coupon.name_required'),
             'target_type.required' => __('sirsoft-ecommerce::validation.coupon.target_type_required'),
@@ -154,7 +200,9 @@ class StoreCouponRequest extends FormRequest
             'issue_method.required' => __('sirsoft-ecommerce::validation.coupon.issue_method_required'),
             'issue_condition.required' => __('sirsoft-ecommerce::validation.coupon.issue_condition_required'),
             'valid_type.required' => __('sirsoft-ecommerce::validation.coupon.valid_type_required'),
-            'discount_value.min' => __('sirsoft-ecommerce::validation.coupon.discount_value_rate_min'),
+            'discount_value.min' => $isRate
+                ? __('sirsoft-ecommerce::validation.coupon.discount_value_rate_min')
+                : __('sirsoft-ecommerce::validation.coupon.discount_value_fixed_min'),
             'discount_value.max' => __('sirsoft-ecommerce::validation.coupon.discount_value_rate_max'),
             'valid_days.required_if' => __('sirsoft-ecommerce::validation.coupon.valid_days_required'),
             'valid_from.required_if' => __('sirsoft-ecommerce::validation.coupon.valid_from_required'),

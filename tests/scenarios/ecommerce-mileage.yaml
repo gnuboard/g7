@@ -1,0 +1,232 @@
+# audit:allow test-scenario-coverage reason: 이슈 #44 이커머스 마일리지 시스템 SSoT. axes cross product(수천 조합)는 docblock 전수 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit 라이프사이클 + 프론트 Vitest + Playwright E2E)로 커버한다. effects 는 금전 정확성(FIFO/검증/캐시 정합/부분취소 재안분) + 라이프사이클(적립/사용/복원/회수/소멸/수동) + 스케줄러 + 알림을 망라 기록. 세션 1(백엔드)에서 라이프사이클 effects 를, 세션 2~3 에서 UI/마이페이지/E2E effects 를 채운다.
+
+feature: 이커머스 마일리지 시스템 (Ecommerce Mileage)
+
+description: |
+  주문서 마일리지 사용 → FIFO 차감, 구매확정/배송완료 적립, 취소 복원/적립 회수,
+  유효기간 소멸, 관리자 수동 지급/차감, 일괄 유효기간 연장까지 전 라이프사이클을 구현한다.
+  잔액 SSoT 는 ecommerce_mileage_transactions(원장, SUM(remaining_amount WHERE 잔여>0 AND 미만료)),
+  화면 주입은 ecommerce_mileage_balances(표시 전용 파생 캐시)에서 O(1) 조회한다.
+
+  핵심 설계:
+    - 금전 경로(차감/검증)는 원장 FOR UPDATE 재검증 — 캐시 미신뢰.
+    - 적립 트리거 = 설정값(기본 confirmed/구매확정, delivered/배송완료 전환 가능) — 리스너·스케줄러 양쪽 반영.
+    - 멱등: earn 은 order_option_id earn ledger 부재 검사, restore 는 order_cancel_id 존재검사.
+    - 복원 lot 은 신규 lot(복원 시점 + expiry_days) — 원본 expires_at 승계 안 함.
+    - 부분취소 시 잔여 옵션 subtotal_earned_points_amount 재안분 저장(§6.3 — 취소 상품 몫 제외).
+    - 다통화: ledger.currency = 주문 기준통화 고정, point_value 는 스키마/UI만(기본 1).
+    - 비회원(user_id null)은 적립/사용 전면 제외.
+
+axes:
+  actor: [member, guest]
+  earn_trigger: [confirmed, delivered]
+  earn_delay_days: [zero, positive]
+  use_amount: [zero, below_min, valid_unit, invalid_unit, exceeds_max, exceeds_balance]
+  currency_rule_max_type: [percent, fixed]
+  cancel_kind: [full_cancel, partial_cancel]
+  refund_priority: [points_first, pg_first]
+  admin_action: [grant_with_policy_expiry, grant_with_direct_date, grant_unlimited, deduct_within_balance, deduct_exceeds_balance, extend_expiry]
+  expiry_state: [active, expiring_soon, expired]
+  withdrawal: [none, withdraw_with_balance]
+
+exclusions:
+  - { actor: guest, use_amount: [below_min, valid_unit, invalid_unit, exceeds_max, exceeds_balance], reason: "비회원은 마일리지 사용 0 처리 — 검증 axis 무의미" }
+  - { actor: guest, admin_action: [grant_with_policy_expiry, grant_with_direct_date, grant_unlimited, deduct_within_balance, deduct_exceeds_balance, extend_expiry], reason: "수동 지급/차감 대상은 회원만" }
+  - { earn_delay_days: positive, earn_trigger: [confirmed, delivered], reason: "지연>0 은 리스너 즉시 적립 스킵 + 스케줄러 담당 — 트리거 조합 무관하게 동일 경로" }
+
+effects:
+  # ── 세션 1: 백엔드 라이프사이클 (금전 정확성) ──
+  - balance_ssot_is_sum_remaining_where_positive_and_not_expired
+  - fifo_deducts_oldest_expiring_lot_first_under_for_update_lock
+  - fifo_deduct_revalidates_sum_and_throws_insufficient_balance_when_short
+  - deduct_links_source_transaction_id_to_consumed_lot
+  - validate_usage_rejects_below_min_use_amount
+  - validate_usage_rejects_amount_not_multiple_of_use_unit
+  - validate_usage_rejects_exceeding_max_use_percent_or_fixed
+  - validate_usage_rejects_exceeding_payment_amount
+  - validate_usage_rejects_exceeding_balance
+  - max_usable_caps_by_balance_limit_and_payment_then_floors_to_unit
+  - guest_user_id_null_returns_zero_for_use_and_earn
+  # 적립
+  - earn_for_order_option_uses_subtotal_earned_points_amount_as_amount
+  - earn_idempotent_skips_when_earn_ledger_exists_for_option
+  - earn_skips_when_mileage_disabled
+  - earn_skips_when_amount_zero
+  - earn_sets_expires_at_from_expiry_days_when_expiry_enabled_else_null
+  - earn_default_rate_reads_setting_not_hardcoded_one_percent  # §6.2
+  - earn_zero_when_mileage_disabled_in_calculation  # §6.2
+  # 적립 트리거 분기 (설정 반영)
+  - listener_earns_on_after_confirm_when_trigger_confirmed_and_delay_zero
+  - listener_earns_on_delivered_status_change_when_trigger_delivered_and_delay_zero
+  - listener_skips_immediate_earn_when_delay_positive_scheduler_handles
+  - delivered_at_recorded_on_order_option_status_change_to_delivered  # §3.2
+  # 복원 / 회수
+  - restore_for_cancel_idempotent_by_order_cancel_id
+  - restore_issues_new_lot_with_fresh_expiry_not_inherited
+  - cancel_earn_recovers_from_self_lot_then_fifo_then_records_shortfall_in_metadata  # §2
+  - cancel_earn_triggered_on_cancelled_or_partial_cancelled_status_change
+  # 부분취소 재안분 (§6.3 — 핵심 보정)
+  - partial_cancel_persists_recalculated_subtotal_earned_points_amount_pg_first
+  - partial_cancel_persists_recalculated_subtotal_earned_points_amount_points_first
+  - partial_cancel_excludes_cancelled_option_share_from_earned_points
+  # 소멸 / 탈퇴
+  - expire_lots_records_per_item_expired_transaction_with_expired_at
+  - expire_lots_decrements_balance_and_is_idempotent_on_rerun
+  - withdrawal_records_expired_activity_log_with_amount_currency_userid_before_delete  # §6.1 PO #8
+  # 캐시 정합 (§3.5)
+  - cache_recalculated_for_user_after_every_balance_changing_path
+  - cache_pending_derived_from_order_options_not_ledger
+  - cache_available_matches_ledger_sum_definition
+  - extend_lot_expiry_revives_expired_lot_and_recalculates_cache  # §6.1 표8
+  - cache_is_display_only_money_paths_use_ledger_for_update  # drift 무해
+  # 관리자 수동
+  - admin_earn_issues_lot_with_granted_by_and_memo_and_policy_or_direct_or_unlimited_expiry
+  - admin_deduct_consumes_fifo_and_rejects_when_exceeds_balance_with_422
+  - admin_deduct_records_negative_transaction_linked_to_source
+  - extend_lot_expiry_updates_expires_at_for_remaining_lots_and_logs_activity
+  # 스케줄러
+  - earn_mileage_command_processes_trigger_reached_options_past_delay_idempotently
+  - earn_mileage_command_recalculates_pending_for_affected_users
+  - expire_mileage_command_expires_due_lots_and_syncs_cache
+  - notify_expiring_command_recalculates_window_then_dispatches_per_member
+  - reconcile_command_recalculates_all_caches_from_ledger_and_options
+  # 알림
+  - mileage_expiring_soon_definition_declared_with_mail_and_database_channels
+  - extract_mileage_expiring_soon_builds_data_and_trigger_user_context
+  # 활동로그
+  - activity_logged_for_earn_use_restore_earn_cancel_expire_admin_earn_admin_deduct_extend_expiry
+  # ── 세션 2~3: UI / 마이페이지 / 주입 (후속 세션에서 채움) ──
+  - admin_mileage_history_list_filters_and_paginates
+  - admin_mileage_manual_modal_grant_deduct_with_user_search
+  - admin_mileage_row_expand_shows_linked_transactions
+  - admin_badge_group_distinguishes_eight_types_in_five_color_groups
+  - user_mileage_history_filters_by_four_display_categories
+  - user_display_category_collapses_restore_admin_into_adjust
+  - member_balance_injected_into_admin_user_detail_and_mypage_profile_via_resource_hook
+  - member_balance_injection_uses_cache_not_ledger_sum
+  # 설정 화면 통화 규칙 인라인 추가 (UX 가드)
+  - settings_currency_add_requires_check_confirm_before_persisting_to_rules
+  - settings_save_blocked_with_warning_when_currency_add_row_unconfirmed
+
+scenarios:
+  - id: member_use_fifo_then_earn_on_confirm
+    description: 회원 다중옵션 주문 + 마일리지 사용(상품별 안분) → 구매확정 → 즉시 적립(존재검사). 적립 기준액은 사용분 차감 후 금액.
+    effects:
+      - fifo_deducts_oldest_expiring_lot_first_under_for_update_lock
+      - deduct_links_source_transaction_id_to_consumed_lot
+      - listener_earns_on_after_confirm_when_trigger_confirmed_and_delay_zero
+      - earn_for_order_option_uses_subtotal_earned_points_amount_as_amount
+      - earn_idempotent_skips_when_earn_ledger_exists_for_option
+      - cache_recalculated_for_user_after_every_balance_changing_path
+
+  - id: earn_trigger_switch_confirmed_to_delivered
+    description: 설정을 배송완료로 전환 → 구매확정만으로 미적립(pending) → 배송완료 진입 시 적립. 다시 구매확정으로 전환 시 구매확정 시점 적립.
+    effects:
+      - listener_earns_on_delivered_status_change_when_trigger_delivered_and_delay_zero
+      - delivered_at_recorded_on_order_option_status_change_to_delivered
+      - cache_pending_derived_from_order_options_not_ledger
+
+  - id: delayed_earn_via_scheduler
+    description: 지연일>0 설정 시 트리거 도달해도 리스너 즉시 적립 스킵 → 지연 경과 후 earn-mileage 커맨드가 적립 + 재실행 멱등 + pending→available 이동.
+    effects:
+      - listener_skips_immediate_earn_when_delay_positive_scheduler_handles
+      - earn_mileage_command_processes_trigger_reached_options_past_delay_idempotently
+      - earn_mileage_command_recalculates_pending_for_affected_users
+
+  - id: partial_cancel_reallocation_pg_and_points_first
+    description: 다중옵션 + 마일리지 일부 사용 → 1개 옵션 부분취소(마일리지 우선/PG 우선 각각) → 잔여 옵션 적립액 재안분 저장 → 적립 트리거 도달 시 그 갱신값 적립.
+    effects:
+      - partial_cancel_persists_recalculated_subtotal_earned_points_amount_pg_first
+      - partial_cancel_persists_recalculated_subtotal_earned_points_amount_points_first
+      - partial_cancel_excludes_cancelled_option_share_from_earned_points
+
+  - id: full_cancel_restore_and_earn_cancel
+    description: 주문 취소 → 사용분 복원(신규 lot, order_cancel_id 멱등) + 기적립 회수(self lot 우선 → FIFO → 부족분 metadata 기록).
+    effects:
+      - restore_for_cancel_idempotent_by_order_cancel_id
+      - restore_issues_new_lot_with_fresh_expiry_not_inherited
+      - cancel_earn_recovers_from_self_lot_then_fifo_then_records_shortfall_in_metadata
+      - cancel_earn_triggered_on_cancelled_or_partial_cancelled_status_change
+
+  - id: auto_expire_lots
+    description: expires_at 도과 lot 에 expire-mileage 실행 → per-item expired 거래 + expired_at + 잔액 감소 + 재실행 멱등 + 캐시 동기화.
+    effects:
+      - expire_lots_records_per_item_expired_transaction_with_expired_at
+      - expire_lots_decrements_balance_and_is_idempotent_on_rerun
+      - expire_mileage_command_expires_due_lots_and_syncs_cache
+
+  - id: admin_grant_and_deduct
+    description: 관리자 수동 지급(정책/직접 날짜/무기한) + 차감(잔액 내 FIFO, 초과 시 422 거부) + 일괄 유효기간 연장.
+    effects:
+      - admin_earn_issues_lot_with_granted_by_and_memo_and_policy_or_direct_or_unlimited_expiry
+      - admin_deduct_consumes_fifo_and_rejects_when_exceeds_balance_with_422
+      - admin_deduct_records_negative_transaction_linked_to_source
+      - extend_lot_expiry_updates_expires_at_for_remaining_lots_and_logs_activity
+      - extend_lot_expiry_revives_expired_lot_and_recalculates_cache
+
+  - id: validation_matrix
+    description: 사용 검증 — 최소금액/사용단위/최대한도(percent·fixed)/결제금액/잔액 초과를 각각 거부 또는 보정.
+    effects:
+      - validate_usage_rejects_below_min_use_amount
+      - validate_usage_rejects_amount_not_multiple_of_use_unit
+      - validate_usage_rejects_exceeding_max_use_percent_or_fixed
+      - validate_usage_rejects_exceeding_payment_amount
+      - validate_usage_rejects_exceeding_balance
+      - max_usable_caps_by_balance_limit_and_payment_then_floors_to_unit
+
+  - id: cache_reconcile_drift
+    description: 캐시 임의 오염 후 reconcile-mileage-balance 실행 → available/pending 원장·옵션 기준 재산출(자기 치유).
+    effects:
+      - cache_available_matches_ledger_sum_definition
+      - cache_pending_derived_from_order_options_not_ledger
+      - reconcile_command_recalculates_all_caches_from_ledger_and_options
+
+  - id: withdrawal_records_expiry
+    description: 잔액 보유 회원 탈퇴 → 활성 lot 을 expired 활동로그(금액·통화·회원ID)로 소멸 기록 후 삭제.
+    effects:
+      - withdrawal_records_expired_activity_log_with_amount_currency_userid_before_delete
+
+  - id: expiring_notification
+    description: N일 내 소멸 예정 보유 회원에게 notify-expiring 실행 → 윈도우 캐시 갱신 후 회원별 발송.
+    effects:
+      - notify_expiring_command_recalculates_window_then_dispatches_per_member
+      - mileage_expiring_soon_definition_declared_with_mail_and_database_channels
+      - extract_mileage_expiring_soon_builds_data_and_trigger_user_context
+
+  - id: settings_currency_add_confirm_guard
+    description: |
+      마일리지 설정 통화 규칙 인라인 추가 — 입력 행을 열고 통화를 입력한 뒤 체크(✓) 확정 버튼을
+      누르지 않은 채 저장하면, 임시 입력이 currency_rules 배열에 확정되지 않아 저장 시 사라진다.
+      저장 sequence 는 미확정 상태(isAddingMileageCurrency/isAddingCurrency)에서 차단 + 경고 토스트를
+      띄우고, 체크 확정 후에는 배열에 push 되어 정상 저장된다.
+    effects:
+      - settings_currency_add_requires_check_confirm_before_persisting_to_rules
+      - settings_save_blocked_with_warning_when_currency_add_row_unconfirmed
+
+test_files:
+  # 백엔드 라이프사이클 (세션 1)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/MileageEnumsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/UserMileageServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/MileageTransactionListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/MileageCommandsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/MileageTransactionControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserMileageControllerTest.php
+  # 부분취소 재안분 회귀 (§6.3) — 기존 파일에 회귀 테스트 추가
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
+  # 적립률 패치 (§6.2)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCalculationServiceMileageTest.php
+  # 알림 추출 (세션 1)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/EcommerceNotificationDataListenerTest.php
+  # 관리자/마이페이지 레이아웃 렌더링 (세션 2)
+  # 마일리지 설정은 이커머스 환경설정의 서브탭으로 통합 (별도 화면 아님)
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_ecommerce_settings_mileage_tab.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_ecommerce_mileage_transaction_index.test.tsx
+  # 마이페이지 (세션 3)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-mileage.test.tsx
+  # E2E (세션 3)
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/mileage-settings.spec.ts
+
+notes: |
+  세션 1(백엔드 라이프사이클, §19 단계 1~14)에서 금전 정확성·라이프사이클·스케줄러·알림 effects 를
+  PHPUnit 으로 커버한다. UI/마이페이지/주입 effects 는 세션 2~3 의 Vitest 레이아웃 렌더링 +
+  Playwright E2E 로 채운다. 부분취소 재안분(§6.3)은 fail→fix→green 4단계로 OrderAdjustmentServiceTest 에 고정.

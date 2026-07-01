@@ -1,0 +1,153 @@
+{
+  "title": "マイレージ履歴",
+  "description": "会員のマイレージ取引履歴を閲覧し、手動で付与・差引を行います。",
+  "manual_action": "手動付与・差引",
+  "search": {
+    "field": "検索項目",
+    "field_member": "会員名",
+    "field_member_id": "会員ID",
+    "field_email": "メール",
+    "field_order": "注文番号",
+    "keyword_placeholder": "検索キーワードを入力してください",
+    "submit": "検索",
+    "reset": "初期化"
+  },
+  "filter": {
+    "label_search": "検索",
+    "label_type": "タイプ",
+    "label_currency": "通貨",
+    "label_date": "期間",
+    "type": "タイプ",
+    "type_all": "すべて",
+    "type_earn": "積立",
+    "type_use": "利用",
+    "type_expire": "失効",
+    "type_adjust": "調整",
+    "currency": "通貨",
+    "currency_all": "すべて",
+    "period": "期間",
+    "period_week": "1週間",
+    "period_month": "1ヶ月",
+    "period_3months": "3ヶ月",
+    "period_all": "すべて",
+    "start_date": "開始日",
+    "end_date": "終了日"
+  },
+  "table": {
+    "total_count": "合計{{count}}件"
+  },
+  "sort": {
+    "label": "並べ替え",
+    "created_at_desc": "最新順",
+    "amount_desc": "金額が高い順",
+    "amount_asc": "金額が低い順"
+  },
+  "per_page": {
+    "10": "10件ずつ",
+    "20": "20件ずつ",
+    "50": "50件ずつ",
+    "100": "100件ずつ"
+  },
+  "column": {
+    "datetime": "日時",
+    "member": "会員",
+    "type": "タイプ",
+    "amount": "金額",
+    "remaining": "残高",
+    "order": "注文",
+    "granted_by": "付与",
+    "actions": "管理",
+    "expiry": "有効期限"
+  },
+  "cell": {
+    "system": "システム",
+    "view_member": "会員情報",
+    "search_member": "この会員で検索",
+    "view_admin": "管理者情報",
+    "none": "-",
+    "expired": "全額失効",
+    "partial_expired": "一部失効",
+    "expired_amount": "{{amount}} 失効",
+    "unlimited": "無期限"
+  },
+  "row_action": {
+    "expand": "詳細表示",
+    "linked": "関連取引",
+    "manual": "手動調整",
+    "edit": "理由·期限変更"
+  },
+  "linked": {
+    "title": "関連取引",
+    "consumed_lots": "消費した積立ロット",
+    "source_order": "参照元取引",
+    "empty": "関連取引なし",
+    "consumed_amount": "消費"
+  },
+  "bulk": {
+    "selected": "{{count}}件選択",
+    "extend_expiry": "有効期限延長",
+    "apply": "適用"
+  },
+  "modal_manual": {
+    "title": "手動付与・差引",
+    "member_search": "会員検索",
+    "member_search_placeholder": "会員名、メールアドレスで検索",
+    "current_balance": "現在の残高",
+    "action": "区分",
+    "action_earn": "付与",
+    "action_deduct": "差引",
+    "amount": "金額",
+    "currency": "通貨",
+    "exceed_warning": "残高{{balance}}を超えています(実行不可)",
+    "expiry": "有効期限",
+    "expiry_policy": "ポリシーに従う",
+    "expiry_custom": "直接指定",
+    "expiry_unlimited": "期限なし付与",
+    "expiry_future_only": "未来の日付のみ指定可能です。",
+    "reason": "理由",
+    "reason_placeholder": "付与・差引の理由を入力してください",
+    "submit_earn": "付与",
+    "submit_deduct": "差引",
+    "confirm": "会員·金額·区分を確認されましたか?",
+    "select_member_first": "まず会員を選択してください。",
+    "submitting": "処理中...",
+    "no_results": "検索結果がありません。",
+    "validation_error": "入力値を確認してください。",
+    "field_user_id": "対象会員",
+    "field_amount": "金額",
+    "field_memo": "理由"
+  },
+  "modal_extend": {
+    "title": "有効期限延長",
+    "days": "延長日数",
+    "days_suffix": "日",
+    "submit": "延長",
+    "selected_lots": "選択された{{count}}件の給付ロット有効期限を延長します。",
+    "submitting": "処理中...",
+    "validation_error": "入力値を確認してください。",
+    "field_days": "延長日数"
+  },
+  "message": {
+    "manual_success": "処理されました。",
+    "extend_success": "有効期限が延長されました。",
+    "empty": "マイレージ取引履歴がありません。",
+    "edit_success": "積立件が編集されました。"
+  },
+  "cancel": "キャンセル",
+  "modal_edit": {
+    "title": "積立件理由·期限変更",
+    "info_member": "会員",
+    "info_amount": "金額",
+    "info_type": "種類",
+    "info_earned_at": "積立日",
+    "reason": "理由",
+    "reason_placeholder": "管理者メモを入力してください",
+    "expiry": "有効期限",
+    "expiry_date": "失効日",
+    "expiry_locked": "既に失効しているか、すべて使用済みの積立件は失効日を変更できません。",
+    "readonly_hint": "グレーの項目は変更できません。",
+    "submit": "保存",
+    "submitting": "保存中...",
+    "validation_error": "入力値を確認してください。"
+  }
+}

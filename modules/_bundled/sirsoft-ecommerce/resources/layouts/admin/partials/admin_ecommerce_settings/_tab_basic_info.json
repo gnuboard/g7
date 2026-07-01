@@ -7,52 +7,40 @@
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'basic_info'}}",
-  "props": {
-    "className": "mt-6 space-y-6"
-  },
+  "props": {},
   "children": [
     {
       "id": "shop_info_card",
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "card"
+        "className": "admin-card"
       },
       "children": [
         {
-          "id": "shop_info_header",
+          "id": "shop_info_title",
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.title"
+        },
+        {
+          "id": "shop_info_description",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "card-header"
+            "className": "card-description"
           },
-          "children": [
-            {
-              "id": "shop_info_title",
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "card-title"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.title"
-            },
-            {
-              "id": "shop_info_description",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "card-description"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.description"
-            }
-          ]
+          "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.description"
         },
         {
           "id": "shop_info_content",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-4"
+            "className": "row-stack"
           },
           "children": [
             {
@@ -79,7 +67,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 ml-1"
+                        "className": "text-required"
                       },
                       "text": "*"
                     }
@@ -101,7 +89,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['basic_info.shop_name']}}",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['basic_info.shop_name']?.[0] ?? ''}}"
                 }
@@ -132,7 +120,7 @@
                       "name": "Span",
                       "if": "{{!_local.form?.basic_info?.no_route}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 ml-1"
+                        "className": "text-required"
                       },
                       "text": "*"
                     }
@@ -146,7 +134,7 @@
                     "name": "basic_info.route_path",
                     "placeholder": "shop",
                     "disabled": "{{_computed.isReadOnly || _local.form?.basic_info?.no_route === true}}",
-                    "className": "{{_local.errors?.['basic_info.route_path'] ? 'input input-error w-60' : 'input w-60'}}{{_local.form?.basic_info?.no_route ? ' opacity-50 cursor-not-allowed' : ''}}"
+                    "className": "{{_local.errors?.['basic_info.route_path'] ? 'input input-error w-60' : 'input w-60'}}{{_local.form?.basic_info?.no_route ? 'opacity-50 cursor-not-allowed' : ''}}"
                   }
                 },
                 {
@@ -154,7 +142,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['basic_info.route_path']}}",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['basic_info.route_path']?.[0] ?? ''}}"
                 }
@@ -165,7 +153,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2"
+                "className": "flex-center gap-2"
               },
               "children": [
                 {
@@ -182,7 +170,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                    "className": "text-body"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.no_route"
                 }
@@ -197,43 +185,33 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "card"
+        "className": "admin-card"
       },
       "children": [
         {
-          "id": "business_info_header",
+          "id": "business_info_title",
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.title"
+        },
+        {
+          "id": "business_info_description",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "card-header"
+            "className": "card-description"
           },
-          "children": [
-            {
-              "id": "business_info_title",
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "card-title"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.title"
-            },
-            {
-              "id": "business_info_description",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "card-description"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.description"
-            }
-          ]
+          "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.description"
         },
         {
           "id": "business_info_content",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-4"
+            "className": "row-stack"
           },
           "children": [
             {
@@ -241,7 +219,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                "className": "grid-2col-responsive"
               },
               "children": [
                 {
@@ -276,7 +254,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.company_name']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.company_name']?.[0] ?? ''}}"
                     }
@@ -364,7 +342,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.business_number_1'] || _local.errors?.['basic_info.business_number_2'] || _local.errors?.['basic_info.business_number_3']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.business_number_1']?.[0] ?? _local.errors?.['basic_info.business_number_2']?.[0] ?? _local.errors?.['basic_info.business_number_3']?.[0] ?? ''}}"
                     }
@@ -377,7 +355,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                "className": "grid-2col-responsive"
               },
               "children": [
                 {
@@ -412,7 +390,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.ceo_name']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.ceo_name']?.[0] ?? ''}}"
                     }
@@ -450,7 +428,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.business_type']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.business_type']?.[0] ?? ''}}"
                     }
@@ -490,7 +468,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['basic_info.business_category']}}",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['basic_info.business_category']?.[0] ?? ''}}"
                 }
@@ -515,79 +493,83 @@
                 {
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                    "className": "space-y-2"
-                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": {
-                        "className": "flex items-center gap-2"
-                      },
                       "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-center gap-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "text",
+                                "name": "basic_info.zipcode",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.zipcode",
+                                "className": "input w-28",
+                                "readOnly": false,
+                                "disabled": "{{_computed.isReadOnly}}"
+                              }
+                            },
+                            {
+                              "id": "address_search_slot",
+                              "type": "extension_point",
+                              "name": "address_search_slot",
+                              "props": {
+                                "readOnlyFields": [
+                                  "basic_info.zipcode",
+                                  "basic_info.base_address"
+                                ],
+                                "targetFields": {
+                                  "zipcode": "form.basic_info.zipcode",
+                                  "address": "form.basic_info.base_address",
+                                  "region": "form.basic_info.region",
+                                  "city": "form.basic_info.city"
+                                }
+                              }
+                            }
+                          ]
+                        },
                         {
                           "type": "basic",
                           "name": "Input",
                           "props": {
                             "type": "text",
-                            "name": "basic_info.zipcode",
-                            "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.zipcode",
-                            "className": "input w-28",
+                            "name": "basic_info.base_address",
+                            "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.base_address",
+                            "className": "input",
                             "readOnly": false,
                             "disabled": "{{_computed.isReadOnly}}"
                           }
                         },
                         {
-                          "id": "address_search_slot",
-                          "type": "extension_point",
-                          "name": "address_search_slot",
+                          "type": "basic",
+                          "name": "Input",
                           "props": {
-                            "readOnlyFields": [
-                              "basic_info.zipcode",
-                              "basic_info.base_address"
-                            ],
-                            "targetFields": {
-                              "zipcode": "form.basic_info.zipcode",
-                              "address": "form.basic_info.base_address",
-                              "region": "form.basic_info.region",
-                              "city": "form.basic_info.city"
-                            }
+                            "type": "text",
+                            "name": "basic_info.detail_address",
+                            "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.detail_address",
+                            "className": "{{_local.errors?.['basic_info.detail_address'] ? 'input input-error md:w-96' : 'input md:w-96'}}",
+                            "disabled": "{{_computed.isReadOnly}}"
                           }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['basic_info.zipcode'] || _local.errors?.['basic_info.base_address'] || _local.errors?.['basic_info.detail_address']}}",
+                          "props": {
+                            "className": "form-error"
+                          },
+                          "text": "{{_local.errors?.['basic_info.zipcode']?.[0] ?? _local.errors?.['basic_info.base_address']?.[0] ?? _local.errors?.['basic_info.detail_address']?.[0] ?? ''}}"
                         }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "basic_info.base_address",
-                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.base_address",
-                        "className": "input w-full",
-                        "readOnly": false,
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "basic_info.detail_address",
-                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.detail_address",
-                        "className": "{{_local.errors?.['basic_info.detail_address'] ? 'input input-error w-full md:w-96' : 'input w-full md:w-96'}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['basic_info.zipcode'] || _local.errors?.['basic_info.base_address'] || _local.errors?.['basic_info.detail_address']}}",
-                      "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
-                      },
-                      "text": "{{_local.errors?.['basic_info.zipcode']?.[0] ?? _local.errors?.['basic_info.base_address']?.[0] ?? _local.errors?.['basic_info.detail_address']?.[0] ?? ''}}"
+                      ],
+                      "props": {}
                     }
                   ]
                 }
@@ -598,7 +580,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                "className": "grid-2col-responsive"
               },
               "children": [
                 {
@@ -683,7 +665,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.phone_1'] || _local.errors?.['basic_info.phone_2'] || _local.errors?.['basic_info.phone_3']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.phone_1']?.[0] ?? _local.errors?.['basic_info.phone_2']?.[0] ?? _local.errors?.['basic_info.phone_3']?.[0] ?? ''}}"
                     }
@@ -771,7 +753,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.fax_1'] || _local.errors?.['basic_info.fax_2'] || _local.errors?.['basic_info.fax_3']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.fax_1']?.[0] ?? _local.errors?.['basic_info.fax_2']?.[0] ?? _local.errors?.['basic_info.fax_3']?.[0] ?? ''}}"
                     }
@@ -799,7 +781,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -867,7 +849,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['basic_info.email_id'] || _local.errors?.['basic_info.email_domain']}}",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['basic_info.email_id']?.[0] ?? _local.errors?.['basic_info.email_domain']?.[0] ?? ''}}"
                 }
@@ -878,7 +860,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                "className": "grid-2col-responsive"
               },
               "children": [
                 {
@@ -913,7 +895,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.privacy_officer']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.privacy_officer']?.[0] ?? ''}}"
                     }
@@ -951,7 +933,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.privacy_officer_email']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.privacy_officer_email']?.[0] ?? ''}}"
                     }
@@ -964,7 +946,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                "className": "grid-2col-responsive"
               },
               "children": [
                 {
@@ -999,7 +981,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.mail_order_number']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.mail_order_number']?.[0] ?? ''}}"
                     }
@@ -1037,7 +1019,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['basic_info.telecom_number']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['basic_info.telecom_number']?.[0] ?? ''}}"
                     }
@@ -1054,36 +1036,26 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "card"
+        "className": "admin-card"
       },
       "children": [
         {
-          "id": "inquiry_settings_header",
+          "id": "inquiry_settings_title",
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.title"
+        },
+        {
+          "id": "inquiry_settings_description",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "card-header"
+            "className": "card-description"
           },
-          "children": [
-            {
-              "id": "inquiry_settings_title",
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "card-title"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.title"
-            },
-            {
-              "id": "inquiry_settings_description",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "card-description"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.description"
-            }
-          ]
+          "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.description"
         },
         {
           "id": "inquiry_settings_body",
@@ -1102,7 +1074,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg mb-4"
+                    "className": "alert-info"
                   },
                   "children": [
                     {
@@ -1119,7 +1091,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-blue-700 dark:text-blue-300"
+                        "className": "text-info-soft"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.module_not_installed"
                     }

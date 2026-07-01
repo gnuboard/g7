@@ -209,6 +209,44 @@ describe('SearchableDropdown', () => {
     expect(screen.getByText('Nike')).toBeInTheDocument();
   });
 
+  // 회귀: 알림 템플릿 편집 모달의 역할 드롭다운 라벨 미표시 버그
+  // value 는 있으나 options 가 비어 있으면 라벨을 찾지 못해 triggerLabel 폴백.
+  // → 레이아웃이 현재 선택값을 options 에 시드해야 라벨이 표시된다(아래 두 케이스가 그 계약).
+  it('회귀: value 가 options 에 없으면 triggerLabel 폴백 (시드 누락 시 버그 재현)', () => {
+    render(<SearchableDropdown options={[]} value="admin" triggerLabel="역할" />);
+
+    // 선택값(admin)에 대응하는 옵션이 없어 라벨을 못 찾음 → 폴백
+    expect(screen.getByText('역할')).toBeInTheDocument();
+    expect(screen.queryByText('관리자')).not.toBeInTheDocument();
+  });
+
+  it('회귀: 현재 선택값이 options 에 시드되면 라벨 표시', () => {
+    // 레이아웃이 rcpt.value + rcpt.display_name 으로 시드한 옵션
+    render(
+      <SearchableDropdown
+        options={[{ value: 'admin', label: '관리자', description: 'admin' }]}
+        value="admin"
+        triggerLabel="역할"
+      />
+    );
+
+    expect(screen.getByText('관리자')).toBeInTheDocument();
+  });
+
+  it('회귀: 다중 선택값이 display_names 로 시드되면 개수/라벨 표시', () => {
+    render(
+      <SearchableDropdown
+        multiple
+        options={[{ value: 'uuid-1', label: '홍길동', description: 'hong@example.com' }]}
+        value={['uuid-1']}
+        triggerLabel="사용자"
+      />
+    );
+
+    // 단일 선택 시 라벨, 복수 선택 시 "N selected" 가 표시되는 기존 계약과 결합
+    expect(screen.getByText('홍길동')).toBeInTheDocument();
+  });
+
   it('다중 선택 시 선택 개수 표시', () => {
     render(
       <SearchableDropdown

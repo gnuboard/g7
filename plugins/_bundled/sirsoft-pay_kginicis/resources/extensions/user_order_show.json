@@ -1,0 +1,204 @@
+{
+  "target_layout": "mypage/orders/show",
+  "injections": [
+    {
+      "target_id": "order_payment_info_panel",
+      "position": "append_child",
+      "components": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{order.data.payment?.pg_provider === 'kginicis' && (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}",
+          "props": {
+            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1"
+              },
+              "text": "$t:sirsoft-pay_kginicis.user.tax_breakdown_title"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-pay_kginicis.user.supply_amount"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-primary font-medium"
+                  },
+                  "text": "{{order.data.total_taxable_supply_amount_formatted}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-pay_kginicis.user.vat_amount"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-primary font-medium"
+                  },
+                  "text": "{{order.data.total_vat_amount_formatted}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{order.data.total_tax_free_amount > 0}}",
+              "props": {
+                "className": "flex-between text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-pay_kginicis.user.tax_free_amount"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-primary font-medium"
+                  },
+                  "text": "{{order.data.total_tax_free_amount_formatted}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{order.data.payment?.pg_provider === 'kginicis' && order.data.payment?.currency !== 'JPY' && order.data.payment?.transaction_id && order.data.payment?.paid_at}}",
+          "props": {
+            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!!order.data.payment?.is_escrow}}",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:sirsoft-pay_kginicis.user.payment_type_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                  },
+                  "text": "$t:sirsoft-pay_kginicis.admin.escrow_yes"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:sirsoft-pay_kginicis.user.receipt_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "A",
+                  "props": {
+                    "href": "https://iniweb.inicis.com/DefaultWebApp/mall/cr/cm/mCmReceipt_head.jsp?noTid={{order.data.payment.transaction_id}}&noMethod=1",
+                    "target": "_blank",
+                    "rel": "noopener noreferrer",
+                    "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  },
+                  "text": "$t:sirsoft-pay_kginicis.user.receipt_view"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!!order.data.payment?.is_escrow}}",
+              "props": {
+                "className": "pt-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "A",
+                  "props": {
+                    "href": "/plugins/sirsoft-pay_kginicis/payment/escrow-confirm/{{route.orderNumber}}",
+                    "target": "_blank",
+                    "rel": "noopener noreferrer",
+                    "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "check-circle",
+                        "className": "w-4 h-4"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-pay_kginicis.user.escrow_confirm_button"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

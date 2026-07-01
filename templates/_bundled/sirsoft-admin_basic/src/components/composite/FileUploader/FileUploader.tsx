@@ -56,6 +56,8 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       enablePrimarySelection = false,
       primaryFileId,
       onPrimaryChange,
+      id,
+      editorAttrs,
     },
     ref
   ) => {
@@ -181,7 +183,7 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
 
     return (
       <FileUploaderProvider value={contextValue}>
-        <Div className={className}>
+        <Div id={id} className={className} {...editorAttrs}>
           {/* 드롭존 + 파일 목록 통합 영역 */}
           <FileDropZone
             isDragOver={uploader.isDragOver}

@@ -15,7 +15,24 @@
     "wishlist": "Wishlist",
     "addresses": "Addresses",
     "notifications": "Notifications",
-    "inquiries": "Inquiries"
+    "inquiries": "Inquiries",
+    "mileage": "Mileage"
+  },
+  "currency_settings": {
+    "title": "Payment Currency",
+    "description": "Choose the currency used for orders and payments.",
+    "edit_hint": "Currency is changed together when you edit your profile.",
+    "save_button": "Save",
+    "saved": "Payment currency updated.",
+    "save_failed": "Failed to update payment currency."
+  },
+  "shipping_country_settings": {
+    "title": "Shipping Country",
+    "description": "Choose your default shipping country.",
+    "edit_hint": "Shipping country is changed together when you edit your profile.",
+    "save_button": "Save",
+    "saved": "Shipping country updated.",
+    "save_failed": "Failed to update shipping country."
   },
   "notification_settings": {
     "title": "Board Notification Settings",
@@ -149,9 +166,12 @@
       "confirmed": "Confirmed",
       "cancelled": "Cancelled"
     },
+    "partial_cancelled_badge": "Partially Cancelled",
     "total_amount": "Total Amount",
     "shipping_fee": "Shipping",
     "free_shipping": "Free",
+    "points_used": "Mileage Used",
+    "points_earning": "To Earn",
     "view_detail": "View Details",
     "empty": "No order history.",
     "go_shopping": "Go Shopping",
@@ -167,11 +187,17 @@
     "back": "Order History",
     "order_number": "Order Number",
     "items_title": "Order Items",
+    "orderer_title": "Orderer Information",
+    "orderer_name": "Orderer",
+    "orderer_phone": "Phone",
+    "orderer_email": "Email",
     "shipping_title": "Shipping Information",
     "shipping_name": "Recipient",
     "shipping_phone": "Phone",
     "shipping_address": "Address",
     "shipping_memo": "Delivery Note",
+    "track_shipment": "Track Shipment",
+    "cancelled_at": "Cancelled At",
     "payment_title": "Payment Information",
     "product_amount": "Product Amount",
     "discount_amount": "Discount",
@@ -192,12 +218,16 @@
     "history_title": "Order History",
     "ordered_at": "Order Date",
     "paid_at": "Payment Date",
+    "cancel_reason_title": "Cancellation Reason",
+    "cancel_reason": "Reason",
+    "cancel_reason_detail": "Details",
     "continue_shopping": "Continue Shopping",
     "cancel_order": "Cancel Order",
     "reorder": "Reorder",
     "write_review": "Write Review",
     "confirm_purchase": "Confirm Purchase",
     "review_written": "Review Written",
+    "review_deadline_passed": "The review period has ended",
     "confirm_modal": {
       "title": "Confirm Purchase",
       "option_label": "Option",
@@ -211,7 +241,7 @@
       "content_label": "Review",
       "content_placeholder": "Please share your honest review about the product. (Min. 10 characters)",
       "content_min_length": "Min. 10 characters",
-      "image_label": "Attach Images (Max 5)",
+      "image_label": "Attach Images (Max {{count}})",
       "add_image": "Add Image",
       "submit_button": "Submit"
     },
@@ -235,6 +265,7 @@
       "reason_required": "Please select a cancellation reason.",
       "reason_label": "Cancellation Reason",
       "reason_placeholder": "Select cancellation reason",
+      "cancel_reason_detail_placeholder": "Enter the detailed reason (optional)",
       "reason": {
         "order_mistake": "Order mistake",
         "changed_mind": "Changed mind",
@@ -289,7 +320,8 @@
     "manual_input": "Manual Input",
     "apply_change": "Apply",
     "shipping_address_changed": "Shipping address has been changed.",
-    "confirm_change_address": "Are you sure you want to change the shipping address?"
+    "confirm_change_address": "Are you sure you want to change the shipping address?",
+    "charged_in_payment_currency": "Charged {{amount}} in {{currency}}"
   },
   "addresses": {
     "title": "Manage Addresses",
@@ -346,6 +378,39 @@
     "removed": "Removed from wishlist.",
     "empty": "Your wishlist is empty.",
     "go_shopping": "Go Shopping"
+  },
+  "mileage": {
+    "title": "Mileage",
+    "summary": {
+      "available": "Available",
+      "expiring_soon": "Expiring Soon",
+      "expiring_until": "Until {{date}}",
+      "total_earned": "Total Earned",
+      "total_used": "Total Used"
+    },
+    "filter": {
+      "all": "All",
+      "earn": "Earned",
+      "use": "Used",
+      "expire": "Expired",
+      "adjust": "Adjusted"
+    },
+    "category": {
+      "earn": "Earned",
+      "use": "Used",
+      "expire": "Expired",
+      "adjust": "Adjusted"
+    },
+    "table": {
+      "date": "Date",
+      "category": "Type",
+      "description": "Description",
+      "amount": "Mileage",
+      "expires_at": "Expires"
+    },
+    "expires_label": "Expires {{date}}",
+    "empty": "No mileage history.",
+    "disabled_notice": "Mileage is disabled."
   },
   "posts": {
     "filter": {

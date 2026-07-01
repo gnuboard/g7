@@ -4,22 +4,21 @@ namespace Modules\Sirsoft\Ecommerce\Database\Seeders\Sample;
 
 use App\Models\User;
 use App\Traits\HasSeederCounts;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
-use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderAddressFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
+use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -28,8 +27,10 @@ use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOptionValue;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
-use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
+use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
+use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\SequenceService;
 
@@ -51,6 +52,11 @@ class OrderSeeder extends Seeder
      * 생성할 기본 주문 수
      */
     private const ORDER_COUNT = 100;
+
+    /**
+     * 주문을 배정할 회원 풀 크기 (주문을 더 많은 회원에 분산)
+     */
+    private const ORDER_USER_POOL = 40;
 
     /**
      * 상태별 최소 주문 수
@@ -140,11 +146,24 @@ class OrderSeeder extends Seeder
     private function createOrders(): void
     {
         // 사용자 목록 가져오기 (없으면 생성)
-        $users = User::take(10)->get();
+        // 주문을 더 많은 회원에 분산시키기 위해 일반 회원(관리자 제외) 풀을 넓게 사용한다.
+        // 풀이 넓을수록 $users->random() 로 배정되는 주문이 더 많은 회원에 퍼지고,
+        // 후행 마일리지 시더(실주문 기반 적립/사용 정합)도 그만큼 많은 회원에 분포된다.
+        $users = User::whereDoesntHave('roles', fn ($q) => $q->where('identifier', 'admin'))
+            ->inRandomOrder()
+            ->take(self::ORDER_USER_POOL)
+            ->get();
+
+        // 일반 회원이 부족하면 전체 회원으로 폴백, 그래도 없으면 생성
         if ($users->isEmpty()) {
-            $this->command->line('  - 사용자가 없어 10명 생성합니다.');
-            $users = User::factory()->count(10)->create();
+            $users = User::take(self::ORDER_USER_POOL)->get();
         }
+        if ($users->isEmpty()) {
+            $this->command->line('  - 사용자가 없어 '.self::ORDER_USER_POOL.'명 생성합니다.');
+            $users = User::factory()->count(self::ORDER_USER_POOL)->create();
+        }
+
+        $this->command->line("  - 주문 배정 회원 풀: {$users->count()}명");
 
         // 상품 옵션 목록 가져오기 (없으면 경고)
         $productOptions = ProductOption::with('product')->take(100)->get();
@@ -217,7 +236,7 @@ class OrderSeeder extends Seeder
 
         $progressBar->finish();
         $this->command->newLine();
-        $this->command->info("  - 회원 주문: ".($createdCount - $guestCount)."건, 비회원 주문: {$guestCount}건, 쿠폰 적용: {$couponCount}건");
+        $this->command->info('  - 회원 주문: '.($createdCount - $guestCount)."건, 비회원 주문: {$guestCount}건, 쿠폰 적용: {$couponCount}건");
     }
 
     /**
@@ -256,8 +275,8 @@ class OrderSeeder extends Seeder
      *
      * @param  User|null  $user  사용자 (null이면 비회원 주문)
      * @param  OrderStatusEnum  $status  주문 상태
-     * @param  \Illuminate\Support\Collection  $productOptions  상품 옵션 목록
-     * @param  \Illuminate\Support\Collection|null  $userCouponIssues  사용자의 사용 가능 쿠폰 발급 목록
+     * @param  Collection  $productOptions  상품 옵션 목록
+     * @param  Collection|null  $userCouponIssues  사용자의 사용 가능 쿠폰 발급 목록
      */
     private function createOrder(
         ?User $user,
@@ -302,15 +321,17 @@ class OrderSeeder extends Seeder
         if (! $status->isBeforePayment()) {
             $this->createOrderPayment($order, $status);
         }
+
+        // 적립(PURCHASE_EARN) 발행은 OrderSeeder 가 아니라 MileageSeeder 의 책임이다.
+        // MileageSeeder 가 OrderSeeder 뒤에 실행되며 기존 거래를 전량 정리 후 배송완료/구매확정
+        // 주문의 적립액에서 거래를 재발행한다 (잔액 lot·시간순·캐시 정합 일괄 관리). 여기서 발행하면
+        // 중복/덮어쓰기가 된다. 따라서 적립 보정은 MileageSeeder 측에서 처리한다.
     }
 
     /**
      * 상태에 따른 주문일 반환
-     *
-     * @param  OrderStatusEnum  $status
-     * @return \Carbon\Carbon
      */
-    private function getOrderedAtByStatus(OrderStatusEnum $status): \Carbon\Carbon
+    private function getOrderedAtByStatus(OrderStatusEnum $status): Carbon
     {
         return match ($status) {
             OrderStatusEnum::PENDING_ORDER, OrderStatusEnum::PENDING_PAYMENT => now()->subHours(rand(1, 48)),
@@ -327,9 +348,7 @@ class OrderSeeder extends Seeder
      * 상태에 따라 주문 생성
      *
      * @param  User|null  $user  사용자 (null이면 비회원 주문)
-     * @param  OrderStatusEnum  $status
-     * @param  \Carbon\Carbon  $orderedAt
-     * @return Order
+     * @param  Carbon  $orderedAt
      */
     private function createOrderByStatus(
         ?User $user,
@@ -358,29 +377,32 @@ class OrderSeeder extends Seeder
         // 시퀀스 서비스로 주문번호 생성 (프로덕션과 동일한 로직)
         $orderNumber = app(SequenceService::class)->generateCode(SequenceType::ORDER);
 
-        return $factory->create([
+        $attributes = [
             'order_number' => $orderNumber,
             'order_status' => $status,
             'ordered_at' => $orderedAt,
             'currency_snapshot' => $this->buildCurrencySnapshot(),
-        ]);
+        ];
+
+        // 취소 주문은 취소일시(native cancelled_at) 기록 — 주문일 이후 시점 (MP02)
+        if ($status === OrderStatusEnum::CANCELLED) {
+            $attributes['cancelled_at'] = (clone $orderedAt)->addHours(rand(1, 48));
+        }
+
+        return $factory->create($attributes);
     }
 
     /**
      * 주문 옵션 생성
      *
-     * @param  Order  $order
-     * @param  \Illuminate\Support\Collection  $productOptions
-     * @param  int  $count
-     * @param  OrderStatusEnum  $orderStatus
-     * @return \Illuminate\Support\Collection
+     * @param  Collection  $productOptions
      */
     private function createOrderOptions(
         Order $order,
         $productOptions,
         int $count,
         OrderStatusEnum $orderStatus
-    ): \Illuminate\Support\Collection {
+    ): Collection {
         $orderOptions = collect();
 
         // 실제 상품 옵션이 있으면 사용
@@ -389,7 +411,15 @@ class OrderSeeder extends Seeder
 
             foreach ($selectedOptions as $productOption) {
                 $quantity = rand(1, 3);
-                $unitPrice = $productOption->product->selling_price + ($productOption->price_adjustment ?? 0);
+
+                $product = $productOption->product;
+
+                // 추가옵션 스냅샷 (상품에 추가옵션이 있으면 30% 확률로 선택 동결)
+                // 추가옵션 단위 합계는 단가에 가산된다 (OrderProcessingService와 동일).
+                [$additionalOptionsSnapshot, $additionalOptionsTotal] = $this->buildOrderOptionAdditionalOptions($product);
+
+                $basePrice = $productOption->product->selling_price + ($productOption->price_adjustment ?? 0);
+                $unitPrice = $basePrice + $additionalOptionsTotal;
                 $subtotalPrice = $quantity * $unitPrice;
 
                 // 할인은 쿠폰/코드 미적용 시 0 (출처 없는 유령 할인 방지)
@@ -401,7 +431,6 @@ class OrderSeeder extends Seeder
                 $optionNameI18n = $productOption->option_name ?? [];
                 $optionValueI18n = $this->buildMultilingualOptionValue($productOption->option_values);
 
-                $product = $productOption->product;
                 $productNameJson = is_array($product->name) ? $product->name : ['ko' => $product->getLocalizedName(), 'en' => $product->getLocalizedName()];
                 $finalAmount = $subtotalPrice - $discountAmount;
 
@@ -410,6 +439,7 @@ class OrderSeeder extends Seeder
                     'product_id' => $productOption->product_id,
                     'product_option_id' => $productOption->id,
                     'option_status' => $optionStatus,
+                    'is_stock_deducted' => $this->isStockDeductedForStatus($optionStatus),
                     'source_type' => 'order',
                     'sku' => $productOption->option_code,
                     'product_name' => $productNameJson,
@@ -422,6 +452,7 @@ class OrderSeeder extends Seeder
                     'subtotal_weight' => ($product->weight ?? 0.5) * $quantity,
                     'subtotal_volume' => 0.01 * $quantity,
                     'unit_price' => $unitPrice,
+                    'additional_options_total' => $additionalOptionsTotal,
                     'subtotal_price' => $subtotalPrice,
                     'subtotal_discount_amount' => $discountAmount,
                     'product_coupon_discount_amount' => 0,
@@ -436,9 +467,11 @@ class OrderSeeder extends Seeder
                     'subtotal_earned_points_amount' => round($finalAmount * 0.01, 2),
                     'product_snapshot' => $product->toSnapshotArray(),
                     'option_snapshot' => $productOption->toSnapshotArray(),
+                    'additional_options_snapshot' => $additionalOptionsSnapshot,
                     'promotions_applied_snapshot' => null,
                     // 다중 통화 필드 (OrderProcessingService와 동일 형식)
                     'mc_unit_price' => $this->buildMultiCurrencyAmount($unitPrice),
+                    'mc_additional_options_total' => $additionalOptionsTotal > 0 ? $this->buildMultiCurrencyAmount($additionalOptionsTotal) : null,
                     'mc_subtotal_price' => $this->buildMultiCurrencyAmount($subtotalPrice),
                     'mc_product_coupon_discount_amount' => $this->buildMultiCurrencyAmount(0),
                     'mc_order_coupon_discount_amount' => $this->buildMultiCurrencyAmount(0),
@@ -462,6 +495,7 @@ class OrderSeeder extends Seeder
                     ->forOrder($order)
                     ->create([
                         'option_status' => $optionStatus,
+                        'is_stock_deducted' => $this->isStockDeductedForStatus($optionStatus),
                         'product_id' => null,
                         'product_option_id' => null,
                     ]);
@@ -477,9 +511,6 @@ class OrderSeeder extends Seeder
      * 주문 상태에 따른 주문 옵션 상태 반환
      *
      * OrderStatusEnum으로 통일되었으므로 동일한 값을 반환합니다.
-     *
-     * @param  OrderStatusEnum  $orderStatus
-     * @return OrderStatusEnum
      */
     private function getOrderOptionStatusByOrderStatus(OrderStatusEnum $orderStatus): OrderStatusEnum
     {
@@ -487,10 +518,29 @@ class OrderSeeder extends Seeder
     }
 
     /**
+     * 옵션 상태에 따른 재고 차감 여부를 판정합니다.
+     *
+     * 실제 주문 프로세스(StockService::deductStock)는 결제완료/주문접수 타이밍에 재고를 차감하고,
+     * 취소 시 복원(is_stock_deducted=false)합니다. 시더는 이 라이프사이클을 거치지 않고 상태만
+     * 직접 세팅하므로, 결제완료 이후 상태(취소 제외)는 차감된 것으로 보정합니다.
+     *
+     * @param  OrderStatusEnum  $optionStatus  옵션 상태
+     * @return bool 재고 차감 여부
+     */
+    private function isStockDeductedForStatus(OrderStatusEnum $optionStatus): bool
+    {
+        // 결제 전(주문대기/결제대기)은 미차감, 취소는 차감 후 복원되어 미차감
+        if ($optionStatus->isBeforePayment() || $optionStatus === OrderStatusEnum::CANCELLED) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * 주문 금액 재계산
      *
-     * @param  Order  $order
-     * @param  \Illuminate\Support\Collection  $orderOptions
+     * @param  Collection  $orderOptions
      */
     private function recalculateOrderAmount(Order $order, $orderOptions): void
     {
@@ -567,8 +617,6 @@ class OrderSeeder extends Seeder
 
     /**
      * 주문 주소 생성
-     *
-     * @param  Order  $order
      */
     private function createOrderAddress(Order $order): void
     {
@@ -580,9 +628,6 @@ class OrderSeeder extends Seeder
 
     /**
      * 주문 결제 정보 생성
-     *
-     * @param  Order  $order
-     * @param  OrderStatusEnum  $status
      */
     private function createOrderPayment(Order $order, OrderStatusEnum $status): void
     {
@@ -616,8 +661,6 @@ class OrderSeeder extends Seeder
 
     /**
      * 랜덤 결제 방법 반환
-     *
-     * @return string
      */
     private function getRandomPaymentMethod(): string
     {
@@ -639,8 +682,6 @@ class OrderSeeder extends Seeder
 
     /**
      * CurrencyConversionService를 지연 로딩합니다.
-     *
-     * @return CurrencyConversionService
      */
     private function getCurrencyConversionService(): CurrencyConversionService
     {
@@ -676,6 +717,61 @@ class OrderSeeder extends Seeder
         }
 
         return $result;
+    }
+
+    /**
+     * 주문 옵션의 추가옵션 스냅샷과 단위 합계를 생성합니다.
+     *
+     * 상품에 활성 추가옵션 선택지가 있으면 30% 확률로 그룹당 1개를 선택해 주문 시점 스냅샷으로
+     * 동결합니다. 스냅샷 형식은 ProductAdditionalOptionValue::toSnapshotArray 와 정합합니다.
+     *
+     * @param  Product  $product  상품 모델
+     * @return array{0: array<int, array>, 1: int} [스냅샷 배열, 단위당 추가금 합계(KRW)]
+     */
+    private function buildOrderOptionAdditionalOptions(Product $product): array
+    {
+        // 활성 추가옵션 그룹·선택지 로드
+        $product->loadMissing('additionalOptions.activeValues');
+
+        if ($product->additionalOptions->isEmpty()) {
+            return [[], 0];
+        }
+
+        // 70% 는 추가옵션 미선택 (분포 다양화)
+        if (rand(1, 100) > 30) {
+            return [[], 0];
+        }
+
+        $snapshot = [];
+        $total = 0;
+
+        foreach ($product->additionalOptions as $group) {
+            $values = $group->activeValues;
+            if ($values->isEmpty()) {
+                continue;
+            }
+
+            // 그룹당 1개 선택 (필수 그룹은 항상, 비필수는 60% 확률)
+            if (! $group->is_required && rand(1, 100) > 60) {
+                continue;
+            }
+
+            /** @var ProductAdditionalOptionValue $value */
+            $value = $values->random();
+            $entry = $value->toSnapshotArray();
+            $entry['group_name'] = $group->name;
+            $entry['is_required'] = (bool) $group->is_required;
+
+            // 직접입력 선택지면 custom_text 더미 채움
+            if ($value->allow_custom_text) {
+                $entry['custom_text'] = '주문자 직접 입력 문구';
+            }
+
+            $snapshot[] = $entry;
+            $total += $value->getPriceAdjustment();
+        }
+
+        return [$snapshot, $total];
     }
 
     /**
@@ -759,9 +855,7 @@ class OrderSeeder extends Seeder
     /**
      * 주문 배송 정보 생성
      *
-     * @param  Order  $order
-     * @param  \Illuminate\Support\Collection  $orderOptions
-     * @param  OrderStatusEnum  $status
+     * @param  Collection  $orderOptions
      */
     private function createOrderShippings(Order $order, $orderOptions, OrderStatusEnum $status): void
     {
@@ -831,8 +925,7 @@ class OrderSeeder extends Seeder
      * charge_policy 기반으로 배송비를 산출합니다.
      * 실제 주문 시 calculateCountryShippingFee()와 동일한 분기 로직을 적용합니다.
      *
-     * @param  \Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting  $countrySetting
-     * @param  OrderOption  $orderOption
+     * @param  ShippingPolicyCountrySetting  $countrySetting
      * @return int 배송비 (원)
      */
     private function calculateSeederShippingFee($countrySetting, OrderOption $orderOption): int
@@ -899,7 +992,7 @@ class OrderSeeder extends Seeder
      * CouponSeeder에서 생성한 available 상태의 발급 내역을
      * 쿠폰 정보와 함께 사용자별로 그룹화하여 반환합니다.
      *
-     * @return array<int, \Illuminate\Support\Collection> [user_id => Collection<CouponIssue>]
+     * @return array<int, Collection> [user_id => Collection<CouponIssue>]
      */
     private function loadAvailableCouponIssuesByUser(): array
     {
@@ -916,7 +1009,7 @@ class OrderSeeder extends Seeder
 
         // Collection 그대로 유지 (모델 인스턴스 보존)
         $grouped = $issues->groupBy('user_id')->all();
-        $this->command->line("  - 쿠폰 발급 내역 {$issues->count()}건 로드 (".count($grouped)."명 사용자)");
+        $this->command->line("  - 쿠폰 발급 내역 {$issues->count()}건 로드 (".count($grouped).'명 사용자)');
 
         return $grouped;
     }
@@ -931,8 +1024,8 @@ class OrderSeeder extends Seeder
      * 적용 후 CouponIssue 상태를 'used'로 업데이트합니다.
      *
      * @param  Order  $order  주문
-     * @param  \Illuminate\Support\Collection  $orderOptions  주문 옵션 목록
-     * @param  \Illuminate\Support\Collection  $userCouponIssues  사용자의 쿠폰 발급 목록
+     * @param  Collection  $orderOptions  주문 옵션 목록
+     * @param  Collection  $userCouponIssues  사용자의 쿠폰 발급 목록
      * @return array 배송비 쿠폰 목록 (배송 레코드 생성 후 적용 필요)
      */
     private function applyCouponsToOrderOptions(Order $order, $orderOptions, $userCouponIssues): array
@@ -1044,8 +1137,7 @@ class OrderSeeder extends Seeder
      * @param  Coupon  $coupon  쿠폰 모델
      * @param  CouponIssue  $issueModel  쿠폰 발급 모델
      * @param  int  $discountAmount  할인금액
-     * @param  \Illuminate\Support\Collection  $orderOptions  주문 옵션 목록
-     * @return array
+     * @param  Collection  $orderOptions  주문 옵션 목록
      */
     private function buildCouponSnapshotEntry(Coupon $coupon, CouponIssue $issueModel, int $discountAmount, $orderOptions): array
     {
@@ -1080,7 +1172,7 @@ class OrderSeeder extends Seeder
      * 최소 주문금액 조건을 만족하는 쿠폰 중 1~2개를 선택합니다.
      * 중복불가(is_combinable=false) 쿠폰은 단독 적용됩니다.
      *
-     * @param  \Illuminate\Support\Collection  $available  사용 가능한 쿠폰 발급 목록
+     * @param  Collection  $available  사용 가능한 쿠폰 발급 목록
      * @param  float  $orderSubtotal  주문 소계
      * @return array [{issue, coupon, discount}]
      */
@@ -1191,7 +1283,7 @@ class OrderSeeder extends Seeder
      * - 상품금액 쿠폰: product_coupon_discount_amount에 배분
      * - 주문금액 쿠폰: order_coupon_discount_amount에 금액 비율로 배분
      *
-     * @param  \Illuminate\Support\Collection  $orderOptions  주문 옵션 목록
+     * @param  Collection  $orderOptions  주문 옵션 목록
      * @param  Coupon  $coupon  쿠폰 모델
      * @param  int  $totalDiscount  총 할인금액
      * @param  float  $orderSubtotal  주문 소계
@@ -1247,7 +1339,7 @@ class OrderSeeder extends Seeder
      * - CATEGORIES: 쿠폰에 포함된 카테고리에 속한 상품의 옵션 수량 합계
      *
      * @param  Coupon  $coupon  쿠폰 모델
-     * @param  \Illuminate\Support\Collection  $orderOptions  주문 옵션 목록
+     * @param  Collection  $orderOptions  주문 옵션 목록
      * @return int 적용 대상 총 수량
      */
     private function getTargetQuantity(Coupon $coupon, $orderOptions): int
@@ -1296,7 +1388,7 @@ class OrderSeeder extends Seeder
      * coupon_issue_ids, product_promotions, order_promotions 구조가 필요합니다.
      *
      * @param  array  $selectedCoupons  적용된 쿠폰 목록 [{issue, coupon, discount}]
-     * @param  \Illuminate\Support\Collection  $orderOptions  주문 옵션 목록
+     * @param  Collection  $orderOptions  주문 옵션 목록
      * @return array 주문 레벨 스냅샷
      */
     private function buildOrderPromotionsSnapshot(array $selectedCoupons, $orderOptions): array
@@ -1436,7 +1528,7 @@ class OrderSeeder extends Seeder
             'shipping_method' => $countrySetting?->shipping_method ?? '',
             'base_fee' => (float) ($countrySetting?->base_fee ?? 0),
             'free_threshold' => $countrySetting?->free_threshold ? (float) $countrySetting->free_threshold : null,
-            'currency_code' => $countrySetting?->currency_code ?? 'KRW',
+            'currency_code' => $countrySetting?->currency_code ?? $this->getCurrencyConversionService()->getDefaultCurrency(),
             'extra_fee_enabled' => (bool) ($countrySetting?->extra_fee_enabled ?? false),
             'shipping_amount' => $shippingAmount,
             'snapshot_at' => now()->toIso8601String(),

@@ -1,0 +1,339 @@
+{
+  "palette": {
+    "div": {
+      "label": "ボックス"
+    },
+    "container": {
+      "label": "コンテナ",
+      "default_child_text": "ここにコンテンツを配置してください"
+    },
+    "flex": {
+      "label": "フレックスボックス"
+    },
+    "grid": {
+      "label": "グリッドボックス"
+    },
+    "section_layout": {
+      "label": "セクションレイアウト"
+    },
+    "three_column_layout": {
+      "label": "3列レイアウト"
+    },
+    "section": {
+      "label": "セクション"
+    },
+    "span": {
+      "label": "インラインテキスト",
+      "default_text": "テキスト"
+    },
+    "p": {
+      "label": "段落",
+      "default_text": "ここに段落テキストを入力してください。"
+    },
+    "h1": {
+      "label": "大見出し（H1）",
+      "default_text": "大見出し"
+    },
+    "h2": {
+      "label": "中見出し（H2）",
+      "default_text": "中見出し"
+    },
+    "h3": {
+      "label": "小見出し（H3）",
+      "default_text": "小見出し"
+    },
+    "h4": {
+      "label": "補助見出し（H4）",
+      "default_text": "補助見出し"
+    },
+    "a": {
+      "label": "リンク",
+      "default_text": "ここをクリック"
+    },
+    "button": {
+      "label": "ボタン",
+      "default_text": "ボタン"
+    },
+    "img": {
+      "label": "画像",
+      "default_alt": "画像の説明"
+    },
+    "icon": {
+      "label": "アイコン"
+    },
+    "hr": {
+      "label": "区切り線"
+    },
+    "ul": {
+      "label": "箇条書きリスト",
+      "default_item_text": "リスト項目"
+    },
+    "ol": {
+      "label": "番号付きリスト",
+      "default_item_text": "リスト項目"
+    },
+    "li": {
+      "label": "リスト項目",
+      "default_text": "リスト項目"
+    },
+    "nav": {
+      "label": "ナビゲーション",
+      "default_item_text": "メニュー"
+    },
+    "code": {
+      "label": "インラインコード",
+      "default_text": "code"
+    },
+    "pre": {
+      "label": "コードブロック",
+      "default_text": "// コードブロック"
+    },
+    "card": {
+      "label": "カード",
+      "default_title": "カードのタイトル",
+      "default_body": "カードの内容"
+    },
+    "badge": {
+      "label": "バッジ",
+      "default_text": "バッジ"
+    },
+    "status_badge": {
+      "label": "ステータスバッジ",
+      "default_label": "有効化"
+    },
+    "alert": {
+      "label": "通知",
+      "default_message": "通知メッセージ"
+    },
+    "empty_state": {
+      "label": "空の状態",
+      "default_title": "表示する項目がありません",
+      "default_description": "新しい項目を追加して開始してください。"
+    },
+    "loading_spinner": {
+      "label": "ローディングスピナー"
+    },
+    "page_header": {
+      "label": "ページヘッダー",
+      "default_title": "ページタイトル",
+      "default_subtitle": "ページサブタイトル"
+    },
+    "breadcrumb": {
+      "label": "パンくずリスト",
+      "default_item1_label": "ホーム",
+      "default_item2_label": "現在のページ"
+    },
+    "tab_navigation": {
+      "label": "タブ",
+      "default_tab1_label": "タブ1",
+      "default_tab2_label": "タブ2"
+    },
+    "tab_navigation_scroll": {
+      "label": "スクロールタブ",
+      "default_tab1_label": "タブ1",
+      "default_tab2_label": "タブ2"
+    },
+    "toggle": {
+      "label": "トグル",
+      "default_label": "トグル"
+    },
+    "form_field": {
+      "label": "フォームフィールド",
+      "default_label": "フィールド名"
+    },
+    "input": {
+      "label": "入力ボックス",
+      "default_placeholder": "ここに入力してください"
+    },
+    "textarea": {
+      "label": "複数行入力",
+      "default_placeholder": "複数行テキストを入力してください"
+    },
+    "label": {
+      "label": "ラベル",
+      "default_text": "ラベル"
+    },
+    "select": {
+      "label": "選択ボックス",
+      "default_option1_label": "オプション1",
+      "default_option2_label": "オプション2"
+    },
+    "checkbox": {
+      "label": "チェックボックス",
+      "default_label": "選択"
+    },
+    "radio_group": {
+      "label": "ラジオグループ",
+      "default_option1_label": "オプション 1",
+      "default_option2_label": "オプション 2"
+    },
+    "file_input": {
+      "label": "ファイル入力"
+    },
+    "file_uploader": {
+      "label": "ファイルアップローダー",
+      "default_label": "ファイルをアップロードしてください"
+    },
+    "html_content": {
+      "label": "HTMLコンテンツ",
+      "default_text": "HTMLコンテンツエリア"
+    },
+    "html_editor": {
+      "label": "HTMLエディター",
+      "default_placeholder": "内容を入力してください"
+    },
+    "data_grid": {
+      "label": "データグリッド",
+      "default_column_id_label": "ID",
+      "default_column_name_label": "名前"
+    },
+    "card_grid": {
+      "label": "カードグリッド"
+    },
+    "pagination": {
+      "label": "ページネーション"
+    },
+    "search_bar": {
+      "label": "検索バー",
+      "default_placeholder": "検索キーワードを入力してください"
+    },
+    "stat_card": {
+      "label": "統計カード",
+      "default_title": "統計タイトル"
+    },
+    "product_card": {
+      "label": "商品カード",
+      "default_name": "サンプル商品"
+    },
+    "template_card": {
+      "label": "テンプレートカード",
+      "default_name": "サンプルテンプレート",
+      "default_description": "テンプレート説明"
+    },
+    "bar_chart": {
+      "label": "棒グラフ",
+      "default_label1": "A",
+      "default_label2": "B"
+    },
+    "donut_chart": {
+      "label": "ドーナツグラフ",
+      "default_label1": "A",
+      "default_label2": "B"
+    },
+    "image_gallery": {
+      "label": "画像ギャラリー",
+      "default_alt1": "ギャラリー画像 1",
+      "default_alt2": "ギャラリー画像 2"
+    },
+    "group": {
+      "design": "デザイン",
+      "db": "データ"
+    },
+    "form": {
+      "label": "フォーム",
+      "default_label_text": "ラベル",
+      "default_submit_text": "送信"
+    },
+    "table": {
+      "label": "テーブル"
+    },
+    "accordion": {
+      "label": "アコーディオン",
+      "default_body": "アコーディオンコンテンツ"
+    },
+    "icon_button": {
+      "label": "アイコンボタン",
+      "default_label": "作業"
+    },
+    "dropdown": {
+      "label": "ドロップダウン",
+      "default_label": "メニュー",
+      "default_item1_label": "項目 1",
+      "default_item2_label": "項目 2"
+    },
+    "action_menu": {
+      "label": "アクションメニュー",
+      "default_trigger_label": "作業",
+      "default_item1_label": "編集",
+      "default_item2_label": "削除"
+    },
+    "tag_input": {
+      "label": "タグ入力",
+      "default_option1_label": "オプション 1",
+      "default_option2_label": "オプション 2",
+      "default_placeholder": "タグ入力"
+    },
+    "searchable_dropdown": {
+      "label": "検索ドロップダウン",
+      "default_option1_label": "オプション 1",
+      "default_option2_label": "オプション 2",
+      "default_search_placeholder": "検索"
+    },
+    "rich_select": {
+      "label": "リッチセレクト",
+      "default_option1_label": "オプション 1",
+      "default_option2_label": "オプション 2",
+      "default_placeholder": "選択してください"
+    },
+    "tag_select": {
+      "label": "タグ選択",
+      "default_option1_label": "オプション 1",
+      "default_option2_label": "オプション 2",
+      "default_placeholder": "選択してください"
+    },
+    "icon_select": {
+      "label": "アイコン選択",
+      "default_placeholder": "アイコン選択",
+      "default_search_placeholder": "アイコン検索"
+    },
+    "chip_checkbox": {
+      "label": "チップチェックボックス",
+      "default_label": "オプション"
+    },
+    "multilingual_input": {
+      "label": "多言語入力",
+      "default_placeholder": "入力してください"
+    },
+    "multilingual_tag_input": {
+      "label": "多言語タグ入力",
+      "default_placeholder": "タグ入力"
+    },
+    "language_selector": {
+      "label": "言語セレクター"
+    },
+    "permission_tree": {
+      "label": "権限ツリー"
+    },
+    "category_tree": {
+      "label": "カテゴリーツリー",
+      "sample_node1": "カテゴリー",
+      "sample_node2": "サブカテゴリー"
+    },
+    "extension_badge": {
+      "label": "拡張バッジ",
+      "default_name": "拡張"
+    },
+    "user_profile": {
+      "label": "ユーザープロフィール",
+      "default_name": "ユーザー"
+    },
+    "filter_group": {
+      "label": "フィルターグループ",
+      "default_title": "フィルター"
+    },
+    "sortable_menu_list": {
+      "label": "ソートメニューリスト",
+      "sample_item1": "メニュー項目 1",
+      "sample_item2": "メニュー項目 2"
+    },
+    "dynamic_field_list": {
+      "label": "動的フィールドリスト",
+      "default_add_label": "項目を追加"
+    },
+    "section_header": {
+      "label": "セクションヘッダー",
+      "default_title": "セクションタイトル",
+      "default_description": "セクションの説明"
+    }
+  }
+}

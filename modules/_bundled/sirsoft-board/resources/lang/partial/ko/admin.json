@@ -62,7 +62,7 @@
     "delete": {
       "title": "게시판 삭제",
       "confirm": "'{{name}}' 게시판을 삭제하시겠습니까?",
-      "with_posts_info": "이 게시판에는 {{posts_count}}개의 게시글과 댓글이 있습니다.",
+      "with_posts_info": "이 게시판에는 {{posts_count}}개의 게시글이 있습니다. 삭제 시 게시글에 달린 댓글과 첨부파일(업로드된 원본 파일 포함)도 함께 삭제됩니다.",
       "no_posts_info": "이 게시판에는 게시글이 없습니다.",
       "force_delete_label_with_posts": "영구 삭제 (게시글, 댓글, 첨부파일 모두 삭제)",
       "force_delete_label_no_posts": "영구 삭제 (데이터베이스 테이블도 삭제)",
@@ -151,9 +151,9 @@
         "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
       },
       "blocked_keywords": {
-        "label": "제한 키워드",
-        "placeholder": "쉼표로 구분하여 입력 (예: 욕설, 비방, 광고)",
-        "description": "부적절한 단어 또는 해당 게시판에 제외될 키워드"
+        "label": "금지어",
+        "placeholder": "금지어 입력 후 Enter (예: 욕설, 비방, 광고)",
+        "description": "부적절한 단어 또는 해당 게시판에서 제외할 금지어"
       },
       "use_file_upload": {
         "label": "첨부 파일 설정",
@@ -942,9 +942,9 @@
       "report_view_roles_description": "신고 목록과 상세 내용을 열람할 수 있는 권한입니다.",
       "report_manage_roles": "신고 처리 권한",
       "report_manage_roles_description": "신고를 승인·반려·블라인드 처리할 수 있는 권한입니다. 신고 접수 시 관리자 알림도 이 권한을 가진 역할 기준으로 발송됩니다.",
-      "blocked_keywords": "제한 키워드",
-      "blocked_keywords_placeholder": "키워드 입력 후 Enter",
-      "blocked_keywords_description": "게시글/댓글에서 차단할 키워드 목록입니다",
+      "blocked_keywords": "금지어",
+      "blocked_keywords_placeholder": "금지어 입력 후 Enter",
+      "blocked_keywords_description": "게시글/댓글에서 차단할 금지어 목록입니다",
       "blocked_keywords_hint": "등록된 키워드가 포함된 게시글/댓글은 작성이 차단됩니다",
       "post_cooldown_seconds": "게시글 쿨다운 (초)",
       "post_cooldown_seconds_hint": "같은 사용자가 연속 게시글 작성 시 대기 시간 (0~3600초, 0 = 제한 없음)",
@@ -1202,7 +1202,7 @@
   "users": {
     "form": {
       "sections": {
-        "notification_settings": "알림 설정"
+        "notification_settings": "게시판 알림 설정"
       },
       "notifications": {
         "post_complete": "게시글 완료 알림",

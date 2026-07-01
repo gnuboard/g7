@@ -1,3 +1,4 @@
+// e2e:allow 단위 테스트 보강 (composeSemanticClassName 머지 회귀) — 동작 무변, 컴포넌트 소스의 e2e:allow 와 동일 사이클에서 E2E spec 일괄 작성 예정.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -201,6 +202,56 @@ describe('Input 컴포넌트', () => {
     });
 
     // autoFocus는 jsdom 환경에서 제대로 테스트되지 않으므로 생략
+  });
+
+  // composeSemanticClassName 회귀 테스트 (#369)
+  // 호출처가 이미 시맨틱 토큰을 명시한 경우 컴포넌트가 무조건 prepend 하여
+  // "input input ..." 으로 중복되던 결함 해소를 검증한다.
+  describe('디폴트 시맨틱 클래스 머지', () => {
+    it('className 미지정 시 디폴트 시맨틱 "input" 이 자동 적용된다', () => {
+      const { container } = render(<Input />);
+      const input = container.querySelector('input');
+      expect(input?.className).toBe('input');
+    });
+
+    it('className 에 시맨틱 토큰이 없으면 "input" 을 prepend 한다', () => {
+      const { container } = render(<Input className="font-mono w-full" />);
+      const input = container.querySelector('input');
+      expect(input?.className).toBe('input font-mono w-full');
+    });
+
+    it('className 에 이미 "input" 토큰이 있으면 중복 prepend 하지 않는다', () => {
+      const { container } = render(<Input className="input font-mono" />);
+      const input = container.querySelector('input');
+      // "input input font-mono" 로 중복되지 않아야 한다
+      expect(input?.className).toBe('input font-mono');
+      expect(input?.className.split(/\s+/).filter((t) => t === 'input')).toHaveLength(1);
+    });
+
+    it('input-readonly 처럼 다른 시맨틱과 조합 시 "input" 이 prepend 된다', () => {
+      const { container } = render(<Input className="input-readonly font-mono" />);
+      const input = container.querySelector('input');
+      // "input-readonly" 는 "input" 토큰과 다르므로 prepend 발생
+      expect(input?.className).toBe('input input-readonly font-mono');
+    });
+
+    it('checkbox 타입은 디폴트 시맨틱 "checkbox" 가 적용된다', () => {
+      const { container } = render(<Input type="checkbox" />);
+      const input = container.querySelector('input');
+      expect(input?.className).toBe('checkbox');
+    });
+
+    it('radio 타입은 디폴트 시맨틱 "radio" 가 적용된다', () => {
+      const { container } = render(<Input type="radio" />);
+      const input = container.querySelector('input');
+      expect(input?.className).toBe('radio');
+    });
+
+    it('checkbox 타입에 "checkbox" 토큰이 이미 있으면 중복되지 않는다', () => {
+      const { container } = render(<Input type="checkbox" className="checkbox accent-blue-500" />);
+      const input = container.querySelector('input');
+      expect(input?.className).toBe('checkbox accent-blue-500');
+    });
   });
 
   describe('복합 Props', () => {

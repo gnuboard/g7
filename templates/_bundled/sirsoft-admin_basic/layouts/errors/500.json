@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "layout_name": "500",
+  "layout_name": "errors/500",
   "extends": "_admin_base",
   "meta": {
     "title": "$t:errors.500.title",
@@ -14,7 +14,7 @@
         "type": "basic",
         "name": "Div",
         "props": {
-          "className": "flex flex-col items-center justify-center min-h-[60vh] text-center p-8"
+          "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
         },
         "children": [
           {
@@ -31,7 +31,7 @@
             "type": "basic",
             "name": "H1",
             "props": {
-              "className": "text-6xl font-bold text-gray-900 dark:text-white mb-4"
+              "className": "text-primary text-6xl font-bold mb-4"
             },
             "text": "500"
           },

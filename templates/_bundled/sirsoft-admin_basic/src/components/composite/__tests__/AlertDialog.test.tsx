@@ -77,7 +77,7 @@ describe('AlertDialog', () => {
     );
 
     const confirmButton = screen.getByText('확인');
-    expect(confirmButton).toHaveClass('bg-red-600');
+    expect(confirmButton).toHaveClass('dialog-btn-danger');
   });
 
   it('closeOnOverlay가 false일 때 오버레이 클릭 시 닫히지 않음', async () => {

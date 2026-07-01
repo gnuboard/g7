@@ -142,32 +142,45 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   });
 
   // ==============================
-  // 3. 메타 설정 카드 구조
+  // 3. 메타 설정 섹션 헤더 + 페이지별 admin-card 구조
   // ==============================
-  describe('메타 설정 카드 (meta_settings_card)', () => {
-    it('meta_settings_card가 존재한다', () => {
-      const card = findById(tabSeo, 'meta_settings_card');
-      expect(card).not.toBeNull();
+  describe('메타 설정 섹션 (section-header + admin-card × 4)', () => {
+    it('meta_settings_header가 section-header 자산을 사용한다', () => {
+      const header = findById(tabSeo, 'meta_settings_header');
+      expect(header).not.toBeNull();
+      expect(header.props.className).toBe('section-header');
     });
 
-    it('카드 제목이 다국어 키를 사용한다', () => {
-      const title = findById(tabSeo, 'meta_settings_title');
-      expect(title).not.toBeNull();
-      expect(title.text).toContain('$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.title');
+    it('섹션 헤더의 H3 제목이 다국어 키를 사용한다', () => {
+      const header = findById(tabSeo, 'meta_settings_header');
+      const h3 = findAllByComponentName(header, 'H3')[0];
+      expect(h3).toBeDefined();
+      expect(h3.text).toContain('$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.title');
     });
 
-    it('카드 설명이 다국어 키를 사용한다', () => {
-      const desc = findById(tabSeo, 'meta_settings_description');
-      expect(desc).not.toBeNull();
-      expect(desc.text).toContain('$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.description');
+    it('섹션 헤더의 P 설명이 다국어 키를 사용한다', () => {
+      const header = findById(tabSeo, 'meta_settings_header');
+      const p = findAllByComponentName(header, 'P')[0];
+      expect(p).toBeDefined();
+      expect(p.text).toContain('$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.description');
     });
 
-    describe('카테고리 페이지 아코디언', () => {
-      it('accordion_category_page가 존재한다', () => {
-        const accordion = findById(tabSeo, 'accordion_category_page');
-        expect(accordion).not.toBeNull();
-      });
+    it('페이지별 admin-card 4개가 존재한다 (category/search/product/shop_index)', () => {
+      const cardIds = [
+        'category_page_card',
+        'search_page_card',
+        'product_page_card',
+        'shop_index_page_card',
+      ];
+      for (const id of cardIds) {
+        const card = findById(tabSeo, id);
+        expect(card, `${id} 카드가 없다`).not.toBeNull();
+        expect(card.props.className).toBe('admin-card');
+        expect(card.name).toBe('SectionLayout');
+      }
+    });
 
+    describe('카테고리 페이지 카드', () => {
       it('meta_category_title Input이 존재한다', () => {
         const input = findByPropName(tabSeo, 'seo.meta_category_title');
         expect(input).not.toBeNull();
@@ -182,13 +195,9 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       });
 
       it('카테고리 title 에러 표시 조건이 올바르다', () => {
-        const accordion = findById(tabSeo, 'accordion_category_page_body');
-        expect(accordion).not.toBeNull();
-
         const titleField = findById(tabSeo, 'field_category_title');
         expect(titleField).not.toBeNull();
 
-        // 에러 Span의 if 조건 확인
         const errorSpans = findAllByComponentName(titleField, 'Span')
           .filter((s: any) => s.if && s.if.includes('errors'));
         expect(errorSpans.length).toBeGreaterThan(0);
@@ -202,12 +211,7 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       });
     });
 
-    describe('검색 페이지 아코디언', () => {
-      it('accordion_search_page가 존재한다', () => {
-        const accordion = findById(tabSeo, 'accordion_search_page');
-        expect(accordion).not.toBeNull();
-      });
-
+    describe('검색 페이지 카드', () => {
       it('meta_search_title Input이 존재한다', () => {
         const input = findByPropName(tabSeo, 'seo.meta_search_title');
         expect(input).not.toBeNull();
@@ -227,12 +231,7 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       });
     });
 
-    describe('상품 페이지 아코디언', () => {
-      it('accordion_product_page가 존재한다', () => {
-        const accordion = findById(tabSeo, 'accordion_product_page');
-        expect(accordion).not.toBeNull();
-      });
-
+    describe('상품 페이지 카드', () => {
       it('meta_product_title Input이 존재한다', () => {
         const input = findByPropName(tabSeo, 'seo.meta_product_title');
         expect(input).not.toBeNull();
@@ -250,12 +249,6 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
         expect(input.props.placeholder).toContain('{commerce_name}');
         expect(input.props.placeholder).toContain('{product_name}');
       });
-    });
-
-    it('meta_accordions에 4개의 아코디언이 있다 (category/search/product/shop_index)', () => {
-      const accordions = findById(tabSeo, 'meta_accordions');
-      expect(accordions).not.toBeNull();
-      expect(accordions.children).toHaveLength(4);
     });
   });
 
@@ -342,10 +335,16 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // 5. 전체 구조 검증
   // ==============================
   describe('전체 구조', () => {
-    it('루트 children에 2개의 카드가 있다 (meta_settings + seo_friendly)', () => {
-      expect(tabSeo.children).toHaveLength(2);
-      expect(tabSeo.children[0].id).toBe('meta_settings_card');
-      expect(tabSeo.children[1].id).toBe('seo_friendly_card');
+    it('루트 children이 section-header + admin-card × 4 + seo_friendly_card 순서다', () => {
+      const ids = tabSeo.children.map((c: any) => c.id);
+      expect(ids).toEqual([
+        'meta_settings_header',
+        'category_page_card',
+        'search_page_card',
+        'product_page_card',
+        'shop_index_page_card',
+        'seo_friendly_card',
+      ]);
     });
 
     it('모든 Input/Textarea의 name이 seo. 접두사를 사용한다', () => {
@@ -412,13 +411,25 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // 7. 폼 필드 완전성
   // ==============================
   describe('폼 필드 완전성', () => {
-    it('메타 설정 Input 8개 (title 4 + description 4)가 존재한다', () => {
-      const metaCard = findById(tabSeo, 'meta_settings_card');
-      const inputs = findAllByComponentName(metaCard, 'Input');
-      const textareas = findAllByComponentName(metaCard, 'Textarea');
+    const pageCardIds = [
+      'category_page_card',
+      'search_page_card',
+      'product_page_card',
+      'shop_index_page_card',
+    ];
 
-      expect(inputs).toHaveLength(4); // category/search/product/shop_index 각 title
-      expect(textareas).toHaveLength(4); // 각 description
+    it('페이지별 카드 4개에 걸쳐 Input 4 + Textarea 4가 존재한다', () => {
+      const inputs = pageCardIds.flatMap((id) => {
+        const card = findById(tabSeo, id);
+        return findAllByComponentName(card, 'Input');
+      });
+      const textareas = pageCardIds.flatMap((id) => {
+        const card = findById(tabSeo, id);
+        return findAllByComponentName(card, 'Textarea');
+      });
+
+      expect(inputs).toHaveLength(4);
+      expect(textareas).toHaveLength(4);
     });
 
     it('SEO Friendly 체크박스 4개가 존재한다', () => {
@@ -429,20 +440,23 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       expect(checkboxes).toHaveLength(4);
     });
 
-    it('에러 표시 Span이 8개 존재한다 (각 Input/Textarea마다)', () => {
-      const metaCard = findById(tabSeo, 'meta_settings_card');
-      const errorSpans = findAllByComponentName(metaCard, 'Span')
-        .filter((s: any) => s.if && s.if.includes('_local.errors'));
+    it('에러 표시 Span이 8개 존재한다 (각 Input/Textarea 마다)', () => {
+      const errorSpans = pageCardIds.flatMap((id) => {
+        const card = findById(tabSeo, id);
+        return findAllByComponentName(card, 'Span')
+          .filter((s: any) => s.if && s.if.includes('_local.errors'));
+      });
 
       expect(errorSpans).toHaveLength(8);
     });
 
-    it('힌트(form-hint) P 태그가 카테고리/검색/상품에 각각 존재한다', () => {
-      const metaCard = findById(tabSeo, 'meta_settings_card');
-      const hints = findAllByComponentName(metaCard, 'P')
-        .filter((p: any) => p.props?.className === 'form-hint');
+    it('힌트(form-hint) P 태그가 카테고리/검색/상품/쇼핑몰메인 카드에 분포한다', () => {
+      const hints = pageCardIds.flatMap((id) => {
+        const card = findById(tabSeo, id);
+        return findAllByComponentName(card, 'P')
+          .filter((p: any) => p.props?.className === 'form-hint');
+      });
 
-      // 카테고리: title hint + desc hint, 검색: title hint, 상품: title hint + desc hint = 최소 4개
       expect(hints.length).toBeGreaterThanOrEqual(4);
     });
   });

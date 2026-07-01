@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\ExtensionStatus;
 use App\Extension\ExtensionManager;
+use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Models\Module;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\File;
@@ -73,10 +74,16 @@ class ModuleRouteServiceProvider extends ServiceProvider
             ->toArray();
 
         $modules = File::directories($modulesPath);
+        $allowlistActive = ExtensionTestAllowlist::isActive();
 
         foreach ($modules as $module) {
             $moduleName = basename($module);
             $moduleFile = $module.'/module.php';
+
+            // 테스트 환경 확장 격리: allowlist 밖 모듈의 라우트 등록 차단
+            if ($allowlistActive && ! ExtensionTestAllowlist::isAllowed('module', $moduleName)) {
+                continue;
+            }
 
             // 활성화된 모듈만 라우트 로드
             if (! in_array($moduleName, $activeModuleIdentifiers)) {

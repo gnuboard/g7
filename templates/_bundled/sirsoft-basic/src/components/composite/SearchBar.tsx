@@ -6,6 +6,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
+import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -28,6 +29,14 @@ export interface SearchBarProps {
   showSuggestions?: boolean;
   className?: string;
   style?: React.CSSProperties;
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+/**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -72,6 +81,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   showSuggestions = false,
   className = '',
   style,
+  id,
+  editorAttrs,
 }) => {
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedPlaceholder = placeholder ?? t('common.search_placeholder');
@@ -127,7 +138,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <Div ref={containerRef} className={`relative ${className}`} style={style}>
+    <Div ref={containerRef} className={`relative ${className}`} style={style} id={id} {...editorAttrs}>
       <Form onSubmit={handleSubmit} className="relative">
         <Div className={`relative flex items-center ${showButton ? 'gap-2' : ''}`}>
           {/* Input wrapper */}

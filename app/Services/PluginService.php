@@ -2,14 +2,16 @@
 
 namespace App\Services;
 
-use App\Exceptions\PluginOperationException;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Exceptions\PluginOperationException;
 use App\Extension\Helpers\ChangelogParser;
+use App\Extension\Helpers\EditorSpecAssembler;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
+use App\Extension\Vendor\VendorMode;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
@@ -106,11 +108,12 @@ class PluginService
 
         return $this->pluginManager->getPluginUninstallInfo($pluginName);
     }
+
     /**
      * 플러그인을 설치합니다 (before/after_install 훅 발화 + ValidationException 변환).
      *
      * @param  string  $pluginName  플러그인 식별자
-     * @param  \App\Extension\Vendor\VendorMode  $vendorMode  vendor 설치 모드 (Auto/Composer/Bundled)
+     * @param  VendorMode  $vendorMode  vendor 설치 모드 (Auto/Composer/Bundled)
      * @param  bool  $force  Updating/Failed 등 진행 중 상태도 무시하고 강제 설치 여부
      * @return array|null 설치된 플러그인 정보 또는 설치 실패 시 null
      *
@@ -118,7 +121,7 @@ class PluginService
      */
     public function installPlugin(
         string $pluginName,
-        \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
+        VendorMode $vendorMode = VendorMode::Auto,
         bool $force = false,
     ): ?array {
         HookManager::doAction('core.plugins.before_install', $pluginName);
@@ -143,6 +146,7 @@ class PluginService
             ]);
         }
     }
+
     /**
      * 플러그인을 활성화합니다 (before/after_activate 훅 발화 + ValidationException 변환).
      *
@@ -185,6 +189,7 @@ class PluginService
             ]);
         }
     }
+
     /**
      * 플러그인을 비활성화합니다 (before/after_deactivate 훅 발화 + ValidationException 변환).
      *
@@ -225,6 +230,7 @@ class PluginService
             ]);
         }
     }
+
     /**
      * 플러그인을 제거합니다 (before/after_uninstall 훅 발화).
      *
@@ -483,7 +489,7 @@ class PluginService
      * 지정된 플러그인을 업데이트합니다.
      *
      * @param  string  $pluginName  업데이트할 플러그인 identifier
-     * @param  \App\Extension\Vendor\VendorMode  $vendorMode  Vendor 설치 모드
+     * @param  VendorMode  $vendorMode  Vendor 설치 모드
      * @param  string  $layoutStrategy  레이아웃 전략 (overwrite|keep)
      * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
@@ -492,7 +498,7 @@ class PluginService
      */
     public function updatePlugin(
         string $pluginName,
-        \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
+        VendorMode $vendorMode = VendorMode::Auto,
         string $layoutStrategy = 'overwrite',
         bool $force = false,
     ): array {
@@ -611,6 +617,82 @@ class PluginService
             'mimeType' => $mimeType,
             'error' => null,
         ];
+    }
+
+    /**
+     * 플러그인 편집기 스펙(editor-spec.json) 디코드 결과를 반환합니다.
+     *
+     * 활성 플러그인만 대상으로 하며, 활성 디렉토리 → _bundled 폴백 순으로 읽습니다.
+     * editor-spec.json 은 수작업 작성 파일로 플러그인 루트(plugin.json 옆)에 둡니다.
+     * 파일 미존재/미작성 시 spec=null 로 폴백합니다(편집 컨트롤 부재).
+     *
+     * @param  string  $identifier  플러그인 식별자 (vendor-plugin 형식)
+     * @return array{success: bool, spec: array<string, mixed>|null, error: string|null}
+     */
+    public function getEditorSpec(string $identifier): array
+    {
+        $plugin = $this->pluginRepository->findByIdentifier($identifier);
+
+        if (! $plugin || $plugin->status !== ExtensionStatus::Active->value) {
+            return ['success' => false, 'spec' => null, 'error' => 'plugin_not_found'];
+        }
+
+        // 분할 editor-spec.json 은 manifest + `$include` 블록으로 구성되므로
+        // 단순 디코드가 아닌 합본이 필요하다. 활성 디렉토리만 기준으로 합본한다
+        // (_bundled 폴백 없음). _bundled 작업분은 plugin:update 로 활성에
+        // 반영된 뒤에만 런타임에 보인다. 미분할 파일은 원본 그대로(하위 호환).
+        $spec = EditorSpecAssembler::assemble(
+            base_path("plugins/{$identifier}/editor-spec.json")
+        );
+
+        return ['success' => true, 'spec' => $spec, 'error' => null];
+    }
+
+    /**
+     * 플러그인 컴포넌트 매니페스트(components.json) 디코드 결과를 반환합니다.
+     *
+     * components.json 은 plugin:build 산출물로 플러그인 루트에 둡니다.
+     * 활성 디렉토리 → _bundled 폴백 순으로 읽으며, 미생성(구버전 플러그인) 시
+     * components=null 로 폴백합니다(무손실 보존 디그레이드 — 원칙 4.6).
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return array{success: bool, components: array<string, mixed>|null, error: string|null}
+     */
+    public function getComponents(string $identifier): array
+    {
+        $plugin = $this->pluginRepository->findByIdentifier($identifier);
+
+        if (! $plugin || $plugin->status !== ExtensionStatus::Active->value) {
+            return ['success' => false, 'components' => null, 'error' => 'plugin_not_found'];
+        }
+
+        $components = $this->readJsonWithBundledFallback("plugins/{$identifier}/components.json");
+
+        return ['success' => true, 'components' => $components, 'error' => null];
+    }
+
+    /**
+     * 활성 디렉토리 → _bundled 폴백 순으로 JSON 파일을 읽어 디코드합니다.
+     *
+     * @param  string  $relativePath  base_path 기준 상대 경로 (plugins/{id}/file.json)
+     * @return array<string, mixed>|null 디코드된 배열, 미존재/파싱 실패 시 null
+     */
+    private function readJsonWithBundledFallback(string $relativePath): ?array
+    {
+        $bundledPath = preg_replace('#^plugins/#', 'plugins/_bundled/', $relativePath, 1);
+        $candidates = [base_path($relativePath), base_path((string) $bundledPath)];
+
+        foreach ($candidates as $path) {
+            if (! file_exists($path) || ! is_file($path)) {
+                continue;
+            }
+            $decoded = json_decode((string) file_get_contents($path), true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -773,6 +855,7 @@ class PluginService
             ],
         ];
     }
+
     /**
      * 업로드된 ZIP 파일로부터 플러그인을 추출/검증하고 _pending 으로 이동 후 설치합니다.
      *

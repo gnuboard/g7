@@ -86,6 +86,8 @@
     "view_detail": "사용자 정보"
   },
   "modals": {
+    "status_action_editor_label": "신고 상태 변경",
+    "status_change_editor_label": "신고 상태 일괄 변경",
     "status_change_pending_title": "접수로 변경",
     "status_change_pending_confirm": "선택한 {{count}}개 항목을 접수 상태로 변경하시겠습니까?",
     "status_change_pending_confirm_single": "이 신고를 접수 상태로 변경하시겠습니까?",

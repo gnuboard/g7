@@ -429,6 +429,43 @@ class LanguagePackSeedInjector
     }
 
     /**
+     * `{type}.{id}.manifest.translations` 필터 — 모듈/플러그인/템플릿의 manifest name/description
+     * 다국어 필드에 활성 언어팩의 manifest seed(`seed/manifest.json`)를 주입합니다.
+     *
+     * seed 형식은 `{ "name": "ja 번역", "description": "ja 번역" }` 평문이며, 각 활성 비-fallback
+     * locale 팩의 번역을 `$manifest['name'][$locale]`, `$manifest['description'][$locale]` 에 추가합니다.
+     * ko/en 등 기존 키는 보존하며, ja 팩이 없으면 입력을 그대로 반환합니다.
+     *
+     * @param  array<string, mixed>  $manifest  `['name' => <multilingual array>, 'description' => <multilingual array>]`
+     * @param  string  $targetIdentifier  모듈/플러그인/템플릿 식별자
+     * @param  string  $scope  module|plugin|template
+     * @return array<string, mixed> locale 키가 보강된 manifest 배열
+     */
+    public function injectExtensionManifest(array $manifest, string $targetIdentifier, string $scope): array
+    {
+        $packs = $this->registry->getActivePacks($scope)
+            ->filter(fn (LanguagePack $pack) => $pack->target_identifier === $targetIdentifier);
+
+        foreach ($packs as $pack) {
+            $seed = $this->loadPackSeed($pack, 'manifest');
+            if (! $seed) {
+                continue;
+            }
+            foreach (['name', 'description'] as $field) {
+                if (! isset($seed[$field]) || ! is_string($seed[$field]) || $seed[$field] === '') {
+                    continue;
+                }
+                if (! isset($manifest[$field]) || ! is_array($manifest[$field])) {
+                    $manifest[$field] = [];
+                }
+                $manifest[$field][$pack->locale] = $seed[$field];
+            }
+        }
+
+        return $manifest;
+    }
+
+    /**
      * `{type}.{id}.permissions.translations` 필터 — 모듈/플러그인의 권한 트리에
      * 활성 언어팩의 permissions seed 를 주입합니다.
      *
@@ -461,7 +498,6 @@ class LanguagePackSeedInjector
      *
      * @param  array<string, mixed>  $config
      * @param  array<string, mixed>  $seed  identifier ⇒ {name, description} 맵
-     * @param  string  $locale
      * @return array<string, mixed>
      */
     private function mergePermissionTranslations(array $config, array $seed, string $locale, ?string $targetIdentifier = null): array
@@ -554,7 +590,6 @@ class LanguagePackSeedInjector
      *
      * @param  array<int, mixed>  $menus
      * @param  array<string, mixed>  $seed  slug ⇒ {name: ...} 맵
-     * @param  string  $locale
      * @return array<int, mixed>
      */
     private function mergeMenuTranslations(array $menus, array $seed, string $locale): array

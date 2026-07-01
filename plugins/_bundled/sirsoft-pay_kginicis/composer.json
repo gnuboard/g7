@@ -1,0 +1,20 @@
+{
+    "name": "plugins/sirsoft-pay_kginicis",
+    "description": "KG Inicis PG Plugin for G7 platform",
+    "version": "1.0.0",
+    "type": "library",
+    "authors": [
+        {
+            "name": "sirsoft",
+            "email": "contact@sirsoft.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Sirsoft\\PayKginicis\\": ["src/", "./"]
+        }
+    }
+}

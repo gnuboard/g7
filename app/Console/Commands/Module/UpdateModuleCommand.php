@@ -5,8 +5,10 @@ namespace App\Console\Commands\Module;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Enums\LayoutSourceType;
 use App\Extension\ModuleManager;
 use App\Extension\Vendor\VendorMode;
+use App\Services\LayoutExtensionService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -36,7 +38,8 @@ class UpdateModuleCommand extends Command
      */
     public function __construct(
         private ModuleManager $moduleManager,
-        private ModuleRepositoryInterface $moduleRepository
+        private ModuleRepositoryInterface $moduleRepository,
+        private LayoutExtensionService $layoutExtensionService
     ) {
         parent::__construct();
     }
@@ -118,6 +121,30 @@ class UpdateModuleCommand extends Command
                 $this->info(__('modules.commands.update.current_version', ['version' => $module->version]));
                 $this->info('업데이트 소스: ZIP ('.$zipPath.')');
                 $this->info('업데이트 버전: (module.json 추출 후 판별)');
+            }
+
+            $this->info(__('modules.commands.update.layout_strategy', ['strategy' => $layoutStrategy]));
+
+            // overwrite 전략일 때 관리자가 편집한 레이아웃 확장 경고
+            if ($layoutStrategy === 'overwrite') {
+                $modifiedExtensions = $this->layoutExtensionService->getModifiedExtensionsBySource(
+                    LayoutSourceType::Module,
+                    $identifier
+                );
+
+                if (! empty($modifiedExtensions)) {
+                    $this->newLine();
+                    $this->warn('⚠️  '.__('modules.commands.update.modified_extensions_warning', [
+                        'count' => count($modifiedExtensions),
+                    ]));
+
+                    foreach ($modifiedExtensions as $extension) {
+                        $this->warn(__('modules.commands.update.modified_extension_item', [
+                            'target' => $extension['target_name'],
+                            'source' => $extension['source_identifier'],
+                        ]));
+                    }
+                }
             }
 
             $this->newLine();

@@ -387,4 +387,154 @@ class StockServiceTest extends ModuleTestCase
         $option->refresh();
         $this->assertEquals(5, $option->stock_quantity);
     }
+
+    // ===== restoreOptionStockForOrderOption (복원 + 플래그 정리) =====
+
+    public function test_restore_option_for_order_option_increases_stock_and_resets_flag(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 5]);
+        $option = ProductOption::factory()->create([
+            'product_id' => $product->id,
+            'stock_quantity' => 5,
+        ]);
+
+        $order = Order::factory()->create();
+        // 전체취소 시나리오: CANCELLED 상태 + is_stock_deducted=true 인 옵션
+        $orderOption = OrderOption::factory()->create([
+            'order_id' => $order->id,
+            'product_option_id' => $option->id,
+            'quantity' => 3,
+            'option_status' => \Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum::CANCELLED,
+            'is_stock_deducted' => true,
+        ]);
+
+        $this->service->restoreOptionStockForOrderOption($orderOption, 3);
+
+        // 재고 복원 (5 + 3 = 8)
+        $option->refresh();
+        $this->assertEquals(8, $option->stock_quantity);
+
+        // CANCELLED 옵션 플래그 false 로 정리
+        $orderOption->refresh();
+        $this->assertFalse($orderOption->is_stock_deducted);
+    }
+
+    public function test_restore_option_for_order_option_keeps_flag_on_remaining_active_option(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 10]);
+        $option = ProductOption::factory()->create([
+            'product_id' => $product->id,
+            'stock_quantity' => 5,
+        ]);
+
+        $order = Order::factory()->create();
+
+        // 부분취소 분할 결과 모사: 동일 product_option_id 에 대해
+        // 잔여(active) 행 + 취소(CANCELLED) 행이 공존
+        $activeOption = OrderOption::factory()->create([
+            'order_id' => $order->id,
+            'product_option_id' => $option->id,
+            'quantity' => 2,
+            'option_status' => \Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum::PAYMENT_COMPLETE,
+            'is_stock_deducted' => true,
+        ]);
+        $cancelledOption = OrderOption::factory()->create([
+            'order_id' => $order->id,
+            'product_option_id' => $option->id,
+            'quantity' => 3,
+            'option_status' => \Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum::CANCELLED,
+            'is_stock_deducted' => true,
+        ]);
+
+        // 취소 수량 3 복원 (원본 행 컨텍스트로 호출 — product_option_id 기준 CANCELLED 행 정리)
+        $this->service->restoreOptionStockForOrderOption($cancelledOption, 3);
+
+        $option->refresh();
+        $this->assertEquals(8, $option->stock_quantity); // 5 + 3
+
+        // CANCELLED 행만 플래그 정리, 잔여 active 행은 유지
+        $cancelledOption->refresh();
+        $activeOption->refresh();
+        $this->assertFalse($cancelledOption->is_stock_deducted);
+        $this->assertTrue($activeOption->is_stock_deducted);
+    }
+
+    // ===== redeductForReactivation (재활성 재차감) =====
+
+    public function test_rededuct_for_reactivation_rededucts_restored_stock(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 8]);
+        $option = ProductOption::factory()->create([
+            'product_id' => $product->id,
+            'stock_quantity' => 8, // 취소로 복원된 상태(원래 5에서 +3)
+        ]);
+
+        $order = Order::factory()->create();
+        // 취소로 복원된 옵션 (is_stock_deducted=false)
+        $orderOption = OrderOption::factory()->create([
+            'order_id' => $order->id,
+            'product_option_id' => $option->id,
+            'quantity' => 3,
+            'option_status' => \Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum::CANCELLED,
+            'is_stock_deducted' => false,
+        ]);
+
+        $order->load('options');
+        $this->service->redeductForReactivation($order);
+
+        // 재차감으로 재고 -3 (8 → 5)
+        $option->refresh();
+        $this->assertEquals(5, $option->stock_quantity);
+
+        // 재차감 후 플래그 true
+        $orderOption->refresh();
+        $this->assertTrue($orderOption->is_stock_deducted);
+    }
+
+    public function test_rededuct_for_reactivation_skips_already_deducted_via_idempotency(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 10]);
+        $option = ProductOption::factory()->create([
+            'product_id' => $product->id,
+            'stock_quantity' => 10,
+        ]);
+
+        $order = Order::factory()->create();
+        // 복원되지 않았던 옵션 (OFF 등으로 여전히 차감 상태) → 멱등 스킵
+        OrderOption::factory()->create([
+            'order_id' => $order->id,
+            'product_option_id' => $option->id,
+            'quantity' => 3,
+            'is_stock_deducted' => true,
+        ]);
+
+        $order->load('options');
+        $this->service->redeductForReactivation($order);
+
+        // 이미 차감된 옵션은 멱등 스킵 → 재고 불변
+        $option->refresh();
+        $this->assertEquals(10, $option->stock_quantity);
+    }
+
+    public function test_rededuct_for_reactivation_throws_on_insufficient_stock(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 2]);
+        $option = ProductOption::factory()->create([
+            'product_id' => $product->id,
+            'stock_quantity' => 2, // 재차감 요구량(3)보다 적음
+        ]);
+
+        $order = Order::factory()->create();
+        OrderOption::factory()->create([
+            'order_id' => $order->id,
+            'product_option_id' => $option->id,
+            'quantity' => 3,
+            'is_stock_deducted' => false,
+        ]);
+
+        $order->load('options');
+
+        $this->expectException(InsufficientStockException::class);
+        $this->service->redeductForReactivation($order);
+    }
 }

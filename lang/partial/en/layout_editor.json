@@ -1,0 +1,1360 @@
+{
+  "chrome": {
+    "toolbar": {
+      "toggle_route_tree": "Toggle route tree",
+      "undo": "Undo",
+      "redo": "Redo",
+      "template_route_separator": " ▸ ",
+      "locale_switcher_label": "Content language",
+      "add_element": "Add element",
+      "device_desktop": "Desktop",
+      "device_tablet": "Tablet",
+      "device_mobile": "Mobile",
+      "zoom_out": "Zoom out",
+      "zoom_in": "Zoom in",
+      "zoom_reset": "Reset zoom",
+      "page_settings": "Page settings",
+      "preview": "Preview",
+      "previewing": "Opening…",
+      "version_history": "Version history",
+      "edit_code": "Edit code",
+      "save": "Save",
+      "saving": "Saving…",
+      "exit": "Exit",
+      "exit_base_edit": "Exit common layout editing",
+      "exit_modal_edit": "Exit modal editing",
+      "exit_extension_edit": "Exit extension editing",
+      "exit_iteration_item_edit": "Exit repeating item editing",
+      "mode_badge": {
+        "base": "Editing common layout",
+        "modal": "Editing modal",
+        "extension": "Editing extension",
+        "iteration_item": "Editing repeating item"
+      },
+      "images": "Images",
+      "translations": "Translations",
+      "data_sources": "Data",
+      "reset": "Reset",
+      "switch_template": "Switch to another template"
+    },
+    "route_tree": {
+      "panel_title": "Screens / Routes",
+      "search_placeholder": "Search by name or route…",
+      "search_clear": "Clear search",
+      "search_no_results": "No matching routes",
+      "group": {
+        "base": "Common layouts",
+        "template": "Template",
+        "module": "Module: {name}",
+        "plugin": "Plugin: {name}",
+        "modal": "Modals",
+        "extension": "Extension injections"
+      },
+      "connected": {
+        "modals": "Modals on this screen ({count})",
+        "extensions": "Injected extensions ({count})"
+      },
+      "badge": {
+        "hidden": "Hidden",
+        "redirect": "Redirect",
+        "shared_layout": "Shared by {count} routes",
+        "modified": "Modified",
+        "version_tooltip": "Current saved version v{version}",
+        "extension_point": "Extension point",
+        "overlay": "Overlay",
+        "priority": "p:{priority}",
+        "inactive": "Inactive"
+      },
+      "empty": "No routes to display"
+    },
+    "fab": {
+      "label": "Edit layout",
+      "tooltip": "Open this screen in the layout editor"
+    },
+    "denied": {
+      "title": "Layout editing permission required",
+      "message": "Administrator permission is required to use this feature.",
+      "go_login": "Sign in",
+      "go_home": "Home"
+    },
+    "dirty_guard": {
+      "title": "Unsaved changes",
+      "message": "Exit without saving changes?",
+      "stay": "Keep editing",
+      "discard": "Discard changes"
+    },
+    "canvas": {
+      "placeholder": "Canvas area — will be filled in Phase 2"
+    },
+    "reset_guard": {
+      "title": "Reset this screen",
+      "message": "Discard changes on this screen and revert to the last saved state."
+    }
+  },
+  "preview": {
+    "empty": "Select a route on the left to start editing",
+    "empty_layout": "This layout has no components to display",
+    "loading": "Loading layout...",
+    "error": "Failed to load layout: {error}",
+    "assets_loading": "Loading editor template assets...",
+    "assets_error": "Failed to load editor template assets: {error}",
+    "sample_data_badge": "Sample data",
+    "extension_no_injection_title": "Nothing to edit on this screen",
+    "extension_no_injection_desc": "This extension does not add any visually editable elements to this screen. Please use code editing instead.",
+    "extension_gated_title": "No editable elements in this state",
+    "extension_gated_desc": "The area this extension injects into only appears in a specific screen state. That state is not defined in the editor settings, so it cannot be edited visually. Please use code editing instead.",
+    "extension_gated_desc_with_states": "The area this extension injects into only appears in a specific screen state. Switch to that state using the state selector at the top to edit it.",
+    "slot_area_label": "Content area"
+  },
+  "version_history": {
+    "title": "Version history",
+    "close": "Close",
+    "loading": "Loading versions…",
+    "empty": "No saved versions yet.",
+    "restore": "Restore",
+    "restoring": "Restoring…",
+    "restore_confirm": "Restore this version? Your current unsaved changes will be lost.",
+    "restore_not_found": "That version could not be found. Please refresh the list.",
+    "latest": "Latest",
+    "added": "+{count} lines",
+    "removed": "-{count} lines",
+    "chars": "({diff} chars)",
+    "saved_by": "Saved by {name}",
+    "unknown_author": "Unknown",
+    "compare": "Compare",
+    "comparing": "Comparing…",
+    "diff_title": "Changes v{old} → v{new}",
+    "diff_back": "Back",
+    "diff_identical": "The two versions are identical.",
+    "diff_too_large": "The changes are too large to display."
+  },
+  "preview_action": {
+    "no_document": "No layout is selected to preview."
+  },
+  "access_error": {
+    "required_permission_label": "Required permission:",
+    "detail_summary": "Show error details",
+    "action": {
+      "sign_in": "Sign in",
+      "go_home": "Go to admin home",
+      "go_admin_home": "Go to admin home",
+      "retry": "Try again"
+    },
+    "unauthorized": {
+      "title": "Sign-in required",
+      "message": "Your session has expired or you are signed out. Redirecting to the sign-in page..."
+    },
+    "forbidden": {
+      "title": "You don't have access to this layout",
+      "message": "Your account doesn't have permission to edit this screen. Ask an administrator to grant access, or sign in with a different account."
+    },
+    "not_found": {
+      "title": "Layout not found",
+      "message": "The requested layout doesn't exist or has been removed. Please pick another route."
+    },
+    "server_error": {
+      "title": "Something went wrong on the server",
+      "message": "The server returned an error while loading this layout. Please try again in a moment."
+    },
+    "network": {
+      "title": "Check your network connection",
+      "message": "Unable to reach the server. Verify your connection and try again."
+    },
+    "unknown": {
+      "title": "Failed to load layout",
+      "message": "An unexpected problem occurred. Please try again or contact an administrator."
+    }
+  },
+  "device": {
+    "group_label": "Device preview",
+    "desktop": "🖥 Desktop",
+    "tablet": "📱 Tablet",
+    "mobile": "📲 Mobile",
+    "portable": "📱 Mobile+Tablet",
+    "custom": "📐 Custom",
+    "custom_width_label": "Width"
+  },
+  "zoom": {
+    "label": "Zoom",
+    "aria_label": "Canvas zoom slider"
+  },
+  "palette": {
+    "title": "Add element",
+    "search_placeholder": "Search elements…",
+    "group": {
+      "design": "Design elements",
+      "db": "Data elements"
+    },
+    "category": {
+      "all": "All",
+      "other": "Other",
+      "fallback": {
+        "basic": "Basic",
+        "composite": "Composite",
+        "layout": "Layout"
+      }
+    },
+    "empty": "No elements available for this location",
+    "spec_missing": "This template has no editor spec. Element insertion is disabled.",
+    "default_node_missing_badge": "No defaults",
+    "requires_default_node_missing": "This component cannot be added until the template defines its default style. Add componentPalette.entries.<name>.defaultNode in editor-spec.json.",
+    "table": {
+      "label": "Table",
+      "header_1": "Title",
+      "header_2": "Content",
+      "cell": "Content"
+    },
+    "select": {
+      "default_option1_label": "Option 1",
+      "default_option2_label": "Option 2"
+    }
+  },
+  "insertion": {
+    "above": "Add above",
+    "below": "Add below",
+    "left": "Add to the left",
+    "right": "Add to the right"
+  },
+  "context_menu": {
+    "edit_props": "Properties",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "separate_branch": "Make device-specific",
+    "merge_branch": "Remove device-specific layout",
+    "separate_branch_device": "Make this region {device}-only",
+    "merge_branch_device": "Remove {device}-only layout",
+    "separate_branch_hint": "Use this when this device needs a different set of elements. To change only style (color, spacing, etc.), use the Properties > Style tab instead.",
+    "merge_branch_hint": "Removes the device-specific layout and reverts to the default configuration.",
+    "device_desktop": "desktop",
+    "device_tablet": "tablet",
+    "device_mobile": "mobile",
+    "device_portable": "mobile+tablet",
+    "device_custom": "{range}"
+  },
+  "overlay": {
+    "edit_common_layout": "Edit common layout",
+    "edit_extension": "Edit extension",
+    "edit_iteration_item": "Edit repeating item",
+    "edit_destination_route": "→ Edit this screen",
+    "cannot_drop_here": "Cannot drop here",
+    "locked_data_bound": "Data-bound regions cannot be edited directly",
+    "select_parent": "Select parent element (↑)",
+    "branch_mobile": "Mobile layout",
+    "branch_tablet": "Tablet layout",
+    "branch_desktop": "Desktop layout",
+    "branch_custom": "{range} layout",
+    "branch_boundary_denied": "Cannot move between per-device layouts",
+    "jump_device": "Go to {device} layout",
+    "jump_device_hint": "This region has a separate layout defined for {device}. Click to switch to that device view and edit it.",
+    "on": "On",
+    "off": "Off",
+    "inherit_banner": "These settings are inherited from the common layout. Change them to override for this screen.",
+    "reset_inherit": "Reset to inherited",
+    "inherited_badge": "Inherited",
+    "overridden_badge": "Overridden",
+    "override_field": "Override here",
+    "enabled_label": "Loading screen",
+    "enabled_hint": "Show a placeholder while this screen loads its data.",
+    "scope_label": "Where to show it",
+    "scope_full": "Whole screen",
+    "scope_region": "A specific region",
+    "target_label": "Region to cover",
+    "fallback_label": "Fallback region",
+    "fallback_hint": "Used when the region above is not found.",
+    "style_label": "Style",
+    "skeleton_component": "Skeleton component",
+    "skeleton_animation": "Animation",
+    "skeleton_count": "Number of rows",
+    "spinner_component": "Spinner component",
+    "spinner_text": "Loading text",
+    "waitfor_label": "Wait for data",
+    "waitfor_hint": "Keep the loading screen until the selected data has loaded.",
+    "waitfor_empty": "No data sources to wait for.",
+    "loading_picker": {
+      "none": "None",
+      "select": "Choose",
+      "search": "Search components",
+      "empty": "No matching components."
+    },
+    "anim_none": "None",
+    "anim_pulse": "Pulse",
+    "anim_wave": "Wave",
+    "style_blur": "Blur",
+    "style_fade": "Fade in",
+    "style_opaque": "Solid cover",
+    "style_skeleton": "Skeleton",
+    "style_spinner": "Spinner"
+  },
+  "save": {
+    "success": "Layout saved",
+    "in_progress": "Saving…",
+    "validation_failed": "Validation failed",
+    "blocked_inactive_extension": "Cannot save — newly added components belong to a deactivated extension",
+    "network_error_title": "Network error while saving",
+    "guard_no_document": "No layout document loaded — nothing to save",
+    "concurrent": {
+      "title": "Another user saved first",
+      "message": "This layout was saved by another administrator. Load the latest version?",
+      "version_info": "Latest version: {current} / Your version: {yours}",
+      "load_latest": "Load latest",
+      "view_my_changes": "View my changes",
+      "cancel": "Cancel"
+    },
+    "conflict": "A conflict occurred because it was saved elsewhere first."
+  },
+  "control": {
+    "use": "Use",
+    "default": "Default",
+    "color_hex_placeholder": "#000000 / none",
+    "tag_add": "+ Add",
+    "background_image": {
+      "upload": "Upload image",
+      "clear": "Remove",
+      "mode_fill": "Fill",
+      "mode_fit": "Fit",
+      "mode_tile": "Tile",
+      "upload_failed": "Image upload failed"
+    },
+    "dimension": {
+      "placeholder": "e.g. 320px, 50%, 24rem, auto"
+    },
+    "spacing": {
+      "mode_all": "Uniform",
+      "mode_sides": "Per-side",
+      "all": "All",
+      "x": "Left/Right",
+      "y": "Top/Bottom",
+      "top": "Top",
+      "right": "Right",
+      "bottom": "Bottom",
+      "left": "Left"
+    }
+  },
+  "recipe": {
+    "custom_input": "Enter manually…",
+    "pick_from_list": "Pick from list",
+    "page_placeholder": "Destination path (e.g. /board)",
+    "datasource_placeholder": "Data name",
+    "state_key_placeholder": "State key",
+    "modal_placeholder": "Select modal to open",
+    "i18n_text_placeholder": "Text to show"
+  },
+  "action": {
+    "no_events": "This element has no configurable actions",
+    "no_recipes": "This template provides no available actions",
+    "add_action": "+ Add action",
+    "remove": "Remove action",
+    "advanced_action": "Action authored manually",
+    "advanced_preserved": "Action authored in the code editor (preserved)",
+    "event": {
+      "onClick": "When clicked",
+      "onHover": "When hovered",
+      "onChange": "When value changes",
+      "onSubmit": "When submitted",
+      "onClose": "When closed",
+      "onFilesChange": "When files change",
+      "onPageChange": "When the page changes",
+      "onReact": "When reacted",
+      "onTabChange": "When the tab changes",
+      "onUploadSuccess": "On upload success",
+      "onUploadError": "On upload error",
+      "onButtonClick": "When the button is clicked",
+      "onDismiss": "When dismissed",
+      "onItemAdd": "When an item is added",
+      "onItemClick": "When an item is clicked",
+      "onItemRemove": "When an item is removed",
+      "onLanguageChange": "When the language changes",
+      "onLayoutEditClick": "When layout edit is clicked",
+      "onLogoutClick": "When logout is clicked",
+      "onOrderChange": "When the order changes",
+      "onProfileClick": "When the profile is clicked",
+      "onReset": "When reset",
+      "onRowClick": "When a row is clicked",
+      "onSelect": "When selected",
+      "onSelectionChange": "When the selection changes",
+      "onToggle": "When toggled",
+      "onComponentEvent": "On a specific event"
+    },
+    "advanced": "Advanced",
+    "view_code": "View code",
+    "summary_missing_required": "Some required fields are empty.",
+    "source_core": "Built-in",
+    "add_search": "Search actions",
+    "add_no_match": "No matching actions.",
+    "group": {
+      "state": "State",
+      "nav": "Navigation",
+      "notify": "Notifications",
+      "data": "Data",
+      "locale": "Language",
+      "etc": "Other",
+      "flow": "Flow control",
+      "error": "Error handling",
+      "extension": "Extensions"
+    },
+    "source_base": "Shared",
+    "source_module": "Module",
+    "source_plugin": "Plugin",
+    "source_route": "This page",
+    "source_template": "Template"
+  },
+  "visibility": {
+    "no_recipes": "This template provides no available display conditions",
+    "show_when": "Show this element when",
+    "and": "AND",
+    "or": "OR",
+    "remove": "Remove condition",
+    "preview": "Preview",
+    "clear": "Clear condition",
+    "advanced_preserved": "Condition authored in the code editor (preserved)"
+  },
+  "flex": {
+    "container_title": "Alignment box",
+    "item_title": "Inside the alignment box",
+    "direction": "Direction",
+    "justify": "Children alignment (main axis)",
+    "align": "Children alignment (cross axis)",
+    "wrap": "Allow wrapping",
+    "gap": "Child spacing",
+    "item_grow": "Grow",
+    "item_align": "Align self",
+    "item_order": "Order",
+    "make_flex": "Make alignment box",
+    "unmake_flex": "Remove alignment box",
+    "not_flex": "This element is not an alignment box"
+  },
+  "property_modal": {
+    "title": "Edit properties: {name}",
+    "settings_title": "{name} settings",
+    "element": "Element",
+    "close": "Close",
+    "delete_element": "Delete this element",
+    "no_editable_props": "This element has no editable properties",
+    "injected_props": {
+      "title": "Properties injected by extensions",
+      "help": "Base properties apply to every screen; injected properties apply only while this extension is active.",
+      "origin": "Injected by {source}",
+      "save_target": "On save: recorded on this extension row.",
+      "save_button": "Save to {source}",
+      "saving": "Saving…",
+      "saved": "Saved.",
+      "invalid_json": "Invalid JSON format."
+    },
+    "tab_deferred": "This tab is supported in a later phase",
+    "advanced_deferred": "This advanced property is supported in a later phase",
+    "unsupported_widget": "Unsupported control",
+    "value_conflict": "Conflicting value",
+    "settings_group": "Group {index}",
+    "advanced_badge": "This element contains advanced settings authored in the code editor",
+    "branch_badge": "This element belongs to the {device}-only layout — other devices show a different layout.",
+    "advanced_preserved_title": "{count} advanced setting(s) authored in code (preserved)",
+    "advanced_kind_developer": "Developer property",
+    "advanced_kind_expression": "Complex expression",
+    "tab": {
+      "settings": "Settings",
+      "props": "Properties",
+      "style": "Style",
+      "action": "Action",
+      "visibility": "Visibility",
+      "translation": "Translation",
+      "advanced": "Advanced"
+    },
+    "advanced": {
+      "permissions": "Visibility permissions",
+      "blur_until_loaded": "Blur until data loads",
+      "blur_hint": "Show blurred while loading data",
+      "comment": "Note"
+    },
+    "scope": {
+      "scheme_light": "Light",
+      "scheme_dark": "Dark",
+      "device_base": "Default",
+      "device_desktop": "PC",
+      "device_tablet": "Tablet",
+      "device_mobile": "Mobile",
+      "device_portable": "Mobile+Tablet",
+      "add_custom": "Custom size",
+      "custom_min": "Min",
+      "custom_max": "Max",
+      "custom_priority_note": "A custom range takes priority over PC/Tablet/Mobile.",
+      "custom_invalid": "Invalid range (min ≤ max, numbers only).",
+      "reset_to_base": "Reset to default"
+    },
+    "dark_code_only": "This color can only be edited in code mode for dark mode",
+    "dark_preset_only": "In dark mode, pick a preset color from the panel to apply it (free typed values are light-only)"
+  },
+  "core_props": {
+    "id": {
+      "label": "Element ID",
+      "placeholder": "e.g. main-content",
+      "add_data": "Data",
+      "binding_hint": "Connect an index or row key from a repeating list as data to give each item a unique ID (e.g. item_{{$idx}})"
+    },
+    "dataKey": {
+      "label": "Form data binding",
+      "placeholder": "e.g. form",
+      "hint": "The name that groups the input fields. Prefix with _global. or _isolated. to bind to a global or isolated scope.",
+      "bound_degraded": "This value is set in the code editor."
+    },
+    "isolatedScopeId": {
+      "label": "Scope name",
+      "placeholder": "e.g. cart-scope",
+      "search": "Search scope names",
+      "duplicate": "Another element already uses this scope name. They will share the same state."
+    },
+    "isolatedState": {
+      "label": "Isolated region",
+      "off_hint": "Give this element its own state, separate from the rest of the page.",
+      "initial_label": "Initial values"
+    }
+  },
+  "icon_picker": {
+    "search_placeholder": "Search icons",
+    "none": "None",
+    "no_results": "No matching icons",
+    "free_input_hint": "Type an icon name"
+  },
+  "list_editor": {
+    "add": "Add item",
+    "remove": "Remove",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "empty": "No items",
+    "item": "Item",
+    "edit_translation": "Edit translation",
+    "option_value": "Value",
+    "option_label": "Label",
+    "bound_degraded": "Bound to data (edit in code)",
+    "items_title": "Items",
+    "item_text": "Item text",
+    "item_label": "Label",
+    "item_placeholder": "Placeholder text",
+    "new_item": "New item",
+    "add_child": "Add {component}",
+    "no_child_component": "No child component is configured to add"
+  },
+  "array_editor": {
+    "items_title": "Items",
+    "item": "item",
+    "add": "Add {item}",
+    "remove": "Remove",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "empty": "No items",
+    "icon_placeholder": "Icon name (e.g. user, cog)",
+    "bound_degraded": "Bound to data (edit in code)",
+    "no_array_prop": "No array property is configured to edit",
+    "number_list_placeholder": "Comma-separated numbers (e.g. 10, 20, 30)"
+  },
+  "cell_tree_editor": {
+    "columns_title": "Columns",
+    "id_placeholder": "Column identifier",
+    "expand_cells": "Edit cell content",
+    "collapse_cells": "Close cell content",
+    "add_column": "Add {item}"
+  },
+  "table_editor": {
+    "title": "Edit table",
+    "add_row": "Add row",
+    "add_col": "Add column",
+    "remove_row": "Remove row",
+    "remove_col": "Remove column",
+    "merge_cells": "Merge cells",
+    "unmerge_cells": "Unmerge",
+    "cell_border": "Cell border",
+    "cell_class_placeholder": "e.g. border border-gray-300",
+    "move_row_up": "Move row up",
+    "move_row_down": "Move row down",
+    "move_col_left": "Move column left",
+    "move_col_right": "Move column right",
+    "move_blocked_section": "Cannot move across the table header/body boundary",
+    "header_row": "Header row",
+    "cell_text": "Cell text",
+    "cell_i18n_label": "Selected cell translations",
+    "structural_cell": "Structural cell (edit on canvas)",
+    "grid_invalid": "Table structure is inconsistent (check merges/holes)",
+    "select_hint": "Click a cell to select, Shift+click to select a range, then merge",
+    "cell_fill": "Cell Background",
+    "cell_fill_none": "None (transparent)",
+    "cell_fill_custom": "Pick a color",
+    "cell_padding": "Cell Padding",
+    "cell_padding_custom": "Custom",
+    "cell_color": "Cell Color",
+    "dark_free_color_hint": "Dark mode supports preset colors only (custom colors are light-only)"
+  },
+  "table_inplace": {
+    "select_cell": "Select cell",
+    "add_row": "Add row",
+    "add_col": "Add column",
+    "remove_row": "Remove row",
+    "remove_col": "Remove column",
+    "move_row_up": "Move row up",
+    "move_row_down": "Move row down",
+    "move_col_left": "Move column left",
+    "move_col_right": "Move column right",
+    "merge": "Merge",
+    "unmerge": "Unmerge",
+    "select_all": "Select all",
+    "border_apply_count": "Apply to {count} cells",
+    "merge_right": "Merge with right",
+    "merge_down": "Merge with below",
+    "border_apply_all": "Apply to whole table",
+    "select_cell_hint": "Click a cell on the canvas to show merge/border tools.",
+    "merge_range": "Merge range",
+    "range_selected": "{count} cells selected",
+    "custom_color": "Custom color"
+  },
+  "attachment_manager": {
+    "title": "Manage images for this layout",
+    "recent": "Recent uploads",
+    "manage_link": "Manage images",
+    "upload": "Upload image",
+    "use_as_bg": "Background",
+    "delete": "Delete",
+    "delete_confirm": "Delete this image? This cannot be undone.",
+    "empty": "No images uploaded for this layout.",
+    "loading": "Loading…",
+    "close": "Close"
+  },
+  "translation_manager": {
+    "title": "Manage translation keys for this layout",
+    "filter_label": "Status filter",
+    "filter_all": "All",
+    "filter_active": "In use",
+    "filter_orphaned": "Unused",
+    "badge_orphaned": "Unused / orphaned",
+    "badge_live_in_use": "In use on canvas",
+    "badge_live_unused": "Not on canvas",
+    "select_aria": "Select {key}",
+    "delete_selected": "Delete selected ({count})",
+    "purge_orphaned": "Delete all unused ({count})",
+    "delete_confirm": "Delete {count} selected translation key(s)? This cannot be undone.",
+    "conflict": "It was modified elsewhere first. Refresh and try again.",
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete",
+    "empty": "No translation keys created for this layout.",
+    "loading": "Loading…",
+    "close": "Close"
+  },
+  "data_sources": {
+    "title": "Data Sources",
+    "description": "Add, edit, or remove the data sources this screen loads. Once defined, a source can be selected in a component's data binding.",
+    "add": "Add data source",
+    "edit": "Edit",
+    "remove": "Remove",
+    "close": "Close",
+    "empty": "No data sources defined for this screen.",
+    "no_label": "Display name (label_key) not set",
+    "inherited_title": "Inherited sources (read-only)",
+    "source": {
+      "module": "Module",
+      "plugin": "Plugin"
+    },
+    "form": {
+      "add_title": "Add data source",
+      "edit_title": "Edit data source",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "field": {
+      "id": "ID",
+      "label_key": "Display name",
+      "label_key_placeholder": "e.g. Product list",
+      "label_key_hint": "Friendly name shown in the searchable data picker. Type plain text and a translation key is created automatically; use the 🌐 button to edit per-language values.",
+      "type": "Type",
+      "endpoint": "Endpoint",
+      "method": "HTTP method",
+      "auth_mode": "Auth mode",
+      "loading_strategy": "Loading strategy",
+      "auto_fetch": "Fetch automatically on screen load",
+      "params": "Request parameters",
+      "params_hint": "Values may use binding expressions such as {{query.page}}.",
+      "params_empty": "Add values to send with the API request — e.g. page, per_page, a search term.",
+      "params_preview": "Preview of values to send",
+      "params_mode_block": "Blocks",
+      "params_mode_code": "Code",
+      "param_key_placeholder": "Parameter name",
+      "param_add": "Add parameter",
+      "fallback": "Fallback value",
+      "fallback_add": "Add fallback",
+      "fallback_add_field": "Add field",
+      "fallback_clear": "Remove fallback",
+      "fallback_empty": "Value shown before data loads or when it fails — e.g. an empty list ([]) under data.",
+      "fallback_key_placeholder": "Field name (e.g. data)",
+      "fallback_preview": "Fallback preview",
+      "content_type": "Content type",
+      "refetch_on_mount": "Refetch on re-entry",
+      "channel": "Channel",
+      "event": "Event",
+      "channel_type": "Channel type",
+      "target_source": "Target source",
+      "on_receive": "On message received"
+    },
+    "ds_type": {
+      "api": "API call",
+      "static": "Static data",
+      "route_params": "Route params",
+      "query_params": "Query params",
+      "websocket": "WebSocket"
+    },
+    "auth_mode": {
+      "none": "None (public)",
+      "optional": "Optional (send token if present)",
+      "required": "Required (fail without token)"
+    },
+    "loading_strategy": {
+      "progressive": "Progressive",
+      "blocking": "Blocking",
+      "background": "Background"
+    },
+    "error": {
+      "id_required": "Please enter an ID.",
+      "id_invalid": "ID may contain letters, digits, and underscores only, and cannot start with a digit.",
+      "id_duplicate": "ID '{id}' is already in use.",
+      "params_json": "Request parameters are not valid JSON.",
+      "params_object": "Request parameters must be a JSON object.",
+      "fallback_json": "Fallback value is not valid JSON."
+    },
+    "global_headers": "Global headers",
+    "global_headers_empty": "No global headers defined.",
+    "global_headers_hint": "Headers sent automatically with requests. Defined in code.",
+    "scripts": "Scripts",
+    "scripts_empty": "No scripts defined.",
+    "scripts_hint": "Scripts loaded by this screen. Defined in code.",
+    "section": {
+      "websocket": "Realtime (WebSocket) settings",
+      "on_success": "On success",
+      "on_error": "On error",
+      "error_handling": "Error handling by code",
+      "load_condition": "Load condition"
+    },
+    "add_error_code": "+ Add error code"
+  },
+  "toolbar": {
+    "color_scheme_group": "Color theme",
+    "color_scheme_light": "☀ Light",
+    "color_scheme_dark": "🌙 Dark",
+    "state": "State:"
+  },
+  "locale": {
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語",
+    "zh": "中文",
+    "vi": "Tiếng Việt"
+  },
+  "inline_edit": {
+    "aria_label": "Edit text inline",
+    "toolbar_label": "Text formatting",
+    "new_key_hint": "A translation key will be created on save",
+    "existing_key_hint": "Translation — only the current language value is updated",
+    "open_translations": "Edit all languages",
+    "empty_warning": "Please enter content",
+    "format": {
+      "fontWeight": "Bold",
+      "fontBold": "Bold",
+      "fontStyle": "Italic",
+      "fontItalic": "Italic",
+      "textDecoration": "Underline",
+      "textUnderline": "Underline",
+      "textAlign": "Align",
+      "fontSize": "Font size",
+      "textColor": "Text color"
+    },
+    "prompt": {
+      "fontSize": "Enter font size (e.g. 16px, 1.2rem)",
+      "textColor": "Enter text color (e.g. #2563eb)"
+    }
+  },
+  "prop_i18n": {
+    "placeholder": "Enter text",
+    "edit_languages": "Edit per language",
+    "bound_code_only": "Bound (edit in code)",
+    "create_first": "Enter the current language value first to create a translation key, then edit per language."
+  },
+  "value_tree": {
+    "show_source": "View source expression",
+    "raw_code_only": "Edit in code",
+    "segmented_hint": "This value is several parts joined together. Add or remove parts, or drag the handle to reorder.",
+    "drag_reorder": "Drag to reorder",
+    "change_data": "Change data",
+    "edit": "Edit",
+    "done": "Done",
+    "collapse": "Collapse",
+    "to_expression": "Switch to expression",
+    "to_plain": "Back to simple name",
+    "to_plain_lead": "Remove the expression and keep only this value:",
+    "to_plain_warn": "All other conditions, branches, and data links will be deleted and cannot be undone.",
+    "to_plain_ok": "Revert to this value",
+    "to_plain_cancel": "Cancel",
+    "raw_expression_hint": "This value is already written as an expression, so it can't be broken down into friendly editing. You can edit the expression directly above, or use [Edit code] at the top for more complex changes.",
+    "segment": {
+      "text": "Fixed text",
+      "expression": "Part that varies by condition",
+      "fallback": "Instead, when empty",
+      "data": "Data",
+      "remove": "Remove this part",
+      "data_pick_hint": "Search and select the data to display.",
+      "data_no_candidates": "No data is available to connect on this screen."
+    },
+    "cond": {
+      "label": "Condition",
+      "code_only": "Edit in code",
+      "field_placeholder": "Base value (e.g. edit mode)",
+      "value_placeholder": "Value to compare",
+      "when_true": "When this condition",
+      "when_false": "Otherwise",
+      "op_truthy": "has a value",
+      "op_falsy": "has no value",
+      "op_eq": "equals",
+      "op_neq": "is not",
+      "op_gt": "greater than",
+      "op_lt": "less than",
+      "op_gte": "at least",
+      "op_lte": "at most"
+    },
+    "fallback": {
+      "primary": "Default value",
+      "when_empty": "Instead, when empty",
+      "when_falsy": "Instead, when blank"
+    },
+    "concat": {
+      "hint": "Joins multiple values in order.",
+      "part": "Part {n}"
+    }
+  },
+  "translation": {
+    "key_label": "Translation key",
+    "needs_translation": "Needs translation",
+    "not_a_key": "This element is not a translation key. Double-click the text on the canvas to edit it inline and create a key.",
+    "loading": "Loading…",
+    "load_failed": "Failed to load translation values",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "save_failed": "Failed to save",
+    "conflict": "Another user edited this first. Reload and try again.",
+    "token_mismatch": "You cannot change or delete the data binding ({{ }}) inside a translation. Edit data bindings in the [Properties] tab.",
+    "placeholder_mismatch": "You cannot delete or change the data placeholders ({p0}, etc.) in a translation. Translate the sentence freely but keep the placeholders intact.",
+    "placeholder_locked": "Data chips cannot be deleted like text. Drag to reposition, and disconnect from the [Properties] tab."
+  },
+  "shortcuts": {
+    "title": "Shortcuts",
+    "close": "Close",
+    "or": "or",
+    "footnote": "Shortcuts are disabled while an input or modal has focus.",
+    "group": {
+      "clipboard": "Clipboard",
+      "element": "Element",
+      "history": "History",
+      "view": "View/Tools",
+      "document": "Document"
+    },
+    "action": {
+      "copy": "Copy",
+      "cut": "Cut",
+      "paste": "Paste (across layouts)",
+      "open_props": "Open properties",
+      "delete": "Delete",
+      "select_parent": "Select parent",
+      "deselect": "Deselect",
+      "add_element": "Add element",
+      "undo": "Undo",
+      "redo": "Redo",
+      "edit_code": "Edit code",
+      "preview": "Preview",
+      "translations": "Translations",
+      "help": "Shortcut map",
+      "reset": "Reset",
+      "save": "Save",
+      "exit": "Exit"
+    }
+  },
+  "binding": {
+    "section_title": "Data Binding",
+    "search": "Search data",
+    "search_placeholder": "Search by name or path…",
+    "no_results": "No matching data",
+    "not_connected": "Not connected",
+    "clear": "Clear",
+    "complex": "Complex binding (edit in code)",
+    "required": "Required",
+    "item_fields": "Item fields",
+    "shape_scalar": "Scalar",
+    "shape_array": "Array",
+    "shape_object": "Object",
+    "iteration_title": "Repeat data binding",
+    "iteration_label": "Repeat data source",
+    "iteration_hint": "This region repeats over an array. One item template is rendered once per data row.",
+    "iteration_item_var": "Item variable",
+    "iteration_index_var": "Index variable"
+  },
+  "inline_binding": {
+    "section_title": "Text data binding",
+    "none": "No data is bound to this text",
+    "search": "Search data",
+    "search_placeholder": "Search by name or path…",
+    "no_results": "No matching data",
+    "clear": "Remove",
+    "complex": "Complex binding (edit in code)",
+    "append_hint": "Insert data at end of text",
+    "insert_data": "Data",
+    "param_hint": "Edit the sentence in the [Translation] tab (drag data chips to reposition); here you can change, add, or disconnect the connected data sources."
+  },
+  "host_picker": {
+    "title": "Select representative host layout",
+    "description": "This extension is injected into multiple screens. Choose which screen to edit on. Saved changes apply to every screen this extension is injected into.",
+    "description_with_label": "The \"{label}\" extension is injected into multiple screens. Choose which screen to edit on."
+  },
+  "computed": {
+    "add": "Add value",
+    "empty": "No computed values yet.",
+    "custom_open": "Build a custom value",
+    "custom_add": "Add this value",
+    "revert": "Revert",
+    "source_base": "From common layout",
+    "source_overridden": "Overridden",
+    "overridden_hint": "This value overrides the common layout.",
+    "override_notice": "This name overrides a value from the common layout.",
+    "key_duplicate": "This name is already in use.",
+    "preview_label": "Result",
+    "preview_error": "Could not calculate a preview.",
+    "effect_preview": "Preview effect",
+    "value_none": "None",
+    "list_more": "+{count} more",
+    "custom_step1": "Which data",
+    "custom_step2": "What to do with it",
+    "custom_step3": "Name the result",
+    "custom_sum_field": "Field to add up",
+    "custom_value_field": "Value field",
+    "custom_label_field": "Label field",
+    "custom_prop": "Field to read",
+    "custom_candidates": "Fields to check, in order",
+    "custom_fallback": "Fallback value",
+    "cond_add": "Add condition",
+    "cond_field": "Field",
+    "cond_value": "Value",
+    "op_count": "Count items",
+    "op_sum": "Add up a field",
+    "op_filter": "Keep matching items",
+    "op_to_options": "Turn into options",
+    "op_nth": "Pick one by position",
+    "op_first_of": "First available value",
+    "op_literal": "A fixed value",
+    "kind_string": "Text",
+    "kind_number": "Number",
+    "kind_boolean": "True / false",
+    "type_number": "Number",
+    "type_string": "Text",
+    "type_boolean": "True / false",
+    "type_list": "List",
+    "type_object": "Object",
+    "type_null": "Empty",
+    "group_common": "Common",
+    "group_more": "More"
+  },
+  "init_actions": {
+    "empty": "No actions run when this screen opens.",
+    "empty_self": "No actions added for this screen yet.",
+    "group_base": "From common layout",
+    "group_self": "This screen",
+    "merge_order": "Common layout actions run first, then this screen’s actions.",
+    "base_readonly_hint": "Common layout actions are edited in the common (base) layout’s page settings.",
+    "edit": "Edit",
+    "remove": "Remove",
+    "drag_reorder": "Drag to reorder",
+    "locked_parent": "Defined in the common layout",
+    "cond_badge": "Conditional",
+    "if_label": "Only run when",
+    "if_placeholder": "e.g. {{user.isAdmin}}",
+    "advanced_param_hint": "These settings are edited in code."
+  },
+  "action_param": {
+    "key_placeholder": "Name",
+    "value_placeholder": "Value (data binding / expression supported)",
+    "add_pair": "Add value",
+    "number_placeholder": "Number or data binding"
+  },
+  "initstate": {
+    "section_local": "This screen",
+    "section_global": "Whole app",
+    "section_isolated": "Isolated scopes",
+    "section_isolated_desc": "Starting values for elements that have their own isolated state.",
+    "isolated_dynamic_hint": "Isolated scopes created while the screen runs are not listed here.",
+    "isolated_orphan": "No element on this screen uses this scope name.",
+    "legacy_state": "This screen still uses an older state format.",
+    "no_values": "No values set.",
+    "value_name": "Value name",
+    "value_kind": "Value type",
+    "add_value": "Add value",
+    "revert": "Revert",
+    "subkey_name": "Key name",
+    "add_subkey": "Add key",
+    "add_item": "Add item",
+    "kind_string": "Text",
+    "kind_number": "Number",
+    "kind_boolean": "True / false",
+    "kind_null": "Empty",
+    "kind_list": "List",
+    "kind_object": "Object",
+    "name_required": "Enter a value name.",
+    "name_duplicate": "A value with this name already exists.",
+    "name_invalid": "Names must start with a letter and use only letters, digits, and _."
+  },
+  "action_chip": {
+    "response_data": "Response data",
+    "response_message": "Response message",
+    "error_status": "Error status code",
+    "error_message": "Error message",
+    "error_errors": "Validation errors",
+    "error_data": "Error response data",
+    "error_status_text": "Error status text",
+    "payload_data": "Received data"
+  },
+  "error": {
+    "intro": "Choose what happens when this screen runs into an error.",
+    "degrade": "When nothing is set here, errors are shown using the default behavior.",
+    "message_placeholder": "Message to show (use 🔍 to insert error details)",
+    "handler_none": "Do nothing",
+    "target_content": "Content area",
+    "target_full": "Whole screen",
+    "setstate_key": "State name",
+    "handler_navigate": "Go to another page",
+    "handler_openModal": "Open a modal",
+    "handler_parallel": "Run actions at once",
+    "handler_sequence": "Run actions in order",
+    "handler_setState": "Change state",
+    "handler_showErrorPage": "Show error page",
+    "handler_toast": "Show a notification"
+  },
+  "page_settings": {
+    "title": "{name} settings",
+    "close": "Close",
+    "advanced_summary": "{count} setting(s) are edited in code and shown here as read-only.",
+    "tab": {
+      "meta": "Page",
+      "seo": "SEO",
+      "init": "On load",
+      "overlay": "Loading",
+      "computed": "Computed values",
+      "state": "Initial state",
+      "error": "Errors",
+      "data": "Data"
+    },
+    "banner": {
+      "advanced": "In code",
+      "inline_hint": "Press Enter to save, Esc to cancel.",
+      "dblclick_hint": "Double-click to edit",
+      "open_settings": "Page settings"
+    },
+    "meta": {
+      "title": "Page name",
+      "description": "Page description",
+      "dynamic_hint": "Set in code",
+      "icon": "Menu icon",
+      "icon_placeholder": "e.g. fa-home",
+      "editor_label": "Name in the editor",
+      "editor_label_hint": "Only shown in the editor screen tree, not to visitors.",
+      "permissions": "Required permissions",
+      "permissions_hint": "Visitors need these permissions to view the page."
+    },
+    "computed": {
+      "heading": "Computed values"
+    },
+    "error": {
+      "heading": "Error handling"
+    },
+    "init_actions": {
+      "heading": "Run when the screen opens"
+    },
+    "initstate": {
+      "heading": "Initial state"
+    },
+    "seo": {
+      "title": "SEO title",
+      "description": "SEO description",
+      "enabled": "Generate an SEO-friendly page for search engines",
+      "disabled_note": "SEO generation is off for this screen.",
+      "use_default": "Use default",
+      "revert_default": "Revert",
+      "value_placeholder": "Enter a value",
+      "remove": "Remove",
+      "page_type": "Page type",
+      "page_type_none": "Not set",
+      "page_type_free_placeholder": "Enter a page type",
+      "page_type_free_note": "No matching page type was found, so this is treated as a custom value.",
+      "extensions": "SEO extensions",
+      "add_extension": "Add extension",
+      "no_extension_candidate": "No extensions available.",
+      "missing_extensions": "No SEO extension selected.",
+      "missing_page_type": "No page type selected.",
+      "defaults_precondition": "Set the items below to fill in SEO defaults:",
+      "toggle_setting": "Toggle setting",
+      "toggle_setting_search": "Search settings",
+      "data_sources": "Data sources",
+      "data_sources_hint": "Select the data that SEO variables and structured data will reference.",
+      "data_sources_empty": "No data sources on this screen.",
+      "priority": "Sitemap priority",
+      "changefreq": "Update frequency",
+      "structured_data": "Structured data",
+      "vars": "SEO variables",
+      "og_section": "Open Graph (social sharing)",
+      "og_type": "Type",
+      "og_title": "Title",
+      "og_description": "Description",
+      "og_image": "Image",
+      "og_image_alt": "Image alt text",
+      "og_image_adv": "Advanced image options (height·type·secure URL)",
+      "og_image_height": "Image height (px)",
+      "og_image_type": "Image type (e.g. image/png)",
+      "og_image_secure_url": "Image secure URL (https)",
+      "og_site_name": "Site name",
+      "og_locale": "Language",
+      "og_extra": "Extra tags",
+      "og_locked": "Set by an extension",
+      "og_intro": "Empty fields use the default set by the core/extension (source shown). Typing overrides it for this screen.",
+      "og_source_core": "Built-in",
+      "og_source_filter": "Extension",
+      "og_source_inherited": "Shared layout",
+      "og_source_module": "From {name}",
+      "auto_chip_source": "From extension",
+      "auto_chip_replace": "Use different data",
+      "tw_section": "Twitter card",
+      "tw_fallback_note": "Empty fields fall back to the Open Graph values above.",
+      "tw_card": "Card type",
+      "tw_site": "Site account",
+      "tw_creator": "Author account",
+      "tw_title": "Title",
+      "tw_description": "Description",
+      "tw_image": "Image",
+      "tw_image_alt": "Image alt text",
+      "tw_extra": "Extra tags",
+      "extra_property": "property",
+      "extra_name": "name",
+      "extra_content": "content",
+      "add_extra": "Add tag",
+      "sd_mode": "Structured data",
+      "sd_filter_locked": "Set by an extension",
+      "sd_filter_locked_note": "An extension is providing this structured data, so it cannot be edited here.",
+      "sd_manual_toggle": "Add my own structured data",
+      "sd_auto_title": "Provided automatically",
+      "sd_auto_empty": "Nothing provided automatically.",
+      "sd_replace_pre_warn": "Adding your own structured data replaces what is provided automatically.",
+      "sd_replace_warn": "Your structured data replaces the automatic one.",
+      "sd_type": "Type",
+      "sd_prop_key": "Property",
+      "sd_prop_value": "Value",
+      "sd_add_prop": "Add property",
+      "sd_seed_from_module": "Start from the automatic one",
+      "sd_empty_note": "Leave empty to use the automatic structured data.",
+      "sd_has_empty": "Some values are empty.",
+      "vars_precondition": "Select a page type and SEO extension first to see available variables.",
+      "vars_auto_group": "Filled automatically",
+      "vars_auto": "auto",
+      "vars_data_group": "From data sources",
+      "vars_custom_group": "Custom",
+      "vars_required_empty": "This required variable has no value.",
+      "vars_add": "Add variable",
+      "vars_add_name": "Variable name",
+      "vars_name_reserved": "\"{name}\" is a reserved name.",
+      "vars_name_duplicate": "\"{name}\" already exists.",
+      "vars_name_not_provided": "\"{name}\" is not provided by the selected extension.",
+      "vars_value_hint": "Variable values can use data from this screen.",
+      "bot_preview_title": "Search engine preview",
+      "bot_preview_refresh": "Refresh",
+      "bot_preview_disabled": "Turn on SEO generation to see the preview.",
+      "bot_preview_empty": "No preview yet.",
+      "bot_preview_mode_code": "Source",
+      "bot_preview_mode_render": "Preview",
+      "bot_preview_sample_note": "This preview uses sample data.",
+      "page_type_free": "Enter manually"
+    }
+  },
+  "target_picker": {
+    "cancel": "Cancel",
+    "canvas_pick_hint": "Click an element on the canvas to link",
+    "select_area": "Select area",
+    "id_placeholder": "Enter an element ID or select an area",
+    "none": "Not selected",
+    "minimized_hint": "Click an element on the canvas to link it",
+    "needs_id": "An ID is required to link this element"
+  },
+  "action_recipe": {
+    "set_state": {
+      "label": "Set or change screen state",
+      "param_target": "Target (local/global)",
+      "param_state": "State value",
+      "param_merge": "Merge with existing value"
+    },
+    "load_local": {
+      "label": "Load saved settings",
+      "param_key": "Storage key",
+      "param_state_key": "State key to fill",
+      "param_default": "Default value"
+    },
+    "save_local": {
+      "label": "Save settings",
+      "param_key": "Storage key",
+      "param_value": "Value to save"
+    },
+    "navigate": {
+      "label": "Go to another page",
+      "param_path": "Destination page",
+      "param_query": "Query values",
+      "param_merge_query": "Keep existing query",
+      "param_scroll": "Scroll position",
+      "param_replace": "Replace history",
+      "param_overlay_target": "Loading overlay area"
+    },
+    "open_window": {
+      "label": "Open in a new window",
+      "param_target": "Page to open",
+      "param_window_target": "Open mode (new/current window)"
+    },
+    "navigate_back": {
+      "label": "Go back"
+    },
+    "navigate_forward": {
+      "label": "Go forward"
+    },
+    "replace_url": {
+      "label": "Change URL only",
+      "param_path": "Page",
+      "param_query": "Query values"
+    },
+    "toast": {
+      "label": "Show a notice message",
+      "param_message": "Message",
+      "param_type": "Type (info/success/warning/error)",
+      "param_duration": "Duration (ms)",
+      "param_icon": "Icon"
+    },
+    "open_modal": {
+      "label": "Open a dialog",
+      "param_target": "Dialog to open"
+    },
+    "close_modal": {
+      "label": "Close a dialog"
+    },
+    "show_alert": {
+      "label": "Show a browser alert",
+      "param_message": "Message"
+    },
+    "set_error": {
+      "label": "Set error state",
+      "param_message": "Message",
+      "param_state_target": "Target (local/global)"
+    },
+    "refetch": {
+      "label": "Refresh list",
+      "param_data_source": "Data source",
+      "param_sync": "Run synchronously"
+    },
+    "append_data": {
+      "label": "Add data to list",
+      "param_data_source": "Data source",
+      "param_data_path": "Data path",
+      "param_new_data": "Data to add"
+    },
+    "update_data": {
+      "label": "Replace list data",
+      "param_data_source": "Data source",
+      "param_data": "New data",
+      "param_merge": "Merge with existing"
+    },
+    "scroll": {
+      "label": "Scroll to a position",
+      "param_selector": "Target selector",
+      "param_behavior": "Scroll mode (smooth/instant)",
+      "param_block": "Alignment"
+    },
+    "login": {
+      "label": "Handle login",
+      "param_body": "Login info"
+    },
+    "logout": {
+      "label": "Handle logout",
+      "param_target": "Destination"
+    },
+    "set_locale": {
+      "label": "Change language",
+      "param_target": "Language"
+    },
+    "emit_event": {
+      "label": "Send a component event",
+      "param_event": "Event name",
+      "param_data": "Payload"
+    },
+    "api_call": {
+      "label": "Send to server and handle result",
+      "param_target": "Request address",
+      "param_method": "Method (GET/POST, etc.)",
+      "param_body": "Request body",
+      "param_query": "Query values",
+      "param_identity_target_email": "Identity verification email",
+      "param_identity_target_phone": "Identity verification phone",
+      "param_on_success": "On success",
+      "param_on_error": "On error"
+    },
+    "conditions": {
+      "label": "Branch by condition",
+      "param_branches": "Branches",
+      "param_if": "Condition",
+      "param_then": "Actions to run",
+      "branch_when": "When",
+      "branch_else": "Otherwise",
+      "add_branch": "Add branch",
+      "remove_branch": "Remove branch",
+      "move_up": "Move up",
+      "move_down": "Move down"
+    },
+    "sequence": {
+      "label": "Run actions in order",
+      "param_actions": "Action list"
+    },
+    "parallel": {
+      "label": "Run actions at the same time",
+      "param_actions": "Action list"
+    },
+    "switch": {
+      "label": "Branch by value",
+      "param_value": "Value to check",
+      "param_cases": "Actions per case"
+    },
+    "suppress": {
+      "label": "Do nothing (suppress error)"
+    }
+  },
+  "action_list": {
+    "drag_reorder": "Drag to reorder",
+    "remove": "Remove",
+    "unknown": "Unknown action",
+    "view_code": "View code"
+  },
+  "error_rows": {
+    "default": "Default (all other errors)",
+    "clear": "Clear setting",
+    "no_action": "Not set",
+    "default_warning": "Applies to all errors not set above and overrides the template's default behavior.",
+    "source_self": "Set on this page",
+    "source_inherited": "Inherited from shared layout",
+    "source_template": "Template default",
+    "source_none": "Template default",
+    "revert": "Revert",
+    "override_here": "Override here",
+    "override_inherited": "Changing this overrides the parent setting for this page only.",
+    "override_template": "This action is set template-wide. Changing it here overrides the template setting for this page only."
+  },
+  "modal": {
+    "minimized_default": "Page settings",
+    "restore": "Restore"
+  },
+  "json_block": {
+    "mode_code": "As code",
+    "mode_block": "As blocks",
+    "invalid": "Not a valid JSON format.",
+    "must_be_object": "Must be a JSON object, e.g. { \"name\": value }",
+    "invalid_keys": "Names must start with a letter and use only letters, digits, _: {keys}"
+  }
+}

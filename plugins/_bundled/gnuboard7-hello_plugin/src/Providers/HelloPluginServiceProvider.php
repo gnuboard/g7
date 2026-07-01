@@ -2,36 +2,24 @@
 
 namespace Plugins\Gnuboard7\HelloPlugin\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Extension\BasePluginServiceProvider;
 use Plugins\Gnuboard7\HelloPlugin\Services\HelloLogService;
 
 /**
- * Hello 플러그인 서비스 프로바이더
+ * Hello 플러그인 서비스 프로바이더.
  *
- * HelloLogService 를 싱글톤으로 바인딩합니다. 플러그인에서 DI 가 필요할 때의
- * 구조를 시연하기 위한 최소 프로바이더입니다.
+ * BasePluginServiceProvider 를 상속해 표준 자동 바인딩 표면을 제공하며,
+ * 추가로 HelloLogService 를 싱글톤으로 바인딩합니다. 학습용 샘플 플러그인
+ * 의 최소 프로바이더 구조를 보여줍니다.
  */
-class HelloPluginServiceProvider extends ServiceProvider
+class HelloPluginServiceProvider extends BasePluginServiceProvider
 {
-    /**
-     * 서비스 컨테이너 바인딩을 등록합니다.
-     *
-     * @return void
-     */
+    protected string $pluginIdentifier = 'gnuboard7-hello_plugin';
+
     public function register(): void
     {
-        $this->app->singleton(HelloLogService::class, function () {
-            return new HelloLogService();
-        });
-    }
+        parent::register();
 
-    /**
-     * 부트 로직을 실행합니다.
-     *
-     * @return void
-     */
-    public function boot(): void
-    {
-        // 학습용 샘플은 부트 단계 로직이 없습니다.
+        $this->app->singleton(HelloLogService::class, fn () => new HelloLogService());
     }
 }

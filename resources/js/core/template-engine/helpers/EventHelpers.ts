@@ -75,12 +75,23 @@ export function createChangeEvent(
 ): React.ChangeEvent<HTMLInputElement> {
   const { checked, value, name, type = 'checkbox' } = options;
 
+  // checkbox/radio 의 value 기본값은 boolean(checked) 그대로 둔다.
+  // 명시적 value 가 없을 때 String(checked)("true"/"false") 로 문자열화하면,
+  // Form 자동바인딩이 value 바인딩 경로로 처리될 경우 boolean 필드에 문자열이 저장되어
+  // 백엔드 boolean 검증(예: order_settings.stock_restore_on_cancel)이 422 로 거부한다.
+  // checked 바인딩 경로는 target.checked(boolean)를 쓰므로 무관하지만, value 경로까지
+  // boolean 으로 안전하게 만든다. text/textarea 등은 명시 value 를 받으므로 영향 없다.
+  const isCheckable = type === 'checkbox' || type === 'radio';
+  const resolvedValue = value !== undefined
+    ? value
+    : (isCheckable ? (checked ?? false) : String(checked ?? ''));
+
   const target = {
     checked: checked ?? false,
-    value: value ?? String(checked ?? ''),
+    value: resolvedValue,
     name: name ?? '',
     type,
-  } as HTMLInputElement;
+  } as unknown as HTMLInputElement;
 
   return {
     target,

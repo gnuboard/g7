@@ -58,5 +58,8 @@
   },
   "timezones": {
     "$partial": "partial/en/timezones.json"
+  },
+  "layout_editor": {
+    "$partial": "partial/en/layout_editor.json"
   }
 }

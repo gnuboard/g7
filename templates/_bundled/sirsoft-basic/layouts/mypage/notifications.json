@@ -18,6 +18,7 @@
   "data_sources": [
     {
       "id": "userNotifications",
+      "label_key": "$t:editor.data_source.userNotifications",
       "type": "api",
       "endpoint": "/api/user/notifications",
       "method": "GET",

@@ -1,0 +1,51 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   StoreShippingPolicyRequest 의 attributes()/messages() 보강(A12) + api_endpoint 필수화(W1)
+#   + i18n 키 보강(W2) + api_request_fields Rule::in 후보 검증(W3)을 PHPUnit Feature 가
+#   대상필드 × 입력 × 로케일 × Store/Update cross product 로 커버하며 green.
+feature: 배송정책 구간/계산 API 검증 메시지 친화화 (A12 + A13)
+
+description: |
+  구간별 배송비(tier fee/min/max/unit_value)·추가배송비 음수/비숫자/required 누락 시 사용자
+  메시지가 키 원문이 아닌 한글/영문 라벨로 표시(attributes 전수 + 음수 직결 messages).
+  계산 API 정책 선택 시 api_endpoint 필수화(cross-field), 잘못된 URL 시 i18n 키 보강,
+  api_request_fields 는 후보 5종 SSoT enum 의 Rule::in 으로 검증(후보 외 거부).
+
+axes:
+  target_field:
+    - tier_fee
+    - tier_min
+    - tier_max
+    - unit_value
+    - extra_fee
+    - base_fee
+    - api_endpoint
+    - api_request_fields
+  input:
+    - negative          # 음수 → min:0
+    - non_numeric       # 비숫자
+    - required_missing  # required 누락
+    - invalid_url       # 잘못된 URL(api_endpoint)
+    - api_empty_endpoint # api 정책 + 빈 endpoint → W1 422
+    - field_in_candidates    # api_request_fields 후보 내 → 통과
+    - field_out_candidates   # api_request_fields 후보 외 → Rule::in 422
+  locale:
+    - ko
+    - en
+  request:
+    - store
+    - update           # Update 상속 확인
+
+effects:
+  - returns_422_on_invalid                 # 검증 동작 유지
+  - message_not_raw_key                    # country_settings/sirsoft-ecommerce::validation 미포함
+  - friendly_negative_message              # "배송비는 0 이상" 류
+  - api_endpoint_required_when_api_policy   # W1
+  - api_endpoint_url_message_translated     # W2
+  - request_field_out_of_candidates_rejected # W3 Rule::in
+  - request_field_in_candidates_accepted     # W3 통과
+  - update_inherits_messages_attributes      # Update 상속
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ShippingPolicyValidationMessageTest.php

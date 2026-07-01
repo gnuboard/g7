@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0] - 2026-07-01
+
+### Added
+
+- 레이아웃 편집기 데이터 소스 라벨 일본어 번역 추가 (`editor.data_source.*`) — 편집기에서 페이지 데이터 소스의 표시 명칭이 일본어 로케일에서 자연스럽게 표시됩니다.
+
 ## [1.0.0-beta.2] - 2026-05-12
 
 ### Added

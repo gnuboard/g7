@@ -5,16 +5,16 @@
         "ko": "마케팅 동의",
         "en": "Marketing Consent"
     },
-    "version": "1.0.0-beta.3",
+    "version": "1.0.0",
     "description": {
         "ko": "이메일 구독, 마케팅 동의, 제3자 제공 동의 등을 관리하는 플러그인",
         "en": "Plugin for managing email subscriptions, marketing consent, and third-party data sharing consent"
     },
     "license": "MIT",
-    "g7_version": ">=7.0.0-beta.2",
+    "g7_version": ">=7.0.0",
     "dependencies": {
         "modules": {
-            "sirsoft-page": ">=1.0.0-beta.3"
+            "sirsoft-page": ">=1.0.0"
         },
         "plugins": {}
     },

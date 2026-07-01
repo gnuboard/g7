@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "회원탈퇴 확인 모달"
+    "description": "회원탈퇴 확인 모달",
+    "editor_label": "$t:user.modal_label.mypage_profile.withdrawModal"
   },
   "type": "composite",
   "name": "Modal",
@@ -244,14 +245,6 @@
                           "handler": "closeModal"
                         },
                         {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "currentUser": null,
-                            "isAuthenticated": false
-                          }
-                        },
-                        {
                           "handler": "toast",
                           "params": {
                             "type": "success",
@@ -259,10 +252,7 @@
                           }
                         },
                         {
-                          "handler": "navigate",
-                          "params": {
-                            "url": "/"
-                          }
+                          "handler": "logout"
                         }
                       ],
                       "onError": [

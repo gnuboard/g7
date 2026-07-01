@@ -36,6 +36,7 @@
     "data_sources": [
         {
             "id": "category",
+            "label_key": "$t:editor.data_source.category",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/categories/{{route.slug}}",
             "method": "GET",
@@ -47,6 +48,7 @@
         },
         {
             "id": "categories",
+            "label_key": "$t:editor.data_source.categories",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/categories",
             "method": "GET",
@@ -58,6 +60,7 @@
         },
         {
             "id": "products",
+            "label_key": "$t:editor.data_source.products",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products",
             "method": "GET",

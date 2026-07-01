@@ -111,4 +111,20 @@ describe('게시판 알림 템플릿 모달 회귀 (옵션 K)', () => {
     expect(modalStr).toContain('"dataSourceId":"boardNotificationDefinitions"');
     expect(modalStr).toContain('"board_notification_template_form_modal":null');
   });
+
+  // 회귀: 역할/사용자 드롭다운이 저장된 선택값을 표시하지 못하던 버그.
+  // 검색 전(roleSearchResults/userSearchResults 빈 배열) 에도 현재 선택값을 options 에
+  // 시드해야 SearchableDropdown 이 라벨(rcpt.display_name / display_names) 을 표시한다.
+  it('role 드롭다운 options 가 현재 선택값을 시드', () => {
+    const modalStr = JSON.stringify(notifModal);
+    expect(modalStr).not.toContain('"options":"{{_global.board_notification_template_form_modal?.roleSearchResults ?? []}}"');
+    expect(modalStr).toContain('rcpt.display_name ?? rcpt.value');
+    expect(modalStr).toContain('String(o.value) !== String(rcpt.value)');
+  });
+
+  it('specific_users 드롭다운 options 가 현재 선택값을 시드', () => {
+    const modalStr = JSON.stringify(notifModal);
+    expect(modalStr).not.toContain('"options":"{{_global.board_notification_template_form_modal?.userSearchResults ?? []}}"');
+    expect(modalStr).toContain('(rcpt.display_names ?? [])[i] ?? uid');
+  });
 });

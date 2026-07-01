@@ -2,9 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
-use App\Http\Resources\BaseApiCollection;
 
 /**
  * 공통정보 템플릿 컬렉션 리소스
@@ -44,9 +44,9 @@ class ProductCommonInfoCollection extends BaseApiCollection
      */
     public function toArray(Request $request): array
     {
-        return [
+        return array_merge([
             'data' => $this->collection,
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), $request->user()),
-        ];
+        ], $this->paginationMeta());
     }
 }

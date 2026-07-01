@@ -1,0 +1,22 @@
+{
+    "name": "@plugins/sirsoft-gdpr",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite build --watch",
+        "test": "vitest",
+        "test:run": "vitest run"
+    },
+    "devDependencies": {
+        "@testing-library/jest-dom": "^6.5.0",
+        "@testing-library/react": "^16.0.0",
+        "@types/node": "^22.0.0",
+        "@vitest/ui": "^2.1.0",
+        "jsdom": "^25.0.0",
+        "typescript": "^5.6.0",
+        "vite": "^5.4.0",
+        "vitest": "^2.1.0"
+    }
+}

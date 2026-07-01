@@ -240,4 +240,85 @@ class ProductServiceOptionsTest extends ModuleTestCase
         // Then: 모든 추가옵션 삭제됨
         $this->assertEquals(0, ProductAdditionalOption::where('product_id', $product->id)->count());
     }
+
+    // ========================================
+    // syncProductSellingPriceFromDefaultOption() - A22 백엔드 안전망
+    // ========================================
+
+    /**
+     * 옵션 동기화 후 상품 판매가가 기본 옵션 판매가로 보정된다 (프론트 우회 안전망)
+     */
+    public function test_sync_options_syncs_product_selling_price_from_default_option(): void
+    {
+        // Given: 옵션 보유 상품. 상품 판매가(39000)와 기본 옵션 판매가(35000)가 어긋난 상태
+        $product = Product::factory()->create([
+            'has_options' => true,
+            'selling_price' => 39000,
+        ]);
+        $option = ProductOption::factory()->create([
+            'product_id' => $product->id,
+            'is_default' => true,
+            'selling_price' => 35000,
+        ]);
+
+        // When: 어긋난 상품 판매가를 그대로 보내며 옵션 동기화
+        $this->service->update($product, [
+            'selling_price' => 39000,
+            'options' => [
+                ['id' => $option->id, 'is_default' => true, 'selling_price' => 35000],
+            ],
+        ]);
+
+        // Then: 상품 판매가가 기본 옵션 판매가로 보정됨
+        $this->assertEquals(35000, $product->fresh()->selling_price);
+    }
+
+    /**
+     * 기본 옵션이 없으면 상품 판매가를 건드리지 않는다
+     */
+    public function test_sync_options_keeps_product_price_when_no_default_option(): void
+    {
+        // Given: 기본 옵션이 없는 옵션 보유 상품
+        $product = Product::factory()->create([
+            'has_options' => true,
+            'selling_price' => 39000,
+        ]);
+        $option = ProductOption::factory()->create([
+            'product_id' => $product->id,
+            'is_default' => false,
+            'selling_price' => 35000,
+        ]);
+
+        // When: 옵션 동기화
+        $this->service->update($product, [
+            'selling_price' => 39000,
+            'options' => [
+                ['id' => $option->id, 'is_default' => false, 'selling_price' => 35000],
+            ],
+        ]);
+
+        // Then: 상품 판매가 불변
+        $this->assertEquals(39000, $product->fresh()->selling_price);
+    }
+
+    /**
+     * 옵션 미보유 상품은 판매가 보정 대상이 아니다
+     */
+    public function test_sync_does_not_apply_to_product_without_options(): void
+    {
+        // Given: 옵션 미보유 상품
+        $product = Product::factory()->create([
+            'has_options' => false,
+            'selling_price' => 39000,
+        ]);
+
+        // When: 옵션 없이 업데이트
+        $this->service->update($product, [
+            'selling_price' => 39000,
+            'options' => [],
+        ]);
+
+        // Then: 상품 판매가 불변
+        $this->assertEquals(39000, $product->fresh()->selling_price);
+    }
 }

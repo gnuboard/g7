@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "모듈 수동 설치 모달"
+    "description": "모듈 수동 설치 모달",
+    "editor_label": "$t:admin.modal_label.admin_module_list.module_manual_install_modal"
   },
   "id": "module_manual_install_modal",
   "type": "composite",
@@ -15,7 +16,7 @@
       "type": "basic",
       "name": "P",
       "props": {
-        "className": "text-gray-600 dark:text-gray-400 mb-4"
+        "className": "text-secondary mb-4"
       },
       "text": "$t:admin.modules.modals.manual_install_description"
     },
@@ -46,14 +47,14 @@
       "name": "Div",
       "if": "{{_global.moduleInstallError}}",
       "props": {
-        "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4"
+        "className": "alert-danger"
       },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-3"
+            "className": "form-error-xs"
           },
           "children": [
             {
@@ -73,7 +74,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                    "className": "text-error-strong"
                   },
                   "text": "{{_global.moduleInstallError}}"
                 },
@@ -82,7 +83,7 @@
                   "name": "P",
                   "if": "{{_global.moduleInstallErrors?.error}}",
                   "props": {
-                    "className": "text-sm text-red-700 dark:text-red-300 mt-1 whitespace-pre-line"
+                    "className": "text-error-soft mt-1 whitespace-pre-line"
                   },
                   "text": "{{_global.moduleInstallErrors.error}}"
                 }
@@ -139,14 +140,13 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-2"
           },
           "children": [
             {
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                "className": "form-label"
               },
               "text": "$t:admin.modules.tabs.file_label"
             },
@@ -178,7 +178,7 @@
               "name": "Span",
               "if": "{{_global.moduleInstallErrors?.file}}",
               "props": {
-                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                "className": "form-error-xs mt-1"
               },
               "text": "{{Array.isArray(_global.moduleInstallErrors?.file) ? _global.moduleInstallErrors.file[0] : _global.moduleInstallErrors?.file}}"
             }
@@ -195,7 +195,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-start gap-2"
+                "className": "flex-start gap-2"
               },
               "children": [
                 {
@@ -215,7 +215,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-blue-700 dark:text-blue-300"
+                        "className": "text-info-soft"
                       },
                       "text": "$t:admin.modules.tabs.file_requirements"
                     },
@@ -231,7 +231,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "mt-1 text-sm text-blue-700 dark:text-blue-300"
+                        "className": "mt-1 text-info-soft"
                       },
                       "text": "$t:admin.modules.tabs.file_structure_hint"
                     }
@@ -256,14 +256,13 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-2"
           },
           "children": [
             {
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                "className": "form-label"
               },
               "text": "$t:admin.modules.tabs.github_url_label"
             },
@@ -274,7 +273,7 @@
                 "type": "url",
                 "placeholder": "https://github.com/username/module-name",
                 "value": "{{_global.moduleGithubUrl ?? ''}}",
-                "className": "{{_global.moduleInstallErrors?.github_url ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}"
+                "className": "input {{_global.moduleInstallErrors?.github_url ? 'input-error' : ''}}"
               },
               "actions": [
                 {
@@ -294,7 +293,7 @@
               "name": "Span",
               "if": "{{_global.moduleInstallErrors?.github_url}}",
               "props": {
-                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                "className": "form-error-xs mt-1"
               },
               "text": "{{Array.isArray(_global.moduleInstallErrors?.github_url) ? _global.moduleInstallErrors.github_url[0] : _global.moduleInstallErrors?.github_url}}"
             },
@@ -302,7 +301,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400"
+                "className": "text-tertiary"
               },
               "text": "$t:admin.modules.tabs.github_url_hint"
             }
@@ -319,7 +318,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-start gap-2"
+                "className": "flex-start gap-2"
               },
               "children": [
                 {
@@ -339,7 +338,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-blue-700 dark:text-blue-300"
+                        "className": "text-info-soft"
                       },
                       "text": "$t:admin.modules.tabs.github_requirements"
                     },
@@ -355,7 +354,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "mt-1 text-sm text-blue-700 dark:text-blue-300"
+                        "className": "mt-1 text-info-soft"
                       },
                       "text": "$t:admin.modules.tabs.github_public_only"
                     }
@@ -371,7 +370,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {
@@ -379,7 +378,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "btn btn-secondary",
             "disabled": "{{_global.isModuleManualInstalling}}"
           },
           "actions": [
@@ -418,7 +417,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isModuleManualInstalling || ((!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? !_global.moduleUploadFile : !_global.moduleGithubUrl)}}"
           },
           "actions": [

@@ -1,0 +1,115 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는(편집기 프리뷰 캔버스 + 샘플 데이터 + 출처 메타 + 반응형 디바이스 미리보기) 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트(Vitest 단위/통합 + PHPUnit Feature)로 커버. Phase 2 는 캔버스 렌더 + 샘플 모드 + 백엔드 출처 메타 옵션 신설에 한정 — 요소 배치/추가/드래그는 Phase 3, 속성 편집은 Phase 4.
+
+feature: 레이아웃 편집기 프리뷰 캔버스 + 샘플 데이터 + 반응형 디바이스 미리보기
+
+description: |
+  편집기 셸의 캔버스 영역에서 선택한 라우트의 레이아웃을 실제로 렌더링하고,
+  데이터 의존 영역을 샘플 데이터로 채워 예시 화면으로 표시한다.
+  데이터 결정 영역은 텍스트 편집 불가로 표시. 라우트 편집 시 base 레이아웃
+  출처 노드는 잠금 표시. 디바이스 미리보기(데스크톱/태블릿/모바일) 전환 시
+  responsive 가 적용된 실시간 렌더로 전환.
+
+  배경:
+ - Phase 1 산출물(셸/툴바/라우트 트리) 위에 얹힘. 셸은 동일하게 코어 React tree.
+ - `with_source_meta=1` 옵션이 백엔드 응답에 __source 메타를 부여.
+ - DataSourceManager 의 sampleProvider 옵션이 fetch 를 대체.
+ - ResponsiveProvider overrideWidth 로 디바이스 폭 강제.
+
+axes:
+  edit_mode: [route, base, modal, extension]
+  node_origin: [route_self, base_via_extends, partial_via_host, extension_inject]
+  data_dependency: [static, bound_text, iteration, ancestor_iteration]
+  sample_source: [spec_byId, spec_byEndpoint, core_preset, ds_fallback, generic_infer]
+  preview_device: [desktop, tablet, mobile, custom]
+  device_overflow: [fits_canvas, exceeds_canvas]
+  responsive_override_declared: [none, mobile, tablet, mobile_and_tablet, portable]
+  modal_definition: [inline_in_route, inline_in_base_inherited, partial_ref]
+  extension_point_state: [empty_placeholder, has_injected_fragment]
+  with_source_meta_option: [absent, present_with_permission, present_without_permission, present_guest]
+  user_state: [editor_authorized, authenticated_no_perm, guest]
+
+exclusions:
+  - { edit_mode: extension, node_origin: partial_via_host,
+      reason: "확장 편집 캔버스는 호스트 본체 잠금 — partial 출처 노드는 호스트 소속으로 분류돼 잠금" }
+  - { edit_mode: base, modal_definition: inline_in_route,
+      reason: "base 편집 모드는 호스트 라우트 modals 를 다루지 않음" }
+  - { device_overflow: exceeds_canvas, preview_device: mobile,
+      reason: "모바일 폭(390)은 대부분의 캔버스 가용폭 안에 들어가 overflow 가 의미 없음" }
+  - { with_source_meta_option: present_guest,
+      reason: "guest 는 401 로 차단됨 — 인증 후 권한 체크가 이뤄지므로 비인증 + 메타 옵션은 401 단일 분기" }
+  - { with_source_meta_option: present_without_permission, user_state: editor_authorized,
+      reason: "축의 의미 중복 — editor_authorized 는 권한 보유와 동의어" }
+
+effects:
+  # 백엔드 출처 메타 옵션 
+  - backend_serve_without_option_response_format_unchanged
+  - backend_serve_with_option_attaches_source_meta_to_every_node
+  - backend_meta_option_requires_authentication_unauthenticated_returns_401
+  - backend_meta_option_requires_edit_permission_no_perm_returns_403
+  - backend_meta_cache_separated_from_normal_response_cache
+  - backend_extends_merging_marks_parent_layout_nodes_as_base
+  - backend_slot_contents_marked_as_route_origin
+  - backend_layout_extension_inject_marks_extension_origin_with_extension_id
+
+  # DynamicRenderer __ 메타 필터링 
+  - dynamic_renderer_filters_double_underscore_keys_from_basic_layout_dom_props
+  - dynamic_renderer_passes_through_data_aria_attributes_unchanged
+  - dynamic_renderer_does_not_leak_source_meta_to_dom
+
+  # DataSourceManager 샘플 모드 
+  - data_source_manager_with_sample_provider_skips_fetch_when_provider_has_returns_true
+  - data_source_manager_falls_back_to_network_when_provider_has_returns_false
+  - data_source_manager_normal_render_unaffected_when_sample_mode_not_injected
+  - data_source_manager_sample_resolve_supports_promise_return
+
+  # sampleDataProvider 우선순위 
+  - sample_provider_resolves_in_priority_spec_byId_then_endpoint_then_core_then_fallback_then_infer
+  - sample_provider_byid_overrides_endpoint_pattern_when_both_match
+  - sample_provider_endpoint_pattern_supports_wildcard
+  - sample_provider_inferred_returns_generic_when_no_keyword_match
+  - sample_provider_onmatch_failure_does_not_break_resolve
+
+  # layoutTreeUtils 잠금 판정 
+  - is_base_originated_node_detects_kind_base_only
+  - is_route_originated_node_detects_kind_route_only
+  - is_partial_originated_node_detects_kind_partial_only
+  - is_extension_originated_node_locks_outside_extension_mode
+  - is_extension_originated_node_unlocks_for_current_extension_id
+  - is_data_bound_node_detects_binding_iteration_and_ancestor_iteration
+  - is_extension_point_node_locks_in_all_edit_modes
+  - node_lock_matrix_route_mode_locks_base_partial_extension
+  - node_lock_matrix_base_mode_locks_route_extension
+  - node_lock_matrix_modal_mode_locks_only_extension
+
+  # PreviewCanvas + DynamicRenderer + ResponsiveProvider 
+  - preview_canvas_renders_loaded_layout_components
+  - preview_canvas_shows_empty_state_when_no_route_selected
+  - preview_canvas_shows_loading_state_during_fetch
+  - preview_canvas_shows_error_state_on_load_failure
+  - preview_canvas_shows_empty_layout_when_components_array_is_empty
+
+  # useDevicePreview + DevicePreviewToolbar 
+  - device_preview_default_is_desktop_with_zoom_1
+  - device_preview_set_device_dispatches_set_preview_device_action
+  - device_preview_set_zoom_clamps_to_0_5_through_1
+  - device_preview_zoom_at_100_percent_preserves_device_width_with_horizontal_scroll
+  - device_preview_zoom_below_100_percent_applies_visual_scale
+
+  # devtools 트래커 
+  - sample_match_callback_invoked_with_resolved_by_metadata
+  - sample_match_callback_failure_does_not_block_resolve
+  - editor_chrome_unmount_clears_editor_sample_data
+
+  # 다국어 
+  - core_lang_partial_ko_en_have_identical_key_set_after_preview_keys_added
+  - device_preview_toolbar_labels_resolved_via_t_function
+  - preview_canvas_empty_state_resolved_via_t_function
+
+test_files:
+  - tests/Feature/Api/Public/LayoutSourceMetaServingTest.php
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.sourceMetaFiltering.test.tsx
+  - resources/js/core/template-engine/__tests__/DataSourceManager.sampleMode.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/sample-data/sampleDataProvider.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/layoutTreeUtils.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/LayoutEditorChrome.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/i18n/chrome-i18n-coverage.test.ts

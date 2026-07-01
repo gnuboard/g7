@@ -1057,4 +1057,69 @@ describe('DynamicRenderer - Responsive 오버라이드', () => {
       expect(screen.getByText('데스크톱')).toBeInTheDocument();
     });
   });
+
+  // 편집기가 만든 responsive 산출물이 실제 렌더되는지 round-trip 증명.
+  // applyRecipe(node, control, value, {breakpoint:'mobile'}) 가 만드는 형태
+  // (responsive.mobile.props.className) 를 그대로 넣어 모바일 폭에서 병합 honor 확인.
+  describe('편집기 scope 산출물 round-trip', () => {
+    it('편집기가 만든 responsive.mobile.props.className 이 모바일 폭에서 적용된다', () => {
+      setWidth(390); // 모바일
+
+      // applyRecipe(scope:mobile) 산출 형태 — base className + responsive.mobile override
+      const componentDef: ComponentDefinition = {
+        id: 'editor-scope-1',
+        type: 'basic',
+        name: 'Div',
+        props: { className: 'bg-white' },
+        responsive: {
+          mobile: { props: { className: 'bg-slate-800' } },
+        },
+      };
+
+      render(
+        <DynamicRenderer
+          componentDef={componentDef}
+          dataContext={{}}
+          translationContext={translationContext}
+          registry={registry}
+          bindingEngine={bindingEngine}
+          translationEngine={translationEngine}
+          actionDispatcher={actionDispatcher}
+        />
+      );
+
+      const div = screen.getByTestId('test-div');
+      expect(div).toHaveClass('bg-slate-800'); // 모바일 override 적용
+    });
+
+    it('데스크톱 폭에서는 base className(편집기 공통 scope) 사용', () => {
+      setWidth(1280); // 데스크톱
+
+      const componentDef: ComponentDefinition = {
+        id: 'editor-scope-2',
+        type: 'basic',
+        name: 'Div',
+        props: { className: 'bg-white' },
+        responsive: {
+          mobile: { props: { className: 'bg-slate-800' } },
+        },
+      };
+
+      render(
+        <DynamicRenderer
+          componentDef={componentDef}
+          dataContext={{}}
+          translationContext={translationContext}
+          registry={registry}
+          bindingEngine={bindingEngine}
+          translationEngine={translationEngine}
+          actionDispatcher={actionDispatcher}
+        />
+      );
+
+      const div = screen.getByTestId('test-div');
+      expect(div).toHaveClass('bg-white'); // 공통(base) 적용
+      expect(div).not.toHaveClass('bg-slate-800');
+    });
+  });
 });

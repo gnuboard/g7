@@ -4,8 +4,11 @@ namespace Modules\Sirsoft\Board\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 
 /**
@@ -45,6 +48,33 @@ class AttachmentRepository implements AttachmentRepositoryInterface
             ->where('board_id', $board?->id)
             ->where('hash', $hash)
             ->first();
+    }
+
+    /**
+     * 첨부파일이 속한 게시글이 삭제(soft delete) 상태인지 확인합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return bool 소속 게시글이 삭제 상태인지 여부
+     */
+    public function isPostDeleted(string $slug, int $postId): bool
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        if (! $board) {
+            return false;
+        }
+
+        $post = Post::withTrashed()
+            ->where('board_id', $board->id)
+            ->where('id', $postId)
+            ->first(['id', 'status', 'deleted_at']);
+
+        if (! $post) {
+            return false;
+        }
+
+        return $post->deleted_at !== null || $post->status === PostStatus::Deleted;
     }
 
     /**
@@ -316,5 +346,67 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     public function softDeleteByBoardId(int $boardId): int
     {
         return Attachment::where('board_id', $boardId)->delete();
+    }
+
+    /**
+     * 게시글 ID 기준으로 살아있는 첨부를 cascade 로 일괄 소프트 삭제합니다.
+     *
+     * 게시글 삭제 연쇄로 지워졌음을 trigger_type='cascade' 로 마킹합니다.
+     * 이미 삭제된(trashed) 첨부는 Eloquent 기본 스코프가 제외하므로,
+     * 사용자가 먼저 지운 첨부(trigger_type='user')는 영향을 받지 않습니다.
+     * 물리 파일은 보존하며 deleted_at 마킹만 수행합니다. (복원 가능성 유지)
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return int 삭제된 첨부 수
+     */
+    public function softDeleteByPostId(string $slug, int $postId): int
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        return Attachment::where('board_id', $board?->id)
+            ->where('post_id', $postId)
+            ->update([
+                'trigger_type' => TriggerType::Cascade->value,
+                'deleted_at' => now(),
+            ]);
+    }
+
+    /**
+     * 게시글 ID 기준으로 cascade 로 지워진 첨부만 복원합니다.
+     *
+     * 게시글 복원 시, 게시글 삭제 연쇄로 지워진(trigger_type='cascade') 첨부만
+     * 되살립니다. 사용자가 직접 지운(trigger_type='user') 첨부는 trashed 로 유지됩니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return int 복원된 첨부 수
+     */
+    public function restoreCascadedByPostId(string $slug, int $postId): int
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        return Attachment::onlyTrashed()
+            ->where('board_id', $board?->id)
+            ->where('post_id', $postId)
+            ->where('trigger_type', TriggerType::Cascade->value)
+            ->update([
+                'deleted_at' => null,
+            ]);
+    }
+
+    /**
+     * 게시판 ID 기준으로 첨부파일을 일괄 영구 삭제합니다.
+     *
+     * 게시판 영구 삭제(deleteBoard) 시 사용합니다. 소프트 삭제와 달리
+     * deleted_at 마킹이 아니라 레코드를 물리적으로 제거합니다.
+     * (물리 파일은 BoardService::deleteAttachmentFiles 가 별도로 삭제)
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 삭제된 첨부파일 수
+     */
+    public function forceDeleteByBoardId(int $boardId): int
+    {
+        return Attachment::where('board_id', $boardId)->forceDelete();
     }
 }

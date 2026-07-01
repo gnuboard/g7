@@ -236,7 +236,7 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
         (c: any) => c.if && c.if.includes(errorStateKeys[type])
       );
       expect(errorBanner, `${type}: 에러 배너가 존재해야 함`).toBeDefined();
-      expect(errorBanner.props.className).toContain('bg-red-50');
+      expect(errorBanner.props.className).toContain('alert-danger');
     }
   });
 
@@ -309,14 +309,14 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
     }
   });
 
-  it('3개 모달 모두 필드별 에러 표시(text-red-500) 포함', () => {
+  it('3개 모달 모두 필드별 에러 표시(.form-error-xs) 포함 (#408)', () => {
     const types = ['module', 'plugin', 'template'] as const;
 
     for (const type of types) {
       const json = loadModalJson(type);
       const jsonStr = JSON.stringify(json);
-      // 파일 에러 + URL 에러 모두 적색 텍스트
-      const redErrorCount = (jsonStr.match(/text-red-500 dark:text-red-400 text-xs/g) || []).length;
+      // text-red-500 + dark:text-red-400 + text-xs 토큰을 .form-error-xs 자산이 흡수
+      const redErrorCount = (jsonStr.match(/form-error-xs/g) || []).length;
       expect(redErrorCount, `${type}: 필드 에러 2개(file, github_url)`).toBeGreaterThanOrEqual(2);
     }
   });

@@ -12,6 +12,7 @@
     "data_sources": [
         {
             "id": "settings",
+            "label_key": "$t:gnuboard7-hello_plugin.editor.data_source.settings",
             "type": "api",
             "endpoint": "/api/admin/plugins/{{route.identifier}}/settings",
             "method": "GET",
@@ -27,11 +28,10 @@
                 "id": "plugin_settings_content",
                 "type": "basic",
                 "name": "Div",
-                "blur_until_loaded": "{{_local.isSaving}}",
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -66,7 +66,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-start gap-3"
+                                            "className": "flex-start gap-3"
                                         },
                                         "children": [
                                             {
@@ -75,7 +75,7 @@
                                                 "props": {
                                                     "type": "checkbox",
                                                     "name": "log_enabled",
-                                                    "className": "mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                    "className": "mt-1 h-4 w-4 rounded text-blue-600"
                                                 }
                                             },
                                             {
@@ -86,7 +86,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label"
                                                     },
@@ -94,7 +94,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:gnuboard7-hello_plugin.settings.fields.log_enabled.hint"
                                                     }
@@ -111,7 +111,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex justify-end gap-3 mt-6"
+                            "className": "sticky-footer-buttons"
                         },
                         "children": [
                             {
@@ -120,7 +120,7 @@
                                 "name": "Button",
                                 "props": {
                                     "type": "button",
-                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                    "className": "btn btn-secondary"
                                 },
                                 "actions": [
                                     {
@@ -146,7 +146,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "flex items-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "actions": [
                                     {

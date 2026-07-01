@@ -32,14 +32,16 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['shipping_policy_id', 'country_code'], 'uniq_policy_country');
-            $table->index('country_code');
+            // 테이블명이 길어 자동 생성 인덱스명이 DB prefix 4자 이상에서
+            // MySQL identifier 한도(64자)를 초과하므로 짧은 이름을 명시한다.
+            $table->index('country_code', 'idx_cs_country_code');
             $table->index('is_active');
             $table->index(['shipping_policy_id', 'is_active'], 'idx_policy_active');
             $table->foreign('shipping_policy_id', 'fk_cs_shipping_policy_id')->references('id')->on('ecommerce_shipping_policies')->cascadeOnDelete();
         });
 
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE `".DB::getTablePrefix()."ecommerce_shipping_policy_country_settings` COMMENT '배송정책 국가별 설정'");
+            DB::statement('ALTER TABLE `'.DB::getTablePrefix()."ecommerce_shipping_policy_country_settings` COMMENT '배송정책 국가별 설정'");
         }
     }
 

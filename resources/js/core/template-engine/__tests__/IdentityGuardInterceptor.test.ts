@@ -160,6 +160,53 @@ describe('IdentityGuardInterceptor', () => {
       const result = await IdentityGuardInterceptor.handle(response);
       expect(result).toBeNull();
     });
+
+    /**
+     * 신규(engine-v1.51.0) — 흐름이 선언한 인증 대상(target)이 launcher payload 에 병합되어야 함.
+     * 비회원 주문 등 비로그인 흐름의 핵심 — 서버 428 payload 에는 target 이 없고 흐름이 선언한다.
+     */
+    it('merges declared target into launcher payload (email + phone)', async () => {
+      let receivedPayload: any = null;
+      IdentityGuardInterceptor.setLauncher(async (payload) => {
+        receivedPayload = payload;
+        return { status: 'cancelled' };
+      });
+
+      await IdentityGuardInterceptor.handle(makeResponse(), undefined, {
+        email: 'guest@example.com',
+        phone: '01012345678',
+      });
+
+      expect(receivedPayload?.target).toEqual({
+        email: 'guest@example.com',
+        phone: '01012345678',
+      });
+    });
+
+    it('does not merge target when both email and phone are empty', async () => {
+      let receivedPayload: any = null;
+      IdentityGuardInterceptor.setLauncher(async (payload) => {
+        receivedPayload = payload;
+        return { status: 'cancelled' };
+      });
+
+      await IdentityGuardInterceptor.handle(makeResponse(), undefined, { email: '', phone: '' });
+
+      // 빈 target 은 병합하지 않음 — 로그인 사용자는 서버 세션이 도출
+      expect(receivedPayload?.target).toBeUndefined();
+    });
+
+    it('omits target entirely when not provided (backward compatible)', async () => {
+      let receivedPayload: any = null;
+      IdentityGuardInterceptor.setLauncher(async (payload) => {
+        receivedPayload = payload;
+        return { status: 'cancelled' };
+      });
+
+      await IdentityGuardInterceptor.handle(makeResponse());
+
+      expect(receivedPayload?.target).toBeUndefined();
+    });
   });
 
   describe('createDeferred / resolveDeferred', () => {
@@ -183,6 +230,51 @@ describe('IdentityGuardInterceptor', () => {
       expect(() =>
         IdentityGuardInterceptor.resolveDeferred({ status: 'cancelled' }),
       ).not.toThrow();
+    });
+  });
+
+  /**
+   * 도메인 안내 표출 신호 (engine-v1.52.0) — 부가 목적(성인인증 등) 실패 시 provider 가
+   * 고유 안내를 표출했음을 표시하면, 코어 toast 핸들러가 동일 사이클의 generic IDV 가드
+   * 토스트("본인 확인이 필요합니다") 1건을 skip 한다. 일반 본인인증 실패는 무영향.
+   */
+  describe('markDomainNoticeShown / consumeDomainNoticeShown', () => {
+    it('기본값은 false — 신호 미설정 시 consume 은 false', () => {
+      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(false);
+    });
+
+    it('mark 후 consume 은 1회만 true (소비 후 해제)', () => {
+      IdentityGuardInterceptor.markDomainNoticeShown();
+      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(true);
+      // 1회 소비 후에는 다시 false — 다음 토스트는 정상 표출
+      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(false);
+    });
+
+    it('handle() 진입 시 이전 사이클의 미소비 신호를 정리한다 (stale skip 방지)', async () => {
+      // 이전 사이클에서 신호만 set 되고 가드 토스트가 없어 미소비로 남은 상황
+      IdentityGuardInterceptor.markDomainNoticeShown();
+
+      // 새 challenge 진입 — handle() 이 flag 를 정리해야 함
+      IdentityGuardInterceptor.setLauncher(async () => ({ status: 'cancelled' }));
+      await IdentityGuardInterceptor.handle({
+        success: false,
+        error_code: 'identity_verification_required',
+        message: 'verify',
+        verification: {
+          policy_key: 'k',
+          purpose: 'sensitive_action',
+          return_request: { method: 'POST', url: '/api/x' },
+        },
+      });
+
+      // 정리되어 false 여야 함
+      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(false);
+    });
+
+    it('reset() 이 신호를 해제한다', () => {
+      IdentityGuardInterceptor.markDomainNoticeShown();
+      IdentityGuardInterceptor.reset();
+      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(false);
     });
   });
 

@@ -3,11 +3,11 @@
     "is_partial": true,
     "description": "Board Form - Basic Tab Content"
   },
-  "id": "tab_content_basic",
+  "id": "section_basic_card",
   "type": "basic",
   "name": "Div",
   "props": {
-    "id": "tab_content_basic"
+    "className": "admin-card"
   },
   "classMap": {
     "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
@@ -17,34 +17,29 @@
     }
   },
   "children": [
-    {
-      "id": "section_basic_card",
-      "type": "layout",
-      "name": "SectionLayout",
-      "props": {
-        "background": "white",
-        "border": true,
-        "shadow": "md",
-        "rounded": true,
-        "padding": "xl",
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
-      },
-      "children": [
         {
           "id": "section_basic_settings",
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-6 border-b-2 border-gray-200 dark:border-gray-700"
+            "className": "card-title"
           },
           "text": "$t:sirsoft-board.admin.form.tabs.basic"
         },
+        {
+          "id": "section_basic_fields",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "row-stack"
+          },
+          "children": [
         {
           "id": "field_is_active",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex justify-between items-start mb-6"
+            "className": "flex-start justify-between"
           },
           "children": [
             {
@@ -58,7 +53,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                    "className": "text-heading"
                   },
                   "text": "$t:sirsoft-board.admin.form.fields.is_active"
                 },
@@ -66,7 +61,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                    "className": "form-hint"
                   },
                   "text": "$t:sirsoft-board.admin.form.descriptions.is_active"
                 }
@@ -88,7 +83,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-2 mb-6"
+            "className": "space-y-2"
           },
           "children": [
             {
@@ -97,7 +92,7 @@
               "name": "Label",
               "props": {
                 "required": true,
-                "className": "block text-sm font-medium text-gray-900 dark:text-white mb-1"
+                "className": "block text-heading mb-1"
               },
               "children": [
                 {
@@ -109,7 +104,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 ml-1"
+                    "className": "text-required"
                   },
                   "text": "*"
                 }
@@ -125,7 +120,7 @@
                 "placeholder": "$t:sirsoft-board.admin.form.placeholders.slug",
                 "required": true,
                 "disabled": "{{!!route?.id || _computed.isReadOnly}}",
-                "className": "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 {{!!route?.id || _computed.isReadOnly ? 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"
+                "className": "font-mono"
               }
             },
             {
@@ -133,7 +128,7 @@
               "name": "Span",
               "if": "{{_local.errors?.slug}}",
               "props": {
-                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                "className": "form-error-xs mt-1"
               },
               "text": "{{_local.errors?.slug?.[0] ?? ''}}"
             },
@@ -142,7 +137,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                "className": "form-hint"
               },
               "text": "$t:sirsoft-board.admin.form.descriptions.slug"
             },
@@ -158,7 +153,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-start gap-2 mb-3"
+                    "className": "flex-start gap-2 mb-3"
                   },
                   "children": [
                     {
@@ -166,14 +161,14 @@
                       "name": "Icon",
                       "props": {
                         "name": "circle-info",
-                        "className": "w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                        "className": "text-secondary w-4 h-4 mt-0.5 flex-shrink-0"
                       }
                     },
                     {
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                        "className": "text-body"
                       },
                       "text": "$t:sirsoft-board.admin.form.menu.manual_guide"
                     }
@@ -183,7 +178,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "space-y-2 text-xs text-gray-600 dark:text-gray-400"
+                    "className": "text-secondary space-y-2 text-xs"
                   },
                   "children": [
                     {
@@ -205,7 +200,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-2 flex-1"
+                            "className": "flex-center gap-2 flex-1"
                           },
                           "children": [
                             {
@@ -227,66 +222,6 @@
                                     "className": "ml-2 px-2 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 font-mono"
                                   },
                                   "text": "/admin/board/{{_local.form?.slug ?? 'notice'}}"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Button",
-                              "if": "{{!!route?.id}}",
-                              "props": {
-                                "className": "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_computed.isReadOnly}}"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Icon",
-                                  "props": {
-                                    "name": "plus",
-                                    "className": "w-3 h-3"
-                                  }
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "text": "$t:sirsoft-board.admin.form.menu.add_to_admin_menu"
-                                }
-                              ],
-                              "actions": [
-                                {
-                                  "type": "click",
-                                  "handler": "apiCall",
-                                  "target": "/api/modules/sirsoft-board/admin/boards/{{route?.id}}/add-to-menu",
-                                  "params": {
-                                    "method": "POST"
-                                  },
-                                  "auth_required": true,
-                                  "onSuccess": [
-                                    {
-                                      "handler": "toast",
-                                      "params": {
-                                        "type": "success",
-                                        "message": "{{result.message}}"
-                                      }
-                                    },
-                                    {
-                                      "handler": "refetchDataSource",
-                                      "params": {
-                                        "dataSourceId": "admin_menu",
-                                        "sync": true
-                                      }
-                                    }
-                                  ],
-                                  "onError": [
-                                    {
-                                      "handler": "toast",
-                                      "params": {
-                                        "type": "error",
-                                        "message": "{{error.message}}"
-                                      }
-                                    }
-                                  ]
                                 }
                               ]
                             }
@@ -334,6 +269,49 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center gap-3 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-heading"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.menu.show_in_admin_menu"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-secondary text-xs mt-0.5"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.menu.show_in_admin_menu_desc"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Toggle",
+                      "props": {
+                        "name": "add_to_menu",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "flex-shrink-0"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -344,7 +322,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-2 mb-6"
+            "className": "space-y-2"
           },
           "children": [
             {
@@ -353,7 +331,7 @@
               "name": "Label",
               "props": {
                 "required": true,
-                "className": "block text-sm font-medium text-gray-900 dark:text-white mb-1"
+                "className": "block text-heading mb-1"
               },
               "children": [
                 {
@@ -365,7 +343,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 ml-1"
+                    "className": "text-required"
                   },
                   "text": "*"
                 }
@@ -389,7 +367,7 @@
               "name": "Span",
               "if": "{{_local.errors?.name}}",
               "props": {
-                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                "className": "form-error-xs mt-1"
               },
               "text": "{{_local.errors?.name?.[0] ?? ''}}"
             }
@@ -400,7 +378,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-2 mb-6"
+            "className": "space-y-2"
           },
           "children": [
             {
@@ -408,7 +386,7 @@
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "block text-sm font-medium text-gray-900 dark:text-white mb-1"
+                "className": "block text-heading mb-1"
               },
               "children": [
                 {
@@ -436,7 +414,7 @@
               "name": "Span",
               "if": "{{_local.errors?.description}}",
               "props": {
-                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                "className": "form-error-xs mt-1"
               },
               "text": "{{_local.errors?.description?.[0] ?? ''}}"
             },
@@ -444,7 +422,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                "className": "form-hint"
               },
               "text": "$t:sirsoft-board.admin.form.descriptions.description"
             }
@@ -455,7 +433,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-2 mb-6"
+            "className": "space-y-2"
           },
           "children": [
             {
@@ -464,7 +442,7 @@
               "name": "Label",
               "props": {
                 "required": true,
-                "className": "block text-sm font-medium text-gray-900 dark:text-white mb-1"
+                "className": "block text-heading mb-1"
               },
               "children": [
                 {
@@ -490,7 +468,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                "className": "form-hint"
               },
               "text": "$t:sirsoft-board.admin.form.descriptions.type"
             }
@@ -501,7 +479,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-2 mb-6 pb-6"
+            "className": "space-y-2"
           },
           "children": [
             {
@@ -509,7 +487,7 @@
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                "className": "text-heading"
               },
               "children": [
                 {
@@ -524,7 +502,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+                "className": "text-tertiary mb-2"
               },
               "text": "$t:sirsoft-board.admin.form.descriptions.categories"
             },
@@ -537,25 +515,14 @@
                 "options": "{{_local.form?.category_options ?? []}}",
                 "creatable": true,
                 "disabled": "{{_computed.isReadOnly}}"
-              },
-              "actions": [
-                {
-                  "type": "before_remove",
-                  "handler": "check_category_usage",
-                  "on_blocked": {
-                    "handler": "setState",
-                    "target": "_local.showCategoryRemoveModal",
-                    "value": true
-                  }
-                }
-              ]
+              }
             },
             {
               "type": "basic",
               "name": "Span",
               "if": "{{_local.errors?.categories}}",
               "props": {
-                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                "className": "form-error-xs mt-1"
               },
               "text": "{{_local.errors?.categories?.[0] ?? ''}}"
             },
@@ -575,7 +542,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex pt-4 justify-between items-center"
+            "className": "flex-between"
           },
           "children": [
             {
@@ -583,7 +550,7 @@
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                "className": "text-heading"
               },
               "children": [
                 {
@@ -624,7 +591,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex pt-4 justify-between items-start"
+            "className": "flex-start justify-between"
           },
           "children": [
             {
@@ -638,7 +605,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                    "className": "text-heading"
                   },
                   "text": "$t:sirsoft-board.admin.form.fields.show_view_count"
                 },
@@ -646,7 +613,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                    "className": "form-hint"
                   },
                   "text": "$t:sirsoft-board.admin.form.descriptions.show_view_count"
                 }
@@ -668,7 +635,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex pt-4 justify-between items-start"
+            "className": "flex-start justify-between"
           },
           "children": [
             {
@@ -682,7 +649,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                    "className": "text-heading"
                   },
                   "text": "$t:sirsoft-board.admin.form.fields.use_report"
                 },
@@ -690,7 +657,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                    "className": "form-hint"
                   },
                   "text": "$t:sirsoft-board.admin.form.descriptions.use_report"
                 }
@@ -707,7 +674,7 @@
             }
           ]
         }
+          ]
+        }
       ]
-    }
-  ]
 }

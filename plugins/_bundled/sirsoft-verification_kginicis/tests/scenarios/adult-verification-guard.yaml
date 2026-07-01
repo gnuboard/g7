@@ -1,0 +1,59 @@
+feature: KG이니시스 본인인증 — 성인인증 미성년자 차단 + verify 실패 안내 toast
+
+description: |
+  성인인증 미성년자 차단(및 연관 신원 가드). KG이니시스 본인확인 verify 처리에서:
+    - (성인 차단) 성인인증(inicis.adult_verification) purpose 의 challenge 는 만 19세 이상만 통과.
+          미성년자(생년월일 누락·형식오류 포함)는 본인 확인 성공이어도 status=failed 로 두고
+          VerificationResult::failure(NOT_ADULT) 반환 → 토큰 미발급 → 코어 정책 게이트
+          (IdentityPolicyService::enforce)가 verified 로그 부재로 자동 차단(428). 코어 무수정.
+    - (실패 안내) verify 실패 시 사용자 안내 toast 가 누락되던 결함을 NOT_ADULT 포함 전체
+          failureCode 에 대해 보강. 브리지 query 에는 failureCode 만 실리므로 프론트에서
+          $t: 다국어 키로 매핑해 코어 toast 핸들러가 로케일별 번역 표시 (하드코딩 금지).
+    - (중복 토스트 억제) 부가 목적 미달(NOT_ADULT)로 challenge 실패 시, 플러그인이 고유 사유
+          toast 를 표출한 직후 코어가 원 428 onError 의 generic 가드 toast("본인 확인이 필요합니다")를
+          중복 발화하던 결함. 플러그인이 부가목적 미달류 실패에 대해 G7Core.identity.markDomainNoticeShown()
+          신호를 남기면, 코어 handleToast 가 동일 사이클의 IDV 가드 error toast 1건을 skip.
+          일반 본인인증 실패(본인확인 자체 실패)는 신호가 없어 가드 toast 유지.
+
+axes:
+  purpose: [adult, non_adult]              # adult: inicis.adult_verification / non_adult: self_update 등
+  is_adult: [true, false, missing]         # true: 만19세이상 / false: 미성년 / missing: 생년월일 누락·형식오류(→차단)
+
+exclusions:
+  - { purpose: non_adult, is_adult: false, reason: "성인 가드는 purpose=adult 일 때만 적용 — non_adult 는 is_adult 무관하게 통과, (non_adult,true)/(non_adult,missing) 으로 대표" }
+
+effects:
+  # 성인인증 차단 (백엔드)
+  - minor_blocked_with_not_adult_failure_and_no_token        # purpose=adult, is_adult=false → failure(NOT_ADULT), status=failed, 토큰 미발급
+  - adult_passes_with_verified_status_and_token              # purpose=adult, is_adult=true → success, 토큰 발급, status=verified
+  - non_adult_purpose_unaffected_by_guard                    # purpose=non_adult → is_adult 무관 success 유지 (회귀 방지)
+  - adult_purpose_blocks_when_birthday_absent                # purpose=adult, is_adult=missing → failure(NOT_ADULT)
+  # (3 표시) verify 실패 안내 toast (프론트)
+  - verify_failure_dispatches_error_toast_with_i18n_key      # identity_error 수신 시 $t: 키로 toast 발행
+  - verified_result_does_not_dispatch_toast                  # 성공 경로는 toast 미발화 (회귀 방지)
+  # (중복 토스트 억제) 부가목적 미달 실패만 코어 가드 토스트 억제 신호
+  - supplementary_failure_marks_domain_notice_to_suppress_guard_toast  # failure_kind=supplementary_unmet → markDomainNoticeShown() 호출
+  - general_identity_failure_does_not_mark_domain_notice               # failure_kind=identity_failed → markDomainNoticeShown() 미호출 (가드 토스트 유지)
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Identity/InicisAdultVerificationGuardTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/resources/js/__tests__/startAuthHandler.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.identityGuardToastSuppress.test.ts
+  - resources/js/core/template-engine/__tests__/IdentityGuardInterceptor.test.ts
+
+rules_layer_coverage:
+  - rule: i18n-key-naming
+    coverage: not_adult 안내는 exceptions.php(ko/en) + 프론트 ko/en.json errors.not_adult + ja 번들 동기. 프론트 toast 는 $t: 다국어 키 — 하드코딩 금지.
+
+design_rationale: |
+  강제 지점 / 표시:
+   - is_adult 결과는 Provider 가 계산해 로그 metadata 에만 저장하고, 코어 정책 게이트는
+     purpose 무관하게 'verified 로그 존재 여부'만 검사해 미성년자도 통과시키던 결함.
+   - 코어 정책 conditions 에 is_adult 조건을 추가(코어 수정)하는 대신, Provider 가 성인인증
+     purpose 에서 미성년자 verify 를 failure 로 처리(코어 무수정). 생년월일은 Provider 만 알고,
+     기존 failure 패턴(binding_mismatch 등)과 동형이라 자연스러운 차단 지점.
+   - 표시: 이니시스는 자체 브리지→postMessage 경로라 결과를 플러그인 index.ts 가 직접 수신.
+     코어 인터셉터는 실패 시 null 반환(재실행 중단)만 하므로 표시 책임은 플러그인에 있음.
+     verify 실패 분기에서 failureCode→$t: 매핑 후 toast 발화 — NOT_ADULT 외 기존 미노출
+     실패(INVALID_AUTH_URL/DECRYPT_FAILED/REMOTE_CALL_FAILED/NOT_FOUND/BINDING_MISMATCH/
+     ALREADY_CONSUMED)도 함께 보강(이슈 3 표시 본체).

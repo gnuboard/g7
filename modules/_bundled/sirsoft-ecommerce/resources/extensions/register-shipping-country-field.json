@@ -1,0 +1,48 @@
+{
+  "target_layout": "auth/register",
+  "injections": [
+    {
+      "target_id": "register_extension_fields",
+      "position": "append_child",
+      "components": [
+        {
+          "id": "ext_register_shipping_country",
+          "comment": "가입폼 배송국가 선택 (MP08 후속 / D6 — 이커머스 설치 + 해외배송 활성 시에만). 기본값=세션 배송국가(>GeoIP>기본국가). name 바인딩으로 registerForm 에 자동 포함 → /api/auth/register 제출.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "text": "$t:sirsoft-ecommerce.auth.register_shipping_country.label"
+            },
+            {
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "preferred_shipping_country",
+                "value": "{{_local?.registerForm?.preferred_shipping_country ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}",
+                "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[_global.locale] ?? c.name?.ko ?? c.code) }))}}",
+                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                "disabled": "{{_local?.isRegistering}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+              },
+              "text": "$t:sirsoft-ecommerce.auth.register_shipping_country.hint"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 331
+}

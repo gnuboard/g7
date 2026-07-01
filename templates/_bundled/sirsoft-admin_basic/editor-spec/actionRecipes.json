@@ -1,0 +1,266 @@
+{
+  "comment": "admin 은 callServerThen 강조(폼/테이블 저장). params + build 풀 프레임워크.",
+  "goToPage": {
+    "label": "$t:editor.action.go_to_page.label",
+    "params": [
+      {
+        "key": "url",
+        "label": "$t:editor.action.go_to_page.param_url",
+        "widget": "page-picker"
+      }
+    ],
+    "build": {
+      "handler": "navigate",
+      "params": {
+        "path": "{{url}}"
+      }
+    }
+  },
+  "showMessage": {
+    "label": "$t:editor.action.show_message.label",
+    "params": [
+      {
+        "key": "text",
+        "label": "$t:editor.action.show_message.param_text",
+        "widget": "i18n-text"
+      },
+      {
+        "key": "tone",
+        "label": "$t:editor.action.show_message.param_tone",
+        "widget": "select",
+        "options": [
+          {
+            "value": "success",
+            "label": "$t:editor.action.show_message.tone_success"
+          },
+          {
+            "value": "error",
+            "label": "$t:editor.action.show_message.tone_error"
+          },
+          {
+            "value": "info",
+            "label": "$t:editor.action.show_message.tone_info"
+          }
+        ]
+      }
+    ],
+    "build": {
+      "handler": "toast",
+      "params": {
+        "message": "{{text}}",
+        "type": "{{tone}}"
+      }
+    }
+  },
+  "changeState": {
+    "label": "$t:editor.action.change_state.label",
+    "params": [
+      {
+        "key": "key",
+        "label": "$t:editor.action.change_state.param_key",
+        "widget": "state-key-picker"
+      },
+      {
+        "key": "value",
+        "label": "$t:editor.action.change_state.param_value",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "setState",
+      "target": "local",
+      "params": {
+        "{{key}}": "{{value}}"
+      }
+    }
+  },
+  "refreshData": {
+    "label": "$t:editor.action.refresh_data.label",
+    "params": [
+      {
+        "key": "src",
+        "label": "$t:editor.action.refresh_data.param_src",
+        "widget": "datasource-picker"
+      }
+    ],
+    "build": {
+      "handler": "refetchDataSource",
+      "params": {
+        "dataSourceId": "{{src}}"
+      }
+    }
+  },
+  "callServerThen": {
+    "label": "$t:editor.action.call_server_then.label",
+    "params": [
+      {
+        "key": "endpoint",
+        "label": "$t:editor.action.call_server_then.param_endpoint",
+        "widget": "text"
+      },
+      {
+        "key": "onSuccess",
+        "label": "$t:editor.action.call_server_then.param_on_success",
+        "widget": "action-list"
+      },
+      {
+        "key": "onError",
+        "label": "$t:editor.action.call_server_then.param_on_error",
+        "widget": "action-list"
+      }
+    ],
+    "build": {
+      "handler": "apiCall",
+      "target": "{{endpoint}}",
+      "onSuccess": "{{onSuccess}}",
+      "onError": "{{onError}}"
+    }
+  },
+  "setLocale": {
+    "label": "$t:editor.action.set_locale.label",
+    "params": [
+      {
+        "key": "target",
+        "label": "$t:editor.action.set_locale.param_target",
+        "widget": "select",
+        "options": [
+          { "value": "ko", "label": "$t:editor.action.set_locale.target_ko" },
+          { "value": "en", "label": "$t:editor.action.set_locale.target_en" },
+          { "value": "ja", "label": "$t:editor.action.set_locale.target_ja" }
+        ]
+      }
+    ],
+    "build": {
+      "handler": "setLocale",
+      "params": {
+        "target": "{{target}}"
+      }
+    }
+  },
+  "setTheme": {
+    "label": "$t:editor.action.set_theme.label",
+    "params": [
+      {
+        "key": "target",
+        "label": "$t:editor.action.set_theme.param_target",
+        "widget": "select",
+        "options": [
+          { "value": "auto", "label": "$t:editor.action.set_theme.target_auto" },
+          { "value": "light", "label": "$t:editor.action.set_theme.target_light" },
+          { "value": "dark", "label": "$t:editor.action.set_theme.target_dark" }
+        ]
+      }
+    ],
+    "build": {
+      "handler": "setTheme",
+      "params": {
+        "target": "{{target}}"
+      }
+    }
+  },
+  "scrollToSection": {
+    "label": "$t:editor.action.scroll_to_section.label",
+    "params": [
+      {
+        "key": "sectionId",
+        "label": "$t:editor.action.scroll_to_section.param_section_id",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "scrollToSection",
+      "params": {
+        "sectionId": "{{sectionId}}"
+      }
+    }
+  },
+  "setDateRange": {
+    "label": "$t:editor.action.set_date_range.label",
+    "params": [
+      {
+        "key": "preset",
+        "label": "$t:editor.action.set_date_range.param_preset",
+        "widget": "select",
+        "options": [
+          { "value": "today", "label": "$t:editor.action.set_date_range.preset_today" },
+          { "value": "week", "label": "$t:editor.action.set_date_range.preset_week" },
+          { "value": "month", "label": "$t:editor.action.set_date_range.preset_month" },
+          { "value": "year", "label": "$t:editor.action.set_date_range.preset_year" }
+        ]
+      }
+    ],
+    "build": {
+      "handler": "setDateRange",
+      "params": {
+        "preset": "{{preset}}"
+      }
+    }
+  },
+  "toggleFilterVisibility": {
+    "label": "$t:editor.action.toggle_filter_visibility.label",
+    "params": [
+      {
+        "key": "filterKey",
+        "label": "$t:editor.action.toggle_filter_visibility.param_filter_key",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "toggleFilterVisibility",
+      "params": {
+        "filterKey": "{{filterKey}}"
+      }
+    }
+  },
+  "saveMultilingualTag": {
+    "label": "$t:editor.action.save_multilingual_tag.label",
+    "params": [
+      {
+        "key": "tag",
+        "label": "$t:editor.action.save_multilingual_tag.param_tag",
+        "widget": "i18n-text"
+      }
+    ],
+    "build": {
+      "handler": "saveMultilingualTag",
+      "params": {
+        "tag": "{{tag}}"
+      }
+    }
+  },
+  "initTheme": {
+    "label": "$t:editor.action.init_theme.label",
+    "params": [
+      {
+        "key": "target",
+        "label": "$t:editor.action.init_theme.param_target",
+        "widget": "select",
+        "options": [
+          { "value": "auto", "label": "$t:editor.action.init_theme.target_auto" },
+          { "value": "light", "label": "$t:editor.action.init_theme.target_light" },
+          { "value": "dark", "label": "$t:editor.action.init_theme.target_dark" }
+        ]
+      }
+    ],
+    "build": {
+      "handler": "initTheme",
+      "params": {
+        "target": "{{target}}"
+      }
+    }
+  },
+  "initMenuFromUrl": {
+    "label": "$t:editor.action.init_menu_from_url.label",
+    "params": [],
+    "build": {
+      "handler": "initMenuFromUrl"
+    }
+  },
+  "initFilterVisibility": {
+    "label": "$t:editor.action.init_filter_visibility.label",
+    "params": [],
+    "build": {
+      "handler": "initFilterVisibility"
+    }
+  }
+}

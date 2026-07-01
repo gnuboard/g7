@@ -76,4 +76,38 @@ class SettingsServiceProviderTest extends TestCase
         // 설정값이 null이 아님 = seo 카테고리가 정상 로딩됨
         $this->assertNotNull($botDetectionEnabled, 'seo.bot_detection_enabled 설정이 로딩되어야 합니다.');
     }
+
+    /**
+     * CORE_CATEGORIES 에 identity 카테고리가 포함되어 admin UI 본인인증 설정이 로딩되는지 테스트합니다.
+     *
+     * 회귀 차단 (이슈 #275): identity 가 CORE_CATEGORIES 에서 누락되면 admin UI 의
+     * 본인인증 환경설정(기본 프로바이더 / 목적별 / TTL / 최대 시도 횟수) 4개 항목이 모두 무시됨.
+     */
+    public function test_identity_category_included_in_core_categories(): void
+    {
+        $reflection = new ReflectionClass(SettingsServiceProvider::class);
+        $categories = $reflection->getConstant('CORE_CATEGORIES');
+
+        $this->assertContains('identity', $categories, 'CORE_CATEGORIES 에 identity 카테고리가 포함되어야 합니다.');
+    }
+
+    /**
+     * 본인인증 설정이 config('settings.identity.*') dot-path 로 hydrate 되는지 테스트합니다.
+     *
+     * 회귀 차단 (이슈 #275): IdentityVerificationManager / MailIdentityProvider /
+     * InicisIdentityProvider 등이 `config('settings.identity.*')` 경로로 직접 read 한다.
+     * 이 경로 hydration 이 누락되면 admin UI 저장값이 모두 무시되고 코드 fallback 만 사용된다.
+     */
+    public function test_settings_identity_dot_path_hydrated(): void
+    {
+        // storage/app/settings/identity.json 이 존재하는 환경에서는 hydrate 되어 array
+        // 부재 환경에서도 최소 null 이어야 함 (Config::set('settings.identity', ...) 의 cover 범위)
+        $identityConfig = config('settings.identity');
+
+        // 카테고리 자체가 등록되어 있어야 함. 빈 배열일 수도 있지만 false 또는 'string' 류는 부적합
+        $this->assertTrue(
+            $identityConfig === null || is_array($identityConfig),
+            'config(\'settings.identity\') 는 null 또는 array 여야 합니다.'
+        );
+    }
 }

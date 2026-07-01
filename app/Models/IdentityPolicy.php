@@ -70,6 +70,7 @@ class IdentityPolicy extends Model
      */
     protected array $trackableFields = [
         'enabled', 'grace_minutes', 'provider_id', 'fail_mode', 'conditions',
+        'purpose', 'applies_to', 'priority',
     ];
 
     protected function casts(): array

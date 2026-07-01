@@ -100,6 +100,7 @@ class WhitelistedEndpoint implements ValidationRule
 {
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
+        // 실제 룰은 /api/(modules|plugins)/{vendor-id}/ 확장 프리픽스도 허용 — app/Rules/WhitelistedEndpoint.php 참조
         if (!preg_match('/^\/api\/(admin|auth|public)\//', $value)) {
             $fail(__('validation.custom.whitelisted_endpoint'));
         }
@@ -1018,6 +1019,67 @@ Rule::exists("board_{$slug}_posts", 'id'),
 - [ ] Custom Rule에서 모든 `$fail()` 호출 시 `__()` 함수 사용
 - [ ] 동적 값은 파라미터 배열로 전달 (예: `['field' => $fieldName]`)
 - [ ] 두 언어 모두에서 테스트 수행
+
+---
+
+## Service-Repository 패턴 {#service-repository-패턴}
+
+FormRequest 의 검증 로직(closure rule, `prepareForValidation`, `withValidator`,
+`messages` 등)이 데이터 조회를 필요로 할 때, Service 와 동일하게 Repository
+Interface 경유 패턴을 따른다.
+
+### 금지 — Model facade 직접 호출
+
+```php
+// ❌ Closure rule 안에서 Model::where 직접 호출
+protected function uniqueRule(): Closure
+{
+    return function ($attribute, $value, $fail) {
+        $exists = User::where('email', $value)->exists(); // ❌
+        if ($exists) { $fail(__('...')); }
+    };
+}
+
+// ❌ prepareForValidation 안에서 Model facade
+protected function prepareForValidation(): void
+{
+    $template = Template::where('identifier', $name)->first(); // ❌
+}
+```
+
+### 필수 — Repository Interface 경유
+
+FormRequest 는 생성자 주입 대신 `app(Interface::class)` 로 해석한다 (Laravel
+의 FormRequest 는 컨테이너 해석 시점이 다르며, 모든 검증 closure 가 인스턴스
+스코프 안에서 동작하므로 helper 호출이 가장 단순).
+
+```php
+use App\Contracts\Repositories\UserRepositoryInterface;
+
+protected function uniqueRule(): Closure
+{
+    return function ($attribute, $value, $fail) {
+        $exists = app(UserRepositoryInterface::class)->existsByEmail($value);
+        if ($exists) { $fail(__('...')); }
+    };
+}
+
+protected function prepareForValidation(): void
+{
+    $template = app(TemplateRepositoryInterface::class)
+        ->findByIdentifier($this->route('templateName'));
+}
+```
+
+조회에 필요한 메서드가 Repository Interface 에 없으면 **Interface 에 메서드를
+추가** 한 뒤 호출한다 (검증 로직 자체를 Service 로 옮기지 않는다 — 검증은
+FormRequest 책임).
+
+### 자동 검증
+
+audit 룰 `formrequest-direct-data-access` 가 FormRequest 내 DB facade / Model
+정적 호출 / 영속 메서드(`save`/`saveQuietly`/`forceDelete`) 직접 호출을 자동
+차단한다. `Rule::exists(Model::class, ...)` 같은 validation rule helper 는 면제.
 
 ---
 

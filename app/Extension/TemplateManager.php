@@ -2,6 +2,7 @@
 
 namespace App\Extension;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
@@ -10,6 +11,7 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
@@ -20,8 +22,6 @@ use App\Services\LayoutService;
 use App\Services\TemplateService;
 use Composer\Semver\Semver;
 use Illuminate\Support\Facades\Auth;
-use App\Contracts\Extension\CacheInterface;
-use App\Extension\Cache\CoreCacheDriver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -85,15 +85,17 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 코어 캐시 드라이버를 lazy 조회합니다.
+     * 코어 캐시 드라이버를 반환합니다.
+     *
+     * 이 메서드가 다루는 키(`template.*`, `layout.*`)는 모두 코어 소유이므로
+     * 항상 `g7:core:` 네임스페이스를 써야 한다. 컨테이너의 `CacheInterface`
+     * 바인딩(모듈/플러그인 테스트가 일시적으로 `PluginCacheDriver` 등으로
+     * 재바인딩할 수 있음)에 의존하면 누수된 바인딩 때문에 forget/remember 가
+     * `g7:plugin.*` 네임스페이스로 빗나가므로, 항상 CoreCacheDriver 를 직접 생성한다.
      */
     private function cache(): CacheInterface
     {
-        try {
-            return app(CacheInterface::class);
-        } catch (\Throwable $e) {
-            return new CoreCacheDriver(config('cache.default', 'array'));
-        }
+        return new CoreCacheDriver(config('cache.default', 'array'));
     }
 
     /**
@@ -423,6 +425,14 @@ class TemplateManager implements TemplateManagerInterface
             // name과 description 다국어 변환 (역호환성)
             $name = $this->convertToMultilingual($template['name']);
             $description = $this->convertToMultilingual($template['description'] ?? '');
+
+            // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
+            $manifest = HookManager::applyFilters(
+                "template.{$templateName}.manifest.translations",
+                ['name' => $name, 'description' => $description]
+            );
+            $name = $manifest['name'] ?? $name;
+            $description = $manifest['description'] ?? $description;
 
             // 3. DB 등록
             $onProgress?->__invoke('db', 'DB 등록 중...');
@@ -921,6 +931,7 @@ class TemplateManager implements TemplateManagerInterface
 
         return $installedTemplates;
     }
+
     /**
      * 템플릿 식별자에 대한 메타데이터(다국어 치환 + 활성 상태 포함)를 조회합니다.
      *
@@ -968,6 +979,7 @@ class TemplateManager implements TemplateManagerInterface
             'github_changelog_url' => $template['github_changelog_url'] ?? null,
             'requires_core' => $template['g7_version'] ?? null,
             'dependencies' => $template['dependencies'] ?? [],
+            'externals' => $template['externals'] ?? [],
             'locales' => $template['locales'] ?? [],
             'layouts_count' => $layoutsCount,
             'components' => $components,
@@ -1015,6 +1027,7 @@ class TemplateManager implements TemplateManagerInterface
             'github_changelog_url' => $metadata['github_changelog_url'] ?? null,
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $metadata['dependencies'] ?? [],
+            'externals' => $metadata['externals'] ?? [],
             'locales' => $metadata['locales'] ?? [],
             'layouts_count' => 0,
             'components' => $metadata['components'] ?? [],
@@ -1187,11 +1200,12 @@ class TemplateManager implements TemplateManagerInterface
                 );
             }
 
-            // 레이아웃 이름 (숫자 또는 문자열 키)
+            // 레이아웃 이름 (숫자 또는 문자열 키) — 다른 모든 카테고리(auth/, board/) 와
+            // 동일하게 디렉토리 접두사 포함된 식별자를 그대로 사용한다 (예: "errors/404").
             $layoutName = $errorLayouts[$code] ?? $errorLayouts[(string) $code];
 
-            // 3. 레이아웃 파일 실제 존재 확인 (errors/ 디렉토리 내)
-            $layoutFilePath = $templatePath.'/layouts/errors/'.$layoutName.'.json';
+            // 3. 레이아웃 파일 실제 존재 확인 — layout_name 그대로 layouts/ 하위 파일 경로로 사용
+            $layoutFilePath = $templatePath.'/layouts/'.$layoutName.'.json';
             if (! File::exists($layoutFilePath)) {
                 throw new \Exception(
                     __('templates.errors.error_layout_not_found', [
@@ -3006,6 +3020,16 @@ class TemplateManager implements TemplateManagerInterface
             try {
                 $name = $template ? $this->convertToMultilingual($template['name']) : $record->name;
                 $description = $template ? $this->convertToMultilingual($template['description'] ?? '') : $record->description;
+
+                // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입 (install 경로와 동일)
+                if ($template) {
+                    $manifest = HookManager::applyFilters(
+                        "template.{$identifier}.manifest.translations",
+                        ['name' => $name, 'description' => $description]
+                    );
+                    $name = $manifest['name'] ?? $name;
+                    $description = $manifest['description'] ?? $description;
+                }
 
                 $this->templateRepository->updateByIdentifier($identifier, [
                     'version' => $toVersion,

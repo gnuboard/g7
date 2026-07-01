@@ -9,17 +9,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Board\Exceptions\MenuAlreadyExistsException;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Modules\Sirsoft\Board\Http\Requests\StoreBoardRequest;
 use Modules\Sirsoft\Board\Http\Requests\UpdateBoardRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardCollection;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
-use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Http\Resources\BoardTypeResource;
+use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\BoardTypeService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자용 게시판 관리 컨트롤러
@@ -29,6 +29,7 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 class BoardController extends AdminBaseController
 {
     use ChecksBoardPermission;
+
     /**
      * BoardController 생성자
      *
@@ -47,6 +48,7 @@ class BoardController extends AdminBaseController
      * @param  Request  $request  HTTP 요청
      * @return JsonResponse 게시판 목록 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 목록 조회. all()로 필터·페이징 파라미터만 읽음 (검증 불필요)
     public function index(Request $request): JsonResponse
     {
         try {
@@ -98,6 +100,7 @@ class BoardController extends AdminBaseController
      * @param  PostService  $postService  게시글 서비스 (DI)
      * @return JsonResponse 게시판 상세 정보 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 슬러그 상세 조회. 경로 파라미터(slug)만 사용 (검증 불필요)
     public function showBySlug(Request $request, string $slug, PostService $postService): JsonResponse
     {
         try {
@@ -195,6 +198,7 @@ class BoardController extends AdminBaseController
      * @param  Request  $request  HTTP 요청
      * @return JsonResponse 삭제 성공 응답
      */
+    // audit:allow controller-base-request-injection reason: DELETE 단건 삭제. force_delete 불리언 플래그만 input()으로 읽음 (검증 불필요)
     public function destroy(int $id, Request $request): JsonResponse
     {
         try {
@@ -217,6 +221,7 @@ class BoardController extends AdminBaseController
      * @param  Request  $request  HTTP 요청
      * @return JsonResponse 폼 데이터 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 폼 데이터 조회. board_id 존재 여부로 생성/수정 모드만 분기 (검증 불필요)
     public function getFormData(Request $request): JsonResponse
     {
         try {
@@ -227,6 +232,8 @@ class BoardController extends AdminBaseController
                 $request->merge(['include_permissions' => true]);
 
                 $board = $this->boardService->getBoard($request->board_id);
+                // 폼 토글 초기값: 관리자 메뉴 등록 여부를 모델 속성으로 전달
+                $board->is_in_admin_menu = $this->boardService->isInAdminMenu($board);
                 $data = (new BoardResource($board))->toArray($request);
             }
             // 복사 모드
@@ -249,6 +256,7 @@ class BoardController extends AdminBaseController
                 $data['id'] = null;
                 $data['slug'] = null;
                 $data['is_active'] = true;
+                $data['add_to_menu'] = false;
 
                 // 로그인한 관리자를 게시판 관리자 기본값으로 지정
                 $currentUser = Auth::user();
@@ -270,8 +278,9 @@ class BoardController extends AdminBaseController
 
                 $data['categories'] = [];
                 $spamSecurity = g7_module_settings('sirsoft-board', 'spam_security', []);
-                $data['blocked_keywords'] = collect($spamSecurity['blocked_keywords'] ?? [])->join(',');
-                $data['allowed_extensions'] = collect($basicDefaults['allowed_extensions'] ?? [])->join(',');
+                // TagInput 입력과 일관되게 배열로 주입 (categories 와 동일 패턴)
+                $data['blocked_keywords'] = array_values($spamSecurity['blocked_keywords'] ?? []);
+                $data['allowed_extensions'] = array_values($basicDefaults['allowed_extensions'] ?? []);
 
                 // depth 필드는 reject(is_array)로 걸러지지 않지만 basic_defaults가 비어있을 수 있으므로 명시적 기본값 보장
                 $limits = config('sirsoft-board.limits', []);

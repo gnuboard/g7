@@ -1,0 +1,46 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 웹소켓 토글 전 계층 SSoT 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버. Chrome MCP 라이브 axis 는 PO 환경 실측.
+
+feature: websocket_enabled 토글 전 계층 단일 SSoT 가드 (공개#50)
+
+description: |
+  admin 환경설정 드라이버의 `websocket_enabled` 토글이 송신·프론트연결·채널인증
+  세 계층을 모두 제어하는지 보장하는 시나리오.
+
+  배경:
+    - 토글 OFF 시 broadcasting.default='null' 로 백엔드 송신은 막혔으나,
+      .env REVERB_APP_KEY 가 살아 있으면 Blade @if(reverb.key) 가 true 라 브라우저가
+      직접 WebSocket 에 연결하고 broadcasting/auth 가 통과되던 빈틈.
+    - 변경 1: OFF 시 reverb.key 를 빈 문자열로 무력화 → 프론트 연결 차단.
+    - 변경 2: broadcasting/auth 가 broadcasting.default==='null' 이면 403.
+
+axes:
+  websocket_enabled: [off, on]
+  env_broadcast_connection: [reverb, null, log]
+  layer: [send_broadcast, front_reverb_key, channel_auth]
+  authenticated: [yes, no]
+
+exclusions:
+  - { layer: channel_auth, authenticated: no, reason: "broadcasting/auth 는 auth:sanctum 선행 → 미인증은 401(가드 이전)" }
+  - { websocket_enabled: on, env_broadcast_connection: null, reason: "ON 인데 .env null 이면 자격증명 소스 부재 — 별도 환경 결함, 본 토글 SSoT 범위 밖" }
+
+effects:
+  - off_forces_broadcasting_default_null
+  - off_blanks_reverb_key_for_front_connection_block
+  - off_clears_g7_websocket_client_host
+  - on_preserves_reverb_key_from_settings_or_env
+  - channel_auth_returns_403_when_toggle_off
+  - channel_auth_returns_401_when_unauthenticated
+  - channel_auth_passes_toggle_guard_when_on_and_authenticated
+  - websocket_manager_skips_initialize_when_appkey_empty
+  - front_no_wss_connection_attempt_when_toggle_off  # Chrome MCP 라이브 실측 (PO 환경)
+
+test_files:
+  - tests/Unit/Providers/SettingsServiceProviderWebsocketConfigTest.php
+  - tests/Feature/Api/BroadcastingAuthTest.php
+  - resources/js/core/websocket/__tests__/WebSocketManager.test.ts
+
+rules_layer_coverage:
+  - rule: hook-broadcast-direct
+    coverage: 송신 가드는 HookManager::broadcast 의 broadcasting.default 체크 (미변경)
+  - rule: routing
+    coverage: broadcasting/auth 라우트 name('api.broadcasting.auth') 유지 + auth:sanctum 미들웨어 보존

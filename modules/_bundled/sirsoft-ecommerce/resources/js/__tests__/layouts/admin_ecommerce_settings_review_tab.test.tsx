@@ -156,13 +156,13 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
         });
 
         it('카드 본문에 3개 설정 섹션이 있다', () => {
-            const cardBody = (tabReviewSettings as any).children[0].children[1];
+            const cardBody = (tabReviewSettings as any).children[0].children[2];
             // 3개 설정 + 2개 구분선 = 5개
             expect(cardBody.children.length).toBeGreaterThanOrEqual(3);
         });
 
         it('write_deadline_days Input이 min=1, max=365다', () => {
-            const cardBody = (tabReviewSettings as any).children[0].children[1];
+            const cardBody = (tabReviewSettings as any).children[0].children[2];
             const deadlineSection = cardBody.children[0];
             const input = deadlineSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
@@ -171,7 +171,7 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
         });
 
         it('max_images Input이 min=0, max=10이다', () => {
-            const cardBody = (tabReviewSettings as any).children[0].children[1];
+            const cardBody = (tabReviewSettings as any).children[0].children[2];
             const maxImagesSection = cardBody.children[2]; // 구분선(index 1) 건너뜀
             const input = maxImagesSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
@@ -180,7 +180,7 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
         });
 
         it('max_image_size_mb Input이 min=1, max=20이다', () => {
-            const cardBody = (tabReviewSettings as any).children[0].children[1];
+            const cardBody = (tabReviewSettings as any).children[0].children[2];
             const maxSizeSection = cardBody.children[4]; // 구분선(index 3) 건너뜀
             const input = maxSizeSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
@@ -189,7 +189,7 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
         });
 
         it('모든 Input의 onChange가 setState + hasChanges: true를 사용한다', () => {
-            const cardBody = (tabReviewSettings as any).children[0].children[1];
+            const cardBody = (tabReviewSettings as any).children[0].children[2];
             const inputSections = [cardBody.children[0], cardBody.children[2], cardBody.children[4]];
             for (const section of inputSections) {
                 const input = section.children.find((c: any) => c.name === 'Input');

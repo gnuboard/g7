@@ -53,5 +53,12 @@
   "validation_error_title": "入力エラー",
   "validation_error_description": "入力項目を確認してください。",
   "reset": "初期化",
-  "currency_unit": "円"
+  "currency_unit": "円",
+  "currency": "通貨",
+  "pagination": "ページネーション",
+  "first_page": "最初のページ",
+  "prev_page": "前のページ",
+  "next_page": "次のページ",
+  "last_page": "最後のページ",
+  "page_n": "ページ {{n}}"
 }

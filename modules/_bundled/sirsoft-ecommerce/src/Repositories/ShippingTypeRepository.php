@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInter
 class ShippingTypeRepository implements ShippingTypeRepositoryInterface
 {
     /**
-     * @param ShippingType $model 배송유형 모델
+     * @param  ShippingType  $model  배송유형 모델
      */
     public function __construct(
         protected ShippingType $model
@@ -129,5 +129,24 @@ class ShippingTypeRepository implements ShippingTypeRepositoryInterface
         }
 
         return $query->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getActiveCodes(): array
+    {
+        return $this->model->where('is_active', true)->pluck('code')->toArray();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getFirstActiveCodeByCategory(string $category): ?string
+    {
+        return $this->model->where('category', $category)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->value('code');
     }
 }

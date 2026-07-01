@@ -2,7 +2,7 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "card"
+    "className": "admin-card"
   },
   "children": [
     {
@@ -16,7 +16,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center justify-between"
+            "className": "flex-between"
           },
           "children": [
             {
@@ -39,7 +39,7 @@
               "if": "{{!_local.isAddingRefundReason}}",
               "props": {
                 "type": "button",
-                "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                 "disabled": "{{_computed.isReadOnly}}"
               },
               "actions": [
@@ -107,7 +107,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                    "className": "text-secondary block text-xs font-medium mb-1"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.code"
                 },
@@ -118,7 +118,7 @@
                     "type": "text",
                     "value": "{{_local.refundReasonForm?.code ?? ''}}",
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.code_placeholder",
-                    "className": "{{_local.refundReasonFormErrors?.code ? 'input input-error w-full font-mono' : 'input w-full font-mono'}}",
+                    "className": "{{_local.refundReasonFormErrors?.code ? 'input input-error font-mono' : 'input font-mono'}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   },
                   "actions": [
@@ -137,7 +137,7 @@
                   "name": "Span",
                   "if": "{{_local.refundReasonFormErrors?.code}}",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.validation.code_required"
                 }
@@ -151,7 +151,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                    "className": "text-secondary block text-xs font-medium mb-1"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name"
                 },
@@ -186,7 +186,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                    "className": "text-secondary block text-xs font-medium mb-1"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_type"
                 },
@@ -236,7 +236,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "flex items-center gap-2 cursor-pointer"
+                    "className": "flex-center gap-2 cursor-pointer"
                   },
                   "children": [
                     {
@@ -263,7 +263,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                        "className": "text-body"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.is_user_selectable"
                     }
@@ -285,7 +285,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                 "disabled": "{{_computed.isReadOnly}}"
               },
               "actions": [
@@ -411,7 +411,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-32"
+                        "className": "text-tertiary text-left font-medium px-4 py-2 w-32"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.code"
                     },
@@ -419,7 +419,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-56"
+                        "className": "text-tertiary text-left font-medium px-4 py-2 w-56"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.name"
                     },
@@ -427,7 +427,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-32"
+                        "className": "text-tertiary text-left font-medium px-4 py-2 w-32"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.fault_type"
                     },
@@ -435,7 +435,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "text-center text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-20"
+                        "className": "text-tertiary text-center font-medium px-4 py-2 w-20"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.is_user_selectable"
                     },
@@ -443,7 +443,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "text-center text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-16"
+                        "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.is_active"
                     },
@@ -451,7 +451,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "text-center text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-16"
+                        "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.actions"
                     }
@@ -486,7 +486,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "font-mono text-sm text-gray-700 dark:text-gray-300"
+                            "className": "font-mono text-body"
                           },
                           "text": "{{reason.code}}"
                         }

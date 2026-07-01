@@ -17,20 +17,17 @@
         {
           "type": "basic",
           "name": "H3",
-          "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white"
-          },
           "text": "$t:admin.settings.identity.messages.title"
         },
         {
           "type": "basic",
           "name": "P",
-          "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
-          },
           "text": "$t:admin.settings.identity.messages.intro"
         }
-      ]
+      ],
+      "props": {
+        "className": "section-header"
+      }
     },
     {
       "id": "identity_messages_channel_sub_tabs",
@@ -45,7 +42,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "{{(_local.activeIdentityMessageChannel ?? 'mail') === 'mail' ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2"
+            "className": "{{(_local.activeIdentityMessageChannel ?? 'mail') === 'mail' ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
           },
           "children": [
             {
@@ -80,14 +77,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center justify-between"
+        "className": "flex-between py-3"
       },
       "children": [
         {
           "type": "basic",
           "name": "Span",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400"
+            "className": "text-label-subtle"
           },
           "text": "$t:admin.settings.identity.messages.total_count|count={{identityMessages?.data?.meta?.total ?? identityMessages?.data?.pagination?.total ?? 0}}"
         },
@@ -95,14 +92,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-2"
+            "className": "flex-center gap-2"
           },
           "children": [
             {
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:admin.settings.identity.messages.per_page_label"
             },
@@ -114,9 +111,18 @@
                 "className": "w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                 "value": "{{String(query.messages_per_page || 20)}}",
                 "options": [
-                  { "value": "10", "label": "10" },
-                  { "value": "20", "label": "20" },
-                  { "value": "50", "label": "50" }
+                  {
+                    "value": "10",
+                    "label": "10"
+                  },
+                  {
+                    "value": "20",
+                    "label": "20"
+                  },
+                  {
+                    "value": "50",
+                    "label": "50"
+                  }
                 ]
               },
               "actions": [
@@ -147,7 +153,10 @@
                 {
                   "type": "basic",
                   "name": "Icon",
-                  "props": { "name": "fa-solid fa-plus", "className": "text-xs" }
+                  "props": {
+                    "name": "fa-solid fa-plus",
+                    "className": "text-xs"
+                  }
                 },
                 {
                   "type": "basic",
@@ -172,7 +181,9 @@
                               "scope_type": "policy",
                               "scope_value": "",
                               "name": {},
-                              "channels": ["mail"],
+                              "channels": [
+                                "mail"
+                              ],
                               "subject": {},
                               "body": {}
                             },
@@ -181,7 +192,10 @@
                           }
                         }
                       },
-                      { "handler": "openModal", "target": "modal_identity_message_definition_add" }
+                      {
+                        "handler": "openModal",
+                        "target": "modal_identity_message_definition_add"
+                      }
                     ]
                   }
                 }
@@ -196,7 +210,6 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "space-y-3"
       },
       "children": [
         {
@@ -208,14 +221,14 @@
             "index_var": "defIdx"
           },
           "props": {
-            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+            "className": "admin-card mb-3"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-start gap-3"
+                "className": "flex-start gap-3"
               },
               "children": [
                 {
@@ -266,7 +279,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3"
+                        "className": "flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
                       },
                       "children": [
                         {
@@ -280,14 +293,14 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "flex flex-wrap items-center gap-2 mb-1"
+                                "className": "flex-center flex-wrap gap-2 mb-1"
                               },
                               "children": [
                                 {
                                   "type": "basic",
                                   "name": "H4",
                                   "props": {
-                                    "className": "text-base font-medium text-gray-900 dark:text-white"
+                                    "className": "text-primary text-base font-medium"
                                   },
                                   "text": "{{def.name?.[$locale] ?? def.name?.ko ?? (def.provider_id + ' / ' + def.scope_type)}}"
                                 },
@@ -295,7 +308,7 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "props": {
-                                    "className": "text-xs font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded"
+                                    "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                   },
                                   "text": "{{def.scope_type === 'provider_default' ? 'provider_default' : (def.scope_type + ':' + def.scope_value)}}"
                                 },
@@ -322,7 +335,7 @@
                               "type": "basic",
                               "name": "P",
                               "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 truncate"
+                                "className": "text-label-subtle truncate"
                               },
                               "text": "{{def.templates?.[0]?.subject?.[$locale] ?? def.templates?.[0]?.subject?.ko ?? ''}}"
                             },
@@ -342,12 +355,24 @@
                                     "item_var": "v"
                                   },
                                   "props": {
-                                    "className": "text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded font-mono"
+                                    "className": "text-tertiary px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono"
                                   },
                                   "children": [
-                                    { "type": "basic", "name": "Span", "text": "{" },
-                                    { "type": "basic", "name": "Span", "text": "{{v.key}}" },
-                                    { "type": "basic", "name": "Span", "text": "}" }
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "text": "{"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "text": "{{v.key}}"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "text": "}"
+                                    }
                                   ]
                                 }
                               ]
@@ -358,7 +383,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-3 flex-shrink-0"
+                            "className": "flex-center gap-3 flex-shrink-0"
                           },
                           "children": [
                             {
@@ -375,14 +400,38 @@
                                   "handler": "apiCall",
                                   "auth_required": true,
                                   "target": "{{'/api/admin/identity/messages/definitions/' + def.id + '/toggle-active'}}",
-                                  "params": { "method": "PATCH" },
+                                  "params": {
+                                    "method": "PATCH"
+                                  },
                                   "onSuccess": [
-                                    { "handler": "toast", "params": { "message": "$t:admin.settings.identity.messages.toggle_success", "variant": "success" } },
-                                    { "handler": "refetchDataSource", "params": { "dataSourceId": "identityMessages" } }
+                                    {
+                                      "handler": "toast",
+                                      "params": {
+                                        "message": "$t:admin.settings.identity.messages.toggle_success",
+                                        "variant": "success"
+                                      }
+                                    },
+                                    {
+                                      "handler": "refetchDataSource",
+                                      "params": {
+                                        "dataSourceId": "identityMessages"
+                                      }
+                                    }
                                   ],
                                   "onError": [
-                                    { "handler": "toast", "params": { "message": "$t:admin.settings.identity.messages.toggle_failed", "variant": "error" } },
-                                    { "handler": "refetchDataSource", "params": { "dataSourceId": "identityMessages" } }
+                                    {
+                                      "handler": "toast",
+                                      "params": {
+                                        "message": "$t:admin.settings.identity.messages.toggle_failed",
+                                        "variant": "error"
+                                      }
+                                    },
+                                    {
+                                      "handler": "refetchDataSource",
+                                      "params": {
+                                        "dataSourceId": "identityMessages"
+                                      }
+                                    }
                                   ]
                                 }
                               ]
@@ -426,7 +475,10 @@
                                           }
                                         }
                                       },
-                                      { "handler": "openModal", "target": "modal_identity_message_template_form" }
+                                      {
+                                        "handler": "openModal",
+                                        "target": "modal_identity_message_template_form"
+                                      }
                                     ]
                                   }
                                 }
@@ -456,7 +508,10 @@
                                           "resetIdentityMessageTargetName": "{{def.name?.[$locale] ?? def.name?.ko ?? ''}}"
                                         }
                                       },
-                                      { "handler": "openModal", "target": "modal_identity_message_definition_reset" }
+                                      {
+                                        "handler": "openModal",
+                                        "target": "modal_identity_message_definition_reset"
+                                      }
                                     ]
                                   }
                                 }
@@ -485,7 +540,10 @@
                                           "deleteIdentityMessageTargetName": "{{def.name?.[$locale] ?? def.name?.ko ?? ''}}"
                                         }
                                       },
-                                      { "handler": "openModal", "target": "modal_identity_message_definition_delete" }
+                                      {
+                                        "handler": "openModal",
+                                        "target": "modal_identity_message_definition_delete"
+                                      }
                                     ]
                                   }
                                 }
@@ -500,14 +558,14 @@
                       "name": "Div",
                       "if": "{{(_local.expandedIdentityMessages ?? {})[def.id]}}",
                       "props": {
-                        "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+                        "className": "mt-3 pt-3"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 block"
+                            "className": "text-tertiary font-medium mb-2 block"
                           },
                           "text": "$t:admin.settings.identity.messages.body_preview"
                         },
@@ -536,7 +594,7 @@
       "name": "Div",
       "if": "{{(identityMessages?.data?.data ?? []).length === 0}}",
       "props": {
-        "className": "text-center py-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+        "className": "admin-card"
       },
       "children": [
         {
@@ -551,7 +609,7 @@
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400"
+            "className": "text-label-subtle"
           },
           "text": "$t:admin.settings.identity.messages.empty"
         }

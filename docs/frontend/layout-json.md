@@ -77,7 +77,7 @@
 | `version` | string | ✅ | 스키마 버전 (예: "1.0.0") |
 | `layout_name` | string | ✅ | 레이아웃 식별자 (아래 네이밍 규칙 참조) |
 | `meta` | object | ❌ | 메타 정보 (title, description) |
-| `data_sources` | array | ✅ | API 데이터 소스 정의 |
+| `data_sources` | array | ✅ | API 데이터 소스 정의 (각 항목에 `label_key` `$t:` 키 — 편집기 데이터 연결 피커 친화 명칭) |
 | `init_actions` | array | ❌ | 초기화 액션 (레이아웃 로드 시 실행) |
 | `modals` | array | ❌ | 모달 컴포넌트 정의 |
 | `scripts` | array | ❌ | 외부 스크립트 동적 로드 (engine-v1.8.0+) |

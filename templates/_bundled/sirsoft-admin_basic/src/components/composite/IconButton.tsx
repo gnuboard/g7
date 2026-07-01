@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import type { EditorAttrs } from '../../types';
 
 // G7Core 전역 객체의 스타일 헬퍼 접근
 const G7Core = () => (window as any).G7Core;
@@ -10,11 +11,17 @@ export interface IconButtonProps {
   iconName: IconName;
   label?: string;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -46,12 +53,14 @@ export const IconButton: React.FC<IconButtonProps> = ({
   disabled = false,
   className = '',
   style,
+  id,
+  editorAttrs,
 }) => {
-  // 크기별 스타일
+  // 크기별 스타일 (라벨 없을 때는 정사각 고정 크기로 정렬을 보장)
   const sizeClasses = {
-    sm: label ? 'px-3 py-1.5 text-sm' : 'p-1.5',
-    md: label ? 'px-4 py-2 text-base' : 'p-2',
-    lg: label ? 'px-5 py-2.5 text-lg' : 'p-2.5',
+    sm: label ? 'px-3 py-1.5 text-sm' : 'w-8 h-8',
+    md: label ? 'px-4 py-2 text-base' : 'w-10 h-10',
+    lg: label ? 'px-5 py-2.5 text-lg' : 'w-12 h-12',
   };
 
   // 아이콘 크기
@@ -67,6 +76,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
     secondary: 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600',
     danger: 'bg-red-600 hover:bg-red-700 text-white border-transparent',
     ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-transparent',
+    outline: 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600',
   };
 
   const baseClasses = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400';
@@ -83,6 +93,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
       disabled={disabled}
       className={mergedClassName}
       style={style}
+      id={id} {...editorAttrs}
     >
       <Icon name={iconName} className={iconSizeClasses[size]} />
       {label}

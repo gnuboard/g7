@@ -10,10 +10,13 @@ use App\Enums\LayoutSourceType;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Models\LayoutExtension;
+use App\Models\Plugin;
 use App\Models\Template;
+use App\Models\TemplateLayout;
 use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
@@ -24,6 +27,16 @@ use Tests\TestCase;
 class LayoutExtensionServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * 같은 스위트의 레이아웃/GDPR 미들웨어 의존 테스트와 migrate:fresh 정합성을
+     * 맞추기 위해 GDPR 플러그인 마이그레이션을 일관 선언한다.
+     *
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
 
     private LayoutExtensionService $service;
 
@@ -66,6 +79,11 @@ class LayoutExtensionServiceTest extends TestCase
 
         $mockModuleManager = $this->createMock(ModuleManager::class);
         $mockModuleManager->method('getActiveModules')->willReturn($activeModules);
+        // getModuleInfo 는 편집 모드 출처 메타의 로케일 표시명 해석에 쓰인다.
+        // 식별자 → "{식별자} 모듈" 형태의 표시명을 돌려주는 스텁.
+        $mockModuleManager->method('getModuleInfo')->willReturnCallback(
+            fn (string $id) => isset($activeModules[$id]) ? ['identifier' => $id, 'name' => $id.' 모듈'] : null
+        );
         $this->app->instance(ModuleManager::class, $mockModuleManager);
 
         $activePlugins = [];
@@ -136,6 +154,359 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
+     * 편집 모드(withSourceMeta=true)에서 주입 노드의 __source 가 출처 타입/식별자를
+     * 함께 담아, 편집기 오버레이가 "어느 확장인지" 표시할 수 있게 하는지 검증한다.
+     */
+    public function test_marks_extension_source_with_type_and_identifier_in_edit_mode(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'admin.dashboard.widgets',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-support',
+            'content' => [
+                'extension_point' => 'admin.dashboard.widgets',
+                'components' => [
+                    [
+                        'id' => 'support_widget',
+                        'type' => 'composite',
+                        'name' => 'Card',
+                        'children' => [
+                            ['id' => 'support_child', 'type' => 'basic', 'name' => 'Span'],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_dashboard',
+            'components' => [
+                [
+                    'id' => 'dashboard_widgets',
+                    'type' => 'extension_point',
+                    'name' => 'admin.dashboard.widgets',
+                    'default' => [],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        // withSourceMeta=true 로 편집 모드 출처 메타 부여
+        $result = $this->service->applyExtensions($layout, $this->template->id, true);
+
+        $injected = $result['components'][0]['children'][0];
+        $this->assertSame('extension', $injected['__source']['kind']);
+        $this->assertSame('module', $injected['__source']['extensionSourceType']);
+        $this->assertSame('sirsoft-support', $injected['__source']['extensionIdentifier']);
+        // 로케일 표시명도 함께 부여 — 오버레이가 "표시명 (식별자)" 로 노출
+        $this->assertSame('sirsoft-support 모듈', $injected['__source']['extensionName']);
+
+        // 자식 노드에도 동일 출처 메타가 전파되어야 한다(통짜 잠금/라벨 일관성).
+        $child = $injected['children'][0];
+        $this->assertSame('sirsoft-support', $child['__source']['extensionIdentifier']);
+        $this->assertSame('sirsoft-support 모듈', $child['__source']['extensionName']);
+    }
+
+    /**
+     * 편집 모드에서 확장이 주입한 data_source 에도 출처 메타(__source)가 부여되어,
+     * 데이터 소스 모달이 "어느 확장(모듈/플러그인)이 주입했는지" 표시할 수 있게 한다
+     * 일반 렌더는 메타 미부여.
+     */
+    public function test_marks_extension_source_on_injected_data_sources_in_edit_mode(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'admin.dashboard.widgets',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-support',
+            'content' => [
+                'extension_point' => 'admin.dashboard.widgets',
+                'components' => [
+                    ['id' => 'support_widget', 'type' => 'composite', 'name' => 'Card', 'props' => ['title' => 'Support']],
+                ],
+                'data_sources' => [
+                    ['id' => 'supportConsent', 'type' => 'api', 'endpoint' => '/api/modules/sirsoft-support/consent'],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_dashboard',
+            'components' => [
+                ['id' => 'dashboard_widgets', 'type' => 'extension_point', 'name' => 'admin.dashboard.widgets', 'default' => []],
+            ],
+            'data_sources' => [],
+        ];
+
+        // 편집 모드(withSourceMeta=true)
+        $edit = $this->service->applyExtensions($layout, $this->template->id, true);
+        $ds = collect($edit['data_sources'])->firstWhere('id', 'supportConsent');
+        $this->assertNotNull($ds, '주입된 data_source 가 병합되어야 함');
+        $this->assertSame('extension', $ds['__source']['kind']);
+        $this->assertSame('module', $ds['__source']['extensionSourceType']);
+        $this->assertSame('sirsoft-support', $ds['__source']['extensionIdentifier']);
+
+        // 일반 렌더(withSourceMeta=false)는 __source 미부여(운영 화면 영향 0).
+        $render = $this->service->applyExtensions($layout, $this->template->id, false);
+        $dsPlain = collect($render['data_sources'])->firstWhere('id', 'supportConsent');
+        $this->assertNotNull($dsPlain);
+        $this->assertArrayNotHasKey('__source', $dsPlain);
+    }
+
+    /**
+     * 편집 모드(withSourceMeta=true)에서 inject_props 대상 호스트 노드에 `__injectedProps`
+     * 메타가 부여되는지 검증한다.
+     */
+    public function test_marks_injected_props_on_host_node_in_edit_mode(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_detail',
+                'injections' => [
+                    [
+                        'target_id' => 'user_detail_tabs',
+                        'position' => 'inject_props',
+                        'props' => ['tabs' => ['_append' => [['id' => 'ext_tab', 'label' => 'Ext']]]],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_user_detail',
+            'components' => [
+                ['id' => 'user_detail_tabs', 'type' => 'composite', 'name' => 'Tabs', 'props' => ['tabs' => []]],
+            ],
+        ];
+
+        // 편집 모드 — 호스트 노드에 __injectedProps 부여.
+        $edit = $this->service->applyExtensions($layout, $this->template->id, true);
+        $host = collect($edit['components'])->firstWhere('id', 'user_detail_tabs');
+        $this->assertNotNull($host);
+        $this->assertArrayHasKey('__injectedProps', $host);
+        $this->assertCount(1, $host['__injectedProps']);
+        $injected = $host['__injectedProps'][0];
+        $this->assertSame('module', $injected['extensionSourceType']);
+        $this->assertSame('sirsoft-marketing', $injected['extensionIdentifier']);
+        $this->assertSame(
+            ['tabs' => ['_append' => [['id' => 'ext_tab', 'label' => 'Ext']]]],
+            $injected['props'],
+        );
+        // 호스트 props 에 실제 주입도 동작(병합) — _append 가 props.tabs 에 반영.
+        $this->assertNotEmpty($host['props']['tabs']);
+
+        // 일반 렌더(withSourceMeta=false)는 __injectedProps 미부여(운영 화면 무영향).
+        $render = $this->service->applyExtensions($layout, $this->template->id, false);
+        $hostPlain = collect($render['components'])->firstWhere('id', 'user_detail_tabs');
+        $this->assertArrayNotHasKey('__injectedProps', $hostPlain);
+    }
+
+    /**
+     * 확장의 호스트 레이아웃 후보 — overlay 는 target_layout 1개, extension_point 는
+     * 그 확장점을 포함하는 레이아웃 전체.
+     */
+    public function test_get_extension_host_layouts_overlay_and_extension_point(): void
+    {
+        // overlay — target_layout + 편집 가능 컴포넌트를 실재 target_id 에 주입 → 유효 호스트.
+        TemplateLayout::create([
+            'template_id' => $this->template->id,
+            'name' => 'admin_user_detail',
+            'content' => ['components' => [['name' => 'Div', 'props' => ['id' => 'detail_panel']]]],
+        ]);
+        $overlay = LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_detail',
+                'injections' => [['target_id' => 'detail_panel', 'position' => 'append_child', 'components' => [['name' => 'Div']]]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+        $this->assertSame(['admin_user_detail'], $this->service->getExtensionHostLayouts($overlay));
+
+        // extension_point — 그 확장점을 포함하는 레이아웃 전체 조회(2개 호스트).
+        TemplateLayout::create([
+            'template_id' => $this->template->id,
+            'name' => 'admin_dashboard',
+            'content' => ['components' => [['type' => 'extension_point', 'name' => 'dash.widgets']]],
+        ]);
+        TemplateLayout::create([
+            'template_id' => $this->template->id,
+            'name' => 'admin_home',
+            'content' => ['components' => [['type' => 'extension_point', 'name' => 'dash.widgets']]],
+        ]);
+        $ep = LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'dash.widgets',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            // extension_point 가 편집 가능 컴포넌트를 실제로 주입해야 시각 편집 호스트로 인정.
+            'content' => ['extension_point' => 'dash.widgets', 'components' => [['name' => 'Div']]],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+        $hosts = $this->service->getExtensionHostLayouts($ep);
+        $this->assertContains('admin_dashboard', $hosts);
+        $this->assertContains('admin_home', $hosts);
+        $this->assertCount(2, $hosts);
+    }
+
+    /**
+     * -1 — 백엔드 게이트는 "주입이 성립하는가" 수준만 판정한다.
+     * modals 만 주입하는 extension_point(예: 토스페이먼츠)도 주입은 성립하므로 호스트로 인정해
+     * 트리에 노출한다(클릭 시 프론트가 시각 조각 유무를 판정해 디그레이드 안내 — 숨김이 아니라
+     * 디그레이드). 완전 빈 content(병합할 payload 없음)만 제외한다.
+     */
+    public function test_get_extension_host_layouts_extension_point_requires_components(): void
+    {
+        TemplateLayout::create([
+            'template_id' => $this->template->id,
+            'name' => 'shop_checkout',
+            'content' => ['components' => [['type' => 'extension_point', 'name' => 'shop.checkout.ext']]],
+        ]);
+
+        // components 없이 modals 만 주입 — 주입 성립 → 호스트 인정(트리 노출, 클릭 시 프론트
+        // editability 판정으로 디그레이드).
+        $modalsOnly = LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'shop.checkout.ext',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-tosspayments',
+            'content' => [
+                'extension_point' => 'shop.checkout.ext',
+                'modals' => [['id' => 'toss_modal', 'components' => [['name' => 'Div']]]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+        $this->assertSame(['shop_checkout'], $this->service->getExtensionHostLayouts($modalsOnly));
+
+        // 병합할 payload 가 전혀 없는 content(components 빈 배열뿐) — 주입 불성립 → 제외.
+        $emptyComps = LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'shop.checkout.ext',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-empty',
+            'content' => ['extension_point' => 'shop.checkout.ext', 'components' => []],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+        $this->assertSame([], $this->service->getExtensionHostLayouts($emptyComps));
+
+        // components 를 실제 주입하면 호스트로 인정.
+        $withComps = LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'shop.checkout.ext',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-valid',
+            'content' => ['extension_point' => 'shop.checkout.ext', 'components' => [['name' => 'Div']]],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+        $this->assertSame(['shop_checkout'], $this->service->getExtensionHostLayouts($withComps));
+    }
+
+    /**
+     * overlay 의 injection target_id 가 호스트에 실재할 때만 유효 호스트.
+     * target_id 가 호스트에 없으면 applyExtensions 가 주입하지 못하므로 호스트 후보에서 제외한다
+     * (결제 overlay 가 존재하지 않는 target 을 가리켜 "주입됨"으로 오판되던 결함 방지).
+     */
+    public function test_get_extension_host_layouts_overlay_requires_existing_target_id(): void
+    {
+        // 호스트 레이아웃: target_id 노드가 실재.
+        TemplateLayout::create([
+            'template_id' => $this->template->id,
+            'name' => 'shop/checkout',
+            'content' => ['components' => [['name' => 'Div', 'props' => ['id' => 'pay_section']]]],
+        ]);
+
+        // target_id 가 호스트에 실재 → 유효 호스트.
+        $valid = LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'shop/checkout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-pay_ok',
+            'content' => [
+                'target_layout' => 'shop/checkout',
+                'injections' => [['target_id' => 'pay_section', 'position' => 'append_child', 'components' => [['name' => 'Div']]]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+        $this->assertSame(['shop/checkout'], $this->service->getExtensionHostLayouts($valid));
+
+        // target_id 가 호스트에 없음 → 주입 불가 → 호스트 후보에서 제외.
+        $invalid = LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'shop/checkout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-pay_broken',
+            'content' => [
+                'target_layout' => 'shop/checkout',
+                'injections' => [['target_id' => 'missing_section', 'position' => 'append_child', 'components' => [['name' => 'Div']]]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+        $this->assertSame([], $this->service->getExtensionHostLayouts($invalid));
+
+        // injection 없이 modals 만 주입하는 overlay(예: 일부 결제 플러그인) — 주입은 성립하므로
+        // 호스트 인정.
+        $modalsOnly = LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'shop/checkout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-pay_modalsonly',
+            'content' => ['target_layout' => 'shop/checkout', 'modals' => [['id' => 'pay_modal']]],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+        $this->assertSame(['shop/checkout'], $this->service->getExtensionHostLayouts($modalsOnly));
+
+        // components 는 있으나 target_id 가 호스트에 없는 injection 만(부수 주입도 없음) → 주입
+        // 불성립 → 제외.
+        $compsNoTarget = LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'shop/checkout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-pay_compsnotarget',
+            'content' => [
+                'target_layout' => 'shop/checkout',
+                'injections' => [['target_id' => 'nope', 'position' => 'append_child', 'components' => [['name' => 'Div']]]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+        $this->assertSame([], $this->service->getExtensionHostLayouts($compsNoTarget));
+    }
+
+    /**
      * Overlay가 타겟 ID에 올바르게 주입되는지 테스트
      */
     public function test_applies_overlay_at_correct_position(): void
@@ -189,6 +560,167 @@ class LayoutExtensionServiceTest extends TestCase
         // append_child로 탭이 추가되었는지 확인
         $this->assertCount(2, $result['components'][0]['children']);
         $this->assertEquals('marketing_tab', $result['components'][0]['children'][1]['id']);
+    }
+
+    /**
+     * Overlay 확장이 호스트 레이아웃 init_actions 뒤에 초기화 액션을 병합한다.
+     *
+     * 모듈이 호스트(예: _admin_base)가 모르는 _global 초기화(모듈별 표시 통화 복원 등)를
+     * layout_extensions 로 기여할 수 있게 한다. 호스트 init_actions 뒤에 순서대로 추가된다.
+     */
+    public function test_merges_overlay_init_actions_after_host(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_detail',
+                'injections' => [
+                    [
+                        'target_id' => 'user_tabs',
+                        'position' => 'append_child',
+                        'components' => [
+                            ['id' => 'marketing_tab', 'type' => 'composite', 'name' => 'Tab'],
+                        ],
+                    ],
+                ],
+                'init_actions' => [
+                    ['handler' => 'sirsoft-marketing.initSomething', 'params' => ['x' => 1]],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_user_detail',
+            'components' => [
+                ['id' => 'user_tabs', 'type' => 'layout', 'name' => 'Tabs', 'children' => []],
+            ],
+            'init_actions' => [
+                ['handler' => 'initTheme'],
+            ],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        // 호스트 init 뒤에 확장 init 이 추가됨 (순서 보존).
+        // 결과는 표준 키 initActions 로 통합된다 (deprecated init_actions 입력도 표준 키로 흡수).
+        $this->assertArrayNotHasKey('init_actions', $result, 'deprecated snake 키가 결과에 잔존하면 안 됨');
+        $this->assertCount(2, $result['initActions']);
+        $this->assertSame('initTheme', $result['initActions'][0]['handler']);
+        $this->assertSame('sirsoft-marketing.initSomething', $result['initActions'][1]['handler']);
+    }
+
+    /**
+     * 호스트가 표준 키 initActions(camelCase)를 가지고 overlay 가 deprecated init_actions(snake)를
+     * 기여할 때, 두 키가 공존하지 않고 표준 initActions 단일 배열로 통합되어야 한다.
+     *
+     * 회귀: 두 키 공존 시 엔진(TemplateApp)의 `initActions || init_actions` OR 단락이
+     * snake 배열을 통째로 무시 → overlay 가 기여한 init_actions(헤더 통화 셀렉터 복원 등)가
+     * 실행되지 않아 통화/배송국가 선택기가 자체 initActions 를 가진 화면에서만 미표시되던 결함.
+     * (admin_dashboard 는 자체 initActions 가 없어 정상 표시, admin_ecommerce_settings 등
+     *  자체 initActions 를 가진 화면은 미표시 — Chrome MCP 실측으로 확인)
+     */
+    public function test_overlay_snake_init_actions_merge_into_standard_camel_key(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_detail',
+                'injections' => [
+                    [
+                        'target_id' => 'user_tabs',
+                        'position' => 'append_child',
+                        'components' => [
+                            ['id' => 'currency_node', 'type' => 'basic', 'name' => 'Div'],
+                        ],
+                    ],
+                ],
+                // overlay 정의는 deprecated snake 키 사용
+                'init_actions' => [
+                    ['handler' => 'sirsoft-marketing.initPreferredCurrency'],
+                    ['handler' => 'sirsoft-marketing.initPreferredShippingCountry'],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        // 호스트(자식 레이아웃 병합 결과)는 표준 camel 키를 가진다
+        $layout = [
+            'layout_name' => 'admin_user_detail',
+            'components' => [
+                ['id' => 'user_tabs', 'type' => 'layout', 'name' => 'Tabs', 'children' => []],
+            ],
+            'initActions' => [
+                ['handler' => 'setState', 'params' => ['target' => 'local', 'q' => '']],
+            ],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        // 두 키 공존 금지 — 표준 initActions 단일 배열로 통합
+        $this->assertArrayNotHasKey('init_actions', $result, 'snake 키가 별도로 잔존하면 엔진 OR 단락으로 무시됨');
+        $this->assertCount(3, $result['initActions'], '호스트 1 + overlay 2 = 3개가 한 배열로 통합되어야 함');
+        $this->assertSame('setState', $result['initActions'][0]['handler']);
+        $this->assertSame('sirsoft-marketing.initPreferredCurrency', $result['initActions'][1]['handler']);
+        $this->assertSame('sirsoft-marketing.initPreferredShippingCountry', $result['initActions'][2]['handler']);
+    }
+
+    /**
+     * 호스트에 init_actions 가 없어도 확장 init_actions 만으로 배열을 생성한다.
+     */
+    public function test_merges_overlay_init_actions_when_host_has_none(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_detail',
+                'injections' => [
+                    [
+                        'target_id' => 'user_tabs',
+                        'position' => 'append_child',
+                        'components' => [
+                            ['id' => 'marketing_tab', 'type' => 'composite', 'name' => 'Tab'],
+                        ],
+                    ],
+                ],
+                'init_actions' => [
+                    ['handler' => 'sirsoft-marketing.initSomething'],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_user_detail',
+            'components' => [
+                ['id' => 'user_tabs', 'type' => 'layout', 'name' => 'Tabs', 'children' => []],
+            ],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        // 호스트에 init 이 없어도 overlay 의 deprecated snake 입력은 표준 initActions 로 흡수된다.
+        $this->assertArrayNotHasKey('init_actions', $result);
+        $this->assertCount(1, $result['initActions']);
+        $this->assertSame('sirsoft-marketing.initSomething', $result['initActions'][0]['handler']);
     }
 
     /**
@@ -1281,14 +1813,14 @@ class LayoutExtensionServiceTest extends TestCase
             'is_active' => true,
         ]);
 
-        \Illuminate\Support\Facades\Log::shouldReceive('warning')
+        Log::shouldReceive('warning')
             ->once()
             ->withArgs(function ($message) {
                 return str_contains($message, 'inject_props _append 대상이 표현식 문자열');
             });
 
         // 다른 로그 호출 허용
-        \Illuminate\Support\Facades\Log::shouldReceive('debug')->zeroOrMoreTimes();
+        Log::shouldReceive('debug')->zeroOrMoreTimes();
 
         $result = $this->service->applyExtensions($layout, $this->template->id);
 
@@ -1335,7 +1867,7 @@ class LayoutExtensionServiceTest extends TestCase
             'is_active' => true,
         ]);
 
-        \Illuminate\Support\Facades\Log::shouldReceive('warning')
+        Log::shouldReceive('warning')
             ->once()
             ->withArgs(function ($message, $context) {
                 return $message === 'Layout extension target not found'
@@ -1343,7 +1875,7 @@ class LayoutExtensionServiceTest extends TestCase
                     && $context['position'] === 'inject_props';
             });
 
-        \Illuminate\Support\Facades\Log::shouldReceive('debug')->zeroOrMoreTimes();
+        Log::shouldReceive('debug')->zeroOrMoreTimes();
 
         $this->service->applyExtensions($layout, $this->template->id);
     }
@@ -2285,5 +2817,60 @@ class LayoutExtensionServiceTest extends TestCase
 
         $this->assertEquals('default_widget', $childIds[0], 'append 모드에서 default가 앞에 유지되어야 함');
         $this->assertEquals('appended_widget', $childIds[1], 'append 모드에서 확장이 뒤에 와야 함');
+    }
+
+    /**
+     * 확장 출처명(트리 `🔌 {sourceLabel}`)은 DB 레코드의 다국어 name 을
+     * 우선 사용한다. 설치/동기화 시 manifest.translations 필터가 ja 를 DB name 에 병합하므로,
+     * 매니페스트 객체(ko/en 만 보유)가 아니라 DB name 을 읽어야 ja locale 에서 일본어로 표시된다.
+     */
+    public function test_resolve_source_label_reads_ja_from_db_name(): void
+    {
+        Plugin::factory()->create([
+            'identifier' => 'sirsoft-gdpr',
+            'name' => [
+                'ko' => 'GDPR (일반 데이터 보호 규정)',
+                'en' => 'GDPR (General Data Protection Regulation)',
+                'ja' => 'GDPR (一般データ保護規則)',
+            ],
+            'status' => ExtensionStatus::Active->value,
+        ]);
+
+        $ref = new \ReflectionMethod($this->service, 'resolveSourceLabel');
+        $ref->setAccessible(true);
+
+        app()->setLocale('ja');
+        $this->assertSame(
+            'GDPR (一般データ保護規則)',
+            $ref->invoke($this->service, LayoutSourceType::Plugin, 'sirsoft-gdpr'),
+            'ja locale 에서 DB name 의 ja 가 표시돼야 함 (manifest ko 폴백 금지)'
+        );
+
+        app()->setLocale('ko');
+        $this->assertSame(
+            'GDPR (일반 데이터 보호 규정)',
+            $ref->invoke($this->service, LayoutSourceType::Plugin, 'sirsoft-gdpr')
+        );
+
+        app()->setLocale('en');
+        $this->assertSame(
+            'GDPR (General Data Protection Regulation)',
+            $ref->invoke($this->service, LayoutSourceType::Plugin, 'sirsoft-gdpr')
+        );
+    }
+
+    /**
+     * DB 레코드가 없으면 매니페스트 객체 getName() 으로 폴백한다(역호환, 크래시 없음).
+     */
+    public function test_resolve_source_label_falls_back_to_manifest_when_no_db_row(): void
+    {
+        $ref = new \ReflectionMethod($this->service, 'resolveSourceLabel');
+        $ref->setAccessible(true);
+
+        app()->setLocale('ja');
+        $label = $ref->invoke($this->service, LayoutSourceType::Plugin, 'sirsoft-payment');
+
+        $this->assertIsString($label);
+        $this->assertNotSame('', $label);
     }
 }

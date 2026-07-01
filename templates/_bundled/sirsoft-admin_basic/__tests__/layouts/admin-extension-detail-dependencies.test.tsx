@@ -96,8 +96,18 @@ function loadModulePartial(relativePath: string): any {
   const path = require('path');
   const full = path.resolve(__dirname, '..', '..', 'layouts', relativePath);
   const json = JSON.parse(fs.readFileSync(full, 'utf-8'));
-  const root = json.children?.[0] ?? json;
-  return (root.children ?? []).find((c: any) => c.id === 'dependencies_section');
+  return findNodeById(json.children ?? [json], 'dependencies_section');
+}
+
+function findNodeById(nodes: any[] | any, id: string): any {
+  const list = Array.isArray(nodes) ? nodes : [nodes];
+  for (const node of list) {
+    if (!node || typeof node !== 'object') continue;
+    if (node.id === id) return node;
+    const found = findNodeById(node.children ?? [], id);
+    if (found) return found;
+  }
+  return undefined;
 }
 
 function buildLayoutFromSection(section: any, globalKey: string, value: Record<string, any>) {

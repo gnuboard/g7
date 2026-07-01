@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
 use App\Search\Contracts\FulltextSearchable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,6 +16,7 @@ use Laravel\Scout\Searchable;
 class Category extends Model implements FulltextSearchable
 {
     use Searchable;
+
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
         'parent_id' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.parent_id', 'type' => 'number'],
@@ -89,6 +92,33 @@ class Category extends Model implements FulltextSearchable
     }
 
     /**
+     * 주어진 카테고리 ID와 그 모든 하위 카테고리 ID를 path 기반으로 반환합니다.
+     *
+     * @param  int  $categoryId  기준 카테고리 ID
+     * @return array<int> 자기 자신 + 모든 하위 카테고리 ID
+     */
+    public static function selfAndDescendantIds(int $categoryId): array
+    {
+        $self = self::find($categoryId, ['id', 'path']);
+        if (! $self) {
+            return [$categoryId];
+        }
+
+        $ids = self::where('id', $categoryId)
+            ->orWhere(function ($q) use ($self) {
+                // path 공백 레거시 행 방어 (실DB 측정: 공백 0건이나 안전망 유지)
+                if (! empty($self->path)) {
+                    $q->where('path', 'like', $self->path.'/%');
+                }
+            })
+            ->pluck('id')
+            ->map(fn ($v) => (int) $v)
+            ->all();
+
+        return ! empty($ids) ? $ids : [$categoryId];
+    }
+
+    /**
      * 카테고리 이미지 관계
      *
      * @return HasMany
@@ -116,7 +146,7 @@ class Category extends Model implements FulltextSearchable
     /**
      * 현재 로케일의 카테고리명 반환
      *
-     * @param string|null $locale 로케일 (기본값: 현재 앱 로케일)
+     * @param  string|null  $locale  로케일 (기본값: 현재 앱 로케일)
      * @return string
      */
     public function getLocalizedName(?string $locale = null): string
@@ -149,14 +179,14 @@ class Category extends Model implements FulltextSearchable
     /**
      * 조상 카테고리들 조회
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
-    public function getAncestors(): \Illuminate\Database\Eloquent\Collection
+    public function getAncestors(): Collection
     {
         $ancestorIds = $this->getAncestorIds();
 
         if (empty($ancestorIds)) {
-            return new \Illuminate\Database\Eloquent\Collection();
+            return new Collection;
         }
 
         $ancestors = self::whereIn('id', $ancestorIds)->get();
@@ -198,8 +228,8 @@ class Category extends Model implements FulltextSearchable
      *
      * 예: "가구 > 책상 > 컴퓨터책상"
      *
-     * @param string|null $locale 로케일 (기본값: 현재 앱 로케일)
-     * @param string $separator 구분자 (기본값: ' > ')
+     * @param  string|null  $locale  로케일 (기본값: 현재 앱 로케일)
+     * @param  string  $separator  구분자 (기본값: ' > ')
      * @return string
      */
     public function getLocalizedBreadcrumbString(?string $locale = null, string $separator = ' > '): string
@@ -220,15 +250,13 @@ class Category extends Model implements FulltextSearchable
 
     /**
      * path 자동 생성 (저장 전 호출)
-     *
-     * @return void
      */
     public function generatePath(): void
     {
         if ($this->parent_id) {
             $parent = self::find($this->parent_id);
             if ($parent) {
-                $this->path = $parent->path ? $parent->path . '/' . $this->id : (string) $this->id;
+                $this->path = $parent->path ? $parent->path.'/'.$this->id : (string) $this->id;
                 $this->depth = $parent->depth + 1;
             }
         } else {
@@ -240,8 +268,8 @@ class Category extends Model implements FulltextSearchable
     /**
      * 루트 카테고리만 조회 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeRoots($query)
     {
@@ -251,8 +279,8 @@ class Category extends Model implements FulltextSearchable
     /**
      * 활성 카테고리만 조회 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeActive($query)
     {
@@ -262,9 +290,9 @@ class Category extends Model implements FulltextSearchable
     /**
      * 특정 깊이의 카테고리 조회 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $depth
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @param  int  $depth  조회할 깊이
+     * @return Builder
      */
     public function scopeAtDepth($query, int $depth)
     {
@@ -274,16 +302,16 @@ class Category extends Model implements FulltextSearchable
     /**
      * 트리 구조로 카테고리 조회 (재귀)
      *
-     * @param int|null $parentId 부모 ID (null이면 루트부터)
-     * @param bool $onlyActive 활성 카테고리만 조회할지 여부
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param  int|null  $parentId  부모 ID (null이면 루트부터)
+     * @param  bool  $onlyActive  활성 카테고리만 조회할지 여부
+     * @return Collection
      */
-    public static function getTree(?int $parentId = null, bool $onlyActive = false): \Illuminate\Database\Eloquent\Collection
+    public static function getTree(?int $parentId = null, bool $onlyActive = false): Collection
     {
         $query = self::with([
-                'images',
-                'parent:id,name,slug', // parent에서 필요한 필드만 선택
-            ])
+            'images',
+            'parent:id,name,slug', // parent에서 필요한 필드만 선택
+        ])
             ->withCount('products')
             ->where('parent_id', $parentId)
             ->orderBy('sort_order')
@@ -305,11 +333,11 @@ class Category extends Model implements FulltextSearchable
     /**
      * 플랫 리스트로 변환 (들여쓰기용 depth 포함)
      *
-     * @param \Illuminate\Database\Eloquent\Collection|null $categories
-     * @param string $indent 들여쓰기 문자
+     * @param  Collection|null  $categories  변환할 카테고리 컬렉션 (null이면 전체 트리)
+     * @param  string  $indent  들여쓰기 문자
      * @return array
      */
-    public static function toFlatList(?\Illuminate\Database\Eloquent\Collection $categories = null, string $indent = '　'): array
+    public static function toFlatList(?Collection $categories = null, string $indent = '　'): array
     {
         if ($categories === null) {
             $categories = self::getTree();
@@ -321,7 +349,7 @@ class Category extends Model implements FulltextSearchable
             $prefix = str_repeat($indent, $category->depth);
             $result[] = [
                 'id' => $category->id,
-                'name' => $prefix . $category->getLocalizedName(),
+                'name' => $prefix.$category->getLocalizedName(),
                 'depth' => $category->depth,
                 'is_active' => $category->is_active,
             ];

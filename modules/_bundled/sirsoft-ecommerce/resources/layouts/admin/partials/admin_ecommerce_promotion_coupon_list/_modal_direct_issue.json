@@ -1,0 +1,369 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Coupon - Direct Issue Modal (관리자 회원 지정 즉시 발급)"
+  },
+  "id": "modal_direct_issue",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.title",
+    "size": "md"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-label mb-4"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.subtitle|name={{_global.directIssueCoupon?.name}}"
+    },
+    {
+      "comment": "회원 검색 입력 (타이핑 시 실시간 검색, 250ms 디바운스)",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-3"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "text",
+            "name": "directIssueSearchKeyword",
+            "className": "input w-full",
+            "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_placeholder",
+            "debounce": 250,
+            "value": "{{_global.directIssueSearchKeyword ?? ''}}"
+          },
+          "actions": [
+            {
+              "type": "input",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "directIssueSearchKeyword": "{{$event.target.value}}"
+                    }
+                  },
+                  {
+                    "handler": "apiCall",
+                    "if": "{{($event.target.value ?? '').length > 0}}",
+                    "auth_mode": "required",
+                    "target": "/api/admin/users/search",
+                    "params": {
+                      "method": "GET",
+                      "query": {
+                        "keyword": "{{$event.target.value}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "directIssueSearchResults": "{{(response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email }))}}"
+                        }
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "toast",
+                        "params": {
+                          "type": "error",
+                          "message": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_failed"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "handler": "setState",
+                    "if": "{{($event.target.value ?? '').length === 0}}",
+                    "params": {
+                      "target": "global",
+                      "directIssueSearchResults": []
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "검색 결과 목록",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_global.directIssueSearchResults ?? []).length > 0}}",
+      "props": {
+        "className": "border border-gray-200 dark:border-gray-700 rounded-md max-h-40 overflow-y-auto mb-4 divide-y divide-gray-100 dark:divide-gray-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{_global.directIssueSearchResults ?? []}}",
+            "item_var": "member",
+            "index_var": "memberIdx"
+          },
+          "props": {
+            "className": "flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-col"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                  },
+                  "text": "{{member.name}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "{{member.email}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{!(_global.directIssueSelectedUsers ?? []).some(u => u.uuid === member.uuid)}}",
+              "props": {
+                "type": "button",
+                "className": "px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.add",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "directIssueSelectedUsers": "{{[...(_global.directIssueSelectedUsers ?? []), { uuid: member.uuid, name: member.name }]}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(_global.directIssueSelectedUsers ?? []).some(u => u.uuid === member.uuid)}}",
+              "props": {
+                "className": "text-xs text-gray-400 dark:text-gray-500"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.added"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "선택된 회원 칩",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-2 text-label"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.selected|count={{(_global.directIssueSelectedUsers ?? []).length}}"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_global.directIssueSelectedUsers ?? []).length > 0}}",
+      "props": {
+        "className": "flex flex-wrap gap-2 mb-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{_global.directIssueSelectedUsers ?? []}}",
+            "item_var": "selected",
+            "index_var": "selectedIdx"
+          },
+          "props": {
+            "className": "flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{selected.name}}"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "ml-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "directIssueSelectedUsers": "{{(_global.directIssueSelectedUsers ?? []).filter(u => u.uuid !== selected.uuid)}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "x",
+                    "size": "sm"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "푸터 (취소 / 발급)",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-2 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "disabled": "{{(_global.directIssueSelectedUsers ?? []).length === 0 || _global.directIssueSubmitting}}",
+            "className": "flex items-center gap-2 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.directIssueSubmitting}}",
+              "props": {
+                "name": "spinner",
+                "size": "sm",
+                "className": "animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.directIssueSubmitting ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.issue_btn'}}"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "directIssueSubmitting": true
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_mode": "required",
+                  "target": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.directIssueCoupon?.id}}/issue-direct",
+                  "params": {
+                    "method": "POST",
+                    "body": {
+                      "user_uuids": "{{(_global.directIssueSelectedUsers ?? []).map(u => u.uuid)}}"
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "directIssueSubmitting": false
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "coupons"
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "{{response.message}}"
+                      }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "directIssueSubmitting": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.issue_failed'}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

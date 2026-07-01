@@ -1,0 +1,22 @@
+{
+    "name": "plugins/sirsoft-gdpr",
+    "description": "GDPR (General Data Protection Regulation) plugin for G7 platform by sirsoft",
+    "type": "library",
+    "version": "1.0.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "sirsoft",
+            "email": "contact@sirsoft.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Sirsoft\\Gdpr\\": ["src/", "./"]
+        }
+    }
+}

@@ -13,6 +13,7 @@ import { Img } from '../basic/Img';
 import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { ImageGallery, useImageGallery, GalleryImage } from './ImageGallery';
+import type { EditorAttrs } from '../../types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -42,6 +43,12 @@ export interface ProductImageViewerProps {
   images: ProductImage[];
   /** 커스텀 클래스 */
   className?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 // ========== Helper ==========
@@ -58,6 +65,8 @@ const getImageSrc = (image: ProductImage): string => {
 export const ProductImageViewer: React.FC<ProductImageViewerProps> = ({
   images = [],
   className = '',
+  id,
+  editorAttrs,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { openGallery, galleryProps } = useImageGallery();
@@ -80,6 +89,7 @@ export const ProductImageViewer: React.FC<ProductImageViewerProps> = ({
     return (
       <Div
         className={`flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg aspect-square ${className}`}
+        id={id} {...editorAttrs}
       >
         <Div className="text-center text-gray-400 dark:text-gray-500">
           <Icon name="image" size="3x" className="mb-3 opacity-50" />
@@ -92,7 +102,7 @@ export const ProductImageViewer: React.FC<ProductImageViewerProps> = ({
   const currentImage = images[selectedIndex] ?? images[0];
 
   return (
-    <Div className={className}>
+    <Div id={id} className={className} {...editorAttrs}>
       {/* 메인 이미지 */}
       <Div className="relative overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700 aspect-square mb-3">
         <Button

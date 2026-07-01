@@ -10,10 +10,12 @@
     "shipping": "배송설정",
     "review_settings": "리뷰 설정",
     "notification_definitions": "알림 설정",
-    "identity_policies": "본인인증 정책"
+    "identity_policies": "본인인증 정책",
+    "mileage": "마일리지"
   },
   "save_success": "설정이 저장되었습니다.",
   "save_error": "설정 저장에 실패했습니다.",
+  "save_pending_currency": "추가 중인 통화를 먼저 확정(체크 버튼)하거나 취소한 뒤 저장하세요.",
   "validation_error": "입력 내용을 확인해 주세요.",
   "basic_info": {
     "shop_info": {
@@ -65,26 +67,32 @@
   },
   "language_currency": {
     "language_settings": {
-      "title": "언어/통화",
-      "description": "쇼핑몰의 기본 언어 및 화폐를 설정합니다.",
-      "default_language": "기본언어",
+      "title": "기본 화폐",
+      "description": "쇼핑몰의 기본 화폐를 설정합니다. 사이트 언어는 일반 설정에서 관리합니다.",
       "default_currency": "기본화폐",
-      "currency_change_warning": "최초 상품등록 이후 변경이 불가능합니다."
+      "currency_change_warning": "상품 또는 주문이 등록된 이후에는 변경할 수 없습니다."
     },
     "exchange_settings": {
       "title": "환율/통화 설정",
-      "description": "KRW 1,000 기준 환율 및 통화별 절사 기준을 설정합니다.",
+      "description": "기본 통화의 기준 단위당 환율 및 통화별 절사 기준을 설정합니다.",
       "add_currency": "통화 추가",
       "currency_code": "통화 코드",
       "currency_name": "통화명",
+      "currency_symbol": "기호",
+      "symbol_placeholder": "₩",
       "exchange_rate": "환율",
+      "base_unit": "기준 단위",
+      "base_unit_equals": "단위 =",
+      "base_unit_hint": "이 통화가 기본 통화일 때 환율 입력의 기준이 되는 단위입니다. (예: 원 = 1,000 / 달러 = 1)",
       "rounding_unit": "절사 단위",
       "rounding_method": "절사 방식",
       "decimal_places": "소수 자릿수",
+      "locales": "사용 언어",
+      "locales_placeholder": "언어 선택",
+      "locales_hint": "회원가입 시 브라우저 언어가 이 통화의 언어와 일치하면 해당 통화가 기본 결제 통화로 지정됩니다.",
       "actions": "관리",
       "delete": "삭제",
       "base_currency": "기본 통화",
-      "krw_base": "KRW 1,000 =",
       "rounding_units": {
         "1": "1 (일의 자리)",
         "10": "10 (십의 자리)",
@@ -132,6 +140,8 @@
       "timing_payment_complete": "결제완료 시",
       "timing_none": "재고 차감 안함",
       "stock_deduction_timing": "재고 차감 시점",
+      "mileage_deduction_timing": "마일리지 차감 시점",
+      "mileage_deduction_timing_disabled_hint": "마일리지 사용이 꺼져 있어 차감 시점이 적용되지 않습니다.",
       "min_order_amount": "최소 주문금액",
       "is_active": "사용여부",
       "orphaned_badge": "플러그인 미설치",
@@ -194,11 +204,7 @@
       "toggle_description": "입금대기 상태의 주문을 지정 기간 후 자동으로 취소합니다.",
       "toggle_hint": "비활성화하면 입금대기 주문이 자동 취소되지 않습니다.",
       "days_prefix": "입금대기 상태의 주문건은 주문일 포함",
-      "days_suffix": "일 이후 자동 취소됩니다.",
-      "vbank_due_days_label": "가상계좌 입금기한:",
-      "vbank_due_days_suffix": "일",
-      "dbank_due_days_label": "무통장입금 입금기한:",
-      "dbank_due_days_suffix": "일"
+      "days_suffix": "일 이후 자동 취소됩니다."
     },
     "cart_expiry": {
       "title": "장바구니 유효기간",
@@ -432,12 +438,12 @@
     "reset_success": "알림 설정이 기본값으로 복원되었습니다.",
     "reset_failed": "알림 설정 복원에 실패했습니다.",
     "reset_modal": {
-        "title": "기본값으로 복원",
-        "confirm_message": "이 알림의 모든 채널 템플릿을 기본값으로 복원합니다.",
-        "warning_message": "저장된 제목/본문/수신자 설정이 모두 사라지며 복구할 수 없습니다.",
-        "target_label": "복원 대상:",
-        "btn_confirm": "복원",
-        "btn_confirming": "복원 중..."
+      "title": "기본값으로 복원",
+      "confirm_message": "이 알림의 모든 채널 템플릿을 기본값으로 복원합니다.",
+      "warning_message": "저장된 제목/본문/수신자 설정이 모두 사라지며 복구할 수 없습니다.",
+      "target_label": "복원 대상:",
+      "btn_confirm": "복원",
+      "btn_confirming": "복원 중..."
     },
     "no_template_for_channel": "이 채널에 대한 템플릿이 없습니다.",
     "body_preview": "본문 미리보기",
@@ -450,7 +456,8 @@
       "order_cancelled": "주문 취소",
       "new_order_admin": "신규 주문 (관리자)",
       "inquiry_received": "상품 문의 접수 (관리자)",
-      "inquiry_replied": "상품 문의 답변"
+      "inquiry_replied": "상품 문의 답변",
+      "mileage_expiring_soon": "마일리지 소멸 예정"
     },
     "btn_search": "검색",
     "btn_reset_filter": "초기화",
@@ -481,6 +488,7 @@
     }
   },
   "identity": {
+    "policy_form_editor_label": "본인인증 정책 추가/편집",
     "intro_title": "이커머스 본인인증 정책",
     "intro": "이커머스 모듈이 선언한 정책과 운영자가 추가한 정책을 관리합니다. 결제 직전 본인 확인 등 도메인 특화 정책을 활성화할 수 있습니다.",
     "purposes_section_title": "이 모듈이 등록한 본인인증 목적",

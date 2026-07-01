@@ -481,7 +481,10 @@ modules/_bundled/sirsoft-ecommerce/
 ├── module.json                  # 메타데이터 (이름, 버전, 설명 등 SSoT)
 ├── module.php                    # ModuleInterface 구현
 ├── LICENSE                      # 라이선스 전문 (MIT)
-├── composer.json                 # 오토로딩 + 외부 패키지 의존성 설정
+├── composer.json                 # 오토로딩 + 외부 패키지 의존성 설정 (Git 추적)
+├── composer.lock                 # Composer 락 파일 (Git 추적 — vendor-bundle.json 의 composer_lock_sha256 가 이 파일을 검증)
+├── vendor-bundle.json            # 번들 메타파일: SHA256, 패키지 목록 (Git 추적)
+├── vendor-bundle.zip             # 압축된 vendor 디렉토리 (Git 추적)
 ├── package.json                 # npm 패키지 정의 (에셋 모듈만)
 ├── vite.config.ts               # Vite 빌드 설정 (에셋 모듈만)
 ├── tsconfig.json                # TypeScript 설정 (에셋 모듈만)
@@ -743,7 +746,7 @@ protected function registerBundledModuleInstance(): void
 | 환경설정 구조 변경 | ✅ (SettingsMigrator) | 설정 키 이름/구조 변경 |
 | 기존 데이터 변환 | ✅ | 데이터 형식 변환, 기본값 |
 | 권한/역할/메뉴 추가·수정 | ❌ (자동 동기화) | Module.php에서 정의 |
-| 정적 권한/메뉴 제거 | ✅ (cleanup 명시 호출) | #135: 동적 메뉴/권한 보존 |
+| 정적 권한/메뉴 제거 | ✅ (cleanup 명시 호출) | 동적 메뉴/권한 보존 |
 | 레이아웃 JSON 변경 | ❌ (자동 갱신) | refresh-layout에서 처리 |
 | PHP 코드만 변경 | ❌ | 버전만 올리면 됨 |
 

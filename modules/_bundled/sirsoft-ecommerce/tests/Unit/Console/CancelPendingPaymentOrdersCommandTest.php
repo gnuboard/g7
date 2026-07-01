@@ -6,12 +6,14 @@ use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Models\User;
+use App\Services\ModuleSettingsService;
 use Carbon\Carbon;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -64,18 +66,18 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
 
         // ModuleSettingsService 는 ModuleManagerInterface 를 생성 시점에 주입받으므로
         // instance 교체 후 기존 service 인스턴스를 forget 해 다음 resolve 에서 새 mock 사용
-        $this->app->forgetInstance(\App\Services\ModuleSettingsService::class);
+        $this->app->forgetInstance(ModuleSettingsService::class);
 
         // sirsoft-ecommerce 는 전용 EcommerceSettingsService 가 자동 discover 되어
         // ModuleSettingsService::get 에서 먼저 위임됨. 이 서비스를 모듈 설정 mock 으로 교체.
-        $mockEcommerceSettings = Mockery::mock(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class)->makePartial();
+        $mockEcommerceSettings = Mockery::mock(EcommerceSettingsService::class)->makePartial();
         $mockEcommerceSettings->shouldReceive('getSetting')
             ->andReturnUsing(function (string $key, mixed $default = null) {
                 return array_key_exists($key, $this->moduleSettings)
                     ? $this->moduleSettings[$key]
                     : $default;
             });
-        $this->app->instance(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class, $mockEcommerceSettings);
+        $this->app->instance(EcommerceSettingsService::class, $mockEcommerceSettings);
     }
 
     public function test_command_exists(): void
@@ -107,7 +109,7 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
     }
 
-    public function test_cancels_expired_manual_bank_transfer_order(): void
+    public function test_cancels_expired_dbank_manual_deposit_order(): void
     {
         $user = User::factory()->create();
 
@@ -116,10 +118,10 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
             'order_status' => OrderStatusEnum::PENDING_PAYMENT,
         ]);
 
-        // 만료된 수동 무통장입금 결제 (BANK 메서드 + deposit_due_at 사용)
+        // 만료된 무통장입금(수동 입금확인) 결제 (DBANK 메서드 + deposit_due_at 사용)
         OrderPayment::factory()->create([
             'order_id' => $order->id,
-            'payment_method' => PaymentMethodEnum::BANK,
+            'payment_method' => PaymentMethodEnum::DBANK,
             'deposit_due_at' => Carbon::now()->subDay(), // 1일 전 만료
         ]);
 
@@ -128,6 +130,36 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
 
         $order->refresh();
         $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
+    }
+
+    /**
+     * 계좌이체(BANK)는 입금 기한 만료 자동취소 대상이 아니다.
+     *
+     * 자동취소 대상은 가상계좌(VBANK)와 무통장입금(DBANK)뿐이다.
+     * 과거 쿼리가 DBANK 대신 BANK 를 매칭해 무통장입금 주문이
+     * 자동취소에서 누락되던 회귀를 차단한다 (주문 442).
+     */
+    public function test_does_not_cancel_expired_bank_transfer_order(): void
+    {
+        $user = User::factory()->create();
+
+        $order = Order::factory()->create([
+            'user_id' => $user->id,
+            'order_status' => OrderStatusEnum::PENDING_PAYMENT,
+        ]);
+
+        // 계좌이체(BANK)는 입금 기한 만료 자동취소 대상이 아님
+        OrderPayment::factory()->create([
+            'order_id' => $order->id,
+            'payment_method' => PaymentMethodEnum::BANK,
+            'deposit_due_at' => Carbon::now()->subDay(),
+        ]);
+
+        $this->artisan('sirsoft-ecommerce:cancel-pending-orders')
+            ->assertSuccessful();
+
+        $order->refresh();
+        $this->assertEquals(OrderStatusEnum::PENDING_PAYMENT, $order->order_status);
     }
 
     public function test_does_not_cancel_non_expired_order(): void

@@ -51,8 +51,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * removeOrphans 기본값(false)일 때 소스에 없는 대상 파일이 유지되는지 검증합니다.
-     *
-     * @return void
      */
     public function test_copy_directory_does_not_remove_orphans_by_default(): void
     {
@@ -82,8 +80,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * removeOrphans=true일 때 소스에 없는 파일이 삭제되는지 검증합니다.
-     *
-     * @return void
      */
     public function test_copy_directory_removes_orphans_when_enabled(): void
     {
@@ -112,8 +108,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * removeOrphans=true일 때 소스에 없는 디렉토리가 재귀 삭제되는지 검증합니다.
-     *
-     * @return void
      */
     public function test_copy_directory_removes_orphan_directories(): void
     {
@@ -146,8 +140,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * removeOrphans=true일 때 하위 디렉토리 내 소스에 없는 파일도 삭제되는지 검증합니다.
-     *
-     * @return void
      */
     public function test_copy_directory_removes_orphans_in_subdirectories(): void
     {
@@ -178,8 +170,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * removeOrphans=true이더라도 excludes 대상은 삭제하지 않는지 검증합니다.
-     *
-     * @return void
      */
     public function test_copy_directory_preserves_excluded_orphans(): void
     {
@@ -212,8 +202,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * 기존 파일의 퍼미션이 보존되는지 검증합니다. (Linux/Mac에서만 의미있음)
-     *
-     * @return void
      */
     public function test_copy_file_preserves_permissions_on_existing_files(): void
     {
@@ -266,8 +254,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * 루트 0775 + 자식·손자 0755 + 파일 0644 → 호출 후 자식·손자·파일 모두 g+w 승격.
-     *
-     * @return void
      */
     public function test_sync_group_writability_recovers_child_dirs_and_files(): void
     {
@@ -298,8 +284,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * 루트가 g-w (0755) 인 경우 — no-op. 운영자 정책 보존.
-     *
-     * @return void
      */
     public function test_sync_group_writability_respects_root_policy_without_group_write(): void
     {
@@ -320,8 +304,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * 이미 정상 (자식·손자 모두 g+w) → no-op (멱등).
-     *
-     * @return void
      */
     public function test_sync_group_writability_is_idempotent(): void
     {
@@ -346,8 +328,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * 다른 비트(other, owner, sticky 등) 무변경 — g+w 만 OR.
-     *
-     * @return void
      */
     public function test_sync_group_writability_only_adds_group_write_bit(): void
     {
@@ -375,8 +355,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * chownRecursiveDetailed — chown 미지원 환경 (Windows) 에서는 supported=false.
-     *
-     * @return void
      */
     public function test_chown_recursive_detailed_returns_supported_false_when_chown_missing(): void
     {
@@ -396,8 +374,6 @@ class FilePermissionHelperTest extends TestCase
      * chownRecursiveDetailed — POSIX 환경에서 자기 자신을 owner 로 호출 시 changed=0, failed=0.
      *
      * 자기 소유자와 일치하면 chown 호출 자체가 발생하지 않으므로 멱등.
-     *
-     * @return void
      */
     public function test_chown_recursive_detailed_idempotent_when_owner_matches(): void
     {
@@ -417,8 +393,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * syncGroupWritabilityDetailed — 루트 g-w 환경은 skipped=true 로 보고.
-     *
-     * @return void
      */
     public function test_sync_group_writability_detailed_skipped_when_root_no_group_write(): void
     {
@@ -436,8 +410,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * syncGroupWritabilityDetailed — 정상 승격 시 changed>0, failed=0, skipped=false.
-     *
-     * @return void
      */
     public function test_sync_group_writability_detailed_reports_changed(): void
     {
@@ -469,8 +441,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * `chownRecursiveDetailed` 가 `respectPreservationMarker` 옵션을 지원해야 함.
-     *
-     * @return void
      */
     public function test_chown_recursive_detailed_supports_respect_preservation_marker_option(): void
     {
@@ -487,8 +457,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * 마커가 있는 디렉토리 트리는 chownRecursiveDetailed 가 skip — 자기 자신/하위 모두 chown 안 함.
-     *
-     * @return void
      */
     public function test_chown_recursive_detailed_skips_subtree_when_preservation_marker_present(): void
     {
@@ -526,8 +494,6 @@ class FilePermissionHelperTest extends TestCase
 
     /**
      * 마커 옵션이 false 이면 (기본값) — 기존 동작 그대로 (호환성 유지).
-     *
-     * @return void
      */
     public function test_chown_recursive_detailed_backward_compatible_without_marker_option(): void
     {
@@ -541,5 +507,87 @@ class FilePermissionHelperTest extends TestCase
 
         $this->assertTrue($report['supported']);
         $this->assertSame(0, $report['failed']);
+    }
+
+    // ========================================================================
+    // preserveTopLevelOrphans — 최상위 레벨 orphan 보존
+    // ========================================================================
+
+    /**
+     * preserveTopLevelOrphans=true 일 때 최상위 레벨에 소스에 없는 디렉토리/파일이
+     * 보존되는지 검증합니다.
+     */
+    public function test_preserve_top_level_orphans_keeps_top_level_dir_and_file(): void
+    {
+        $source = $this->createTempDir();
+        $dest = $this->createTempDir();
+
+        // 소스: bundled_ext/manifest.json 만 존재
+        File::ensureDirectoryExists($source.DIRECTORY_SEPARATOR.'bundled_ext');
+        File::put($source.DIRECTORY_SEPARATOR.'bundled_ext'.DIRECTORY_SEPARATOR.'manifest.json', 'new');
+
+        // 대상: bundled_ext + user_dir(소스에 없음) + user_file.txt(소스에 없음)
+        File::ensureDirectoryExists($dest.DIRECTORY_SEPARATOR.'bundled_ext');
+        File::put($dest.DIRECTORY_SEPARATOR.'bundled_ext'.DIRECTORY_SEPARATOR.'manifest.json', 'old');
+        File::ensureDirectoryExists($dest.DIRECTORY_SEPARATOR.'user_dir');
+        File::put($dest.DIRECTORY_SEPARATOR.'user_dir'.DIRECTORY_SEPARATOR.'custom.txt', 'mine');
+        File::put($dest.DIRECTORY_SEPARATOR.'user_file.txt', 'keep me');
+
+        FilePermissionHelper::copyDirectory($source, $dest, removeOrphans: true, preserveTopLevelOrphans: true);
+
+        // 최상위 사용자 디렉토리 보존
+        $this->assertTrue(File::isDirectory($dest.DIRECTORY_SEPARATOR.'user_dir'));
+        $this->assertEquals('mine', File::get($dest.DIRECTORY_SEPARATOR.'user_dir'.DIRECTORY_SEPARATOR.'custom.txt'));
+
+        // 최상위 사용자 단일 파일 보존
+        $this->assertTrue(File::exists($dest.DIRECTORY_SEPARATOR.'user_file.txt'));
+
+        // 번들 확장은 source 기준 갱신
+        $this->assertEquals('new', File::get($dest.DIRECTORY_SEPARATOR.'bundled_ext'.DIRECTORY_SEPARATOR.'manifest.json'));
+    }
+
+    /**
+     * preserveTopLevelOrphans=true 라도 소스에 존재하는 디렉토리 *내부* 의 orphan 은
+     * 정상적으로 삭제되는지 검증합니다 (최상위 한 레벨만 보존).
+     */
+    public function test_preserve_top_level_orphans_still_cleans_nested_orphans(): void
+    {
+        $source = $this->createTempDir();
+        $dest = $this->createTempDir();
+
+        // 소스: bundled_ext/manifest.json 만 (old.json 없음)
+        File::ensureDirectoryExists($source.DIRECTORY_SEPARATOR.'bundled_ext');
+        File::put($source.DIRECTORY_SEPARATOR.'bundled_ext'.DIRECTORY_SEPARATOR.'manifest.json', 'new');
+
+        // 대상: bundled_ext/manifest.json + bundled_ext/old.json(소스에 없는 중첩 orphan)
+        File::ensureDirectoryExists($dest.DIRECTORY_SEPARATOR.'bundled_ext');
+        File::put($dest.DIRECTORY_SEPARATOR.'bundled_ext'.DIRECTORY_SEPARATOR.'manifest.json', 'old');
+        File::put($dest.DIRECTORY_SEPARATOR.'bundled_ext'.DIRECTORY_SEPARATOR.'old.json', 'stale');
+
+        FilePermissionHelper::copyDirectory($source, $dest, removeOrphans: true, preserveTopLevelOrphans: true);
+
+        // 소스에 존재하는 디렉토리 내부의 stale 파일은 삭제 (중첩 레벨)
+        $this->assertFalse(File::exists($dest.DIRECTORY_SEPARATOR.'bundled_ext'.DIRECTORY_SEPARATOR.'old.json'));
+        $this->assertEquals('new', File::get($dest.DIRECTORY_SEPARATOR.'bundled_ext'.DIRECTORY_SEPARATOR.'manifest.json'));
+    }
+
+    /**
+     * preserveTopLevelOrphans 기본값(false)이면 기존 동작(최상위 orphan 삭제)이
+     * 그대로 유지되는지 검증합니다 (하위호환).
+     */
+    public function test_preserve_top_level_orphans_defaults_to_existing_behavior(): void
+    {
+        $source = $this->createTempDir();
+        $dest = $this->createTempDir();
+
+        File::put($source.DIRECTORY_SEPARATOR.'file_a.txt', 'source_a');
+
+        File::put($dest.DIRECTORY_SEPARATOR.'file_a.txt', 'old_a');
+        File::put($dest.DIRECTORY_SEPARATOR.'orphan.txt', 'orphan_content');
+
+        // preserveTopLevelOrphans 미지정 → 기존 동작 (최상위 orphan 삭제)
+        FilePermissionHelper::copyDirectory($source, $dest, removeOrphans: true);
+
+        $this->assertFalse(File::exists($dest.DIRECTORY_SEPARATOR.'orphan.txt'));
     }
 }

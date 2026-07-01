@@ -250,6 +250,37 @@ class AttachmentService
     }
 
     /**
+     * 삭제된 게시글의 첨부파일 접근 권한을 검증합니다.
+     *
+     * 첨부가 속한 게시글이 삭제 상태이면 관리 권한(manager/admin.manage)
+     * 보유자만 접근을 허용합니다. 권한이 없으면 AccessDeniedHttpException 을 던집니다.
+     * 정상 게시글(또는 게시글 미연결 임시 첨부)은 통과시킵니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  Attachment  $attachment  첨부파일 모델
+     * @return void
+     *
+     * @throws AccessDeniedHttpException 삭제글 첨부에 권한 없이 접근한 경우
+     */
+    private function assertDeletedPostAttachmentAccess(string $slug, Attachment $attachment): void
+    {
+        if (! $attachment->post_id) {
+            return;
+        }
+
+        if (! $this->repository->isPostDeleted($slug, $attachment->post_id)) {
+            return;
+        }
+
+        $canManage = PermissionHelper::check("sirsoft-board.{$slug}.manager")
+            || PermissionHelper::check("sirsoft-board.{$slug}.admin.manage");
+
+        if (! $canManage) {
+            throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        }
+    }
+
+    /**
      * ID로 첨부파일 조회
      *
      * @param  string  $slug  게시판 슬러그
@@ -398,6 +429,7 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
+     * @param  string  $context  권한 컨텍스트 (admin | user)
      * @return StreamedResponse|null 파일 스트림 또는 없을 경우 null
      */
     public function download(string $slug, int $id, string $context = 'admin'): ?StreamedResponse
@@ -416,6 +448,14 @@ class AttachmentService
         if (! PermissionHelper::checkScopeAccess($attachment, $scopePermission)) {
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
         }
+
+        // 삭제된 게시글의 첨부파일은 관리 권한자만 접근
+        $this->assertDeletedPostAttachmentAccess($slug, $attachment);
+
+        // 다운로드 활동이력 기록 훅
+        // 권한/삭제글 가드 통과 후 발화 → 차단된 시도는 기록하지 않음.
+        // $context('user'|'admin')는 로그 부가정보용 (log_type 은 요청 경로로 자동 결정).
+        HookManager::doAction('sirsoft-board.attachment.after_download', $attachment, $context);
 
         // RFC 5987에 따라 UTF-8 파일명 인코딩
         $encodedFilename = rawurlencode($attachment->original_filename);
@@ -472,6 +512,9 @@ class AttachmentService
             return null;
         }
 
+        // 삭제된 게시글의 첨부파일은 관리 권한자만 접근
+        $this->assertDeletedPostAttachmentAccess($slug, $attachment);
+
         return $this->storage->response(
             'attachments',
             $attachment->path,
@@ -500,6 +543,9 @@ class AttachmentService
         if (! $attachment) {
             return null;
         }
+
+        // 삭제된 게시글의 첨부파일은 관리 권한자만 접근
+        $this->assertDeletedPostAttachmentAccess($slug, $attachment);
 
         // 파일 존재 확인
         if (! $this->storage->exists('attachments', $attachment->path)) {

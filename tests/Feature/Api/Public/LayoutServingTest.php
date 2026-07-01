@@ -14,6 +14,17 @@ class LayoutServingTest extends TestCase
     use RefreshDatabase;
 
     /**
+     * 같은 스위트의 DB 테스트(LayoutSourceMetaServingTest, PublicLayoutControllerTest)
+     * 와 마이그레이션 정합성을 맞추기 위해 — 레이아웃 서빙 경로가 GDPR 미들웨어를
+     * 거치므로 해당 플러그인 마이그레이션을 테스트 DB 에 포함시킨다.
+     *
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
+
+    /**
      * 정상적인 레이아웃 서빙 전체 플로우 테스트
      */
     public function test_complete_layout_serving_flow(): void

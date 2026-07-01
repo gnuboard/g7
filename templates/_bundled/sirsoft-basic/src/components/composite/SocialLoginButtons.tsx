@@ -9,6 +9,7 @@ import React from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
+import type { EditorAttrs } from '../../types';
 
 /**
  * 소셜 로그인 아이콘 SVG 컴포넌트
@@ -70,6 +71,12 @@ interface SocialLoginButtonsProps {
   variant?: 'full' | 'icon';
   /** 추가 CSS 클래스 */
   className?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 interface ProviderConfig {
@@ -144,6 +151,8 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
   mode = 'login',
   variant = 'full',
   className = '',
+  id,
+  editorAttrs,
 }) => {
   const handleSocialLogin = (provider: SocialProvider) => {
     // OAuth 인증 URL로 리다이렉트
@@ -164,7 +173,7 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
 
   if (variant === 'icon') {
     return (
-      <Div className={`flex justify-center gap-4 ${className}`}>
+      <Div className={`flex justify-center gap-4 ${className}`} id={id} {...editorAttrs}>
         {filteredProviders.map((provider) => (
           <Button
             key={provider.id}
@@ -180,7 +189,7 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
   }
 
   return (
-    <Div className={`space-y-3 ${className}`}>
+    <Div className={`space-y-3 ${className}`} id={id} {...editorAttrs}>
       {filteredProviders.map((provider) => (
         <Button
           key={provider.id}

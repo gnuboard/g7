@@ -7,7 +7,7 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "card"
+    "className": "admin-card"
   },
   "children": [
     {
@@ -15,7 +15,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center justify-between mb-6"
+        "className": "flex-between mb-6"
       },
       "children": [
         {
@@ -30,7 +30,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-2"
+            "className": "flex-center gap-2"
           },
           "children": [
             {
@@ -78,7 +78,7 @@
           "type": "basic",
           "name": "Label",
           "props": {
-            "className": "form-label mb-2"
+            "className": "form-label"
           },
           "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.preview"
         },
@@ -86,7 +86,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-[3/1] flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600"
+            "className": "flex-center relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-[3/1] justify-center border-2 border-dashed border-gray-300 dark:border-gray-600"
           },
           "children": [
             {
@@ -130,7 +130,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-2 mb-4"
+            "className": "flex-center gap-2 mb-4"
           },
           "children": [
             {
@@ -169,9 +169,6 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "space-y-4"
-          },
           "children": [
             {
               "type": "basic",
@@ -194,7 +191,7 @@
                   "props": {
                     "type": "text",
                     "name": "bannerTitle",
-                    "className": "input w-full",
+                    "className": "input",
                     "placeholder": "배너 제목 (한국어)"
                   }
                 }
@@ -221,13 +218,15 @@
                   "props": {
                     "type": "text",
                     "name": "bannerContent",
-                    "className": "input w-full",
+                    "className": "input",
                     "placeholder": "배너 내용 (한국어)"
                   }
                 }
               ]
             }
-          ]
+          ],
+          "props": {
+          }
         }
       ]
     },
@@ -250,15 +249,12 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "space-y-4"
-          },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-4 flex-wrap"
+                "className": "flex-center gap-4 flex-wrap"
               },
               "children": [
                 {
@@ -304,7 +300,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "border-2 border-dashed border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400"
+                    "className": "border-2 border-dashed border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-tertiary"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.color_picker_placeholder"
                 },
@@ -327,9 +323,18 @@
                     "className": "w-24",
                     "value": "left",
                     "options": [
-                      { "value": "left", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_left" },
-                      { "value": "center", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_center" },
-                      { "value": "right", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_right" }
+                      {
+                        "value": "left",
+                        "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_left"
+                      },
+                      {
+                        "value": "center",
+                        "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_center"
+                      },
+                      {
+                        "value": "right",
+                        "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_right"
+                      }
                     ]
                   }
                 }
@@ -339,7 +344,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-4 flex-wrap"
+                "className": "flex-center gap-4 flex-wrap"
               },
               "children": [
                 {
@@ -385,7 +390,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "border-2 border-dashed border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400"
+                    "className": "border-2 border-dashed border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-tertiary"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.color_picker_placeholder"
                 },
@@ -408,9 +413,18 @@
                     "className": "w-24",
                     "value": "left",
                     "options": [
-                      { "value": "left", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_left" },
-                      { "value": "center", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_center" },
-                      { "value": "right", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_right" }
+                      {
+                        "value": "left",
+                        "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_left"
+                      },
+                      {
+                        "value": "center",
+                        "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_center"
+                      },
+                      {
+                        "value": "right",
+                        "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_right"
+                      }
                     ]
                   }
                 }
@@ -493,7 +507,7 @@
           "props": {
             "type": "text",
             "name": "linkUrl",
-            "className": "input w-full",
+            "className": "input",
             "placeholder": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.link_url_placeholder"
           }
         },
@@ -527,7 +541,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "grid grid-cols-2 gap-4"
+            "className": "grid-2col"
           },
           "children": [
             {
@@ -538,7 +552,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "form-label mb-1"
+                    "className": "form-label"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.start_date"
                 },
@@ -548,7 +562,7 @@
                   "props": {
                     "type": "date",
                     "name": "startDate",
-                    "className": "input w-full"
+                    "className": "input"
                   }
                 }
               ]
@@ -561,7 +575,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "form-label mb-1"
+                    "className": "form-label"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.end_date"
                 },
@@ -571,7 +585,7 @@
                   "props": {
                     "type": "date",
                     "name": "endDate",
-                    "className": "input w-full"
+                    "className": "input"
                   }
                 }
               ]
@@ -600,7 +614,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "grid grid-cols-2 gap-4"
+            "className": "grid-2col"
           },
           "children": [
             {
@@ -611,7 +625,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "form-label mb-2"
+                    "className": "form-label"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.status"
                 },
@@ -619,7 +633,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -652,7 +666,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "form-label mb-1"
+                    "className": "form-label"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.created_at"
                 },
@@ -660,7 +674,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 py-2"
+                    "className": "flex-center gap-2 py-2"
                   },
                   "children": [
                     {

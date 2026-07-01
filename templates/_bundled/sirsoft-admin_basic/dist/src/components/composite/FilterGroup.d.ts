@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export interface FilterOption {
     id: string | number;
     label: string;
@@ -19,6 +20,12 @@ export interface FilterGroupProps {
     showResetButton?: boolean;
     className?: string;
     style?: React.CSSProperties;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * FilterGroup 집합 컴포넌트

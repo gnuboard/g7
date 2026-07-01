@@ -6,7 +6,12 @@ use App\Extension\HookManager;
 use App\Rules\LocaleRequiredTranslatable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingApiRequestField;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingApiResponseType;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
 /**
@@ -44,7 +49,8 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.shipping_method' => ['required', 'string', Rule::in(ShippingType::pluck('code')->toArray())],
             'country_settings.*.custom_shipping_name' => ['nullable', 'array'],
             'country_settings.*.custom_shipping_name.*' => ['nullable', 'string', 'max:100'],
-            'country_settings.*.currency_code' => ['required', 'string', 'max:10'],
+            // 통화는 서버가 상점 기본 통화로 강제하므로 클라이언트 입력에 의존하지 않는다 (읽기전용 표시).
+            'country_settings.*.currency_code' => ['nullable', 'string', 'max:10'],
             'country_settings.*.charge_policy' => ['required', Rule::enum(ChargePolicyEnum::class)],
 
             // 배송비 관련
@@ -63,8 +69,23 @@ class StoreShippingPolicyRequest extends FormRequest
             // API 설정
             'country_settings.*.api_endpoint' => ['nullable', 'url', 'max:500'],
             'country_settings.*.api_request_fields' => ['nullable', 'array'],
-            'country_settings.*.api_request_fields.*' => ['string', 'max:100'],
+            // 후보 5종 SSoT(ShippingApiRequestField) 외 필드명 거부 — silent drop 차단
+            'country_settings.*.api_request_fields.*' => ['string', 'max:100', Rule::in(ShippingApiRequestField::values())],
             'country_settings.*.api_response_fee_field' => ['nullable', 'string', 'max:100'],
+
+            // 계산 API 고급 설정 (api_config) — 메서드/인증/매핑/응답형식
+            'country_settings.*.api_config' => ['nullable', 'array'],
+            'country_settings.*.api_config.http_method' => ['nullable', 'string', Rule::in(ShippingApiHttpMethod::values())],
+            'country_settings.*.api_config.auth_type' => ['nullable', 'string', Rule::in(ShippingApiAuthType::values())],
+            'country_settings.*.api_config.auth_token' => ['nullable', 'string', 'max:1000'],
+            // 헤더명: HTTP 토큰 문자만 허용 (CRLF/콜론/공백 차단 — 헤더 인젝션 방지)
+            'country_settings.*.api_config.auth_header_name' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9!#$%&\'*+.^_`|~-]+$/'],
+            'country_settings.*.api_config.response_type' => ['nullable', 'string', Rule::in(ShippingApiResponseType::values())],
+            'country_settings.*.api_config.response_path' => ['nullable', 'string', 'max:200'],
+            'country_settings.*.api_config.skip_ssl_verify' => ['nullable', 'boolean'],
+            'country_settings.*.api_config.field_map' => ['nullable', 'array'],
+            // 외부 키 이름: 영숫자/언더스코어/하이픈/점만 (헤더·쿼리 인젝션 방지)
+            'country_settings.*.api_config.field_map.*' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9_.\-]+$/'],
 
             // 도서산간 추가배송비
             'country_settings.*.extra_fee_enabled' => ['required', 'boolean'],
@@ -97,7 +118,6 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.country_code.distinct' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.country_code.distinct'),
             'country_settings.*.shipping_method.required' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.shipping_method.required'),
             'country_settings.*.shipping_method.Illuminate\Validation\Rules\Enum' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.shipping_method.in'),
-            'country_settings.*.currency_code.required' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.currency_code.required'),
             'country_settings.*.charge_policy.required' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.charge_policy.required'),
             'country_settings.*.charge_policy.Illuminate\Validation\Rules\Enum' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.charge_policy.in'),
             'country_settings.*.base_fee.numeric' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.base_fee.numeric'),
@@ -105,8 +125,21 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.free_threshold.numeric' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.free_threshold.numeric'),
             'country_settings.*.free_threshold.min' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.free_threshold.min'),
             'country_settings.*.api_endpoint.url' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.api_endpoint.url'),
+            'country_settings.*.api_request_fields.*.in' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.api_request_fields.in'),
+            'country_settings.*.api_config.http_method.in' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.api_config.http_method_in'),
+            'country_settings.*.api_config.auth_type.in' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.api_config.auth_type_in'),
+            'country_settings.*.api_config.auth_header_name.regex' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.api_config.auth_header_name_format'),
+            'country_settings.*.api_config.response_type.in' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.api_config.response_type_in'),
+            'country_settings.*.api_config.field_map.*.regex' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.api_config.field_map_format'),
             'country_settings.*.extra_fee_enabled.required' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.extra_fee_enabled.required'),
             'country_settings.*.is_active.required' => __('sirsoft-ecommerce::validation.shipping_policy.country_settings.is_active.required'),
+            // 구간별 배송비 음수/필수 직결 메시지 (raw key 노출 차단)
+            'country_settings.*.ranges.tiers.*.fee.required' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.fee_required'),
+            'country_settings.*.ranges.tiers.*.fee.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.fee_non_negative'),
+            'country_settings.*.ranges.tiers.*.min.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.tier_min_non_negative'),
+            'country_settings.*.ranges.tiers.*.max.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.tier_max_non_negative'),
+            'country_settings.*.ranges.unit_value.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.unit_value_min'),
+            'country_settings.*.extra_fee_settings.*.fee.min' => __('sirsoft-ecommerce::validation.extra_fee_template.fee_min'),
             'is_active.required' => __('sirsoft-ecommerce::validation.shipping_policy.is_active.required'),
         ];
     }
@@ -118,15 +151,80 @@ class StoreShippingPolicyRequest extends FormRequest
      * - 비무료 정책의 base_fee 0 원 금지
      * - shipping_method=custom 일 때 custom_shipping_name 다국어 필수
      *
-     * @param  \Illuminate\Validation\Validator  $validator  Laravel validator 인스턴스
+     * @param  Validator  $validator  Laravel validator 인스턴스
      */
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function (\Illuminate\Validation\Validator $validator) {
+        $validator->after(function (Validator $validator) {
             $this->validateRangeTiersContinuity($validator);
             $this->validateNonFreeBaseFee($validator);
             $this->validateCustomShippingName($validator);
+            $this->validateApiEndpointRequired($validator);
+            $this->validateApiConfig($validator);
         });
+    }
+
+    /**
+     * 계산 API 정책(api) 선택 시 api_endpoint 필수 검증 (cross-field).
+     *
+     * 비-API 정책은 base rule 의 nullable 을 유지하여 회귀를 막고, API 정책에 한해 빈
+     * endpoint 저장을 차단하여 silent base_fee 폴백을 방지합니다.
+     *
+     * @param  Validator  $validator  Laravel validator 인스턴스
+     */
+    private function validateApiEndpointRequired(Validator $validator): void
+    {
+        $countrySettings = $this->input('country_settings', []);
+
+        if (! is_array($countrySettings)) {
+            return;
+        }
+
+        foreach ($countrySettings as $i => $cs) {
+            $policy = ChargePolicyEnum::tryFrom($cs['charge_policy'] ?? '');
+
+            if ($policy && $policy->requiresApiEndpoint() && trim((string) ($cs['api_endpoint'] ?? '')) === '') {
+                $validator->errors()->add(
+                    "country_settings.{$i}.api_endpoint",
+                    __('sirsoft-ecommerce::validation.shipping_policy.country_settings.api_endpoint.required')
+                );
+            }
+        }
+    }
+
+    /**
+     * 계산 API 고급 설정(api_config)의 cross-field 검증.
+     *
+     * - custom_header 인증 시 헤더명 필수
+     *
+     * @param  Validator  $validator  Laravel validator 인스턴스
+     */
+    private function validateApiConfig(Validator $validator): void
+    {
+        $countrySettings = $this->input('country_settings', []);
+
+        if (! is_array($countrySettings)) {
+            return;
+        }
+
+        foreach ($countrySettings as $i => $cs) {
+            $policy = ChargePolicyEnum::tryFrom($cs['charge_policy'] ?? '');
+
+            if (! $policy || ! $policy->requiresApiEndpoint()) {
+                continue;
+            }
+
+            $config = $cs['api_config'] ?? [];
+
+            // custom_header 인증 시 헤더명 필수
+            if (($config['auth_type'] ?? null) === ShippingApiAuthType::CUSTOM_HEADER->value
+                && trim((string) ($config['auth_header_name'] ?? '')) === '') {
+                $validator->errors()->add(
+                    "country_settings.{$i}.api_config.auth_header_name",
+                    __('sirsoft-ecommerce::validation.shipping_policy.country_settings.api_config.auth_header_name_required')
+                );
+            }
+        }
     }
 
     /**
@@ -138,7 +236,7 @@ class StoreShippingPolicyRequest extends FormRequest
      * - 구간이 연속적이어야 합니다 (현재 max + 1 === 다음 min, 포함 범위 기준).
      * - 배송비는 0 이상이어야 합니다.
      */
-    private function validateRangeTiersContinuity(\Illuminate\Validation\Validator $validator): void
+    private function validateRangeTiersContinuity(Validator $validator): void
     {
         $countrySettings = $this->input('country_settings', []);
 
@@ -210,11 +308,8 @@ class StoreShippingPolicyRequest extends FormRequest
      * 무료배송이 아닌 정책에서 배송비 0원을 금지합니다.
      *
      * 구간별 배송비(RANGE_*) 정책은 tiers에서 배송비를 관리하므로 예외입니다.
-     *
-     * @param \Illuminate\Validation\Validator $validator
-     * @return void
      */
-    private function validateNonFreeBaseFee(\Illuminate\Validation\Validator $validator): void
+    private function validateNonFreeBaseFee(Validator $validator): void
     {
         $countrySettings = $this->input('country_settings', []);
 
@@ -242,9 +337,9 @@ class StoreShippingPolicyRequest extends FormRequest
     /**
      * custom 배송방법 선택 시 custom_shipping_name 필수 검증
      *
-     * @param \Illuminate\Validation\Validator $validator Validator 인스턴스
+     * @param  Validator  $validator  Validator 인스턴스
      */
-    private function validateCustomShippingName(\Illuminate\Validation\Validator $validator): void
+    private function validateCustomShippingName(Validator $validator): void
     {
         $countrySettings = $this->input('country_settings', []);
 
@@ -309,6 +404,7 @@ class StoreShippingPolicyRequest extends FormRequest
                     $countrySettings[$i]['api_endpoint'] = null;
                     $countrySettings[$i]['api_request_fields'] = null;
                     $countrySettings[$i]['api_response_fee_field'] = null;
+                    $countrySettings[$i]['api_config'] = null;
                 }
             }
 

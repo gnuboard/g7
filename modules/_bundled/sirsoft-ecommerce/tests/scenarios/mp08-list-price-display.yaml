@@ -1,0 +1,48 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
+#   정가 공통 베이스 axis 는 PHPUnit(BaseOrderItemResource 경유 Cart/Checkout)·Vitest 레이아웃·
+#   Playwright 가 커버하며 green 이다.
+feature: 정가/할인율 공통 베이스 — 장바구니·주문서 (U5·U4②)
+
+description: |
+  BaseOrderItemResource::formatOptionInfo() 공통 베이스 1곳에 list_price/list_price_formatted/
+  multi_currency_list_price/discount_rate 를 추가해 CartItemResource·CheckoutItemResource 양쪽
+  응답에 정가가 실린다. 프론트는 주문서/장바구니에 정가 취소선 + 할인율 칩 + 판매가 표시.
+
+axes:
+  discount:
+    - none               # list_price == selling_price
+    - discounted         # list_price > selling_price
+    - list_zero          # list_price <= 0 (0나눗셈 가드)
+  surface:
+    - cart
+    - checkout
+  currency:
+    - KRW
+    - JPY
+  option_adjustment:
+    - with_adjustment    # price_adjustment != 0
+    - no_adjustment
+
+effects:
+  # 백엔드 공통 베이스 (PHPUnit)
+  - base_resource_includes_list_price            # list_price/list_price_formatted/multi_currency_list_price 포함
+  - base_resource_includes_discount_rate         # discount_rate 산출
+  - discount_rate_zero_when_equal                # 정가=판매가 → discount_rate===0
+  - discount_rate_positive_when_discounted       # 정가>판매가 → 양수
+  - discount_rate_zero_when_list_nonpositive     # list_price<=0 → 0 (가드)
+  - adjustment_reflected_in_both_prices          # price_adjustment 가 정가·판매가 양쪽 반영
+  - cart_item_resource_has_list_price            # CartItemResource 동일 필드(U4 연계)
+  - checkout_item_resource_has_list_price        # CheckoutItemResource 동일 필드(U5)
+  # 프론트 표시 (Vitest 레이아웃)
+  - checkout_shows_strikethrough_list_price      # 주문서 정가 취소선
+  - checkout_shows_discount_rate_chip            # 주문서 할인율 칩
+  - cart_shows_strikethrough_list_price          # 장바구니 정가 취소선
+  - cart_shows_discount_rate_chip                # 장바구니 할인율 칩
+  - no_strikethrough_when_no_discount            # 정가=판매가 → 취소선·칩 미렌더, 판매가만
+  - secondary_currency_list_price_converted      # 보조통화(JPY) 정가도 환산 표시
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/BaseOrderItemResourceListPriceTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/listPriceDisplay.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/mp08-list-price.spec.ts

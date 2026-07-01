@@ -7,6 +7,7 @@ use App\Extension\ModuleManager;
 use App\Traits\HasSeederCounts;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\Client\Pool;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -19,6 +20,8 @@ use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOption;
+use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOptionValue;
 use Modules\Sirsoft\Ecommerce\Models\ProductCommonInfo;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabel;
@@ -27,6 +30,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductNotice;
 use Modules\Sirsoft\Ecommerce\Models\ProductNoticeTemplate;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\SequenceService;
 
 /**
@@ -697,7 +701,7 @@ class ProductSeeder extends Seeder
                 'common_info_id' => $commonInfoId,
                 'list_price' => $listPrice,
                 'selling_price' => $sellingPrice,
-                'currency_code' => 'KRW',
+                'currency_code' => $this->defaultCurrency(),
                 'stock_quantity' => rand(10, 200),
                 'safe_stock_quantity' => rand(5, 20),
                 'sales_status' => $this->getRandomSalesStatus($i),
@@ -707,6 +711,9 @@ class ProductSeeder extends Seeder
                 'description' => $template['description'],
                 'has_options' => true, // 모든 상품에 옵션 필수
                 'option_groups' => $optionGroups,
+                // SEO 메타 (A26): 다국어 JSON + 동기화 플래그.
+                // 70% 는 동기화(직접 입력 없음 → 메타 null), 30% 는 직접 입력 보존(sync=false)
+                ...$this->buildSeoFields($template, $i),
             ]);
 
             // 카테고리 연결
@@ -714,6 +721,11 @@ class ProductSeeder extends Seeder
 
             // 옵션 생성 (모든 상품에 필수)
             $this->createOptions($product, $optionGroups, $sku);
+
+            // 추가옵션 그룹·선택지 생성 (40% 확률) — 추가옵션 시스템 데모 데이터
+            if (rand(1, 100) <= 40) {
+                $this->createAdditionalOptions($product);
+            }
 
             // 상품정보제공고시 생성
             if ($noticeTemplates->isNotEmpty()) {
@@ -738,6 +750,144 @@ class ProductSeeder extends Seeder
 
         $progressBar->finish();
         $this->command->newLine();
+    }
+
+    /**
+     * SEO 메타 필드를 생성합니다 (A26).
+     *
+     * meta_title/meta_description 는 다국어 JSON 으로 저장하며, 동기화 플래그
+     * (seo_sync_title/seo_sync_description) 와 정합되게 채웁니다.
+     *  - 동기화 ON(기본): 직접 입력이 없으므로 메타는 null (서버가 상품명/설명으로 자동 노출)
+     *  - 동기화 OFF: 사용자가 직접 입력한 메타를 보존 — 다국어 JSON 으로 시드
+     *
+     * @param  array  $template  상품 템플릿
+     * @param  int  $index  상품 인덱스
+     * @return array<string, mixed> Product::create 에 병합할 SEO 컬럼
+     */
+    private function buildSeoFields(array $template, int $index): array
+    {
+        // 30% 는 직접 입력 보존(sync=false), 70% 는 동기화(sync=true → 메타 null)
+        $syncTitle = rand(1, 100) > 30;
+        $syncDescription = rand(1, 100) > 30;
+
+        $metaTitle = null;
+        if (! $syncTitle) {
+            $metaTitle = [
+                'ko' => $template['name']['ko'].' #'.$index.' | 추천 상품',
+                'en' => $template['name']['en'].' #'.$index.' | Featured',
+            ];
+        }
+
+        $metaDescription = null;
+        if (! $syncDescription) {
+            $metaDescription = [
+                'ko' => $template['name']['ko'].' #'.$index.' 의 직접 입력 SEO 설명입니다.',
+                'en' => 'Custom SEO description for '.$template['name']['en'].' #'.$index.'.',
+            ];
+        }
+
+        return [
+            'meta_title' => $metaTitle,
+            'meta_description' => $metaDescription,
+            'seo_sync_title' => $syncTitle,
+            'seo_sync_description' => $syncDescription,
+        ];
+    }
+
+    /**
+     * CurrencyConversionService 인스턴스 캐시
+     */
+    /**
+     * 추가옵션 그룹과 선택지를 생성합니다.
+     *
+     * 추가금(price_adjustment)은 KRW 기준 정수로 저장하며, 다중통화 추가금(mc_price_adjustment)은
+     * 프로덕션과 동일하게 null 로 둡니다 — 프로덕션 ProductService::syncAdditionalOptions 도
+     * 이 컬럼을 저장하지 않고, 주문/표시 시점에 currency_snapshot 기준으로 환산하기 때문입니다
+     * (런타임 SSoT = price_adjustment). 시더가 미리 환산값을 박으면 프로덕션 데이터 형상과
+     * 어긋나고 기본통화 해석 차이로 잘못된 값이 생깁니다.
+     *
+     * @param  Product  $product  상품 모델
+     */
+    private function createAdditionalOptions(Product $product): void
+    {
+        // 추가옵션 그룹 후보 (이름 다국어 + 선택지 정의)
+        $groupTemplates = [
+            [
+                'name' => ['ko' => '포장 방식', 'en' => 'Gift Wrapping'],
+                'is_required' => false,
+                'values' => [
+                    ['name' => ['ko' => '기본 포장', 'en' => 'Standard'], 'price' => 0, 'is_default' => true],
+                    ['name' => ['ko' => '선물 포장', 'en' => 'Gift Box'], 'price' => 3000],
+                    ['name' => ['ko' => '프리미엄 포장', 'en' => 'Premium'], 'price' => 5000],
+                ],
+            ],
+            [
+                'name' => ['ko' => '각인 문구', 'en' => 'Engraving'],
+                'is_required' => false,
+                'values' => [
+                    ['name' => ['ko' => '각인 없음', 'en' => 'None'], 'price' => 0, 'is_default' => true],
+                    ['name' => ['ko' => '문구 직접 입력', 'en' => 'Custom Text'], 'price' => 2000, 'allow_custom_text' => true],
+                ],
+            ],
+            [
+                'name' => ['ko' => 'A/S 보증', 'en' => 'Warranty'],
+                'is_required' => true,
+                'values' => [
+                    ['name' => ['ko' => '기본 보증 (1년)', 'en' => '1 Year'], 'price' => 0, 'is_default' => true],
+                    ['name' => ['ko' => '연장 보증 (2년)', 'en' => '2 Years'], 'price' => 10000],
+                ],
+            ],
+        ];
+
+        // 1~2개 그룹 랜덤 선택
+        shuffle($groupTemplates);
+        $selectedGroups = array_slice($groupTemplates, 0, rand(1, 2));
+
+        foreach ($selectedGroups as $groupIndex => $groupTemplate) {
+            $group = ProductAdditionalOption::create([
+                'product_id' => $product->id,
+                'name' => $groupTemplate['name'],
+                'is_required' => $groupTemplate['is_required'],
+                'sort_order' => $groupIndex,
+            ]);
+
+            foreach ($groupTemplate['values'] as $valueIndex => $valueTemplate) {
+                $price = (int) ($valueTemplate['price'] ?? 0);
+
+                ProductAdditionalOptionValue::create([
+                    'additional_option_id' => $group->id,
+                    'name' => $valueTemplate['name'],
+                    'price_adjustment' => $price,
+                    // mc_price_adjustment 는 프로덕션과 동일하게 미저장(null) — 런타임 환산이 SSoT
+                    'is_default' => $valueTemplate['is_default'] ?? false,
+                    'is_active' => true,
+                    'allow_custom_text' => $valueTemplate['allow_custom_text'] ?? false,
+                    'sort_order' => $valueIndex,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * 설정의 기본 통화 코드 캐시
+     */
+    private ?string $defaultCurrencyCode = null;
+
+    /**
+     * 설정의 기본 통화 코드를 반환합니다 (KRW 하드코딩 제거 — base 추종).
+     *
+     * 가격 액수는 그대로 두되 통화 라벨만 설정의 default_currency 로 맞춰 mc 환산과 정합화합니다.
+     *
+     * @return string 기본 통화 코드
+     */
+    private function defaultCurrency(): string
+    {
+        if ($this->defaultCurrencyCode === null) {
+            $this->defaultCurrencyCode = app(CurrencyConversionService::class)
+                ->getDefaultCurrency();
+        }
+
+        return $this->defaultCurrencyCode;
     }
 
     /**
@@ -883,7 +1033,7 @@ class ProductSeeder extends Seeder
                 'option_name' => $optionName,
                 'sku' => $optionSku,
                 'price_adjustment' => $sortOrder === 0 ? 0 : rand(0, 5) * 1000,
-                'currency_code' => 'KRW',
+                'currency_code' => $this->defaultCurrency(),
                 'stock_quantity' => $stockQuantity,
                 'safe_stock_quantity' => 3,
                 'is_default' => $sortOrder === 0,
@@ -1269,7 +1419,7 @@ class ProductSeeder extends Seeder
      * 상품에 라벨 할당
      *
      * @param  Product  $product  상품 모델
-     * @param  \Illuminate\Support\Collection  $labels  사용 가능한 라벨 컬렉션
+     * @param  Collection  $labels  사용 가능한 라벨 컬렉션
      */
     private function assignLabels(Product $product, $labels): void
     {
@@ -1278,7 +1428,7 @@ class ProductSeeder extends Seeder
         $selectedLabels = $labels->random($labelCount);
 
         // Collection이 아닌 단일 모델이 반환될 수 있음
-        if (! ($selectedLabels instanceof \Illuminate\Support\Collection)) {
+        if (! ($selectedLabels instanceof Collection)) {
             $selectedLabels = collect([$selectedLabels]);
         }
 

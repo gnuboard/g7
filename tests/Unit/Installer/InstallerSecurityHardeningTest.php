@@ -20,6 +20,7 @@ class InstallerSecurityHardeningTest extends TestCase
 {
     private static bool $loaded = false;
     private static string $tempBase = '';
+    private static string $skipReason = '';
 
     public static function setUpBeforeClass(): void
     {
@@ -51,12 +52,36 @@ class InstallerSecurityHardeningTest extends TestCase
             define('STATE_PATH', self::$tempBase . '/storage/installer-state.json');
         }
 
+        // 안전 가드: STATE_PATH 는 PHP 상수라 한 프로세스에서 단 한 번만 정의된다.
+        // 다른 Installer 테스트(ComposerPathValidationTest 등)가 먼저 BASE_PATH 기반
+        // 루트 경로로 STATE_PATH 를 박으면 본 테스트의 writeState/clearState 가 실제 운영
+        // installer-state.json 을 파괴하게 된다. STATE_PATH 가 시스템 temp 하위가 아니면 skip.
+        $tempPrefix = realpath(sys_get_temp_dir()) ?: sys_get_temp_dir();
+        $resolvedState = realpath(dirname((string) STATE_PATH)) ?: dirname((string) STATE_PATH);
+        if (strpos($resolvedState, $tempPrefix) !== 0) {
+            self::$skipReason = 'STATE_PATH (' . STATE_PATH . ') 가 시스템 temp 하위가 아님 — '
+                . '다른 Installer 테스트의 상수 정의가 선행됨. 실제 installer-state.json 파괴 방지를 위해 skip. '
+                . '격리 실행: php vendor/bin/phpunit --filter=InstallerSecurityHardeningTest';
+            self::$loaded = true;
+
+            return;
+        }
+
         require_once $projectRoot . '/public/install/api/check-configuration.php';
         require_once $projectRoot . '/public/install/includes/installer-state.php';
         require_once $projectRoot . '/public/install/includes/functions.php';
         require_once $projectRoot . '/public/install/includes/task-runner.php';
 
         self::$loaded = true;
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (self::$skipReason !== '') {
+            $this->markTestSkipped(self::$skipReason);
+        }
     }
 
     private function invokePrivate(object $obj, string $method, array $args)
@@ -67,18 +92,15 @@ class InstallerSecurityHardeningTest extends TestCase
     }
 
     /**
-     * 테스트가 도중 종료되어도 사용자 작업 디렉토리에 state.json 잔여물이 남지 않도록 항상 정리.
-     * BASE_PATH 가 다른 테스트 인프라에 의해 프로젝트 루트로 바인딩되는 경우를 대비해
-     * 프로젝트 루트의 storage/installer-state.json 도 함께 정리.
+     * 테스트가 도중 종료되어도 임시 디렉토리에 state.json 잔여물이 남지 않도록 정리.
+     * STATE_PATH 는 setUpBeforeClass 의 안전 가드로 시스템 temp 하위임이 보장된 경우에만
+     * 이 지점에 도달하므로, 운영 storage/installer-state.json 은 절대 건드리지 않는다.
+     * (과거 루트 state 를 무조건 @unlink 하던 코드는 실제 운영 설치 상태를 파괴할 수 있어 제거)
      */
     protected function tearDown(): void
     {
-        if (is_file(STATE_PATH)) {
+        if (self::$skipReason === '' && is_file(STATE_PATH)) {
             @unlink(STATE_PATH);
-        }
-        $projectStateFile = dirname(__DIR__, 3) . '/storage/installer-state.json';
-        if (is_file($projectStateFile)) {
-            @unlink($projectStateFile);
         }
         parent::tearDown();
     }

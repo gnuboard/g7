@@ -17,7 +17,8 @@
     "search": "検索",
     "reset": "初期化",
     "view_member": "会員情報表示",
-    "search_by_creator": "この登録者で検索"
+    "search_by_creator": "この登録者で検索",
+    "direct_issue": "直接発行"
   },
   "search": {
     "field": {
@@ -177,15 +178,37 @@
         "status": "ステータス",
         "member_info": "会員情報",
         "usage_status": "使用状態",
-        "used_at": "使用日時"
+        "used_at": "使用日時",
+        "used_order": "使用注文",
+        "actions": "管理"
       },
       "action": {
-        "filter_by_user": "このメンバーでフィルター"
+        "filter_by_user": "このメンバーでフィルター",
+        "cancel_issue": "発行キャンセル"
       },
       "status": {
         "used": "使用完了",
         "unused": "未使用"
       }
+    },
+    "cancel_issue": {
+      "title": "発行をキャンセルしますか？",
+      "message": "{{name}}会員に発行されたクーポンをキャンセルします。",
+      "warning": "キャンセルされた発行は復元できず、未使用状態の発行のみキャンセルできます。",
+      "confirm_btn": "発行キャンセル",
+      "failed": "発行キャンセルに失敗しました。"
+    },
+    "direct_issue": {
+      "title": "クーポン直接発行",
+      "subtitle": "'{{name}}'クーポンを指定した会員に即座に発行します。",
+      "search_placeholder": "会員名またはメールアドレスで検索",
+      "search_btn": "検索",
+      "search_failed": "会員検索に失敗しました。",
+      "add": "追加",
+      "added": "追加されました",
+      "selected": "選択された会員{{count}}名",
+      "issue_btn": "発行",
+      "issue_failed": "クーポン発行に失敗しました。"
     }
   },
   "messages": {
@@ -327,7 +350,8 @@
       "unit_days": "日間有効",
       "unit_quantity": "枚",
       "per_user": "会員当たり",
-      "unit_times": "回"
+      "unit_times": "回",
+      "direct_issue_guide": "直接発行クーポンは登録後、クーポン一覧から該当クーポンの[直接発行]ボタンを押して特定の会員に発行できます。"
     },
     "search": {
       "products": "商品検索",

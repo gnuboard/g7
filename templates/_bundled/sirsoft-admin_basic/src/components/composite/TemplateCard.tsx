@@ -9,6 +9,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { StatusBadge, StatusType } from './StatusBadge';
 import { ActionMenu, ActionMenuItem } from './ActionMenu';
+import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -36,6 +37,12 @@ export interface TemplateCardProps {
   actions?: ActionMenuItem[];
   onLayoutEditClick?: () => void;
   className?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -77,6 +84,8 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
   actions = [],
   onLayoutEditClick,
   className = '',
+  id,
+  editorAttrs,
 }) => {
   /**
    * 상태를 StatusType으로 매핑
@@ -110,6 +119,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
         bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow
         ${className}
       `}
+      id={id} {...editorAttrs}
     >
       {/* 미리보기 이미지 */}
       {image && (

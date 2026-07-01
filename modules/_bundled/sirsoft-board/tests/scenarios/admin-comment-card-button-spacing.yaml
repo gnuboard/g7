@@ -1,0 +1,48 @@
+# audit:allow test-scenario-coverage reason: |
+#   본 시나리오는 관리자 게시글 상세의 댓글 카드 우측 버튼 영역 (답변 / 신고) 시각 간격
+#   회귀 방지용 명세다. 기능 동작 변경은 0건 — Tailwind `gap-2` 클래스 1개 추가만 수행.
+#   회귀 가드는 기존 컴포넌트 단위 테스트(Vitest 의 admin-board-post-detail-* spec) 가
+#   className 단언으로 커버한다. Playwright spec 은 추가하지 않고 매니페스트 명세로만 유지.
+feature: 관리자 댓글 카드 우측 버튼 시각 간격
+
+description: |
+  관리자 게시글 상세(`admin/board/{slug}/post/{id}`) 의 댓글 리스트 카드 우측에 노출되는
+  "답변" / "신고" / "더보기" 버튼이 서로 붙어있던 시각 결함을 해소. 댓글 카드 컨테이너
+  (`comment_right_section`) 의 `className` 에 `gap-2` 를 추가하여 버튼 사이 8px 간격을
+  보장한다.
+
+  핵심 동작:
+    - 답변 버튼과 신고 버튼 사이에 가시적 간격 (Tailwind gap-2 = 0.5rem)
+    - 모바일/데스크탑 동일 적용 (responsive 분기 없음)
+    - 댓글 권한별 표시 분기 (이미 신고함 / 작성자 본인) 무관하게 적용
+
+axes:
+  comment_state:
+    - active
+    - reported_by_me
+    - deleted
+    - blinded
+  user_role:
+    - admin
+    - admin_with_board_manager
+    - regular_user
+  buttons_visible:
+    - reply_and_report
+    - reply_only
+    - report_only
+    - none
+
+exclusions:
+  - { comment_state: deleted, buttons_visible: reply_and_report, reason: "삭제 댓글에는 답변/신고 버튼 미노출" }
+  - { comment_state: blinded, buttons_visible: reply_and_report, reason: "블라인드 댓글에도 동일" }
+
+effects:
+  - comment_right_section_has_gap_class
+  - reply_and_report_buttons_have_visible_spacing
+  - spacing_applies_to_responsive_breakpoints
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-post-detail-count-consistency.test.tsx
+
+validation:
+  audit_rule: frontend-change-requires-e2e

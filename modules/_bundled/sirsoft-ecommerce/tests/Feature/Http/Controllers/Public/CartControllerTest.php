@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Public;
 
+use App\Models\User;
+use Modules\Sirsoft\Ecommerce\Database\Factories\CartFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
@@ -26,8 +28,6 @@ class CartControllerTest extends ModuleTestCase
 
     /**
      * 테스트용 배송정책을 생성합니다.
-     *
-     * @return ShippingPolicy
      */
     protected function createShippingPolicy(): ShippingPolicy
     {
@@ -70,6 +70,108 @@ class CartControllerTest extends ModuleTestCase
         ]);
 
         return ['product' => $product, 'option' => $option];
+    }
+
+    /**
+     * 국가별로 서로 다른 고정 배송비를 가진 배송정책 + 상품을 생성합니다.
+     *
+     * @param  int  $krFee  KR 고정 배송비
+     * @param  int  $usFee  US 고정 배송비
+     * @return array{product: Product, option: ProductOption}
+     */
+    protected function createProductWithCountryFees(int $krFee, int $usFee): array
+    {
+        $policy = ShippingPolicy::create([
+            'name' => ['ko' => '국가별 배송정책', 'en' => 'Per-Country Policy'],
+            'is_active' => true,
+            'is_default' => false,
+        ]);
+        $policy->countrySettings()->create([
+            'country_code' => 'KR', 'shipping_method' => 'parcel', 'currency_code' => 'KRW',
+            'charge_policy' => ChargePolicyEnum::FIXED, 'base_fee' => $krFee, 'is_active' => true,
+        ]);
+        $policy->countrySettings()->create([
+            'country_code' => 'US', 'shipping_method' => 'parcel', 'currency_code' => 'KRW',
+            'charge_policy' => ChargePolicyEnum::FIXED, 'base_fee' => $usFee, 'is_active' => true,
+        ]);
+
+        $product = ProductFactory::new()->onSale()->create(['shipping_policy_id' => $policy->id]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+
+        return ['product' => $product, 'option' => $option];
+    }
+
+    /**
+     * 해외배송 가능 국가(KR/US)를 활성화합니다.
+     */
+    protected function enableIntlShipping(): void
+    {
+        $settings = app(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class);
+        $settings->setSetting('shipping.international_shipping_enabled', true);
+        $settings->setSetting('shipping.default_country', 'KR');
+        $settings->setSetting('shipping.available_countries', [
+            ['code' => 'KR', 'name' => ['ko' => '대한민국'], 'is_active' => true],
+            ['code' => 'US', 'name' => ['ko' => '미국'], 'is_active' => true],
+        ]);
+    }
+
+    // ========================================
+    // 배송국가 차등 배송비 (선택 국가 → 장바구니 배송비 계산) 회귀
+    // ========================================
+
+    /**
+     * 선택 배송국가(X-Shipping-Country: US)가 장바구니 배송비 계산에 반영되어야 합니다.
+     *
+     * 회귀: CartService 가 CalculationInput 에 shippingAddress 를 전달하지 않아
+     * 장바구니 배송비가 항상 KR 로 계산되던 버그. selected_shipping_country 표시(US)와
+     * 실제 배송비 계산 국가가 일치해야 한다.
+     */
+    public function test_cart_applies_selected_shipping_country_fee(): void
+    {
+        $this->enableIntlShipping();
+        $data = $this->createProductWithCountryFees(krFee: 3000, usFee: 2000);
+        $cartKey = 'ck_'.str_repeat('e', 32);
+
+        $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $data['product']->id,
+            'items' => [
+                ['option_values' => $data['option']->getLocalizedOptionValues(), 'quantity' => 1],
+            ],
+        ], ['X-Cart-Key' => $cartKey])->assertStatus(201);
+
+        // 비회원 헤더로 US 선택 → 장바구니 배송비 US(2000)
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/cart', [
+            'X-Cart-Key' => $cartKey,
+            'X-Shipping-Country' => 'US',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.calculation.summary.total_shipping', 2000);
+        $response->assertJsonPath('data.selected_shipping_country', 'US');
+    }
+
+    /**
+     * 배송국가 헤더 미전달 시에는 기본 국가(KR) 배송비가 적용됩니다.
+     */
+    public function test_cart_defaults_to_kr_fee_without_shipping_country_header(): void
+    {
+        $this->enableIntlShipping();
+        $data = $this->createProductWithCountryFees(krFee: 3000, usFee: 2000);
+        $cartKey = 'ck_'.str_repeat('f', 32);
+
+        $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $data['product']->id,
+            'items' => [
+                ['option_values' => $data['option']->getLocalizedOptionValues(), 'quantity' => 1],
+            ],
+        ], ['X-Cart-Key' => $cartKey])->assertStatus(201);
+
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/cart', [
+            'X-Cart-Key' => $cartKey,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.calculation.summary.total_shipping', 3000);
     }
 
     // ========================================
@@ -385,5 +487,257 @@ class CartControllerTest extends ModuleTestCase
                 'success' => false,
             ], "Failed JSON assertion for cart_key: {$invalidKey}");
         }
+    }
+
+    // ========================================
+    // U13②/U4: 판매불가 상품 담기 4xx 매핑 테스트
+    // ========================================
+
+    /**
+     * 판매중지 상품 담기 시 generic 500 이 아닌 422(cart_unavailable) 로 차단됩니다.
+     */
+    public function test_add_to_cart_blocks_suspended_product_with_422(): void
+    {
+        // Given: 판매중지 상품
+        $shippingPolicy = $this->createShippingPolicy();
+        $product = ProductFactory::new()->suspended()->create([
+            'shipping_policy_id' => $shippingPolicy->id,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 100,
+        ]);
+
+        $cartKey = 'ck_'.str_repeat('e', 32);
+
+        // When: 담기 시도
+        $response = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $product->id,
+            'items' => [
+                ['option_values' => $option->getLocalizedOptionValues(), 'quantity' => 1],
+            ],
+        ], [
+            'X-Cart-Key' => $cartKey,
+        ]);
+
+        // Then: 422 + 판매상태 사유 (500 아님)
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.code', 'cart_unavailable');
+        $this->assertTrue($response->json('errors.has_status_issue'));
+        // 사용자용 구체 안내(errors.message)가 generic 과 다른 판매상태 안내여야 한다
+        $this->assertNotEmpty($response->json('errors.message'));
+        $this->assertStringContainsString(
+            __('sirsoft-ecommerce::exceptions.product_unavailable'),
+            $response->json('errors.message')
+        );
+    }
+
+    /**
+     * 최대 구매수량 초과 담기 시 errors.message 에 한도/요청 수량 구체 안내가 포함됩니다.
+     */
+    public function test_add_to_cart_max_qty_response_includes_specific_message(): void
+    {
+        // Given: 최대 3개 상품 (옵션 재고 충분)
+        $shippingPolicy = $this->createShippingPolicy();
+        $product = ProductFactory::new()->onSale()->create([
+            'shipping_policy_id' => $shippingPolicy->id,
+            'min_purchase_qty' => 1,
+            'max_purchase_qty' => 3,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 100,
+        ]);
+
+        $cartKey = 'ck_'.str_repeat('f', 32);
+
+        // When: 한도(3) 초과(6) 담기 시도
+        $response = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $product->id,
+            'items' => [
+                ['option_values' => $option->getLocalizedOptionValues(), 'quantity' => 6],
+            ],
+        ], [
+            'X-Cart-Key' => $cartKey,
+        ]);
+
+        // Then: 422 + max_qty 사유 + 한도(3)/요청(6) 치환된 구체 메시지
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.code', 'cart_unavailable');
+        $this->assertTrue($response->json('errors.has_max_qty_issue'));
+        $message = $response->json('errors.message');
+        $this->assertNotEmpty($message);
+        $this->assertStringContainsString('3', $message);
+        $this->assertStringContainsString('6', $message);
+    }
+
+    // ========================================
+    // MP07 §1 — 담기/삭제 액션 500 → 4xx (U9/U8)
+    // ========================================
+
+    /**
+     * 재고 0(품절) 옵션 담기 → generic 500 이 아닌 422(cart_unavailable, 재고 사유).
+     */
+    public function test_add_to_cart_out_of_stock_returns_422_not_500(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy();
+        $product = ProductFactory::new()->onSale()->create([
+            'shipping_policy_id' => $shippingPolicy->id,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 0, // 품절
+        ]);
+
+        $cartKey = 'ck_'.str_repeat('g', 32);
+
+        $response = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $product->id,
+            'items' => [
+                ['option_values' => $option->getLocalizedOptionValues(), 'quantity' => 1],
+            ],
+        ], ['X-Cart-Key' => $cartKey]);
+
+        // Then: 422 (500 아님) + 재고 사유
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.code', 'cart_unavailable');
+        $this->assertTrue($response->json('errors.has_stock_issue'));
+        $this->assertNotEmpty($response->json('errors.message'));
+    }
+
+    /**
+     * 요청 수량 > 재고 담기 → 422 + 재고 부족 구체 메시지(요청/가용 치환).
+     */
+    public function test_add_to_cart_exceeding_stock_returns_422_with_substitution(): void
+    {
+        $shippingPolicy = $this->createShippingPolicy();
+        $product = ProductFactory::new()->onSale()->create([
+            'shipping_policy_id' => $shippingPolicy->id,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 3,
+        ]);
+
+        $cartKey = 'ck_'.str_repeat('h', 32);
+
+        $response = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
+            'product_id' => $product->id,
+            'items' => [
+                ['option_values' => $option->getLocalizedOptionValues(), 'quantity' => 5],
+            ],
+        ], ['X-Cart-Key' => $cartKey]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('errors.code', 'cart_unavailable');
+        $this->assertTrue($response->json('errors.has_stock_issue'));
+        $message = $response->json('errors.message');
+        $this->assertStringContainsString('5', $message); // 요청
+        $this->assertStringContainsString('3', $message); // 가용
+    }
+
+    /**
+     * 존재하지 않는 장바구니 항목 삭제 → generic 500 이 아닌 404.
+     */
+    public function test_destroy_nonexistent_item_returns_404(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->deleteJson('/api/modules/sirsoft-ecommerce/cart/999999');
+
+        $response->assertStatus(404);
+    }
+
+    /**
+     * 타인의 장바구니 항목 삭제 시도 → generic 500 이 아닌 403.
+     */
+    public function test_destroy_others_item_returns_403(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+
+        $shippingPolicy = $this->createShippingPolicy();
+        $product = ProductFactory::new()->onSale()->create([
+            'shipping_policy_id' => $shippingPolicy->id,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 10,
+        ]);
+        $cart = CartFactory::new()->forUser($owner)->forProduct($product)->forOption($option)->create();
+
+        // other 사용자가 owner 의 항목을 삭제 시도
+        $response = $this->actingAs($other)
+            ->deleteJson("/api/modules/sirsoft-ecommerce/cart/{$cart->id}");
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * 정상 삭제는 200 (회귀 보호 — 4xx 분기가 정상 경로를 막지 않음).
+     */
+    public function test_destroy_own_item_returns_200(): void
+    {
+        $user = User::factory()->create();
+
+        $shippingPolicy = $this->createShippingPolicy();
+        $product = ProductFactory::new()->onSale()->create([
+            'shipping_policy_id' => $shippingPolicy->id,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 10,
+        ]);
+        $cart = CartFactory::new()->forUser($user)->forProduct($product)->forOption($option)->create();
+
+        $response = $this->actingAs($user)
+            ->deleteJson("/api/modules/sirsoft-ecommerce/cart/{$cart->id}");
+
+        $response->assertStatus(200);
+    }
+
+    /**
+     * 선택 삭제 응답 메시지의 :deleted_count placeholder 치환 (U12)
+     */
+    public function test_destroy_multiple_replaces_deleted_count_placeholder(): void
+    {
+        $user = User::factory()->create();
+        $shippingPolicy = $this->createShippingPolicy();
+        $product = ProductFactory::new()->onSale()->create([
+            'shipping_policy_id' => $shippingPolicy->id,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 50]);
+
+        $cart1 = CartFactory::new()->forUser($user)->forProduct($product)->forOption($option)->create();
+        $cart2 = CartFactory::new()->forUser($user)->forProduct($product)->forOption($option)->create();
+
+        $response = $this->actingAs($user)
+            ->deleteJson('/api/modules/sirsoft-ecommerce/cart', ['ids' => [$cart1->id, $cart2->id]]);
+
+        $response->assertStatus(200);
+        // placeholder 가 치환되어 개수가 들어가고 raw key 가 노출되지 않아야 한다
+        $response->assertJsonPath('message', fn ($m) => is_string($m)
+            && str_contains($m, '2')
+            && ! str_contains($m, ':deleted_count'));
+    }
+
+    /**
+     * 전체 삭제 응답 메시지의 :deleted_count placeholder 치환 (U12)
+     */
+    public function test_destroy_all_replaces_deleted_count_placeholder(): void
+    {
+        $user = User::factory()->create();
+        $shippingPolicy = $this->createShippingPolicy();
+        $product = ProductFactory::new()->onSale()->create([
+            'shipping_policy_id' => $shippingPolicy->id,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 50]);
+
+        CartFactory::new()->forUser($user)->forProduct($product)->forOption($option)->create();
+        CartFactory::new()->forUser($user)->forProduct($product)->forOption($option)->create();
+        CartFactory::new()->forUser($user)->forProduct($product)->forOption($option)->create();
+
+        $response = $this->actingAs($user)
+            ->deleteJson('/api/modules/sirsoft-ecommerce/cart/all');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('message', fn ($m) => is_string($m)
+            && str_contains($m, '3')
+            && ! str_contains($m, ':deleted_count'));
     }
 }

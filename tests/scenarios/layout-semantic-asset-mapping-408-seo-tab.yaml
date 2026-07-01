@@ -1,0 +1,59 @@
+# audit:allow test-scenario-coverage reason: 시각 회귀 없는 시맨틱 자산 치환 — 메타 설정 카드(card + card-header + card-accordion × N) → section-header + admin-card × N 으로 교체. 모든 form field name / 다국어 키 / actions / data_sources 동일 유지. Playwright cross-product 가드 불필요 — 자산 정의는 admin_basic main.css SSoT.
+
+feature: 게시판/이커머스 어드민 설정 SEO 탭 메타 설정 영역 시맨틱 자산 매핑 (#408 보강)
+
+description: |
+  이슈 #408 후속 — board/ecommerce admin SEO 탭의 메타 설정 영역에 잔존한
+  card-accordion + card-header 패턴을 #408 신설 자산(section-header, admin-card)
+  으로 교체. 토글 동작이 없는 더미 아코디언이었으므로 시각/동작 양면에서 회귀 없음.
+
+  결정 요약:
+    - meta_settings_card (card + card-header) → meta_settings_header (section-header)
+      로 교체 — admin-card 외부 카드 래핑 제거. H3 + P 가 section-header 자산 내부에
+      직접 배치되어 페이지 헤딩-설명 표준 정합
+    - 각 페이지 유형별 card-accordion (boards/board/post, category/search/product/shop_index)
+      → admin-card (SectionLayout) 로 교체. card-accordion-header 의 더미 토글 +
+      chevron 아이콘 제거. 내부 row-stack + form-group 2개로 표준화
+    - 모든 form field name (seo.meta_*_title / seo.meta_*_description) 유지
+    - 모든 다국어 키 ($t:sirsoft-board.admin.settings.seo.* / $t:sirsoft-ecommerce.*) 유지
+    - seo_friendly_card (card + card-header) 는 본 작업 범위 밖 — 그대로 유지
+
+axes:
+  layout_file:
+    - modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.json
+    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.json
+  asset_class:
+    - section-header
+    - admin-card
+    - SectionLayout
+    - row-stack
+    - card-title
+    - form-group
+    - form-label
+    - form-error
+    - form-hint
+  page_card:
+    board: [boards_page_card, board_page_card, post_page_card]
+    ecommerce: [category_page_card, search_page_card, product_page_card, shop_index_page_card]
+  viewport: [desktop, portable]
+  theme: [light, dark]
+
+effects:
+  - board_seo_tab_meta_settings_header_uses_section_header_asset
+  - board_seo_tab_replaces_card_accordion_with_admin_card_for_three_page_types
+  - board_seo_tab_each_admin_card_uses_section_layout_with_h3_card_title
+  - board_seo_tab_form_field_names_preserve_seo_meta_boards_board_post_title_description
+  - ecommerce_seo_tab_meta_settings_header_uses_section_header_asset
+  - ecommerce_seo_tab_replaces_card_accordion_with_admin_card_for_four_page_types
+  - ecommerce_seo_tab_each_admin_card_uses_section_layout_with_h3_card_title
+  - ecommerce_seo_tab_form_field_names_preserve_seo_meta_category_search_product_shop_index
+  - dummy_accordion_toggle_chevron_removed_no_user_facing_behavior_change
+  - row_stack_asset_provides_vertical_spacing_between_form_group_pairs_inside_admin_card
+  - seo_friendly_card_remains_card_pattern_outside_seo_tab_meta_refactor_scope
+  - i18n_keys_preserved_across_refactor_no_lang_pack_changes_required
+  - admin_basic_main_css_section_header_admin_card_section_layout_already_define_target_assets
+
+test_files: []
+
+validation:
+  audit_rule: frontend-change-requires-e2e

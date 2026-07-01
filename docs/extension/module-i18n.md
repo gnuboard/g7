@@ -39,6 +39,11 @@
 | 백엔드 | `/lang/{locale}/*.php` | PHP 배열 | Laravel `__()` 함수 |
 | 프론트엔드 | `/resources/lang/{locale}.json` | JSON | 레이아웃 JSON `$t:` 문법 |
 
+> **코어 자체 다국어 자원도 동일 구조** — 코어는 `lang/{ko,en}/*.php` (백엔드) +
+> `lang/{ko,en}.json` (+ `lang/partial/{ko,en}/*.json`) (프론트엔드) 를 사용한다.
+> 모듈/플러그인/템플릿/코어 모두 같은 디렉토리 구조와 $partial 디렉티브 메커니즘을
+> 공유한다. 상세: [docs/extension/language-packs.md "코어 다국어 자원의 위치"](language-packs.md#코어-다국어-자원의-위치).
+
 ### moduleIdentifier 규칙
 
 ```
@@ -197,6 +202,12 @@ modules/sirsoft-sample/
   }
 }
 ```
+
+### 코어/템플릿 도메인과의 충돌
+
+모듈 lang 데이터는 모듈 identifier wrap (`sirsoft-sample.*`) 으로 코어/템플릿 도메인과 자연 격리된다. 다만 코어/템플릿 lang 과 동일 top-level 키 (`layout_editor`, `core`, `auth` 등) 를 모듈이 직접 정의하는 것은 권장하지 않는다 — `TemplateService::getLanguageDataWithModules` 는 deep merge (재귀 병합) 정책이라 양쪽 leaf 가 보존되긴 하지만, 동일 키 경로 leaf 충돌 시 모듈이 우선순위가 높아 코어/템플릿 leaf 를 덮어쓴다. 의도된 오버라이드가 아닌 한 모듈 identifier wrap 안에만 정의.
+
+상세 병합 정책: [docs/extension/language-packs.md](language-packs.md#병합-정책--deep-merge-재귀-병합) / [docs/frontend/data-binding-i18n.md](../frontend/data-binding-i18n.md#병합-정책--deep-merge-재귀-병합)
 
 ---
 

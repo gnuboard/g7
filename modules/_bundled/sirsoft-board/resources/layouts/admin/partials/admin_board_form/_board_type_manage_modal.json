@@ -16,9 +16,6 @@
       "id": "bt_modal_content",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "classMap": {
         "key": "{{$parent._computed.isReadOnly ? 'readonly' : 'normal'}}",
         "variants": {
@@ -32,7 +29,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2.5"
+            "className": "alert-info text-xs text-blue-600 dark:text-blue-400"
           },
           "children": [
             {
@@ -68,7 +65,7 @@
               "type": "basic",
               "name": "Table",
               "props": {
-                "className": "min-w-full divide-y divide-gray-200 dark:divide-gray-700"
+                "className": "divider-list min-w-full"
               },
               "children": [
                 {
@@ -86,7 +83,7 @@
                           "type": "basic",
                           "name": "Th",
                           "props": {
-                            "className": "px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                            "className": "text-table-header px-3 py-2 text-left"
                           },
                           "text": "$t:sirsoft-board.admin.board_types.slug"
                         },
@@ -95,7 +92,7 @@
                           "type": "basic",
                           "name": "Th",
                           "props": {
-                            "className": "px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                            "className": "text-table-header px-3 py-2 text-left"
                           },
                           "text": "$t:sirsoft-board.admin.board_types.name"
                         },
@@ -104,7 +101,7 @@
                           "type": "basic",
                           "name": "Th",
                           "props": {
-                            "className": "px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24"
+                            "className": "text-table-header px-3 py-2 text-center w-24"
                           },
                           "text": "$t:sirsoft-board.admin.board_types.actions"
                         }
@@ -117,7 +114,7 @@
                   "type": "basic",
                   "name": "Tbody",
                   "props": {
-                    "className": "bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
+                    "className": "divider-list bg-white dark:bg-gray-800"
                   },
                   "children": [
                     {
@@ -132,7 +129,7 @@
                           "name": "Td",
                           "props": {
                             "colSpan": 3,
-                            "className": "px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                            "className": "px-3 py-8 text-center text-label-subtle"
                           },
                           "text": "$t:sirsoft-board.admin.board_types.empty"
                         }
@@ -190,7 +187,7 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "flex items-center justify-center gap-1"
+                                "className": "flex-center justify-center gap-1"
                               },
                               "children": [
                                 {
@@ -342,7 +339,7 @@
                                       "if": "{{_global.btDeletingId === btItem.id}}",
                                       "props": {
                                         "name": "spinner",
-                                        "className": "w-4 h-4 animate-spin"
+                                        "className": "spinner-sm"
                                       }
                                     }
                                   ],
@@ -365,7 +362,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "border-t border-gray-200 dark:border-gray-700 pt-4 rounded-lg transition-all duration-200"
+            "className": "border-t border-gray-200 dark:border-gray-700 rounded-lg transition-all duration-200"
           },
           "classMap": {
             "key": "{{_global.btFormMode}}",
@@ -380,7 +377,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center justify-between mb-3"
+                "className": "flex-between mb-3"
               },
               "children": [
                 {
@@ -388,7 +385,7 @@
                   "type": "basic",
                   "name": "H3",
                   "props": {
-                    "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                    "className": "text-primary text-sm font-semibold"
                   },
                   "text": "{{_global.btFormMode === 'edit' ? '$t:sirsoft-board.admin.board_types.edit_title' : '$t:sirsoft-board.admin.board_types.add_title'}}"
                 },
@@ -426,9 +423,6 @@
               "id": "bt_form_fields",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-3"
-              },
               "children": [
                 {
                   "id": "bt_field_slug",
@@ -452,14 +446,14 @@
                         "type": "text",
                         "value": "{{_global.btFormSlug ?? ''}}",
                         "placeholder": "basic",
-                        "className": "w-full px-2 py-1.5 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500",
+                        "className": "input font-mono",
                         "disabled": "{{_computed.isReadOnly || _global.btFormMode === 'edit'}}"
                       },
                       "classMap": {
                         "key": "{{_global.btFormErrors?.slug ? 'error' : 'normal'}}",
                         "variants": {
-                          "error": "border-red-500 dark:border-red-400",
-                          "normal": "border-gray-300 dark:border-gray-600"
+                          "error": "input-error",
+                          "normal": ""
                         }
                       },
                       "actions": [
@@ -480,7 +474,7 @@
                       "name": "P",
                       "if": "{{_global.btFormMode !== 'edit' && !_global.btFormErrors?.slug}}",
                       "props": {
-                        "className": "mt-1 text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-hint mt-1"
                       },
                       "text": "$t:sirsoft-board.admin.board_types.slug_hint"
                     },
@@ -490,7 +484,7 @@
                       "name": "P",
                       "if": "{{_global.btFormErrors?.slug}}",
                       "props": {
-                        "className": "mt-1 text-xs text-red-500 dark:text-red-400"
+                        "className": "form-error-xs mt-1"
                       },
                       "text": "{{_global.btFormErrors?.slug?.[0] ?? ''}}"
                     }
@@ -542,7 +536,7 @@
                       "name": "P",
                       "if": "{{_global.btFormErrors?.['name.ko'] || _global.btFormErrors?.['name']}}",
                       "props": {
-                        "className": "mt-1 text-xs text-red-500 dark:text-red-400"
+                        "className": "form-error-xs mt-1"
                       },
                       "text": "{{_global.btFormErrors?.['name.ko']?.[0] ?? _global.btFormErrors?.['name']?.[0] ?? ''}}"
                     }
@@ -564,7 +558,7 @@
                   "name": "Button",
                   "props": {
                     "type": "button",
-                    "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
                     "disabled": "{{_computed.isReadOnly || _global.btSaving || !_global.btFormSlug || !_global.btFormName?.ko}}"
                   },
                   "actions": [
@@ -673,7 +667,7 @@
                       "if": "{{_global.btSaving}}",
                       "props": {
                         "name": "spinner",
-                        "className": "w-4 h-4 animate-spin"
+                        "className": "spinner-sm"
                       }
                     },
                     {

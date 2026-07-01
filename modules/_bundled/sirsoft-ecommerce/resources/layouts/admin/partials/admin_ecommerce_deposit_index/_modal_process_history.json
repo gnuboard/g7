@@ -24,7 +24,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "grid grid-cols-2 gap-4"
+            "className": "grid-2col"
           },
           "children": [
             {
@@ -117,9 +117,6 @@
           "id": "timeline_list",
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "space-y-4"
-          },
           "children": [
             {
               "id": "timeline_item_success",
@@ -133,14 +130,14 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-start gap-3"
+                    "className": "flex-start gap-3"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0"
+                        "className": "flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0"
                       },
                       "children": [
                         {
@@ -164,7 +161,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-2 mb-1"
+                            "className": "flex-center gap-2 mb-1"
                           },
                           "children": [
                             {
@@ -219,14 +216,14 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-start gap-3"
+                    "className": "flex-start gap-3"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0"
+                        "className": "flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0"
                       },
                       "children": [
                         {
@@ -250,7 +247,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-2 mb-1"
+                            "className": "flex-center gap-2 mb-1"
                           },
                           "children": [
                             {
@@ -315,7 +312,7 @@
                               "name": "Button",
                               "props": {
                                 "type": "button",
-                                "className": "flex items-center gap-1 text-sm text-secondary hover:text-primary"
+                                "className": "flex-center gap-1 text-sm text-secondary hover:text-primary"
                               },
                               "children": [
                                 {
@@ -413,7 +410,9 @@
                 }
               ]
             }
-          ]
+          ],
+          "props": {
+          }
         }
       ]
     }

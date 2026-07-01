@@ -3,11 +3,11 @@
     "is_partial": true,
     "description": "Board Form - Permissions Tab Content"
   },
-  "id": "tab_content_permissions",
+  "id": "section_permissions_card",
   "type": "basic",
   "name": "Div",
   "props": {
-    "id": "tab_content_permissions"
+    "className": "admin-card"
   },
   "classMap": {
     "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
@@ -17,34 +17,29 @@
     }
   },
   "children": [
-    {
-      "id": "section_permissions_card",
-      "type": "layout",
-      "name": "SectionLayout",
-      "props": {
-        "background": "white",
-        "border": true,
-        "shadow": "md",
-        "rounded": true,
-        "padding": "xl",
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
-      },
-      "children": [
         {
           "id": "section_permissions_header",
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-6 border-b-2 border-gray-200 dark:border-gray-700"
+            "className": "card-title"
           },
           "text": "$t:sirsoft-board.admin.form.tabs.permissions"
         },
+        {
+          "id": "section_permissions_fields",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "row-stack"
+          },
+          "children": [
         {
           "id": "permissions_section_managers",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-2 mb-8"
+            "className": ""
           },
           "children": [
             {
@@ -52,7 +47,7 @@
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                "className": "text-heading"
               },
               "children": [
                 {
@@ -67,7 +62,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                "className": "text-tertiary mb-3"
               },
               "text": "$t:sirsoft-board.admin.form.permissions.managers_description"
             },
@@ -138,7 +133,7 @@
               "name": "Span",
               "if": "{{ !!_local.errors?.board_manager_ids }}",
               "props": {
-                "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                "className": "form-error"
               },
               "text": "{{ _local.errors?.board_manager_ids?.[0] }}"
             }
@@ -149,7 +144,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-2 mb-8"
+            "className": ""
           },
           "children": [
             {
@@ -157,7 +152,7 @@
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                "className": "text-heading"
               },
               "children": [
                 {
@@ -172,7 +167,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                "className": "text-tertiary mb-3"
               },
               "text": "$t:sirsoft-board.admin.form.permissions.steps_description"
             },
@@ -243,7 +238,7 @@
               "name": "Span",
               "if": "{{ !!_local.errors?.board_step_ids }}",
               "props": {
-                "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                "className": "form-error"
               },
               "text": "{{ _local.errors?.board_step_ids?.[0] }}"
             }
@@ -254,7 +249,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "pt-6"
+            "className": ""
           },
           "children": [
             {
@@ -268,7 +263,7 @@
                   "type": "basic",
                   "name": "H4",
                   "props": {
-                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                    "className": "text-heading"
                   },
                   "text": "$t:sirsoft-board.admin.form.permissions.settings_title"
                 },
@@ -276,7 +271,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                    "className": "form-hint"
                   },
                   "text": "$t:sirsoft-board.admin.form.permissions.settings_description"
                 },
@@ -285,7 +280,7 @@
                   "name": "P",
                   "if": "{{ !!route?.id }}",
                   "props": {
-                    "className": "text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1"
+                    "className": "flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1"
                   },
                   "children": [
                     {
@@ -312,7 +307,7 @@
               "name": "Div",
               "if": "{{ !route?.id }}",
               "props": {
-                "className": "mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-3"
+                "className": "alert-info"
               },
               "children": [
                 {
@@ -328,7 +323,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm text-blue-700 dark:text-blue-300"
+                    "className": "text-info-soft"
                   },
                   "text": "$t:sirsoft-board.admin.form.permissions.create_mode_permissions_notice"
                 }
@@ -340,14 +335,14 @@
               "name": "Div",
               "if": "{{ !!route?.id && (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}",
               "props": {
-                "className": "mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                "className": "alert-danger"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-start gap-3"
+                    "className": "flex-start gap-3"
                   },
                   "children": [
                     {
@@ -367,7 +362,7 @@
                           "type": "basic",
                           "name": "P",
                           "props": {
-                            "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                            "className": "text-error-strong"
                           },
                           "text": "$t:sirsoft-board.admin.form.permissions.error_title"
                         },
@@ -375,7 +370,7 @@
                           "type": "basic",
                           "name": "P",
                           "props": {
-                            "className": "text-sm text-red-700 dark:text-red-300 mt-1"
+                            "className": "text-error-soft mt-1"
                           },
                           "text": "{{ _local.errors?.permissions?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_description' }}"
                         }
@@ -407,7 +402,7 @@
                       "name": "Div",
                       "props": {
                         "slot": "trigger",
-                        "className": "flex items-center gap-2 w-full px-2 py-1"
+                        "className": "flex-center gap-2 w-full px-2 py-1"
                       },
                       "children": [
                         {
@@ -423,7 +418,7 @@
                           "type": "basic",
                           "name": "H4",
                           "props": {
-                            "className": "font-medium text-gray-900 dark:text-white"
+                            "className": "text-primary font-medium"
                           },
                           "text": "$t:sirsoft-board.admin.form.permissions.admin_permissions_title"
                         },
@@ -450,7 +445,7 @@
                           "type": "basic",
                           "name": "P",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                            "className": "text-tertiary mb-3"
                           },
                           "text": "$t:sirsoft-board.admin.form.permissions.admin_permissions_description"
                         },
@@ -459,7 +454,7 @@
                           "name": "Div",
                           "if": "{{_local.form?.permissions !== undefined}}",
                           "props": {
-                            "className": "space-y-2 grid grid-cols-1 md:grid-cols-2 md:gap-2"
+                            "className": "space-y-2 grid-2col-responsive"
                           },
                           "children": [
                             {
@@ -490,7 +485,7 @@
                                           "type": "basic",
                                           "name": "Span",
                                           "props": {
-                                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                            "className": "text-heading"
                                           },
                                           "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}"
                                         },
@@ -498,7 +493,7 @@
                                           "type": "basic",
                                           "name": "P",
                                           "props": {
-                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                            "className": "text-tertiary mt-0.5"
                                           },
                                           "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}_desc"
                                         }
@@ -535,7 +530,7 @@
                                       "name": "Span",
                                       "if": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] }}",
                                       "props": {
-                                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                                        "className": "form-error"
                                       },
                                       "text": "{{ _local.errors?.['permissions.' + perm?._key + '.roles']?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_roles_required' }}"
                                     }
@@ -573,7 +568,7 @@
                       "name": "Div",
                       "props": {
                         "slot": "trigger",
-                        "className": "flex items-center gap-2 w-full px-2 py-1"
+                        "className": "flex-center gap-2 w-full px-2 py-1"
                       },
                       "children": [
                         {
@@ -589,7 +584,7 @@
                           "type": "basic",
                           "name": "H4",
                           "props": {
-                            "className": "font-medium text-gray-900 dark:text-white"
+                            "className": "text-primary font-medium"
                           },
                           "text": "$t:sirsoft-board.admin.form.permissions.user_permissions_title"
                         },
@@ -616,7 +611,7 @@
                           "type": "basic",
                           "name": "P",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                            "className": "text-tertiary mb-3"
                           },
                           "text": "$t:sirsoft-board.admin.form.permissions.user_permissions_description"
                         },
@@ -625,7 +620,7 @@
                           "name": "Div",
                           "if": "{{_local.form?.permissions !== undefined}}",
                           "props": {
-                            "className": "space-y-2 grid grid-cols-1 md:grid-cols-2 md:gap-2"
+                            "className": "space-y-2 grid-2col-responsive"
                           },
                           "children": [
                             {
@@ -656,7 +651,7 @@
                                           "type": "basic",
                                           "name": "Span",
                                           "props": {
-                                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                            "className": "text-heading"
                                           },
                                           "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}"
                                         },
@@ -664,7 +659,7 @@
                                           "type": "basic",
                                           "name": "P",
                                           "props": {
-                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                            "className": "text-tertiary mt-0.5"
                                           },
                                           "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}_desc"
                                         }
@@ -701,7 +696,7 @@
                                       "name": "Span",
                                       "if": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] }}",
                                       "props": {
-                                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                                        "className": "form-error"
                                       },
                                       "text": "{{ _local.errors?.['permissions.' + perm?._key + '.roles']?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_roles_required' }}"
                                     }
@@ -719,7 +714,7 @@
             }
           ]
         }
+          ]
+        }
       ]
-    }
-  ]
 }

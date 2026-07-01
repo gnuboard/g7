@@ -399,6 +399,44 @@ export class TranslationEngine {
   }
 
   /**
+   * 단일 번역 키 값을 활성 사전에 낙관적으로 주입합니다.
+   *
+   * 레이아웃 편집기 인라인 편집으로 커스텀 키를 생성/수정한 직후, 서버 lang 을 재fetch 하는
+   * 비동기 동안 캔버스가 그 키를 raw(또는 옛 값)로 렌더하지 않도록, 입력한 값을 즉시 사전에
+   * 반영한다. 점선 경로(`custom.layout.2`)를 중첩 객체로 풀어 set 하며, 사전이 아직 없으면
+   * 생성한다. 이후 `loadTranslations(...,true)` 가 서버 권위 값으로 사전을 원자 교체한다.
+   *
+   * 사용자 페이지(비편집)에는 호출되지 않는다 — 편집기 전용 낙관적 경로.
+   *
+   * @param templateId 템플릿 식별자
+   * @param locale 대상 로케일
+   * @param key 번역 키 (점선 경로, `$t:` 접두 없이)
+   * @param value 주입할 값
+   * @return 없음
+   */
+  setTranslationValue(
+    templateId: string,
+    locale: string,
+    key: string,
+    value: string
+  ): void {
+    const cacheKey = `${templateId}:${locale}`;
+    const dict = this.translations.get(cacheKey) ?? {};
+    const parts = key.split('.');
+    let cursor: Record<string, unknown> = dict as Record<string, unknown>;
+    for (let i = 0; i < parts.length - 1; i += 1) {
+      const seg = parts[i];
+      const existing = cursor[seg];
+      if (existing == null || typeof existing !== 'object' || Array.isArray(existing)) {
+        cursor[seg] = {};
+      }
+      cursor = cursor[seg] as Record<string, unknown>;
+    }
+    cursor[parts[parts.length - 1]] = value;
+    this.translations.set(cacheKey, dict as TranslationDictionary);
+  }
+
+  /**
    * 파라미터 문자열을 파싱합니다.
    *
    * `{{...}}` 내부의 `|`와 `&`는 구분자로 취급하지 않습니다.

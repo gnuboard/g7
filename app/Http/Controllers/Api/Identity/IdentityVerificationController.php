@@ -103,11 +103,19 @@ class IdentityVerificationController extends PublicBaseController
             ],
         );
 
+        // verify 실패 시에도 서버 측 시도 횟수를 응답에 포함 — 클라이언트가 자체 카운트를 서버와 동기화하여
+        // "남은 시도 횟수" UI 가 다른 탭/세션과 불일치하지 않도록.
         if (! $result->success) {
+            $fresh = $challenge->fresh();
+
             return $this->error(
                 $result->failureReason ?: 'identity.errors.generic',
                 422,
-                ['failure_code' => $result->failureCode],
+                [
+                    'failure_code' => $result->failureCode,
+                    'attempts' => $fresh ? (int) $fresh->attempts : (int) $challenge->attempts,
+                    'max_attempts' => $fresh ? (int) $fresh->max_attempts : (int) $challenge->max_attempts,
+                ],
             );
         }
 

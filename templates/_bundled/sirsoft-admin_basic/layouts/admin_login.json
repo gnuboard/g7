@@ -42,7 +42,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8"
+        "className": "flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8"
       },
       "lifecycle": {
         "onMount": [
@@ -100,7 +100,7 @@
                   "name": "H1",
                   "if": "{{!_global.settings?.general?.site_logo_url}}",
                   "props": {
-                    "className": "text-4xl font-bold text-gray-900 dark:text-white mb-2"
+                    "className": "text-primary text-4xl font-bold mb-2"
                   },
                   "children": [
                     {
@@ -116,7 +116,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                    "className": "text-label"
                   },
                   "text": "$t:auth.login.subtitle"
                 }
@@ -138,14 +138,16 @@
                   "name": "Div",
                   "if": "{{_local.loginError}}",
                   "props": {
-                    "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                    "className": "alert-danger"
                   },
                   "children": [
                     {
                       "id": "login_error_text",
                       "type": "basic",
                       "name": "P",
-                      "props": { "className": "text-sm text-red-600 dark:text-red-400" },
+                      "props": {
+                        "className": "text-sm text-red-600 dark:text-red-400"
+                      },
                       "text": "{{_local.loginError}}"
                     }
                   ]
@@ -162,7 +164,7 @@
                       "name": "Label",
                       "props": {
                         "htmlFor": "email",
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        "className": "form-label"
                       },
                       "text": "$t:auth.login.email"
                     },
@@ -175,7 +177,7 @@
                         "type": "email",
                         "name": "email",
                         "placeholder": "$t:auth.login.email",
-                        "className": "{{_local.loginErrors?.email ? 'w-full px-4 py-3 rounded-lg border border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}",
+                        "className": "input py-3 {{_local.loginErrors?.email ? 'input-error' : ''}}",
                         "required": true,
                         "disabled": "{{_local.isLoggingIn}}"
                       }
@@ -205,7 +207,7 @@
                       "name": "Label",
                       "props": {
                         "htmlFor": "password",
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        "className": "form-label"
                       },
                       "text": "$t:auth.login.password"
                     },
@@ -218,7 +220,7 @@
                         "type": "password",
                         "name": "password",
                         "placeholder": "$t:auth.login.password",
-                        "className": "{{_local.loginErrors?.password ? 'w-full px-4 py-3 rounded-lg border border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}",
+                        "className": "input py-3 {{_local.loginErrors?.password ? 'input-error' : ''}}",
                         "required": true,
                         "disabled": "{{_local.isLoggingIn}}"
                       }
@@ -241,7 +243,9 @@
                   "id": "login_forgot_password",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "flex items-center justify-end" },
+                  "props": {
+                    "className": "flex-center justify-end"
+                  },
                   "children": [
                     {
                       "id": "login_forgot_link",
@@ -271,7 +275,7 @@
                   "name": "Button",
                   "props": {
                     "type": "submit",
-                    "className": "w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2",
+                    "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
                     "disabled": "{{_local.isLoggingIn}}"
                   },
                   "children": [
@@ -280,7 +284,9 @@
                       "type": "basic",
                       "name": "Div",
                       "if": "{{_local.isLoggingIn}}",
-                      "props": { "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" }
+                      "props": {
+                        "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                      }
                     },
                     {
                       "id": "login_submit_text",
@@ -332,7 +338,9 @@
                         },
                         {
                           "handler": "navigate",
-                          "target": "{{query.redirect || '/admin'}}"
+                          "params": {
+                            "path": "{{query.redirect ?? '/admin'}}"
+                          }
                         }
                       ],
                       "onError": [
@@ -372,7 +380,9 @@
                     {
                       "type": "change",
                       "handler": "setLocale",
-                      "target": "{{event.target.value}}"
+                      "params": {
+                        "locale": "{{$event.target.value}}"
+                      }
                     }
                   ]
                 }
@@ -407,7 +417,9 @@
                         {
                           "type": "click",
                           "handler": "setTheme",
-                          "target": "light"
+                          "params": {
+                            "theme": "light"
+                          }
                         }
                       ],
                       "children": [
@@ -435,7 +447,9 @@
                         {
                           "type": "click",
                           "handler": "setTheme",
-                          "target": "dark"
+                          "params": {
+                            "theme": "dark"
+                          }
                         }
                       ],
                       "children": [
@@ -463,7 +477,9 @@
                         {
                           "type": "click",
                           "handler": "setTheme",
-                          "target": "auto"
+                          "params": {
+                            "theme": "auto"
+                          }
                         }
                       ],
                       "children": [

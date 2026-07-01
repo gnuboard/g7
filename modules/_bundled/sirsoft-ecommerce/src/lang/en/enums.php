@@ -6,6 +6,24 @@
  * Multilingual labels for enum values
  */
 return [
+    // Mileage transaction type (matches MileageTransactionTypeEnum values)
+    'mileage_transaction_type' => [
+        'purchase_earn' => 'Purchase Earn',
+        'admin_earn' => 'Admin Grant',
+        'order_use' => 'Order Use',
+        'admin_deduct' => 'Admin Deduct',
+        'expired' => 'Expired',
+        'refund_restore' => 'Refund Restore',
+        'order_cancel_restore' => 'Order Cancel Restore',
+        'earn_cancel' => 'Earn Cancel',
+    ],
+
+    // Mileage earn trigger (matches MileageEarnTriggerEnum values)
+    'mileage_earn_trigger' => [
+        'delivered' => 'Delivered',
+        'confirmed' => 'Order Confirmed',
+    ],
+
     'sales_status' => [
         'on_sale' => 'On Sale',
         'suspended' => 'Suspended',
@@ -52,7 +70,6 @@ return [
         'delivered' => 'Delivered',
         'confirmed' => 'Confirmed',
         'cancelled' => 'Cancelled',
-        'partial_cancelled' => 'Partially Cancelled',
     ],
 
     // Payment Status (matches PaymentStatusEnum values)
@@ -302,5 +319,41 @@ return [
     'has_reply' => [
         'replied' => 'Replied',
         'not_replied' => 'Not Replied',
+    ],
+
+    // Shipping calculation API request fields (matches ShippingApiRequestField)
+    'shipping_api_request_field' => [
+        'policy_id' => 'Shipping policy ID',
+        'country_code' => 'Country code',
+        'items' => 'Order items',
+        'group_total' => 'Group total amount',
+        'total_quantity' => 'Total quantity',
+    ],
+
+    // Shipping calculation API HTTP method (matches ShippingApiHttpMethod)
+    'shipping_api_http_method' => [
+        'GET' => 'GET',
+        'POST' => 'POST',
+    ],
+
+    // Shipping calculation API auth type (matches ShippingApiAuthType)
+    'shipping_api_auth_type' => [
+        'none' => 'No authentication',
+        'bearer' => 'Bearer token',
+        'custom_header' => 'Custom header',
+    ],
+
+    // Shipping calculation API response type (matches ShippingApiResponseType)
+    'shipping_api_response_type' => [
+        'json' => 'JSON',
+        'text' => 'Text',
+    ],
+
+    // Delivery memo preset (matches DeliveryMemoPresetEnum)
+    'delivery_memo_preset' => [
+        'door' => 'Leave at door',
+        'security' => 'Leave with security',
+        'parcel_box' => 'Leave in parcel box',
+        'call' => 'Please call before delivery',
     ],
 ];

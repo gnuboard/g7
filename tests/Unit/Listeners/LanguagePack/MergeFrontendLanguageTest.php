@@ -139,4 +139,41 @@ class MergeFrontendLanguageTest extends TestCase
         // ja 활성 팩 없음 → base 그대로
         $this->assertSame('저장', $result['common']['save']);
     }
+
+    /**
+     * core scope 언어팩이 코어 frontend 베이스 레이어(`core.*` 키)를 덮어쓰는지 검증.
+     *
+     * 본 PR 도입 후 TemplateService 가 `lang/{locale}.json` 을 베이스로 합치므로,
+     * 응답 base 에는 `core.errors.*` 같은 코어 키가 이미 포함된 상태로 본 필터 진입.
+     * 외부 사용자가 g7-core-{locale} 언어팩으로 `core.errors.*` 번역을 제공하면
+     * 그것이 베이스를 덮어써야 한다.
+     */
+    public function test_core_lang_pack_overrides_core_frontend_base_layer(): void
+    {
+        // 코어 ja 팩이 core.errors.* 키 제공
+        $this->setupJaPack('test-core-frontend-ja', LanguagePackScope::Core->value, null, [
+            'core' => [
+                'errors' => [
+                    'template_not_found' => 'アクティブなテンプレートがありません',
+                ],
+            ],
+        ]);
+        $this->registry->invalidate();
+
+        // TemplateService 가 lang/ko.json 으로부터 합친 base 시뮬레이션
+        $base = [
+            'core' => [
+                'errors' => [
+                    'template_not_found' => '활성화된 템플릿이 없습니다',
+                    'layout_load_failed' => '레이아웃을 불러오는데 실패했습니다',
+                ],
+            ],
+        ];
+        $result = ($this->listener)($base, 'sirsoft-admin_basic', 'ja');
+
+        // ja 팩이 코어 키 덮어씀
+        $this->assertSame('アクティブなテンプレートがありません', $result['core']['errors']['template_not_found']);
+        // ja 팩이 정의하지 않은 키는 base 보존
+        $this->assertSame('레이아웃을 불러오는데 실패했습니다', $result['core']['errors']['layout_load_failed']);
+    }
 }

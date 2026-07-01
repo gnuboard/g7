@@ -39,7 +39,7 @@
 
 | 파일 | 설명 |
 | ---- | ---- |
-| `template.json` | 메타데이터 SSoT (type, components, error_config 등) |
+| `template.json` | 메타데이터 SSoT (type, components, error_config, externals 등) |
 | `routes.json` | 프론트엔드 라우트 정의 |
 | `components.json` | 컴포넌트 레지스트리 매핑 |
 | `CHANGELOG.md` | Keep a Changelog 형식 |

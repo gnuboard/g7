@@ -4,11 +4,13 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\ProductImageCollection;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductImageUploadLimitException;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
@@ -61,6 +63,9 @@ class ProductImageService
             $tempKey = Str::uuid()->toString();
         }
 
+        // 컬렉션당 이미지 개수 상한 검증 (도메인 불변식 — 프론트 우회 안전망)
+        $this->assertWithinImageLimit($productId, $tempKey, $collection);
+
         // Before 훅
         HookManager::doAction('sirsoft-ecommerce.product-image.before_upload', $file, $productId);
 
@@ -68,7 +73,7 @@ class ProductImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.product-image.filter_upload_file', $file);
 
         // 저장 경로 결정
-        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
 
         if ($productId) {
             $product = $this->productRepository->find($productId);
@@ -133,6 +138,31 @@ class ProductImageService
     }
 
     /**
+     * 컬렉션당 이미지 개수 상한을 초과하지 않는지 검증합니다.
+     *
+     * 상품당(또는 임시키당) 이미지 수가 상한에 도달했으면 도메인 예외를 던집니다.
+     * 입력 형식 검증이 아니라 도메인 불변식(상품당 이미지 수 상한)이므로 Service 레벨이 정당합니다.
+     *
+     * @param  int|null  $productId  상품 ID
+     * @param  string|null  $tempKey  임시 업로드 키
+     * @param  string  $collection  컬렉션명
+     *
+     * @throws ProductImageUploadLimitException 상한 도달 시
+     */
+    protected function assertWithinImageLimit(?int $productId, ?string $tempKey, string $collection): void
+    {
+        $max = ProductImageCollection::MAX_IMAGES_PER_COLLECTION;
+
+        $currentCount = $productId
+            ? $this->repository->getByProductId($productId, $collection)->count()
+            : ($tempKey ? $this->repository->getByTempKey($tempKey, $collection)->count() : 0);
+
+        if ($currentCount >= $max) {
+            throw new ProductImageUploadLimitException($max);
+        }
+    }
+
+    /**
      * 임시 이미지를 상품에 연결합니다.
      *
      * 경로 패턴:
@@ -188,7 +218,7 @@ class ProductImageService
      *
      * @param  string  $tempKey  임시 업로드 키
      * @param  string|null  $collection  컬렉션 필터
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getTempImages(string $tempKey, ?string $collection = null)
     {
@@ -199,7 +229,7 @@ class ProductImageService
      * 해시로 이미지 조회
      *
      * @param  string  $hash  이미지 해시 (12자)
-     * @return ProductImage|null
+     * @return ProductImage|null 조회된 이미지 (없으면 null)
      */
     public function findByHash(string $hash): ?ProductImage
     {
@@ -421,7 +451,7 @@ class ProductImageService
      *
      * @param  int  $productId  상품 ID
      * @param  string|null  $collection  컬렉션 필터
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getImages(int $productId, ?string $collection = null)
     {
@@ -434,7 +464,6 @@ class ProductImageService
      * 상품 저장 실패 시 업로드된 이미지들을 정리하기 위해 사용됩니다.
      *
      * @param  array<int>  $imageIds  이미지 ID 배열
-     * @return void
      */
     public function rollbackUploadedImages(array $imageIds): void
     {

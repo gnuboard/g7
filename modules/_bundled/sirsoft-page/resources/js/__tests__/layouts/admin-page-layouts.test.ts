@@ -236,6 +236,61 @@ describe('admin_page_list.json', () => {
         expect(aComponent?.props?.href).toContain('row.slug');
         expect(aComponent?.props?.target).toBe('_blank');
     });
+
+    // ─── 발행 상태 필터: list-toolbar Select 정합 ───
+
+    it('list_options 의 published_filter_select 가 composite Select 로 정의됨', () => {
+        const select = findById(adminPageList, 'published_filter_select');
+        expect(select).not.toBeNull();
+        expect(select.type).toBe('composite');
+        expect(select.name).toBe('Select');
+    });
+
+    it('published_filter_select 가 list_options 안에서 sort_select 보다 앞에 위치함', () => {
+        const listOptions = findById(adminPageList, 'list_options');
+        expect(listOptions).not.toBeNull();
+        const childIds = (listOptions.children ?? []).map((c: any) => c.id);
+        const publishedIdx = childIds.indexOf('published_filter_select');
+        const sortIdx = childIds.indexOf('sort_select');
+        expect(publishedIdx).toBeGreaterThanOrEqual(0);
+        expect(sortIdx).toBeGreaterThanOrEqual(0);
+        expect(publishedIdx).toBeLessThan(sortIdx);
+    });
+
+    it("published_filter_select 가 query.published 를 value 로 바인딩하고 nullish fallback '' 을 사용함", () => {
+        const select = findById(adminPageList, 'published_filter_select');
+        expect(select.props.value).toContain('query.published');
+        expect(select.props.value).toMatch(/\?\?\s*''/);
+    });
+
+    it("published_filter_select options 가 ''/'1'/'0' 세 값과 published_filter 다국어 라벨을 가짐", () => {
+        const select = findById(adminPageList, 'published_filter_select');
+        const values = (select.props.options ?? []).map((o: any) => o.value);
+        expect(values).toEqual(['', '1', '0']);
+        const labels = (select.props.options ?? []).map((o: any) => o.label);
+        expect(labels).toContain('$t:sirsoft-page.admin.page.published_filter.all');
+        expect(labels).toContain('$t:sirsoft-page.admin.page.published_filter.published');
+        expect(labels).toContain('$t:sirsoft-page.admin.page.published_filter.unpublished');
+    });
+
+    it("published_filter_select change 가 navigate 로 published 쿼리를 갱신하고 페이지를 1 로 리셋함", () => {
+        const select = findById(adminPageList, 'published_filter_select');
+        const changeAction = (select.actions ?? []).find((a: any) => a.type === 'change');
+        expect(changeAction).toBeDefined();
+        expect(changeAction.handler).toBe('navigate');
+        expect(changeAction.params.path).toBe('/admin/pages');
+        expect(changeAction.params.mergeQuery).toBe(true);
+        expect(changeAction.params.query.published).toContain('$event.target.value');
+        expect(changeAction.params.query.page).toBe(1);
+    });
+
+    it('기존 좌측 카드 필터(filter_tabs_area / published_filter_tabs) 가 더 이상 존재하지 않음', () => {
+        expect(findById(adminPageList, 'filter_tabs_area')).toBeNull();
+        expect(findById(adminPageList, 'published_filter_tabs')).toBeNull();
+        expect(findById(adminPageList, 'published_all')).toBeNull();
+        expect(findById(adminPageList, 'published_true')).toBeNull();
+        expect(findById(adminPageList, 'published_false')).toBeNull();
+    });
 });
 
 // ─────────────────────────────────────────────
@@ -263,8 +318,8 @@ describe('admin_page_form.json', () => {
         expect(dsStr).toContain('route');
     });
 
-    it('header_save_button의 액션에 setState, emitEvent, apiCall이 포함됨', () => {
-        const btn = findById(adminPageForm, 'header_save_button');
+    it('footer_save_button의 액션에 setState, emitEvent, apiCall이 포함됨', () => {
+        const btn = findById(adminPageForm, 'footer_save_button');
         expect(btn).not.toBeNull();
         const handlers = extractHandlersFromActions(btn.actions);
         expect(handlers).toContain('setState');
@@ -273,13 +328,13 @@ describe('admin_page_form.json', () => {
     });
 
     it('emitEvent가 upload:page_attachments 이벤트를 발행함', () => {
-        const btn = findById(adminPageForm, 'header_save_button');
+        const btn = findById(adminPageForm, 'footer_save_button');
         const btnStr = JSON.stringify(btn);
         expect(btnStr).toContain('upload:page_attachments');
     });
 
     it('apiCall body에 temp_key가 포함됨', () => {
-        const btn = findById(adminPageForm, 'header_save_button');
+        const btn = findById(adminPageForm, 'footer_save_button');
         const btnStr = JSON.stringify(btn);
         expect(btnStr).toContain('temp_key');
         expect(btnStr).toContain('_local.tempKey');
@@ -319,7 +374,7 @@ describe('admin_page_form.json', () => {
     });
 
     it('저장 버튼이 isReadOnly일 때 숨겨짐', () => {
-        const saveBtn = findById(adminPageForm, 'header_save_button');
+        const saveBtn = findById(adminPageForm, 'footer_save_button');
         expect(saveBtn).not.toBeNull();
         expect(saveBtn.if).toContain('isReadOnly');
     });
@@ -380,7 +435,7 @@ describe('admin_page_form.json', () => {
     });
 
     it('저장 버튼의 slugChecked 차단 조건에 route.id가 포함되지 않음 (생성·수정 공통)', () => {
-        const saveBtn = findById(adminPageForm, 'header_save_button');
+        const saveBtn = findById(adminPageForm, 'footer_save_button');
         const clickAction = saveBtn?.actions?.find((a: any) => a.type === 'click');
         const blockCondition = clickAction?.conditions?.[0];
         expect(blockCondition).toBeDefined();
@@ -410,6 +465,108 @@ describe('admin_page_form.json', () => {
         const inputStr = JSON.stringify(slugInput);
         expect(inputStr).toContain('slugChecked');
         expect(inputStr).toContain('false');
+    });
+
+    // ─── 슬러그 + 발행여부 그리드: 표준 자산 정합 ───
+
+    it('slug_published_grid 가 grid-2col-responsive 자산을 단독 사용함 (호출처 gap-* 토큰 제거)', () => {
+        const grid = findById(adminPageForm, 'slug_published_grid');
+        expect(grid).not.toBeNull();
+        expect(grid.props.className).toBe('grid-2col-responsive');
+        // 자산이 반응형을 포함하므로 호출처 responsive override 없어야 함
+        expect(grid.responsive).toBeUndefined();
+    });
+
+    it('slug_field / published_field 의 Label 이 form-label 자산을 사용함', () => {
+        const slugField = findById(adminPageForm, 'slug_field');
+        const publishedField = findById(adminPageForm, 'published_field');
+        const slugLabel = (slugField.children ?? []).find((c: any) => c.name === 'Label');
+        const publishedLabel = (publishedField.children ?? []).find((c: any) => c.name === 'Label');
+        expect(slugLabel?.props?.className).toBe('form-label');
+        expect(publishedLabel?.props?.className).toBe('form-label');
+    });
+
+    it('slug_field 가 className 부재 — form-label 의 mb-1 만으로 라벨↔입력 간격 처리 (stack-tight 회귀 차단)', () => {
+        const slugField = findById(adminPageForm, 'slug_field');
+        // stack-tight 의 gap-2 가 form-label 의 mb-1 위에 중복 적용되어 라벨↔입력 간격이
+        // 4px + 8px = 12px (발행 측의 3배) 로 비대칭이 되던 회귀를 차단
+        expect(slugField.props?.className).toBeUndefined();
+    });
+
+    it('slug_field 의 안내 Span 2종이 form-hint block 자산으로 통일 (mt-1 내장으로 입력행 간 시각 간격 확보)', () => {
+        const slugField = findById(adminPageForm, 'slug_field');
+        const directSpans = (slugField.children ?? []).filter((c: any) => c.name === 'Span');
+        // URL 미리보기 안내 + 영문 소문자 안내 — 둘 다 form-hint block 자산 사용
+        const formHintSpans = directSpans.filter(
+            (s: any) => s.props?.className === 'form-hint block',
+        );
+        expect(formHintSpans.length).toBeGreaterThanOrEqual(2);
+        // text-tertiary / text-hint 톤 분기 회귀 차단 (현재는 form-hint 로 통일)
+        const oldToneSpans = directSpans.filter(
+            (s: any) =>
+                s.props?.className === 'text-tertiary block' ||
+                s.props?.className === 'text-hint block',
+        );
+        expect(oldToneSpans.length).toBe(0);
+        // 직속 자식 중에 className 이 'row-stack' 인 Div wrapper 가 더 이상 없어야 함
+        const nestedRowStack = (slugField.children ?? []).find(
+            (c: any) => c.name === 'Div' && c.props?.className === 'row-stack',
+        );
+        expect(nestedRowStack).toBeUndefined();
+    });
+
+    it('published_field 가 className 부재 (admin/settings 필드 셀 패턴) 로 Label + Select 를 직속 자식으로 보유', () => {
+        const publishedField = findById(adminPageForm, 'published_field');
+        // 필드 셀에는 className 부재 — form-label 의 mb-1 이 라벨↔Select 간격 담당
+        expect(publishedField.props?.className).toBeUndefined();
+        const childNames = (publishedField.children ?? []).map((c: any) => c.name);
+        expect(childNames).toEqual(['Label', 'Select']);
+        // published_select 가 published_field 직속 자식인지 확인 (id 위치 보존)
+        const selectChild = publishedField.children.find((c: any) => c.id === 'published_select');
+        expect(selectChild).toBeDefined();
+    });
+
+    // ─── 기본 정보 / SEO 필드 셀 정합 (#408 grid 셀 직속 row-stack 회귀 차단) ───
+
+    it('basic_info_fields / seo_fields 는 다중 row 컨테이너로 row-stack 유지', () => {
+        // 다중 입력 row 리스트 컨테이너는 row-stack 가 의도된 사용 (행 사이 divide-y)
+        const basic = findById(adminPageForm, 'basic_info_fields');
+        const seo = findById(adminPageForm, 'seo_fields');
+        expect(basic.props.className).toBe('row-stack');
+        expect(seo.props.className).toBe('row-stack');
+    });
+
+    it('title_field / content_field 가 className 부재 + form-label 표준 패턴 (stack-tight 중복 간격 회귀 차단)', () => {
+        const titleField = findById(adminPageForm, 'title_field');
+        const contentField = findById(adminPageForm, 'content_field');
+        // form-label 의 mb-1 만으로 라벨↔입력 간격 처리 (admin/settings · admin_user_form 표준)
+        expect(titleField.props?.className).toBeUndefined();
+        expect(contentField.props?.className).toBeUndefined();
+
+        const titleLabel = (titleField.children ?? []).find((c: any) => c.name === 'Label');
+        const contentLabel = (contentField.children ?? []).find((c: any) => c.name === 'Label');
+        expect(titleLabel?.props?.className).toBe('form-label');
+        expect(contentLabel?.props?.className).toBe('form-label');
+    });
+
+    it('seo_* 필드 셀이 className 부재 + 빈 Div wrapper 없이 form-label-muted Label + 입력을 직속 자식으로 보유', () => {
+        const ids = ['seo_title_field', 'seo_description_field', 'seo_keywords_field'];
+        for (const id of ids) {
+            const field = findById(adminPageForm, id);
+            expect(field, id).not.toBeNull();
+            // SEO 필드 셀 자체에는 className 부재 (단일 필드 셀 표준 패턴)
+            expect(field.props?.className, id).toBeUndefined();
+            // 빈 Div wrapper 가 더 이상 없어야 함 — Label 이 직속 자식
+            const directLabel = (field.children ?? []).find((c: any) => c.name === 'Label');
+            expect(directLabel, id).toBeDefined();
+            // 보조 라벨 톤 자산화 — form-label-muted (text-secondary block text-sm font-medium 원자 토큰 흡수)
+            expect(directLabel.props.className, id).toBe('form-label-muted');
+            // 빈 className Div wrapper 미존재 확인
+            const emptyDivWrapper = (field.children ?? []).find(
+                (c: any) => c.name === 'Div' && !c.props,
+            );
+            expect(emptyDivWrapper, id).toBeUndefined();
+        }
     });
 });
 

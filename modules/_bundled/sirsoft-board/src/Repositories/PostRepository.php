@@ -2,8 +2,10 @@
 
 namespace Modules\Sirsoft\Board\Repositories;
 
+use App\Enums\PermissionType;
 use App\Helpers\PermissionHelper;
 use App\Search\Engines\DatabaseFulltextEngine;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -11,6 +13,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
@@ -324,6 +327,32 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
+     * navigation 판별용 게시글 메타(카테고리·부모 ID)를 경량 조회합니다.
+     *
+     * isNotice 와 동일하게 trashed 포함, 스코프/권한 체크 없이 조회합니다.
+     *
+     * @param  int  $id  게시글 ID
+     * @param  int  $boardId  게시판 ID
+     * @return array{category: string|null, parent_id: int|null}|null 메타 또는 미존재 시 null
+     */
+    public function getNavigationMeta(int $id, int $boardId): ?array
+    {
+        $row = Post::withTrashed()
+            ->where('id', $id)
+            ->where('board_id', $boardId)
+            ->first(['category', 'parent_id']);
+
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'category' => $row->category,
+            'parent_id' => $row->parent_id !== null ? (int) $row->parent_id : null,
+        ];
+    }
+
+    /**
      * 신고 처리를 위한 게시글 상태를 일괄 업데이트합니다.
      *
      * @param  string  $slug  게시판 슬러그
@@ -387,6 +416,13 @@ class PostRepository implements PostRepositoryInterface
             $boardId = $board?->id;
         }
 
+        // 관리 권한자는 삭제된 게시글의 하위 데이터(답글/첨부)까지 열람 가능.
+        // 첨부 eager load 클로저에서도 동일 권한 기준으로 cascade 삭제분을 포함하기 위해
+        // 조회 이전에 권한을 계산한다 (댓글의 권한 기반 withTrashed 와 비대칭 제거).
+        $hasDeletePermission = $this->checkBoardPermission($slug, 'admin.control')
+            || $this->checkBoardPermission($slug, 'admin.manage')
+            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+
         $post = Post::withTrashed()
             ->where('board_id', $boardId)
             ->with([
@@ -397,16 +433,24 @@ class PostRepository implements PostRepositoryInterface
                     $query->withTrashed()
                         ->with('user');
                 },
-                'attachments' => function ($query) use ($boardId) {
+                'attachments' => function ($query) use ($boardId, $hasDeletePermission) {
                     $query->where('board_id', $boardId);
+                    // 관리 권한자는 게시글 삭제로 cascade soft delete 된 첨부까지 조회한다.
+                    // 단, 사용자가 글 삭제 전에 직접 지운 첨부(trigger_type='user' 등)는 제외하고
+                    // cascade 분만 포함한다 (살아있는 것 + cascade 만). 댓글의 cascade-only 노출과 일관.
+                    if ($hasDeletePermission) {
+                        $query->withTrashed()
+                            ->where(function ($q) {
+                                $q->whereNull('deleted_at')
+                                    ->orWhere('trigger_type', TriggerType::Cascade->value);
+                            });
+                    }
                 },
             ])
             ->find($id);
 
         // 모든 하위 답글을 재귀적으로 로드하여 트리 구조로 설정
         if ($post) {
-            $hasDeletePermission = $this->checkBoardPermission($slug, 'admin.control')
-                || $this->checkBoardPermission($slug, 'admin.manage');
             // loadAllDescendantReplies는 board_id만 필요하므로 Board 모델 대신 조회된 board 사용
             $board = $board ?? $post->board;
             $allReplies = $this->loadAllDescendantReplies($post->id, $board, $hasDeletePermission);
@@ -1222,6 +1266,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
+     * @return int 키워드와 일치하는 게시글 수
      */
     public function countAcrossBoards(array $boardIds, string $keyword): int
     {
@@ -1358,6 +1403,20 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
+     * 게시판 ID 기준으로 게시글을 일괄 영구 삭제합니다.
+     *
+     * 게시판 영구 삭제(deleteBoard) 시 사용합니다. 소프트 삭제와 달리
+     * deleted_at 마킹이 아니라 레코드를 물리적으로 제거합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 삭제된 게시글 수
+     */
+    public function forceDeleteByBoardId(int $boardId): int
+    {
+        return Post::where('board_id', $boardId)->forceDelete();
+    }
+
+    /**
      * Eager loading 관계에 board_id 조건을 명시적으로 바인딩합니다.
      *
      * 모델 관계 정의에서 $this->board_id를 사용하면 Eager loading 시
@@ -1487,5 +1546,43 @@ class PostRepository implements PostRepositoryInterface
         Post::where('id', $parentPostId)->update(['replies_count' => $count]);
 
         return $count;
+    }
+
+    /**
+     * 특정 날짜에 작성된 전체 게시판의 게시글 수를 조회합니다 (대시보드 집계용).
+     *
+     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @return int 해당 날짜 작성 게시글 수
+     */
+    public function countCreatedOnDate(string $date): int
+    {
+        $start = CarbonImmutable::parse($date)->startOfDay();
+        $end = $start->addDay();
+
+        return Post::query()
+            ->whereNull('deleted_at')
+            ->where('created_at', '>=', $start)
+            ->where('created_at', '<', $end)
+            ->count();
+    }
+
+    /**
+     * 전체 게시판에서 최신 게시글을 조회합니다 (대시보드 최신글 카드용).
+     *
+     * 답글(parent_id != null)은 본문 게시글이 아니므로 제외한다.
+     * 다른 메서드(검색/인기/카테고리 목록 등)와 동일한 "원글만" 컨벤션 유지.
+     *
+     * @param  int  $limit  조회 건수
+     * @return \Illuminate\Database\Eloquent\Collection<int, Post> 최신 게시글 컬렉션
+     */
+    public function getRecentAcrossBoards(int $limit): \Illuminate\Database\Eloquent\Collection
+    {
+        return Post::query()
+            ->whereNull('deleted_at')
+            ->whereNull('parent_id')
+            ->with(['board', 'user'])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
     }
 }

@@ -1,0 +1,276 @@
+{
+  "target_layout": "mypage/profile",
+  "data_sources": [
+    {
+      "id": "inicisRecord",
+      "label_key": "$t:sirsoft-verification_kginicis.editor.data_source.inicisRecord",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-verification_kginicis/me/identity/inicis",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true
+    }
+  ],
+  "injections": [
+    {
+      "target_id": "profile_view_bio_card",
+      "position": "append",
+      "components": [
+        {
+          "id": "profile_view_inicis_identity_card",
+          "if": "{{inicisRecord?.data}}",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "section-heading-md mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "text": "$t:sirsoft-verification_kginicis.card.title"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-verification_kginicis.card.method"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "{{inicisRecord?.data?.method ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-verification_kginicis.card.verified_at"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "{{inicisRecord?.data?.verified_at ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-verification_kginicis.card.name"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "{{inicisRecord?.data?.name_masked ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-verification_kginicis.card.birthday"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "{{inicisRecord?.data?.birthday_masked ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-verification_kginicis.card.phone"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "{{inicisRecord?.data?.phone_masked ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-verification_kginicis.card.is_adult.label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "{{inicisRecord?.data?.is_adult ? '$t:sirsoft-verification_kginicis.card.is_adult.true' : '$t:sirsoft-verification_kginicis.card.is_adult.false'}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "profile_view_inicis_identity_pending_card",
+          "if": "{{!inicisRecord?.data}}",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "section-heading-md mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "text": "$t:sirsoft-verification_kginicis.card.title"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-start gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "circle-info",
+                    "className": "w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-body"
+                      },
+                      "text": "$t:sirsoft-verification_kginicis.card.pending.title"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-tertiary"
+                      },
+                      "text": "$t:sirsoft-verification_kginicis.card.pending.hint"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 110
+}

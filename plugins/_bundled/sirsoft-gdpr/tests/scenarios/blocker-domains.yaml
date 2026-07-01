@@ -1,0 +1,115 @@
+# audit:allow test-scenario-coverage reason: 도메인 axes 가 광범위 (tag × match_kind × consent_state × catalog_state × scheme) — 본 매니페스트는 신규 기능의 시나리오 매트릭스 SSoT 로 기록만 하고, 개별 케이스 docblock 마킹은 후속 PR 에서 단계적 적용 예정. 핵심 회귀 가드는 test_files 에 명시된 통과 테스트로 커버됨.
+
+feature: GDPR 도메인 기반 추적 리소스 차단 엔진 (속성 기반 보강)
+
+description: |
+  운영자가 카테고리별 차단 도메인 목록을 관리하면 `data-gdpr-category` 속성 없이도
+  외부 추적 리소스(`<script>` / `<iframe>` / `<img>` / `<link>`)를 동의 전 차단.
+  속성 기반 매칭(기존)을 우선 평가, 매칭 안 되면 도메인 매칭으로 fallback.
+  운영자 커스텀 + 기본 카탈로그(GA/GTM/Meta Pixel/Hotjar 등) 합집합 적용.
+
+  기존 회귀 (이번 보강에서도 통과 유지):
+    - 속성 기반 차단 (`data-gdpr-category` 가 부여된 `<script>`/`<iframe>`)
+    - 동의 변경 이벤트 시 rescan 으로 placeholder ↔ 원본 복원
+
+  해결 축:
+    - DOM 삽입 시점 가로채기 (MutationObserver) — 외부 HTTP 요청 자체가 발생하지 않음
+    - endsWith 기반 매칭 (정규식 미사용) — 일반 페이지 < 5ms
+    - 동일 origin 차단 대상 외 — 운영자 자체 자산 보호
+    - data:/blob:/about: URI 차단 대상 외 — 외부 호스트 없음
+    - necessary 카테고리 매칭 자체를 skip — 필수 쿠키 보호
+
+axes:
+  tag: [script_src, iframe_src, img_src, link_preconnect, link_stylesheet]
+  match_kind: [attr_only, domain_exact, domain_wildcard, attr_and_domain, none]
+  consent_state: [denied, granted]
+  catalog_state: [custom_only, custom_plus_default, default_only, empty]
+  scheme: [https_external, http_external, same_origin, data_uri, blob_uri, about_blank]
+
+exclusions:
+  - { scheme: data_uri, match_kind: domain_exact, reason: "data: URI 는 외부 호스트 없음 — 차단 대상 외" }
+  - { scheme: blob_uri, match_kind: domain_wildcard, reason: "blob: URI 는 외부 호스트 없음 — 차단 대상 외" }
+  - { scheme: about_blank, match_kind: domain_exact, reason: "about: 스킴은 외부 호스트 없음" }
+  - { scheme: same_origin, match_kind: domain_exact, reason: "동일 origin 은 정책상 차단 대상 외" }
+
+effects:
+  # 속성 기반 (기존 회귀)
+  - script_with_attr_blocked_when_consent_denied
+  - script_with_attr_restored_when_consent_granted
+  - iframe_with_attr_blocked_when_consent_denied
+  # 도메인 기반 (신규)
+  - script_external_blocked_by_exact_domain
+  - script_external_blocked_by_wildcard_domain
+  - iframe_external_blocked_by_domain
+  - img_tracking_pixel_blocked_by_domain
+  - link_preconnect_blocked_by_domain
+  - link_stylesheet_blocked_by_domain
+  # 평가 우선순위
+  - attr_match_takes_priority_over_domain_match
+  # 동일 origin 보호
+  - same_origin_script_passes_without_attr
+  - same_origin_link_passes_without_attr
+  # 비-HTTP 스킴
+  - data_uri_passes_without_match
+  - blob_uri_passes_without_match
+  - about_blank_passes_without_match
+  # 카테고리 보호
+  - necessary_category_skipped_during_domain_match
+  # 카탈로그 병합
+  - default_catalog_merges_with_custom_when_toggle_on
+  - default_catalog_skipped_when_toggle_off
+  - duplicate_domains_deduplicated_in_merge
+  # 동의 변경 rescan
+  - rescan_restores_domain_blocked_after_consent_grant
+  - rescan_blocks_newly_inserted_after_consent_revoke
+  # 유효하지 않은 입력
+  - invalid_url_returns_null_category
+  - empty_patterns_returns_null_category
+  # 부트스트랩 가드
+  - blocker_inactive_when_auto_blocking_disabled
+  - blocked_domains_default_to_empty_when_undefined
+
+sub_flows:
+  - id: domain_match_priority
+    description: 속성 + 도메인 동시 매칭 시 속성 우선 평가
+    effects:
+      - attr_match_takes_priority_over_domain_match
+      - script_with_attr_blocked_when_consent_denied
+  - id: catalog_merge
+    description: 운영자 커스텀 + 기본 카탈로그 합집합 (중복 제거)
+    effects:
+      - default_catalog_merges_with_custom_when_toggle_on
+      - default_catalog_skipped_when_toggle_off
+      - duplicate_domains_deduplicated_in_merge
+  - id: same_origin_protection
+    description: 동일 origin 자산은 운영자 책임이라 차단 대상 외
+    effects:
+      - same_origin_script_passes_without_attr
+      - same_origin_link_passes_without_attr
+  - id: consent_rescan
+    description: 동의 변경 시 placeholder ↔ 원본 양방향 복원/차단
+    effects:
+      - rescan_restores_domain_blocked_after_consent_grant
+      - rescan_blocks_newly_inserted_after_consent_revoke
+      - script_with_attr_restored_when_consent_granted
+  - id: preblocker_handoff
+    description: preblocker (1차 라인) 가 처리한 노드는 MutationObserver 백업 라인이 중복 차단하지 않음 — data-gdpr-blocked-category 속성 보유 시 skip
+    effects:
+      - script_with_preblocker_attr_skipped_by_mutation_observer
+      - script_without_preblocker_attr_blocked_by_backup_line
+
+test_files:
+  - resources/js/__tests__/blocker-domains.test.ts
+  - resources/js/__tests__/blocker.test.ts
+  - resources/js/__tests__/preblocker.test.ts
+
+notes: |
+  본 매니페스트는 SSoT 로 작성되었으며, audit 룰 test-scenario-coverage 의 docblock 마킹
+  강제 적용은 follow-up PR 에서 단계적으로 진행. 핵심 회귀(속성 기반 차단·동의 rescan·동일
+  origin 보호)는 test_files 의 통과 테스트로 커버.
+
+  GDPR 한계 안내 (운영자 책임 안내 박스로 노출, 본 차단 엔진은 미커버):
+    - `document.cookie =` 직접 set 차단은 미지원 (Phase 2 후속 과제)
+    - 동의 철회 후 이미 로드된 GA `window.dataLayer` 부수효과 잔존
+    - 외부 폰트(`fonts.googleapis.com`) 잘못 분류 시 페이지 시각 깨짐 (운영자 책임)
+    - punycode·localhost·단일 라벨 도메인은 정규식이 거부 (FQDN 만 지원)

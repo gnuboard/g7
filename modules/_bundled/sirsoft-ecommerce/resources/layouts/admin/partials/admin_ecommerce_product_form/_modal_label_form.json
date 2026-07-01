@@ -1,13 +1,14 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "Product Form - Label Registration/Edit Modal"
+    "description": "Product Form - Label Registration/Edit Modal",
+    "editor_label": "$t:sirsoft-ecommerce.admin.product.labels.modal_title_create"
   },
   "id": "modal_label_form",
   "type": "composite",
   "name": "Modal",
   "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product.labels.modal_title",
+    "title": "{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}",
     "description": "$t:sirsoft-ecommerce.admin.product.labels.modal_description",
     "size": "md"
   },
@@ -16,43 +17,45 @@
       "id": "label_form_content",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "id": "label_preview_section",
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
           "children": [
             {
               "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product.labels.preview"
-            },
-            {
-              "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "flex items-center justify-center py-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
-              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Span",
+                  "name": "Label",
                   "props": {
-                    "className": "px-3 py-1.5 rounded-full text-sm font-medium",
-                    "style": "background-color: {{(_global.labelFormData?.color ?? '#6B7280') + '20'}}; color: {{_global.labelFormData?.color ?? '#6B7280'}}"
+                    "className": "form-label"
                   },
-                  "text": "{{$localized(_global.labelFormData?.name) || $t('sirsoft-ecommerce.admin.product.labels.preview')}}"
+                  "text": "$t:sirsoft-ecommerce.admin.product.labels.preview"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center justify-center py-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "px-3 py-1.5 rounded-full text-sm font-medium",
+                        "style": "background-color: {{(_global.labelFormData?.color ?? '#6B7280') + '20'}}; color: {{_global.labelFormData?.color ?? '#6B7280'}}"
+                      },
+                      "text": "{{$localized(_global.labelFormData?.name) || $t('sirsoft-ecommerce.admin.product.labels.preview')}}"
+                    }
+                  ]
                 }
-              ]
+              ],
+              "props": {
+              }
             }
           ]
         },
@@ -60,37 +63,42 @@
           "id": "label_name_section",
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
           "children": [
             {
               "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product.labels.name"
-            },
-            {
-              "type": "composite",
-              "name": "MultilingualInput",
-              "props": {
-                "name": "label_name",
-                "value": "{{_global.labelFormData?.name ?? { ko: '', en: '' }}}",
-                "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.name",
-                "layout": "tabs"
-              },
-              "actions": [
+              "name": "Div",
+              "children": [
                 {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "labelFormData.name": "{{$event.target.value}}"
-                  }
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.labels.name"
+                },
+                {
+                  "type": "composite",
+                  "name": "MultilingualInput",
+                  "props": {
+                    "name": "label_name",
+                    "value": "{{_global.labelFormData?.name ?? { ko: '', en: '' }}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.name",
+                    "layout": "tabs"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "labelFormData.name": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
                 }
-              ]
+              ],
+              "props": {
+              }
             }
           ]
         },
@@ -98,85 +106,90 @@
           "id": "label_color_section",
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
           "children": [
             {
               "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product.labels.color"
-            },
-            {
-              "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "flex items-center gap-3"
-              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Input",
+                  "name": "Label",
                   "props": {
-                    "type": "color",
-                    "value": "{{_global.labelFormData?.color ?? '#6B7280'}}",
-                    "className": "w-12 h-10 p-1 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+                    "className": "form-label"
                   },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "labelFormData.color": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Input",
-                  "props": {
-                    "name": "label_color_text",
-                    "value": "{{_global.labelFormData?.color ?? ''}}",
-                    "placeholder": "#FF0000",
-                    "className": "flex-1"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "labelFormData.color": "{{$event.target.value || null}}"
-                      }
-                    }
-                  ]
+                  "text": "$t:sirsoft-ecommerce.admin.product.labels.color"
                 },
                 {
                   "type": "basic",
-                  "name": "Button",
-                  "if": "{{_global.labelFormData?.color}}",
+                  "name": "Div",
                   "props": {
-                    "type": "button",
-                    "className": "btn btn-ghost btn-sm text-gray-500 dark:text-gray-400"
+                    "className": "flex-center gap-3"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.product.labels.color_reset",
-                  "actions": [
+                  "children": [
                     {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "labelFormData.color": null
-                      }
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "color",
+                        "value": "{{_global.labelFormData?.color ?? '#6B7280'}}",
+                        "className": "w-12 h-10 p-1 rounded cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "labelFormData.color": "{{$event.target.value}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Input",
+                      "props": {
+                        "name": "label_color_text",
+                        "value": "{{_global.labelFormData?.color ?? ''}}",
+                        "placeholder": "#FF0000",
+                        "className": "flex-1"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "labelFormData.color": "{{$event.target.value || null}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "if": "{{_global.labelFormData?.color}}",
+                      "props": {
+                        "type": "button",
+                        "className": "btn btn-ghost btn-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.labels.color_reset",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "labelFormData.color": null
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
-              ]
+              ],
+              "props": {
+              }
             }
           ]
         },
@@ -185,7 +198,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
+            "className": "flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700"
           },
           "children": [
             {
@@ -225,7 +238,7 @@
                   "if": "{{_global.isSavingLabel}}",
                   "props": {
                     "name": "spinner",
-                    "className": "w-4 h-4 mr-2 animate-spin"
+                    "className": "spinner-sm mr-2"
                   }
                 },
                 {
@@ -237,7 +250,9 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     }
   ]
 }

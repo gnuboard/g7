@@ -123,21 +123,60 @@ describe('본인인증 공통 모달 (sirsoft-basic) — engine-v1.46.0', () => 
       if (n.type === 'extension_point') slots.push(n);
     });
 
-    it('render_hint:text_code 슬롯 존재', () => {
-      const slot = slots.find((s) => s.name === 'identity_provider_ui:text_code');
-      expect(slot).toBeDefined();
-      expect(Array.isArray(slot!.default)).toBe(true);
-      expect((slot!.default as Node[]).length).toBeGreaterThan(0);
+    it('외부 IDV 플러그인 진입점 (identity_provider_ui:provider) 단일 슬롯만 존재 — text_code/link 는 plain Div 로 이동', () => {
+      // 외부 플러그인이 mode:replace 로 default 코어 UI 를 비워버리던 회귀(빈 모달)를 차단하기 위해
+      // 코어 OTP/link UI 는 plain Div 로 이동했고, 외부 플러그인 진입점만 단일 슬롯으로 통합됨.
+      const providerSlots = slots.filter((s) => s.name === 'identity_provider_ui:provider');
+      expect(providerSlots).toHaveLength(1);
+      expect(slots.find((s) => s.name === 'identity_provider_ui:text_code')).toBeUndefined();
+      expect(slots.find((s) => s.name === 'identity_provider_ui:link')).toBeUndefined();
     });
 
-    it('render_hint:link 슬롯 존재', () => {
-      const slot = slots.find((s) => s.name === 'identity_provider_ui:link');
-      expect(slot).toBeDefined();
-    });
-
-    it('provider 별 슬롯 존재 (외부 IDV 플러그인 진입점)', () => {
+    it('외부 provider 슬롯은 코어 mail/미지정 케이스에서 마운트되지 않는다 (if 가드)', () => {
       const slot = slots.find((s) => s.name === 'identity_provider_ui:provider');
       expect(slot).toBeDefined();
+      expect(typeof slot!.if).toBe('string');
+      // provider_id 가 truthy 이면서 코어 mail 이 아닐 때만 마운트
+      expect(slot!.if).toContain('_global.identityChallenge?.provider_id');
+      expect(slot!.if).toContain("'g7:core.mail'");
+    });
+
+    it('코어 OTP 입력 Div 는 코어 mail/미지정 + text_code 케이스에 if 가드로 노출된다', () => {
+      const cores: Node[] = [];
+      walk(identityModal as unknown as Node, (n) => {
+        if (
+          n.type === 'basic' &&
+          n.name === 'Div' &&
+          typeof n.if === 'string' &&
+          n.if.includes("'text_code'") &&
+          n.if.includes("'g7:core.mail'")
+        ) {
+          cores.push(n);
+        }
+      });
+      expect(cores.length).toBeGreaterThan(0);
+    });
+
+    it('재전송/확인 버튼 if 가드는 mail provider 인 경우에도 노출되어야 한다 (회귀: signup_before_submit 정책 provider_id NULL 시 코어 mail 인증에서 버튼 사라지던 버그)', () => {
+      // IdentityPolicyService::resolveProviderId 가 NULL 정책에 default_provider (코어 mail) 를 채워 보내므로,
+      // 모달의 재전송/확인 버튼이 !provider_id 조건만 쓰면 mail 인증 시 빈 모달이 됨. 가드 패턴은 반드시
+      // `!provider_id || provider_id === 'g7:core.mail'` 로 통일되어야 한다.
+      const buttonsWithProviderGuard: Node[] = [];
+      walk(identityModal as unknown as Node, (n) => {
+        if (
+          n.type === 'basic' &&
+          n.name === 'Button' &&
+          typeof n.if === 'string' &&
+          n.if.includes('_global.identityChallenge?.provider_id')
+        ) {
+          buttonsWithProviderGuard.push(n);
+        }
+      });
+      // 재전송 + 확인 두 버튼이 모두 가드 보유
+      expect(buttonsWithProviderGuard.length).toBeGreaterThanOrEqual(2);
+      for (const btn of buttonsWithProviderGuard) {
+        expect(btn.if as string).toContain("'g7:core.mail'");
+      }
     });
   });
 

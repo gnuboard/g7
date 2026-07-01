@@ -129,13 +129,36 @@ interface CommentRepositoryInterface
     public function softDeleteByBoardId(int $boardId): int;
 
     /**
-     * 게시글 ID 기준으로 댓글을 일괄 소프트 삭제합니다.
+     * 게시판 ID 기준으로 댓글을 일괄 영구 삭제합니다.
+     *
+     * 게시판 영구 삭제(deleteBoard) 시 사용합니다. 소프트 삭제와 달리
+     * deleted_at 마킹이 아니라 레코드를 물리적으로 제거합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 삭제된 댓글 수
+     */
+    public function forceDeleteByBoardId(int $boardId): int;
+
+    /**
+     * 게시글 ID 기준으로 살아있는 댓글을 cascade 로 일괄 소프트 삭제합니다.
+     *
+     * 게시글 삭제 연쇄로 지워졌음을 trigger_type='cascade' 로 마킹합니다.
+     * 이미 삭제된 댓글(사용자 직접 삭제 등)은 영향을 받지 않습니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $postId  게시글 ID
      * @return int 삭제된 댓글 수
      */
     public function softDeleteByPostId(string $slug, int $postId): int;
+
+    /**
+     * 게시글 ID 기준으로 cascade 로 지워진 댓글만 복원합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return int 복원된 댓글 수
+     */
+    public function restoreCascadedByPostId(string $slug, int $postId): int;
 
     /**
      * 사용자가 작성한 댓글 목록을 페이지네이션하여 조회합니다.
@@ -156,4 +179,14 @@ interface CommentRepositoryInterface
      * @return int 갱신된 카운트 값
      */
     public function recalculateRepliesCount(int $parentCommentId): int;
+
+    /**
+     * 특정 날짜에 작성된 전체 게시판의 댓글 수를 조회합니다 (대시보드 집계용).
+     *
+     * 삭제되지 않은(deleted_at IS NULL) 댓글만 카운트합니다.
+     *
+     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @return int 해당 날짜 작성 댓글 수
+     */
+    public function countCreatedOnDate(string $date): int;
 }

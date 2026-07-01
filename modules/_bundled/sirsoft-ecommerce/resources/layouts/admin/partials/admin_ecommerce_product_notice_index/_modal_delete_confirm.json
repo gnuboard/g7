@@ -14,25 +14,30 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-primary text-base"
+              },
+              "text": "{{$localized(_global.modal_data?.templateName)}}{{$t('sirsoft-ecommerce.admin.product_notice_template.modals.delete.message_suffix')}}"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm text-red-600 dark:text-red-400 font-medium"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.warning"
+            }
+          ],
           "props": {
-            "className": "text-base text-gray-900 dark:text-white"
-          },
-          "text": "{{$localized(_global.modal_data?.templateName)}}{{$t('sirsoft-ecommerce.admin.product_notice_template.modals.delete.message_suffix')}}"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-sm text-red-600 dark:text-red-400 font-medium"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.warning"
+          }
         }
       ]
     },
@@ -40,7 +45,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {

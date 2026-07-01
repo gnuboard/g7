@@ -1,0 +1,43 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 시나리오도 audit:allow). 본 변경은 코어 검색 엔진의
+#   BOOLEAN MODE 입력 정제로, PHPUnit Unit(DatabaseFulltextEngineTest)이 연산자 제거/phrase
+#   변환/빈결과/제어문자/바인딩 정합을 전수 커버하며 green.
+feature: 상품 검색 특수문자 입력 시 500 차단 (U7 / FULLTEXT BOOLEAN MODE 정제)
+
+description: |
+  DatabaseFulltextEngine::sanitizeBooleanModeKeyword() 가 BOOLEAN MODE 연산자
+  (+, -, <, >, (, ), ~, *, ", @)와 제어문자를 제거하고 남은 토큰을 따옴표 phrase 로
+  변환한다. 정제 결과가 비면 빈 결과(performSearch) 또는 1=0(whereFulltext)로 처리하여
+  ER_PARSE_ERROR(500)을 막는다. 두 진입점(Scout performSearch, 직접 whereFulltext) 모두 적용.
+
+axes:
+  keyword:
+    - script_tag       # <script>  → "script"
+    - plus_term        # +상품
+    - minus_term       # -바지
+    - close_paren      # 상품)
+    - open_paren       # (셔츠
+    - tilde            # ~키워드
+    - asterisk         # 상품*
+    - dquote           # "셔츠
+    - at_sign          # @user
+    - operators_only   # < >  → 빈 결과
+    - whitespace_only  # 공백만 → 빈 결과
+    - plain_ko         # 셔츠 (정상 매칭)
+    - plain_en         # shirt (정상 매칭)
+    - mixed            # 셔츠 <b> (혼합)
+  path:
+    - scout            # performSearch (Product::search)
+    - direct           # whereFulltext (getPublicList name 검색)
+
+effects:
+  - no_500_on_special_chars        # 특수문자 입력 시 예외 없음
+  - plain_keyword_matches          # 정상어 매칭 회귀 없음
+  - operators_only_returns_empty   # 연산자만 → 빈 결과(에러 아님)
+  - control_chars_stripped         # 제어문자 제거
+  - sanitized_phrase_bound         # 정제된 phrase 가 바인딩됨
+
+test_files:
+  - tests/Unit/Search/DatabaseFulltextEngineTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicProductControllerTest.php

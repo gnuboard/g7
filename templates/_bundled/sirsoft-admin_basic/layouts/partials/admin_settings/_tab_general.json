@@ -7,31 +7,28 @@
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'general'}}",
-  "props": {
-    "className": "mt-6 space-y-6"
-  },
   "children": [
     {
       "id": "card_site_info",
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.general.site_info"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.general.site_info_desc"
         },
@@ -39,104 +36,113 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+            "className": "row-stack"
           },
           "children": [
             {
-              "id": "field_site_name",
               "type": "basic",
               "name": "Div",
+              "props": {
+                "className": "grid-2col-responsive"
+              },
               "children": [
                 {
+                  "id": "field_site_name",
                   "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  },
+                  "name": "Div",
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.general.site_name"
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.general.site_name"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "general.site_name",
+                        "placeholder": "그누보드7",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "input {{_local.errors?.['general.site_name'] ? 'input-error' : ''}}"
+                      }
                     },
                     {
                       "type": "basic",
                       "name": "Span",
+                      "if": "{{_local.errors?.['general.site_name']}}",
                       "props": {
-                        "className": "text-red-500 ml-1"
+                        "className": "form-error"
                       },
-                      "text": "*"
+                      "text": "{{_local.errors?.['general.site_name']?.[0] ?? ''}}"
                     }
                   ]
                 },
                 {
+                  "id": "field_site_url",
                   "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "name": "general.site_name",
-                    "placeholder": "그누보드7",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "{{_local.errors?.['general.site_name'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['general.site_name']}}",
-                  "props": {
-                    "className": "text-red-500 text-xs mt-1 block"
-                  },
-                  "text": "{{_local.errors?.['general.site_name']?.[0] ?? ''}}"
-                }
-              ]
-            },
-            {
-              "id": "field_site_url",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  },
+                  "name": "Div",
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.general.site_url"
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.general.site_url"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "url",
+                        "name": "general.site_url",
+                        "placeholder": "https://example.com",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "input {{_local.errors?.['general.site_url'] ? 'input-error' : ''}}"
+                      }
                     },
                     {
                       "type": "basic",
                       "name": "Span",
+                      "if": "{{_local.errors?.['general.site_url']}}",
                       "props": {
-                        "className": "text-red-500 ml-1"
+                        "className": "form-error"
                       },
-                      "text": "*"
+                      "text": "{{_local.errors?.['general.site_url']?.[0] ?? ''}}"
                     }
                   ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "url",
-                    "name": "general.site_url",
-                    "placeholder": "https://example.com",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "{{_local.errors?.['general.site_url'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['general.site_url']}}",
-                  "props": {
-                    "className": "text-red-500 text-xs mt-1 block"
-                  },
-                  "text": "{{_local.errors?.['general.site_url']?.[0] ?? ''}}"
                 }
               ]
             },
@@ -144,15 +150,12 @@
               "id": "field_site_description",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "md:col-span-2"
-              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    "className": "form-label"
                   },
                   "text": "$t:admin.settings.general.site_description"
                 },
@@ -164,7 +167,7 @@
                     "rows": 2,
                     "placeholder": "$t:admin.settings.general.site_description_placeholder",
                     "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed resize-none"
+                    "className": "input textarea-sm resize-none"
                   }
                 }
               ]
@@ -173,15 +176,12 @@
               "id": "field_admin_email",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "md:col-span-2"
-              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    "className": "form-label"
                   },
                   "children": [
                     {
@@ -207,7 +207,7 @@
                     "name": "general.admin_email",
                     "placeholder": "admin@example.com",
                     "disabled": "{{_computed.isReadOnly}}",
-                    "className": "{{_local.errors?.['general.admin_email'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                    "className": "input {{_local.errors?.['general.admin_email'] ? 'input-error' : ''}}"
                   }
                 },
                 {
@@ -215,7 +215,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['general.admin_email']}}",
                   "props": {
-                    "className": "text-red-500 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['general.admin_email']?.[0] ?? ''}}"
                 }
@@ -225,15 +225,12 @@
               "id": "field_site_logo",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "md:col-span-2"
-              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    "className": "form-label"
                   },
                   "text": "$t:admin.settings.general.site_logo"
                 },
@@ -241,7 +238,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+                    "className": "text-tertiary mb-2"
                   },
                   "text": "$t:admin.settings.general.site_logo_desc"
                 },
@@ -335,131 +332,137 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.general.localization"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.general.localization_desc"
         },
         {
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
-          },
           "children": [
             {
-              "id": "field_language",
               "type": "basic",
               "name": "Div",
+              "props": {
+                "className": "grid-2col-responsive"
+              },
               "children": [
                 {
+                  "id": "field_language",
                   "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  },
+                  "name": "Div",
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.general.default_language"
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.general.default_language"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "general.language",
+                        "className": "w-full",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "placeholder": "$t:admin.settings.general.select_language",
+                        "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
+                        "error": "{{_local.errors?.['general.language']?.[0] ?? ''}}"
+                      }
                     },
                     {
                       "type": "basic",
                       "name": "Span",
+                      "if": "{{_local.errors?.['general.language']}}",
                       "props": {
-                        "className": "text-red-500 ml-1"
+                        "className": "form-error"
                       },
-                      "text": "*"
+                      "text": "{{_local.errors?.['general.language']?.[0] ?? ''}}"
                     }
                   ]
                 },
                 {
-                  "type": "composite",
-                  "name": "Select",
-                  "props": {
-                    "name": "general.language",
-                    "className": "w-full",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "placeholder": "$t:admin.settings.general.select_language",
-                    "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
-                    "error": "{{_local.errors?.['general.language']?.[0] ?? ''}}"
-                  }
-                },
-                {
+                  "id": "field_timezone",
                   "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['general.language']}}",
-                  "props": {
-                    "className": "text-red-500 text-xs mt-1 block"
-                  },
-                  "text": "{{_local.errors?.['general.language']?.[0] ?? ''}}"
-                }
-              ]
-            },
-            {
-              "id": "field_timezone",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  },
+                  "name": "Div",
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.general.timezone"
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.general.timezone"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "general.timezone",
+                        "className": "w-full",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "placeholder": "$t:admin.settings.general.select_timezone",
+                        "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
+                        "searchable": true,
+                        "searchPlaceholder": "{{$t('common.search')}}",
+                        "error": "{{_local.errors?.['general.timezone']?.[0] ?? ''}}"
+                      }
                     },
                     {
                       "type": "basic",
                       "name": "Span",
+                      "if": "{{_local.errors?.['general.timezone']}}",
                       "props": {
-                        "className": "text-red-500 ml-1"
+                        "className": "form-error"
                       },
-                      "text": "*"
+                      "text": "{{_local.errors?.['general.timezone']?.[0] ?? ''}}"
                     }
                   ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Select",
-                  "props": {
-                    "name": "general.timezone",
-                    "className": "w-full",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "placeholder": "$t:admin.settings.general.select_timezone",
-                    "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
-                    "searchable": true,
-                    "searchPlaceholder": "{{$t('common.search')}}",
-                    "error": "{{_local.errors?.['general.timezone']?.[0] ?? ''}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['general.timezone']}}",
-                  "props": {
-                    "className": "text-red-500 text-xs mt-1 block"
-                  },
-                  "text": "{{_local.errors?.['general.timezone']?.[0] ?? ''}}"
                 }
               ]
             }

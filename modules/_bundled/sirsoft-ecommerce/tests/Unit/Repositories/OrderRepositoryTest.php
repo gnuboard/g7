@@ -2,11 +2,14 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Repositories;
 
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
+use App\Models\User;
+use Carbon\Carbon;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderAddressFactory;
+use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
+use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -23,7 +26,7 @@ class OrderRepositoryTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new OrderRepository(new Order());
+        $this->repository = new OrderRepository(new Order);
     }
 
     public function test_find_returns_order(): void
@@ -207,14 +210,14 @@ class OrderRepositoryTest extends ModuleTestCase
     public function test_get_list_filters_by_order_device(): void
     {
         OrderFactory::new()->count(3)->create([
-            'order_device' => \Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum::PC->value,
+            'order_device' => DeviceTypeEnum::PC->value,
         ]);
         OrderFactory::new()->count(2)->create([
-            'order_device' => \Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum::MOBILE->value,
+            'order_device' => DeviceTypeEnum::MOBILE->value,
         ]);
 
         $result = $this->repository->getListWithFilters([
-            'order_device' => [\Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum::MOBILE->value],
+            'order_device' => [DeviceTypeEnum::MOBILE->value],
         ]);
 
         $this->assertEquals(2, $result->total());
@@ -303,6 +306,29 @@ class OrderRepositoryTest extends ModuleTestCase
         }
     }
 
+    public function test_bulk_update_option_status_syncs_active_options_only(): void
+    {
+        $order = OrderFactory::new()->create([
+            'order_status' => OrderStatusEnum::PENDING_ORDER->value,
+        ]);
+        $active = OrderOptionFactory::new()->forOrder($order)->create([
+            'option_status' => OrderStatusEnum::PENDING_ORDER->value,
+        ]);
+        $cancelled = OrderOptionFactory::new()->forOrder($order)->create([
+            'option_status' => OrderStatusEnum::CANCELLED->value,
+        ]);
+
+        $count = $this->repository->bulkUpdateOptionStatus(
+            [$order->id],
+            OrderStatusEnum::PAYMENT_COMPLETE->value
+        );
+
+        // 활성 옵션 1건만 전이, 취소 옵션은 보존(sync 제외)
+        $this->assertEquals(1, $count);
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $active->fresh()->option_status);
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $cancelled->fresh()->option_status);
+    }
+
     public function test_get_statistics_returns_correct_counts(): void
     {
         OrderFactory::new()->count(3)->create([
@@ -360,7 +386,7 @@ class OrderRepositoryTest extends ModuleTestCase
 
     public function test_has_order_by_user_returns_true_for_user_with_orders(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         OrderFactory::new()->create(['user_id' => $user->id]);
 
         $result = $this->repository->hasOrderByUser($user->id);
@@ -370,7 +396,7 @@ class OrderRepositoryTest extends ModuleTestCase
 
     public function test_has_order_by_user_returns_false_for_user_without_orders(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
 
         $result = $this->repository->hasOrderByUser($user->id);
 
@@ -379,8 +405,8 @@ class OrderRepositoryTest extends ModuleTestCase
 
     public function test_get_list_filters_by_orderer_uuid(): void
     {
-        $user = \App\Models\User::factory()->create();
-        $otherUser = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
 
         // 해당 회원의 주문 2건
         OrderFactory::new()->create([
@@ -419,5 +445,137 @@ class OrderRepositoryTest extends ModuleTestCase
         ], 10);
 
         $this->assertEquals(0, $result->total());
+    }
+
+    // ================================================================
+    // MP02-U18③④: 주문내역 카운터·필터 정합화
+    // ================================================================
+
+    /**
+     * getUserStatistics 의 상품준비중(preparing) 카운터는 PREPARING + SHIPPING_READY 를 합산한다.
+     */
+    public function test_user_statistics_preparing_sums_preparing_and_shipping_ready(): void
+    {
+        $user = User::factory()->create();
+        OrderFactory::new()->count(2)->create(['user_id' => $user->id, 'order_status' => OrderStatusEnum::PREPARING->value]);
+        OrderFactory::new()->count(3)->create(['user_id' => $user->id, 'order_status' => OrderStatusEnum::SHIPPING_READY->value]);
+
+        $stats = $this->repository->getUserStatistics($user->id);
+
+        $this->assertEquals(5, $stats['preparing'], '상품준비중 카운터는 PREPARING + SHIPPING_READY 합산이어야 합니다');
+    }
+
+    /**
+     * 부분취소는 별도 order_status 가 아니므로 통계에 partial_cancelled 키가 없고,
+     * 부분취소된 주문은 잔여 옵션 기준 진행 상태(예: payment_complete) 카운터에 집계된다 (partial_cancelled 제거).
+     */
+    public function test_user_statistics_has_no_partial_cancelled_key(): void
+    {
+        $user = User::factory()->create();
+        // 부분취소 후 잔여 옵션 기준으로 payment_complete 가 유지된 주문 2건
+        OrderFactory::new()->count(2)->create(['user_id' => $user->id, 'order_status' => OrderStatusEnum::PAYMENT_COMPLETE->value]);
+
+        $stats = $this->repository->getUserStatistics($user->id);
+
+        $this->assertArrayNotHasKey('partial_cancelled', $stats);
+        $this->assertEquals(2, $stats['payment_complete'], '부분취소 주문은 진행 상태(payment_complete) 카운터에 집계됨');
+    }
+
+    /**
+     * 주문대기(pending_order)는 통계에서 숨김 유지된다 (PO 확정, listHiddenValues).
+     */
+    public function test_user_statistics_hides_pending_order(): void
+    {
+        $user = User::factory()->create();
+        OrderFactory::new()->count(2)->create(['user_id' => $user->id, 'order_status' => OrderStatusEnum::PENDING_ORDER->value]);
+        OrderFactory::new()->create(['user_id' => $user->id, 'order_status' => OrderStatusEnum::PAYMENT_COMPLETE->value]);
+
+        $stats = $this->repository->getUserStatistics($user->id);
+
+        $this->assertArrayNotHasKey('pending_order', $stats, '주문대기는 카운터에 노출되면 안 됩니다');
+        $this->assertEquals(1, $stats['payment_complete']);
+    }
+
+    /**
+     * 상품준비중(preparing) 필터로 조회하면 PREPARING + SHIPPING_READY 가 함께 조회된다.
+     *
+     * 카운터(합산)와 필터 결과 수가 일치하도록 그룹 SSoT 로 확장된다.
+     */
+    public function test_preparing_filter_expands_to_preparing_and_shipping_ready(): void
+    {
+        OrderFactory::new()->count(2)->create(['order_status' => OrderStatusEnum::PREPARING->value]);
+        OrderFactory::new()->count(3)->create(['order_status' => OrderStatusEnum::SHIPPING_READY->value]);
+        OrderFactory::new()->create(['order_status' => OrderStatusEnum::SHIPPING->value]);
+
+        // 단일 'preparing' 값으로 필터 → 그룹 확장으로 5건 조회(카운터와 일치)
+        $result = $this->repository->getListWithFilters([
+            'order_status' => 'preparing',
+        ]);
+
+        $this->assertEquals(5, $result->total(), '상품준비중 필터는 PREPARING + SHIPPING_READY 를 함께 조회해야 합니다');
+    }
+
+    /**
+     * 일반 상태 값 필터는 그룹 확장의 영향을 받지 않는다(멱등).
+     */
+    public function test_non_group_status_filter_is_unaffected(): void
+    {
+        OrderFactory::new()->count(2)->create(['order_status' => OrderStatusEnum::SHIPPING->value]);
+        OrderFactory::new()->count(3)->create(['order_status' => OrderStatusEnum::PREPARING->value]);
+
+        $result = $this->repository->getListWithFilters([
+            'order_status' => 'shipping',
+        ]);
+
+        $this->assertEquals(2, $result->total());
+    }
+
+    /**
+     * 입금 기한이 만료된 VBANK/DBANK 결제대기 주문만 조회되고
+     * BANK(계좌이체)는 제외되는지 검증한다 (주문 442 누락 회귀 차단).
+     */
+    public function test_get_expired_pending_payment_orders_matches_vbank_and_dbank_only(): void
+    {
+        $user = User::factory()->create();
+
+        // 1) 만료 VBANK → 대상
+        $vbankOrder = OrderFactory::new()->create([
+            'user_id' => $user->id,
+            'order_status' => OrderStatusEnum::PENDING_PAYMENT,
+        ]);
+        OrderPaymentFactory::new()->forOrder($vbankOrder)->create([
+            'payment_method' => PaymentMethodEnum::VBANK,
+            'vbank_due_at' => Carbon::now()->subDay(),
+            'deposit_due_at' => null,
+        ]);
+
+        // 2) 만료 DBANK(무통장입금) → 대상
+        $dbankOrder = OrderFactory::new()->create([
+            'user_id' => $user->id,
+            'order_status' => OrderStatusEnum::PENDING_PAYMENT,
+        ]);
+        OrderPaymentFactory::new()->forOrder($dbankOrder)->create([
+            'payment_method' => PaymentMethodEnum::DBANK,
+            'vbank_due_at' => null,
+            'deposit_due_at' => Carbon::now()->subDay(),
+        ]);
+
+        // 3) 만료 BANK(계좌이체) → 제외
+        $bankOrder = OrderFactory::new()->create([
+            'user_id' => $user->id,
+            'order_status' => OrderStatusEnum::PENDING_PAYMENT,
+        ]);
+        OrderPaymentFactory::new()->forOrder($bankOrder)->create([
+            'payment_method' => PaymentMethodEnum::BANK,
+            'vbank_due_at' => null,
+            'deposit_due_at' => Carbon::now()->subDay(),
+        ]);
+
+        $expired = $this->repository->getExpiredPendingPaymentOrders();
+        $expiredIds = $expired->pluck('id')->all();
+
+        $this->assertContains($vbankOrder->id, $expiredIds);
+        $this->assertContains($dbankOrder->id, $expiredIds);
+        $this->assertNotContains($bankOrder->id, $expiredIds);
     }
 }

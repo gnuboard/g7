@@ -62,7 +62,7 @@
     "delete": {
       "title": "Delete Board",
       "confirm": "Are you sure you want to delete '{{name}}' board?",
-      "with_posts_info": "This board has {{posts_count}} post(s) and comments.",
+      "with_posts_info": "This board has {{posts_count}} post(s). Deleting it also permanently removes the comments and attachments (including the uploaded original files).",
       "no_posts_info": "This board has no posts.",
       "force_delete_label_with_posts": "Permanent Delete (Delete all posts, comments, and attachments)",
       "force_delete_label_no_posts": "Permanent Delete (Delete database tables)",
@@ -942,8 +942,8 @@
       "report_view_roles_description": "Permission to view the report list and report details.",
       "report_manage_roles": "Process Reports Permission",
       "report_manage_roles_description": "Permission to approve, reject, or blind reports. Admin notifications on report submission are also sent to roles with this permission.",
-      "blocked_keywords": "Restricted Keywords",
-      "blocked_keywords_placeholder": "Type keyword and press Enter",
+      "blocked_keywords": "Blocked Keywords",
+      "blocked_keywords_placeholder": "Type a keyword and press Enter",
       "blocked_keywords_description": "List of keywords to block in posts and comments",
       "blocked_keywords_hint": "Posts or comments containing registered keywords will be blocked",
       "post_cooldown_seconds": "Post Cooldown (sec)",
@@ -1202,7 +1202,7 @@
   "users": {
     "form": {
       "sections": {
-        "notification_settings": "Notification Settings"
+        "notification_settings": "Board Notification Settings"
       },
       "notifications": {
         "post_complete": "Post Complete Notification",

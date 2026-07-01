@@ -63,6 +63,7 @@
     "data_sources": [
         {
             "id": "categories",
+            "label_key": "$t:editor.data_source.categories",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/categories",
             "method": "GET",
@@ -74,6 +75,7 @@
         },
         {
             "id": "products",
+            "label_key": "$t:editor.data_source.products",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products",
             "method": "GET",
@@ -99,6 +101,7 @@
         },
         {
             "id": "recentProducts",
+            "label_key": "$t:editor.data_source.recentProducts",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products/recent",
             "method": "GET",
@@ -114,6 +117,7 @@
         },
         {
             "id": "popularProducts",
+            "label_key": "$t:editor.data_source.popularProducts",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products/popular?limit=8",
             "method": "GET",
@@ -126,6 +130,7 @@
         },
         {
             "id": "newProducts",
+            "label_key": "$t:editor.data_source.newProducts",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products/new?limit=8",
             "method": "GET",
@@ -222,7 +227,7 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
-                                    "className": "px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium"
+                                    "className": "{{!query.category ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"
                                 },
                                 "text": "$t:shop.category.all",
                                 "actions": [
@@ -238,11 +243,11 @@
                                         "type": "basic",
                                         "name": "Button",
                                         "props": {
-                                            "className": "px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+                                            "className": "{{query.category == cat?.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"
                                         },
                                         "text": "{{cat?.name_localized}}",
                                         "actions": [
-                                            { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/category/{{cat?.slug}}" } }
+                                            { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": { "category": "{{cat?.id}}", "page": "1" } } }
                                         ]
                                     }
                                 ]

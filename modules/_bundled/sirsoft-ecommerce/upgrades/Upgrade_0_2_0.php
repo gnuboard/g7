@@ -72,7 +72,7 @@ class Upgrade_0_2_0 implements UpgradeStepInterface
             }
         }
 
-        $context->logger->info("[v0.2.0] 배송사 시딩 완료: {$created}건 생성 (총 " . count($carriers) . '건 중)');
+        $context->logger->info("[v0.2.0] 배송사 시딩 완료: {$created}건 생성 (총 ".count($carriers).'건 중)');
     }
 
     /**

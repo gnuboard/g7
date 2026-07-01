@@ -1191,7 +1191,7 @@ function getPermissionFixCommand(string $pathList, string $mode = 'ownership'): 
 
 
 /**
- * 기존 DB 테이블 감지 (이슈 #244 대응).
+ * 기존 DB 테이블 감지.
  *
  * Write DB에 테이블이 존재하는지 확인하고, G7 시그니처 테이블과 비교하여
  * 설치 진행 가능 여부를 판정합니다.
@@ -1255,4 +1255,34 @@ function checkExistingTables(PDO $pdo, string $database, string $tablePrefix = '
         'all_tables' => $tables,
         'severity' => $severity,
     ];
+}
+
+if (!function_exists('filterTablesByPrefix')) {
+    /**
+     * 기존 테이블 목록을 db_prefix 로 필터링합니다.
+     *
+     * drop_tables 동의의 의미는 "이 prefix 로 설치되는 G7 테이블을 지우고 다시 설치"이므로,
+     * 입력한 prefix 로 시작하는 테이블만 삭제 대상으로 선별합니다. prefix 가 없는
+     * 다른 애플리케이션/이전 설치의 테이블은 동일 DB 를 공유하더라도 보존합니다.
+     *
+     * 빈 prefix 는 전체 일치가 되어 모든 테이블이 삭제되는 위험이 있으므로,
+     * 데이터 손실 방어를 위해 빈 목록(삭제 대상 없음)을 반환합니다.
+     *
+     * @param array $tables SHOW TABLES 로 조회한 전체 테이블 목록
+     * @param string $prefix 사용자가 입력한 테이블 prefix (예: 'g7_')
+     * @return array prefix 로 시작하는 테이블만 담은 목록
+     */
+    function filterTablesByPrefix(array $tables, string $prefix): array
+    {
+        if ($prefix === '') {
+            return [];
+        }
+
+        $prefixLength = strlen($prefix);
+
+        return array_values(array_filter(
+            $tables,
+            fn ($table) => strncmp((string) $table, $prefix, $prefixLength) === 0
+        ));
+    }
 }

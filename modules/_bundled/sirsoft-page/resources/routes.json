@@ -6,7 +6,7 @@
             "layout": "admin_page_list",
             "auth_required": true,
             "meta": {
-                "title": "$t:sirsoft-page.admin.page.list.title"
+                "title": "$t:sirsoft-page.admin.page.page_title"
             }
         },
         {
@@ -14,7 +14,7 @@
             "layout": "admin_page_form",
             "auth_required": true,
             "meta": {
-                "title": "$t:sirsoft-page.admin.page.create.title"
+                "title": "$t:sirsoft-page.admin.page.form.page_title_create"
             }
         },
         {
@@ -22,7 +22,7 @@
             "layout": "admin_page_form",
             "auth_required": true,
             "meta": {
-                "title": "$t:sirsoft-page.admin.page.edit.title"
+                "title": "$t:sirsoft-page.admin.page.form.page_title_edit"
             }
         },
         {
@@ -30,7 +30,7 @@
             "layout": "admin_page_detail",
             "auth_required": true,
             "meta": {
-                "title": "$t:sirsoft-page.admin.page.detail.title"
+                "title": "$t:sirsoft-page.admin.page.detail.page_title"
             }
         }
     ]

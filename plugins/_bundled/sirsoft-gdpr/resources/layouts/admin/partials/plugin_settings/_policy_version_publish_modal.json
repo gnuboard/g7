@@ -1,0 +1,253 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "운영자 수동 정책 버전 발행 모달 — memo 입력 + POST /admin/policy-versions"
+  },
+  "id": "policy_version_publish_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-gdpr.settings.policy_version.material_modal.title",
+    "size": "medium"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-3 text-sm text-gray-700 dark:text-gray-200"
+      },
+      "children": [
+        {
+          "comment": "사용자 영향 안내 — amber 좌측 색띠 + circle-exclamation — 「발행 시 즉시 적용 + 전 회원 재동의」 라는 점을 명확히 강조",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-amber-50 dark:bg-gray-900 border border-amber-200 dark:border-gray-700 border-l-4 border-l-amber-500 dark:border-l-amber-400 rounded-lg p-3 flex-center gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "circle-exclamation",
+                "size": "sm",
+                "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-800 dark:text-gray-100 leading-relaxed"
+              },
+              "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.body"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Ul",
+          "props": {
+            "className": "list-disc list-inside text-xs text-gray-600 dark:text-gray-300 space-y-1 pl-1"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Li",
+              "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.effect_bump"
+            },
+            {
+              "type": "basic",
+              "name": "Li",
+              "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.effect_reconsent"
+            },
+            {
+              "type": "basic",
+              "name": "Li",
+              "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.effect_history"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "pt-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_label"
+            },
+            {
+              "type": "basic",
+              "name": "Textarea",
+              "props": {
+                "name": "publish_memo",
+                "rows": 3,
+                "placeholder": "$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_placeholder",
+                "value": "{{_local.publishMemo ?? ''}}",
+                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "publishMemo": "{{$event?.target?.value ?? ''}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700 mt-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "disabled": "{{_local.isPublishing}}",
+                "className": "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal"
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:common.cancel"
+                }
+              ]
+            },
+            {
+              "comment": "발행 확정 — isPublishing 플래그로 발행 동안 스피너 노출 + 양쪽 버튼 disabled. closeModal 을 sequence 마지막에서 onSuccess 로 이동 (이전: 클릭 즉시 닫혀서 사용자가 발행 진행 상태 파악 불가). 발행 실패 시 모달 유지 → memo 수정 후 재시도 가능.",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "disabled": "{{!(_local.publishMemo ?? '').trim() || _local.isPublishing}}",
+                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "isPublishing": true
+                        }
+                      },
+                      {
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "/api/plugins/sirsoft-gdpr/admin/policy-versions",
+                        "params": {
+                          "method": "POST",
+                          "body": "{{({memo: _local.publishMemo ?? ''})}}"
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "isPublishing": false,
+                              "publishMemo": ""
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "gdprPolicyVersionCurrent"
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "gdprPolicyVersionHistory"
+                            }
+                          },
+                          {
+                            "handler": "closeModal"
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "type": "success",
+                              "message": "$t:sirsoft-gdpr.settings.policy_version.publish_success"
+                            }
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "isPublishing": false
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "type": "error",
+                              "message": "{{Object.values(error.errors ?? {})[0]?.[0] ?? '$t:sirsoft-gdpr.settings.save_error'}}"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.isPublishing}}",
+                  "props": {
+                    "name": "spinner",
+                    "size": "sm",
+                    "spin": true,
+                    "className": "mr-1"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!_local.isPublishing}}",
+                  "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.confirm"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.isPublishing}}",
+                  "text": "$t:sirsoft-gdpr.settings.policy_version.publishing"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

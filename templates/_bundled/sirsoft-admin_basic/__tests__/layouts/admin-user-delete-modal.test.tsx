@@ -94,7 +94,8 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       );
       expect(spinnerIcon).toBeDefined();
       expect(spinnerIcon.if).toBe('{{_global.isDeleting}}');
-      expect(spinnerIcon.props.className).toContain('animate-spin');
+      // .spinner-sm 시맨틱 자산이 w-4 h-4 + animate-spin 흡수 (#408)
+      expect(spinnerIcon.props.className).toContain('spinner-sm');
 
       // 텍스트 삼항 연산자
       const textSpan = deleteButton.children.find((c: any) => c.name === 'Span');
@@ -111,7 +112,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
-      expect(deleteButton.props.className).toContain('flex items-center gap-2');
+      expect(deleteButton.props.className).toContain('flex-center gap-2');
       expect(deleteButton.props.className).toContain('disabled:opacity-50');
       expect(deleteButton.props.className).toContain('disabled:cursor-not-allowed');
     });
@@ -184,15 +185,17 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
   });
 
   describe('삭제 버튼 스타일 규정 준수', () => {
-    it('취소 버튼에 disabled:opacity-50 disabled:cursor-not-allowed가 있어야 한다', () => {
+    it('취소 버튼이 .btn .btn-secondary 표준 시맨틱으로 정렬되어 있다 (.btn 안에 disabled 시각 처리 포함)', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
       const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const cancelButton = footerDiv.children[0];
 
-      expect(cancelButton.props.className).toContain('disabled:opacity-50');
-      expect(cancelButton.props.className).toContain('disabled:cursor-not-allowed');
+      // .btn CSS 시맨틱이 disabled:opacity-50 disabled:cursor-not-allowed 를 흡수.
+      // 호출처는 시맨틱 클래스만 명시하면 disabled 시각 처리가 자동 적용된다.
+      expect(cancelButton.props.className).toContain('btn');
+      expect(cancelButton.props.className).toContain('btn-secondary');
     });
 
     it('삭제 버튼은 bg-red-600 스타일이어야 한다 (위험 작업)', () => {

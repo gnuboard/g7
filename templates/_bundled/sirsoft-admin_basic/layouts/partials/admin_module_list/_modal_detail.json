@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "모듈 상세 정보 모달"
+    "description": "모듈 상세 정보 모달",
+    "editor_label": "$t:admin.modal_label.admin_module_list.module_detail_modal"
   },
   "id": "module_detail_modal",
   "type": "composite",
@@ -9,6 +10,7 @@
   "data_sources": [
     {
       "id": "moduleDetail",
+      "label_key": "$t:editor.data_source.moduleDetail",
       "type": "api",
       "endpoint": "/api/admin/modules/{{_global.selectedModule.identifier}}",
       "auth_required": true,
@@ -34,7 +36,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "space-y-6"
+        "className": "row-stack"
       },
       "children": [
         {
@@ -46,7 +48,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 mb-4"
+                "className": "flex-center gap-2 mb-4"
               },
               "children": [
                 {
@@ -61,7 +63,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "font-semibold text-gray-900 dark:text-white"
+                    "className": "text-primary font-semibold"
                   },
                   "text": "$t:admin.modules.modals.basic_info"
                 }
@@ -71,7 +73,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-2 gap-4"
+                "className": "grid-2col"
               },
               "children": [
                 {
@@ -82,7 +84,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.modules.modals.field_name"
                     },
@@ -90,7 +92,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "font-medium text-gray-900 dark:text-white"
+                        "className": "text-primary font-medium"
                       },
                       "text": "{{_global.selectedModule.name}}"
                     }
@@ -104,7 +106,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.modules.modals.field_version"
                     },
@@ -112,7 +114,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "font-medium text-gray-900 dark:text-white"
+                        "className": "text-primary font-medium"
                       },
                       "text": "v{{_global.selectedModule.version}}"
                     }
@@ -129,7 +131,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.modules.modals.field_description"
                     },
@@ -137,7 +139,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "font-medium text-gray-900 dark:text-white"
+                        "className": "text-primary font-medium"
                       },
                       "text": "{{_global.selectedModule.description}}"
                     }
@@ -151,7 +153,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.modules.modals.field_vendor"
                     },
@@ -159,7 +161,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "font-medium text-gray-900 dark:text-white"
+                        "className": "text-primary font-medium"
                       },
                       "text": "{{_global.selectedModule.vendor}}"
                     }
@@ -173,7 +175,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.modules.modals.field_license"
                     },
@@ -181,7 +183,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        "className": "text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                       },
                       "actions": [
                         {
@@ -233,7 +235,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.modules.modals.field_status"
                     },
@@ -245,7 +247,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "{{_global.selectedModule.status === 'active' ? 'px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded' : (_global.selectedModule.status === 'uninstalled' ? 'px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded' : 'px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded')}}"
+                            "className": "{{_global.selectedModule.status === 'active' ? 'badge badge-green' : (_global.selectedModule.status === 'uninstalled' ? 'badge badge-blue' : 'badge badge-gray')}}"
                           },
                           "text": "{{_global.selectedModule.status === 'active' ? '$t:admin.modules.status.active' : (_global.selectedModule.status === 'uninstalled' ? '$t:admin.modules.status.not_installed' : '$t:admin.modules.status.inactive')}}"
                         }
@@ -266,7 +268,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 mb-3"
+                "className": "flex-center gap-2 mb-3"
               },
               "children": [
                 {
@@ -281,7 +283,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "font-semibold text-gray-900 dark:text-white"
+                    "className": "text-primary font-semibold"
                   },
                   "text": "$t:admin.modules.modals.dependencies"
                 }
@@ -291,14 +293,14 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "space-y-3"
+                "className": "row-stack"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -314,7 +316,7 @@
                       "name": "Span",
                       "if": "{{_global.selectedModule.requires_core}}",
                       "props": {
-                        "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded font-mono"
+                        "className": "text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded font-mono"
                       },
                       "text": "{{_global.selectedModule.requires_core}}"
                     },
@@ -323,7 +325,7 @@
                       "name": "Span",
                       "if": "{{!_global.selectedModule.requires_core}}",
                       "props": {
-                        "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded"
+                        "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded"
                       },
                       "text": "$t:admin.modules.modals.no_required_core_version"
                     }
@@ -334,7 +336,7 @@
                   "name": "P",
                   "if": "{{!_global.selectedModule.dependencies || _global.selectedModule.dependencies.length === 0}}",
                   "props": {
-                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                    "className": "text-label-subtle"
                   },
                   "text": "$t:admin.modules.modals.no_dependencies_required"
                 },
@@ -343,7 +345,7 @@
                   "name": "Div",
                   "if": "{{_global.selectedModule.dependencies && _global.selectedModule.dependencies.length > 0}}",
                   "props": {
-                    "className": "space-y-2"
+                    "className": "row-stack"
                   },
                   "children": [
                     {
@@ -354,7 +356,7 @@
                         "item_var": "dep"
                       },
                       "props": {
-                        "className": "flex flex-wrap items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                        "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
                       },
                       "children": [
                         {
@@ -379,7 +381,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                            "className": "text-heading"
                           },
                           "text": "{{dep.name}} ({{dep.identifier}})"
                         },
@@ -396,7 +398,7 @@
                           "name": "Span",
                           "if": "{{dep.installed_version}}",
                           "props": {
-                            "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded font-mono"
+                            "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono"
                           },
                           "text": "$t:admin.modules.modals.dependency_installed_version|version={{dep.installed_version}}"
                         },
@@ -405,7 +407,7 @@
                           "name": "Span",
                           "if": "{{dep.is_met}}",
                           "props": {
-                            "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded"
+                            "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
                           },
                           "text": "$t:admin.modules.modals.dependency_met"
                         },
@@ -423,7 +425,7 @@
                           "name": "Span",
                           "if": "{{!dep.is_met && dep.installed_version && !dep.is_active}}",
                           "props": {
-                            "className": "px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded"
+                            "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
                           },
                           "text": "$t:admin.modules.modals.dependency_inactive"
                         },
@@ -432,7 +434,7 @@
                           "name": "Span",
                           "if": "{{!dep.is_met && dep.installed_version && dep.is_active}}",
                           "props": {
-                            "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded"
+                            "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
                           },
                           "text": "$t:admin.modules.modals.dependency_unmet_version"
                         }
@@ -452,39 +454,39 @@
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex items-center gap-2 mb-3" },
+              "props": { "className": "flex-center gap-2 mb-3" },
               "children": [
                 { "type": "basic", "name": "Icon", "props": { "name": "language", "className": "w-5 h-5 text-gray-500" } },
-                { "type": "basic", "name": "Span", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "$t:admin.modules.modals.supported_languages" }
+                { "type": "basic", "name": "Span", "props": { "className": "text-primary font-semibold" }, "text": "$t:admin.modules.modals.supported_languages" }
               ]
             },
             {
               "type": "basic",
               "name": "P",
               "if": "{{!_global.selectedModule.language_packs || _global.selectedModule.language_packs.length === 0}}",
-              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "props": { "className": "text-label-subtle" },
               "text": "$t:admin.modules.modals.no_supported_languages"
             },
             {
               "type": "basic",
               "name": "Div",
               "if": "{{_global.selectedModule.language_packs && _global.selectedModule.language_packs.length > 0}}",
-              "props": { "className": "space-y-2" },
+              "props": { "className": "row-stack" },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "iteration": { "source": "_global.selectedModule.language_packs", "item_var": "lp" },
-                  "props": { "className": "flex flex-wrap items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700" },
+                  "props": { "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{lp.locale_native_name}} ({{lp.locale}})" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.origin === 'built_in'}}", "props": { "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded" }, "text": "$t:admin.language_packs.origin.built_in" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-heading" }, "text": "{{lp.locale_native_name}} ({{lp.locale}})" },
+                    { "type": "basic", "name": "Span", "if": "{{lp.origin === 'built_in'}}", "props": { "className": "text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded" }, "text": "$t:admin.language_packs.origin.built_in" },
                     { "type": "basic", "name": "Span", "if": "{{lp.origin === 'bundled'}}", "props": { "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded" }, "text": "$t:admin.language_packs.origin.bundled" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.origin === 'user_installed'}}", "props": { "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded" }, "text": "$t:admin.language_packs.origin.user_installed" },
+                    { "type": "basic", "name": "Span", "if": "{{lp.origin === 'user_installed'}}", "props": { "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded" }, "text": "$t:admin.language_packs.origin.user_installed" },
                     { "type": "basic", "name": "Span", "if": "{{lp.status === 'active'}}", "props": { "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded" }, "text": "$t:admin.language_packs.status.active" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.status === 'inactive'}}", "props": { "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded" }, "text": "$t:admin.language_packs.status.inactive" },
+                    { "type": "basic", "name": "Span", "if": "{{lp.status === 'inactive'}}", "props": { "className": "text-tertiary px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded" }, "text": "$t:admin.language_packs.status.inactive" },
                     { "type": "basic", "name": "Span", "if": "{{lp.status === 'uninstalled'}}", "props": { "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded" }, "text": "$t:admin.language_packs.status.uninstalled" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.version}}", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 font-mono" }, "text": "v{{lp.version}}" }
+                    { "type": "basic", "name": "Span", "if": "{{lp.version}}", "props": { "className": "text-tertiary font-mono" }, "text": "v{{lp.version}}" }
                   ]
                 }
               ]
@@ -500,7 +502,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 mb-3"
+                "className": "flex-center gap-2 mb-3"
               },
               "children": [
                 {
@@ -515,7 +517,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "font-semibold text-gray-900 dark:text-white"
+                    "className": "text-primary font-semibold"
                   },
                   "text": "$t:admin.modules.modals.admin_menus"
                 }
@@ -526,7 +528,7 @@
               "name": "P",
               "if": "{{!_global.selectedModule.admin_menus || _global.selectedModule.admin_menus.length === 0}}",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:admin.modules.modals.no_admin_menus"
             },
@@ -560,7 +562,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 mb-3"
+                "className": "flex-center gap-2 mb-3"
               },
               "children": [
                 {
@@ -575,7 +577,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "font-semibold text-gray-900 dark:text-white"
+                    "className": "text-primary font-semibold"
                   },
                   "text": "$t:admin.modules.modals.permissions"
                 }
@@ -586,7 +588,7 @@
               "name": "P",
               "if": "{{!_global.selectedModule.permissions || _global.selectedModule.permissions.length === 0}}",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:admin.modules.modals.no_permissions"
             },
@@ -595,7 +597,7 @@
               "name": "Div",
               "if": "{{_global.selectedModule.permissions && _global.selectedModule.permissions.length > 0}}",
               "props": {
-                "className": "space-y-3"
+                "className": "row-stack"
               },
               "children": [
                 {
@@ -650,7 +652,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 mb-3"
+                "className": "flex-center gap-2 mb-3"
               },
               "children": [
                 {
@@ -665,7 +667,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "font-semibold text-gray-900 dark:text-white"
+                    "className": "text-primary font-semibold"
                   },
                   "text": "$t:admin.modules.modals.roles"
                 }
@@ -676,7 +678,7 @@
               "name": "P",
               "if": "{{!_global.selectedModule.roles || _global.selectedModule.roles.length === 0}}",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:admin.modules.modals.no_roles"
             },
@@ -713,7 +715,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 mb-3"
+                "className": "flex-center gap-2 mb-3"
               },
               "children": [
                 {
@@ -728,7 +730,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "font-semibold text-gray-900 dark:text-white"
+                    "className": "text-primary font-semibold"
                   },
                   "text": "$t:admin.modules.modals.layouts"
                 }
@@ -739,7 +741,7 @@
               "name": "P",
               "if": "{{!_global.selectedModule.layouts_count || _global.selectedModule.layouts_count === 0}}",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:admin.modules.modals.no_layouts"
             },
@@ -748,7 +750,7 @@
               "name": "P",
               "if": "{{_global.selectedModule.layouts_count && _global.selectedModule.layouts_count > 0}}",
               "props": {
-                "className": "text-sm text-gray-700 dark:text-gray-300"
+                "className": "text-body"
               },
               "text": "$t:admin.modules.modals.layouts_count|count={{_global.selectedModule.layouts_count}}"
             }
@@ -763,7 +765,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 mb-3"
+                "className": "flex-center gap-2 mb-3"
               },
               "children": [
                 {
@@ -778,7 +780,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "font-semibold text-gray-900 dark:text-white"
+                    "className": "text-primary font-semibold"
                   },
                   "text": "$t:admin.modules.modals.changelog"
                 }
@@ -789,7 +791,7 @@
               "name": "P",
               "if": "{{!_global.moduleChangelog || _global.moduleChangelog.length === 0}}",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:admin.modules.modals.no_changelog"
             },
@@ -825,7 +827,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "space-y-1"
+                        "className": "row-stack"
                       },
                       "iteration": {
                         "source": "entry.categories",
@@ -841,7 +843,7 @@
                               "type": "basic",
                               "name": "Span",
                               "props": {
-                                "className": "text-xs font-medium text-gray-600 dark:text-gray-400"
+                                "className": "text-secondary text-xs font-medium"
                               },
                               "text": "{{category.name}}"
                             },
@@ -861,7 +863,7 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "text-xs text-gray-600 dark:text-gray-400"
+                                    "className": "text-secondary text-xs"
                                   },
                                   "text": "• {{changeItem}}"
                                 }

@@ -7,31 +7,28 @@
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeSettingsTab || query.tab) === 'advanced'}}",
-  "props": {
-    "className": "mt-6 space-y-6"
-  },
   "children": [
     {
       "id": "card_cache_settings",
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "card-stack-item"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.advanced.cache"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.advanced.cache_desc"
         },
@@ -39,7 +36,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-4"
+            "className": "row-stack"
           },
           "children": [
             {
@@ -47,7 +44,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+                "className": "flex-between"
               },
               "children": [
                 {
@@ -58,14 +55,14 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center"
+                        "className": "flex-center"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                            "className": "text-heading"
                           },
                           "text": "$t:admin.settings.advanced.cache_enabled"
                         },
@@ -83,7 +80,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.settings.advanced.cache_enabled_desc"
                     },
@@ -92,7 +89,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['advanced.cache_enabled']}}",
                       "props": {
-                        "className": "text-red-500 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['advanced.cache_enabled']?.[0] ?? ''}}"
                     }
@@ -113,22 +110,30 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "pt-4"
+                "className": ""
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-4"
+                    "className": "text-body font-medium mb-1"
                   },
                   "text": "$t:admin.settings.advanced.cache_detail_settings"
                 },
                 {
                   "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-hint mb-3"
+                  },
+                  "text": "$t:admin.settings.advanced.cache_ttl_zero_hint"
+                },
+                {
+                  "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "space-y-4"
+                    "className": "row-stack"
                   },
                   "children": [
                     {
@@ -136,12 +141,12 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center justify-between gap-4 py-2"
+                        "className": "flex-between gap-4"
                       },
                       "responsive": {
                         "portable": {
                           "props": {
-                            "className": "flex flex-col gap-3 py-2"
+                            "className": "row-stack py-2"
                           }
                         }
                       },
@@ -150,7 +155,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-3"
+                            "className": "flex-center gap-3"
                           },
                           "children": [
                             {
@@ -170,14 +175,14 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex items-center"
+                                    "className": "flex-center"
                                   },
                                   "children": [
                                     {
                                       "type": "basic",
                                       "name": "Span",
                                       "props": {
-                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                        "className": "text-heading"
                                       },
                                       "text": "$t:admin.settings.advanced.layout_cache"
                                     },
@@ -195,7 +200,7 @@
                                   "type": "basic",
                                   "name": "P",
                                   "props": {
-                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "text-tertiary"
                                   },
                                   "text": "$t:admin.settings.advanced.layout_cache_desc"
                                 },
@@ -204,7 +209,7 @@
                                   "name": "Span",
                                   "if": "{{_local.errors?.['advanced.layout_cache_enabled']}}",
                                   "props": {
-                                    "className": "text-red-500 text-xs mt-1 block"
+                                    "className": "form-error"
                                   },
                                   "text": "{{_local.errors?.['advanced.layout_cache_enabled']?.[0] ?? ''}}"
                                 }
@@ -220,21 +225,21 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "flex items-center gap-2"
+                                "className": "flex-center gap-2"
                               },
                               "children": [
                                 {
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex items-center"
+                                    "className": "flex-center"
                                   },
                                   "children": [
                                     {
                                       "type": "basic",
                                       "name": "Span",
                                       "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                                        "className": "text-label whitespace-nowrap"
                                       },
                                       "text": "$t:admin.settings.advanced.cache_ttl"
                                     },
@@ -258,7 +263,7 @@
                                     "min": "0",
                                     "max": "14400",
                                     "disabled": "{{_computed.isReadOnly}}",
-                                    "className": "{{_local.errors?.['advanced.layout_cache_ttl'] ? 'w-24 px-2 py-1 border border-red-500 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                    "className": "input input-w-xs {{_local.errors?.['advanced.layout_cache_ttl'] ? 'input-error' : ''}}"
                                   }
                                 }
                               ]
@@ -268,7 +273,7 @@
                               "name": "Span",
                               "if": "{{_local.errors?.['advanced.layout_cache_ttl']}}",
                               "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "form-error"
                               },
                               "text": "{{_local.errors?.['advanced.layout_cache_ttl']?.[0] ?? ''}}"
                             }
@@ -281,12 +286,12 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center justify-between gap-4 py-2"
+                        "className": "flex-between gap-4"
                       },
                       "responsive": {
                         "portable": {
                           "props": {
-                            "className": "flex flex-col gap-3 py-2"
+                            "className": "row-stack py-2"
                           }
                         }
                       },
@@ -295,7 +300,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-3"
+                            "className": "flex-center gap-3"
                           },
                           "children": [
                             {
@@ -315,14 +320,14 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex items-center"
+                                    "className": "flex-center"
                                   },
                                   "children": [
                                     {
                                       "type": "basic",
                                       "name": "Span",
                                       "props": {
-                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                        "className": "text-heading"
                                       },
                                       "text": "$t:admin.settings.advanced.stats_cache"
                                     },
@@ -340,7 +345,7 @@
                                   "type": "basic",
                                   "name": "P",
                                   "props": {
-                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "text-tertiary"
                                   },
                                   "text": "$t:admin.settings.advanced.stats_cache_desc"
                                 },
@@ -349,7 +354,7 @@
                                   "name": "Span",
                                   "if": "{{_local.errors?.['advanced.stats_cache_enabled']}}",
                                   "props": {
-                                    "className": "text-red-500 text-xs mt-1 block"
+                                    "className": "form-error"
                                   },
                                   "text": "{{_local.errors?.['advanced.stats_cache_enabled']?.[0] ?? ''}}"
                                 }
@@ -365,21 +370,21 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "flex items-center gap-2"
+                                "className": "flex-center gap-2"
                               },
                               "children": [
                                 {
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex items-center"
+                                    "className": "flex-center"
                                   },
                                   "children": [
                                     {
                                       "type": "basic",
                                       "name": "Span",
                                       "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                                        "className": "text-label whitespace-nowrap"
                                       },
                                       "text": "$t:admin.settings.advanced.cache_ttl"
                                     },
@@ -403,7 +408,7 @@
                                     "min": "0",
                                     "max": "14400",
                                     "disabled": "{{_computed.isReadOnly}}",
-                                    "className": "{{_local.errors?.['advanced.stats_cache_ttl'] ? 'w-24 px-2 py-1 border border-red-500 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                    "className": "input input-w-xs {{_local.errors?.['advanced.stats_cache_ttl'] ? 'input-error' : ''}}"
                                   }
                                 }
                               ]
@@ -413,7 +418,7 @@
                               "name": "Span",
                               "if": "{{_local.errors?.['advanced.stats_cache_ttl']}}",
                               "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "form-error"
                               },
                               "text": "{{_local.errors?.['advanced.stats_cache_ttl']?.[0] ?? ''}}"
                             }
@@ -426,12 +431,12 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center justify-between gap-4 py-2"
+                        "className": "flex-between gap-4"
                       },
                       "responsive": {
                         "portable": {
                           "props": {
-                            "className": "flex flex-col gap-3 py-2"
+                            "className": "row-stack py-2"
                           }
                         }
                       },
@@ -440,7 +445,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-3"
+                            "className": "flex-center gap-3"
                           },
                           "children": [
                             {
@@ -460,14 +465,14 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex items-center"
+                                    "className": "flex-center"
                                   },
                                   "children": [
                                     {
                                       "type": "basic",
                                       "name": "Span",
                                       "props": {
-                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                        "className": "text-heading"
                                       },
                                       "text": "$t:admin.settings.advanced.seo_cache"
                                     },
@@ -485,7 +490,7 @@
                                   "type": "basic",
                                   "name": "P",
                                   "props": {
-                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "text-tertiary"
                                   },
                                   "text": "$t:admin.settings.advanced.seo_cache_desc"
                                 },
@@ -494,7 +499,7 @@
                                   "name": "Span",
                                   "if": "{{_local.errors?.['advanced.seo_cache_enabled']}}",
                                   "props": {
-                                    "className": "text-red-500 text-xs mt-1 block"
+                                    "className": "form-error"
                                   },
                                   "text": "{{_local.errors?.['advanced.seo_cache_enabled']?.[0] ?? ''}}"
                                 }
@@ -510,21 +515,21 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "flex items-center gap-2"
+                                "className": "flex-center gap-2"
                               },
                               "children": [
                                 {
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex items-center"
+                                    "className": "flex-center"
                                   },
                                   "children": [
                                     {
                                       "type": "basic",
                                       "name": "Span",
                                       "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                                        "className": "text-label whitespace-nowrap"
                                       },
                                       "text": "$t:admin.settings.advanced.cache_ttl"
                                     },
@@ -548,7 +553,7 @@
                                     "min": "0",
                                     "max": "14400",
                                     "disabled": "{{_computed.isReadOnly}}",
-                                    "className": "{{_local.errors?.['advanced.seo_cache_ttl'] ? 'w-24 px-2 py-1 border border-red-500 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                    "className": "input input-w-xs {{_local.errors?.['advanced.seo_cache_ttl'] ? 'input-error' : ''}}"
                                   }
                                 }
                               ]
@@ -558,21 +563,13 @@
                               "name": "Span",
                               "if": "{{_local.errors?.['advanced.seo_cache_ttl']}}",
                               "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "form-error"
                               },
                               "text": "{{_local.errors?.['advanced.seo_cache_ttl']?.[0] ?? ''}}"
                             }
                           ]
                         }
                       ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-xs text-gray-400 dark:text-gray-500 mt-4"
-                      },
-                      "text": "$t:admin.settings.advanced.cache_ttl_zero_hint"
                     }
                   ]
                 }
@@ -580,32 +577,23 @@
             },
             {
               "type": "basic",
-              "name": "Div",
+              "name": "Button",
               "props": {
-                "className": "pt-4"
+                "disabled": "{{_computed.isReadOnly}}",
+                "className": "px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "openModal",
+                  "target": "settings_cache_delete_modal"
+                }
+              ],
               "children": [
                 {
                   "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "openModal",
-                      "target": "settings_cache_delete_modal"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.advanced.clear_all_cache"
-                    }
-                  ]
+                  "name": "Span",
+                  "text": "$t:admin.settings.advanced.clear_all_cache"
                 }
               ]
             }
@@ -618,22 +606,22 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "card-stack-item"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.advanced.debug"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.advanced.debug_desc"
         },
@@ -641,7 +629,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-4"
+            "className": "row-stack"
           },
           "children": [
             {
@@ -649,7 +637,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+                "className": "flex-between"
               },
               "children": [
                 {
@@ -660,14 +648,14 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center"
+                        "className": "flex-center"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                            "className": "text-heading"
                           },
                           "text": "$t:admin.settings.advanced.debug_mode"
                         },
@@ -685,7 +673,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.settings.advanced.debug_mode_desc"
                     },
@@ -694,7 +682,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['advanced.debug_mode']}}",
                       "props": {
-                        "className": "text-red-500 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['advanced.debug_mode']?.[0] ?? ''}}"
                     }
@@ -704,7 +692,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-3"
+                    "className": "flex-center gap-3"
                   },
                   "children": [
                     {
@@ -738,7 +726,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center justify-between py-3"
+                "className": "flex-between"
               },
               "children": [
                 {
@@ -749,14 +737,14 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center"
+                        "className": "flex-center"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                            "className": "text-heading"
                           },
                           "text": "$t:admin.settings.advanced.sql_query_log"
                         },
@@ -774,7 +762,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.settings.advanced.sql_query_log_desc"
                     },
@@ -783,7 +771,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['advanced.sql_query_log']}}",
                       "props": {
-                        "className": "text-red-500 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['advanced.sql_query_log']?.[0] ?? ''}}"
                     }
@@ -809,22 +797,22 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "card-stack-item"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.advanced.core_update"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.advanced.core_update_desc"
         },
@@ -832,29 +820,26 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-4"
+            "className": "row-stack"
           },
           "children": [
             {
               "id": "input_core_update_github_url",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-1"
-              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center"
+                    "className": "flex-center"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                        "className": "text-heading"
                       },
                       "text": "$t:admin.settings.advanced.core_update_github_url"
                     }
@@ -864,7 +849,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                    "className": "text-label-subtle"
                   },
                   "text": "$t:admin.settings.advanced.core_update_github_url_desc"
                 },
@@ -876,7 +861,7 @@
                     "name": "advanced.core_update_github_url",
                     "placeholder": "https://github.com/owner/repo",
                     "disabled": "{{_computed.isReadOnly}}",
-                    "className": "{{_local.errors?.['advanced.core_update_github_url'] ? 'w-full px-3 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                    "className": "input {{_local.errors?.['advanced.core_update_github_url'] ? 'input-error' : ''}}"
                   }
                 },
                 {
@@ -884,7 +869,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['advanced.core_update_github_url']}}",
                   "props": {
-                    "className": "text-red-500 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['advanced.core_update_github_url']?.[0] ?? ''}}"
                 }
@@ -894,22 +879,19 @@
               "id": "input_core_update_github_token",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-1"
-              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center"
+                    "className": "flex-center"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                        "className": "text-heading"
                       },
                       "text": "$t:admin.settings.advanced.core_update_github_token"
                     }
@@ -919,7 +901,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                    "className": "text-label-subtle"
                   },
                   "text": "$t:admin.settings.advanced.core_update_github_token_desc"
                 },
@@ -932,7 +914,7 @@
                     "placeholder": "ghp_xxxxxxxxxxxxxxxxxxxx",
                     "autoComplete": "off",
                     "disabled": "{{_computed.isReadOnly}}",
-                    "className": "{{_local.errors?.['advanced.core_update_github_token'] ? 'w-full px-3 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                    "className": "input {{_local.errors?.['advanced.core_update_github_token'] ? 'input-error' : ''}}"
                   }
                 },
                 {
@@ -940,7 +922,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['advanced.core_update_github_token']}}",
                   "props": {
-                    "className": "text-red-500 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['advanced.core_update_github_token']?.[0] ?? ''}}"
                 }
@@ -955,22 +937,22 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "card-stack-item"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.advanced.geoip_section"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.advanced.geoip_section_desc"
         },
@@ -978,7 +960,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-6"
+            "className": "row-stack"
           },
           "children": [
             {
@@ -986,7 +968,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+                "className": "flex-between"
               },
               "children": [
                 {
@@ -997,7 +979,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                        "className": "text-heading"
                       },
                       "text": "$t:admin.settings.advanced.geoip_enabled"
                     },
@@ -1005,7 +987,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.settings.advanced.geoip_enabled_desc"
                     }
@@ -1036,21 +1018,21 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "space-y-1"
+                    "className": "row-stack"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center"
+                        "className": "flex-center"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                            "className": "text-heading"
                           },
                           "text": "$t:admin.settings.advanced.geoip_license_key"
                         }
@@ -1060,7 +1042,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.settings.advanced.geoip_license_key_desc"
                     },
@@ -1073,7 +1055,7 @@
                         "placeholder": "xxxxxxxxxxxxxxxx",
                         "autoComplete": "off",
                         "disabled": "{{_computed.isReadOnly}}",
-                        "className": "{{_local.errors?.['advanced.geoip_license_key'] ? 'w-full px-3 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                        "className": "{{_local.errors?.['advanced.geoip_license_key'] ? 'input-error' : ''}}"
                       }
                     },
                     {
@@ -1081,7 +1063,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['advanced.geoip_license_key']}}",
                       "props": {
-                        "className": "text-red-500 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['advanced.geoip_license_key']?.[0] ?? ''}}"
                     }
@@ -1092,7 +1074,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center justify-between py-2"
+                    "className": "flex-between py-2"
                   },
                   "children": [
                     {
@@ -1103,7 +1085,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                            "className": "text-heading"
                           },
                           "text": "$t:admin.settings.advanced.geoip_auto_update_enabled"
                         },
@@ -1111,7 +1093,7 @@
                           "type": "basic",
                           "name": "P",
                           "props": {
-                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                            "className": "text-label-subtle"
                           },
                           "text": "$t:admin.settings.advanced.geoip_auto_update_enabled_desc"
                         }
@@ -1133,14 +1115,14 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "space-y-2"
+                    "className": "row-stack"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-white block"
+                        "className": "text-heading block"
                       },
                       "text": "$t:admin.settings.advanced.geoip_last_updated_at"
                     },
@@ -1148,7 +1130,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex flex-col md:flex-row md:items-center md:gap-3 space-y-2 md:space-y-0"
+                        "className": "flex flex-col md:flex-row md:items-center gap-2 md:gap-2 md:space-y-0"
                       },
                       "children": [
                         {
@@ -1158,7 +1140,7 @@
                             "type": "text",
                             "disabled": true,
                             "value": "{{_local.form?.advanced?.geoip_last_updated_at ?? '-'}}",
-                            "className": "w-full md:flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 text-sm"
+                            "className": "md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"
                           }
                         },
                         {
@@ -1208,7 +1190,9 @@
                                         "target": "local",
                                         "geoipUpdating": false,
                                         "errors": {
-                                          "advanced.geoip_license_key": ["{{error.message ?? $t('admin.settings.advanced.geoip_update_failed')}}"]
+                                          "advanced.geoip_license_key": [
+                                            "{{error.message ?? $t('admin.settings.advanced.geoip_update_failed')}}"
+                                          ]
                                         }
                                       }
                                     }
@@ -1228,5 +1212,8 @@
         }
       ]
     }
-  ]
+  ],
+  "props": {
+    "className": "card-stack"
+  }
 }

@@ -1,0 +1,35 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   Category::selfAndDescendantIds() + getPublicList 카테고리 분기로, PHPUnit Feature/Unit 이
+#   필터키/트리위치/상품할당 조합과 하위포함·형제미포함·미존재slug 를 커버하며 green.
+feature: 상품 목록 카테고리 필터 하위 카테고리 상품 포함 (U6① path 기반)
+
+description: |
+  getPublicList 의 category_id/category_slug 필터가 직접 할당 카테고리만 매칭하던 것을
+  Category::selfAndDescendantIds()(path LIKE 기반)로 선택 카테고리 + 모든 하위를 포함하도록
+  변경한다. 미존재 slug 는 빈 결과(1=0). 형제 가지는 미포함(과포함 가드).
+
+axes:
+  filter_key:
+    - category_id
+    - category_slug
+  tree_position:
+    - root
+    - mid
+    - leaf
+  product_assignment:
+    - parent_direct    # 상위 직접 할당
+    - child_direct     # 하위 직접 할당
+    - sibling_branch   # 형제 가지
+
+effects:
+  - root_filter_includes_descendant_products  # 루트 필터 → 하위 상품 포함
+  - slug_filter_includes_descendant_products
+  - sibling_branch_excluded                   # 형제 가지 미포함
+  - unknown_slug_returns_empty                # 미존재 slug → 빈 결과(500 아님)
+  - self_and_descendant_ids_path_based        # 모델 메서드 path 기반 산출
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicProductControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/CategoryTest.php

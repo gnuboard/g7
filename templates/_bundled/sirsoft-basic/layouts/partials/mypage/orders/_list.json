@@ -662,25 +662,56 @@
                       ]
                     },
                     {
-                      "comment": "주문상태 배지",
+                      "comment": "주문상태 배지 묶음 — 상태 배지 아래에 부분취소 보조 배지를 세로로 배치",
                       "type": "basic",
-                      "name": "Span",
-                      "classMap": {
-                        "base": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
-                        "key": "{{order.status}}",
-                        "variants": {
-                          "pending_payment": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-                          "payment_complete": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                          "preparing": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                          "shipping_ready": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                          "shipping": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-                          "delivered": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-                          "confirmed": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-                          "cancelled": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                      "name": "Div",
+                      "props": { "className": "flex flex-col items-end gap-1 flex-shrink-0" },
+                      "children": [
+                        {
+                          "comment": "주문상태 배지",
+                          "type": "basic",
+                          "name": "Span",
+                          "classMap": {
+                            "base": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                            "key": "{{order.status}}",
+                            "variants": {
+                              "pending_payment": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                              "payment_complete": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                              "preparing": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                              "shipping_ready": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                              "shipping": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                              "delivered": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                              "confirmed": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                              "cancelled": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                            },
+                            "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                          },
+                          "text": "{{order.status_label}}"
                         },
-                        "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                      },
-                      "text": "{{order.status_label}}"
+                        {
+                          "comment": "부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그 is_partially_cancelled)",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{order.is_partially_cancelled}}",
+                          "props": {
+                            "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
+                          },
+                          "text": "$t:mypage.orders.partial_cancelled_badge"
+                        },
+                        {
+                          "comment": "배송국가 칩 (D9 — 항상 표시, KR 포함)",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{order.recipient_country_code}}",
+                          "props": {
+                            "className": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                          },
+                          "children": [
+                            { "type": "basic", "name": "Span", "props": { "className": "{{'fi fi-' + (order.recipient_country_code ?? 'kr').toLowerCase()}}" } },
+                            { "type": "basic", "name": "Span", "text": "{{order.recipient_country_name?.[_global.locale] ?? order.recipient_country_name?.ko ?? order.recipient_country_code}}" }
+                          ]
+                        }
+                      ]
                     }
                   ]
                 },
@@ -757,6 +788,14 @@
                               "text": "{{item.product_option_name}}"
                             },
                             {
+                              "comment": "추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2)",
+                              "type": "basic",
+                              "name": "P",
+                              "if": "{{item.additional_options_summary}}",
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-0.5" },
+                              "text": "{{item.additional_options_summary?.label}}{{(item.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + item.additional_options_summary.extra_count + '건' : ''}}"
+                            },
+                            {
                               "type": "basic",
                               "name": "P",
                               "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-1" },
@@ -765,7 +804,7 @@
                                   "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5" }
                                 }
                               },
-                              "text": "{{item.mc_unit_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit"
+                              "text": "{{item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit"
                             },
                             {
                               "comment": "옵션 소계",
@@ -777,7 +816,7 @@
                                   "props": { "className": "text-xs font-medium text-gray-900 dark:text-white mt-0.5" }
                                 }
                               },
-                              "text": "{{item.mc_subtotal_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.subtotal_price_formatted}}"
+                              "text": "{{item.subtotal_price_formatted}}"
                             },
                             {
                               "comment": "보조 통화들 (선택된 통화 제외)",
@@ -785,7 +824,7 @@
                               "name": "Div",
                               "props": { "className": "flex flex-wrap gap-x-2 mt-0.5" },
                               "iteration": {
-                                "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                                 "item_var": "currency"
                               },
                               "children": [
@@ -835,7 +874,7 @@
                               "name": "Span",
                               "if": "{{order.total_shipping_amount > 0}}",
                               "props": { "className": "text-xs text-gray-600 dark:text-gray-300" },
-                              "text": "+{{order.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.total_shipping_amount_formatted}}"
+                              "text": "+{{order.total_shipping_amount_formatted}}"
                             },
                             {
                               "type": "basic",
@@ -861,7 +900,7 @@
                               "props": { "className": "text-base font-bold text-gray-900 dark:text-white" }
                             }
                           },
-                          "text": "{{order.mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.total_amount_formatted}}"
+                          "text": "{{order.total_amount_formatted}}"
                         },
                         {
                           "comment": "보조 통화들 (선택된 통화 제외)",
@@ -869,7 +908,7 @@
                           "name": "Div",
                           "props": { "className": "flex flex-wrap gap-x-2" },
                           "iteration": {
-                            "source": "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                            "source": "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                             "item_var": "currency"
                           },
                           "children": [
@@ -880,6 +919,22 @@
                               "text": "{{currency[1]?.formatted}}"
                             }
                           ]
+                        },
+                        {
+                          "comment": "마일리지 사용 (있을 때만) — base_currency 단일 정산",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{(order.total_points_used_amount ?? 0) > 0}}",
+                          "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-0.5" },
+                          "text": "$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}"
+                        },
+                        {
+                          "comment": "적립 예정 마일리지 (있을 때만)",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{(order.total_earned_points_amount ?? 0) > 0 && order.status !== 'cancelled' && !order.is_partially_cancelled}}",
+                          "props": { "className": "text-xs text-blue-600 dark:text-blue-400" },
+                          "text": "$t:mypage.orders.points_earning +{{order.total_earned_points_amount_formatted}}"
                         }
                       ]
                     },

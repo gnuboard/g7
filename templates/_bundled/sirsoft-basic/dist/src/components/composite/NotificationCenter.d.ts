@@ -1,5 +1,6 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
+import { EditorAttrs } from '../../types';
 /**
  * 알림 아이템 인터페이스
  */
@@ -54,6 +55,10 @@ export interface NotificationCenterProps {
     /** 드롭다운 정렬 방향 — "right"(기본): 우측 정렬되어 좌측으로 확장 / "left": 좌측 정렬되어 우측으로 확장 */
     dropdownAlign?: 'left' | 'right';
     className?: string;
+    /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID) */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * NotificationCenter 컴포넌트 (User)

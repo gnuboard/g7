@@ -1,0 +1,39 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(A32)은
+#   component × input × screen cross product 를 레이아웃 토큰 구조 회귀 Vitest +
+#   audit 룰(layout-binding-event-value) 자체 검증이 커버하며 green.
+feature: 상품폼 {{$event}} 전수 정정 (MP12 / A32)
+
+description: |
+  라벨 기간 날짜 input 등에서 {{$event}} 전체 객체를 전달해 "컴포넌트 로드 실패" 가 발생하던 결함을
+  상품 폼 내 8곳에서 systemic 정정한다.
+  - date Input / Select / text Input → $event.target.value
+  - Checkbox(save_template is_default) → $event.target.checked (boolean)
+  - audit 룰(layout-binding-event-value)에 {{$event}} 단독 검출 추가로 재발 차단
+
+axes:
+  component:
+    - date_input              # 라벨 기간 started_at/ended_at
+    - select                  # shopping_integration 3종
+    - text_input              # save_template name
+    - checkbox                # save_template is_default → target.checked
+  input:
+    - typing                  # 직접 타이핑
+    - calendar                # 달력 선택
+    - dropdown                # 드롭다운
+    - toggle                  # 체크박스 토글
+  screen:
+    - create
+    - edit
+
+effects:
+  - date_input_stores_string       # 원시 문자열 저장
+  - select_stores_string
+  - checkbox_stores_boolean        # "on" 아님
+  - no_object_passthrough          # {{$event}} 단독 0회
+  - no_component_load_error        # ErrorBoundary 미발생
+  - audit_rule_detects_event_token # 룰이 {{$event}} 단독 검출
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productEventTokenBinding.test.tsx

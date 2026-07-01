@@ -1,0 +1,49 @@
+feature: 부모 댓글 삭제 시 자식 댓글 트리 보존 (tombstone)
+
+description: |
+  이슈 #413 item 56-2 — 부모 댓글을 삭제해도 살아있는 자식 댓글이 트리에서
+  사라지지 않도록, 살아있는 자식이 있는 삭제 부모를 tombstone("삭제된 댓글입니다")
+  으로 일반 조회 트리에 복구한다.
+
+  근본 원인:
+    · CommentService::deleteComment() 는 부모만 soft delete (자식은 DB 생존).
+    · CommentRepository::getByPostId(withTrashed=false) 에서 삭제 부모가 쿼리에서
+      빠지고, sortByParentChild() 가 parent_id=null 최상위부터 트리를 구성하므로
+      부모 없는 자식 그룹이 어디에도 못 붙어 통째로 누락.
+
+  조치 (B안 — 정렬 단계 고아 복구):
+    · CommentRepository::restoreTombstoneParents() 신설 — withTrashed=false 일 때
+      고아 자식의 조상 체인을 따라 누락된 삭제 부모를 일괄 IN 조회(N+1 회피)로
+      tombstone 노드 복구. 자식 없는 삭제 부모는 고아 자식이 없어 자연 제외.
+    · countDescendants() 보정 — tombstone(삭제) 댓글은 "답글 N" 집계 모수에서 제외
+      (트리 노드로는 유지, 살아있는 자손은 계속 카운트). PO 확정.
+    · content 권한·표시(tombstone 안내 + 관리자 원문 토글)는 #413-50 기구현 재사용.
+    · withTrashed=true(manager del_cmt 토글) 경로는 이미 전체 노출 → 고아 복구 비적용.
+
+  관련:
+    · 56-1(블라인드 댓글 원문 게이트) 은 정상 — 수정 없음. PostBlindedAccessControlTest 보증.
+
+# axis 의미:
+#   차단/노출·content 필터를 가르는 핵심 변별 축은 viewer(요청자 권한)다.
+#   tree_state(부모삭제+자식생존 / 부모삭제+자식없음 / 다단계 / 연쇄삭제) 변종은
+#   effects 와 개별 테스트 메서드로 커버한다.
+axes:
+  viewer: [guest, regular, manager]
+
+effects:
+  # 트리 보존
+  - deleted_parent_with_live_child_shown_as_tombstone
+  - deleted_parent_without_child_excluded
+  - nested_grandchild_tree_preserved
+  # content 권한
+  - tombstone_content_filtered_for_non_privileged
+  - manager_sees_tombstone_original_content
+  # 집계·토글 정합
+  - comments_count_excludes_tombstone
+  - withtrashed_toggle_not_double_applied
+
+test_files:
+  # 56-2 — 백엔드 조회 트리 보존
+  - modules/_bundled/sirsoft-board/tests/Feature/User/CommentDeletedParentChildTreeTest.php
+  # 56-2 — 프론트 tombstone 표시 계약 (레이아웃 JSON 구조)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-deleted-comment-tree.test.tsx

@@ -1,4 +1,5 @@
 import { default as React, ReactNode } from 'react';
+import { EditorAttrs } from '../../types';
 export interface AccordionProps {
     /** 기본 열림 상태 */
     defaultOpen?: boolean;
@@ -14,6 +15,12 @@ export interface AccordionProps {
     children?: ReactNode;
     /** 비활성화 여부 */
     disabled?: boolean;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * Accordion 집합 컴포넌트

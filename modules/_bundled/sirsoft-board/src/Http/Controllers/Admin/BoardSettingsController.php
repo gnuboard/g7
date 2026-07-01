@@ -7,8 +7,10 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\Exceptions\BulkApplyAbortedException;
 use Modules\Sirsoft\Board\Http\Requests\Admin\BulkApplySettingsRequest;
+use Modules\Sirsoft\Board\Http\Requests\Admin\IndexBoardSettingsRequest;
+use Modules\Sirsoft\Board\Http\Requests\Admin\ShowBoardSettingsRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\StoreBoardSettingsRequest;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\BoardSettingsService;
@@ -23,8 +25,8 @@ class BoardSettingsController extends AdminBaseController
     /**
      * BoardSettingsController 생성자
      *
-     * @param BoardSettingsService $settingsService 환경설정 서비스
-     * @param BoardService $boardService 게시판 서비스
+     * @param  BoardSettingsService  $settingsService  환경설정 서비스
+     * @param  BoardService  $boardService  게시판 서비스
      */
     public function __construct(
         private BoardSettingsService $settingsService,
@@ -34,9 +36,10 @@ class BoardSettingsController extends AdminBaseController
     /**
      * 모든 게시판 설정을 조회합니다.
      *
+     * @param  IndexBoardSettingsRequest  $request  환경설정 조회 요청
      * @return JsonResponse 설정 목록을 포함한 JSON 응답
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexBoardSettingsRequest $request): JsonResponse
     {
         try {
             $settings = $this->settingsService->getAllSettings();
@@ -44,6 +47,10 @@ class BoardSettingsController extends AdminBaseController
 
             $settings['abilities'] = [
                 'can_update' => PermissionHelper::check('sirsoft-board.settings.update', $request->user()),
+            ];
+
+            $settings['_meta'] = [
+                'limits' => config('sirsoft-board.limits', []),
             ];
 
             return ResponseHelper::moduleSuccess(
@@ -63,10 +70,11 @@ class BoardSettingsController extends AdminBaseController
     /**
      * 카테고리별 설정을 조회합니다.
      *
-     * @param string $category 카테고리명
+     * @param  ShowBoardSettingsRequest  $request  카테고리별 설정 조회 요청
+     * @param  string  $category  카테고리명
      * @return JsonResponse 카테고리 설정을 포함한 JSON 응답
      */
-    public function show(Request $request, string $category): JsonResponse
+    public function show(ShowBoardSettingsRequest $request, string $category): JsonResponse
     {
         try {
             $settings = $this->settingsService->getSettings($category);
@@ -94,7 +102,7 @@ class BoardSettingsController extends AdminBaseController
     /**
      * 게시판 설정을 저장합니다.
      *
-     * @param StoreBoardSettingsRequest $request 저장 요청 데이터
+     * @param  StoreBoardSettingsRequest  $request  저장 요청 데이터
      * @return JsonResponse 저장 결과 JSON 응답
      */
     public function store(StoreBoardSettingsRequest $request): JsonResponse
@@ -136,7 +144,7 @@ class BoardSettingsController extends AdminBaseController
     /**
      * 환경설정 기본값을 기존 게시판에 일괄 적용합니다.
      *
-     * @param BulkApplySettingsRequest $request 일괄 적용 요청 데이터
+     * @param  BulkApplySettingsRequest  $request  일괄 적용 요청 데이터
      * @return JsonResponse 일괄 적용 결과 JSON 응답
      */
     public function bulkApply(BulkApplySettingsRequest $request): JsonResponse
@@ -157,9 +165,22 @@ class BoardSettingsController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-board',
                 'messages.settings.bulk_apply_success',
-                ['updated_count' => $updatedCount],
+                ['updated_count' => $updatedCount, 'rolled_back' => false],
                 200,
                 ['count' => $updatedCount]
+            );
+        } catch (BulkApplyAbortedException $e) {
+            // 일괄 적용 중 실패 → 전체 롤백됨 (의도된 정상 동작). HTTP 200 + rolled_back 플래그로
+            // 프론트 onSuccess 흐름에서 안내 처리. board=null 이면 컬럼 업데이트 실패(generic).
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-board',
+                'messages.settings.bulk_apply_aborted',
+                [
+                    'rolled_back' => true,
+                    'board' => $e->boardInfo(),
+                    'failed_at' => $e->failedAt,
+                    'total' => $e->total,
+                ]
             );
         } catch (Exception $e) {
             return ResponseHelper::moduleError(

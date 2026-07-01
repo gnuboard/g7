@@ -31,6 +31,7 @@
     "data_sources": [
         {
             "id": "roles",
+            "label_key": "$t:editor.data_source.roles",
             "type": "api",
             "endpoint": "/api/admin/roles",
             "method": "GET",
@@ -67,12 +68,12 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "p-4 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                            "className": "admin-page-content-compact"
                         }
                     }
                 },
@@ -88,10 +89,12 @@
                         "children": [
                             {
                                 "id": "refresh_button",
-                                "type": "basic",
-                                "name": "Button",
+                                "type": "composite",
+                                "name": "IconButton",
                                 "props": {
-                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    "iconName": "refresh",
+                                    "variant": "outline",
+                                    "size": "md"
                                 },
                                 "actions": [
                                     {
@@ -99,16 +102,6 @@
                                         "handler": "refetchDataSource",
                                         "params": {
                                             "dataSourceId": "roles"
-                                        }
-                                    }
-                                ],
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "props": {
-                                            "name": "refresh",
-                                            "size": "lg"
                                         }
                                     }
                                 ]
@@ -119,7 +112,7 @@
                                 "name": "Button",
                                 "props": {
                                     "disabled": "{{roles?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
                                 "actions": [
                                     {
@@ -136,7 +129,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "plus",
-                                            "size": "lg"
+                                            "size": "md"
                                         }
                                     },
                                     {
@@ -219,7 +212,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "flex-center gap-2"
                                             },
                                             "children": [
                                                 {

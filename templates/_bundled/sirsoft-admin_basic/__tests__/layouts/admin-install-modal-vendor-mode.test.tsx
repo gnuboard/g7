@@ -18,7 +18,28 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
-const repoRoot = path.resolve(__dirname, '../../../../..');
+/**
+ * 저장소 루트를 탐색한다.
+ *
+ * 본 테스트 파일은 `_bundled` 와 활성 템플릿 디렉토리(`template:update` 복사본)
+ * 양쪽에 동일 내용으로 존재하며, 두 위치는 디렉토리 깊이가 다르다
+ * (`_bundled` 가 한 단계 더 깊음). 따라서 `../` 상대 카운트로는 한쪽에서만
+ * 맞는다. `artisan` 파일을 마커로 위로 탐색해 깊이와 무관하게 루트를 찾는다.
+ */
+function findRepoRoot(start: string): string {
+  let dir = start;
+  for (let i = 0; i < 12; i++) {
+    if (fs.existsSync(path.join(dir, 'artisan'))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error(`저장소 루트(artisan)를 찾지 못했습니다: ${start}`);
+}
+
+const repoRoot = findRepoRoot(__dirname);
 
 interface LayoutNode {
   type?: string;

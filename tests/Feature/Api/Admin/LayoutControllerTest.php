@@ -23,9 +23,22 @@ class LayoutControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 레이아웃/템플릿 요청 경로가 GDPR 정책 테이블을 조회하므로
+     * 해당 플러그인 마이그레이션을 테스트 DB 에 포함시킨다.
+     *
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
+
     private User $adminUser;
+
     private User $normalUser;
+
     private Template $template;
+
     private string $token;
 
     protected function setUp(): void
@@ -89,7 +102,7 @@ class LayoutControllerTest extends TestCase
                 'description' => json_encode(['ko' => '시스템 관리자', 'en' => 'System Administrator']),
                 'extension_type' => ExtensionOwnerType::Core,
                 'extension_identifier' => 'core',
-                    'type' => 'admin',
+                'type' => 'admin',
                 'is_active' => true,
             ]
         );
@@ -146,6 +159,7 @@ class LayoutControllerTest extends TestCase
                         'template_id',
                         'name',
                         'endpoint',
+                        'route_path',
                         'components',
                         'data_sources',
                         'metadata',
@@ -154,6 +168,30 @@ class LayoutControllerTest extends TestCase
             ]);
 
         $this->assertCount(3, $response->json('data'));
+    }
+
+    /**
+     * 레이아웃 목록 응답에 route_path 필드가 포함된다 (코드 편집기 ?route= 동기화용).
+     *
+     * 팩토리 템플릿은 실제 routes.json 이 없어 매핑이 비므로 route_path 는 null 이다.
+     * 실제 routes.json 기반 매핑 검증은 TemplateService 단위 테스트가 담당.
+     */
+    public function test_layout_list_includes_route_path_field(): void
+    {
+        // Arrange
+        TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'home',
+        ]);
+
+        // Act
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
+
+        // Assert
+        $response->assertStatus(200);
+        $this->assertArrayHasKey('route_path', $response->json('data.0'));
+        $this->assertNull($response->json('data.0.route_path'));
     }
 
     /**
@@ -307,6 +345,7 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-layout',
@@ -343,6 +382,10 @@ class LayoutControllerTest extends TestCase
             'id' => $layout->id,
             'name' => 'test-layout',
         ]);
+
+        // 현재(최신) 버전 번호 동봉.
+        // 첫 저장은 baseline(v1) + 이번 저장본(v2) 두 버전을 적재하므로 current_version=2.
+        $this->assertSame(2, $response->json('data.current_version'));
     }
 
     /**
@@ -356,6 +399,7 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $invalidData = [
+            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test',
@@ -381,6 +425,7 @@ class LayoutControllerTest extends TestCase
     {
         // Arrange
         $updateData = [
+            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'nonexistent',
@@ -417,6 +462,7 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test',
@@ -492,12 +538,66 @@ class LayoutControllerTest extends TestCase
                         'data_sources',
                         'metadata',
                         'changes_summary',
+                        'created_by_name',
                         'created_at',
                     ],
                 ],
             ]);
 
         $this->assertCount(3, $response->json('data'));
+    }
+
+    /**
+     * 버전 목록에 저장자 이름(created_by_name)이 노출되되 created_by ID 는 제외
+     *
+     * @effects version_resource_exposes_creator_name_not_id, version_row_shows_creator_name_or_unknown_fallback
+     */
+    public function test_layout_versions_expose_creator_name_not_id(): void
+    {
+        // Arrange — 저장자 User 와 버전 생성
+        $author = User::factory()->create(['name' => '버전작성자']);
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'authored-layout',
+        ]);
+        TemplateLayoutVersion::factory()->create([
+            'layout_id' => $layout->id,
+            'created_by' => $author->id,
+        ]);
+
+        // Act
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
+
+        // Assert — 이름은 노출, created_by ID 는 응답에 없음
+        $response->assertStatus(200);
+        $first = $response->json('data.0');
+        $this->assertSame('버전작성자', $first['created_by_name']);
+        $this->assertArrayNotHasKey('created_by', $first);
+    }
+
+    /**
+     * 탈퇴/미상 저장자(created_by null)는 created_by_name 이 null
+     */
+    public function test_layout_versions_creator_name_null_when_no_creator(): void
+    {
+        // Arrange — created_by null 버전
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'anon-layout',
+        ]);
+        TemplateLayoutVersion::factory()->create([
+            'layout_id' => $layout->id,
+            'created_by' => null,
+        ]);
+
+        // Act
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
+
+        // Assert
+        $response->assertStatus(200);
+        $this->assertNull($response->json('data.0.created_by_name'));
     }
 
     /**
@@ -550,6 +650,8 @@ class LayoutControllerTest extends TestCase
                 'components' => ['component' => 'test'],
                 'data_sources' => [],
                 'metadata' => ['key' => 'value'],
+                // extends 기반 레이아웃처럼 slots 에 실제 컴포넌트가 있는 경우 — 분해 키엔 안 잡힘.
+                'slots' => ['content' => [['name' => 'Div']]],
             ],
             'changes_summary' => ['updated' => 'components'],
         ]);
@@ -572,6 +674,9 @@ class LayoutControllerTest extends TestCase
                     'data_sources',
                     'metadata',
                     'changes_summary',
+                    'created_by_name',
+                    // 단건 조회는 content 원본 전체(full_content) 노출 — 버전 비교 diff 용
+                    'full_content',
                     'created_at',
                 ],
             ])
@@ -580,6 +685,35 @@ class LayoutControllerTest extends TestCase
             ]);
 
         $this->assertEquals(2, $response->json('data.version'));
+        // full_content 는 slots 등 분해되지 않는 키까지 원본 그대로 보존해야 한다 (diff 정확성).
+        $this->assertSame(
+            [['name' => 'Div']],
+            $response->json('data.full_content.slots.content')
+        );
+    }
+
+    /**
+     * 버전 목록(index)에는 full_content 를 포함하지 않는다 (페이로드 비대화 회피)
+     */
+    public function test_version_index_excludes_full_content(): void
+    {
+        // Arrange
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'index-no-full',
+        ]);
+        TemplateLayoutVersion::factory()->create([
+            'layout_id' => $layout->id,
+            'content' => ['slots' => ['content' => [['name' => 'Div']]]],
+        ]);
+
+        // Act
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
+
+        // Assert — 목록 항목에 full_content 키 없음
+        $response->assertStatus(200);
+        $this->assertArrayNotHasKey('full_content', $response->json('data.0'));
     }
 
     /**
@@ -808,15 +942,19 @@ class LayoutControllerTest extends TestCase
         // Assert
         $response->assertStatus(200);
 
-        // 버전 3이 생성되었는지 확인 (복원 전의 content를 저장)
+        // 버전 3이 생성되었는지 확인 (복원 결과 = 복원된 content 를 저장)
         $newVersion = TemplateLayoutVersion::where('layout_id', $layout->id)
             ->where('version', 3)
             ->first();
 
         $this->assertNotNull($newVersion);
-        // 새 버전은 복원 전의 content (v3)를 저장하여 히스토리 보존
-        $this->assertEquals('/api/v3', $newVersion->content['endpoint']);
-        $this->assertEquals(['version' => '3'], $newVersion->content['components']);
+        // 새 버전은 복원된 content (v1)를 담는다 — "현재 상태가 v1 으로 돌아갔음"을 표현.
+        // (종전엔 복원 전 content 를 저장해 복원인데 "추가"로 표기되던 결함 수정.)
+        $this->assertEquals('/api/v1', $newVersion->content['endpoint']);
+        $this->assertEquals(['version' => '1'], $newVersion->content['components']);
+
+        // changes_summary 는 복원 직전(레이아웃의 v3 content) 대비 변경 — 복원으로 줄거나 바뀐다.
+        $this->assertNotNull($newVersion->changes_summary);
 
         // 레이아웃이 v1으로 복원되었는지 확인
         $layout->refresh();
@@ -885,6 +1023,7 @@ class LayoutControllerTest extends TestCase
         $this->assertEquals(0, $initialVersionCount);
 
         $updateData = [
+            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-layout',
@@ -943,9 +1082,10 @@ class LayoutControllerTest extends TestCase
             ],
         ]);
 
-        // Act - 첫 번째 업데이트
+        // Act - 첫 번째 업데이트 (factory 초기 lock_version=0)
         $response1 = $this->authRequest()
             ->putJson("/api/admin/templates/{$userTemplate->identifier}/layouts/{$layout->name}", [
+                'expected_lock_version' => 0,
                 'content' => [
                     'version' => '1.0.0',
                     'layout_name' => 'test-layout',
@@ -957,9 +1097,10 @@ class LayoutControllerTest extends TestCase
             ]);
         $response1->assertStatus(200);
 
-        // Act - 두 번째 업데이트
+        // Act - 두 번째 업데이트 (첫 저장으로 lock_version=1 로 증가)
         $response2 = $this->authRequest()
             ->putJson("/api/admin/templates/{$userTemplate->identifier}/layouts/{$layout->name}", [
+                'expected_lock_version' => 1,
                 'content' => [
                     'version' => '1.0.0',
                     'layout_name' => 'test-layout',
@@ -976,12 +1117,12 @@ class LayoutControllerTest extends TestCase
             ->orderBy('version', 'asc')
             ->get();
 
-        // 첫 번째 업데이트: 2개 버전 (v1: old, v2: new)
-        // 두 번째 업데이트: 2개 버전 추가 (v3: old, v4: new)
-        // 총 4개 버전
-        $this->assertCount(4, $versions);
+        // 첫 번째 업데이트: baseline(v1: initial) + 수정본(v2: first_update)
+        // 두 번째 업데이트: 수정본(v3: second_update) — baseline 은 이미 있어 추가 안 함
+        // 총 3개 버전 (PUT 당 1건 + 최초 1회 baseline)
+        $this->assertCount(3, $versions);
 
-        // 버전 1: 최초 content
+        // 버전 1: 수정 전 원본 baseline (initial)
         $this->assertEquals(1, $versions[0]->version);
         $this->assertEquals('initial', $versions[0]->content['metadata']['step']);
 
@@ -989,13 +1130,9 @@ class LayoutControllerTest extends TestCase
         $this->assertEquals(2, $versions[1]->version);
         $this->assertEquals('first_update', $versions[1]->content['metadata']['step']);
 
-        // 버전 3: 두 번째 업데이트 전 content (first_update)
+        // 버전 3: 두 번째 업데이트된 content
         $this->assertEquals(3, $versions[2]->version);
-        $this->assertEquals('first_update', $versions[2]->content['metadata']['step']);
-
-        // 버전 4: 두 번째 업데이트된 content
-        $this->assertEquals(4, $versions[3]->version);
-        $this->assertEquals('second_update', $versions[3]->content['metadata']['step']);
+        $this->assertEquals('second_update', $versions[2]->content['metadata']['step']);
     }
 
     /**
@@ -1024,6 +1161,7 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-layout',
@@ -1071,6 +1209,7 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-layout',
@@ -1118,6 +1257,238 @@ class LayoutControllerTest extends TestCase
         $this->assertEquals('test_modal', $layout->content['modals'][0]['id']);
         $this->assertFalse($layout->content['state']['isLoading']);
         $this->assertEquals('setState', $layout->content['init_actions'][0]['handler']);
+    }
+
+    /**
+     * 레이아웃 업데이트 시 meta 하위의 비-SEO 메타 키 보존 (guest_only / is_error_layout / error_code / keywords)
+     *
+     * validated() 는 rules() 에 명시된 키만 반환하므로, content.meta 가 'array' 규칙이고
+     * 하위에 title/description 등 일부 키만 명시돼 있으면 명시되지 않은 meta 하위 키는 저장 시
+     * 누락된다. guest_only 가 사라지면 비로그인 전용 레이아웃(로그인/회원가입/비번찾기/재설정)이
+     * 편집기 저장 후 reload 시 "이미 로그인" 가드가 오발화한다.
+     */
+    public function test_update_layout_preserves_non_seo_meta_keys(): void
+    {
+        // Arrange
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'auth/forgot_password',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'auth/forgot_password',
+                'meta' => [
+                    'title' => '$t:auth.forgot_password.title',
+                    'guest_only' => true,
+                ],
+                'endpoint' => '/api/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ]);
+
+        $updateData = [
+            'expected_lock_version' => 0,
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'auth/forgot_password',
+                'meta' => [
+                    'title' => '$t:auth.forgot_password.title',
+                    'guest_only' => true,
+                    'is_error_layout' => true,
+                    'error_code' => 404,
+                    'keywords' => '{{page?.data?.keywords ?? \'\'}}',
+                ],
+                'endpoint' => '/api/admin/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ];
+
+        // Act
+        $response = $this->authRequest()
+            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/auth/forgot_password", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        $layout->refresh();
+        $this->assertTrue($layout->content['meta']['guest_only'], 'guest_only 가 저장 시 유실됨');
+        $this->assertTrue($layout->content['meta']['is_error_layout'], 'is_error_layout 가 저장 시 유실됨');
+        $this->assertEquals(404, $layout->content['meta']['error_code'], 'error_code 가 저장 시 유실됨');
+        $this->assertEquals('{{page?.data?.keywords ?? \'\'}}', $layout->content['meta']['keywords'], 'keywords 가 저장 시 유실됨');
+    }
+
+    /**
+     * 레이아웃 업데이트 시 meta.seo 하위의 비표준 키 보존 (vars / page_type / extensions / toggle_setting)
+     *
+     * content.meta.seo 도 'array' 규칙이고 enabled/data_sources/priority 등 일부 하위 키만
+     * 명시돼 있어, 명시되지 않은 seo 하위 키(SEO 페이지 생성기가 소비하는 vars/page_type 등)가
+     * 저장 시 누락된다.
+     */
+    public function test_update_layout_preserves_non_standard_seo_keys(): void
+    {
+        // Arrange
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'board/index',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'board/index',
+                'endpoint' => '/api/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ]);
+
+        $updateData = [
+            'expected_lock_version' => 0,
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'board/index',
+                'meta' => [
+                    'title' => 'Board',
+                    'seo' => [
+                        'enabled' => true,
+                        'page_type' => 'board',
+                        'toggle_setting' => '$module_settings:sirsoft-board:seo.seo_board',
+                        'vars' => [
+                            'site_name' => '$core_settings:general.site_name',
+                            'board_name' => '{{posts.data.board.name ?? \'\'}}',
+                        ],
+                        'extensions' => [
+                            ['type' => 'module', 'id' => 'sirsoft-board'],
+                        ],
+                    ],
+                ],
+                'endpoint' => '/api/admin/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ];
+
+        // Act
+        $response = $this->authRequest()
+            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/board/index", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        $layout->refresh();
+        $seo = $layout->content['meta']['seo'];
+        $this->assertEquals('board', $seo['page_type'], 'seo.page_type 가 저장 시 유실됨');
+        $this->assertEquals('$module_settings:sirsoft-board:seo.seo_board', $seo['toggle_setting'], 'seo.toggle_setting 가 저장 시 유실됨');
+        $this->assertArrayHasKey('vars', $seo, 'seo.vars 가 저장 시 유실됨');
+        $this->assertEquals('$core_settings:general.site_name', $seo['vars']['site_name']);
+        $this->assertArrayHasKey('extensions', $seo, 'seo.extensions 가 저장 시 유실됨');
+        $this->assertEquals('sirsoft-board', $seo['extensions'][0]['id']);
+    }
+
+    /**
+     * 레이아웃 업데이트 시 content 직속 상태/액션 키 보존 (initLocal / initGlobal / errorHandling / global_state / actions)
+     *
+     * 이 키들은 엔진이 상태 초기화/에러 처리/액션에 소비하지만 rules() 에 없어 validated() 에서
+     * 누락된다. 저장 시마다 레이아웃 동작 정의가 사라지는 손상.
+     */
+    public function test_update_layout_preserves_content_top_state_action_keys(): void
+    {
+        // Arrange
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'test-layout',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'test-layout',
+                'endpoint' => '/api/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ]);
+
+        $updateData = [
+            'expected_lock_version' => 0,
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'test-layout',
+                'endpoint' => '/api/admin/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+                'initLocal' => ['driverTestResults' => [], 'activeChannel' => null],
+                'initGlobal' => ['reviewImagePreview' => null],
+                'errorHandling' => [
+                    '404' => ['handler' => 'showErrorPage', 'params' => ['target' => 'content']],
+                ],
+                'global_state' => ['searchActiveTab' => 'all'],
+                'actions' => [
+                    ['id' => 'selectBank', 'handler' => 'setState', 'params' => ['target' => '_local.bank', 'value' => 'x']],
+                ],
+            ],
+        ];
+
+        // Act
+        $response = $this->authRequest()
+            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/test-layout", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        $layout->refresh();
+        $this->assertArrayHasKey('initLocal', $layout->content, 'initLocal 이 저장 시 유실됨');
+        $this->assertArrayHasKey('initGlobal', $layout->content, 'initGlobal 이 저장 시 유실됨');
+        $this->assertArrayHasKey('errorHandling', $layout->content, 'errorHandling 이 저장 시 유실됨');
+        $this->assertArrayHasKey('global_state', $layout->content, 'global_state 가 저장 시 유실됨');
+        $this->assertArrayHasKey('actions', $layout->content, 'actions 가 저장 시 유실됨');
+        $this->assertEquals('all', $layout->content['global_state']['searchActiveTab']);
+        $this->assertEquals('showErrorPage', $layout->content['errorHandling']['404']['handler']);
+        $this->assertEquals('selectBank', $layout->content['actions'][0]['id']);
+    }
+
+    /**
+     * 레이아웃 업데이트 시 플러그인 settings 전용 키 보존 (pageConfig / schema)
+     *
+     * 플러그인 설정 레이아웃이 content 직속에 두는 pageConfig/schema 키도 저장 시 누락된다.
+     */
+    public function test_update_layout_preserves_plugin_settings_keys(): void
+    {
+        // Arrange
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'plugin_settings',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'plugin_settings',
+                'endpoint' => '/api/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ]);
+
+        $updateData = [
+            'expected_lock_version' => 0,
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'plugin_settings',
+                'endpoint' => '/api/admin/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+                'pageConfig' => ['notice' => '$t:plugin.notice'],
+                'schema' => [
+                    'is_test_mode' => ['type' => 'boolean', 'default' => true],
+                ],
+            ],
+        ];
+
+        // Act
+        $response = $this->authRequest()
+            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/plugin_settings", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        $layout->refresh();
+        $this->assertArrayHasKey('pageConfig', $layout->content, 'pageConfig 가 저장 시 유실됨');
+        $this->assertArrayHasKey('schema', $layout->content, 'schema 가 저장 시 유실됨');
+        $this->assertEquals('$t:plugin.notice', $layout->content['pageConfig']['notice']);
+        $this->assertTrue($layout->content['schema']['is_test_mode']['default']);
     }
 
     /**
@@ -1175,6 +1546,7 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-child-layout',

@@ -58,14 +58,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex items-center gap-2"
+                            "className": "flex-center gap-2"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0"
+                                    "className": "text-body font-medium shrink-0"
                                 },
                                 "text": "$t:admin.notification_log.detail.source_label"
                             },
@@ -73,7 +73,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    "className": "text-label"
                                 },
                                 "text": "{{row.source ?? '-'}}"
                             }
@@ -83,14 +83,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex items-center gap-2"
+                            "className": "flex-center gap-2"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0"
+                                    "className": "text-body font-medium shrink-0"
                                 },
                                 "text": "$t:admin.notification_log.detail.notification_type_label"
                             },
@@ -112,7 +112,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                    "className": "form-label"
                                 },
                                 "text": "$t:admin.notification_log.detail.body_label"
                             },
@@ -123,7 +123,7 @@
                                 "props": {
                                     "content": "{{row.body}}",
                                     "isHtml": true,
-                                    "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto text-sm"
+                                    "className": "admin-card"
                                 }
                             },
                             {
@@ -157,12 +157,12 @@
                 "width": "100px",
                 "cellChildren": [
                     {
-                        "type": "basic",
-                        "name": "Span",
+                        "type": "composite",
+                        "name": "Badge",
                         "props": {
-                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
-                        },
-                        "text": "{{row.channel ?? '-'}}"
+                            "color": "indigo",
+                            "text": "{{row.channel ?? '-'}}"
+                        }
                     }
                 ]
             },
@@ -180,7 +180,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                    "className": "block text-heading"
                                 },
                                 "text": "{{row.recipient_name ?? row.recipient_identifier ?? '-'}}"
                             },
@@ -189,7 +189,7 @@
                                 "name": "Span",
                                 "if": "{{row.recipient_name && row.recipient_identifier}}",
                                 "props": {
-                                    "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "block text-tertiary"
                                 },
                                 "text": "{{row.recipient_identifier}}"
                             }
@@ -219,7 +219,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                    "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
                                 },
                                 "children": [
                                     {
@@ -249,7 +249,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400 truncate block"
+                                                    "className": "text-tertiary truncate block"
                                                 },
                                                 "text": "({{row.recipient.email}})",
                                                 "if": "{{!!row.recipient.email}}"
@@ -299,7 +299,7 @@
                         "name": "Span",
                         "if": "{{!row.sender}}",
                         "props": {
-                            "className": "text-sm text-gray-500 dark:text-gray-400 italic"
+                            "className": "text-label-subtle italic"
                         },
                         "text": "$t:admin.notification_log.system_sender"
                     },
@@ -327,7 +327,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                    "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
                                 },
                                 "children": [
                                     {
@@ -357,7 +357,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400 truncate block"
+                                                    "className": "text-tertiary truncate block"
                                                 },
                                                 "text": "({{row.sender.email}})",
                                                 "if": "{{!!row.sender.email}}"
@@ -406,7 +406,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-sm text-gray-700 dark:text-gray-300 line-clamp-1"
+                            "className": "text-body line-clamp-1"
                         },
                         "text": "{{row.subject ?? '-'}}"
                     }
@@ -422,19 +422,19 @@
                         "name": "Div",
                         "children": [
                             {
-                                "type": "basic",
-                                "name": "Span",
+                                "type": "composite",
+                                "name": "Badge",
                                 "props": {
-                                    "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                                },
-                                "text": "{{row.extension_type ?? '-'}}"
+                                    "color": "blue",
+                                    "text": "{{row.extension_type ?? '-'}}"
+                                }
                             },
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "if": "{{row.extension_identifier && row.extension_identifier !== row.extension_type}}",
                                 "props": {
-                                    "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                    "className": "block text-tertiary mt-0.5"
                                 },
                                 "text": "{{row.extension_identifier}}"
                             }
@@ -468,7 +468,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                            "className": "text-label"
                         },
                         "text": "{{row.sent_at ?? '-'}}"
                     }

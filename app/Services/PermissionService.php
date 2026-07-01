@@ -224,6 +224,51 @@ class PermissionService
     }
 
     /**
+     * 레이아웃 편집기 표시 권한 후보 목록을 반환합니다.
+     *
+     * 코어 + 활성 확장 권한 전체를 `{key, name}` 형태로 평탄화합니다. `key` 는 권한
+     * 식별자(예: `core.users.read`), `name` 은 지정 로케일 친화 표시명(다국어 array
+     * 의 해당 로케일 → 첫 값 → 식별자 순 폴백)입니다. 편집기 속성 모달의 표시 권한
+     * TagInput 후보로 사용됩니다.
+     *
+     * 자식을 가진 상위(카테고리) 권한은 실제 할당 불가하므로 제외하고, 리프 노드
+     * (`isAssignable` — 자식 없음)만 후보로 반환합니다. 카테고리 행이 후보에 섞여
+     * 표시되던 결함을 차단합니다.
+     *
+     * @param  string  $locale  표시명 로케일
+     * @return array<int, array{key: string, name: string}> 권한 후보 목록 (리프 권한)
+     */
+    public function getPermissionCandidates(string $locale): array
+    {
+        $all = $this->permissionRepository->getAll();
+
+        // 다른 권한의 parent_id 로 참조되는 ID 집합 = 카테고리(자식 보유). N+1 회피를 위해
+        // 메모리에서 1회 계산한다(getAll 로 이미 전량 로드됨).
+        $parentIds = $all
+            ->pluck('parent_id')
+            ->filter(fn ($id): bool => $id !== null)
+            ->unique()
+            ->flip();
+
+        return $all
+            ->reject(fn (Permission $permission): bool => $parentIds->has($permission->id))
+            ->map(function (Permission $permission) use ($locale): array {
+                $name = $permission->name;
+                $label = is_array($name)
+                    ? ($name[$locale] ?? (reset($name) ?: $permission->identifier))
+                    : (is_string($name) && $name !== '' ? $name : $permission->identifier);
+
+                return [
+                    'key' => (string) $permission->identifier,
+                    'name' => (string) $label,
+                ];
+            })
+            ->filter(fn (array $row): bool => $row['key'] !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
      * 특정 권한을 ID로 조회합니다.
      *
      * @param  int  $id  권한 ID

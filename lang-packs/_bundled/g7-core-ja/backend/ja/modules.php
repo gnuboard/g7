@@ -101,6 +101,9 @@ return [
             'aborted' => 'アップデートがキャンセルされました。',
             'backup_restored' => 'バックアップから以前のバージョンが復元されました。',
             'force_mode' => '強制アップデートモード: バージョン比較をスキップして再インストールします。',
+            'layout_strategy' => 'レイアウト戦略: :strategy',
+            'modified_extensions_warning' => '管理者が編集したレイアウト拡張 :count件が上書きされます。',
+            'modified_extension_item' => '  - :target (出典: :source)',
         ],
     ],
     'composer_install' => [

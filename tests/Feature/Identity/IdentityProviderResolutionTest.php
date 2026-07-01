@@ -308,6 +308,11 @@ class IdentityProviderResolutionTest extends TestCase
                 return ['email'];
             }
 
+            public function getChannelLabels(): array
+            {
+                return ['email' => 'Email'];
+            }
+
             public function getRenderHint(): string
             {
                 return 'text_code';

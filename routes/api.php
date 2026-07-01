@@ -1,16 +1,26 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
+use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
+use App\Http\Controllers\Api\Admin\AdminTemplateLayoutAttachmentController;
+// Admin Controllers
 use App\Http\Controllers\Api\Admin\AttachmentController as AdminAttachmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
-// Admin Controllers
+use App\Http\Controllers\Api\Admin\BroadcastCatalogController;
 use App\Http\Controllers\Api\Admin\CoreUpdateController as AdminCoreUpdateController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\ExtensionRecoveryController as AdminExtensionRecoveryController;
+use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
+use App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController;
+use App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController;
+use App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController;
+use App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController;
+use App\Http\Controllers\Api\Admin\Identity\AdminIdentityProviderController;
+use App\Http\Controllers\Api\Admin\LanguagePackController as AdminLanguagePackController;
 use App\Http\Controllers\Api\Admin\LayoutController as AdminLayoutController;
+use App\Http\Controllers\Api\Admin\LayoutExtensionController as AdminLayoutExtensionController;
 use App\Http\Controllers\Api\Admin\LicenseController as AdminLicenseController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
-use App\Http\Controllers\Api\Admin\LanguagePackController as AdminLanguagePackController;
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\NotificationChannelController as AdminNotificationChannelController;
 use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
@@ -22,18 +32,21 @@ use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\ScheduleController as AdminScheduleController;
+use App\Http\Controllers\Api\Admin\SeoBotPreviewController;
 use App\Http\Controllers\Api\Admin\SeoCacheController as AdminSeoCacheController;
-use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
+// Auth Controllers (Authenticated Users)
+use App\Http\Controllers\Api\Admin\SeoCandidateController;
+use App\Http\Controllers\Api\Admin\SeoOgPreviewController;
+// Identity Verification
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
+use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
+// Public Controllers
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
-// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
-// Identity Verification
 use App\Http\Controllers\Api\Identity\IdentityVerificationController;
-// Public Controllers
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
@@ -44,6 +57,7 @@ use App\Http\Controllers\Api\Public\PublicProfileController;
 use App\Http\Controllers\Api\Public\PublicSearchController;
 use App\Http\Controllers\Api\Public\PublicTemplateController;
 use App\Http\Middleware\RefreshTokenExpiration;
+use App\Models\IdentityVerificationLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +82,9 @@ Route::group([], function () {
         // 템플릿 설정 파일 서빙 (error_config 등)
         Route::get('{identifier}/config.json', [PublicTemplateController::class, 'serveConfig'])->name('api.public.templates.config');
 
+        // 레이아웃 편집기 스펙 조회
+        Route::get('{identifier}/editor-spec', [PublicTemplateController::class, 'serveEditorSpec'])->name('api.public.templates.editor_spec');
+
         // 템플릿 정적 파일 서빙
         Route::get('assets/{identifier}/{path}', [PublicTemplateController::class, 'serveAsset'])
             ->where('path', '.*')
@@ -81,6 +98,14 @@ Route::group([], function () {
         Route::get('{identifier}/lang/{locale}.json', [PublicTemplateController::class, 'serveLanguage'])
             ->where('locale', '[a-z]{2}(-[A-Z]{2})?')
             ->name('api.public.templates.language');
+
+        // 레이아웃 첨부 이미지 파일 서빙 — 발행된 배경 이미지는
+        // 일반 방문자에게도 로드되어야 하므로 인증 불필요. 첨부는 비공개 디스크에 있어
+        // 직접 URL 이 없으므로 본 라우트가 캐싱 헤더와 함께 스트림한다. serveFile 이
+        // 첨부가 경로의 템플릿 소속인지 검증한다.
+        Route::get('{identifier}/layout-attachments/{attachment}/file', [PublicTemplateController::class, 'serveFile'])
+            ->where('attachment', '[0-9]+')
+            ->name('api.public.templates.layout-attachment-file');
     });
 
     // 레이아웃 서빙 API (Optional Sanctum 인증 - 토큰 있으면 인증, 없으면 guest)
@@ -103,6 +128,14 @@ Route::group([], function () {
         Route::get('assets/{identifier}/{path}', [PublicModuleController::class, 'serveAsset'])
             ->where('path', '.*')
             ->name('api.public.modules.assets');
+
+        // 레이아웃 편집기 스펙 조회
+        Route::get('{identifier}/editor-spec', [PublicModuleController::class, 'serveEditorSpec'])
+            ->name('api.public.modules.editor_spec');
+
+        // 컴포넌트 정의 파일 서빙 (module:build 산출물)
+        Route::get('{identifier}/components.json', [PublicModuleController::class, 'serveComponents'])
+            ->name('api.public.modules.components');
     });
 
     // 플러그인 에셋 서빙 API
@@ -110,6 +143,14 @@ Route::group([], function () {
         Route::get('assets/{identifier}/{path}', [PublicPluginController::class, 'serveAsset'])
             ->where('path', '.*')
             ->name('api.public.plugins.assets');
+
+        // 레이아웃 편집기 스펙 조회
+        Route::get('{identifier}/editor-spec', [PublicPluginController::class, 'serveEditorSpec'])
+            ->name('api.public.plugins.editor_spec');
+
+        // 컴포넌트 정의 파일 서빙 (plugin:build 산출물)
+        Route::get('{identifier}/components.json', [PublicPluginController::class, 'serveComponents'])
+            ->name('api.public.plugins.components');
     });
 
     // 사용자 공개 프로필 API
@@ -128,12 +169,19 @@ Route::group([], function () {
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)
 Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request $request) {
+    // 웹소켓 사용 OFF 시 채널 인증 거부 (전 계층 SSoT — 공개#50).
+    // 변경 1(reverb.key 무력화)을 우회한 직접 연결 시도까지 차단한다.
+    // broadcasting.default 는 applyWebsocketConfig 와 동일 SSoT.
+    if (config('broadcasting.default') === 'null') {
+        abort(403);
+    }
+
     return Broadcast::auth($request);
 })->name('api.broadcasting.auth');
 
 // 본인인증 (IdentityVerification) 공개 엔드포인트
 // challenge 라우트 파라미터를 IdentityVerificationLog 모델로 자동 resolve — PermissionMiddleware 의 owner_key='user_id' scope 매칭 표준 메커니즘 활용
-Route::model('challenge', \App\Models\IdentityVerificationLog::class);
+Route::model('challenge', IdentityVerificationLog::class);
 Route::prefix('identity')->group(function () {
     Route::get('providers', [IdentityVerificationController::class, 'providers'])
         ->name('api.identity.providers.index');
@@ -296,70 +344,70 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
     // IDV 관리자 라우트 (identity 정책/로그/프로바이더)
     Route::prefix('identity')->group(function () {
-        Route::get('providers', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityProviderController::class, 'index'])
+        Route::get('providers', [AdminIdentityProviderController::class, 'index'])
             ->middleware('permission:admin,core.admin.identity.providers.read')
             ->name('api.admin.identity.providers.index');
 
-        Route::get('logs', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController::class, 'index'])
+        Route::get('logs', [AdminIdentityLogController::class, 'index'])
             ->middleware('permission:admin,core.admin.identity.logs.read')
             ->name('api.admin.identity.logs.index');
 
-        Route::post('logs/purge', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController::class, 'purge'])
+        Route::post('logs/purge', [AdminIdentityLogController::class, 'purge'])
             ->middleware('permission:admin,core.admin.identity.logs.purge')
             ->name('api.admin.identity.logs.purge');
 
         Route::prefix('policies')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'index'])
+            Route::get('/', [AdminIdentityPolicyController::class, 'index'])
                 ->middleware('permission:admin,core.admin.identity.policies.read')
                 ->name('api.admin.identity.policies.index');
-            Route::post('/', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'store'])
+            Route::post('/', [AdminIdentityPolicyController::class, 'store'])
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.store');
-            Route::put('{id}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'update'])
+            Route::put('{id}', [AdminIdentityPolicyController::class, 'update'])
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.update');
-            Route::delete('{id}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'destroy'])
+            Route::delete('{id}', [AdminIdentityPolicyController::class, 'destroy'])
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.destroy');
-            Route::post('{id}/reset-field', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'resetField'])
+            Route::post('{id}/reset-field', [AdminIdentityPolicyController::class, 'resetField'])
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.reset-field');
         });
 
         // IDV 메시지 정의/템플릿 관리
         Route::prefix('messages')->group(function () {
-            Route::get('definitions', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'index'])
+            Route::get('definitions', [AdminIdentityMessageDefinitionController::class, 'index'])
                 ->middleware('permission:admin,core.admin.identity.messages.read')
                 ->name('api.admin.identity.messages.definitions.index');
-            Route::post('definitions', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'store'])
+            Route::post('definitions', [AdminIdentityMessageDefinitionController::class, 'store'])
                 ->middleware('permission:admin,core.admin.identity.messages.update')
                 ->name('api.admin.identity.messages.definitions.store');
-            Route::get('definitions/{definition}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'show'])
+            Route::get('definitions/{definition}', [AdminIdentityMessageDefinitionController::class, 'show'])
                 ->middleware('permission:admin,core.admin.identity.messages.read')
                 ->name('api.admin.identity.messages.definitions.show');
-            Route::patch('definitions/{definition}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'update'])
+            Route::patch('definitions/{definition}', [AdminIdentityMessageDefinitionController::class, 'update'])
                 ->middleware('permission:admin,core.admin.identity.messages.update')
                 ->name('api.admin.identity.messages.definitions.update');
-            Route::delete('definitions/{definition}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'destroy'])
+            Route::delete('definitions/{definition}', [AdminIdentityMessageDefinitionController::class, 'destroy'])
                 ->middleware('permission:admin,core.admin.identity.messages.update')
                 ->name('api.admin.identity.messages.definitions.destroy');
-            Route::patch('definitions/{definition}/toggle-active', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'toggleActive'])
+            Route::patch('definitions/{definition}/toggle-active', [AdminIdentityMessageDefinitionController::class, 'toggleActive'])
                 ->middleware('permission:admin,core.admin.identity.messages.update')
                 ->name('api.admin.identity.messages.definitions.toggle-active');
-            Route::post('definitions/{definition}/reset', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'reset'])
+            Route::post('definitions/{definition}/reset', [AdminIdentityMessageDefinitionController::class, 'reset'])
                 ->middleware('permission:admin,core.admin.identity.messages.update')
                 ->name('api.admin.identity.messages.definitions.reset');
 
-            Route::patch('templates/{template}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'update'])
+            Route::patch('templates/{template}', [AdminIdentityMessageTemplateController::class, 'update'])
                 ->middleware('permission:admin,core.admin.identity.messages.update')
                 ->name('api.admin.identity.messages.templates.update');
-            Route::patch('templates/{template}/toggle-active', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'toggleActive'])
+            Route::patch('templates/{template}/toggle-active', [AdminIdentityMessageTemplateController::class, 'toggleActive'])
                 ->middleware('permission:admin,core.admin.identity.messages.update')
                 ->name('api.admin.identity.messages.templates.toggle-active');
-            Route::post('templates/{template}/reset', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'reset'])
+            Route::post('templates/{template}/reset', [AdminIdentityMessageTemplateController::class, 'reset'])
                 ->middleware('permission:admin,core.admin.identity.messages.update')
                 ->name('api.admin.identity.messages.templates.reset');
-            Route::post('templates/preview', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'preview'])
+            Route::post('templates/preview', [AdminIdentityMessageTemplateController::class, 'preview'])
                 ->middleware('permission:admin,core.admin.identity.messages.read')
                 ->name('api.admin.identity.messages.templates.preview');
         });
@@ -404,6 +452,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('alerts', [AdminDashboardController::class, 'alerts'])
             ->middleware('permission:admin,core.dashboard.read')
             ->name('api.admin.dashboard.alerts');
+        Route::get('recent-notifications', [AdminDashboardController::class, 'recentNotifications'])
+            ->middleware('permission:admin,core.notification-logs.read')
+            ->name('api.admin.dashboard.recent-notifications');
     });
 
     // 코어 라이선스
@@ -687,6 +738,62 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     });
 
     Route::prefix('templates')->group(function () {
+        // 레이아웃 편집기 자산 서빙 — 활성/비활성 무관
+        // 권한 `core.templates.layouts.edit` 가드.
+        // {templateName} 동적 라우트보다 위에 두어 매칭 우선순위 확보.
+        Route::get('{identifier}/editor-assets', [AdminTemplateAssetController::class, 'getEditorAssets'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-assets');
+        Route::get('{identifier}/editor/components.json', [AdminTemplateAssetController::class, 'serveComponents'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-components');
+        Route::get('{identifier}/editor/routes.json', [AdminTemplateAssetController::class, 'serveRoutes'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-routes');
+        Route::get('{identifier}/editor/editor-spec.json', [AdminTemplateAssetController::class, 'serveEditorSpec'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-spec');
+        Route::get('{identifier}/editor/lang/{locale}.json', [AdminTemplateAssetController::class, 'serveLanguage'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-lang');
+        // 표시 권한 후보 — 코어 + 활성 확장 권한 (속성 모달 표시 권한 TagInput).
+        // 편집 권한 가드 하에서만 노출(전역 G7Config 상시 노출 회피).
+        Route::get('{identifier}/editor/permission-candidates.json', [AdminTemplateAssetController::class, 'servePermissionCandidates'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-permission-candidates');
+        // 편집기 프리뷰 전용 CSS — 다크 셀렉터를 프리뷰 마커(.g7le-preview-dark)로 치환해 서빙
+        // PO admin 의 html.dark 조상과 독립적으로 프리뷰 라이트/다크 격리.
+        Route::get('{identifier}/editor/components.css', [AdminTemplateAssetController::class, 'serveEditorCss'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-css');
+
+        // 페이지 설정 모달 — SEO 후보/미리보기 + 브로드캐스트 카탈로그.
+        // 전부 편집 권한 가드 하 편집기 전용. {templateName} 동적 라우트보다 위에 둠.
+        Route::get('{identifier}/editor/seo-candidates.json', [SeoCandidateController::class, 'index'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-seo-candidates');
+        Route::post('{identifier}/editor/seo-og-preview', [SeoOgPreviewController::class, 'show'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-seo-og-preview');
+        Route::post('{identifier}/editor/seo-bot-preview', [SeoBotPreviewController::class, 'show'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-seo-bot-preview');
+        Route::get('{identifier}/editor/broadcast-catalog.json', [BroadcastCatalogController::class, 'index'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.editor-broadcast-catalog');
+
+        // 레이아웃 첨부 파일 (배경 이미지 등). 권한 core.templates.layouts.edit.
+        Route::get('{identifier}/layout-attachments', [AdminTemplateLayoutAttachmentController::class, 'index'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.layout-attachments.index');
+        Route::post('{identifier}/layout-attachments', [AdminTemplateLayoutAttachmentController::class, 'store'])
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.layout-attachments.store');
+        Route::delete('layout-attachments/{attachment}', [AdminTemplateLayoutAttachmentController::class, 'destroy'])
+            ->where('attachment', '[0-9]+')
+            ->middleware('permission:admin,core.templates.layouts.edit')
+            ->name('api.admin.templates.layout-attachments.destroy');
+
         Route::get('/', [AdminTemplateController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.index');
         Route::get('{templateName}', [AdminTemplateController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.show');
         Route::get('{templateName}/install-preview', [AdminTemplateController::class, 'installPreview'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install-preview');
@@ -719,5 +826,28 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 레이아웃 CRUD (범용 {name} 라우트 — 가장 마지막에 등록)
         Route::get('{templateName}/layouts/{name}', [AdminLayoutController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.show')->where('name', '[a-zA-Z0-9_/\.\-]+');
         Route::put('{templateName}/layouts/{name}', [AdminLayoutController::class, 'update'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.update')->where('name', '[a-zA-Z0-9_/\.\-]+');
+
+        // 레이아웃 확장 관리 (별도 prefix — 일반 레이아웃 {name} 정규식 충돌 회피)
+        Route::get('{templateName}/layout-extensions', [AdminLayoutExtensionController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.index');
+
+        // 레이아웃 확장 버전 관리 (show 보다 먼저 등록)
+        Route::get('{templateName}/layout-extensions/{extensionId}/versions', [AdminLayoutExtensionController::class, 'versions'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.versions.index')->whereNumber('extensionId');
+        Route::get('{templateName}/layout-extensions/{extensionId}/versions/{version}', [AdminLayoutExtensionController::class, 'showVersion'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.versions.show')->whereNumber('extensionId')->whereNumber('version');
+        Route::post('{templateName}/layout-extensions/{extensionId}/versions/{versionId}/restore', [AdminLayoutExtensionController::class, 'restoreVersion'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layout-extensions.versions.restore')->whereNumber('extensionId')->whereNumber('versionId');
+
+        // 레이아웃 확장 미리보기
+        Route::post('{templateName}/layout-extensions/{extensionId}/preview', [AdminLayoutExtensionController::class, 'storePreview'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.preview.store')->whereNumber('extensionId');
+
+        // 레이아웃 확장 CRUD (범용 {extensionId} 라우트 — 마지막에 등록)
+        Route::get('{templateName}/layout-extensions/{extensionId}', [AdminLayoutExtensionController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.show')->whereNumber('extensionId');
+        Route::put('{templateName}/layout-extensions/{extensionId}', [AdminLayoutExtensionController::class, 'update'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layout-extensions.update')->whereNumber('extensionId');
+
+        // 커스텀 다국어 키 관리
+        Route::get('{templateName}/custom-translations', [AdminTemplateCustomTranslationController::class, 'index'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.index');
+        Route::post('{templateName}/custom-translations', [AdminTemplateCustomTranslationController::class, 'store'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.store');
+        // 일괄 삭제 (body: ids[]) — {id} 라우트보다 먼저 등록 (id 없는 경로)
+        Route::delete('{templateName}/custom-translations', [AdminTemplateCustomTranslationController::class, 'bulkDestroy'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.bulk-destroy');
+        Route::put('{templateName}/custom-translations/{id}', [AdminTemplateCustomTranslationController::class, 'update'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.update')->whereNumber('id');
+        Route::delete('{templateName}/custom-translations/{id}', [AdminTemplateCustomTranslationController::class, 'destroy'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.destroy')->whereNumber('id');
     });
 });

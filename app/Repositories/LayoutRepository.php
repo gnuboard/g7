@@ -12,6 +12,9 @@ class LayoutRepository implements LayoutRepositoryInterface
 {
     /**
      * 특정 템플릿의 모든 레이아웃 조회
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @return Collection 레이아웃 컬렉션
      */
     public function getByTemplateId(int $templateId): Collection
     {
@@ -22,6 +25,10 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 특정 레이아웃 조회 (템플릿 ID와 이름으로)
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $name  레이아웃 이름
+     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
      */
     public function findByName(int $templateId, string $name): ?TemplateLayout
     {
@@ -32,6 +39,9 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * ID로 레이아웃 조회
+     *
+     * @param  int  $id  레이아웃 ID
+     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
      */
     public function findById(int $id): ?TemplateLayout
     {
@@ -40,6 +50,10 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 레이아웃이 존재하는지 확인
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $name  레이아웃 이름
+     * @return bool 존재 여부
      */
     public function exists(int $templateId, string $name): bool
     {
@@ -49,7 +63,144 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
+     * 특정 템플릿의 레이아웃 중 지정한 확장점(extension_point)을 정의한 것이 있는지 확인
+     *
+     * 레이아웃 content JSON 트리를 재귀 순회하여 `type: extension_point` 노드의
+     * `name` 이 일치하는지 검사합니다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $extensionPointName  확장점 이름
+     * @return bool 정의 존재 여부
+     */
+    public function hasExtensionPoint(int $templateId, string $extensionPointName): bool
+    {
+        // 1차 필터: content 에 extension_point 명이 포함된 레이아웃만 조회 (성능 최적화)
+        $layouts = TemplateLayout::where('template_id', $templateId)
+            ->where('content', 'like', '%'.$extensionPointName.'%')
+            ->get(['content']);
+
+        foreach ($layouts as $layout) {
+            if ($this->containsExtensionPoint($layout->content, $extensionPointName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 지정 extension_point 를 포함하는 레이아웃 이름 목록을 반환합니다.
+     *
+     * 확장 편집 모드에서 extension_point 확장의 대표 호스트 레이아웃 선택(picker)에 쓴다.
+     * 여러 레이아웃에 같은 확장점이 있으면 모두 반환하며, 클라이언트가 1개면 즉시 진입,
+     * 복수면 선택 모달을 띄운다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $extensionPointName  확장점 이름
+     * @return array<int, string> 호스트 레이아웃 이름 목록 (정렬됨)
+     */
+    public function findLayoutNamesWithExtensionPoint(int $templateId, string $extensionPointName): array
+    {
+        $layouts = TemplateLayout::where('template_id', $templateId)
+            ->where('content', 'like', '%'.$extensionPointName.'%')
+            ->get(['name', 'content']);
+
+        $names = [];
+        foreach ($layouts as $layout) {
+            if ($this->containsExtensionPoint($layout->content, $extensionPointName)) {
+                $names[] = $layout->name;
+            }
+        }
+
+        sort($names);
+
+        return $names;
+    }
+
+    /**
+     * 레이아웃 content 트리에 지정 노드 id 가 존재하는지 확인합니다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $layoutName  레이아웃 이름
+     * @param  string  $nodeId  찾을 노드 id
+     * @return bool 노드 id 존재 여부
+     */
+    public function layoutContainsNodeId(int $templateId, string $layoutName, string $nodeId): bool
+    {
+        $layout = $this->findByNameWithOverride($templateId, $layoutName)
+            ?? $this->findByName($templateId, $layoutName);
+        if ($layout === null) {
+            return false;
+        }
+
+        $content = is_array($layout->content)
+            ? $layout->content
+            : json_decode((string) $layout->content, true);
+
+        return is_array($content) && $this->containsNodeId($content, $nodeId);
+    }
+
+    /**
+     * content 트리를 재귀 순회하여 노드 id(`id` 또는 `props.id`)가 일치하는 노드를 검색합니다.
+     *
+     * @param  mixed  $node  탐색 노드 (배열 또는 스칼라)
+     * @param  string  $nodeId  찾을 노드 id
+     * @return bool 발견 여부
+     */
+    private function containsNodeId(mixed $node, string $nodeId): bool
+    {
+        if (! is_array($node)) {
+            return false;
+        }
+
+        $id = $node['id'] ?? ($node['props']['id'] ?? null);
+        if ($id === $nodeId) {
+            return true;
+        }
+
+        foreach ($node as $value) {
+            if (is_array($value) && $this->containsNodeId($value, $nodeId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 레이아웃 content 트리를 재귀 순회하여 extension_point 노드를 검색합니다.
+     *
+     * @param  mixed  $node  탐색 노드 (배열 또는 스칼라)
+     * @param  string  $extensionPointName  확장점 이름
+     * @return bool 발견 여부
+     */
+    private function containsExtensionPoint(mixed $node, string $extensionPointName): bool
+    {
+        if (! is_array($node)) {
+            return false;
+        }
+
+        // extension_point 노드 검출
+        if (($node['type'] ?? null) === 'extension_point' && ($node['name'] ?? null) === $extensionPointName) {
+            return true;
+        }
+
+        // 모든 하위 노드 재귀 탐색 (components / children / slots 등 구조 무관)
+        foreach ($node as $value) {
+            if (is_array($value) && $this->containsExtensionPoint($value, $extensionPointName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * extends를 가진 자식 레이아웃 조회
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $extendsName  부모 레이아웃 이름
+     * @return Collection 자식 레이아웃 컬렉션
      */
     public function getChildrenByExtends(int $templateId, string $extendsName): Collection
     {
@@ -83,21 +234,56 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
+     * 레이아웃 content + lock_version 동시 갱신 (낙관적 잠금)
+     *
+     * Service 가 호출 직전에 expected_lock_version 검증을 마친 상태로,
+     * 본 메서드는 content 교체와 lock_version 증가를 한 번의 UPDATE 로 수행한다.
+     *
+     * @param  int  $id  레이아웃 ID
+     * @param  array  $content  전체 레이아웃 JSON content
+     * @param  int  $newLockVersion  새 lock_version 값 (currentVersion + 1)
+     * @return TemplateLayout 업데이트된 레이아웃 모델
+     */
+    public function updateContent(int $id, array $content, int $newLockVersion): TemplateLayout
+    {
+        $layout = TemplateLayout::findOrFail($id);
+
+        $layout->content = $content;
+        $layout->extends = $content['extends'] ?? null;
+        $layout->lock_version = $newLockVersion;
+
+        $layout->save();
+
+        return $layout->fresh();
+    }
+
+    /**
      * 특정 레이아웃의 모든 버전 조회
+     *
+     * @param  int  $layoutId  레이아웃 ID
+     * @return Collection 버전 컬렉션
      */
     public function getVersionsByLayoutId(int $layoutId): Collection
     {
-        return TemplateLayoutVersion::where('layout_id', $layoutId)
+        // creator eager load — 버전 목록에 저장자 이름(created_by_name) 노출용 (N+1 회피).
+        return TemplateLayoutVersion::with('creator:id,name')
+            ->where('layout_id', $layoutId)
             ->latest()
             ->get();
     }
 
     /**
      * 특정 버전 조회
+     *
+     * @param  int  $layoutId  레이아웃 ID
+     * @param  int  $version  버전 번호
+     * @return TemplateLayoutVersion|null 찾은 버전 모델 또는 null
      */
     public function findVersionByNumber(int $layoutId, int $version): ?TemplateLayoutVersion
     {
-        return TemplateLayoutVersion::where('layout_id', $layoutId)
+        // creator eager load — 단건 버전 조회(showVersion)도 저장자 이름 일관 노출.
+        return TemplateLayoutVersion::with('creator:id,name')
+            ->where('layout_id', $layoutId)
             ->where('version', $version)
             ->first();
     }
@@ -105,8 +291,9 @@ class LayoutRepository implements LayoutRepositoryInterface
     /**
      * 템플릿 오버라이드 레이아웃 찾기
      *
-     * 템플릿에서 제공하는 오버라이드 레이아웃을 검색합니다.
-     * source_type = 'template'이고 source_identifier가 있는 레이아웃
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $layoutName  레이아웃 이름
+     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
      */
     public function findTemplateOverride(int $templateId, string $layoutName): ?TemplateLayout
     {
@@ -120,8 +307,9 @@ class LayoutRepository implements LayoutRepositoryInterface
     /**
      * 모듈 기본 레이아웃 찾기
      *
-     * 모듈에서 제공하는 기본 레이아웃을 검색합니다.
-     * source_type = 'module'인 레이아웃
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $layoutName  레이아웃 이름
+     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
      */
     public function findModuleLayout(int $templateId, string $layoutName): ?TemplateLayout
     {
@@ -134,7 +322,8 @@ class LayoutRepository implements LayoutRepositoryInterface
     /**
      * 특정 템플릿의 모든 레이아웃 이름 조회
      *
-     * @return \Illuminate\Support\Collection<int, string>
+     * @param  int  $templateId  템플릿 ID
+     * @return \Illuminate\Support\Collection<int, string> 레이아웃 이름 컬렉션
      */
     public function getLayoutNamesByTemplateId(int $templateId): \Illuminate\Support\Collection
     {
@@ -145,6 +334,9 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 특정 모듈의 모든 레이아웃 조회
+     *
+     * @param  string  $moduleIdentifier  모듈 식별자
+     * @return Collection 레이아웃 컬렉션
      */
     public function getLayoutsByModule(string $moduleIdentifier): Collection
     {
@@ -155,6 +347,9 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 특정 템플릿에서 오버라이드된 모든 레이아웃 조회
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @return Collection 오버라이드 레이아웃 컬렉션
      */
     public function getOverriddenLayouts(int $templateId): Collection
     {
@@ -166,6 +361,10 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 특정 모듈의 레이아웃 중 템플릿에서 오버라이드된 것들 조회
+     *
+     * @param  string  $moduleIdentifier  모듈 식별자
+     * @param  int  $templateId  템플릿 ID
+     * @return Collection 오버라이드 레이아웃 컬렉션
      */
     public function getModuleLayoutOverrides(string $moduleIdentifier, int $templateId): Collection
     {
@@ -186,10 +385,9 @@ class LayoutRepository implements LayoutRepositoryInterface
     /**
      * 우선순위에 따라 레이아웃 조회 (오버라이드 우선)
      *
-     * 우선순위:
-     * 1. 템플릿 오버라이드 (source_type = 'template', source_identifier 있음)
-     * 2. 모듈 기본 레이아웃 (source_type = 'module')
-     * 3. 일반 템플릿 레이아웃 (source_type = 'template', source_identifier 없음)
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $name  레이아웃 이름
+     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
      */
     public function findByNameWithOverride(int $templateId, string $name): ?TemplateLayout
     {
@@ -214,6 +412,7 @@ class LayoutRepository implements LayoutRepositoryInterface
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string|null  $moduleIdentifier  특정 모듈만 조회 (선택)
+     * @return Collection 모듈 레이아웃 컬렉션
      */
     public function findModuleLayouts(int $templateId, ?string $moduleIdentifier = null): Collection
     {
@@ -234,6 +433,7 @@ class LayoutRepository implements LayoutRepositoryInterface
      * @param  string|null  $sourceType  소스 타입 필터 ('template', 'module', 'plugin')
      * @param  string|null  $sourceIdentifier  소스 식별자 필터 (null이면 source_identifier가 null인 레코드만 조회)
      * @param  bool  $nullIdentifierOnly  true이면 source_identifier가 null인 레코드만 조회 (sourceIdentifier 파라미터가 null일 때만 적용)
+     * @return Collection 필터링된 레이아웃 컬렉션
      */
     public function getByTemplateIdWithFilter(
         int $templateId,
@@ -260,6 +460,9 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 특정 플러그인의 모든 레이아웃 조회
+     *
+     * @param  string  $pluginIdentifier  플러그인 식별자
+     * @return Collection 레이아웃 컬렉션
      */
     public function getLayoutsByPlugin(string $pluginIdentifier): Collection
     {
@@ -273,6 +476,7 @@ class LayoutRepository implements LayoutRepositoryInterface
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string|null  $pluginIdentifier  특정 플러그인만 조회 (선택)
+     * @return Collection 플러그인 레이아웃 컬렉션
      */
     public function findPluginLayouts(int $templateId, ?string $pluginIdentifier = null): Collection
     {

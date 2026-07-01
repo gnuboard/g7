@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Database\Seeders\Sample;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
 /**
  * 배송정책 시더
@@ -29,6 +30,8 @@ class ShippingPolicySeeder extends Seeder
             $policy = ShippingPolicy::create($policyData);
 
             foreach ($countrySettings as $cs) {
+                // 통화 라벨을 설정의 기본 통화로 맞춤 (KRW 하드코딩 제거 — base 추종, mc 정합)
+                $cs['currency_code'] = $this->defaultCurrency();
                 $policy->countrySettings()->create($cs);
             }
 
@@ -37,6 +40,26 @@ class ShippingPolicySeeder extends Seeder
 
         $count = ShippingPolicy::count();
         $this->command->info("배송정책 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
+    }
+
+    /**
+     * 설정의 기본 통화 코드 캐시
+     */
+    private ?string $defaultCurrencyCode = null;
+
+    /**
+     * 설정의 기본 통화 코드를 반환합니다 (KRW 하드코딩 제거 — base 추종).
+     *
+     * @return string 기본 통화 코드
+     */
+    private function defaultCurrency(): string
+    {
+        if ($this->defaultCurrencyCode === null) {
+            $this->defaultCurrencyCode = app(CurrencyConversionService::class)
+                ->getDefaultCurrency();
+        }
+
+        return $this->defaultCurrencyCode;
     }
 
     /**
@@ -267,36 +290,78 @@ class ShippingPolicySeeder extends Seeder
                     [
                         'country_code' => 'US',
                         'shipping_method' => 'parcel',
-                        'currency_code' => 'USD',
+                        'currency_code' => 'KRW',
                         'charge_policy' => 'api',
                         'base_fee' => 0,
                         'api_endpoint' => 'https://api.example.com/shipping/calculate',
                         'api_request_fields' => ['order_amount', 'weight', 'zipcode'],
                         'api_response_fee_field' => 'shipping_fee',
+                        // 계산 API 연동 상세 설정 (MP12 — A13) — api_config JSON
+                        'api_config' => [
+                            'http_method' => 'POST',
+                            'auth_type' => 'bearer',
+                            'auth_token' => 'sample-demo-token',
+                            'auth_header_name' => 'Authorization',
+                            'response_type' => 'json',
+                            'response_path' => 'data.shipping_fee',
+                            'field_map' => [
+                                'order_amount' => 'orderAmount',
+                                'weight' => 'totalWeight',
+                                'zipcode' => 'postalCode',
+                            ],
+                        ],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
                     [
                         'country_code' => 'CN',
                         'shipping_method' => 'parcel',
-                        'currency_code' => 'USD',
+                        'currency_code' => 'KRW',
                         'charge_policy' => 'api',
                         'base_fee' => 0,
                         'api_endpoint' => 'https://api.example.com/shipping/calculate',
                         'api_request_fields' => ['order_amount', 'weight', 'zipcode'],
                         'api_response_fee_field' => 'shipping_fee',
+                        // 계산 API 연동 상세 설정 (MP12 — A13) — api_config JSON
+                        'api_config' => [
+                            'http_method' => 'POST',
+                            'auth_type' => 'bearer',
+                            'auth_token' => 'sample-demo-token',
+                            'auth_header_name' => 'Authorization',
+                            'response_type' => 'json',
+                            'response_path' => 'data.shipping_fee',
+                            'field_map' => [
+                                'order_amount' => 'orderAmount',
+                                'weight' => 'totalWeight',
+                                'zipcode' => 'postalCode',
+                            ],
+                        ],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
                     [
                         'country_code' => 'JP',
                         'shipping_method' => 'parcel',
-                        'currency_code' => 'USD',
+                        'currency_code' => 'KRW',
                         'charge_policy' => 'api',
                         'base_fee' => 0,
                         'api_endpoint' => 'https://api.example.com/shipping/calculate',
                         'api_request_fields' => ['order_amount', 'weight', 'zipcode'],
                         'api_response_fee_field' => 'shipping_fee',
+                        // 계산 API 연동 상세 설정 (MP12 — A13) — api_config JSON
+                        'api_config' => [
+                            'http_method' => 'POST',
+                            'auth_type' => 'bearer',
+                            'auth_token' => 'sample-demo-token',
+                            'auth_header_name' => 'Authorization',
+                            'response_type' => 'json',
+                            'response_path' => 'data.shipping_fee',
+                            'field_map' => [
+                                'order_amount' => 'orderAmount',
+                                'weight' => 'totalWeight',
+                                'zipcode' => 'postalCode',
+                            ],
+                        ],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
@@ -397,7 +462,7 @@ class ShippingPolicySeeder extends Seeder
                     [
                         'country_code' => 'US',
                         'shipping_method' => 'parcel',
-                        'currency_code' => 'USD',
+                        'currency_code' => 'KRW',
                         'charge_policy' => 'range_weight',
                         'base_fee' => 0,
                         'ranges' => [

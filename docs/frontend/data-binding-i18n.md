@@ -378,9 +378,27 @@ $t:defer:는 renderItemChildren 내부에서만 처리됨
 
 ### 병합 우선순위
 
-1. 템플릿 언어 데이터 (기본)
-2. 모듈 언어 데이터 (모듈 identifier를 키로 추가)
-3. 플러그인 언어 데이터 (플러그인 identifier를 키로 추가)
+1. 코어 (`lang/{locale}.json` + partial) — 베이스 레이어
+2. 템플릿 언어 데이터
+3. 모듈 언어 데이터 (모듈 identifier를 키로 추가)
+4. 플러그인 언어 데이터 (플러그인 identifier를 키로 추가)
+5. 활성 언어팩 (`template.language.merge` filter 훅 — 가장 높은 우선순위)
+
+### 병합 정책 — Deep Merge (재귀 병합)
+
+5개 레이어는 `array_merge` 가 아닌 재귀 deep merge (`deepMergeLanguageData`) 로 합쳐진다. 동일 top-level 키 (`layout_editor`, `core`, `auth` 등) 의 하위 트리를 leaf 까지 내려가며 병합하고, 어느 한쪽이 다른 레이어의 부분 트리만 정의해도 나머지 형제 키가 보존된다.
+
+- assoc 트리 ↔ assoc 트리 충돌 → 재귀 병합 (양쪽 leaf 모두 보존, 동일 leaf 는 뒤가 우선)
+- list / scalar / 한쪽만 array → 뒤 입력으로 덮어쓰기
+- 우선순위(낮음 → 높음): 코어 < 템플릿 < 모듈 < 플러그인 < 활성 언어팩
+
+확장 작성자 영향:
+
+- 코어 도메인 네임스페이스 안에 자신의 sub-key 만 정의해도 안전. 예: 템플릿이 `layout_editor.palette` 만 정의해도 코어의 `layout_editor.chrome / device / zoom / preview / save` 가 살아남는다
+- 코어 leaf 를 의도적으로 오버라이드하려면 동일 키 경로에 leaf 만 정의 (트리 교체 의도가 아니라 leaf override 의도임을 코드로 표현)
+- 모듈/플러그인은 식별자 wrap (`module.{id}.*` / `plugin.{id}.*`) 사용을 우선 — 코어 도메인과 충돌할 일이 없고 deep merge 부작용도 회피
+
+배경: 과거 shallow `array_merge` 는 동일 top-level 키 시 트리 전체가 교체되어, 템플릿이 한 sub-key 만 정의해도 코어의 다른 sub-key 가 통째 누락되는 결함이 발생. 상세 정책 / 회귀 사례는 [docs/extension/language-packs.md](../extension/language-packs.md#병합-정책--deep-merge-재귀-병합) 참조.
 
 ### 백엔드 구현 (`TemplateService`)
 
@@ -396,8 +414,17 @@ public function getLanguageDataWithModules(string $identifier, string $locale): 
     // 3. 활성 플러그인 언어 데이터 로드 및 병합
     $pluginLangData = $this->loadActivePluginsLanguageData($locale);
 
-    // 4. 병합
-    $mergedData = array_merge($templateLangData, $moduleLangData, $pluginLangData);
+    // 4. 코어 자체의 프론트엔드 다국어 자원 로드 (베이스 레이어)
+    $coreLangData = $this->loadCoreFrontendLanguageData($locale);
+
+    // 5. Deep merge — assoc 트리 재귀 병합, list/scalar leaf 는 뒤가 우선
+    //    우선순위(낮음 → 높음): 코어 < 템플릿 < 모듈 < 플러그인
+    $mergedData = $this->deepMergeLanguageData(
+        $coreLangData, $templateLangData, $moduleLangData, $pluginLangData
+    );
+
+    // 6. 활성 언어팩 filter 훅 (가장 높은 우선순위 — 코어/모듈/플러그인 모두 덮어쓸 수 있음)
+    $mergedData = HookManager::applyFilters('template.language.merge', $mergedData, $identifier, $locale);
 
     return ['success' => true, 'data' => $mergedData, 'error' => null];
 }

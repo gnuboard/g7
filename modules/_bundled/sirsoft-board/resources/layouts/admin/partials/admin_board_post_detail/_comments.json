@@ -16,7 +16,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center gap-2 px-6 pb-3 border-b border-gray-200 dark:border-gray-700 pb-2"
+        "className": "flex-center gap-2 px-6 pb-3 border-b border-gray-200 dark:border-gray-700 pb-2"
       },
       "children": [
         {
@@ -31,7 +31,7 @@
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+            "className": "section-heading"
           },
           "text": "$t:sirsoft-board.admin.posts.detail.comments_title|count={{post?.data?.comment_count ?? 0}}"
         }
@@ -84,7 +84,7 @@
                   "name": "Div",
                   "if": "{{_local.replyingTo === comment.id && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
                   "props": {
-                    "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700",
+                    "className": "px-4 panel-header",
                     "style": {
                       "marginLeft": "{{Math.min((comment.depth ?? 0) + 1, 10) * 1}}rem"
                     }
@@ -101,7 +101,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-start gap-2 mb-2"
+                            "className": "flex-start gap-2 mb-2"
                           },
                           "children": [
                             {
@@ -116,7 +116,7 @@
                               "type": "basic",
                               "name": "Span",
                               "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                "className": "text-label"
                               },
                               "text": "$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name}}"
                             }
@@ -130,7 +130,7 @@
                             "placeholder": "$t:sirsoft-board.admin.posts.detail.reply_placeholder",
                             "rows": 2,
                             "disabled": "{{post?.data?.abilities?.can_write_comments !== true}}",
-                            "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white mb-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            "className": "text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           },
                           "actions": [
                             {
@@ -154,7 +154,7 @@
                               "type": "basic",
                               "name": "Button",
                               "props": {
-                                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                               },
                               "actions": [
                                 {
@@ -257,7 +257,7 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex items-center gap-2"
+                                    "className": "flex-center gap-2"
                                   },
                                   "children": [
                                     {
@@ -275,7 +275,7 @@
                                       "if": "{{_local.replySubmitting}}",
                                       "props": {
                                         "name": "spinner",
-                                        "className": "w-4 h-4 animate-spin"
+                                        "className": "spinner-sm"
                                       }
                                     },
                                     {
@@ -318,7 +318,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:sirsoft-board.admin.posts.detail.no_comments"
             }
@@ -337,7 +337,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-start gap-3"
+                "className": "flex-start gap-3"
               },
               "children": [
                 {
@@ -363,7 +363,7 @@
                         "placeholder": "$t:sirsoft-board.admin.posts.detail.comment_placeholder",
                         "rows": 3,
                         "disabled": "{{post?.data?.abilities?.can_write_comments !== true}}",
-                        "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       },
                       "actions": [
                         {
@@ -461,7 +461,7 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "flex items-center gap-2"
+                                "className": "flex-center gap-2"
                               },
                               "children": [
                                 {
@@ -479,7 +479,7 @@
                                   "if": "{{_local.commentSubmitting}}",
                                   "props": {
                                     "name": "spinner",
-                                    "className": "w-4 h-4 animate-spin"
+                                    "className": "spinner-sm"
                                   }
                                 },
                                 {

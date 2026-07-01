@@ -100,17 +100,17 @@ class ModuleRolePermissionSyncTest extends TestCase
     {
         $this->moduleManager->installModule('sirsoft-board');
 
-        // 권한 생성 확인 (모듈 루트 1 + 카테고리 3 + 리프 8 = 12)
+        // 권한 생성 확인 (모듈 루트 1 + 카테고리 4 + 리프 10 = 15)
         $permissions = Permission::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-board')->get();
-        $this->assertCount(12, $permissions);
+        $this->assertCount(15, $permissions);
 
-        // admin 역할에 할당된 sirsoft-board 권한 확인 (리프 8개)
+        // admin 역할에 할당된 sirsoft-board 권한 확인 (리프 10개)
         $adminRole = Role::where('identifier', 'admin')->first();
         $adminPermissions = $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get();
-        $this->assertCount(8, $adminPermissions);
+        $this->assertCount(10, $adminPermissions);
 
-        // manager 역할에 할당된 sirsoft-board 권한 확인
+        // manager 역할에 할당된 sirsoft-board 권한 확인 (리프 4개)
         $managerRole = Role::where('identifier', 'manager')->first();
         $managerPermissions = $managerRole->permissions()->where('extension_identifier', 'sirsoft-board')->get();
         $this->assertCount(4, $managerPermissions);
@@ -171,14 +171,14 @@ class ModuleRolePermissionSyncTest extends TestCase
     {
         $this->moduleManager->installModule('sirsoft-board');
 
-        // 초기 상태 확인 (admin에 리프 8개 할당)
+        // 초기 상태 확인 (admin에 리프 10개 할당)
         $adminRole = Role::where('identifier', 'admin')->first();
-        $this->assertCount(8, $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get());
+        $this->assertCount(10, $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get());
 
         // 유저가 admin에서 boards.delete 권한 해제
         $deletePerm = Permission::where('identifier', 'sirsoft-board.boards.delete')->first();
         $adminRole->permissions()->detach($deletePerm->id);
-        $this->assertCount(7, $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get());
+        $this->assertCount(9, $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get());
 
         // user_overrides에 개별 권한 식별자 기록 (실제로는 Listener가 수행)
         $adminRole->update(['user_overrides' => ['sirsoft-board.boards.delete']]);
@@ -187,10 +187,10 @@ class ModuleRolePermissionSyncTest extends TestCase
         $module = $this->moduleManager->getModule('sirsoft-board');
         $this->callProtectedMethod('assignPermissionsToRoles', [$module]);
 
-        // sirsoft-board.boards.delete만 보호 → 해제 상태 유지 → 7개 유지
+        // sirsoft-board.boards.delete만 보호 → 해제 상태 유지 → 9개 유지
         $adminRole->refresh();
         $this->assertCount(
-            7,
+            9,
             $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get(),
             'user_overrides에 개별 권한 식별자가 있으면 해당 권한만 보호되어야 합니다'
         );
@@ -226,7 +226,8 @@ class ModuleRolePermissionSyncTest extends TestCase
         $readPerm = Permission::where('identifier', 'sirsoft-board.boards.read')->first();
         $adminRole->permissions()->detach($readPerm->id);
 
-        $this->assertCount(6, $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get());
+        // 리프 10개 중 2개 해제 → 8개
+        $this->assertCount(8, $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get());
 
         // 재설치
         $module = $this->moduleManager->getModule('sirsoft-board');
@@ -234,7 +235,7 @@ class ModuleRolePermissionSyncTest extends TestCase
 
         $adminRole->refresh();
 
-        // boards.read는 비보호 → 다시 attach → 7개
+        // boards.read는 비보호 → 다시 attach → 9개
         $this->assertTrue(
             $adminRole->permissions()->where('identifier', 'sirsoft-board.boards.read')->exists(),
             '비보호 권한(boards.read)은 재설치 시 다시 attach되어야 합니다'
@@ -247,7 +248,7 @@ class ModuleRolePermissionSyncTest extends TestCase
         );
 
         $this->assertCount(
-            7,
+            9,
             $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get(),
             '비보호 권한만 동기화되고 보호 권한은 유지되어야 합니다'
         );

@@ -1,0 +1,128 @@
+{
+  "version": "1.0.0",
+  "layout_name": "mypage/mileage",
+  "extends": "_user_base",
+  "permissions": [],
+  "transition_overlay": {
+    "enabled": true,
+    "style": "spinner",
+    "target": "mypage_tab_content",
+    "fallback_target": "main_content_area",
+    "spinner": {
+      "component": "PageLoading"
+    }
+  },
+  "computed": {
+    "currentTab": "mileage"
+  },
+  "data_sources": [
+    {
+      "id": "mileage_balance",
+      "label_key": "$t:editor.data_source.mileage_balance",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-ecommerce/user/mileage",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive"
+    },
+    {
+      "id": "mileage_history",
+      "label_key": "$t:editor.data_source.mileage_history",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-ecommerce/user/mileage/history",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "blur_until_loaded": true,
+      "params": {
+        "page": "{{query.page ?? 1}}",
+        "category": "{{query.category}}",
+        "per_page": "{{query.per_page ?? 20}}"
+      }
+    }
+  ],
+  "init_actions": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "mileagePage": "{{query.page ?? 1}}",
+        "mileageCategory": "{{query.category ?? ''}}"
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+        },
+        "children": [
+          {
+            "type": "layout",
+            "name": "Container",
+            "props": {
+              "className": "py-8"
+            },
+            "responsive": {
+              "portable": {
+                "props": {
+                  "className": "py-4"
+                }
+              }
+            },
+            "children": [
+              {
+                "comment": "페이지 제목",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "flex items-center gap-2 mb-6"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "user",
+                      "size": "xl",
+                      "className": "text-gray-900 dark:text-white"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "H1",
+                    "props": {
+                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:mypage.title"
+                  }
+                ]
+              },
+              {
+                "comment": "탭 네비게이션",
+                "partial": "partials/mypage/_tab_navigation.json"
+              },
+              {
+                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                "type": "basic",
+                "name": "Div",
+                "id": "mypage_tab_content",
+                "children": [
+                  {
+                    "comment": "마일리지 내역",
+                    "partial": "partials/mypage/mileage/_list.json"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

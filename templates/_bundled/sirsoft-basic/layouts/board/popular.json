@@ -24,6 +24,7 @@
     "data_sources": [
         {
             "id": "popularPosts",
+            "label_key": "$t:editor.data_source.popularPosts",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/popular",
             "method": "GET",

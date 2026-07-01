@@ -1,3 +1,4 @@
+// e2e:allow편집기 passthrough 결함#2 수정(data-editor-*/id 를 숨겨진 input 대신 시각적 루트 div 로 라우팅). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면), 단위 회귀는 FileInput.test.tsx passthrough describe.
 import React, { forwardRef, useRef, useCallback, useState } from 'react';
 
 export interface FileInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange' | 'onError'> {
@@ -34,6 +35,20 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
   const internalRef = useRef<HTMLInputElement>(null);
   const inputRef = (ref as React.RefObject<HTMLInputElement>) || internalRef;
   const [fileName, setFileName] = useState<string>('');
+
+  // 레이아웃 편집기 식별 표식(data-editor-*) 과 DOM id 는 시각적 루트(<div>)에 부착해야
+  // 캔버스에서 선택/편집이 닿는다. basic 컴포넌트라 DynamicRenderer 가 개별 data-editor-*
+  // 키를 props 로 주입하는데, 숨겨진 <input class="hidden"> 는 0×0 이라 식별 표식이 닿아도
+  // 선택 불가. 식별/표식 키만 분리해 루트로 보낸다.
+  const rootEditorProps: Record<string, unknown> = {};
+  const inputProps: Record<string, unknown> = {};
+  Object.entries(props as Record<string, unknown>).forEach(([key, val]) => {
+    if (key.startsWith('data-editor-') || key === 'id' || key === 'onMouseMove' || key === 'onMouseLeave') {
+      rootEditorProps[key] = val;
+    } else {
+      inputProps[key] = val;
+    }
+  });
 
   const handleClick = useCallback(() => {
     if (!disabled && inputRef.current) {
@@ -76,7 +91,7 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
   }, [onChange, inputRef]);
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-2 ${className}`} {...rootEditorProps}>
       <input
         ref={inputRef}
         type="file"
@@ -84,7 +99,7 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
         onChange={handleChange}
         disabled={disabled}
         className="hidden"
-        {...props}
+        {...inputProps}
       />
       <button
         type="button"

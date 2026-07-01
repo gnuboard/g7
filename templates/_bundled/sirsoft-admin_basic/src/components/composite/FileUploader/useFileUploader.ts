@@ -130,6 +130,10 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const deletedIdsRef = useRef<Set<number | string>>(new Set());
   // 세션 중 업로드된 파일을 추적하여 initialFiles 동기화 시 유지
   const uploadedFilesRef = useRef<Map<number, Attachment>>(new Map());
+  // 업로드 트리거 직후 최종 이미지 목록(기존+신규, 드래그 순서 반영)을 담는 ref.
+  // 업로드 listener 가 stale 클로저(existingFiles)가 아닌 이 ref 를 읽어
+  // 저장 sequence 가 정확한 form.images 를 PUT body 에 실을 수 있게 한다.
+  const lastUploadOrderedRef = useRef<Attachment[] | null>(null);
 
   // 삭제 확인 모달 상태
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -197,8 +201,16 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const handleFiles = useCallback(
     async (selectedFiles: FileList) => {
       const totalCount = existingFiles.length + pendingFiles.length;
-      const remainingSlots = maxFiles - totalCount;
+      const remainingSlots = Math.max(0, maxFiles - totalCount);
       const filesToAdd = Array.from(selectedFiles).slice(0, remainingSlots);
+
+      // 개수 상한 초과분은 조용히 절단하지 않고 안내 (개수 초과 silent 무시 방지)
+      if (selectedFiles.length > remainingSlots) {
+        const overflow = Array.from(selectedFiles).slice(remainingSlots);
+        const message = t('attachment.upload_limit_exceeded', { max: maxFiles });
+        // 잘린 첫 파일을 대표로 콜백에 전달 (없으면 무시)
+        onUploadError?.(message, overflow[0] ?? selectedFiles[0]);
+      }
 
       for (const file of filesToAdd) {
         // 크기 검증
@@ -338,6 +350,9 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     );
 
     if (filesToUpload.length === 0) {
+      // 업로드할 신규 파일이 없어도 현재 기존 목록(삭제/순서변경 반영)을 최종 목록으로 기록.
+      // 저장 listener 가 이 값을 form.images SSoT 로 반환한다.
+      lastUploadOrderedRef.current = existingFiles;
       return [];
     }
 
@@ -419,13 +434,15 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     if (uploadedAttachments.length > 0) {
       onUploadComplete?.(uploadedAttachments);
 
+      // 기존 + 신규 업로드 이미지를 합친 최종 목록(드래그 순서 반영).
+      // 저장 listener 가 이 목록을 form.images SSoT 로 반환한다.
+      const allExisting = [...existingFiles, ...uploadedAttachments];
+
       // 편집 모드(reorder 엔드포인트 존재)에서 드래그 순서가 있는 경우에만 onReorder 호출
       // → form.images를 올바른 순서로 덮어쓰기 (onUploadComplete의 append 순서를 교정)
       // 복사/생성 모드에서는 호출하지 않음 (linkTempImages가 별도 처리하므로 중복 방지)
       // NOTE: customOrder의 pending ID→hash 교체는 processQueue 내에서 즉시 처리됨
-      if (endpoints.reorder && customOrder.length > 0 && onReorder) {
-        const allExisting = [...existingFiles, ...uploadedAttachments];
-
+      if (customOrder.length > 0) {
         // pending ID를 업로드된 hash로 교체 (이미 setCustomOrder로 갱신되었지만, 클로저 값 기준 재계산)
         const updatedOrder = customOrder.map((id) => {
           const hash = pendingToHashMap.get(String(id));
@@ -441,8 +458,23 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
           })
           .map((item, idx) => ({ ...item, sort_order: idx, order: idx + 1 }));
 
-        onReorder(ordered);
+        lastUploadOrderedRef.current = ordered;
+
+        // 편집 모드(reorder 엔드포인트 존재)에서만 서버 순서 동기화 콜백 호출
+        if (endpoints.reorder && onReorder) {
+          onReorder(ordered);
+        }
+      } else {
+        // 드래그 없이 추가만 한 경우: 기존 뒤에 신규를 append 한 순서가 최종 순서
+        lastUploadOrderedRef.current = allExisting.map((item, idx) => ({
+          ...item,
+          sort_order: idx,
+          order: idx + 1,
+        }));
       }
+    } else {
+      // 업로드할 신규 파일이 없으면 현재 기존 목록이 최종 순서
+      lastUploadOrderedRef.current = existingFiles;
     }
 
     return uploadedAttachments;
@@ -455,10 +487,15 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     const unsubscribe = G7Core.componentEvent.on(uploadTriggerEvent, async () => {
       // 업로드할 파일이 있으면 업로드, 없으면 기존 파일 ID 반환
       const uploadedAttachments = await handleUploadAll();
+      // allFiles 는 stale 클로저(existingFiles)가 아니라 handleUploadAll 이 갱신한
+      // lastUploadOrderedRef(기존+신규, 드래그 순서 반영)에서 읽는다.
+      // 저장 sequence 가 이 값을 form.images SSoT 로 PUT body 에 실어 백엔드 syncImages 가
+      // 방금 업로드한 이미지를 삭제하지 않게 한다.
+      const allFiles = lastUploadOrderedRef.current ?? [...existingFiles, ...uploadedAttachments];
       return {
         uploadedAttachments,
         existingFiles,
-        allFiles: [...existingFiles, ...uploadedAttachments],
+        allFiles,
       };
     });
 

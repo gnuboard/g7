@@ -14,8 +14,6 @@ class UpdateOrderRequestTest extends ModuleTestCase
 {
     /**
      * 필수 필드가 포함된 기본 유효 데이터
-     *
-     * @return array
      */
     protected function validData(array $overrides = []): array
     {
@@ -30,13 +28,10 @@ class UpdateOrderRequestTest extends ModuleTestCase
 
     /**
      * 검증 수행
-     *
-     * @param array $data
-     * @return \Illuminate\Validation\Validator
      */
     protected function validate(array $data): \Illuminate\Validation\Validator
     {
-        $request = new UpdateOrderRequest();
+        $request = new UpdateOrderRequest;
 
         return Validator::make($data, $request->rules());
     }
@@ -53,14 +48,15 @@ class UpdateOrderRequestTest extends ModuleTestCase
 
     public function test_empty_request_fails(): void
     {
-        // recipient_name, recipient_zipcode가 required이므로 빈 요청은 실패해야 함
+        // recipient_name(required), recipient_zipcode/address(required_without:address_line_1)가
+        // 빈 요청에서 실패해야 함. detail_address 는 required_with:recipient_address 이므로
+        // recipient_address 가 비어있으면 트리거되지 않을 수 있다(D7 — 해외 주문 지원).
         $validator = $this->validate([]);
 
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('recipient_name', $validator->errors()->toArray());
         $this->assertArrayHasKey('recipient_zipcode', $validator->errors()->toArray());
         $this->assertArrayHasKey('recipient_address', $validator->errors()->toArray());
-        $this->assertArrayHasKey('recipient_detail_address', $validator->errors()->toArray());
     }
 
     public function test_valid_order_status_passes(): void
@@ -258,5 +254,62 @@ class UpdateOrderRequestTest extends ModuleTestCase
         ]));
 
         $this->assertFalse($validator->fails());
+    }
+
+    // --- 해외(D7) 주소 검증 ---
+
+    /**
+     * 해외 주소만 채운 경우(국내 필드 없음)도 통과해야 함 — required_without 분기.
+     */
+    public function test_intl_address_without_kr_fields_passes(): void
+    {
+        $validator = $this->validate([
+            'recipient_name' => 'John Smith',
+            'recipient_phone' => '010-0000-0000',
+            'recipient_country_code' => 'US',
+            'address_line_1' => '1600 Amphitheatre Parkway',
+            'address_line_2' => 'Building 40',
+            'intl_city' => 'Mountain View',
+            'intl_state' => 'CA',
+            'intl_postal_code' => '94043',
+        ]);
+
+        $this->assertFalse($validator->fails(), $validator->errors()->toJson());
+    }
+
+    /**
+     * 해외 주소(address_line_1)가 있으면 intl_city / intl_postal_code 가 필수.
+     */
+    public function test_intl_address_requires_city_and_postal(): void
+    {
+        $validator = $this->validate([
+            'recipient_name' => 'John Smith',
+            'recipient_phone' => '010-0000-0000',
+            'recipient_country_code' => 'US',
+            'address_line_1' => '1600 Amphitheatre Parkway',
+            // intl_city / intl_postal_code 누락
+        ]);
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('intl_city', $validator->errors()->toArray());
+        $this->assertArrayHasKey('intl_postal_code', $validator->errors()->toArray());
+    }
+
+    /**
+     * 국내/해외 둘 다 없으면 recipient_address 와 address_line_1 양쪽 required_without 로 실패.
+     */
+    public function test_no_address_at_all_fails(): void
+    {
+        $validator = $this->validate([
+            'recipient_name' => '홍길동',
+            'recipient_phone' => '010-1234-5678',
+        ]);
+
+        $this->assertTrue($validator->fails());
+        $errors = $validator->errors()->toArray();
+        $this->assertTrue(
+            isset($errors['recipient_address']) || isset($errors['address_line_1']),
+            '국내/해외 주소 둘 다 없으면 주소 필드 에러가 있어야 한다.'
+        );
     }
 }

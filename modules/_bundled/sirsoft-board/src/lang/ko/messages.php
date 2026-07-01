@@ -29,6 +29,7 @@ return [
         'menu_added_success' => '관리자 메뉴에 추가되었습니다.',
         'menu_add_failed' => '메뉴 추가에 실패했습니다.',
         'menu_already_exists' => '이미 추가된 메뉴입니다.',
+        'menu_name_suffix' => '게시판',
         'module_not_found' => '게시판 모듈을 찾을 수 없습니다.',
         'error_404' => '게시판을 찾을 수 없습니다: :slug',
     ],
@@ -304,6 +305,15 @@ return [
         'blind_type' => [
             'auto' => '자동',
             'manual' => '수동',
+        ],
+        // FormatsBoardDate 표시 컨벤션 — 게시글/댓글/대시보드 캡션 등에서 공통 사용
+        'relative_time' => [
+            'just_now' => '방금 전',
+            'minutes_ago' => ':count분 전',
+            'hours_ago' => ':count시간 전',
+            'days_ago' => ':count일 전',
+            'months_ago' => ':count개월 전',
+            'years_ago' => ':count년 전',
         ],
     ],
     'inquiry' => [

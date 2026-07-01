@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 /**
  * 카테고리 노드 인터페이스 (CategoryResource API 응답 기반)
  */
@@ -30,6 +31,12 @@ export interface CategoryTreeProps {
     onToggle?: (expandedIds: number[]) => void;
     /** 선택 변경 콜백: (selectedIds: number[]) => void */
     onSelectionChange?: (selectedIds: number[]) => void;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * CategoryTree 집합 컴포넌트

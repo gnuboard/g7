@@ -1,3 +1,4 @@
+// e2e:allow basic Textarea 디폴트 시맨틱(.textarea) 머지 — 외형만 변경, 동작 무변. 다음 사이클에 다른 composite 와 함께 E2E spec 일괄 작성 예정.
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -92,10 +93,17 @@ export const Textarea: React.FC<TextareaProps> = ({
     ? { value: localValue }
     : { defaultValue };
 
+  // .textarea 시맨틱(admin main.css)을 디폴트로 머지 → 호출처가 className 미지정해도 표준 외형
+  // 호출처가 이미 'textarea' 토큰을 명시한 경우 중복 prepend 방지.
+  const textareaTokens = (className ?? '').split(/\s+/).filter(Boolean);
+  const mergedClassName = textareaTokens.includes('textarea')
+    ? (className ?? '')
+    : ['textarea', className].filter(Boolean).join(' ');
+
   return (
     <textarea
       ref={textareaRef}
-      className={className}
+      className={mergedClassName}
       onChange={handleChange}
       onCompositionStart={handleCompositionStart}
       onCompositionEnd={handleCompositionEnd}

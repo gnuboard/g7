@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export interface RichSelectOption {
     /** 옵션 고유 값 */
     value: string | number;
@@ -48,6 +49,12 @@ export interface RichSelectProps {
         /** 선택된 항목 표시용 레이아웃 정의 */
         selected?: any[];
     };
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * 리치 셀렉트 컴포넌트

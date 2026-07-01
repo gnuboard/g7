@@ -1,0 +1,43 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 엔진 IME 가드 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 단위 테스트(green)로 커버, E2E axis 는 placeholder spec 로 마킹.
+
+feature: IME(한글·일본어·중국어) 조합 중 key 필터 액션 가드 (공개#54)
+
+description: |
+  ActionDispatcher 의 key 필터(`action.key` 지정 keydown 액션)와 모달 ESC 닫기
+  리스너가 IME 조합 중인 keydown 을 매칭에서 제외하는지 보장하는 시나리오.
+
+  배경:
+    - IME 조합 확정 Enter 가 `key:"Enter"` 액션을 조합 확정 전 값으로 발화시켜
+      (1) 마지막 글자 누락 (2) 조합 커밋 후 두 번째 keydown 으로 이중 제출 발생.
+    - isComposing===true 또는 legacy keyCode===229 둘 중 하나면 조합 중으로 판정
+      (브라우저별 조합 종료 keydown 의 isComposing 값 차이 흡수).
+    - 가드는 `action.key` 지정 keydown 액션 + 모달 ESC 리스너에만 적용.
+      key 필터 없는 매 입력 setState 류 액션은 조합 중에도 종전대로 동작(회귀 0).
+
+axes:
+  guard_path: [key_filter_action, modal_esc_listener]
+  ime_signal: [isComposing_true, keycode_229, none]
+  action_key: [Enter, Escape, none]
+  key_filter_present: [true, false]
+
+exclusions:
+  - { action_key: none, key_filter_present: true, reason: "key 필터 있으면 action.key 가 지정됨" }
+  - { guard_path: modal_esc_listener, action_key: Enter, reason: "ESC 리스너는 Escape 키만 처리" }
+
+effects:
+  - ime_composing_enter_does_not_fire_key_filter_action
+  - legacy_keycode_229_enter_does_not_fire_key_filter_action
+  - non_composing_enter_fires_key_filter_action_normally
+  - keydown_action_without_key_filter_fires_during_composition
+  - ime_composing_escape_does_not_fire_key_filter_action
+  - modal_esc_listener_ignores_keydown_during_composition
+  - search_input_korean_then_enter_no_char_loss
+  - search_input_korean_then_enter_no_double_submit
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.test.ts
+  - tests/Playwright/specs/ime-composition-key-filter.spec.ts
+
+rules_layer_coverage:
+  - rule: frontend-change-requires-e2e
+    coverage: ActionDispatcher.ts 변경에 동반하는 ime-composition-key-filter.spec.ts (코어 도메인)

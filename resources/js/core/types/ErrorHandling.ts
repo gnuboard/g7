@@ -168,6 +168,11 @@ export interface ErrorContext {
   data?: any;
   /** HTTP 상태 텍스트 */
   statusText?: string;
+  /**
+   * API 응답의 error_code (예: 'identity_verification_required').
+   * 코어가 IDV 가드 토스트 중복 억제 등 코드 기반 분기에 사용한다.
+   */
+  error_code?: string;
 }
 
 /**

@@ -1,39 +1,3492 @@
 @import "tailwindcss";
-@import "./ui-system/index.css";
+@import "./components/dashboard.css";
+@import "./layout/_admin_base.css";
+
+/* Pretendard 폰트를 기본 sans-serif 폰트로 설정 */
+@theme {
+  --font-sans: 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
 
 @variant dark (.dark &);
 
 /**
- * 레이아웃 JSON에서 동적으로 사용되는 클래스들을 위한 safelist
- * Tailwind가 자동 스캔하지 못하는 JSON 파일의 클래스들은 safelist.txt에 정의
+ * 레이아웃 JSON 파일 스캔 (Tailwind v4)
+ * JSON 파일의 className 값에서 Tailwind 클래스를 자동 감지합니다.
+ * 경로는 이 CSS 파일 (src/styles/main.css) 기준 상대 경로입니다.
  */
-@source "./safelist.txt";
+@source "../../layouts/**/*.json";
+/* SAFELIST-START */
+@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/30 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-500 dark:bg-indigo-900 dark:bg-indigo-900/30 dark:bg-orange-900 dark:bg-purple-800/50 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/50 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-900 dark:bg-yellow-900/30 dark:bg-yellow-900/40 dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-700 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-600 dark:divide-purple-800 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-blue-600 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-900/30 dark:hover:bg-purple-900/30 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-slate-200 dark:hover:bg-slate-600 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-purple-200 dark:hover:text-purple-300 dark:hover:text-red-400 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-500 dark:prose-invert dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-purple-900/50 dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-200 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-800 hover:bg-gray-900 hover:bg-green-700 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-700 hover:bg-purple-50 hover:bg-purple-700 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-50 hover:bg-slate-700 hover:bg-yellow-700 hover:text-blue-500 hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-purple-800 hover:text-purple-900 hover:text-red-500 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start lg:grid-cols-2 lg:grid-cols-3 lg:mb-8 lg:p-8 lg:px-8 max-h-[400px] max-h-[500px] max-h-[70vh] max-w-[200px] md: md:col-span-2 md:flex-1 md:flex-row md:gap-2 md:gap-3 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:h-20 md:items-center md:justify-between md:mb-6 md:p-6 md:rounded-2xl md:space-y-0 md:text-xl md:text-xs md:w-20 md:w-40 md:w-64 md:w-72 md:w-80 md:w-auto min-h-[200px] min-h-[60vh] min-w-[200px] min-w-[80px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl sm:flex-row sm:gap-6 sm:grid-cols-2 sm:inline sm:items-start sm:justify-between sm:mt-6 sm:p-6 sm:px-6 sm:text-2xl sm:text-3xl sm:w-40 text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
+/* SAFELIST-END */
 
-/*
- * flag-icons CSS
- * Tailwind CSS v4가 사용되지 않는 CSS 속성을 purge하기 때문에
- * flag-icons의 기본 스타일(.fi)이 손실될 수 있습니다.
- * 따라서 필수 스타일을 명시적으로 정의합니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Safelist (자동 생성)
+@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-blue-900text-info-soft dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/30 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-800text-warning-soft dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-500 dark:bg-indigo-900 dark:bg-indigo-900/30 dark:bg-orange-900 dark:bg-orange-900/20 dark:bg-purple-800/50 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/50 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-900 dark:bg-yellow-900/20 dark:bg-yellow-900/30 dark:bg-yellow-900/40 dark:bg-yellow-900text-warning-soft dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-700 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-orange-800 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:border-yellow-800 dark:disabled:bg-gray-800 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-500 dark:disabled:text-gray-600 dark:divide-gray-700 dark:divide-purple-800 dark:divide-slate-700 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-blue-600 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-gray-800 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-900/30 dark:hover:bg-purple-900/30 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-slate-200 dark:hover:bg-slate-700 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-purple-200 dark:hover:text-purple-300 dark:hover:text-red-400 dark:hover:text-slate-300 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-500 dark:prose-invert dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-purple-900/50 dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-emerald-400 dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-200 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-200 dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-700 hover:bg-gray-800 hover:bg-gray-900 hover:bg-green-700 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-700 hover:bg-purple-50 hover:bg-purple-700 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-100 hover:bg-slate-700 hover:bg-yellow-700 hover:text-blue-500 hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-purple-800 hover:text-purple-900 hover:text-red-500 hover:text-slate-700 hover:text-slate-900 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start lg:col-span-4 lg:gap-5 lg:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 lg:mb-8 lg:p-8 lg:px-8 max-h-[400px] max-h-[500px] max-h-[70vh] max-w-[200px] md: md:block md:col-span-2 md:flex-1 md:flex-row md:gap-0 md:gap-2 md:gap-3 md:gap-4 md:gap-8 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:h-20 md:h-36 md:items-center md:justify-between md:mb-2 md:mb-6 md:p-5 md:p-6 md:rounded-2xl md:space-y-0 md:text-2xl md:text-[2rem] md:text-xl md:text-xs md:w-20 md:w-40 md:w-48 md:w-64 md:w-72 md:w-80 md:w-auto min-h-[200px] min-h-[60vh] min-w-[200px] min-w-[80px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl sm:flex-row sm:gap-6 sm:grid-cols-2 sm:inline sm:items-start sm:justify-between sm:mt-6 sm:p-6 sm:px-6 sm:text-2xl sm:text-3xl sm:w-40 text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
+ * 빌드 시 자동 실행: npm run build → prebuild → main.css 업데이트
  */
-@import "flag-icons/css/flag-icons.min.css";
 
-/* flag-icons 필수 기본 스타일 (Tailwind purge 방지) */
-.fi {
-  position: relative;
-  display: inline-block;
-  width: 1.333333em;
-  line-height: 1em;
-  background-size: contain;
-  background-position: 50%;
-  background-repeat: no-repeat;
+/* ========================================
+ * BASE STYLES - 기본 글자 크기 설정
+ * ======================================== */
+
+@layer base {
+  body {
+    font-size: 0.875rem; /* 14px - text-sm */
+    line-height: 1.5;
+    @apply text-gray-900;
+    @apply dark:text-gray-100;
+  }
 }
 
-.fi:before {
-  content: "\00a0";
+/* ========================================
+ * UI System - Semantic Classes
+ * 원본: ui-system/colors.css, ui-elements.css, components.css, layout.css, typography.css
+ * ======================================== */
+
+@layer components {
+  /* ========================================
+   * 1. COLORS - 색상 관련 스타일
+   * ======================================== */
+
+  /* Text Colors */
+  .text-primary {
+    @apply text-gray-900;
+    @apply dark:text-white;
+  }
+  .text-secondary {
+    @apply text-gray-600;
+    @apply dark:text-gray-400;
+  }
+  .text-muted {
+    @apply text-gray-500;
+    @apply dark:text-gray-500;
+  }
+  /*
+   * Tertiary text — xs 사이즈의 옅은 보조 텍스트 (메타 / 캡션 / 시각 / 보조 설명).
+   * 인라인 `text-xs text-gray-500 dark:text-gray-400` 가 관리자 화면 전반에
+   * 광범위 복붙되어 있어 단일 시맨틱으로 흡수.
+   * (이전 다크 톤 dark:text-gray-500 은 호출처 0 건이라 dark:text-gray-400 으로
+   * 정합 — 인라인 실제 사용 톤과 일치)
+   */
+  .text-tertiary {
+    @apply text-xs text-gray-500;
+    @apply dark:text-gray-400;
+  }
+  .text-label {
+    @apply text-sm text-gray-600;
+    @apply dark:text-gray-400;
+  }
+  .text-label-subtle {
+    @apply text-sm text-gray-500;
+    @apply dark:text-gray-400;
+  }
+  .text-heading {
+    @apply text-sm font-medium text-gray-900;
+    @apply dark:text-white;
+  }
+  /*
+   * Section heading — admin_card / tab_content 영역 내 섹션 제목 톤 (lg 사이즈
+   * + semibold + primary 색). 인라인 'text-lg font-semibold text-gray-900
+   * dark:text-white' 가 admin 영역에 광범위 (60+ 건) 복붙되어 있어 단일 시맨틱.
+   * mb-1 / pb-3 mb-2 border-b 등 추가 토큰은 호출처 multi-class 로 유지.
+   */
+  .section-heading {
+    @apply text-lg font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+  /*
+   * Section title — .section-heading + mb-1. admin_card / tab_content 안에
+   * 제목 + 설명 묶음에서 제목용 (설명이 바로 뒤에 오므로 작은 mb-1).
+   * 인라인 'text-lg font-semibold text-gray-900 dark:text-white mb-1' 30+ 건
+   * 흡수.
+   */
+  .section-title {
+    @apply text-lg font-semibold text-gray-900 mb-1;
+    @apply dark:text-white;
+  }
+  /*
+   * Section description — text-label-subtle + mb-6. 위 .section-title 다음
+   * 줄의 설명 + 본문 영역과 분리하는 mb-6. 인라인 'text-label-subtle mb-6'
+   * 30+ 건 흡수.
+   */
+  .section-description {
+    @apply text-sm text-gray-500 mb-6;
+    @apply dark:text-gray-400;
+  }
+  /*
+   * Card title / Card description / Card header — admin-card / admin-card-accordion
+   * 의 직계 자식 시맨틱 (베이스: 텍스트 스타일만).
+   * 하단 마진은 admin-card 직속 자식에서만 적용 (헤더 묶음 마지막 요소가 책임):
+   *   - admin-card > card-title 단독: card-title 에 mb-4
+   *   - admin-card > card-title + card-description: card-description 에 mb-4
+   *     (card-title 은 0)
+   * admin-card-accordion 직속 자식은 마진 룰 미적용 — admin-card-accordion 의
+   * 헤더/본문 간격은 .admin-card-accordion > .row-stack { mt-6 } 룰이 책임.
+   */
+  .card-title {
+    @apply text-lg font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+  /*
+   * Card Title (with aside) — .card-title 의 variant.
+   * 제목 텍스트와 우측 부속 요소(예: ExtensionBadge, 상태 배지 등)를
+   * 같은 행에 배치하면서 부속 요소를 우측 끝으로 정렬.
+   * .card-title 의 text-lg/font-semibold/color 와 .admin-card cascade 의
+   * mb-4 를 그대로 유지하기 위해 .card-title 과 병행 사용한다
+   * (className="card-title card-title-aside").
+   */
+  .card-title-aside {
+    @apply flex items-center justify-between gap-2;
+  }
+  .card-description {
+    @apply text-sm text-gray-500;
+    @apply dark:text-gray-400;
+  }
+  .admin-card > .card-title {
+    @apply mb-4;
+  }
+  .admin-card > .card-title:has(+ .card-description) {
+    @apply mb-0;
+  }
+  .admin-card > .card-description {
+    @apply mb-4;
+  }
+  .card-header {
+    @apply flex items-center gap-2 mb-0 leading-none;
+  }
+  .card-header > * {
+    @apply leading-none;
+  }
+  /*
+   * Body text — sm 사이즈 본문 톤 (강조 톤보다는 어둡고 라벨 톤보다는 짙은).
+   * 인라인 `text-sm text-gray-700 dark:text-gray-300` 가 모듈/플러그인/템플릿
+   * 정보 모달 · 활동 로그 · 본인인증 이력 셀 등에 광범위 복붙되어 단일
+   * 시맨틱으로 흡수.
+   */
+  .text-body {
+    @apply text-sm text-gray-700;
+    @apply dark:text-gray-300;
+  }
+
+  /* Icon Colors */
+  .icon-muted {
+    @apply text-gray-400;
+    @apply dark:text-gray-500;
+  }
+
+  /* Success - 성공, 완료, 활성화 */
+  .bg-success {
+    @apply bg-green-100;
+    @apply dark:bg-green-900;
+  }
+  .bg-success-light {
+    @apply bg-green-50;
+    @apply dark:bg-green-900/20;
+  }
+  .bg-success-solid {
+    @apply bg-green-600;
+    @apply dark:bg-green-500;
+  }
+
+  /* Error/Danger - 오류, 위험, 삭제 */
+  .bg-error {
+    @apply bg-red-100;
+    @apply dark:bg-red-900;
+  }
+  .bg-error-light {
+    @apply bg-red-50;
+    @apply dark:bg-red-900/20;
+  }
+  .bg-error-solid {
+    @apply bg-red-600;
+    @apply dark:bg-red-500;
+  }
+
+  /* Warning - 경고, 주의 */
+  .bg-warning {
+    @apply bg-yellow-100;
+    @apply dark:bg-yellow-900;
+  }
+  .bg-warning-light {
+    @apply bg-yellow-50;
+    @apply dark:bg-yellow-900/20;
+  }
+  .bg-warning-solid {
+    @apply bg-yellow-600;
+    @apply dark:bg-yellow-500;
+  }
+
+  /* Info - 정보, 안내 */
+  .bg-info {
+    @apply bg-blue-100;
+    @apply dark:bg-blue-900;
+  }
+  .bg-info-light {
+    @apply bg-blue-50;
+    @apply dark:bg-blue-900/20;
+  }
+  .bg-info-solid {
+    @apply bg-blue-600;
+    @apply dark:bg-blue-500;
+  }
+
+  /* Ready - 배송준비 (cyan) */
+  .bg-ready {
+    @apply bg-cyan-100;
+    @apply dark:bg-cyan-900;
+  }
+  .bg-ready-light {
+    @apply bg-cyan-50;
+    @apply dark:bg-cyan-900/20;
+  }
+  .bg-ready-solid {
+    @apply bg-cyan-600;
+    @apply dark:bg-cyan-400;
+  }
+
+  /* Progress - 배송중 (indigo) */
+  .bg-progress {
+    @apply bg-indigo-100;
+    @apply dark:bg-indigo-900;
+  }
+  .bg-progress-light {
+    @apply bg-indigo-50;
+    @apply dark:bg-indigo-900/20;
+  }
+  .bg-progress-solid {
+    @apply bg-indigo-600;
+    @apply dark:bg-indigo-400;
+  }
+
+  /* Complete - 배송완료 (pink) */
+  .bg-complete {
+    @apply bg-pink-100;
+    @apply dark:bg-pink-900;
+  }
+  .bg-complete-light {
+    @apply bg-pink-50;
+    @apply dark:bg-pink-900/20;
+  }
+  .bg-complete-solid {
+    @apply bg-pink-600;
+    @apply dark:bg-pink-400;
+  }
+
+  /* Hold - 비활성, 대기 (gray) */
+  .bg-hold {
+    @apply bg-gray-100;
+    @apply dark:bg-gray-800;
+  }
+  .bg-hold-light {
+    @apply bg-gray-50;
+    @apply dark:bg-gray-800/50;
+  }
+  .bg-hold-solid {
+    @apply bg-gray-500;
+    @apply dark:bg-gray-400;
+  }
+
+  /* Semantic Text Colors */
+  .text-success {
+    @apply text-green-600;
+    @apply dark:text-green-400;
+  }
+  .text-error {
+    @apply text-red-600;
+    @apply dark:text-red-400;
+  }
+  .text-warning {
+    @apply text-yellow-600;
+    @apply dark:text-yellow-400;
+  }
+  .text-info {
+    @apply text-blue-600;
+    @apply dark:text-blue-400;
+  }
+  .text-ready {
+    @apply text-cyan-600;
+    @apply dark:text-cyan-400;
+  }
+  .text-progress {
+    @apply text-indigo-600;
+    @apply dark:text-indigo-400;
+  }
+  .text-complete {
+    @apply text-pink-600;
+    @apply dark:text-pink-400;
+  }
+  .text-hold {
+    @apply text-gray-500;
+    @apply dark:text-gray-400;
+  }
+
+  /* Semantic Text Colors - Light variants (solid 배경 위 텍스트용) */
+  .text-success-light {
+    @apply text-white;
+    @apply dark:text-green-900;
+  }
+  .text-error-light {
+    @apply text-white;
+    @apply dark:text-red-900;
+  }
+  .text-warning-light {
+    @apply text-white;
+    @apply dark:text-yellow-900;
+  }
+  .text-info-light {
+    @apply text-white;
+    @apply dark:text-blue-900;
+  }
+  .text-ready-light {
+    @apply text-white;
+    @apply dark:text-cyan-900;
+  }
+  .text-progress-light {
+    @apply text-white;
+    @apply dark:text-indigo-900;
+  }
+  .text-complete-light {
+    @apply text-white;
+    @apply dark:text-pink-900;
+  }
+  .text-hold-light {
+    @apply text-white;
+    @apply dark:text-gray-900;
+  }
+
+  /* Semantic Border Colors */
+  .border-success {
+    @apply border-green-200;
+    @apply dark:border-green-800;
+  }
+  .border-error {
+    @apply border-red-200;
+    @apply dark:border-red-800;
+  }
+  .border-warning {
+    @apply border-yellow-200;
+    @apply dark:border-yellow-800;
+  }
+  .border-info {
+    @apply border-blue-200;
+    @apply dark:border-blue-800;
+  }
+  .border-ready {
+    @apply border-cyan-200;
+    @apply dark:border-cyan-800;
+  }
+  .border-progress {
+    @apply border-indigo-200;
+    @apply dark:border-indigo-800;
+  }
+  .border-complete {
+    @apply border-pink-200;
+    @apply dark:border-pink-800;
+  }
+  .border-hold {
+    @apply border-gray-300;
+    @apply dark:border-gray-600;
+  }
+
+  /* Semantic Buttons */
+  .btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700;
+    @apply dark:bg-green-500 dark:hover:bg-green-600;
+  }
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+    @apply dark:bg-red-500 dark:hover:bg-red-600;
+  }
+  .btn-warning {
+    @apply bg-yellow-600 text-white hover:bg-yellow-700;
+    @apply dark:bg-yellow-500 dark:hover:bg-yellow-600;
+  }
+  .btn-info {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+    @apply dark:bg-blue-500 dark:hover:bg-blue-600;
+  }
+  /*
+   * Neutral 채움 버튼 (회색 채움 + 흰 텍스트). .btn-secondary (white bg + gray
+   * text + border) 와 의도가 다른 회색 채움 액션 (예: 비활성화 일괄 처리)
+   * 케이스용.
+   */
+  .btn-neutral {
+    @apply bg-gray-600 text-white hover:bg-gray-700;
+    @apply dark:bg-gray-500 dark:hover:bg-gray-600;
+  }
+  /*
+   * Small size modifier — .btn 의 px-4 py-2 보다 작은 px-3 py-1.5 변형.
+   * 일괄 작업 영역 같이 좁은 공간에 들어가는 액션 버튼용.
+   */
+  .btn-sm {
+    @apply px-3 py-1.5;
+  }
+
+  /* ========================================
+   * 2. UI ELEMENTS - 버튼, 인풋, 뱃지 등 기본 UI 스타일
+   * ======================================== */
+
+  /*
+   * Basic Button base — basic/Button.tsx 가 모든 <button> 에 자동 부착하는
+   * 최소 외형. inline-flex 정렬 + 클릭 가능 커서 + disabled 시 비활성 커서.
+   * gap/padding/색은 호출처(JSON className 또는 .btn / .btn-icon / .tab-btn-*
+   * 등 variant 시맨틱) 가 결정.
+   */
+  .button {
+    @apply inline-flex items-center justify-center cursor-pointer;
+    @apply disabled:cursor-not-allowed;
+  }
+
+  /* Base Button */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Primary Button (다운로드, 저장) */
+  .btn-primary {
+    @apply bg-gray-900 text-white hover:bg-gray-800;
+    @apply dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100;
+  }
+
+  /* Secondary Button (취소) */
+  .btn-secondary {
+    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50;
+    @apply dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+  }
+
+  /* Outline Button (검색 편집, 프리셋 관리) */
+  .btn-outline {
+    @apply bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+  }
+
+  /* Ghost Button */
+  .btn-ghost {
+    @apply bg-transparent text-gray-600 hover:bg-gray-100;
+    @apply dark:text-gray-400 dark:hover:bg-gray-700;
+  }
+
+  /* Icon Button */
+  .btn-icon {
+    @apply p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors;
+    @apply dark:text-gray-400 dark:hover:bg-gray-700;
+  }
+
+  /* Preset Button (오늘 결제완료, 무통장 입금대기) */
+  .btn-preset {
+    @apply bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium;
+    @apply dark:bg-gray-700 dark:text-gray-300;
+  }
+
+  /* Date Quick Select Button */
+  .btn-date {
+    @apply bg-white text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg text-sm;
+    @apply dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700;
+  }
+  .btn-date.active {
+    @apply bg-gray-900 text-white border-gray-900;
+    @apply dark:bg-white dark:text-gray-900 dark:border-white;
+  }
+
+  /* Badge/Filter Button (주문상태 필터) */
+  .btn-badge {
+    @apply bg-white text-gray-600 border border-gray-200 px-3 py-1.5 rounded-full text-sm font-medium;
+    @apply dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700;
+  }
+  .btn-badge.active {
+    @apply border-gray-900 text-gray-900;
+    @apply dark:border-white dark:text-blue-400;
+  }
+
+  /* Button Group (언어 선택, 상태 선택) */
+  .btn-group {
+    @apply inline-flex rounded-lg overflow-hidden border border-gray-200;
+    @apply dark:border-gray-700;
+  }
+  .btn-group-item {
+    @apply px-3 py-1.5 text-sm font-medium bg-white text-gray-600 border-r border-gray-200 transition-colors;
+    @apply hover:bg-gray-50;
+    @apply dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700;
+  }
+  .btn-group-item:last-child {
+    @apply border-r-0;
+  }
+  .btn-group-item.active {
+    @apply bg-gray-900 text-white;
+    @apply dark:bg-white dark:text-gray-900;
+  }
+
+  /* Badge Button Color Variants (선택 상태) */
+  .btn-badge-green {
+    @apply bg-green-50 border-green-500 text-green-600;
+    @apply dark:bg-green-900/20 dark:border-green-400 dark:text-green-400;
+  }
+  .btn-badge-blue {
+    @apply bg-blue-50 border-blue-500 text-blue-600;
+    @apply dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400;
+  }
+  .btn-badge-cyan {
+    @apply bg-cyan-50 border-cyan-500 text-cyan-600;
+    @apply dark:bg-cyan-900/20 dark:border-cyan-400 dark:text-cyan-400;
+  }
+  .btn-badge-indigo {
+    @apply bg-indigo-50 border-indigo-500 text-indigo-600;
+    @apply dark:bg-indigo-900/20 dark:border-indigo-400 dark:text-indigo-400;
+  }
+  .btn-badge-pink {
+    @apply bg-pink-50 border-pink-500 text-pink-600;
+    @apply dark:bg-pink-900/20 dark:border-pink-400 dark:text-pink-400;
+  }
+  .btn-badge-red {
+    @apply bg-red-50 border-red-500 text-red-600;
+    @apply dark:bg-red-900/20 dark:border-red-400 dark:text-red-400;
+  }
+  .btn-badge-gray {
+    @apply bg-gray-50 border-gray-300 text-gray-600;
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400;
+  }
+  .btn-badge-yellow {
+    @apply bg-yellow-50 border-yellow-500 text-yellow-600;
+    @apply dark:bg-yellow-900/20 dark:border-yellow-400 dark:text-yellow-400;
+  }
+  .btn-badge-orange {
+    @apply bg-orange-50 border-orange-500 text-orange-600;
+    @apply dark:bg-orange-900/20 dark:border-orange-400 dark:text-orange-400;
+  }
+
+  /*
+   * Base Input — disabled 토큰을 호출처가 명시적으로 다시 부여 (bg-gray-100 /
+   * dark:bg-gray-800) 하던 인라인 패턴을 통일하여 호출처 override 불필요하게 함.
+   */
+  .input {
+    @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
+    @apply placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500;
+    @apply disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed;
+    @apply dark:disabled:bg-gray-800 dark:disabled:text-gray-500;
+  }
+
+  /* Composite Wrapper Input (.input 외형이지만 wrapper div 용 — 다중 칩 / Select trigger 등 수용) */
+  .input-tag {
+    @apply w-full bg-gray-100 text-gray-900 px-3 py-1.5 rounded-lg text-sm;
+    @apply focus-within:ring-2 focus-within:ring-blue-500 focus-within:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100;
+    min-height: 2.25rem; /* .input 의 h-9 와 동일한 최소 높이, height 는 auto */
+  }
+
+  /* Base Textarea (.input 외형이지만 rows 기반 자유 높이) */
+  .textarea {
+    @apply w-full bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm;
+    @apply placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500;
+    @apply disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed;
+    @apply dark:disabled:bg-gray-700 dark:disabled:text-gray-500;
+  }
+
+  /*
+   * Readonly 식별자 / 참조 정보 시각 분기 (.input 또는 .textarea 와 함께 사용).
+   * 의도: "수정 불가" 가 의도된 식별자 (예: 카테고리 슬러그) 를 일반 입력과 구분.
+   * disabled 와 달리 폼 데이터 전송 가능. 글자색을 옅게 + cursor-default 로
+   * "참조 가능한 잠긴 정보" 톤. 호출처에서 명시 적용:
+   *   className: "input-readonly font-mono" (Input.tsx 가 .input 자동 머지)
+   */
+  .input-readonly {
+    @apply text-gray-500 cursor-default;
+    @apply dark:text-gray-400;
+  }
+
+  /* Input Width Variants */
+  .input-w-xs {
+    @apply w-20;
+  }
+  .input-w-sm {
+    @apply w-32;
+  }
+  .input-w-md {
+    @apply w-48;
+  }
+  .input-w-lg {
+    @apply w-64;
+  }
+  .input-w-xl {
+    @apply w-80;
+  }
+  .input-w-auto {
+    @apply w-auto;
+  }
+
+  /* Search Input Container */
+  .input-search-container {
+    @apply flex items-center bg-gray-100 rounded-lg overflow-hidden;
+    @apply dark:bg-gray-700;
+  }
+  .input-search-container .input-search-icon {
+    @apply pl-3 text-gray-400;
+    @apply dark:text-gray-500;
+  }
+  .input-search-container input {
+    @apply flex-1 bg-transparent px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none;
+    @apply dark:text-gray-100 dark:placeholder-gray-500;
+  }
+  .input-search-container .input-search-dropdown {
+    @apply px-3 py-2 text-sm text-gray-600 border-l border-gray-200 cursor-pointer hover:bg-gray-50;
+    @apply dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700;
+  }
+
+  /* Select/Dropdown */
+  .select {
+    @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm appearance-none cursor-pointer;
+    @apply focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100;
+    @apply disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed;
+    @apply dark:disabled:bg-gray-700 dark:disabled:text-gray-500;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+  .dark .select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  }
+
+  /* Composite Select (options prop 사용 시) - 화살표 없음 */
+  .select-composite {
+    @apply h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
+    @apply focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100;
+    @apply disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed;
+    @apply dark:disabled:bg-gray-700 dark:disabled:text-gray-500;
+  }
+
+  .select-composite-sm {
+    @apply h-8 text-xs;
+  }
+
+  /* Select Width Variants */
+  .select-w-sm {
+    @apply w-32;
+  }
+  .select-w-md {
+    @apply w-48;
+  }
+  .select-w-lg {
+    @apply w-64;
+  }
+
+  /* Split Input Container (사업자번호, 전화번호) */
+  .input-split {
+    @apply flex items-center gap-2;
+  }
+  .input-split input {
+    @apply bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm text-center;
+    @apply focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100;
+  }
+  .input-split .input-split-separator {
+    @apply text-gray-400;
+    @apply dark:text-gray-500;
+  }
+
+  /* Tag Input */
+  .tag-input-container {
+    @apply flex flex-wrap items-center gap-2;
+  }
+  .tag {
+    @apply inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm;
+    @apply dark:bg-gray-700 dark:text-gray-300;
+  }
+  .tag .tag-remove {
+    @apply text-gray-400 hover:text-gray-600 cursor-pointer;
+    @apply dark:text-gray-500 dark:hover:text-gray-300;
+  }
+
+  /* Form Group */
+  .form-group {
+    @apply space-y-1.5;
+  }
+
+  /*
+   * Form Label / Hint — 폼 필드 위/아래 보조 텍스트 시맨틱.
+   * 인라인 Tailwind (block text-sm font-medium text-gray-700 dark:text-gray-300 등) 가
+   * 관리자 폼 전반에 광범위 복붙되어 있어 단일 시맨틱으로 흡수.
+   * (— 두 곳에 중복 정의되어 있던 .form-label 중 본 정의는 폐기.
+   * 하단 마진 mb-1 도 단일 정의 안에 흡수하여 호출처 'form-label mb-N' multi-class
+   * 의 mb-* 토큰을 모두 제거.)
+   */
+  .form-hint {
+    @apply text-xs text-gray-500 mt-1;
+    @apply dark:text-gray-400;
+  }
+
+  /* Textarea Size Variants */
+  .textarea-sm {
+    min-height: 5rem;
+  }
+  .textarea-md {
+    min-height: 8rem;
+  }
+  .textarea-lg {
+    min-height: 12rem;
+  }
+
+  /* Input Validation States */
+  .input-error {
+    @apply border border-red-500 focus:ring-red-500;
+    @apply dark:border-red-500;
+  }
+  .input-success {
+    @apply border border-green-500 focus:ring-green-500;
+    @apply dark:border-green-500;
+  }
+
+  /* FormField error state - 자식 input/select/textarea에 적색 테두리 자동 적용 */
+  .form-field-error .input,
+  .form-field-error input[type],
+  .form-field-error select,
+  .form-field-error textarea {
+    @apply border border-red-500 focus:ring-red-500;
+    @apply dark:border-red-500;
+  }
+
+  /*
+   * Form Error/Success Messages
+   * .form-error 는 폼 필드 아래에 노출되는 검증 에러 메시지 시맨틱.
+   * 인라인 패턴 (text-red-500 dark:text-red-400 text-xs mt-1 block) 을 흡수.
+   * (이전 정의는 text-sm 이었으나 호출 0건 → 인라인 실제 사용 패턴으로 갱신)
+   */
+  .form-error {
+    @apply block text-xs text-red-500 mt-1;
+    @apply dark:text-red-400;
+  }
+  .form-success {
+    @apply text-sm text-green-600;
+    @apply dark:text-green-400;
+  }
+
+  /* Checkbox */
+  .checkbox {
+    @apply w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500 cursor-pointer;
+    @apply dark:border-gray-600 dark:bg-gray-800 dark:text-blue-400;
+  }
+  .checkbox:checked {
+    @apply bg-gray-900 border-gray-900;
+    @apply dark:bg-white dark:border-white;
+  }
+
+  /*
+   * Radio Button — 라디오 입력 자산. 옵션 카드 안에서도 사용 가능 (
+   * 자산 단독 사용으로 호출처 raw 토큰 제거).
+   * 자산 책임: 크기(w-4 h-4) + 테두리/배경(라이트·다크) + active 색조(text-blue-600/
+   * focus:ring-blue-500) + cursor + flex-shrink-0 (옵션 카드 안 정렬 안정).
+   * 호출처 책임: 옵션 카드 안 사용 시 상단 정렬 mt-N / pointer-events-none 명시.
+   */
+  .radio {
+    @apply w-4 h-4 flex-shrink-0 border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer;
+    @apply dark:border-gray-600 dark:bg-gray-800 dark:text-blue-400 dark:focus:ring-blue-400;
+  }
+  .radio:checked {
+    @apply border-blue-600;
+    @apply dark:border-blue-400;
+  }
+
+  /* Toggle/Switch */
+  .toggle {
+    @apply relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors;
+  }
+  .toggle-track {
+    @apply absolute inset-0 rounded-full bg-gray-200 transition-colors;
+    @apply dark:bg-gray-700;
+  }
+  .toggle.active .toggle-track {
+    @apply bg-blue-600;
+  }
+  .toggle-handle {
+    @apply absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform;
+  }
+  .toggle.active .toggle-handle {
+    @apply translate-x-5;
+  }
+
+  /* Base Badge */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium;
+  }
+
+  /* Order Status Badges */
+  .badge-green {
+    @apply bg-green-100 text-green-700 border border-green-200;
+    @apply dark:bg-green-900/30 dark:text-green-400 dark:border-green-800;
+  }
+  .badge-blue {
+    @apply bg-blue-100 text-blue-700 border border-blue-200;
+    @apply dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800;
+  }
+  .badge-cyan {
+    @apply bg-cyan-100 text-cyan-700 border border-cyan-200;
+    @apply dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800;
+  }
+  .badge-indigo {
+    @apply bg-indigo-100 text-indigo-700 border border-indigo-200;
+    @apply dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800;
+  }
+  .badge-pink {
+    @apply bg-pink-100 text-pink-700 border border-pink-200;
+    @apply dark:bg-pink-900/30 dark:text-pink-400 dark:border-pink-800;
+  }
+  .badge-red {
+    @apply bg-red-100 text-red-700 border border-red-200;
+    @apply dark:bg-red-900/30 dark:text-red-400 dark:border-red-800;
+  }
+  .badge-gray {
+    @apply bg-gray-100 text-gray-600 border border-gray-200;
+    @apply dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700;
+  }
+  .badge-yellow {
+    @apply bg-yellow-100 text-yellow-700 border border-yellow-200;
+    @apply dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800;
+  }
+
+  /* Status Badges (엑셀 다운로드) */
+  .badge-status {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  .badge-status-success {
+    @apply bg-green-50 text-green-600;
+    @apply dark:bg-green-900/20 dark:text-green-400;
+  }
+  .badge-status-processing {
+    @apply bg-blue-50 text-blue-600;
+    @apply dark:bg-blue-900/20 dark:text-blue-400;
+  }
+  .badge-status-error {
+    @apply bg-red-50 text-red-600;
+    @apply dark:bg-red-900/20 dark:text-red-400;
+  }
+  .badge-status-expired {
+    @apply bg-gray-50 text-gray-500;
+    @apply dark:bg-gray-800 dark:text-gray-400;
+  }
+
+  /* Search Bar Container */
+  .search-bar {
+    @apply flex flex-col gap-3;
+    @apply md:flex-row md:flex-wrap md:items-center;
+  }
+  .search-bar-select {
+    @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
+    @apply placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500;
+    @apply md:w-32 md:shrink-0;
+  }
+  .search-bar-select-custom {
+    @apply w-full;
+    @apply md:w-32 md:shrink-0;
+  }
+  .search-bar-input {
+    @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
+    @apply placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500;
+    @apply md:flex-1 md:min-w-64;
+  }
+  .search-bar-reset {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer;
+    @apply bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+    @apply w-full shrink-0 gap-1.5;
+    @apply md:w-auto;
+  }
+
+  /*
+   * Filter Grid Container — 검색/필터 영역의 .filter-row 행들을 세로로 쌓고
+   * 일정 간격을 유지하는 컨테이너. .filter-row 의 mb-4 를 부모 gap 으로 이전한
+   * 결과 자산 (활동 로그 / 본인인증 로그 / 알림 로그 / 배송 정책 리스트 등).
+   */
+  .filter-grid {
+    @apply flex flex-col gap-4;
+  }
+
+  /*
+   * Filter Row Container — 행 간 간격은 부모 .filter-grid 의 gap-4 가 처리하므로
+   * 본 자산은 행 내부 정렬만 담당 (mb-4 제거됨).
+   * .filter-row-last 는 같은 의도가 되어 .filter-row 와 통합.
+   */
+  .filter-row {
+    @apply flex flex-col gap-2;
+    @apply md:flex-row md:items-center;
+  }
+  .filter-label {
+    @apply text-sm text-gray-600 block mb-2;
+    @apply dark:text-gray-400;
+    @apply md:mb-0 md:w-14 md:shrink-0 md:flex md:items-center;
+  }
+  .filter-buttons {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  /* Dropdown */
+  .dropdown {
+    @apply relative inline-block;
+  }
+  .dropdown-trigger {
+    @apply px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm;
+    @apply hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500;
+    @apply text-gray-900;
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-white;
+    @apply dark:hover:bg-gray-700 dark:focus:ring-blue-400;
+  }
+  .dropdown-trigger-text {
+    @apply text-gray-900 font-medium cursor-pointer inline-flex items-center;
+    @apply hover:text-blue-600;
+    @apply dark:text-white dark:hover:text-blue-400;
+  }
+  .dropdown-menu {
+    @apply absolute z-50 w-56 bg-white border border-gray-200 rounded-md shadow-lg;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .dropdown-menu-bottom-left {
+    @apply top-full left-0 mt-2;
+  }
+  .dropdown-menu-bottom-right {
+    @apply top-full right-0 mt-2;
+  }
+  .dropdown-menu-top-left {
+    @apply bottom-full left-0 mb-2;
+  }
+  .dropdown-menu-top-right {
+    @apply bottom-full right-0 mb-2;
+  }
+  .dropdown-item {
+    @apply px-4 py-2 text-sm text-gray-700 cursor-pointer;
+    @apply hover:bg-gray-100;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .dropdown-item-icon {
+    @apply text-gray-400;
+    @apply dark:text-gray-500;
+  }
+  .dropdown-item-disabled {
+    @apply px-4 py-2 text-sm text-gray-400 cursor-not-allowed;
+    @apply dark:text-gray-500;
+  }
+  .dropdown-item-focused {
+    @apply bg-gray-100;
+    @apply dark:bg-gray-700;
+  }
+  .dropdown-divider {
+    @apply border-t border-gray-100 my-1;
+    @apply dark:border-gray-700;
+  }
+
+  /* Pagination */
+  .pagination {
+    @apply flex items-center gap-2;
+  }
+  .pagination-btn {
+    @apply px-3 py-1 text-sm border rounded;
+    @apply border-gray-300 bg-white text-gray-700;
+    @apply hover:bg-gray-100;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300;
+    @apply dark:hover:bg-gray-700;
+  }
+  .pagination-btn-active {
+    @apply px-3 py-1 text-sm border rounded;
+    @apply bg-blue-500 text-white border-blue-500;
+    @apply dark:bg-blue-600 dark:border-blue-600;
+  }
+  .pagination-ellipsis {
+    @apply px-3 py-1 text-sm text-gray-500;
+    @apply dark:text-gray-400;
+  }
+
+  /* Dialog */
+  .dialog-header {
+    @apply flex items-center justify-between mb-4;
+  }
+  .dialog-title {
+    @apply text-xl font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+  .dialog-close {
+    @apply text-gray-400 hover:text-gray-600 focus:outline-none;
+    @apply dark:text-gray-500 dark:hover:text-gray-300;
+  }
+  .dialog-body {
+    @apply mb-6 text-gray-700;
+    @apply dark:text-gray-300;
+  }
+  .dialog-footer {
+    @apply flex justify-end gap-3;
+  }
+  .dialog-btn-primary {
+    @apply px-4 py-2 rounded-md font-medium transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+  }
+  .dialog-btn-secondary {
+    @apply px-4 py-2 rounded-md font-medium transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500;
+    @apply dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
+  }
+  .dialog-btn-danger {
+    @apply px-4 py-2 rounded-md font-medium transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+  .dialog-btn-ghost {
+    @apply px-4 py-2 rounded-md font-medium transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+
+  /* Alert — 컨테이너(.alert-{info,warning,danger,success}) 정의는 §"Alert /
+     Notice Box" 섹션에 통합. 여기는 .alert-error 와 .alert-icon-*,
+     .alert-text-* 보조 자산만 유지 — <Alert composite> 에서 참조 (error 타입은
+     아직 .alert-danger 로 미통일). */
+  .alert-error {
+    @apply flex items-center gap-3 px-3 py-3 border rounded-md bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-sm text-red-900 dark:text-red-100;
+  }
+  .alert-icon-info {
+    @apply text-blue-600 flex-shrink-0 mt-0.5;
+    @apply dark:text-blue-400;
+  }
+  .alert-icon-success {
+    @apply text-green-600 flex-shrink-0 mt-0.5;
+    @apply dark:text-green-400;
+  }
+  .alert-icon-warning {
+    @apply text-yellow-600 flex-shrink-0 mt-0.5;
+    @apply dark:text-yellow-400;
+  }
+  .alert-icon-error {
+    @apply text-red-600 flex-shrink-0 mt-0.5;
+    @apply dark:text-red-400;
+  }
+  .alert-text-info {
+    @apply flex-1 text-sm text-blue-800;
+    @apply dark:text-blue-200;
+  }
+  .alert-text-success {
+    @apply flex-1 text-sm text-green-800;
+    @apply dark:text-green-200;
+  }
+  .alert-text-warning {
+    @apply flex-1 text-sm text-yellow-800;
+    @apply dark:text-yellow-200;
+  }
+  .alert-text-error {
+    @apply flex-1 text-sm text-red-800;
+    @apply dark:text-red-200;
+  }
+  .alert-dismiss {
+    @apply hover:opacity-70 flex-shrink-0 bg-transparent border-0 p-0 cursor-pointer;
+  }
+
+  /* ========================================
+   * 3. COMPONENTS - 카드, 모달 등 복합 컴포넌트 스타일
+   * ======================================== */
+
+  /* Table Container */
+  .table-container {
+    @apply border border-gray-200 rounded-lg overflow-hidden;
+    @apply dark:border-gray-700;
+  }
+  .table {
+    @apply w-full;
+  }
+  .table thead {
+    @apply bg-gray-50;
+    @apply dark:bg-gray-800;
+  }
+  .table th {
+    @apply px-4 py-3 text-left text-sm font-medium text-gray-600 border-b border-gray-200;
+    @apply dark:text-gray-400 dark:border-gray-700;
+  }
+  .table th.sortable {
+    @apply cursor-pointer hover:bg-gray-100;
+    @apply dark:hover:bg-gray-700;
+  }
+  .table tbody tr {
+    @apply bg-white border-b border-gray-100;
+    @apply dark:bg-gray-900 dark:border-gray-800;
+  }
+  .table tbody tr:hover {
+    @apply bg-gray-50;
+    @apply dark:bg-gray-800;
+  }
+  .table tbody tr.selected {
+    @apply bg-blue-50;
+    @apply dark:bg-blue-900/20;
+  }
+  .table td {
+    @apply px-4 py-3 text-sm text-gray-900;
+    @apply dark:text-gray-100;
+  }
+  .table-actions {
+    @apply flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200;
+    @apply dark:bg-gray-900 dark:border-gray-700;
+  }
+
+  /* Log Table */
+  .log-table {
+    @apply w-full;
+  }
+  .log-table th {
+    @apply px-4 py-3 text-left text-sm font-medium text-gray-500 border-b border-gray-200;
+    @apply dark:text-gray-400 dark:border-gray-700;
+  }
+  .log-table td {
+    @apply px-4 py-3 text-sm text-gray-900 border-b border-gray-100;
+    @apply dark:text-gray-100 dark:border-gray-800;
+  }
+  .log-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .log-table-actor {
+    @apply inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-sm border border-gray-200;
+    @apply dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600;
+  }
+  .log-card {
+    @apply bg-white rounded-lg border border-gray-200 p-4;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .log-card-header {
+    @apply flex items-center justify-between gap-3 mb-2;
+  }
+  .log-card-body {
+    @apply text-sm text-gray-900;
+    @apply dark:text-gray-100;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
+  }
+  .modal-wrapper {
+    @apply fixed inset-0 flex items-center justify-center;
+  }
+  .modal-backdrop {
+    @apply absolute inset-0 bg-black/50;
+  }
+  .modal-container {
+    @apply relative bg-white rounded-lg shadow-xl max-h-[90vh] overflow-hidden;
+    @apply dark:bg-gray-800;
+  }
+  .modal-header-row {
+    @apply flex items-center justify-between p-4;
+  }
+  .modal-title {
+    @apply text-lg font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+  .modal-close-btn {
+    @apply ml-auto text-gray-400 hover:text-gray-600 focus:outline-none;
+    @apply dark:text-gray-500 dark:hover:text-gray-300;
+  }
+  .modal-body-content {
+    @apply px-6 py-4 overflow-y-auto max-h-[calc(90vh-140px)];
+  }
+  .modal {
+    @apply bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6;
+    @apply dark:bg-gray-800;
+  }
+  .modal-lg {
+    @apply max-w-lg;
+  }
+  .modal-xl {
+    @apply max-w-xl;
+  }
+  .modal-header {
+    @apply flex items-start justify-between mb-4;
+  }
+  .modal-close {
+    @apply p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer;
+    @apply dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .modal-body {
+    @apply py-4;
+  }
+  .modal-footer {
+    @apply flex justify-end gap-3 mt-6;
+  }
+
+  /* Danger Confirm Modal */
+  .danger-confirm-icon {
+    @apply w-12 h-12 mx-auto mb-4 flex items-center justify-center rounded-full bg-red-100;
+    @apply dark:bg-red-900/30;
+  }
+  .danger-confirm-icon svg,
+  .danger-confirm-icon .icon {
+    @apply w-6 h-6 text-red-600;
+    @apply dark:text-red-400;
+  }
+  .danger-confirm-title {
+    @apply text-lg font-semibold text-gray-900 text-center mb-2;
+    @apply dark:text-white;
+  }
+  .danger-confirm-message {
+    @apply text-sm text-gray-600 text-center mb-4;
+    @apply dark:text-gray-400;
+  }
+  .danger-confirm-warning {
+    @apply bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4;
+    @apply dark:bg-yellow-900/20 dark:border-yellow-700;
+  }
+  .danger-confirm-warning-title {
+    @apply text-sm font-semibold text-yellow-800 mb-2;
+    @apply dark:text-yellow-300;
+  }
+  .danger-confirm-warning-list {
+    @apply text-sm text-yellow-700 list-disc list-inside space-y-1;
+    @apply dark:text-yellow-400;
+  }
+  .danger-confirm-alert {
+    @apply text-sm text-red-600 text-center;
+    @apply dark:text-red-400;
+  }
+  .danger-confirm-footer {
+    @apply flex justify-center gap-3 mt-6;
+  }
+
+  /* Basic Card */
+  .card {
+    @apply w-full bg-white rounded-xl border border-gray-200 p-6;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  /*
+   * Admin Card — 관리자 화면의 표준 카드 박스 시맨틱.
+   * .card (rounded-xl + w-full + p-6 고정) 와 달리 padding 을 분리해
+   * 호출처에서 padding / margin 토큰(p-* / mb-*) 일체 명시 금지 — 표준
+   * 구조 결정에 따라 자산 자체가 기본 padding(p-4) 과 카드 간 하단 여백(mb-6) 을
+   * 포함. 부모 컨테이너 (main_content 직속 / partial root 등) 에서 별도 카드
+   * 그룹 wrapper (.stack 등) 없이 admin-card 들을 나열해도 표준 간격이 자동
+   * 적용. 인라인 Tailwind (bg-white dark:bg-gray-800 border border-gray-200
+   * dark:border-gray-700 rounded-lg) 가 관리자 폼/설정 카드 전반에 광범위
+   * 복붙되어 있어 단일 시맨틱으로 흡수.
+   */
+  .admin-card {
+    @apply bg-white border border-gray-200 rounded-lg p-4 mb-6;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+    @apply flex flex-col;
+  }
+
+  /*
+   * Admin Card (Clickable) — admin-card 의 클릭 가능 variant. 마스터-디테일
+   * 패널 (상품 공통정보 / 공지 사이드바 등) 의 비-선택 리스트 항목. cursor +
+   * hover border 강조를 자산 정의로 흡수해 호출처는 자산 단독으로 사용.
+   * 리스트 항목 전용이므로 padding/항목 간격은 패널 컨테이너용 .admin-card
+   * (p-4 mb-6) 보다 조밀한 py-2.5 px-3 mb-2 (자산화 전 원래 값). 동적
+   * 표현식 잔존 정리.
+   */
+  .admin-card-clickable {
+    @apply bg-white border border-gray-200 rounded-lg py-2.5 px-3 mb-2 cursor-pointer;
+    @apply hover:border-gray-300;
+    @apply dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600;
+  }
+
+  /*
+   * Admin Card (Selected) — admin-card 의 선택 강조 variant. 마스터-디테일
+   * 패널에서 현재 선택된 리스트 항목 (파란색 배경 + 보더). cursor + 선택
+   * 강조를 자산 정의로 흡수해 호출처는 자산 단독으로 사용. 간격은
+   * .admin-card-clickable 과 동일 (py-2.5 px-3 mb-2). 동적 표현식
+   * 잔존 정리.
+   */
+  .admin-card-selected {
+    @apply bg-blue-50 border border-blue-500 rounded-lg py-2.5 px-3 mb-2 cursor-pointer;
+    @apply dark:bg-blue-900/30 dark:border-blue-500;
+  }
+
+  .card-clickable {
+    @apply rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .card-image {
+    @apply w-full h-48 object-cover;
+  }
+  /*
+   * NOTE: legacy `.card-title` 정의(text-xl + mb-2)는 제거됨.
+   * 표준 `.card-title` 정의 (line ~395, text-lg + mb-4 + :has() sibling
+   * 변형) 가 admin / board / page / ecommerce 모든 호출처를 일관 처리.
+   * 같은 셀렉터를 중복 정의하면 cascade source order 상 뒤가 이겨 표준
+   * 정의가 무력화되었음 — card-title 단독 / card-description 동반
+   * 두 케이스의 아래 여백이 의도와 달라짐.
+   */
+  .card-content {
+    @apply text-gray-600 text-sm whitespace-pre-line;
+    @apply dark:text-gray-300;
+  }
+  /* NOTE: legacy `.card-header { mb-6 }` 정의는 제거됨 — 표준 .card-header
+   * 정의(line ~461, flex items-center gap-2 + mb-0)와 cascade 충돌하여 무력화시킴. */
+  .card-section-title {
+    @apply text-lg font-semibold text-gray-900 pb-4 mb-6 border-b border-gray-200 -mx-6 px-6;
+    @apply dark:text-white dark:border-gray-700;
+  }
+  .card-account {
+    @apply bg-gray-50 rounded-lg p-4 relative;
+    @apply dark:bg-gray-900;
+  }
+  .card-account-default {
+    @apply absolute top-3 left-3;
+  }
+  .card-account-delete {
+    @apply absolute top-3 right-3;
+  }
+
+  /*
+   * Admin Accordion Card — 관리자 화면 표준 카드의 아코디언 variant.
+   * .admin-card (rounded-lg + p-4 + mb-6) 와 동일 외형, 헤더 + 본문 토글 패턴.
+   * 본문에는 row-stack 효과(자식 사이 divide-y + 균등 py + 첫/마지막 자식 padding 0)를
+   * 자산이 흡수하여 호출처는 본문 자식만 나열하면 된다 (admin-card > row-stack
+   * 구조와 시각 동등을 admin-card-accordion 자체로 보장).
+   * 아코디언 동작 (className 토글 .open/.hidden) 은 main.css 가 책임지지 않으며 호출처
+   * 표현식이 부여한다.
+   */
+  .admin-card-accordion {
+    @apply bg-white border border-gray-200 rounded-lg mb-6 p-4;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+    @apply flex flex-col;
+  }
+  .admin-card-accordion > .card-header {
+    @apply cursor-pointer;
+  }
+  .admin-card-accordion-icon {
+    @apply ml-auto w-5 h-5 text-gray-400 transition-transform duration-200;
+    @apply dark:text-gray-500;
+  }
+  .admin-card-accordion > .row-stack {
+    @apply mt-6;
+  }
+  .admin-card-accordion-icon.open {
+    @apply rotate-180;
+  }
+  /*
+   * admin-card-accordion 의 본문 영역은 별도 자산 없이 row-stack 으로 통일
+   *.
+   * 본문 컨테이너는 row-stack 자산이 자식 사이 구분선 + 균등 padding 책임.
+   */
+
+  /* Tabs */
+  .tabs {
+    @apply bg-gray-100 rounded-lg p-1 inline-flex;
+    @apply dark:bg-gray-800;
+  }
+  .tab {
+    @apply px-6 py-2 rounded-md text-sm font-medium text-gray-500 cursor-pointer transition-colors;
+    @apply hover:text-gray-700;
+    @apply dark:text-gray-400 dark:hover:text-gray-300;
+  }
+  .tab.active {
+    @apply bg-white text-gray-900 shadow-sm;
+    @apply dark:bg-gray-700 dark:text-white;
+  }
+
+  /* Toast */
+  .toast {
+    @apply fixed bottom-4 right-4 z-50;
+  }
+  .toast-item {
+    @apply flex items-center gap-3 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg;
+    @apply dark:bg-white dark:text-gray-900;
+  }
+  .toast-icon {
+    @apply flex-shrink-0;
+  }
+
+  /* Drag List */
+  .drag-item {
+    @apply bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-4;
+    @apply hover:shadow-sm;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .drag-handle {
+    @apply cursor-grab text-gray-400;
+    @apply dark:text-gray-500;
+  }
+  .drag-handle:active {
+    @apply cursor-grabbing;
+  }
+
+  /* Mobile Card View */
+  .table-mobile-cards {
+    @apply hidden;
+  }
+  .excel-card {
+    @apply bg-white rounded-xl border border-gray-200 p-4;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .excel-card-header {
+    @apply flex items-start justify-between gap-3 mb-4 pb-3 border-b border-gray-100;
+    @apply dark:border-gray-700;
+  }
+  .excel-card-title {
+    @apply text-base font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+  .excel-card-body {
+    @apply space-y-2;
+  }
+  .excel-card-row {
+    @apply flex justify-between items-center py-1 text-sm;
+  }
+  .excel-card-label {
+    @apply text-gray-500 flex-shrink-0;
+    @apply dark:text-gray-400;
+  }
+  .excel-card-value {
+    @apply text-gray-900 text-right;
+    @apply dark:text-white;
+  }
+  .excel-card-footer {
+    @apply mt-4 pt-3 border-t border-gray-100 flex items-center justify-between;
+    @apply dark:border-gray-700;
+  }
+  .excel-card-creator {
+    @apply text-sm text-gray-700;
+    @apply dark:text-gray-300;
+  }
+  .excel-card-creator-label {
+    @apply text-gray-500 mr-2;
+    @apply dark:text-gray-400;
+  }
+
+  /* Custom Select */
+  .select-custom {
+    @apply relative inline-block;
+  }
+  .select-trigger {
+    @apply w-full h-9 bg-gray-100 text-gray-700 px-4 rounded-xl text-sm;
+    @apply flex items-center justify-between gap-2 cursor-pointer;
+    @apply border-0 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .select-trigger span {
+    @apply truncate;
+  }
+  .select-trigger-icon {
+    @apply w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0;
+    @apply dark:text-gray-500;
+  }
+  .select-trigger-icon.open {
+    @apply rotate-180;
+  }
+  .select-dropdown {
+    @apply absolute z-50 w-full mt-2 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden;
+    @apply dark:bg-gray-800 dark:border-gray-600;
+  }
+  .select-dropdown.hidden {
+    @apply hidden;
+  }
+  .select-dropdown-inner {
+    @apply py-2 max-h-60 overflow-auto;
+  }
+  .select-option {
+    @apply w-full px-4 py-3 text-left text-sm text-gray-700 cursor-pointer;
+    @apply flex items-center;
+    @apply hover:bg-gray-100 transition-colors;
+    @apply dark:text-gray-200 dark:hover:bg-gray-700;
+  }
+  .select-option.selected {
+    @apply text-blue-600 font-medium;
+    @apply dark:text-blue-400;
+  }
+  .select-option:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  .select-option-check {
+    @apply w-5 h-5 text-blue-600 ml-auto flex-shrink-0;
+    @apply dark:text-blue-400;
+  }
+
+  /* Multi Select */
+  .multi-select {
+    @apply relative inline-block;
+  }
+  .multi-select-trigger {
+    @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium;
+    @apply bg-transparent text-gray-700 border border-gray-300 rounded-lg;
+    @apply cursor-pointer hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+  }
+  .multi-select-count {
+    @apply text-gray-500;
+    @apply dark:text-gray-400;
+  }
+  .multi-select-dropdown {
+    @apply absolute z-50 mt-2 min-w-64 bg-white rounded-xl shadow-lg border border-gray-200;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .multi-select-dropdown.hidden {
+    @apply hidden;
+  }
+  .multi-select-header {
+    @apply px-4 py-3 text-sm font-medium text-gray-900 border-b border-gray-100;
+    @apply dark:text-white dark:border-gray-700;
+  }
+  .multi-select-hint {
+    @apply text-xs text-gray-500 font-normal;
+    @apply dark:text-gray-400;
+  }
+  .multi-select-items {
+    @apply py-2 max-h-80 overflow-auto;
+  }
+  .multi-select-item {
+    @apply flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 cursor-pointer;
+    @apply hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .multi-select-item.disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  .multi-select-item.disabled:hover {
+    @apply bg-transparent;
+    @apply dark:bg-transparent;
+  }
+
+  /* Ghost Select */
+  .select-ghost {
+    @apply relative inline-block;
+  }
+  .select-ghost-trigger {
+    @apply inline-flex items-center gap-1 px-2 py-1.5 text-sm font-medium;
+    @apply bg-transparent text-gray-700 rounded-lg cursor-pointer;
+    @apply hover:bg-gray-100;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .select-ghost-dropdown {
+    @apply absolute z-50 mt-1 min-w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .select-ghost-dropdown.hidden {
+    @apply hidden;
+  }
+  .select-ghost-option {
+    @apply w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 cursor-pointer;
+    @apply hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .select-ghost-option.selected {
+    @apply text-blue-600 font-medium;
+    @apply dark:text-blue-400;
+  }
+  .select-ghost-check {
+    @apply w-4 h-4 text-blue-600;
+    @apply dark:text-blue-400;
+  }
+
+  /* Searchable Dropdown */
+  .searchable-dropdown {
+    @apply relative inline-block;
+  }
+  .searchable-dropdown-trigger {
+    @apply min-w-[200px] px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium;
+    @apply flex items-center justify-between gap-2 cursor-pointer;
+    @apply border-0 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .searchable-dropdown-trigger-icon {
+    @apply w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0;
+    @apply dark:text-gray-500;
+  }
+  .searchable-dropdown-trigger-icon.open {
+    @apply rotate-180;
+  }
+  .searchable-dropdown-dropdown {
+    @apply absolute z-50 w-full mt-2 min-w-[280px] bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden;
+    @apply dark:bg-gray-800 dark:border-gray-600;
+  }
+  .searchable-dropdown-dropdown.hidden {
+    @apply hidden;
+  }
+  .searchable-dropdown-search {
+    @apply p-3 border-b border-gray-200;
+    @apply dark:border-gray-700;
+  }
+  .searchable-dropdown-search-input {
+    @apply w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg text-sm;
+    @apply border border-gray-200 placeholder-gray-400;
+    @apply focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-500;
+  }
+  .searchable-dropdown-items {
+    @apply py-2 max-h-80 overflow-auto;
+  }
+  .searchable-dropdown-option {
+    @apply w-full px-4 py-3 text-left cursor-pointer;
+    @apply flex items-start gap-3;
+    @apply hover:bg-gray-100 transition-colors;
+    @apply dark:hover:bg-gray-700;
+  }
+  .searchable-dropdown-option:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  .searchable-dropdown-check-area {
+    @apply w-5 h-5 flex-shrink-0 mt-0.5;
+  }
+  .searchable-dropdown-check {
+    @apply w-5 h-5 text-blue-600;
+    @apply dark:text-blue-400;
+  }
+  .searchable-dropdown-option-content {
+    @apply flex-1 min-w-0;
+  }
+  .searchable-dropdown-option-label {
+    @apply font-medium text-gray-900;
+    @apply dark:text-blue-400;
+  }
+  .searchable-dropdown-option.selected .searchable-dropdown-option-label {
+    @apply text-blue-600;
+    @apply dark:text-blue-400;
+  }
+  .searchable-dropdown-option-description {
+    @apply text-sm text-gray-500 mt-0.5;
+    @apply dark:text-gray-400;
+  }
+  .searchable-dropdown-message {
+    @apply px-4 py-6 text-center text-gray-500;
+    @apply dark:text-gray-400;
+  }
+
+  /* Stat Card */
+  .stat-card {
+    @apply rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow border border-gray-200 p-6;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .stats-icon {
+    @apply p-3 rounded-lg;
+  }
+  .stats-icon-blue {
+    @apply bg-blue-50 text-blue-600;
+    @apply dark:bg-blue-900/20 dark:text-blue-400;
+  }
+  .stats-icon-green {
+    @apply bg-green-50 text-green-600;
+    @apply dark:bg-green-900/20 dark:text-green-400;
+  }
+  .stats-icon-purple {
+    @apply bg-purple-50 text-purple-600;
+    @apply dark:bg-purple-900/20 dark:text-purple-400;
+  }
+  .stats-icon-orange {
+    @apply bg-orange-50 text-orange-600;
+    @apply dark:bg-orange-900/20 dark:text-orange-400;
+  }
+  .stats-change {
+    @apply flex items-center gap-1 px-2 py-1 rounded-md;
+  }
+  .stats-trend-up {
+    @apply text-green-600 bg-green-50;
+    @apply dark:text-green-400 dark:bg-green-900/20;
+  }
+  .stats-trend-down {
+    @apply text-red-600 bg-red-50;
+    @apply dark:text-red-400 dark:bg-red-900/20;
+  }
+  .stats-trend-neutral {
+    @apply text-gray-600 bg-gray-50;
+    @apply dark:text-gray-400 dark:bg-gray-700;
+  }
+  .stats-value-lg {
+    @apply text-3xl font-bold text-gray-900 mb-1;
+    @apply dark:text-white;
+  }
+  .stats-label {
+    @apply text-sm text-gray-600 mb-2;
+    @apply dark:text-gray-400;
+  }
+  .stats-sublabel {
+    @apply flex items-center gap-1 text-xs text-gray-500;
+    @apply dark:text-gray-400;
+  }
+
+  /* Tree */
+  .tree {
+    @apply space-y-1;
+  }
+  .tree-item {
+    @apply flex items-center gap-2 p-2 rounded-lg cursor-pointer;
+    @apply hover:bg-gray-50;
+    @apply dark:hover:bg-gray-800;
+  }
+  .tree-item.selected {
+    @apply bg-blue-50;
+    @apply dark:bg-blue-900/20;
+  }
+  .tree-item-content {
+    @apply flex items-center gap-2 flex-1 min-w-0;
+  }
+  .tree-item-icon {
+    @apply w-4 h-4 text-gray-400 flex-shrink-0;
+    @apply dark:text-gray-500;
+  }
+  .tree-item-label {
+    @apply text-sm text-gray-700 truncate;
+    @apply dark:text-gray-300;
+  }
+  .tree-expand-btn {
+    @apply w-6 h-6 flex items-center justify-center text-gray-400 rounded;
+    @apply hover:bg-gray-100;
+    @apply dark:text-gray-500 dark:hover:bg-gray-700;
+  }
+  .tree-expand-btn.hidden {
+    @apply invisible;
+  }
+  .tree-children {
+    @apply ml-6 pl-4 border-l border-gray-200;
+    @apply dark:border-gray-700;
+  }
+  .tree-level-1 { @apply ml-0 pl-0 border-l-0; }
+  .tree-level-2 { @apply ml-6 pl-4 border-l border-gray-200 dark:border-gray-700; }
+  .tree-level-3 { @apply ml-6 pl-4 border-l border-gray-200 dark:border-gray-700; }
+  .tree-level-4 { @apply ml-6 pl-4 border-l border-gray-200 dark:border-gray-700; }
+
+  /* Category Selector */
+  .category-item {
+    @apply px-3 py-2 text-sm cursor-pointer flex justify-between items-center;
+    @apply text-gray-900 dark:text-white;
+    @apply hover:bg-gray-50 dark:hover:bg-gray-700;
+  }
+  .category-item[data-selected="true"] {
+    @apply bg-blue-600 text-white;
+  }
+  .category-item[data-selected="true"]:hover {
+    @apply bg-blue-700;
+  }
+  .category-item-mobile {
+    @apply px-3 py-2 text-sm cursor-pointer;
+    @apply text-gray-900 dark:text-white;
+  }
+  .category-item-mobile[data-selected="true"] {
+    @apply bg-blue-50 dark:bg-blue-900/30;
+  }
+
+  /* Dashboard Components */
+  .stats-card {
+    @apply bg-white p-5 rounded-2xl border border-slate-100 flex flex-col justify-between h-36;
+    @apply dark:bg-slate-800 dark:border-slate-700;
+  }
+  .dashboard-panel {
+    @apply bg-white rounded-3xl p-6 shadow-sm border border-slate-100;
+    @apply dark:bg-slate-800 dark:border-slate-700;
+  }
+  .stats-value {
+    @apply text-[2rem] font-bold text-slate-900 leading-none mb-2;
+    @apply dark:text-white;
+  }
+  .stats-trend {
+    @apply flex items-center gap-1 text-xs font-semibold text-emerald-500;
+  }
+
+  /* Status Badges */
+  .status-active {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+    @apply bg-green-100 text-green-700;
+    @apply dark:bg-green-900/30 dark:text-green-400;
+  }
+  .status-inactive {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+    @apply bg-gray-100 text-gray-600;
+    @apply dark:bg-gray-700 dark:text-gray-400;
+  }
+  .status-pending {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+    @apply bg-yellow-100 text-yellow-700;
+    @apply dark:bg-yellow-900/30 dark:text-yellow-400;
+  }
+  .status-error {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+    @apply bg-red-100 text-red-700;
+    @apply dark:bg-red-900/30 dark:text-red-400;
+  }
+
+  /* List Items */
+  .list-item {
+    @apply flex items-center gap-3 py-3 border-b border-gray-100;
+    @apply dark:border-gray-700;
+  }
+  .list-item:last-child {
+    @apply border-b-0;
+  }
+  .list-item-hover {
+    @apply flex items-center gap-3 py-3 px-3 -mx-3 rounded-lg;
+    @apply hover:bg-gray-50;
+    @apply dark:hover:bg-gray-800;
+  }
+
+  /* Empty State */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-12 text-center;
+  }
+  .empty-state-icon {
+    @apply w-16 h-16 text-gray-300 mb-4;
+    @apply dark:text-gray-600;
+  }
+  .empty-state-title {
+    @apply text-lg font-medium text-gray-900 mb-2;
+    @apply dark:text-white;
+  }
+  .empty-state-description {
+    @apply text-sm text-gray-500 mb-4;
+    @apply dark:text-gray-400;
+  }
+
+  /* ========================================
+   * 4. LAYOUT - 페이지 헤더, 그리드 등 레이아웃 스타일
+   * ======================================== */
+
+  /* Page Header */
+  .page-header {
+    @apply flex items-center justify-between mb-6;
+  }
+  /*
+   * 카드/패널 내부 풀-bleed Page Header 변형 — 카드의 외곽 padding 안쪽에
+   * 머무르지 않고 카드 폭 끝까지 차지 (-mx-6 px-6 트릭). 폼 카드 상단에
+   * 페이지 제목 영역을 표시할 때 사용 (이커머스 상품 등록 / 주문 상세 /
+   * 쿠폰 폼 등). 보강.
+   */
+  .page-header-padded {
+    @apply flex items-center justify-between mb-6 px-6;
+  }
+  /*
+   * .page-header-padded 의 풀-bleed 배경 변형 — 회색 배경 + 카드 padding
+   * 음수 마진으로 카드 폭 끝까지 차지. 게시판 폼 / 사용자 상세 등 헤더 영역
+   * 시각 강조용. 보강.
+   */
+  .page-header-fullbleed {
+    @apply flex items-center justify-between mb-6 -mx-6 px-6 bg-gray-50;
+    @apply dark:bg-gray-900;
+  }
+  .page-actions {
+    @apply flex items-center gap-3;
+  }
+
+  /* Section Components */
+  .section-card {
+    @apply scroll-mt-32 bg-white border border-gray-200 rounded-lg p-6 mt-6;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .section-header {
+    @apply text-lg font-semibold text-gray-900 mb-6;
+    @apply dark:text-white;
+  }
+  .info-row {
+    @apply flex items-center gap-2 mb-4;
+  }
+  .action-buttons {
+    @apply flex justify-end gap-3 mt-6;
+  }
+
+  /* Form Labels */
+  .form-label {
+    @apply block text-sm font-medium text-gray-900 mb-1;
+    @apply dark:text-white;
+  }
+  .form-label-muted {
+    @apply block text-sm font-medium text-gray-500 mb-1;
+    @apply dark:text-gray-400;
+  }
+  .form-hint {
+    @apply text-xs text-gray-500 mt-1;
+    @apply dark:text-gray-400;
+  }
+
+  /* Text Styles */
+  .text-value {
+    @apply text-sm text-gray-900;
+    @apply dark:text-white;
+  }
+  .text-link {
+    @apply text-sm text-blue-600 hover:text-blue-700 cursor-pointer;
+    @apply dark:text-blue-400 dark:hover:text-blue-300;
+  }
+
+  /* Icon Sizes */
+  .icon-xs {
+    @apply w-3 h-3;
+  }
+  .icon-sm {
+    @apply w-4 h-4;
+  }
+  .icon-md {
+    @apply w-5 h-5;
+  }
+  .icon-lg {
+    @apply w-6 h-6;
+  }
+  .icon-xl {
+    @apply w-8 h-8;
+  }
+  .icon-2xl {
+    @apply w-10 h-10;
+  }
+  .icon-action {
+    @apply text-gray-400 hover:text-gray-600 cursor-pointer;
+    @apply dark:text-gray-500 dark:hover:text-gray-300;
+  }
+
+  /* Content Containers */
+  .page-container {
+    @apply min-h-screen bg-gray-50 p-6;
+    @apply dark:bg-gray-900;
+  }
+  .content-area {
+    @apply max-w-7xl mx-auto;
+  }
+  .content-panel {
+    @apply bg-white rounded-lg border border-gray-200 p-6;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  /* Flex Utilities */
+  .flex-row-center {
+    @apply flex items-center;
+  }
+  .flex-row-between {
+    @apply flex items-center justify-between;
+  }
+  .flex-row-end {
+    @apply flex items-center justify-end;
+  }
+  .flex-col-start {
+    @apply flex flex-col items-start;
+  }
+  .flex-between {
+    @apply flex items-center justify-between;
+  }
+  .flex-center {
+    @apply flex items-center;
+  }
+  .flex-end {
+    @apply flex items-center justify-end;
+  }
+  .flex-wrap-center {
+    @apply flex flex-wrap items-center;
+  }
+  .inline-flex-center {
+    @apply inline-flex items-center;
+  }
+
+  /*
+   * Row Stack — input row(레이블 + 입력 또는 레이블 + 값) 들을 세로로 나열하는
+   * 컨테이너 자산. flex flex-col + 자식별 py-2 + divide-y(회색 1px) 로 구성.
+   * 자산 책임: 자식 행 상하 균형 패딩(py-2 = 상 8px + 하 8px) + 행 사이 구분선
+   * (divide-gray-200) 이 인접 자식의 패딩 중앙에 위치하도록 배치 — 구분선이 한쪽
+   * 자식에 붙어 보이지 않고 두 자식 사이 정중앙에 균형감 있게 표시.
+   * 첫/마지막 자식은 pt-0 / pb-0 자동 — 컨테이너 외곽 불필요한 빈 공간 차단.
+   * 호출처 책임: 자식 행 내부 레이아웃 (flex-between / form-label 등) 만 명시.
+   * 자식 행에 별도 border-b / border-t / py-N 토큰 명시 금지 — 본 자산이 책임.
+   * 이전 명칭 .stack — 의미 명확화(input row 컨테이너)
+   * + 구분선 통합 + 균형 간격 .
+   */
+  .row-stack {
+    @apply flex flex-col divide-y divide-gray-200 dark:divide-gray-700
+           [&>*]:py-2 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0;
+  }
+
+  /*
+   * Vertical Stack (Flush) — flex flex-col gap-0 의 시맨틱 자산.
+   * 자식 간 세로 간격이 명시적으로 0 인 경우(리스트 행 사이 구분선 표시 등)
+   * 의도를 보존하기 위한 별도 자산.
+   */
+  .stack-flush {
+    @apply flex flex-col gap-0;
+  }
+
+  /*
+   * Vertical Stack (Tight) — flex flex-col gap-2 의 시맨틱 자산.
+   * 표준 .row-stack(gap-4 + divider) 보다 조밀한 수직 간격이 의도된 경우를
+   * 위한 별도 자산. 한 iteration 행 안에서 헤더(Label/체크박스 등) 와 부속
+   * 입력(TagInput 등) 두 블록이 한 묶음으로 보여야 할 때 사용
+   *.
+   */
+  .stack-tight {
+    @apply flex flex-col gap-2;
+  }
+
+  /*
+   * Card Stack — 카드 형태 자식(외형 박스: border + bg + padding 보유) 들을
+   * 세로로 나열할 때 사용하는 자산. flex flex-col gap-4 만 책임 — 구분선 없음
+   * (카드 박스 자체의 외곽선이 분리 역할). row-stack 의 자식별 py-2 가 카드 내
+   * padding 과 겹쳐 시각이 비대칭이 되는 회귀를 방지 (카드 형태
+   * 케이스는 row-stack 의 divide-y 와 py-2 가 불필요).
+   * 위 형제와의 표준 간격 mt-3 흡수 — 안내 P / 라벨 등 본문 흐름 다음에
+   * 카드 묶음이 끼어들 때 자동으로 시각 분리 (위 요소와 공간
+   * 정합). 자기 자신이 첫 자식이면 첫 자식 컨테이너 측에서 mt 무시되므로
+   * 부작용 없음.
+   * 호출처 사용 예: 라디오 옵션 카드 묶음 / 설정 카드 묶음 등.
+   */
+  .card-stack {
+    @apply flex flex-col gap-2 mt-3;
+  }
+
+  /*
+   * Card Stack Item — .card-stack 자식으로 사용되는 정보성 카드 외형.
+   * .admin-card 와 시각 동등(흰 배경 + 회색 테두리 + rounded-lg + p-4 + flex flex-col)
+   * 이되 mb-6 을 제거 — .card-stack 의 gap-2 와 충돌해 의도 외 간격 (mb-6 + gap-2)
+   * 이 생기던 회귀를 차단 (card-stack 직속에 admin-card 직접 사용
+   * 금지). 인터랙티브 카드(클릭 가능 라디오 등) 는 별도 인라인 토큰 사용 — 본 자산은
+   * 정적 표시용.
+   */
+  .card-stack-item {
+    @apply bg-white border border-gray-200 rounded-lg p-4;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+    @apply flex flex-col;
+  }
+
+  /*
+   * Option Card — 토글/입력 옵션을 묶는 카드 외형 wrapper 자산. 헤더 행 +
+   * (선택적) 본문 펼침 영역 패턴을 한 카드 안에 통합. 자식 직계마다 padding +
+   * 헤더와 본문 사이 구분선을 자산이 책임 (토글 옵션의 하위
+   * 옵션을 같은 카드 안에 표시 + 카드 하단 구분선 중복 해소).
+   * 자산 책임:
+   *   - 박스 외형(bg-gray-50 + border + rounded + overflow-hidden)
+   *   - 직계 자식 padding(px-4 py-3) 자동
+   *   - 두번째 이후 직계 자식 위쪽 border-t 자동 (헤더와 본문 분리)
+   * 호출처 책임: 직계 자식은 헤더 행 (flex 등) + 본문 펼침 영역만 두면 됨.
+   * card-stack 자산 안의 자식으로 사용되는 것을 권장.
+   */
+  .option-card {
+    @apply bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden;
+  }
+
+  .option-card > * {
+    @apply px-4 py-3;
+  }
+
+  .option-card > * + * {
+    @apply border-t border-gray-200 dark:border-gray-700;
+  }
+
+  /*
+   * Alert / Notice Box — 안내·경고·오류·성공 메시지 박스 자산 패밀리.
+   * 자산 책임: 박스 외형(4면 padding/border/rounded/색조) + 내부 flex 레이아웃
+   * (items-center + gap-3) + 기본 텍스트 톤(text-sm + variant 별 짙은 텍스트 색)
+   * — 박스 호출처가 Icon + 텍스트를 자식으로만 두면 자동 정렬 (sirsoft-board 봇
+   * 감지 설정의 banner 패턴 채택, 안내 박스 시맨틱 통합).
+   * 호출처 책임: 자식 노드 (Icon + Span/P 텍스트). 별도 flex/gap/색·구조 토큰
+   * 명시 금지. 다중 라인 (제목 + 본문) 콘텐츠는 호출처에서 .flex-start 로 items
+   * 정렬만 덮기. 부모-자식 간 외부 간격(mt-* / mb-*) 은 부모(row-stack /
+   * admin-card / stack 등) 또는 호출처의 책임 — 자산은 외부 margin 보유하지
+   * 않는다.
+   * row-stack 의 자식으로 사용될 때 row-stack 의 [&>*:first-child]:pt-0 /
+   * [&>*:last-child]:pb-0 override 가 자산 padding 을 0 으로 만드는 회귀가 있어
+   * .row-stack > .alert-* 별도 룰로 자산 padding 을 복원한다 (아래 정의).
+   * 구조 토큰 (flex/items-center/gap-3/px-3/py-3/border/rounded-md/text-sm) 은
+   * Tailwind v4 의 같은-layer @apply 미지원으로 각 variant 에 직접 inline.
+   */
+  .alert-info {
+    @apply flex items-center gap-3 px-3 py-3 border rounded-md bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-sm text-blue-900 dark:text-blue-100;
+  }
+
+  .alert-warning {
+    @apply flex items-center gap-3 px-3 py-3 border rounded-md bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-sm text-yellow-900 dark:text-yellow-100;
+  }
+
+  .alert-danger {
+    @apply flex items-center gap-3 px-3 py-3 border rounded-md bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-sm text-red-900 dark:text-red-100;
+  }
+
+  .alert-success {
+    @apply flex items-center gap-3 px-3 py-3 border rounded-md bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-sm text-green-900 dark:text-green-100;
+  }
+
+  /* alert-* 다음에 .row-stack 또는 .toggle-group 이 형제로 오면 alert 와 다음 묶음
+   * 사이 표준 간격 부여 (호출처 mb-* 인라인 토큰 제거 정합 — 자산이 상황 책임). */
+  .alert-info:has(+ .row-stack),
+  .alert-warning:has(+ .row-stack),
+  .alert-danger:has(+ .row-stack),
+  .alert-success:has(+ .row-stack),
+  .alert-error:has(+ .row-stack),
+  .alert-info:has(+ .toggle-group),
+  .alert-warning:has(+ .toggle-group),
+  .alert-danger:has(+ .toggle-group),
+  .alert-success:has(+ .toggle-group),
+  .alert-error:has(+ .toggle-group) {
+    @apply mb-4;
+  }
+
+  /* row-stack 자식 위치에서 자산 padding 복원 — .row-stack > * (specificity 0,2,0)
+     과 같은 specificity 의 후순위 룰. row-stack 의 first/last child padding-0
+     override 를 자산 값으로 되돌린다. */
+  .row-stack > .alert-info,
+  .row-stack > .alert-warning,
+  .row-stack > .alert-danger,
+  .row-stack > .alert-success,
+  .row-stack > .alert-error {
+    padding-top: calc(var(--spacing) * 3);
+    padding-bottom: calc(var(--spacing) * 3);
+  }
+
+  /* alert 박스가 row-stack 내에서 다른 형제 뒤에 위치할 때 — 앞 형제의 divide-y
+     border-bottom (구분선) 과 alert 의 border-top (자체 외곽선) 사이 시각적 간격
+     확보. */
+  .row-stack > * + .alert-info,
+  .row-stack > * + .alert-warning,
+  .row-stack > * + .alert-danger,
+  .row-stack > * + .alert-success,
+  .row-stack > * + .alert-error {
+    margin-top: calc(var(--spacing) * 3);
+  }
+
+  /*
+   * Sub Tab Nav — sticky_header 안에 inline 으로 위치하는 하위 탭 네비게이션
+   * 자산 (게시판 환경설정 > 게시판 설정 / 본인인증 sub-tab 패턴 동일 적용).
+   * 자산 책임: 배경(흰색·다크 모드) + 좌우 패딩(반응형: 24/32/40px) + 자식
+   * 탭 버튼 사이 간격(gap-1) + flex 가로 정렬. 하단 구분선(border-b) 은 두지
+   * 않음 — 외부 sticky_header 의 시각 외곽이 책임.
+   * 호출처 책임: TabNavigationScroll 컴포넌트의 className 으로 단독 사용.
+   */
+  .sub-tab-nav {
+    @apply bg-white dark:bg-gray-800 flex gap-1 px-6 sm:px-8 lg:px-10;
+  }
+
+  /*
+   * Section Header — 탭 컨텐츠/카드 외부 등에서 본문 위에 표시되는 제목+설명
+   * 묶음 자산. H3 (제목) + P (설명) 직계 자식 패턴을 자동 스타일링하고 다음
+   * 본문과의 표준 하단 여백(mb-6) 을 자산이 책임 (탭 컨텐츠 내
+   * 반복되는 header 패턴 시맨틱 통합).
+   * 호출처 책임: H3 + P 자식 (className 명시 불필요).
+   * 자식 셀렉터로 흡수되는 토큰:
+   *   - H3 직계 자식: text-lg font-semibold + 색조 (section-heading 동등)
+   *   - P 직계 자식: text-sm 옅은 회색 + mt-1 (text-label-subtle 동등)
+   */
+  .section-header {
+    @apply mb-6;
+  }
+
+  .section-header > h3 {
+    @apply text-lg font-semibold text-gray-900 dark:text-white;
+  }
+
+  .section-header > p {
+    @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+  }
+
+  /*
+   * Toggle Group — 권한 그룹 / 토글 그룹 등 테두리 박스 컨테이너 자산.
+   * 호출처 책임: 외부 여백 (mb-N).
+   * 내부 구조: .section-header-row (헤더) + .list-row-hover 반복 또는
+   * 임의 콘텐츠.
+   */
+  .toggle-group {
+    @apply border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden;
+  }
+
+  /*
+   * Section Header Row — .toggle-group 상단의 클릭 가능한 헤더 행 자산.
+   * 통상 Label 로 렌더되어 체크박스 + 아이콘 + 제목을 가로 정렬.
+   * 자산 책임: 정렬(flex items-center) + 간격(gap-2) + padding (px-4 py-3) +
+   * 배경/하단 구분선 + cursor-pointer + select-none.
+   */
+  .section-header-row {
+    @apply flex items-center gap-2 px-4 py-3;
+    @apply bg-gray-50 dark:bg-gray-700/50;
+    @apply border-b border-gray-200 dark:border-gray-700;
+    @apply cursor-pointer select-none;
+  }
+
+  /*
+   * List Row Hover — divide-y 컨테이너 안의 hover 가능한 리스트 행 자산.
+   * 행 사이 구분선은 부모 .divide-y 가 담당.
+   * 자산 책임: 배경 + hover 배경 + padding (px-4 py-2.5) + transition.
+   */
+  .list-row-hover {
+    @apply bg-white dark:bg-gray-800;
+    @apply hover:bg-gray-50 dark:hover:bg-gray-700;
+    @apply px-4 py-2.5 transition-colors;
+  }
+
+  /*
+   * Text Hint — 라벨/제목 아래 보조 설명 톤 (text-xs text-gray-400 dark:text-gray-500).
+   * `.text-tertiary` (text-xs text-gray-500 dark:text-gray-400) 보다 light
+   * 모드에서 더 옅고 dark 모드에서 더 muted — "강조도 낮은 hint" 용도.
+   */
+  .text-hint {
+    @apply text-xs text-gray-400 dark:text-gray-500;
+  }
+
+  /*
+   * Alert content text — alert-{variant} 배경 위 텍스트 자산.
+   * 700/300 split: light 배경 위에서 가독성 + 같은 색조 시그널 유지.
+   */
+  .text-info-soft {
+    @apply text-xs text-blue-700 dark:text-blue-300;
+  }
+
+  .text-warning-soft {
+    @apply text-xs text-yellow-700 dark:text-yellow-300;
+  }
+
+  .text-danger-soft {
+    @apply text-xs text-red-700 dark:text-red-300;
+  }
+
+  .text-success-soft {
+    @apply text-xs text-green-700 dark:text-green-300;
+  }
+
+  /*
+   * Checkbox Aligned — 첫 줄 텍스트 위에 top 정렬된 체크박스 자산.
+   * flex items-start 컨테이너 안에서 .text-body + .text-hint 같이 2 줄
+   * 텍스트와 짝지을 때 첫 줄 baseline 에 맞춰 체크박스가 살짝 내려오도록 mt-0.5.
+   * flex-shrink-0 으로 텍스트 길이가 길어져도 체크박스 너비 유지.
+   * 구조: .checkbox 와 동일 모양 + 정렬 helper. Tailwind v4 의 같은-layer
+   * @apply 미지원으로 .checkbox 정의 토큰을 직접 inline.
+   */
+  .checkbox-aligned {
+    @apply w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500 cursor-pointer;
+    @apply dark:border-gray-600 dark:bg-gray-800 dark:text-blue-400;
+    @apply flex-shrink-0 mt-0.5;
+  }
+
+  /*
+   * Divider List — 자식 행 사이에 수평 구분선이 들어가는 리스트 컨테이너 자산
+   *. 통상 .toggle-group 안 또는 .admin-card 안에서 .list-row-hover
+   * 반복을 감싸는 용도.
+   */
+  .divider-list {
+    @apply divide-y divide-gray-200 dark:divide-gray-700;
+  }
+
+  /*
+   * Modal / Form Footer Buttons — 폼 / 모달 하단 액션 버튼 영역 자산.
+   * 자산 책임: 우측 정렬(justify-end) + 버튼 간격(gap-3) + 상단 여백(mt-6).
+   * 호출처는 정렬/여백 토큰 명시 금지.
+   */
+  .modal-footer-buttons {
+    @apply flex justify-end gap-3 mt-6;
+  }
+
+  /*
+   * Spinner SM — 로딩 스피너 작은 크기 자산.
+   * w-4 h-4 (16x16) + animate-spin. 호출처에서 색상 / 위치 토큰만 추가.
+   */
+  .spinner-sm {
+    @apply w-4 h-4 animate-spin;
+  }
+
+  /*
+   * Required Field Asterisk — 폼 필수 필드 라벨 옆 빨간 별표 자산.
+   * Label / 항목명 옆에 inline 으로 붙이는 작은 빨간 마커.
+   */
+  .text-required {
+    @apply text-red-500 dark:text-red-400 ml-1;
+  }
+
+  /*
+   * Form Label Block — 표준 폼 라벨 (block 표시 + body 톤 + medium + 하단
+   * 여백 mb-1) 자산. Label 컴포넌트의 기본 외형.
+   * .text-body 의 토큰을 직접 inline (Tailwind v4 같은-layer @apply 미지원).
+   */
+  .form-label-block {
+    @apply block text-sm text-gray-700 dark:text-gray-300 font-medium mb-1;
+  }
+
+  /*
+   * Form Sub Label — 보조 라벨 (block + tertiary 톤 + 하단 여백 mb-1)
+   * 자산. 메인 라벨 아래 부가 설명용 라벨.
+   * .text-tertiary 의 토큰을 직접 inline.
+   */
+  .form-sub-label {
+    @apply block text-xs text-gray-500 dark:text-gray-400 mb-1;
+  }
+
+  /*
+   * Form Field Hint — 폼 필드 옆 보조 hint 텍스트 자산.
+   * .text-tertiary 톤 + 살짝 내려서(mt-0.5) + font-normal 로 강조 해제.
+   */
+  .text-field-hint {
+    @apply text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal;
+  }
+
+  /*
+   * Section Heading MD — text-base 사이즈 섹션 제목 자산.
+   * 기존 .section-heading(text-lg) 보다 한 단계 작은 변형.
+   */
+  .section-heading-md {
+    @apply text-base font-semibold text-gray-900 dark:text-white;
+  }
+
+  /*
+   * 3 컬럼 반응형 그리드 — mobile 1 column → lg 3 columns 자산.
+   * 기존 .grid-2col-responsive 와 짝. 카드 / 필드 그룹 3 열 배치용.
+   */
+  .grid-3col-responsive {
+    @apply grid grid-cols-1 lg:grid-cols-3 gap-4 items-start;
+  }
+
+  /*
+   * Error Text Soft — 에러 메시지 텍스트 (sm) 자산.
+   * .alert-danger 박스 안 / 일반 form-error 위치 모두 호환.
+   */
+  .text-error-soft {
+    @apply text-sm text-red-700 dark:text-red-300;
+  }
+
+  /*
+   * Error Text Strong — 강조 에러 텍스트 (sm + medium) 자산.
+   * .alert-danger 박스 안 헤더 / 강조 라벨 위치.
+   */
+  .text-error-strong {
+    @apply text-sm font-medium text-red-800 dark:text-red-200;
+  }
+
+  /*
+   * Row Content Indent — 행 안 보조 콘텐츠(예: TagInput)를 부모 Label 의
+   * 텍스트 좌측 정렬과 맞추기 위한 좌측 여백 자산.
+   * 값(pl-6=24px) 의 유래: parent Label 의 .checkbox-aligned (w-4=16px) +
+   * gap-2 (8px) = 24px. 매직 숫자 → 시맨틱 이름화.
+   */
+  .row-content-indent {
+    @apply pl-6;
+  }
+
+  /*
+   * Flex Start — flex + items-start 의 시맨틱 자산.
+   * .flex-center(items-center) 와 짝. 아이콘이 멀티라인 텍스트 위쪽 baseline
+   * 에 맞춰지는 행 레이아웃에 사용.
+   */
+  .flex-start {
+    @apply flex items-start;
+  }
+
+  /*
+   * Inline Clickable — 인라인 클릭 가능 행 자산.
+   * inline-flex + items-center + gap-2 + cursor-pointer.
+   * 체크박스/라디오 + 라벨 인라인 묶음 (한 줄 흐름) 표준.
+   */
+  .inline-clickable {
+    @apply inline-flex items-center gap-2 cursor-pointer;
+  }
+
+  /*
+   * Grid 2 Col (고정) — grid-cols-2 + gap-4 의 자산.
+   * 반응형이 아닌 고정 2 컬럼 — .grid-2col-responsive 와 짝.
+   */
+  .grid-2col {
+    @apply grid grid-cols-2 gap-4;
+  }
+
+  /*
+   * Empty State Cell — 테이블/리스트의 빈 상태 표시 셀.
+   * py-4 + px-4 + text-center. 호출처에서 텍스트 톤(.text-secondary 등)만
+   * 추가하여 빈 메시지 / "데이터 없음" 등 표시.
+   */
+  .empty-state-cell {
+    @apply py-4 px-4 text-center;
+  }
+
+  /*
+   * Form Error XS — 폼 검증 에러 작은 사이즈 텍스트 자산.
+   * text-xs + 500/400 red split. 라벨/입력 옆 또는 아래 메시지.
+   * .text-required (asterisk) 와 색조 동일하지만 ml-1 없음 + text-xs 강제.
+   */
+  .form-error-xs {
+    @apply text-xs text-red-500 dark:text-red-400;
+  }
+
+  /*
+   * Text Page Heading — 페이지 최상단 제목.
+   * text-2xl + font-bold + primary 색조 (text-gray-900 dark:text-white).
+   * 기존 .section-heading (text-lg) / .section-heading-md (text-base) 와
+   * 짝을 이루는 가장 큰 헤딩.
+   * .text-primary 의 토큰을 직접 inline (Tailwind v4 같은-layer @apply 미지원).
+   */
+  .text-page-heading {
+    @apply text-2xl font-bold text-gray-900 dark:text-white;
+  }
+
+  /*
+   * Text Table Header — 테이블 헤더 셀 톤 자산.
+   * text-xs + uppercase + tracking-wider + medium + tertiary 색조
+   * (text-gray-500 dark:text-gray-400). 테이블 컬럼 라벨 표준.
+   * .text-tertiary 의 토큰을 직접 inline.
+   */
+  .text-table-header {
+    @apply text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider;
+  }
+
+  /*
+   * Panel Header Row — 패널 / 카드 상단 헤더 행 자산.
+   * px-6 + py-4 + 하단 구분선. 패널 제목 영역의 표준 외형.
+   */
+  .panel-header-row {
+    @apply px-6 py-4 border-b border-gray-200 dark:border-gray-700;
+  }
+
+  /*
+   * 2 컬럼 반응형 그리드 (mobile 1 column → md 2 columns) — 폼 / 카드 / 정보
+   * 행이 좁은 화면에서는 세로로, 넓은 화면에서는 2 열로 배치되는 영역 자산.
+   * 자산 정의에 기본 gap-4 포함 — 호출처에서 gap-* 토큰 명시 금지.
+   * 호출처 변형(gap-3 / gap-6 등) 잔존도 자산 단독으로 통일.
+   */
+  .grid-2col-responsive {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+  }
+
+  /*
+   * Panel Header — admin-card / 패널 컨테이너 상단 헤더 행 자산.
+   * py-3 + 하단 구분선 (border-b border-gray-200 dark:border-gray-700) 담당.
+   * 가로 padding (px-4 / px-6) 은 패널별로 달라 호출처 multi-class 로 유지.
+   * Phase 1.20 의 'py-3 border-b ...' 일괄 제거가 패널 헤더 분리선까지
+   * 누락시켜 발생한 회귀를 본 자산으로 일원화 복원.
+   */
+  .panel-header {
+    @apply py-3 border-b border-gray-200;
+    @apply dark:border-gray-700;
+  }
+
+  /* Spacing Utilities */
+  .gap-sm {
+    @apply gap-2;
+  }
+  .gap-md {
+    @apply gap-4;
+  }
+  .gap-lg {
+    @apply gap-6;
+  }
+  .mb-sm {
+    @apply mb-2;
+  }
+  .mb-md {
+    @apply mb-4;
+  }
+  .mb-lg {
+    @apply mb-6;
+  }
+
+  /* Surface */
+  .surface {
+    @apply bg-white;
+    @apply dark:bg-gray-800;
+  }
+  .surface-alt {
+    @apply bg-gray-50;
+    @apply dark:bg-gray-900;
+  }
+  .card-border {
+    @apply border border-gray-200 rounded-lg;
+    @apply dark:border-gray-700;
+  }
+  .card-border-xl {
+    @apply border border-gray-200 rounded-xl;
+    @apply dark:border-gray-700;
+  }
+  .border-light {
+    @apply border border-gray-300;
+    @apply dark:border-gray-600;
+  }
+
+  /* State Utilities */
+  .disabled-state {
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    @apply dark:focus:ring-offset-gray-800;
+  }
+  .focus-ring-inset {
+    @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500;
+  }
+  .hover-bg {
+    @apply hover:bg-gray-100;
+    @apply dark:hover:bg-gray-700;
+  }
+  .hover-bg-light {
+    @apply hover:bg-gray-50;
+    @apply dark:hover:bg-gray-800;
+  }
+
+  /* Button Utilities */
+  .btn-base {
+    @apply inline-flex items-center justify-center font-medium rounded-lg;
+    @apply transition-colors duration-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-size-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+  .btn-size-md {
+    @apply px-4 py-2 text-sm;
+  }
+  .btn-size-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  /* Badge Utilities */
+  .badge-base {
+    @apply inline-flex items-center rounded-full text-xs font-medium;
+  }
+  .badge-size-sm {
+    @apply px-2 py-0.5;
+  }
+  .badge-size-md {
+    @apply px-2.5 py-1;
+  }
+
+  /* Shadow Utilities */
+  .shadow-card {
+    @apply shadow-sm;
+  }
+  .shadow-dropdown {
+    @apply shadow-lg;
+  }
+  .shadow-hover {
+    @apply hover:shadow-md;
+  }
+
+  /* Page Header Actions */
+  .page-title {
+    @apply text-xl font-semibold text-gray-900;
+    @apply sm:text-2xl;
+    @apply dark:text-white;
+  }
+  .page-description {
+    @apply text-sm text-gray-600 mt-1;
+    @apply dark:text-gray-400;
+  }
+  .page-action-primary {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2;
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+  .page-action-secondary {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2;
+    @apply bg-gray-200 text-gray-900 hover:bg-gray-300;
+    @apply dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
+  }
+  .page-action-danger {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2;
+    @apply bg-red-600 text-white hover:bg-red-700;
+  }
+  .page-action-ghost {
+    @apply p-2 rounded-lg transition-colors flex items-center gap-2;
+    @apply text-gray-500 hover:text-gray-700 hover:bg-gray-100;
+    @apply dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800;
+  }
+
+  /* Tab Container */
+  .tab-container {
+    @apply flex gap-6 border-b border-gray-200 mb-6;
+    @apply dark:border-gray-700;
+  }
+  .tab-btn {
+    @apply px-1 py-3 border-b-2 transition-colors font-medium flex items-center gap-2 -mb-px;
+    @apply border-transparent text-gray-600 hover:text-gray-900;
+    @apply dark:text-gray-400 dark:hover:text-gray-200;
+  }
+  .tab-btn-active {
+    @apply px-1 py-3 border-b-2 transition-colors font-medium flex items-center gap-2 -mb-px;
+    @apply border-blue-600 text-blue-600;
+    @apply dark:text-blue-400;
+  }
+  .tab-badge {
+    @apply px-2 py-0.5 rounded-full text-xs font-semibold;
+    @apply bg-gray-100 text-gray-600;
+    @apply dark:bg-gray-700 dark:text-gray-400;
+  }
+  .tab-badge-active {
+    @apply px-2 py-0.5 rounded-full text-xs font-semibold;
+    @apply bg-blue-100 text-blue-600;
+    @apply dark:bg-blue-900/20 dark:text-blue-400;
+  }
+
+  /*
+   * TabNavigation composite 시맨틱
+   *
+   * TabNavigation 컴포넌트의 nav 컨테이너 / 탭 버튼 인라인 Tailwind 를 시맨틱 자산으로 흡수.
+   * variant 별 active/inactive 클래스가 페이지 환경설정 / 로그 / 리스트 화면 등 6곳에서
+   * 동일하게 재사용되므로 단일 시맨틱으로 캡슐화.
+   *
+   * .sticky-tab-nav  — 페이지 상단 sticky 탭 컨테이너 (JSON props.className)
+   * .tab-nav-default — TabNavigation variant="default" / "pills" 의 nav 컨테이너
+   * .tab-nav-underline — TabNavigation variant="underline" 의 nav 컨테이너
+   * .tab-btn-base    — 모든 variant 공통 탭 버튼 베이스
+   * .tab-btn-default(-active) — default variant 탭 버튼
+   * .tab-btn-underline(-active) — underline variant 탭 버튼
+   * .tab-btn-pills(-active) — pills variant 탭 버튼
+   * .tab-btn-disabled — disabled 상태 (variant 공통)
+   */
+
+  .sticky-tab-nav {
+    @apply sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200;
+    @apply dark:bg-gray-900 dark:border-gray-700;
+  }
+
+  /*
+   * .sticky-tab-nav 의 responsive padding 변형. 부모 root 가
+   * .admin-page-content-responsive (p-4 sm:p-6 lg:p-8) 인 화면에서 sticky
+   * 풀-bleed 가 단계적 padding 분기와 일치하도록 -mx / px 도 동일 분기를
+   * 적용 (게시판 설정 화면 등). 보강 — responsive padding 정책
+   * 화면 전용 sticky 변종.
+   */
+  .sticky-tab-nav-responsive {
+    @apply sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b bg-gray-50 border-gray-200;
+    @apply dark:bg-gray-900 dark:border-gray-700;
+  }
+
+  /*
+   * Sticky section header — .sticky-tab-nav 와 동일한 sticky/배경/하단 보더를
+   * 가지지만 좌우 padding override (-mx-6 px-6) 가 없는 변형. 자식 컴포넌트
+   * (예: header_content) 가 자체 padding 을 가지는 경우 (게시판 설정 / GDPR
+   * 플러그인 설정의 sticky_header 등) 사용.
+   */
+  .sticky-section-header {
+    @apply sticky top-0 z-40 border-b bg-gray-50 border-gray-200;
+    @apply dark:bg-gray-900 dark:border-gray-700;
+  }
+
+  /*
+   * 폼 화면 하단의 sticky 저장/취소 버튼 영역 (#footer_buttons).
+   * z-10 은 sticky-tab-nav (z-40) / main_header (z-50) 보다 낮아 헤더 / 탭에
+   * 가려지지 않도록 유지. 기본은 우측 정렬 (.sticky-footer-buttons),
+   * 좌우 배치 (예: 삭제 + 저장 분리) 가 필요한 경우 .sticky-footer-buttons-between 사용.
+   */
+  .sticky-footer-buttons {
+    @apply sticky bottom-0 z-10 flex justify-end items-center gap-3 mt-6 px-4 py-3;
+    @apply bg-gray-50 border border-gray-200 rounded-lg;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  .sticky-footer-buttons-between {
+    @apply sticky bottom-0 z-10 flex items-center justify-between gap-3 mt-6 px-4 py-3;
+    @apply bg-gray-50 border border-gray-200 rounded-lg;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  /*
+   * .sticky-footer-buttons-between 의 non-sticky / 풀-bleed 변형 — 모달이나
+   * 카드 내부 하단의 좌우 배치 액션 바 영역 (sticky 없이 상단 보더로만
+   * 구분). 본인인증 정책 폼 모달의 푸터 영역 등. 보강.
+   */
+  .footer-buttons-between {
+    @apply flex items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 bg-gray-50;
+    @apply dark:bg-gray-900 dark:border-gray-700;
+  }
+
+  /*
+   * Tab Content — sticky tab navigation 아래에 위치하는 탭별 콘텐츠
+   * 컨테이너 자산.
+   * 자산 책임: sticky-tab-nav 와 콘텐츠 시작점 사이의 표준 상단 시각 여백
+   * (pt-6 = 24px). admin / board 등 sticky tab + tab content 구조의 모든
+   * 페이지에 공통 적용.
+   * 이전 이력: _admin_base 슬롯의 id="main_content" 와 페이지 안쪽 id 가
+   * 중복되어 HTML 스펙 위반 → 페이지 안쪽 id 를 tab_content 로 분리하면서
+   * 시각 padding 도 그 위치로 이관.
+   */
+  .tab-content {
+    @apply pt-6;
+  }
+
+  /*
+   * Admin 페이지 컨텐츠 영역 (#main_content 슬롯 직계 자식의 wrapper Div).
+   * — admin 36개 화면에 반복되어 있던 "p-6 bg-gray-50
+   * dark:bg-gray-900 min-h-screen" 동일 인라인 패턴을 단일 시맨틱으로 흡수.
+   */
+  .admin-page-content {
+    @apply p-6 min-h-screen bg-gray-50;
+    @apply dark:bg-gray-900;
+  }
+
+  /*
+   * .admin-page-content 의 작은 padding 변형. responsive.portable 같은 좁은
+   * 화면 분기 또는 카드/표가 페이지 폭 가까이 채워야 하는 케이스에 사용.
+   */
+  .admin-page-content-compact {
+    @apply p-4 min-h-screen bg-gray-50;
+    @apply dark:bg-gray-900;
+  }
+
+  /*
+   * .admin-page-content 의 Tailwind 직접 반응형 분기 변형 (mobile p-4, sm p-6,
+   * lg p-8). 환경설정 / 설정 페이지 등 데스크톱·태블릿·모바일에서 padding 이
+   * 단계적으로 커져야 하는 화면.
+   */
+  .admin-page-content-responsive {
+    @apply p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50;
+    @apply dark:bg-gray-900;
+  }
+
+  /*
+   * .admin-page-content-responsive 의 min-h-screen 미적용 변형. 대시보드처럼
+   * 컨테이너 안에 카드/위젯이 자체 높이로 채워지고 페이지 자체 min-height 가
+   * 필요 없는 화면.
+   */
+  .admin-page-content-responsive-fluid {
+    @apply p-4 sm:p-6 lg:p-8 bg-gray-50;
+    @apply dark:bg-gray-900;
+  }
+
+  /*
+   * .admin-page-content (p-6 + min-h-screen) 의 min-h-screen 미적용 변형.
+   * 게시판 목록 / 사용자 목록 / 페이지 목록 처럼 내부에 카드/리스트가 자체
+   * 높이로 채워지고 페이지 자체 min-height 가 필요 없는 화면 (admin_user_list,
+   * admin_board_posts_index, admin_board_post_detail, admin_board_reports_*,
+   * admin_page_list 등 6건).
+   */
+  .admin-page-content-fluid {
+    @apply p-6 bg-gray-50;
+    @apply dark:bg-gray-900;
+  }
+
+  /*
+   * .admin-page-content-fluid 의 작은 padding (p-4) 변형. 위 6건의
+   * responsive.portable 분기 + ecommerce product_list partial 의 7건 케이스.
+   */
+  .admin-page-content-fluid-compact {
+    @apply p-4 bg-gray-50;
+    @apply dark:bg-gray-900;
+  }
+
+  /*
+   * .admin-page-content-fluid 의 풀-스크린 viewport 변형. 헤더(h-16) 를 제외한
+   * 화면 전체 높이를 점유하고 내부 스크롤을 자체 처리하는 카탈로그 / 위지윅
+   * 편집기 같은 영역에 사용 (ecommerce product_common_info_index /
+   * product_notice_index 2건). 보강 — viewport 풀-bleed 콘텐츠 영역
+   * 카테고리 확립.
+   */
+  .admin-page-content-viewport {
+    @apply p-6 bg-gray-50 h-[calc(100vh-64px)] overflow-hidden;
+    @apply dark:bg-gray-900;
+  }
+
+  /*
+   * .admin-page-content-viewport 의 작은 padding (p-4) 변형. 위 2건의
+   * responsive.portable 분기에 토큰 동치로 잔존하던 패턴을 흡수.
+   */
+  .admin-page-content-viewport-compact {
+    @apply p-4 bg-gray-50 h-[calc(100vh-64px)] overflow-hidden;
+    @apply dark:bg-gray-900;
+  }
+
+  /*
+   * 일괄 작업 바 — 사용자 목록 / 게시판 신고 / 페이지 목록 등 다중 선택 후
+   * 일괄 액션 (활성화/비활성화/차단/탈퇴 등) 을 노출하는 영역의 컨테이너.
+   * (admin_user_list, admin_board_reports_index, admin_page_list 3건)
+   */
+  .bulk-actions-bar {
+    @apply rounded-lg p-3 mb-4 flex items-center gap-3 border bg-gray-100 border-gray-200;
+    @apply dark:bg-gray-700/50 dark:border-gray-600;
+  }
+
+  /*
+   * AdminSidebar composite 시맨틱
+   *
+   * 관리자 사이드바 메뉴의 트리/아이템 인라인 Tailwind 를 시맨틱 자산으로 흡수.
+   *
+   * - .admin-sidebar-menu-list     스크롤 영역 안의 메뉴 컨테이너
+   * - .admin-sidebar-item          최상위 메뉴 아이템 base
+   * - .admin-sidebar-subitem       하위 메뉴 아이템 base
+   * - .admin-sidebar-item-active   현재 화면 매칭 활성 modifier
+   * - .admin-sidebar-item-active-parent  하위에 활성 메뉴가 있을 때 부모 강조
+   * - .admin-sidebar-item-default  비활성 + hover modifier
+   * - .admin-sidebar-item-disabled URL/하위메뉴 모두 없는 비활성 modifier
+   * - .admin-sidebar-icon-box      아이콘 18×18 박스
+   * - .admin-sidebar-chevron-trail 우측 chevron / 모듈 cube 아이콘 컨테이너
+   * - .admin-sidebar-module-icon   모듈 메뉴 표식 (fa-cube) 아이콘
+   * - .admin-sidebar-tree-line-vertical  서브 트리의 세로 연결선
+   * - .admin-sidebar-tree-line-curve     서브 트리의 곡선 연결선
+   * - .admin-sidebar-header        로고 + 접기 토글 헤더 영역
+   * - .admin-sidebar-collapse-btn  접기/펼치기 토글 버튼
+   */
+
+  .admin-sidebar-menu-list {
+    @apply px-4 pb-4 space-y-0.5;
+  }
+
+  .admin-sidebar-item {
+    @apply w-full flex items-center justify-between px-3 py-2 transition-colors rounded-lg text-sm font-semibold;
+  }
+
+  .admin-sidebar-subitem {
+    @apply w-full flex items-center justify-between pl-[30px] pr-3 py-[6px] transition-colors rounded-lg text-[13px] font-medium;
+  }
+
+  .admin-sidebar-item-active {
+    @apply bg-slate-100 text-slate-900 font-medium;
+    @apply dark:bg-slate-700 dark:text-white;
+  }
+
+  .admin-sidebar-item-active-parent {
+    @apply text-slate-900 font-medium;
+    @apply dark:text-white;
+  }
+
+  .admin-sidebar-item-default {
+    @apply text-slate-500;
+    @apply hover:bg-slate-50 hover:text-slate-900;
+    @apply dark:text-slate-400;
+    @apply dark:hover:bg-slate-800 dark:hover:text-white;
+  }
+
+  .admin-sidebar-item-disabled {
+    @apply text-slate-400 cursor-default;
+    @apply dark:text-slate-500;
+  }
+
+  .admin-sidebar-icon-box {
+    @apply w-[18px] h-[18px] flex items-center justify-center shrink-0;
+  }
+
+  .admin-sidebar-chevron-trail {
+    @apply flex items-center gap-1;
+  }
+
+  /*
+   * 메뉴 아이템 좌측 컨테이너 (아이콘 박스 + 라벨). 자식이 1개 (collapsed 시
+   * 아이콘만) 인 경우 gap 은 시각적 영향이 없으므로 collapsed 분기 없이
+   * 단일 자산으로 사용.
+   */
+  .admin-sidebar-item-content {
+    @apply flex items-center gap-2;
+  }
+
+  .admin-sidebar-module-icon {
+    @apply w-3 h-3 mr-2 opacity-60 text-slate-400;
+    @apply dark:text-slate-500;
+  }
+
+  .admin-sidebar-tree-line-vertical {
+    @apply absolute left-[12px] top-0 bottom-0 border-l z-0 border-slate-300;
+    @apply dark:border-slate-600;
+  }
+
+  .admin-sidebar-tree-line-curve {
+    @apply absolute left-[12px] top-0 w-[14px] h-1/2 border-l border-b rounded-bl-[10px] transition-colors z-10;
+    @apply border-slate-300;
+    @apply group-hover:border-blue-400;
+    @apply dark:border-slate-600;
+    @apply dark:group-hover:border-blue-500;
+  }
+
+  .admin-sidebar-header {
+    @apply flex items-center justify-between px-4 py-4 border-b border-slate-200;
+    @apply dark:border-slate-700;
+  }
+
+  .admin-sidebar-collapse-btn {
+    @apply p-2 rounded-md transition-colors;
+    @apply hover:bg-slate-100;
+    @apply dark:hover:bg-slate-700;
+  }
+
+  .tab-nav-default {
+    @apply flex gap-2;
+  }
+
+  .tab-nav-underline {
+    @apply flex gap-0 border-b border-gray-200;
+    @apply dark:border-gray-700;
+  }
+
+  .tab-btn-base {
+    @apply flex items-center gap-2 px-4 py-2 font-medium text-sm transition-all;
+  }
+
+  .tab-btn-default {
+    @apply text-gray-600 border-b-2 border-transparent;
+    @apply hover:text-gray-900 hover:bg-gray-50;
+    @apply dark:text-gray-400;
+    @apply dark:hover:text-gray-200 dark:hover:bg-gray-700;
+  }
+
+  .tab-btn-default-active {
+    @apply text-blue-600 bg-blue-50 border-b-2 border-blue-600;
+    @apply dark:text-blue-400 dark:bg-blue-900/20 dark:border-blue-400;
+  }
+
+  .tab-btn-underline {
+    @apply text-gray-600 border-b-2 border-transparent;
+    @apply hover:text-gray-900 hover:border-gray-300;
+    @apply dark:text-gray-400;
+    @apply dark:hover:text-gray-200 dark:hover:border-gray-600;
+  }
+
+  .tab-btn-underline-active {
+    @apply text-blue-600 border-b-2 border-blue-600;
+    @apply dark:text-blue-400 dark:border-blue-400;
+  }
+
+  .tab-btn-pills {
+    @apply text-gray-600 rounded-lg;
+    @apply hover:bg-gray-100;
+    @apply dark:text-gray-400 dark:hover:bg-gray-700;
+  }
+
+  .tab-btn-pills-active {
+    @apply bg-blue-600 text-white rounded-lg;
+    @apply dark:bg-blue-500;
+  }
+
+  .tab-btn-disabled {
+    @apply opacity-50 cursor-not-allowed text-gray-400;
+    @apply dark:text-gray-600;
+  }
+
+  /*
+   * Toggle composite 시맨틱
+   *
+   * composite/Toggle.tsx 내부의 반복 인라인 Tailwind 를 시맨틱 자산으로 흡수.
+   * sizing 토큰 (track-* / thumb-*) 은 동적이므로 호출처 multi-class 로 유지.
+   */
+  .toggle-container {
+    @apply inline-flex flex-wrap items-start gap-x-2 w-auto;
+  }
+
+  .toggle-switch-wrapper {
+    @apply relative inline-flex items-center flex-shrink-0;
+  }
+
+  /*
+   * Toggle switch (스위치형) track + thumb (after pseudo) 베이스.
+   * 기존 .toggle-track (L941) 은 다른 토글 구조용 — 이름 분리.
+   * peer 마커는 호출처 input.peer 가 부여. sizing (track w/h + thumb after:w-*
+   * after:h-*) 은 동적이라 호출처 multi-class 부착.
+   */
+  .toggle-switch-track {
+    @apply relative rounded-full transition-colors bg-gray-200;
+    @apply peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300;
+    @apply peer-checked:bg-blue-600;
+    @apply dark:bg-gray-700;
+    @apply dark:peer-focus:ring-blue-800;
+    @apply dark:peer-checked:bg-blue-500;
+    @apply after:content-[''] after:absolute after:top-0.5 after:left-0.5;
+    @apply after:bg-white after:border after:border-gray-300 after:rounded-full after:transition-all;
+    @apply dark:after:border-gray-600;
+    @apply peer-checked:after:translate-x-full peer-checked:after:border-white;
+  }
+
+  .toggle-label {
+    @apply text-sm font-medium text-gray-900;
+    @apply dark:text-white;
+  }
+
+  .toggle-description {
+    @apply w-full mt-1 text-xs text-gray-500;
+    @apply dark:text-gray-400;
+  }
+
+  /*
+   * AdminFooter composite 시맨틱
+   *
+   * composite/AdminFooter.tsx 내부의 반복 인라인 Tailwind 를 시맨틱 자산으로
+   * 흡수. 좌측 카피라이트 + 우측 빠른 링크 구조.
+   */
+  .admin-footer {
+    @apply px-6 py-4 mt-6;
+  }
+  .admin-footer-row {
+    @apply flex flex-col md:flex-row items-center justify-between gap-4;
+  }
+  .admin-footer-group {
+    @apply flex items-center gap-4 text-sm text-gray-600;
+    @apply dark:text-gray-400;
+  }
+  .admin-footer-link-hover {
+    @apply cursor-pointer transition-colors hover:text-blue-600;
+    @apply dark:hover:text-blue-400;
+  }
+  .admin-footer-link {
+    @apply flex items-center gap-2 text-sm text-gray-600 transition-colors hover:text-blue-600;
+    @apply dark:text-gray-400;
+    @apply dark:hover:text-blue-400;
+  }
+
+  /* Responsive Grid */
+  .responsive-grid {
+    @apply grid grid-cols-1 gap-4;
+  }
+  .grid-cols-1-lg-3 {
+    @apply grid grid-cols-1 gap-6;
+  }
+  .col-span-1-lg {
+    @apply col-span-1;
+  }
+  .col-span-2-lg {
+    @apply col-span-1;
+  }
+
+  /* ========================================
+   * 5. TYPOGRAPHY - 타이포그래피 스타일
+   * ======================================== */
+
+  /* Card Typography */
+  /*
+   * NOTE: legacy `.card-description` 정의(text-sm + mt-1, no mb)는 제거됨.
+   * 표준 `.card-description` 정의 (line ~402, text-sm + mb-4) 가
+   * admin / board / page / ecommerce 모든 호출처를 일관 처리.
+   * 중복 정의 시 cascade source order 상 뒤가 이겨 mt-1 만 적용되고 mb 가
+   * 사라져 card-title 단독 / card-description 동반 두 케이스의
+   * 아래 여백이 의도와 달라짐.
+   */
+
+  /* Modal Typography */
+  .modal-description {
+    @apply text-sm text-gray-500 mt-1;
+    @apply dark:text-gray-400;
+  }
+
+  /* Toast Typography */
+  .toast-message {
+    @apply text-sm;
+  }
 }
 
-.fi.fis {
-  width: 1em;
+/* ========================================
+ * MEDIA QUERIES
+ * ======================================== */
+
+/* Input Split Responsive */
+@media (max-width: 640px) {
+  .input-split {
+    flex-wrap: wrap;
+  }
+  .input-split input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Page Header Responsive */
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Responsive Grid - sm breakpoint */
+@media (min-width: 640px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Responsive Grid - lg breakpoint */
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .grid-cols-1-lg-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .col-span-1-lg {
+    grid-column: span 1 / span 1;
+  }
+  .col-span-2-lg {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Responsive Grid - 오버플로우 방지 */
+@media (max-width: 480px) {
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Mobile Card View - 768px 이하에서 표시 */
+@media (max-width: 768px) {
+  .table-mobile-cards {
+    display: block;
+  }
+  .table-mobile-cards > * + * {
+    margin-top: 1rem;
+  }
+  .table-desktop {
+    display: none !important;
+  }
+}
+
+/* Modal Responsive */
+@media (max-width: 640px) {
+  .modal {
+    margin-left: 1rem;
+    margin-right: 1rem;
+    max-width: calc(100% - 2rem);
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+  .modal-overlay {
+    padding: 1rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+  .modal-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .modal-footer .btn {
+    width: 100%;
+  }
+}
+
+/* Card Account - 오버플로우 방지 */
+@media (max-width: 640px) {
+  .card-account {
+    width: 100%;
+  }
 }
 
 /* sirsoft-admin_basic 템플릿 커스텀 스타일 */

@@ -36,34 +36,40 @@ class EcommerceSitemapContributor implements SitemapContributorInterface
         $urls = [];
         $routePath = g7_module_settings('sirsoft-ecommerce', 'basic_info.route_path') ?? 'shop';
 
-        // 상품 목록 페이지
-        $urls[] = [
-            'url' => "/{$routePath}/products",
-            'changefreq' => 'daily',
-            'priority' => 0.7,
-        ];
-
-        // 카테고리별 페이지
-        $categories = Category::where('is_active', true)->get(['id', 'slug', 'updated_at']);
-        foreach ($categories as $category) {
+        // 상품 목록 페이지 — 'SEO 제공 페이지' 토글 OFF 시 제외
+        if ((bool) g7_module_settings('sirsoft-ecommerce', 'seo.seo_shop_index', true)) {
             $urls[] = [
-                'url' => "/{$routePath}/category/{$category->slug}",
-                'lastmod' => $category->updated_at?->toW3cString(),
-                'changefreq' => 'weekly',
-                'priority' => 0.6,
+                'url' => "/{$routePath}/products",
+                'changefreq' => 'daily',
+                'priority' => 0.7,
             ];
         }
 
-        // 개별 상품 페이지 (전시 상태가 '전시'인 상품만)
-        $products = Product::where('display_status', ProductDisplayStatus::VISIBLE)
-            ->get(['id', 'updated_at']);
-        foreach ($products as $product) {
-            $urls[] = [
-                'url' => "/{$routePath}/products/{$product->id}",
-                'lastmod' => $product->updated_at?->toW3cString(),
-                'changefreq' => 'weekly',
-                'priority' => 0.8,
-            ];
+        // 카테고리별 페이지 — 토글 OFF 시 제외
+        if ((bool) g7_module_settings('sirsoft-ecommerce', 'seo.seo_category', true)) {
+            $categories = Category::where('is_active', true)->get(['id', 'slug', 'updated_at']);
+            foreach ($categories as $category) {
+                $urls[] = [
+                    'url' => "/{$routePath}/category/{$category->slug}",
+                    'lastmod' => $category->updated_at?->toW3cString(),
+                    'changefreq' => 'weekly',
+                    'priority' => 0.6,
+                ];
+            }
+        }
+
+        // 개별 상품 페이지 (전시 상태가 '전시'인 상품만) — 토글 OFF 시 제외
+        if ((bool) g7_module_settings('sirsoft-ecommerce', 'seo.seo_product_detail', true)) {
+            $products = Product::where('display_status', ProductDisplayStatus::VISIBLE)
+                ->get(['id', 'updated_at']);
+            foreach ($products as $product) {
+                $urls[] = [
+                    'url' => "/{$routePath}/products/{$product->id}",
+                    'lastmod' => $product->updated_at?->toW3cString(),
+                    'changefreq' => 'weekly',
+                    'priority' => 0.8,
+                ];
+            }
         }
 
         return $urls;

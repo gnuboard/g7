@@ -131,8 +131,11 @@ class CommentService
      */
     public function canUpdate(Comment $comment, ?int $userId, ?string $password = null, ?string $slug = null): bool
     {
-        // 1. 게시판 관리자 권한 확인 (admin.manage 권한)
-        if ($slug && Auth::check() && $this->checkBoardPermission($slug, 'admin.manage')) {
+        // 1. 게시판 관리 권한 확인 (admin.manage 또는 사용자 페이지 manager 권한)
+        if ($slug && Auth::check() && (
+            $this->checkBoardPermission($slug, 'admin.manage')
+            || $this->checkBoardPermission($slug, 'manager', PermissionType::User)
+        )) {
             return true;
         }
 
@@ -167,8 +170,11 @@ class CommentService
      */
     public function canDelete(Comment $comment, ?int $userId, ?string $password = null, ?string $slug = null): bool
     {
-        // 1. 게시판 관리자 권한 확인 (admin.manage 권한)
-        if ($slug && Auth::check() && $this->checkBoardPermission($slug, 'admin.manage')) {
+        // 1. 게시판 관리 권한 확인 (admin.manage 또는 사용자 페이지 manager 권한)
+        if ($slug && Auth::check() && (
+            $this->checkBoardPermission($slug, 'admin.manage')
+            || $this->checkBoardPermission($slug, 'manager', PermissionType::User)
+        )) {
             return true;
         }
 

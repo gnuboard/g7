@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import type { EditorAttrs } from '../../types';
 import { Table } from '../basic/Table';
 import { Thead } from '../basic/Thead';
 import { Tbody } from '../basic/Tbody';
@@ -338,7 +339,7 @@ export interface DataGridProps {
   /**
    * 서브 행 셀의 CSS 클래스 (선택적)
    *
-   * @default "px-6 py-2 bg-gray-50 dark:bg-gray-750"
+   * @default "px-6 py-2 bg-gray-50 dark:bg-gray-900"
    */
   subRowClassName?: string;
 
@@ -380,6 +381,9 @@ export interface DataGridProps {
    * 미지정 시 footerCells를 key-value 형태로 자동 렌더링합니다.
    */
   footerCardChildren?: DataGridCellChild[];
+
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -623,12 +627,13 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // 서브 행 (Sub Row) - 선택적
   subRowChildren,
   subRowCondition,
-  subRowClassName = 'px-6 py-2 bg-gray-50 dark:bg-gray-750',
+  subRowClassName = 'px-6 py-2 bg-gray-50 dark:bg-gray-900',
   subRowRender,
   // 푸터 행 (Footer Row) - v1.19.0+
   footerCells,
   footerClassName = 'bg-gray-50 dark:bg-gray-800/50 font-medium',
   footerCardChildren,
+  editorAttrs,
 }) => {
   // props로 전달된 값이 없으면 undefined (Pagination이 기본 화살표 사용)
   const resolvedPrevText = prevText || undefined;
@@ -819,8 +824,16 @@ export const DataGrid: React.FC<DataGridProps> = ({
   }, [mergedColumns, visibleColumns, showColumnSelector, initialVisibleColumns]);
 
   // 정렬 처리
+  // onSortChange 가 연결된 경우(controlled) 정렬 주체는 서버다. 헤더 클릭 →
+  // onSortChange → 상위가 query 갱신 후 API 재요청 → 서버가 새 순서를 내려준다.
+  // 이때 data 는 이미 서버가 정렬한 결과이므로 클라이언트가 다시 정렬하면 안 된다
+  // (프론트는 서버가 내려준 순서를 그대로 출력한다). 특히 클라이언트 정렬은 null
+  // 값 비교 시 항상 앞으로 밀어 서버 ORDER BY 순서를 훼손한다.
+  // onSortChange 가 없는 경우(uncontrolled)에만 컴포넌트가 단독 정렬 주체로서
+  // 전달받은 로컬 데이터를 클라이언트에서 정렬한다.
   const sortedData = useMemo(() => {
     if (!sortField || !sortable || !data) return data || [];
+    if (onSortChange) return data;
 
     return [...data].sort((a, b) => {
       const aValue = a[sortField];
@@ -831,7 +844,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
       const comparison = aValue > bValue ? 1 : -1;
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [data, sortField, sortDirection, sortable]);
+  }, [data, sortField, sortDirection, sortable, onSortChange]);
 
   // 페이지네이션 처리
   const paginatedData = useMemo(() => {
@@ -1115,7 +1128,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // 모바일 카드 뷰
   if (isMobileView) {
     return (
-      <Div id={id} className={`w-full ${className}`} style={style}>
+      <Div id={id} className={`w-full ${className}`} style={style} {...editorAttrs}>
         {/* 컬럼 선택 메뉴 */}
         {showColumnSelector && (
           <Div className="mb-4 flex justify-end">
@@ -1234,7 +1247,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // 데스크톱 테이블 뷰
   return (
-    <Div id={id} className={`w-full ${className}`} style={style}>
+    <Div id={id} className={`w-full ${className}`} style={style} {...editorAttrs}>
       {/* 컬럼 선택 메뉴 */}
       {showColumnSelector && (
         <Div className="mb-4 flex justify-end">
@@ -1400,7 +1413,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                       {displayColumns.map((column) => (
                         <Td
                           key={column.field}
-                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200"
+                          className="px-6 py-4 align-top whitespace-nowrap text-sm text-gray-900 dark:text-gray-200"
                           style={{ width: column.width, minWidth: column.width }}
                         >
                           {column.cellChildren && column.cellChildren.length > 0
@@ -1429,7 +1442,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
                     {/* 확장된 행 콘텐츠 */}
                     {expandable && expanded && isRowExpandable(row) && (
-                      <Tr className="bg-gray-50 dark:bg-gray-750">
+                      <Tr className="bg-gray-50 dark:bg-gray-900">
                         <Td
                           colSpan={
                             displayColumns.length +
@@ -1455,7 +1468,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             (selectable ? 1 : 0) +
                             (rowActions && rowActions.length > 0 ? 1 : 0)
                           }
-                          className={subRowClassName ? 'p-2' : subRowClassName || 'px-6 py-2 bg-gray-50 dark:bg-gray-750'}
+                          className={subRowClassName ? 'p-2' : subRowClassName || 'px-6 py-2 bg-gray-50 dark:bg-gray-900'}
                         >
                           {subRowClassName ? (
                             <Div className={subRowClassName}>

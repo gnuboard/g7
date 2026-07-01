@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Models\NotificationDefinition;
 use App\Notifications\GenericNotification;
@@ -66,11 +67,36 @@ class NotificationHookListener implements HookListenerInterface
         foreach ($definitions as $definition) {
             $hooks = $definition->hooks ?? [];
             foreach ($hooks as $hook) {
-                HookManager::addAction($hook, function (...$args) use ($definition) {
-                    $this->dispatch($definition, $args);
-                }, priority: 30);
+                // 발송을 큐로 디스패치한다 — 다른 코어/모듈 리스너(getSubscribedHooks → HookListenerRegistrar)
+                // 가 큐로 가는 것과 동일한 정책. 직접 발송하면 요청 스레드에서 동기 실행되어, 수신자가
+                // 많을 때(예: admin role 전체) 호출 요청(주문 생성 등)이 전체 발송 완료까지 막힌다.
+                // 동적 구독은 정적 매핑으로 표현할 수 없으므로 Registrar 의 동적 진입점에 위임한다 —
+                // 큐 래핑 로직(DispatchHookListenerJob/직렬화/컨텍스트 캡처)의 소유권을 Registrar 에
+                // 유지하여 정적/동적 등록을 일관되게 만든다. 큐 드라이버가 sync 면 즉시 실행(하위호환).
+                // $definition 을 boundArgs 로 고정 전달 → 워커가 dispatchForDefinition($definition, ...$args) 호출.
+                HookListenerRegistrar::registerDynamicAction(
+                    hookName: $hook,
+                    listenerClass: self::class,
+                    method: 'dispatchForDefinition',
+                    boundArgs: [$definition],
+                    priority: 30,
+                );
             }
         }
+    }
+
+    /**
+     * 큐 워커에서 호출되는 발송 진입점.
+     *
+     * registerDynamicHooks 가 등록한 큐 작업이 (NotificationDefinition $definition, ...$hookArgs)
+     * 형태로 복원해 호출한다. 원래 훅 인자($hookArgs)를 배열로 모아 dispatch() 에 위임한다.
+     *
+     * @param  NotificationDefinition  $definition  알림 정의 (큐 직렬화 후 PK 로 복원됨)
+     * @param  mixed  ...$hookArgs  원래 훅 발화 시 전달된 인자들
+     */
+    public function dispatchForDefinition(NotificationDefinition $definition, ...$hookArgs): void
+    {
+        $this->dispatch($definition, $hookArgs);
     }
 
     /**
@@ -81,9 +107,8 @@ class NotificationHookListener implements HookListenerInterface
      * 2. extract_data 필터의 notifiables 배열
      * 3. extract_data 필터의 단일 notifiable (레거시 호환)
      *
-     * @param NotificationDefinition $definition 알림 정의
-     * @param array $args 훅 파라미터
-     * @return void
+     * @param  NotificationDefinition  $definition  알림 정의
+     * @param  array  $args  훅 파라미터
      */
     private function dispatch(NotificationDefinition $definition, array $args): void
     {

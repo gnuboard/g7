@@ -1,0 +1,38 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   ProductRepository/CouponRepository 의 보조필드 union 전환으로, PHPUnit Feature 가
+#   search_field/매칭위치/동반필터 조합과 total==count 불변식을 커버하며 green.
+feature: 관리자 상품/쿠폰 목록 검색 시 total=0 오표시 수정 (A19① Scout total 정합)
+
+description: |
+  Scout queryCallback 으로 total 재계산 시 보조필드 OR(product_code/sku/barcode 또는
+  creator)가 MATCH 절 없이 재적용되어 total=0 이 되던 결함을, FULLTEXT 매칭 ID 와
+  보조필드 매칭 ID 의 합집합(union)을 미리 산출해 whereIn 으로 한정하는 방식으로 수정한다.
+  total 계산 경로와 결과 조회 경로가 동일 조건을 본다.
+
+axes:
+  search_field:
+    - all
+    - name
+    - product_code     # 상품 전용
+  match_location:
+    - name_only
+    - aux_only         # product_code(상품) / creator(쿠폰)
+    - both
+    - no_match
+  companion_filter:
+    - none
+    - sales_status     # 검색어 + 판매상태 동시
+
+effects:
+  - total_equals_count_for_aux_match    # 보조필드 매칭 시 total==count (회귀 가드)
+  - total_equals_count_for_name_match
+  - name_field_total_stable             # name 단독 경로 회귀 없음
+  - total_consistent_with_companion_filter
+  - no_match_returns_zero_total         # 매칭 없으면 total=0(정상)
+  - coupon_creator_match_total_consistent
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductControllerSearchTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponListCreatorTest.php

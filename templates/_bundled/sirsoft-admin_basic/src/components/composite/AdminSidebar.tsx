@@ -4,6 +4,7 @@ import { Img } from '../basic/Img';
 import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
+import type { EditorAttrs } from '../../types';
 
 // G7Core 전역 객체 접근 헬퍼
 const G7Core = () => (window as any).G7Core;
@@ -38,6 +39,12 @@ export interface AdminSidebarProps {
   className?: string;
   /** 현재 로케일 (다국어 메뉴 이름 표시용). 미지정 시 G7Core.locale.current() 자동 사용 */
   currentLocale?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -74,6 +81,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onToggleCollapse,
   className = '',
   currentLocale: currentLocaleProp,
+  id,
+  editorAttrs,
 }) => {
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(new Set());
   const [locale, setLocale] = useState<string>(currentLocaleProp || G7Core()?.locale?.current?.() || 'ko');
@@ -141,7 +150,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   /**
    * 특정 경로가 메뉴 URL과 일치하는지 확인
-   * 접두사 매칭 시 가장 구체적인(가장 긴) 매칭만 활성화 (Issue #37)
+   * 접두사 매칭 시 가장 구체적인(가장 긴) 매칭만 활성화 ()
    *
    * @param url 메뉴 URL
    * @param path 확인할 경로
@@ -197,7 +206,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   /**
    * 메뉴 URL이 현재 경로와 일치하는지 확인
-   * 접두사 매칭 시 가장 구체적인 매칭만 활성화 (Issue #37)
+   * 접두사 매칭 시 가장 구체적인 매칭만 활성화 ()
    *
    * @param url 메뉴 URL
    * @returns 활성 여부
@@ -275,25 +284,38 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   /**
    * 메뉴 아이템 렌더링 (재귀)
    */
-  const renderMenuItem = (item: MenuItem, level: number = 0): React.ReactNode => {
+  const renderMenuItem = (item: MenuItem, level: number = 0, isLast: boolean = false): React.ReactNode => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems.has(item.id);
-    const paddingLeft = level * 16 + 16;
+    // padding-left 는 .admin-sidebar-item (px-3 → 12px) / .admin-sidebar-subitem
+    // (pl-[30px]) 시맨틱 자산에 흡수됨.
     const label = getMenuLabel(item.name);
+    const isSubItem = level > 0;
 
     // 활성 메뉴 판별
     const isActive = isActiveMenu(item.url);
     const hasActiveDescendant = hasActiveChild(item);
 
     // 스타일 클래스
-    const baseClass = 'w-full flex items-center justify-between px-4 py-3 transition-colors';
-    const activeClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-l-4 border-blue-500';
-    const activeParentClass = 'text-blue-600 dark:text-blue-400';
-    const defaultClass = 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
-    const disabledClass = 'text-gray-400 dark:text-gray-500 cursor-default';
+    const baseClass = isSubItem ? 'admin-sidebar-subitem' : 'admin-sidebar-item';
+    const activeClass = 'admin-sidebar-item-active';
+    const activeParentClass = 'admin-sidebar-item-active-parent';
+    const defaultClass = 'admin-sidebar-item-default';
+    const disabledClass = 'admin-sidebar-item-disabled';
 
     return (
-      <Div key={item.id}>
+      <Div key={item.id} className={isSubItem ? 'relative group' : ''}>
+        {/* 서브메뉴 트리라인 */}
+        {isSubItem && (
+          <>
+            {/* 세로선 (마지막 아이템이 아닐 때만) */}
+            {!isLast && (
+              <Div className="admin-sidebar-tree-line-vertical" />
+            )}
+            {/* 커브드 연결선 */}
+            <Div className="admin-sidebar-tree-line-curve" />
+          </>
+        )}
         {/* 메뉴 아이템 */}
         {hasChildren && item.url ? (
           // 하위 메뉴 + URL 있는 경우: 텍스트 클릭 → 네비게이션, chevron 클릭 → 토글
@@ -303,7 +325,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               ${isActive ? activeClass : hasActiveDescendant ? activeParentClass : defaultClass}
               ${collapsed ? 'justify-center' : ''}
             `}
-            style={{ paddingLeft: collapsed ? undefined : `${paddingLeft}px` }}
           >
             <Button
               onClick={(event) => handleNavigate(event, item.url!)}
@@ -317,9 +338,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               {!collapsed && <Span className="truncate">{label}</Span>}
             </Button>
             {!collapsed && (
-              <Div className="flex items-center gap-1">
+              <Div className="admin-sidebar-chevron-trail">
                 {item.module_id && (
-                  <I className="fas fa-cube w-3 h-3 mr-2 text-gray-400 dark:text-gray-500 opacity-60" title="모듈 메뉴" />
+                  <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
                 )}
                 <Button
                   onClick={() => toggleExpand(item.id)}
@@ -342,23 +363,22 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               ${hasActiveDescendant ? activeParentClass : defaultClass}
               ${collapsed ? 'justify-center' : ''}
             `}
-            style={{ paddingLeft: collapsed ? undefined : `${paddingLeft}px` }}
           >
-            <Div className="flex items-center">
+            <Div className="admin-sidebar-item-content">
               {item.icon && (
-                <I
-                  className={`${item.icon} ${collapsed ? '' : 'mr-3'} w-5 h-5 flex items-center justify-center`}
-                />
+                <Div className="admin-sidebar-icon-box">
+                  <I className={item.icon} />
+                </Div>
               )}
               {!collapsed && <Span>{label}</Span>}
             </Div>
             {!collapsed && (
-              <Div className="flex items-center gap-1">
+              <Div className="admin-sidebar-chevron-trail">
                 {item.module_id && (
-                  <I className="fas fa-cube w-3 h-3 mr-2 text-gray-400 dark:text-gray-500 opacity-60" title="모듈 메뉴" />
+                  <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
                 )}
                 <I
-                  className={`fas fa-chevron-down w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  className={`fas fa-chevron-right w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                 />
               </Div>
             )}
@@ -373,18 +393,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               ${collapsed ? 'justify-center' : ''}
               text-left
             `}
-            style={{ paddingLeft: collapsed ? undefined : `${paddingLeft}px` }}
           >
-            <Div className="flex items-center">
+            <Div className="admin-sidebar-item-content">
               {item.icon && (
-                <I
-                  className={`${item.icon} ${collapsed ? '' : 'mr-3'} w-5 h-5 flex items-center justify-center`}
-                />
+                <Div className="admin-sidebar-icon-box">
+                  <I className={item.icon} />
+                </Div>
               )}
               {!collapsed && <Span>{label}</Span>}
             </Div>
             {!collapsed && item.module_id && (
-              <I className="fas fa-cube w-3 h-3 mr-2 text-gray-400 dark:text-gray-500 opacity-60" title="모듈 메뉴" />
+              <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
             )}
           </Button>
         ) : (
@@ -396,26 +415,27 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               ${collapsed ? 'justify-center' : ''}
               text-left
             `}
-            style={{ paddingLeft: collapsed ? undefined : `${paddingLeft}px` }}
           >
-            <Div className="flex items-center">
+            <Div className="admin-sidebar-item-content">
               {item.icon && (
-                <I
-                  className={`${item.icon} ${collapsed ? '' : 'mr-3'} w-5 h-5 flex items-center justify-center`}
-                />
+                <Div className="admin-sidebar-icon-box">
+                  <I className={item.icon} />
+                </Div>
               )}
               {!collapsed && <Span>{label}</Span>}
             </Div>
             {!collapsed && item.module_id && (
-              <I className="fas fa-cube w-3 h-3 mr-2 text-gray-400 dark:text-gray-500 opacity-60" title="모듈 메뉴" />
+              <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
             )}
           </Button>
         )}
 
         {/* 하위 메뉴 */}
         {hasChildren && !collapsed && isExpanded && (
-          <Div className="bg-gray-50 dark:bg-gray-900">
-            {item.children!.map((child) => renderMenuItem(child, level + 1))}
+          <Div className="relative ml-2">
+            {item.children!.map((child, index) =>
+              renderMenuItem(child, level + 1, index === item.children!.length - 1)
+            )}
           </Div>
         )}
       </Div>
@@ -423,10 +443,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   };
 
   return (
-    <Div className={className}>
+    <Div className={className} id={id} {...editorAttrs}>
       {/* 로고 영역 (선택적) */}
       {(logo || onToggleCollapse) && (
-        <Div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+        <Div className="admin-sidebar-header">
           {logo && !collapsed && (
             <Img
               src={logo}
@@ -437,11 +457,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           {onToggleCollapse && (
             <Button
               onClick={onToggleCollapse}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+              className="admin-sidebar-collapse-btn"
               aria-label={collapsed ? t('common.expand_sidebar') : t('common.collapse_sidebar')}
             >
               <I
-                className={`${collapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'} w-5 h-5 text-gray-600 dark:text-gray-400`}
+                className={`${collapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'} w-5 h-5 text-slate-600 dark:text-slate-400`}
               />
             </Button>
           )}
@@ -449,8 +469,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       )}
 
       {/* 메뉴 영역 */}
-      <Div>
-        {menu.map((item) => renderMenuItem(item))}
+      <Div className="admin-sidebar-menu-list">
+        {menu.map((item, index) => renderMenuItem(item, 0, index === menu.length - 1))}
       </Div>
     </Div>
   );

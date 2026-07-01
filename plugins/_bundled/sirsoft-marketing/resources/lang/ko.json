@@ -1,4 +1,10 @@
 {
+  "editor": {
+    "data_source": {
+      "marketing_settings": "마케팅 수신 설정",
+      "settings": "설정"
+    }
+  },
   "marketing_consent_title": "마케팅 동의 정보",
   "email_subscription": "광고성 이메일 수신",
   "email_subscription_desc": "프로모션, 이벤트, 할인 등의 마케팅 이메일을 수신합니다.",

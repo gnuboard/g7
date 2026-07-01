@@ -47,7 +47,9 @@ class BoardActivityLogListener implements HookListenerInterface
             'sirsoft-board.board.after_update' => ['method' => 'handleBoardAfterUpdate', 'priority' => 20],
             'sirsoft-board.board.after_delete' => ['method' => 'handleBoardAfterDelete', 'priority' => 20],
             'sirsoft-board.board.after_add_to_menu' => ['method' => 'handleBoardAfterAddToMenu', 'priority' => 20],
+            'sirsoft-board.board.after_remove_from_menu' => ['method' => 'handleBoardAfterRemoveFromMenu', 'priority' => 20],
             'sirsoft-board.settings.after_bulk_apply' => ['method' => 'handleSettingsAfterBulkApply', 'priority' => 20],
+            'sirsoft-board.settings.after_bulk_apply_aborted' => ['method' => 'handleSettingsAfterBulkApplyAborted', 'priority' => 20],
 
             // ─── BoardType ───
             'sirsoft-board.board_type.after_create' => ['method' => 'handleBoardTypeAfterCreate', 'priority' => 20],
@@ -71,6 +73,7 @@ class BoardActivityLogListener implements HookListenerInterface
             // ─── Attachment ───
             'sirsoft-board.attachment.after_upload' => ['method' => 'handleAttachmentAfterUpload', 'priority' => 20],
             'sirsoft-board.attachment.after_delete' => ['method' => 'handleAttachmentAfterDelete', 'priority' => 20],
+            'sirsoft-board.attachment.after_download' => ['method' => 'handleAttachmentAfterDownload', 'priority' => 20],
 
             // ─── Report ───
             'sirsoft-board.report.after_create' => ['method' => 'handleReportAfterCreate', 'priority' => 20],
@@ -86,7 +89,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 훅 이벤트 처리 (기본 핸들러)
      *
-     * @param mixed ...$args 훅에서 전달된 인수들
+     * @param  mixed  ...$args  훅에서 전달된 인수들
      */
     public function handle(...$args): void
     {
@@ -100,8 +103,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시판 생성 후 로그 기록
      *
-     * @param Board $board 생성된 게시판
-     * @param array $data 생성 데이터
+     * @param  Board  $board  생성된 게시판
+     * @param  array  $data  생성 데이터
      */
     public function handleBoardAfterCreate(Board $board, array $data): void
     {
@@ -116,9 +119,9 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시판 수정 후 로그 기록
      *
-     * @param Board $updatedBoard 수정된 게시판
-     * @param array $data 수정 데이터
-     * @param array|null $snapshot 수정 전 스냅샷 (서비스에서 전달)
+     * @param  Board  $updatedBoard  수정된 게시판
+     * @param  array  $data  수정 데이터
+     * @param  array|null  $snapshot  수정 전 스냅샷 (서비스에서 전달)
      */
     public function handleBoardAfterUpdate(Board $updatedBoard, array $data, ?array $snapshot = null): void
     {
@@ -135,7 +138,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시판 삭제 후 로그 기록
      *
-     * @param Board $board 삭제된 게시판
+     * @param  Board  $board  삭제된 게시판
      */
     public function handleBoardAfterDelete(?Board $board): void
     {
@@ -154,8 +157,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시판 메뉴 추가 후 로그 기록
      *
-     * @param Menu $menu 추가된 메뉴
-     * @param Board $board 대상 게시판
+     * @param  Menu  $menu  추가된 메뉴
+     * @param  Board  $board  대상 게시판
      */
     public function handleBoardAfterAddToMenu(Menu $menu, Board $board): void
     {
@@ -171,10 +174,29 @@ class BoardActivityLogListener implements HookListenerInterface
     }
 
     /**
+     * 게시판 메뉴 제거 후 로그 기록
+     *
+     * @param  Menu  $menu  제거된 메뉴
+     * @param  Board  $board  대상 게시판
+     */
+    public function handleBoardAfterRemoveFromMenu(Menu $menu, Board $board): void
+    {
+        $this->logActivity('board.remove_from_menu', [
+            'loggable' => $board,
+            'description_key' => 'sirsoft-board::activity_log.description.board_remove_from_menu',
+            'description_params' => [
+                'board_name' => $board->name ?? '',
+                'menu_name' => $menu->name ?? '',
+            ],
+            'properties' => ['menu_id' => $menu->id, 'board_id' => $board->id],
+        ]);
+    }
+
+    /**
      * 게시판 설정 일괄 적용 후 로그 기록
      *
-     * @param array $fields 적용된 필드 목록
-     * @param int $updatedCount 업데이트된 게시판 수
+     * @param  array  $fields  적용된 필드 목록
+     * @param  int  $updatedCount  업데이트된 게시판 수
      */
     public function handleSettingsAfterBulkApply(array $fields, int $updatedCount): void
     {
@@ -185,6 +207,39 @@ class BoardActivityLogListener implements HookListenerInterface
         ]);
     }
 
+    /**
+     * 게시판 설정 일괄 적용 중단(전체 롤백) 후 로그 기록
+     *
+     * 일괄 적용 중 한 지점이라도 실패하면 전체 변경이 롤백되며,
+     * 그 중단 사실을 활동 이력에 남긴다. 컬럼 업데이트 실패(failed_board=null)는
+     * 게시판 특정 불가이므로 실패 게시판명을 '-' 로 기록한다.
+     *
+     * 훅 인자는 큐 직렬화를 거치므로 Exception 객체가 아닌 배열(toLogContext)을 받는다.
+     *
+     * @param  array  $fields  적용 시도한 필드 목록
+     * @param  array  $context  중단 정보 (failed_board, failed_at, total, failure_reason)
+     */
+    public function handleSettingsAfterBulkApplyAborted(array $fields, array $context): void
+    {
+        $failedBoard = $context['failed_board'] ?? null;
+
+        $this->logActivity('board_settings.bulk_apply_aborted', [
+            'description_key' => 'sirsoft-board::activity_log.description.board_settings_bulk_apply_aborted',
+            'description_params' => [
+                'failed_board_name' => $failedBoard['name'] ?? '-',
+                'failed_at' => $context['failed_at'] ?? 0,
+                'total' => $context['total'] ?? 0,
+            ],
+            'properties' => [
+                'fields' => $fields,
+                'failed_board' => $failedBoard,
+                'failed_at' => $context['failed_at'] ?? null,
+                'total' => $context['total'] ?? 0,
+                'failure_reason' => $context['failure_reason'] ?? null,
+            ],
+        ]);
+    }
+
     // ═══════════════════════════════════════════
     // BoardType 핸들러
     // ═══════════════════════════════════════════
@@ -192,8 +247,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시판 유형 생성 후 로그 기록
      *
-     * @param BoardType $boardType 생성된 게시판 유형
-     * @param array $data 생성 데이터
+     * @param  BoardType  $boardType  생성된 게시판 유형
+     * @param  array  $data  생성 데이터
      */
     public function handleBoardTypeAfterCreate(BoardType $boardType, array $data): void
     {
@@ -208,9 +263,9 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시판 유형 수정 후 로그 기록
      *
-     * @param BoardType $updatedBoardType 수정된 게시판 유형
-     * @param array $data 수정 데이터
-     * @param array|null $snapshot 수정 전 스냅샷 (서비스에서 전달)
+     * @param  BoardType  $updatedBoardType  수정된 게시판 유형
+     * @param  array  $data  수정 데이터
+     * @param  array|null  $snapshot  수정 전 스냅샷 (서비스에서 전달)
      */
     public function handleBoardTypeAfterUpdate(BoardType $updatedBoardType, array $data, ?array $snapshot = null): void
     {
@@ -227,7 +282,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시판 유형 삭제 후 로그 기록
      *
-     * @param BoardType $boardType 삭제된 게시판 유형
+     * @param  BoardType  $boardType  삭제된 게시판 유형
      */
     public function handleBoardTypeAfterDelete(?BoardType $boardType): void
     {
@@ -250,8 +305,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시글 생성 후 로그 기록
      *
-     * @param Post $post 생성된 게시글
-     * @param string $slug 게시판 슬러그
+     * @param  Post  $post  생성된 게시글
+     * @param  string  $slug  게시판 슬러그
      */
     public function handlePostAfterCreate(Post $post, string $slug): void
     {
@@ -271,9 +326,9 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시글 수정 후 로그 기록
      *
-     * @param Post $updatedPost 수정된 게시글
-     * @param string $slug 게시판 슬러그
-     * @param array|null $snapshot 수정 전 스냅샷 (서비스에서 전달)
+     * @param  Post  $updatedPost  수정된 게시글
+     * @param  string  $slug  게시판 슬러그
+     * @param  array|null  $snapshot  수정 전 스냅샷 (서비스에서 전달)
      */
     public function handlePostAfterUpdate(Post $updatedPost, string $slug, ?array $snapshot = null): void
     {
@@ -295,8 +350,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시글 삭제 후 로그 기록
      *
-     * @param Post $deletedPost 삭제된 게시글
-     * @param string $slug 게시판 슬러그
+     * @param  Post  $deletedPost  삭제된 게시글
+     * @param  string  $slug  게시판 슬러그
      */
     public function handlePostAfterDelete(?Post $deletedPost, string $slug): void
     {
@@ -320,8 +375,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시글 블라인드 처리 후 로그 기록
      *
-     * @param Post $blindedPost 블라인드 처리된 게시글
-     * @param string $slug 게시판 슬러그
+     * @param  Post  $blindedPost  블라인드 처리된 게시글
+     * @param  string  $slug  게시판 슬러그
      */
     public function handlePostAfterBlind(Post $blindedPost, string $slug): void
     {
@@ -341,8 +396,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 게시글 복원 후 로그 기록
      *
-     * @param Post $restoredPost 복원된 게시글
-     * @param string $slug 게시판 슬러그
+     * @param  Post  $restoredPost  복원된 게시글
+     * @param  string  $slug  게시판 슬러그
      */
     public function handlePostAfterRestore(Post $restoredPost, string $slug): void
     {
@@ -366,8 +421,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 댓글 생성 후 로그 기록
      *
-     * @param Comment $comment 생성된 댓글
-     * @param string $slug 게시판 슬러그
+     * @param  Comment  $comment  생성된 댓글
+     * @param  string  $slug  게시판 슬러그
      */
     public function handleCommentAfterCreate(Comment $comment, string $slug): void
     {
@@ -387,9 +442,9 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 댓글 수정 후 로그 기록
      *
-     * @param Comment $updatedComment 수정된 댓글
-     * @param string $slug 게시판 슬러그
-     * @param array|null $snapshot 수정 전 스냅샷 (서비스에서 전달)
+     * @param  Comment  $updatedComment  수정된 댓글
+     * @param  string  $slug  게시판 슬러그
+     * @param  array|null  $snapshot  수정 전 스냅샷 (서비스에서 전달)
      */
     public function handleCommentAfterUpdate(Comment $updatedComment, string $slug, ?array $snapshot = null): void
     {
@@ -406,8 +461,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 댓글 삭제 후 로그 기록
      *
-     * @param Comment $deletedComment 삭제된 댓글
-     * @param string $slug 게시판 슬러그
+     * @param  Comment  $deletedComment  삭제된 댓글
+     * @param  string  $slug  게시판 슬러그
      */
     public function handleCommentAfterDelete(?Comment $deletedComment, string $slug): void
     {
@@ -426,8 +481,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 댓글 블라인드 처리 후 로그 기록
      *
-     * @param Comment $blindedComment 블라인드 처리된 댓글
-     * @param string $slug 게시판 슬러그
+     * @param  Comment  $blindedComment  블라인드 처리된 댓글
+     * @param  string  $slug  게시판 슬러그
      */
     public function handleCommentAfterBlind(Comment $blindedComment, string $slug): void
     {
@@ -442,8 +497,8 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 댓글 복원 후 로그 기록
      *
-     * @param Comment $restoredComment 복원된 댓글
-     * @param string $slug 게시판 슬러그
+     * @param  Comment  $restoredComment  복원된 댓글
+     * @param  string  $slug  게시판 슬러그
      */
     public function handleCommentAfterRestore(Comment $restoredComment, string $slug): void
     {
@@ -462,7 +517,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 첨부파일 업로드 후 로그 기록
      *
-     * @param Attachment $attachment 업로드된 첨부파일
+     * @param  Attachment  $attachment  업로드된 첨부파일
      */
     public function handleAttachmentAfterUpload(?Attachment $attachment): void
     {
@@ -475,7 +530,7 @@ class BoardActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-board::activity_log.description.board_attachment_upload',
             'description_params' => ['post_id' => $attachment->post_id ?? null],
             'properties' => [
-                'original_name' => $attachment->original_name ?? '',
+                'original_filename' => $attachment->original_filename ?? '',
                 'size' => $attachment->size ?? 0,
                 'post_id' => $attachment->post_id ?? null,
             ],
@@ -485,7 +540,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 첨부파일 삭제 후 로그 기록
      *
-     * @param Attachment $attachment 삭제된 첨부파일
+     * @param  Attachment  $attachment  삭제된 첨부파일
      */
     public function handleAttachmentAfterDelete(?Attachment $attachment): void
     {
@@ -498,8 +553,32 @@ class BoardActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-board::activity_log.description.board_attachment_delete',
             'description_params' => ['post_id' => $attachment->post_id ?? null],
             'properties' => [
-                'original_name' => $attachment->original_name ?? '',
+                'original_filename' => $attachment->original_filename ?? '',
                 'post_id' => $attachment->post_id ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * 첨부파일 다운로드 후 로그 기록
+     *
+     * @param  Attachment|null  $attachment  다운로드된 첨부파일
+     * @param  string  $context  권한 컨텍스트 (user | admin) — 로그 부가정보
+     */
+    public function handleAttachmentAfterDownload(?Attachment $attachment, string $context = 'user'): void
+    {
+        if ($attachment === null) {
+            return; // 큐 워커 시점에 모델이 이미 사라진 경우 스킵
+        }
+
+        $this->logActivity('attachment.download', [
+            'loggable' => $attachment,
+            'description_key' => 'sirsoft-board::activity_log.description.board_attachment_download',
+            'description_params' => ['post_id' => $attachment->post_id ?? null],
+            'properties' => [
+                'original_filename' => $attachment->original_filename ?? '',
+                'post_id' => $attachment->post_id ?? null,
+                'context' => $context,
             ],
         ]);
     }
@@ -511,7 +590,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 신고 생성 후 로그 기록
      *
-     * @param Report $report 생성된 신고
+     * @param  Report  $report  생성된 신고
      */
     public function handleReportAfterCreate(?Report $report): void
     {
@@ -530,7 +609,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 신고 상태 변경 후 로그 기록
      *
-     * @param Report $updatedReport 상태 변경된 신고
+     * @param  Report  $updatedReport  상태 변경된 신고
      */
     public function handleReportAfterUpdateStatus(?Report $updatedReport): void
     {
@@ -549,10 +628,10 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 신고 상태 일괄 변경 후 로그 기록
      *
-     * @param array $ids 대상 신고 ID 목록
-     * @param array $data 변경 데이터
-     * @param int $affectedRows 영향받은 행 수
-     * @param array $snapshots 수정 전 스냅샷 맵 (report_id => snapshot, 서비스에서 전달)
+     * @param  array  $ids  대상 신고 ID 목록
+     * @param  array  $data  변경 데이터
+     * @param  int  $affectedRows  영향받은 행 수
+     * @param  array  $snapshots  수정 전 스냅샷 맵 (report_id => snapshot, 서비스에서 전달)
      */
     public function handleReportAfterBulkUpdateStatus(array $ids, array $data, int $affectedRows, array $snapshots = []): void
     {
@@ -580,7 +659,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 신고 삭제 후 로그 기록
      *
-     * @param Report $report 삭제된 신고
+     * @param  Report  $report  삭제된 신고
      */
     public function handleReportAfterDelete(?Report $report): void
     {
@@ -598,7 +677,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 신고 대상 콘텐츠 복원 후 로그 기록
      *
-     * @param Report $report 대상 신고
+     * @param  Report  $report  대상 신고
      */
     public function handleReportAfterRestoreContent(Report $report): void
     {
@@ -612,7 +691,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 신고 대상 콘텐츠 블라인드 처리 후 로그 기록
      *
-     * @param Report $report 대상 신고
+     * @param  Report  $report  대상 신고
      */
     public function handleReportAfterBlindContent(Report $report): void
     {
@@ -626,7 +705,7 @@ class BoardActivityLogListener implements HookListenerInterface
     /**
      * 신고 대상 콘텐츠 삭제 처리 후 로그 기록
      *
-     * @param Report $report 대상 신고
+     * @param  Report  $report  대상 신고
      */
     public function handleReportAfterDeleteContent(Report $report): void
     {
@@ -636,5 +715,4 @@ class BoardActivityLogListener implements HookListenerInterface
             'description_params' => ['report_id' => $report->id],
         ]);
     }
-
 }

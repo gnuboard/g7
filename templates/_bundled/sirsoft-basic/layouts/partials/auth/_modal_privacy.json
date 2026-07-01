@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "개인정보처리방침 모달"
+    "description": "개인정보처리방침 모달",
+    "editor_label": "$t:user.modal_label.auth.privacyModal"
   },
   "id": "privacyModal",
   "type": "composite",

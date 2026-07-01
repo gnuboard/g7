@@ -17,12 +17,15 @@ return [
         'bulk_toggle_active' => 'Bulk Active Status Changed',
         'bulk_update' => 'Bulk Updated',
         'cancel' => 'Cancelled',
+        'change' => 'Changed',
         'change_option' => 'Option Changed',
         'confirm' => 'Confirmed',
         'copy' => 'Copied',
         'create' => 'Created',
         'delete' => 'Deleted',
         'delete_all' => 'All Deleted',
+        'direct_issue' => 'Direct Issue',
+        'issue_cancel' => 'Issue Cancelled',
         'download' => 'Downloaded',
         'earn' => 'Earned',
         'partial_cancel' => 'Partially Cancelled',
@@ -30,6 +33,7 @@ return [
         'payment_failed' => 'Payment Failed',
         'remove' => 'Removed',
         'reorder' => 'Reordered',
+        'reset_guest_password' => 'Reset Guest Lookup Password',
         'restore' => 'Restored',
         'send_email' => 'Email Sent',
         'set_default' => 'Set as Default',
@@ -42,6 +46,12 @@ return [
         'update_shipping_address' => 'Shipping Address Updated',
         'upload' => 'Uploaded',
         'use' => 'Used',
+        'expire' => 'Expired',
+        'earn_cancel' => 'Earn Canceled',
+        'admin_earn' => 'Admin Grant',
+        'admin_deduct' => 'Admin Deduct',
+        'extend_expiry' => 'Expiry Extended',
+        'adjust' => 'Earning Edited',
     ],
 
     'description' => [
@@ -72,6 +82,7 @@ return [
         'order_bulk_shipping_update' => 'Shipping info bulk entered (:count items)',
         'order_update_shipping_address' => 'Shipping address changed (:order_number)',
         'order_send_email' => 'Order email sent (:order_number)',
+        'order_reset_guest_password' => 'Guest lookup password reset (:order_number)',
         'order_option_status_change' => 'Order option status changed (Order: :order_number)',
         'order_option_bulk_status_change' => 'Order option statuses bulk changed (:count items)',
 
@@ -82,6 +93,8 @@ return [
         'coupon_update' => 'Coupon updated (:coupon_name)',
         'coupon_delete' => 'Coupon deleted (:coupon_name)',
         'coupon_bulk_status' => 'Coupon statuses bulk changed (:count items)',
+        'coupon_direct_issue' => 'Coupon directly issued (:coupon_name → member #:user_id)',
+        'coupon_issue_cancel' => 'Coupon issuance cancelled (:coupon_name → member #:user_id)',
 
         // Shipping policy management (Admin)
         'shipping_policy_index' => 'Shipping policy list viewed',
@@ -110,6 +123,9 @@ return [
         'category_reorder' => 'Category order changed',
         'category_toggle_status' => 'Category status toggled (:category_name)',
 
+        'user_currency_change' => 'User payment currency changed',
+        'user_shipping_country_change' => 'User shipping country changed',
+
         // Brand management (Admin)
         'brand_index' => 'Brand list viewed',
         'brand_show' => 'Brand details viewed (:brand_name)',
@@ -137,6 +153,7 @@ return [
         'product_notice_template_update' => 'Product notice template updated (:template_name)',
         'product_notice_template_delete' => 'Product notice template deleted (:template_name)',
         'product_notice_template_copy' => 'Product notice template copied (:template_name)',
+        'product_notice_template_toggle_active' => 'Product notice template active status changed (:template_name)',
 
         // Extra fee template (Admin)
         'extra_fee_template_index' => 'Extra fee template list viewed',
@@ -175,6 +192,7 @@ return [
 
         // Ecommerce settings
         'ecommerce_settings_index' => 'Ecommerce settings viewed',
+        'ecommerce_settings_update' => 'Ecommerce settings saved (:categories)',
 
         // Payment (Admin)
         'payment_refund' => 'Payment refunded (Order: :order_number)',
@@ -195,6 +213,12 @@ return [
         'mileage_earn' => 'Mileage earned (:amount)',
         'mileage_use' => 'Mileage used (:amount)',
         'mileage_restore' => 'Mileage restored (:amount)',
+        'mileage_expire' => 'Mileage expired (:amount)',
+        'mileage_earn_cancel' => 'Mileage earn canceled (:amount)',
+        'mileage_admin_earn' => 'Admin granted mileage (:amount)',
+        'mileage_admin_deduct' => 'Admin deducted mileage (:amount)',
+        'mileage_extend_expiry' => 'Mileage expiry extended (:days days)',
+        'mileage_adjust' => 'Mileage earning edited (:amount)',
     ],
 
     // ChangeDetector field labels
@@ -283,6 +307,7 @@ return [
         'address' => 'Address',
         'address_detail' => 'Address Detail',
         'delivery_memo' => 'Delivery Memo',
+        'delivery_memo_label' => 'Delivery Memo Label',
 
         // ProductOption
         'option_name' => 'Option Name',

@@ -281,4 +281,97 @@ class NotificationRecipientResolverTest extends TestCase
         $this->assertCount(1, $result);
         $this->assertEquals($user->id, $result->first()->id);
     }
+
+    // ──────────────────────────────────────────────
+    // 비회원(guest) trigger_user 폴백
+    // ──────────────────────────────────────────────
+
+    public function test_trigger_user_falls_back_to_guest_recipient_when_no_user_id(): void
+    {
+        $result = $this->resolver->resolve(
+            [['type' => 'trigger_user']],
+            ['guest_recipient' => ['email' => 'guest@example.com', 'name' => '홍길동', 'locale' => 'ko']]
+        );
+
+        $this->assertCount(1, $result);
+        $this->assertInstanceOf(\App\Notifications\GuestNotifiable::class, $result->first());
+        $this->assertSame('guest@example.com', $result->first()->email);
+    }
+
+    public function test_trigger_user_prefers_member_over_guest_recipient(): void
+    {
+        $user = User::factory()->create();
+
+        $result = $this->resolver->resolve(
+            [['type' => 'trigger_user']],
+            [
+                'trigger_user_id' => $user->id,
+                'trigger_user' => $user,
+                'guest_recipient' => ['email' => 'guest@example.com'],
+            ]
+        );
+
+        // 회원이 있으면 게스트 폴백을 타지 않는다
+        $this->assertCount(1, $result);
+        $this->assertInstanceOf(User::class, $result->first());
+        $this->assertEquals($user->id, $result->first()->id);
+    }
+
+    public function test_invalid_guest_recipient_yields_no_recipient(): void
+    {
+        $result = $this->resolver->resolve(
+            [['type' => 'trigger_user']],
+            ['guest_recipient' => ['email' => '']]
+        );
+
+        $this->assertCount(0, $result);
+    }
+
+    public function test_duplicate_guest_email_dedupes_to_one(): void
+    {
+        // 같은 이메일 게스트가 두 규칙(둘 다 trigger_user)으로 들어와도 1명으로 dedupe
+        $result = $this->resolver->resolve(
+            [['type' => 'trigger_user'], ['type' => 'trigger_user']],
+            ['guest_recipient' => ['email' => 'guest@example.com']]
+        );
+
+        $this->assertCount(1, $result);
+    }
+
+    public function test_member_and_guest_coexist_without_collapsing(): void
+    {
+        $user = User::factory()->create();
+
+        // role 규칙으로 회원, trigger_user 규칙으로 게스트 — null-id 게스트가 회원과 뭉개지지 않아야 함
+        $role = Role::factory()->create(['identifier' => 'guest-coexist-role']);
+        $user->roles()->attach($role->id);
+
+        $result = $this->resolver->resolve(
+            [
+                ['type' => 'role', 'value' => 'guest-coexist-role'],
+                ['type' => 'trigger_user'],
+            ],
+            ['guest_recipient' => ['email' => 'guest@example.com']]
+        );
+
+        $this->assertCount(2, $result);
+    }
+
+    public function test_exclude_trigger_user_does_not_break_on_guest(): void
+    {
+        // 게스트 수신자 + exclude_trigger_user 규칙이 함께 있어도 예외 없이 통과
+        $result = $this->resolver->resolve(
+            [
+                ['type' => 'trigger_user'],
+                ['type' => 'role', 'value' => 'nonexistent-role', 'exclude_trigger_user' => true],
+            ],
+            ['guest_recipient' => ['email' => 'guest@example.com']]
+        );
+
+        // 게스트는 user_id 가 없어 exclude 대상이 아니므로 그대로 유지
+        $this->assertGreaterThanOrEqual(1, $result->count());
+        $this->assertTrue(
+            $result->contains(fn ($r) => $r instanceof \App\Notifications\GuestNotifiable)
+        );
+    }
 }

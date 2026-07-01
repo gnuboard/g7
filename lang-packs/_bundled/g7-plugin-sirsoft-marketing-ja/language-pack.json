@@ -12,7 +12,7 @@
         "en": "G7 plugin (sirsoft-marketing) Japanese language pack (bundled)",
         "ja": "G7 プラグイン (sirsoft-marketing) 日本語 言語パック(バンドル)"
     },
-    "version": "1.0.0-beta.1",
+    "version": "1.0.0",
     "license": "MIT",
     "scope": "plugin",
     "target_identifier": "sirsoft-marketing",
@@ -20,7 +20,7 @@
     "locale_name": "Japanese",
     "locale_native_name": "日本語",
     "text_direction": "ltr",
-    "g7_version": ">=7.0.0-beta.4",
+    "g7_version": ">=7.0.0",
     "requires": {
         "target_version": null,
         "depends_on_core_locale": true

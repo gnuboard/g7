@@ -76,6 +76,16 @@
               }
             },
             {
+              "comment": "부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그)",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{order.data.is_partially_cancelled}}",
+              "props": {
+                "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 mt-1"
+              },
+              "text": "$t:mypage.orders.partial_cancelled_badge"
+            },
+            {
               "type": "basic",
               "name": "P",
               "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" },

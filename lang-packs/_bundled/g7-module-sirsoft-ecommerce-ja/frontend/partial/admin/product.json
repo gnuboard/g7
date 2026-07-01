@@ -590,7 +590,8 @@
       "stock": "在庫を{{value}}変更します。",
       "price_change": "販売価格一括変更",
       "stock_change": "在庫一括変更",
-      "no_changes": "変更する項目がありません。"
+      "no_changes": "変更する項目がありません。",
+      "error_section": "変更に失敗しました"
     },
     "bulk_placeholder": {
       "sales_status": "販売ステータス選択",
@@ -661,7 +662,8 @@
       "more_fields": "個フィールドさらに表示",
       "info": "テンプレートは告示情報入力時に素早く読み込んで使用できます。",
       "save_button": "テンプレート保存"
-    }
+    },
+    "multilingual_tag_edit_editor_label": "多言語タグ編集"
   },
   "description": {
     "mode_html": "HTML",
@@ -698,7 +700,10 @@
     "bulk_summary_stock_inline": "在庫:{value}",
     "bulk_summary_option_name": "オプション名:{name}",
     "bulk_summary_sku": "SKU: {sku}",
-    "bulk_summary_selected": "選択されました"
+    "bulk_summary_selected": "選択されました",
+    "delete_check_error": "削除可能かどうかを確認中にエラーが発生しました。",
+    "bulk_summary_safe_stock": "安全在庫: {value}",
+    "bulk_summary_is_active": "使用: {value}"
   },
   "buttons": {
     "auto_generate": "自動生成",
@@ -870,8 +875,19 @@
       "generated": "{count}個のオプションが作成されました",
       "name_required": "オプション名を入力してください",
       "add_tool_applied": "オプション追加ツールが適用されました",
-      "additional_max_5": "最大5個まで追加できます"
-    }
+      "additional_max_5": "最大5個まで追加できます",
+      "additional_value_max_20": "選択肢はグループごとに最大20個まで追加できます。",
+      "additional_value_min_1": "グループごとに最小1つの選択肢が必要です。"
+    },
+    "additional_clear_confirm": "入力した追加オプションがすべて削除されます。続行しますか?",
+    "auto_currency_hint": "外貨価格は売上価格基準の為替レートで自動表示されます",
+    "add_additional_value": "選択肢を追加",
+    "additional_value_name_label": "選択肢名",
+    "additional_value_name_placeholder": "例：刻印を追加",
+    "additional_value_price_label": "追加料金",
+    "additional_value_default": "デフォルト",
+    "additional_value_active": "使用",
+    "additional_value_allow_custom_text": "直接入力"
   },
   "notice": {
     "tab_existing_template": "テンプレート選択",
@@ -986,7 +1002,8 @@
       "extra_fee": "追加配送料",
       "condition": "配送条件",
       "return_exchange_fee": "返品·交換料"
-    }
+    },
+    "inactive_policy_warning": "現在適用中の配送ポリシーが無効化されました。別の配送ポリシーを選択するか、そのまま維持することができます。"
   },
   "price": {
     "base_currency": "デフォルト通貨",
@@ -1154,7 +1171,15 @@
       "preset_14d": "14日",
       "preset_30d": "30日",
       "preset_permanent": "永久"
-    }
+    },
+    "add": "ラベルを追加",
+    "unassign": "割り当て解除",
+    "delete": "ラベルを削除",
+    "modal_title_create": "ラベルを登録",
+    "modal_title_edit": "ラベルを編集",
+    "create_success": "ラベルが登録されました。",
+    "started_at": "開始日を選択",
+    "ended_at": "終了日を選択"
   },
   "roles": {
     "system": "システムロール",

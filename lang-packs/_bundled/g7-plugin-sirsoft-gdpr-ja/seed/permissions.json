@@ -1,0 +1,18 @@
+{
+  "sirsoft-gdpr": {
+    "name": "GDPR（一般データ保護規則）",
+    "description": "GDPRプラグインが提供する権限"
+  },
+  "sirsoft-gdpr.privacy": {
+    "name": "個人情報保護",
+    "description": "GDPRドメイン権限（閲覧·設定）"
+  },
+  "sirsoft-gdpr.privacy.view": {
+    "name": "個人情報閲覧",
+    "description": "同意履歴·GDPR設定閲覧（監査·モニタリング）"
+  },
+  "sirsoft-gdpr.privacy.update": {
+    "name": "個人情報設定変更",
+    "description": "クッキーカテゴリ·ポリシーバージョンなどGDPRプラグイン設定変更"
+  }
+}

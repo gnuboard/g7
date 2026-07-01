@@ -33,7 +33,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+            "className": "px-3 py-2 bg-gray-100 dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors"
           },
           "text": "$t:sirsoft-daum_postcode.search_address",
           "actions": [

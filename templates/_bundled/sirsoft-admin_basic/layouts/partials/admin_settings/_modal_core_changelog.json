@@ -1,5 +1,5 @@
 {
-    "meta": { "is_partial": true, "description": "코어 변경사항 모달" },
+    "meta": { "is_partial": true, "description": "코어 변경사항 모달", "editor_label": "$t:admin.modal_label.admin_settings.core_changelog_modal" },
     "id": "core_changelog_modal",
     "type": "composite",
     "name": "Modal",
@@ -34,19 +34,19 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex items-center gap-2 mb-3" },
+                            "props": { "className": "flex-center gap-2 mb-3" },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-sm font-bold text-gray-900 dark:text-white" },
+                                    "props": { "className": "text-primary text-sm font-bold" },
                                     "text": "v{{entry.version}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{entry.date}}",
-                                    "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                                    "props": { "className": "text-tertiary" },
                                     "text": "{{entry.date}}"
                                 }
                             ]
@@ -80,7 +80,7 @@
                                                 "item_var": "changeItem",
                                                 "index_var": "itemIdx"
                                             },
-                                            "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                                            "props": { "className": "text-label" },
                                             "text": "{{changeItem}}"
                                         }
                                     ]

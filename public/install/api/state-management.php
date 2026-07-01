@@ -73,7 +73,7 @@ class StateManagementApi
         // state.json 파일 실제 존재 여부 (getInstallationState는 부재 시 DEFAULT_INSTALLATION_STATE를 반환하므로
         // isset($state['installation_status']) 로는 "기본 상태"와 "실제 파일 상태"를 구분할 수 없다)
         $stateFileExists = file_exists(STATE_PATH);
-        $installedFlagPath = BASE_PATH . '/storage/app/g7_installed';
+        $installedFlagPath = BASE_PATH.'/storage/app/g7_installed';
 
         // 현재 설치 상태 조회
         $state = getInstallationState();
@@ -81,7 +81,7 @@ class StateManagementApi
         // installation_status 값을 status로 매핑
         $status = 'pending';
 
-        if (!$stateFileExists && file_exists($installedFlagPath)) {
+        if (! $stateFileExists && file_exists($installedFlagPath)) {
             // state.json 삭제 + g7_installed 플래그 존재 → 설치 완료 후 정리된 상태
             // 폴링이 완료 시점을 놓치면 이후 주기에서 이 분기로 completed 전환
             $status = 'completed';
@@ -189,7 +189,7 @@ class StateManagementApi
         // 상태 저장
         $saved = saveInstallationState($state);
 
-        if (!$saved) {
+        if (! $saved) {
             throw new Exception(lang('state_save_failed'));
         }
 
@@ -280,7 +280,7 @@ class StateManagementApi
         $state['abort_reason'] = 'User requested';
 
         // 롤백 실패 정보 저장 (새로고침 후에도 표시용)
-        if (isset($rollbackResult['success']) && !$rollbackResult['success']) {
+        if (isset($rollbackResult['success']) && ! $rollbackResult['success']) {
             $state['rollback_failure'] = [
                 'task' => $rollbackResult['task'] ?? null,
                 'message' => $rollbackResult['message'] ?? null,
@@ -355,6 +355,17 @@ require_once __DIR__.'/../includes/installer-state.php';
 
 // 롤백 함수 로드 (reset, abort 액션에서 필요)
 require_once __DIR__.'/rollback-functions.php';
+
+// 설치 완료 후 진입 차단 (KVE-2026-1056)
+// finalize 전용 가드 — `.env` 의 INSTALLER_COMPLETED=true 단독으로만 차단한다.
+// 일반 가드(installer_guard_or_410)는 `g7_installed` 락 파일도 차단 사유로 삼는데,
+// 그 락 파일은 마지막 task `complete_flag` 가 먼저 생성한다. 그 직후에도 본 엔드포인트의
+// action=get 폴링(1초 간격)이 계속되어 `completed` 상태를 받아야 완료 화면으로 전환되므로,
+// 락 파일 기준으로 차단하면 정상 설치가 "진행 중"에 고착되는 자가 차단 회귀가 발생한다.
+// 완전 완료 신호인 `.env` 플래그를 기준으로 삼아 get/reset/abort 를
+// 일괄 차단하면서 폴링 구간은 비파괴로 통과시킨다.
+require_once __DIR__.'/_guard.php';
+installer_guard_finalize_or_410();
 
 // 다국어 로드
 $currentLang = getCurrentLanguage();

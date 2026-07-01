@@ -84,6 +84,7 @@
 | 필드 | 타입 | 필수 | 기본값 | 설명 |
 |------|------|------|--------|------|
 | `id` | string | ✅ | - | 데이터 소스 고유 ID (컴포넌트에서 `{{id.data}}` 형태로 참조) |
+| `label_key` | string | ❌ | - | 친화 명칭 `$t:` 다국어 키 (예 `$t:editor.data_source.products`). 레이아웃 편집기 데이터 연결 검색 피커가 현재 로케일 명칭으로 표시. 미지정 시 `id` 폴백. 번들 템플릿은 전 data_source 보유 의무(audit `data-source-label-key-coverage`) |
 | `type` | string | ✅ | - | 데이터 소스 타입 (`api`, `static`, `route_params`, `query_params`, `websocket`) |
 | `endpoint` | string | ✅* | - | API 엔드포인트 (type이 `api`일 때 필수) |
 | `method` | string | ❌ | `GET` | HTTP 메서드 (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) |

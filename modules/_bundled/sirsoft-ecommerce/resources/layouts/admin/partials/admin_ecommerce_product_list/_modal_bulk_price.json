@@ -16,9 +16,6 @@
       "id": "bulk_price_form",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "id": "price_method_field",
@@ -149,7 +146,7 @@
                       "props": {
                         "value": "won"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit_won"
+                      "text": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}}"
                     },
                     {
                       "type": "basic",
@@ -179,9 +176,9 @@
               "name": "Span",
               "if": "{{(_local.bulkPriceMethod || 'increase') === 'increase'}}",
               "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400"
+                "className": "text-label"
               },
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_increase|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원'}}"
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_increase|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'))}}"
             },
             {
               "id": "preview_decrease",
@@ -189,9 +186,9 @@
               "name": "Span",
               "if": "{{(_local.bulkPriceMethod || 'increase') === 'decrease'}}",
               "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400"
+                "className": "text-label"
               },
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_decrease|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원'}}"
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_decrease|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'))}}"
             },
             {
               "id": "preview_fixed",
@@ -199,13 +196,15 @@
               "name": "Span",
               "if": "{{(_local.bulkPriceMethod || 'increase') === 'fixed'}}",
               "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400"
+                "className": "text-label"
               },
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_fixed|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원'}}"
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_fixed|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'))}}"
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     },
     {
       "id": "bulk_price_footer",
@@ -244,7 +243,7 @@
               "handler": "setState",
               "params": {
                 "target": "global",
-                "bulkPriceCondition": "{{(_local.bulkPriceMethod || 'increase') === 'fixed' ? (_local.bulkPriceValue || 0) + ((_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원') : ((_local.bulkPriceMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkPriceValue || 0) + ((_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원')}}",
+                "bulkPriceCondition": "{{(() => { const unit = (_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')); const val = _local.bulkPriceValue || 0; return (_local.bulkPriceMethod || 'increase') === 'fixed' ? val + unit : ((_local.bulkPriceMethod || 'increase') === 'increase' ? '+' : '-') + val + unit; })()}}",
                 "bulkPriceMethod": "{{_local.bulkPriceMethod || 'increase'}}",
                 "bulkPriceValue": "{{_local.bulkPriceValue || 0}}",
                 "bulkPriceUnit": "{{_local.bulkPriceUnit || 'won'}}"

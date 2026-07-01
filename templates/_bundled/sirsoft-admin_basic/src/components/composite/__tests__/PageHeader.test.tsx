@@ -89,7 +89,7 @@ describe('PageHeader', () => {
     );
 
     const activeTab = screen.getByText('사용자').closest('button');
-    expect(activeTab).toHaveClass('text-blue-600', 'border-blue-600');
+    expect(activeTab).toHaveClass('tab-btn-active');
   });
 
   it('탭 뱃지가 표시됨', () => {

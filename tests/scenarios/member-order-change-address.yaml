@@ -1,0 +1,98 @@
+feature: 주문 상세 배송지 변경 (회원/비회원 — Order Change Shipping Address)
+
+description: |
+  주문 상세에서 배송지를 변경하는 흐름. 회원(마이페이지) / 비회원(게스트 주문 상세) 공통으로
+  "배송지 변경" 버튼 → 모달에서 변경한다. 모달/트리거 partial(_modal_change_address.json,
+  _shipping.json)과 커스텀 핸들러(sirsoft-ecommerce.changeShippingAddress)를 공유한다.
+
+  회원/비회원 차이:
+    - 회원: "저장된 배송지" 탭(주소록 선택, address_id) + "직접 입력" 탭. user/orders endpoint.
+    - 비회원: 주소록이 없어 탭 없이 직접 입력 폼만. guest/orders endpoint + X-Guest-Order-Token 헤더.
+
+  배경 (이슈 #55):
+    - 회원 흐름 버그(#5): 모달이 부모 _local 미접근(별도 컨텍스트)이라 직접입력 폼이 빈 값 전송 +
+      적용 버튼에 confirm 달린 apiCall 2개라 확인창 두 번. → _global.editingShippingAddress dataKey
+      패턴(_modal_address.json 동일)으로 해결, confirm 1회로 정리, 로딩 스피너 추가.
+    - 비회원 배송지 변경 재도입: 44ee97599 에서 제거됐던 guest endpoint/FormRequest/라우트 복원.
+
+  핵심 설계:
+    - 모달은 부모 _local 미접근 → 공유 상태(changeAddressMode/selectedAddressId/editingShippingAddress)
+      를 _global 로 전달. 트리거가 열 때마다 덮어써 잔존값 무해화.
+    - endpoint/body/토큰 분기는 단일 커스텀 핸들러(changeShippingAddress)가 처리 — 레이아웃 apiCall
+      직접 호출 없음 (cancel/estimate-refund/confirm-option 과 동일 패턴).
+    - 주문 소유권: 회원=세션, 비회원=VerifyGuestOrderToken 미들웨어(토큰 부재/위조 모두 404).
+
+axes:
+  actor: [member, guest]
+  change_mode: [saved, manual]
+  e2e_browser: [chromium]
+
+exclusions:
+  - { actor: guest, change_mode: saved, reason: "비회원은 주소록이 없어 saved(저장된 배송지 선택) 모드 미지원 — 직접입력만" }
+
+effects:
+  # 모달 컨텍스트 — _global 전달 (회원/비회원 공통)
+  - change_address_modal_uses_global_editingshippingaddress_datakey_not_parent_local
+  - change_address_autobind_inputs_use_subkey_name_without_prefix
+  - change_address_postcode_search_writes_global_via_onaddressselect
+  # 적용 액션 — 단일 커스텀 핸들러 (endpoint/body/토큰 분기)
+  - change_address_apply_invokes_single_custom_handler_with_one_confirm
+  - change_address_layout_has_no_direct_apicall_or_endpoint_url
+  - change_address_handler_branches_guest_endpoint_with_token_header_when_guest_context
+  - change_address_handler_uses_user_endpoint_without_token_header_for_member
+  - change_address_handler_saved_mode_sends_address_id_manual_sends_full_object
+  - change_address_handler_resets_issubmitting_and_closes_modal_and_refetches_order_on_success
+  # 회원/비회원 UI 분기
+  - change_address_tab_header_visible_member_only
+  - change_address_manual_form_visible_for_guest_always_and_member_manual_mode
+  - change_address_saved_list_visible_member_only
+  # 트리거 — 회원/비회원 공통 노출 + 모드 분기
+  - change_address_trigger_visible_for_both_member_and_guest_before_shipping
+  - change_address_trigger_sets_mode_saved_for_member_manual_for_guest
+  # 로딩 스피너
+  - change_address_apply_button_shows_spinner_and_disables_while_submitting
+  # 백엔드 — 비회원 endpoint
+  - guest_update_shipping_address_succeeds_with_valid_token
+  - guest_update_shipping_address_blocked_404_without_or_invalid_token
+  - guest_update_shipping_address_validation_422_when_recipient_fields_missing
+
+scenarios:
+  - id: member_change_address_saved_e2e
+    description: 회원이 저장된 배송지를 선택해 변경 → 확인창 1회 → user endpoint + address_id 전송
+    effects:
+      - change_address_apply_invokes_single_custom_handler_with_one_confirm
+      - change_address_handler_uses_user_endpoint_without_token_header_for_member
+      - change_address_handler_saved_mode_sends_address_id_manual_sends_full_object
+
+  - id: member_change_address_manual_e2e
+    description: 회원이 직접 입력으로 변경 → user endpoint + editingShippingAddress 전체 전송
+    effects:
+      - change_address_modal_uses_global_editingshippingaddress_datakey_not_parent_local
+      - change_address_manual_form_visible_for_guest_always_and_member_manual_mode
+
+  - id: guest_change_address_manual_e2e
+    description: 비회원이 탭 없이 직접 입력 폼으로 변경 → guest endpoint + X-Guest-Order-Token 헤더
+    effects:
+      - change_address_tab_header_visible_member_only
+      - change_address_handler_branches_guest_endpoint_with_token_header_when_guest_context
+      - guest_update_shipping_address_succeeds_with_valid_token
+
+  - id: guest_change_address_token_guard_e2e
+    description: 비회원이 토큰 없이/위조 토큰으로 배송지 변경 시도 → 404 차단
+    effects:
+      - guest_update_shipping_address_blocked_404_without_or_invalid_token
+
+test_files:
+  # 백엔드 (비회원 endpoint — 성공/토큰가드 404/검증 422)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/OrderControllerTest.php
+  # 프론트엔드 핸들러 단위 (endpoint/body/토큰 분기)
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userChangeShippingAddressHandlers.test.ts
+  # 프론트엔드 모달 구조 (Vitest — _global 바인딩, 회원/비회원 분기, 핸들러 호출, 스피너)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-order-change-address-modal.test.tsx
+  # E2E (브라우저 실증)
+  - tests/Playwright/specs/smoke/member-order-change-address.spec.ts
+
+notes: |
+  endpoint/body/토큰 분기는 핸들러 단위 테스트가 SSoT 로 검증하고, 레이아웃 테스트는 핸들러를
+  올바르게 호출하는지(단일 액션 + confirm 1회 + orderId)와 회원/비회원 UI 분기를 검증한다.
+  full 흐름 E2E(결제→주문→상세 진입)는 fixture/시드 의존 — 현재 spec 은 진입/구조 위주 + graceful skip.

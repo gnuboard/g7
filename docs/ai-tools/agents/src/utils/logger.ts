@@ -4,18 +4,22 @@
 import pino from 'pino';
 
 const level = process.env.LOG_LEVEL || 'info';
+const isMcpStdio = process.env.MCP_STDIO === '1';
 
-export const logger = pino({
-  level,
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname',
+export const logger = isMcpStdio
+  ? pino({ level }, pino.destination(2))
+  : pino({
+      level,
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'SYS:standard',
+          ignore: 'pid,hostname',
+        },
+      },
     },
-  },
-});
+  );
 
 // 에이전트별 로거 생성
 export function createAgentLogger(agentName: string) {

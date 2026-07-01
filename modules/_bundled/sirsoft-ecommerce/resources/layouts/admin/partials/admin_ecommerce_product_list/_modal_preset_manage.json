@@ -28,7 +28,6 @@
       "name": "Div",
       "if": "{{presets.data && presets.data.length > 0}}",
       "props": {
-        "className": "space-y-3"
       },
       "children": [
         {
@@ -40,7 +39,7 @@
             "item_var": "presetItem"
           },
           "props": {
-            "className": "flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
+            "className": "flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
           },
           "children": [
             {
@@ -55,7 +54,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2"
+                "className": "flex-center gap-2"
               },
               "children": [
                 {

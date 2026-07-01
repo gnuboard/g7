@@ -36,6 +36,12 @@ class BulkAddToCartRequest extends FormRequest
             'items' => 'required|array|min:1',
             'items.*.option_values' => 'nullable|array',
             'items.*.quantity' => 'required|integer|min:1|max:9999',
+            // 추가옵션 선택 (서버에서 value_id 기준 가격 재조회·검증 — 클라 가격 신뢰 금지)
+            'items.*.additional_option_selections' => 'nullable|array',
+            'items.*.additional_option_selections.*.additional_option_id' => 'required_with:items.*.additional_option_selections|integer',
+            'items.*.additional_option_selections.*.value_id' => 'required_with:items.*.additional_option_selections|integer',
+            // 직접입력 텍스트 (선택지의 allow_custom_text 여부·필수성은 서버에서 재검증)
+            'items.*.additional_option_selections.*.custom_text' => 'nullable|string|max:255',
         ];
 
         return HookManager::applyFilters('sirsoft-ecommerce.cart.bulk_add_validation_rules', $rules, $this);

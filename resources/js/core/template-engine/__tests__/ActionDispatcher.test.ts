@@ -277,6 +277,110 @@ describe('ActionDispatcher', () => {
         expect(mockSetState).toHaveBeenCalled();
       });
 
+      // 공개#54 — IME(한글/일본어/중국어) 조합 중 Enter 글자누락/이중제출 방지
+      describe('IME 조합 가드 (공개#54)', () => {
+        /** KeyboardEvent 에 isComposing/keyCode 를 강제 주입한다 (생성자 옵션 미지원). */
+        const makeKeyEvent = (
+          key: string,
+          opts: { isComposing?: boolean; keyCode?: number } = {},
+        ): KeyboardEvent => {
+          const e = new KeyboardEvent('keydown', { key });
+          if (opts.isComposing !== undefined) {
+            Object.defineProperty(e, 'isComposing', { value: opts.isComposing, configurable: true });
+          }
+          if (opts.keyCode !== undefined) {
+            Object.defineProperty(e, 'keyCode', { value: opts.keyCode, configurable: true });
+          }
+          return e;
+        };
+
+        const enterFilterProps = {
+          actions: [
+            {
+              type: 'keydown' as const,
+              key: 'Enter',
+              handler: 'navigate',
+              params: { path: '/search' },
+            },
+          ],
+        };
+
+        it('T1: isComposing=true 인 Enter 는 key 필터 액션을 실행하지 않아야 함', () => {
+          const boundProps = dispatcher.bindActionsToProps(enterFilterProps, {}, { state: {}, setState: vi.fn() });
+          mockNavigate.mockClear();
+
+          boundProps.onKeyDown(makeKeyEvent('Enter', { isComposing: true }));
+
+          expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        it('T2: keyCode=229 인 Enter(isComposing 미지원)도 실행하지 않아야 함', () => {
+          const boundProps = dispatcher.bindActionsToProps(enterFilterProps, {}, { state: {}, setState: vi.fn() });
+          mockNavigate.mockClear();
+
+          boundProps.onKeyDown(makeKeyEvent('Enter', { keyCode: 229 }));
+
+          expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        it('T3: isComposing=false 인 일반 Enter 는 정상 실행되어야 함', () => {
+          const boundProps = dispatcher.bindActionsToProps(enterFilterProps, {}, { state: {}, setState: vi.fn() });
+          mockNavigate.mockClear();
+
+          boundProps.onKeyDown(makeKeyEvent('Enter', { isComposing: false }));
+
+          expect(mockNavigate).toHaveBeenCalledWith('/search', { replace: false });
+        });
+
+        it('T4: key 필터 없는 keydown 액션은 조합 중에도 실행되어야 함 (회귀 방지)', () => {
+          const mockSetState = vi.fn();
+          const props = {
+            actions: [
+              {
+                type: 'keydown' as const,
+                handler: 'setState',
+                params: { target: 'local', value: 'typed' },
+              },
+            ],
+          };
+          const boundProps = dispatcher.bindActionsToProps(props, {}, { state: {}, setState: mockSetState });
+
+          boundProps.onKeyDown(makeKeyEvent('x', { isComposing: true }));
+
+          expect(mockSetState).toHaveBeenCalled();
+        });
+
+        it('T5: isComposing=true 인 Escape 는 key 필터 액션을 실행하지 않아야 함', () => {
+          const mockSetState = vi.fn();
+          const props = {
+            actions: [
+              {
+                type: 'keydown' as const,
+                key: 'Escape',
+                handler: 'setState',
+                params: { target: 'local', isOpen: false },
+              },
+            ],
+          };
+          const boundProps = dispatcher.bindActionsToProps(props, {}, { state: {}, setState: mockSetState });
+
+          boundProps.onKeyDown(makeKeyEvent('Escape', { isComposing: true }));
+
+          expect(mockSetState).not.toHaveBeenCalled();
+        });
+
+        it('isImeComposing 헬퍼 분기: isComposing/keyCode/둘다 false/undefined', () => {
+          const helper = (dispatcher as unknown as {
+            isImeComposing: (e: { isComposing?: boolean; keyCode?: number }) => boolean;
+          }).isImeComposing.bind(dispatcher);
+
+          expect(helper({ isComposing: true })).toBe(true);
+          expect(helper({ keyCode: 229 })).toBe(true);
+          expect(helper({ isComposing: false, keyCode: 13 })).toBe(false);
+          expect(helper({})).toBe(false);
+        });
+      });
+
       it('admin_user_list.json 시나리오: change와 keydown+Enter 조합', () => {
         const mockSetState = vi.fn();
         const componentContext = {
@@ -1224,6 +1328,92 @@ describe('ActionDispatcher', () => {
       expect(mockSetState).toHaveBeenCalledWith({
         selectedIds: [1, 2, 3],
       });
+    });
+
+    // engine-v1.50.4: 컴포넌트 setState(target:"_local")가 canonical source(_global._local)에도 동기화되어야 함.
+    // 배경: 검색(navigate replace:true) → updateQueryParams refetch → updateTemplateData 가
+    // currentDataContext._local 을 _global._local 로 되돌리는데, 사용자가 선택한 필터(target:"_local" setState)가
+    // _global._local 에 반영되지 않으면 검색 직후 필터가 init 기본값으로 풀린다(쿠폰/주문/배송정책 공통 결함).
+    // GLOBAL STATE UPDATER path 와 동일하게 COMPONENT path 도 globalStateUpdater 로 _global._local 을 동기화하되,
+    // render:false 로 호출하여 추가 React 렌더를 유발하지 않는다.
+    it('컴포넌트 컨텍스트의 setState(target:"local")가 _global._local을 render:false로 동기화해야 함 (검색 후 필터 보존 회귀)', () => {
+      const mockSetState = vi.fn();
+      const globalStateUpdater = vi.fn();
+      dispatcher.setGlobalStateUpdater(globalStateUpdater);
+
+      // 전역 pending 스냅샷 격리: 런타임에서는 렌더 후 useLayoutEffect 가 null 로 클리어하지만
+      // 단위 테스트에서는 이전 테스트 잔여값이 base 를 오염시키므로 명시적으로 비운다.
+      (window as any).__g7PendingLocalState = null;
+      (window as any).__g7ForcedLocalFields = undefined;
+
+      const componentContext = {
+        state: { filter: { targetType: 'all', issueStatus: 'all' } },
+        setState: mockSetState,
+      };
+
+      const props = {
+        actions: [
+          {
+            type: 'change' as const,
+            handler: 'setState',
+            params: {
+              target: 'local',
+              'filter.issueStatus': 'issuing',
+            },
+          },
+        ],
+      };
+
+      const boundProps = dispatcher.bindActionsToProps(props, {}, componentContext);
+      boundProps.onChange({ target: { value: 'issuing' } });
+
+      // 저장소 A: 컴포넌트 React 상태 (변경 필드만)
+      expect(mockSetState).toHaveBeenCalledWith({
+        filter: { issueStatus: 'issuing' },
+      });
+
+      // 저장소 B: _global._local 동기화 — render:false (추가 렌더 없음)
+      // 기존 필드(filter.targetType)는 base(context.state)에서 보존되어야 함
+      expect(globalStateUpdater).toHaveBeenCalledWith(
+        {
+          _local: expect.objectContaining({
+            filter: expect.objectContaining({
+              targetType: 'all',
+              issueStatus: 'issuing',
+            }),
+          }),
+        },
+        { render: false }
+      );
+    });
+
+    it('globalStateUpdater가 없으면 setState(target:"local")는 컴포넌트 상태만 갱신하고 조용히 넘어가야 함', () => {
+      // _global 동기화는 globalStateUpdater 유무에 가드되어 있어야 함 (모달/단독 렌더 안전)
+      const mockSetState = vi.fn();
+      // globalStateUpdater 설정하지 않음
+      (window as any).__g7PendingLocalState = null;
+      (window as any).__g7ForcedLocalFields = undefined;
+
+      const componentContext = {
+        state: { filter: { issueStatus: 'all' } },
+        setState: mockSetState,
+      };
+
+      const props = {
+        actions: [
+          {
+            type: 'change' as const,
+            handler: 'setState',
+            params: { target: 'local', 'filter.issueStatus': 'issuing' },
+          },
+        ],
+      };
+
+      const boundProps = dispatcher.bindActionsToProps(props, {}, componentContext);
+
+      // globalStateUpdater 미설정 상태에서도 에러 없이 컴포넌트 setState 가 호출되어야 함
+      expect(() => boundProps.onChange({ target: { value: 'issuing' } })).not.toThrow();
+      expect(mockSetState).toHaveBeenCalledWith({ filter: { issueStatus: 'issuing' } });
     });
 
     it('표준 DOM 이벤트와 커스텀 콜백 이벤트를 구분해야 함', () => {

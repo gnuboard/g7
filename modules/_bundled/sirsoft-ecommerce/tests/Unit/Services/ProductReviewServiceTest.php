@@ -3,17 +3,18 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Contracts\Extension\StorageInterface;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
-use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
@@ -29,17 +30,20 @@ class ProductReviewServiceTest extends ModuleTestCase
 {
     private ProductReviewService $service;
 
-    /** @var \Mockery\MockInterface&ProductReviewRepositoryInterface */
+    /** @var MockInterface&ProductReviewRepositoryInterface */
     private $repository;
 
-    /** @var \Mockery\MockInterface&OrderOptionRepositoryInterface */
+    /** @var MockInterface&OrderOptionRepositoryInterface */
     private $orderOptionRepository;
 
-    /** @var \Mockery\MockInterface&StorageInterface */
+    /** @var MockInterface&StorageInterface */
     private $storage;
 
-    /** @var \Mockery\MockInterface&EcommerceSettingsService */
+    /** @var MockInterface&EcommerceSettingsService */
     private $settingsService;
+
+    /** @var MockInterface&ProductReviewImageRepositoryInterface */
+    private $imageRepository;
 
     protected function setUp(): void
     {
@@ -52,12 +56,14 @@ class ProductReviewServiceTest extends ModuleTestCase
         $this->orderOptionRepository = Mockery::mock(OrderOptionRepositoryInterface::class);
         $this->storage = Mockery::mock(StorageInterface::class);
         $this->settingsService = Mockery::mock(EcommerceSettingsService::class);
+        $this->imageRepository = Mockery::mock(ProductReviewImageRepositoryInterface::class);
 
         $this->service = new ProductReviewService(
             $this->repository,
             $this->orderOptionRepository,
             $this->storage,
-            $this->settingsService
+            $this->settingsService,
+            $this->imageRepository
         );
     }
 
@@ -147,7 +153,7 @@ class ProductReviewServiceTest extends ModuleTestCase
 
         $this->settingsService
             ->shouldReceive('getSetting')
-            ->with('review.write_deadline_days', Mockery::any())
+            ->with('review_settings.write_deadline_days', Mockery::any())
             ->andReturn(90);
 
         $this->repository
@@ -180,7 +186,7 @@ class ProductReviewServiceTest extends ModuleTestCase
 
         $this->settingsService
             ->shouldReceive('getSetting')
-            ->with('review.write_deadline_days', Mockery::any())
+            ->with('review_settings.write_deadline_days', Mockery::any())
             ->andReturn(90);
 
         $this->repository
@@ -213,7 +219,7 @@ class ProductReviewServiceTest extends ModuleTestCase
 
         $this->settingsService
             ->shouldReceive('getSetting')
-            ->with('review.write_deadline_days', Mockery::any())
+            ->with('review_settings.write_deadline_days', Mockery::any())
             ->andReturn(90);
 
         $result = $this->service->canWrite(1, 1);
@@ -384,7 +390,7 @@ class ProductReviewServiceTest extends ModuleTestCase
         $this->assertEquals('수정된 답변입니다.', $capturedData['reply_content']);
         $this->assertEquals(10, $capturedData['reply_admin_id']);
         $this->assertNotNull($capturedData['reply_updated_at']);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $capturedData['replied_at']);
+        $this->assertInstanceOf(Carbon::class, $capturedData['replied_at']);
         $this->assertEquals('수정된 답변입니다.', $result->reply_content);
     }
 

@@ -181,6 +181,18 @@ HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.re
 
 > **중요**: 웹소켓 OFF 시 `broadcasting.default`가 `'null'`로 강제되는 동작은 `.env`의 `BROADCAST_CONNECTION` 값을 무시하고 적용됩니다. 따라서 운영자가 환경설정에서 OFF한 경우, `.env`에 `REVERB_HOST=localhost` 등이 남아 있어도 broadcast 시도가 발생하지 않습니다. 알림 시스템(mail/database 채널)은 이 설정과 독립적으로 정상 동작합니다.
 
+#### 웹소켓 토글은 전 계층 SSoT (송신 · 프론트연결 · 채널인증)
+
+웹소켓 사용 OFF 는 **송신 계층만** 막는 것이 아니라 다음 세 계층을 모두 차단합니다 (`websocket_enabled` 가 단일 SSoT):
+
+| 계층 | OFF 시 동작 | 구현 |
+|------|------------|------|
+| ① 백엔드 송신 | `broadcasting.default='null'` → `HookManager::broadcast()` 즉시 return | `applyWebsocketConfig()` |
+| ② 프론트 연결 | `broadcasting.connections.reverb.key` 를 빈 문자열로 무력화 → Blade `@if(reverb.key)` false → 브라우저 WebSocket 미연결 | `applyWebsocketConfig()` OFF 분기 |
+| ③ 채널 인증 | `POST /api/broadcasting/auth` 가 `broadcasting.default==='null'` 이면 403 | `routes/api.php` 가드 |
+
+따라서 `.env` 에 `REVERB_APP_KEY` 가 살아 있고 Reverb 서버가 운영자 OS 레벨로 기동 중이어도, 토글 OFF 면 프론트가 연결을 시도하지 않고 직접 연결 시도도 채널 인증 단계에서 거부됩니다. `.env` 는 토글 ON 일 때만 자격증명·endpoint 소스로 사용됩니다.
+
 ### 채널 타입
 
 | 타입 | 클래스 | 용도 | 인증 필요 |

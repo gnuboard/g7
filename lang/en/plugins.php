@@ -228,6 +228,9 @@ return [
             'aborted' => 'Update cancelled.',
             'backup_restored' => 'Previous version has been restored from backup.',
             'force_mode' => 'Force update mode: Skipping version comparison and reinstalling.',
+            'layout_strategy' => 'Layout strategy: :strategy',
+            'modified_extensions_warning' => ':count layout extension(s) edited by an administrator will be overwritten.',
+            'modified_extension_item' => '  - :target (source: :source)',
         ],
     ],
 

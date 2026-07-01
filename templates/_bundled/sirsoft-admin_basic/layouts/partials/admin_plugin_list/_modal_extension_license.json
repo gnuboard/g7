@@ -1,5 +1,6 @@
 {
   "meta": {
+    "editor_label": "$t:admin.modal_label.admin_plugin_list.plugin_extension_license_modal",
     "is_partial": true,
     "description": "플러그인 라이선스 전문 모달"
   },
@@ -29,7 +30,7 @@
               "type": "basic",
               "name": "Pre",
               "props": {
-                "className": "whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-mono leading-relaxed"
+                "className": "whitespace-pre-wrap text-body font-mono leading-relaxed"
               },
               "text": "{{_global.extensionLicenseContent ?? ''}}"
             }

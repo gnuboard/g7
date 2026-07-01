@@ -1,0 +1,36 @@
+{
+    "identifier": "sirsoft-gdpr",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "GDPR (일반 데이터 보호 규정)",
+        "en": "GDPR (General Data Protection Regulation)"
+    },
+    "version": "1.0.0",
+    "description": {
+        "ko": "쿠키 동의 배너, 자동 차단, 동의 이력 저장, 마이페이지 동의 철회를 제공하는 GDPR 대응 플러그인입니다.",
+        "en": "GDPR-ready plugin: cookie consent banner, auto-blocking, consent history, and mypage consent withdrawal."
+    },
+    "license": "MIT",
+    "g7_version": ">=7.0.0",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-gdpr",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-gdpr/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "css": {
+            "entry": "resources/css/banner.css",
+            "output": "dist/css/plugin.css"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 50
+    }
+}

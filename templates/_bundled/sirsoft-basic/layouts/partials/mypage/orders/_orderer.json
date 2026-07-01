@@ -1,0 +1,144 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "주문 상세 - 주문자 정보 (회원/비회원 공유). order.data.orderer_* 바인딩."
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
+    }
+  },
+  "children": [
+    {
+      "comment": "섹션 제목",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "user", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" }
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
+          "text": "$t:mypage.order_detail.orderer_title",
+          "responsive": {
+            "portable": {
+              "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "주문자 정보 목록",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-3" },
+      "children": [
+        {
+          "comment": "주문자",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-start" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.orderer_name",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white" },
+              "text": "{{order.data.orderer_name ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "연락처",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-start" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.orderer_phone",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white" },
+              "text": "{{order.data.orderer_phone ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "이메일 (있는 경우만 표시)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{order.data.orderer_email}}",
+          "props": { "className": "flex items-start" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.orderer_email",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white" },
+              "text": "{{order.data.orderer_email ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

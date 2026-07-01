@@ -1,0 +1,61 @@
+{
+  "extension_point": "admin_dashboard_quick_menu",
+  "mode": "append",
+  "priority": 50,
+  "components": [
+    {
+      "id": "qm_boards",
+      "type": "basic",
+      "name": "A",
+      "props": {
+        "href": "/admin/boards",
+        "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "clipboard-list",
+            "className": "text-lg md:text-xl"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "text-center leading-tight"
+          },
+          "text": "$t:sirsoft-board.admin.dashboard.quick_menu.boards"
+        }
+      ]
+    },
+    {
+      "id": "qm_reports",
+      "type": "basic",
+      "name": "A",
+      "props": {
+        "href": "/admin/boards/reports",
+        "className": "flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "flag",
+            "className": "text-lg md:text-xl"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "text-center leading-tight"
+          },
+          "text": "$t:sirsoft-board.admin.dashboard.quick_menu.reports"
+        }
+      ]
+    }
+  ]
+}

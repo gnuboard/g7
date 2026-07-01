@@ -856,6 +856,43 @@ export class DataBindingEngine {
   }
 
   /**
+   * 문자열 전체가 단일 `{{...}}` 바인딩인지 판정하고, 그렇다면 내부 식을 반환합니다.
+   *
+   * 종전 `^\{\{([^}]+)\}\}$` 정규식은 식 안에 `}` 가 든 경우(예: 빈 객체 fallback
+   * `{{error.errors ?? {}}}`)를 단일 바인딩으로 인식하지 못해 원본 문자열이 그대로
+   * 새어 나갔다. 본 메서드는 외곽 `{{ }}` 안의 중괄호 균형(depth)을 추적해, 내부에서
+   * 바인딩이 조기 종료(`}}`)되지 않고 끝까지 단일 식으로 닫히는 경우에만 그 식을 반환한다.
+   * `"{{a}} {{b}}"` 처럼 두 개 이상의 바인딩이면 null 을 반환해 문자열 보간 경로로 보낸다.
+   *
+   * @param value 검사할 문자열
+   * @returns 단일 바인딩이면 내부 식 문자열, 아니면 null
+   */
+  private extractSingleBinding(value: string): string | null {
+    if (!value.startsWith('{{') || !value.endsWith('}}') || value.length < 5) {
+      return null;
+    }
+    const inner = value.slice(2, -2);
+    // inner 를 스캔하며 `}}` 가 깊이 0(외곽 바인딩 종료)에서 등장하면 단일 바인딩 아님.
+    // `{` / `}` 로 깊이를 추적하되, 식 내부의 `{}`(객체 리터럴)는 균형이 맞으므로
+    // 깊이가 음수로 떨어지지 않는 한 단일 바인딩으로 본다.
+    let depth = 0;
+    for (let i = 0; i < inner.length - 1; i++) {
+      const c = inner[i];
+      if (c === '{') {
+        depth++;
+      } else if (c === '}') {
+        if (depth > 0) {
+          depth--;
+        } else if (inner[i + 1] === '}') {
+          // 깊이 0 에서 `}}` 출현 → 외곽 바인딩이 중간에 닫힘 → 다중 바인딩/보간
+          return null;
+        }
+      }
+    }
+    return inner;
+  }
+
+  /**
    * 객체 내의 모든 바인딩 표현식을 데이터로 치환
    *
    * @param obj 바인딩 표현식이 포함된 객체
@@ -921,10 +958,13 @@ export class DataBindingEngine {
       }
 
       if (typeof value === 'string') {
-        // 전체가 {{variable}} 패턴인 경우 원본 값(배열/객체) 반환
-        const singleBindingMatch = value.match(/^\{\{([^}]+)\}\}$/);
-        if (singleBindingMatch) {
-          const path = singleBindingMatch[1].trim();
+        // 전체가 {{variable}} 패턴인 경우 원본 값(배열/객체) 반환.
+        // `[^}]+` 는 `{{error.errors ?? {}}}` 처럼 식 안에 `}` 가 든 경우(빈 객체 fallback 등)
+        // 첫 `}` 에서 끊겨 매칭에 실패 → 원본 문자열이 그대로 새어 나오던 결함이 있었다.
+        // extractSingleBinding 은 외곽 `{{ }}` 안의 중괄호 균형을 추적해 단일 바인딩 식을 정확히 추출한다.
+        const singleBindingPath = this.extractSingleBinding(value);
+        if (singleBindingPath !== null) {
+          const path = singleBindingPath.trim();
 
           // raw: 접두사 감지 @since engine-v1.27.0
           let isRawBinding = false;
@@ -1398,6 +1438,11 @@ export class DataBindingEngine {
       'this', 'super', 'import', 'export', 'default', 'try', 'catch', 'finally', 'throw',
       // 내장 객체
       'Math', 'Date', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp',
+      // 컬렉션/표준 내장 객체 (@since engine-v1.50.0)
+      // 이들이 reserved 에 없으면 컨텍스트 변수로 오인되어 undefined 로 가려지고
+      // new Function 본문에서 `new Set(...)` 가 `new undefined()` 가 되어 실패한다.
+      // eval/Function/globalThis/window 등 위험 전역은 의도적으로 제외한다.
+      'Set', 'Map', 'WeakSet', 'WeakMap', 'Symbol', 'Promise', 'BigInt', 'Error',
       // 전역 함수
       'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI',
       'encodeURIComponent', 'decodeURIComponent',

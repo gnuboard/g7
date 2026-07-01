@@ -39,6 +39,16 @@ interface CancelItem {
 let userEstimateDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
+ * 비회원 컨텍스트 식별자 확보 여부 — _global.guestOrderToken 과 dataSource('order').data.order_number 가 모두 있으면 true.
+ * 비회원 응답(GuestOrderResource)은 id 미노출이므로 회원 식별자(orderId) 가 비어 있어도 본 값으로 비회원 endpoint 호출 가능.
+ */
+function hasGuestOrderContext(G7Core: any): boolean {
+    const token = G7Core?.state?.get?.('_global')?.guestOrderToken;
+    const orderNumber = G7Core?.dataSource?.get?.('order')?.data?.order_number;
+    return Boolean(token && orderNumber);
+}
+
+/**
  * Debounce 타이머 정리 (사용자 취소 모달)
  *
  * 모달 닫기/페이지 이동 시 pending debounce를 취소합니다.
@@ -190,8 +200,9 @@ export function initUserCancelItemsHandler(
     G7Core.modal?.open?.('modal_cancel_order');
 
     // 초기 환불 예상금액 계산
+    // 비회원 응답(GuestOrderResource)은 id 미노출 — order_number 만 있어도 estimateUserRefundInternal 내부에서 비회원 URL 분기
     const orderId = action.params?.orderId || orderData.id;
-    if (orderId) {
+    if (orderId || orderData.order_number) {
         estimateUserRefundInternal(G7Core, orderId);
     }
 }
@@ -286,7 +297,8 @@ export function updateUserCancelQuantityHandler(
     if (!G7Core?.state) return;
 
     const { optionId, maxQuantity, orderId } = action.params || {};
-    if (!optionId || !maxQuantity || !orderId) return;
+    // 회원: orderId 필수. 비회원: orderId 없어도 토큰+order_number 로 비회원 endpoint 분기.
+    if (!optionId || !maxQuantity || (!orderId && !hasGuestOrderContext(G7Core))) return;
 
     const rawValue = action.params?.value ?? (action as any).$event?.target?.value;
     const parsed = parseInt(String(rawValue), 10);
@@ -335,7 +347,8 @@ export async function estimateUserRefundHandler(
     if (!G7Core?.state) return;
 
     const { orderId } = action.params || {};
-    if (!orderId) return;
+    // 회원: orderId 필수. 비회원: orderId 없어도 토큰+order_number 로 estimateUserRefundInternal 가 비회원 URL 분기.
+    if (!orderId && !hasGuestOrderContext(G7Core)) return;
 
     await estimateUserRefundInternal(G7Core, orderId);
 }
@@ -366,9 +379,19 @@ async function estimateUserRefundInternal(G7Core: any, orderId: number | string)
     G7Core.state.setLocal({ refundLoading: true });
 
     try {
+        const guestToken = G7Core.state.get?.('_global')?.guestOrderToken;
+        const orderNumber = G7Core.dataSource?.get?.('order')?.data?.order_number;
+        const isGuest = Boolean(guestToken && orderNumber);
+        const url = isGuest
+            ? `/api/modules/sirsoft-ecommerce/guest/orders/${orderNumber}/estimate-refund`
+            : `/api/modules/sirsoft-ecommerce/user/orders/${orderId}/estimate-refund`;
+        // ApiClient(axios) 인터셉터는 globalHeaders 를 적용하지 않으므로 비회원 endpoint 호출 시 토큰 헤더를 명시적으로 첨부.
+        const config = isGuest ? { headers: { 'X-Guest-Order-Token': guestToken } } : undefined;
+
         const response = await G7Core.api.post(
-            `/api/modules/sirsoft-ecommerce/user/orders/${orderId}/estimate-refund`,
-            { items, refund_priority: refundPriority }
+            url,
+            { items, refund_priority: refundPriority },
+            config
         );
 
         if (response?.success) {
@@ -415,7 +438,8 @@ export function changeUserRefundPriorityHandler(
     if (!G7Core?.state) return;
 
     const { priority, orderId } = action.params || {};
-    if (!priority || !orderId) return;
+    // 회원: orderId 필수. 비회원: orderId 없어도 토큰+order_number 로 비회원 endpoint 분기.
+    if (!priority || (!orderId && !hasGuestOrderContext(G7Core))) return;
 
     G7Core.state.setLocal({ refundPriority: priority });
 
@@ -443,20 +467,22 @@ export function changeUserRefundPriorityHandler(
  * @param _context 액션 컨텍스트
  */
 export async function executeUserCancelOrderHandler(
-    action: ActionWithParams<{ orderId: number | string; cancelReason?: string; refundPriority?: string }>,
+    action: ActionWithParams<{ orderId: number | string; cancelReason?: string; cancelReasonDetail?: string; refundPriority?: string }>,
     _context: ActionContext
 ): Promise<void> {
     const G7Core = (window as any).G7Core;
     if (!G7Core?.state) return;
 
     const { orderId } = action.params || {};
-    if (!orderId) return;
+    // 회원: orderId 필수. 비회원: orderId 없어도 토큰+order_number 로 비회원 endpoint 분기.
+    if (!orderId && !hasGuestOrderContext(G7Core)) return;
 
     const local = G7Core.state.getLocal();
     const cancelItems: CancelItem[] = local.cancelItems || [];
     const selectedItems = cancelItems.filter((item: CancelItem) => item.selected);
     // cancelReason/refundPriority: params 우선, fallback으로 local (모달 스코프 호환)
     const cancelReason = action.params?.cancelReason || local.cancelReason || '';
+    const cancelReasonDetail = action.params?.cancelReasonDetail ?? local.cancelReasonDetail ?? '';
     const refundPriority = action.params?.refundPriority || local.refundPriority || 'pg_first';
 
     if (selectedItems.length === 0) {
@@ -475,31 +501,40 @@ export async function executeUserCancelOrderHandler(
         return;
     }
 
-    // 전체취소 여부 판단
-    const allItemsSelected = cancelItems.every((item: CancelItem) => item.selected);
-    const allFullQuantity = selectedItems.every(
-        (item: CancelItem) => item.cancel_quantity === item.quantity
-    );
-    const isFullCancel = allItemsSelected && allFullQuantity;
-
+    // 선택한 항목 부분집합을 항상 items 로 전송한다. 프론트에서 전체취소를 휴리스틱으로 판단하지 않는다.
+    // 진짜 전체취소(모든 활성 옵션 전량)도 items 전량으로 보내면 백엔드 shouldConvertToFullCancel 이
+    // FULL 로 승격해 동작·환불 결과가 동일하다. 종전 isFullCancel 휴리스틱은 다중항목 중 일부 전량 선택을
+    // 전체취소로 오판해 items 를 누락시켜 주문 전체가 취소되는 결함이 있었다.
     const body: Record<string, any> = {
         reason: cancelReason,
         refund_priority: refundPriority,
-    };
-
-    if (!isFullCancel) {
-        body.items = selectedItems.map((item: CancelItem) => ({
+        items: selectedItems.map((item: CancelItem) => ({
             order_option_id: item.id,
             cancel_quantity: item.cancel_quantity,
-        }));
+        })),
+    };
+
+    // 기타 사유 선택 시 상세 사유 전송 (선택 입력 — 관리자 패리티)
+    if (cancelReasonDetail) {
+        body.reason_detail = cancelReasonDetail;
     }
 
     G7Core.state.setLocal({ isCancelling: true, cancelError: null, cancelValidationErrors: null });
 
     try {
+        const guestToken = G7Core.state.get?.('_global')?.guestOrderToken;
+        const orderNumber = G7Core.dataSource?.get?.('order')?.data?.order_number;
+        const isGuest = Boolean(guestToken && orderNumber);
+        const url = isGuest
+            ? `/api/modules/sirsoft-ecommerce/guest/orders/${orderNumber}/cancel`
+            : `/api/modules/sirsoft-ecommerce/user/orders/${orderId}/cancel`;
+        // ApiClient(axios) 인터셉터는 globalHeaders 를 적용하지 않으므로 비회원 endpoint 호출 시 토큰 헤더를 명시적으로 첨부.
+        const config = isGuest ? { headers: { 'X-Guest-Order-Token': guestToken } } : undefined;
+
         const response = await G7Core.api.post(
-            `/api/modules/sirsoft-ecommerce/user/orders/${orderId}/cancel`,
-            body
+            url,
+            body,
+            config
         );
 
         if (response?.success) {

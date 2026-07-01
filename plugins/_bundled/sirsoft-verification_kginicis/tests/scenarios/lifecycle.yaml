@@ -1,0 +1,69 @@
+# audit:allow test-scenario-coverage reason: Phase F 사용자 라이프사이클 listener 시나리오 매트릭스 SSoT.
+
+feature: KG이니시스 본인인증 — 사용자 라이프사이클 PII 파기 (Phase F)
+
+description: |
+  사용자 탈퇴 / 관리자 사용자 삭제 시 inicis_identity_records 의 PII 를 즉시 파기 (PIPC 준수).
+  코어 `core.user.after_withdraw` / `core.user.before_delete` 훅을 구독하여 자동 동작.
+
+  설계:
+    - after_withdraw 훅 — 탈퇴 트랜잭션 완료 후 호출 (User 모델 인자, soft delete 상태)
+    - before_delete 훅 — 관리자 hard delete 직전 호출 (User 모델 인자, 행 존재 상태).
+      inicis_identity_records.user_id 는 users(id) FK(CASCADE 미설정)를 가지므로 users
+      행 삭제 전에 record 를 먼저 파기해야 FK 제약 위반(1451) 없이 삭제가 완료된다.
+      (참조: Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener 동일 패턴)
+    - 두 listener 모두 sync 실행 — 탈퇴/삭제 시점 PII 즉시 영구 파기
+
+axes:
+  hook:
+    - after_withdraw      # 사용자 탈퇴
+    - before_delete       # 관리자 사용자 삭제 (hard delete 직전)
+  record_state:
+    - present             # 본인확인 record 존재
+    - absent              # record 없음 (인증 안 한 사용자)
+  multi_user:
+    - single              # 단일 사용자 흐름
+    - multiple_users      # 다른 사용자 record 가 같이 있는 환경
+  log_state:
+    - inicis_log          # 본 plugin 발행 inicis 로그
+    - mail_log            # 코어 mail provider 발행 로그
+    - both_logs           # 두 provider 로그 공존
+
+exclusions: []
+
+effects:
+  # after_withdraw (User 인자)
+  - withdraw_hook_deletes_inicis_record_for_user_id_via_repository_delete_by_user_id
+  - withdraw_hook_does_not_affect_other_users_records
+  - withdraw_hook_noops_when_user_has_no_record
+  - withdraw_hook_anonymizes_inicis_provider_logs_user_id_to_null_for_pipc
+  - withdraw_hook_does_not_anonymize_other_users_logs_or_other_provider_logs
+
+  # before_delete (User 모델 인자)
+  - before_delete_hook_allows_full_user_delete_without_fk_violation_when_record_exists
+  - before_delete_hook_deletes_inicis_record_for_user_id_via_repository_delete_by_user_id
+  - before_delete_hook_does_not_affect_other_users_records
+  - before_delete_hook_noops_when_argument_is_not_user_model
+  - before_delete_hook_anonymizes_inicis_provider_logs_user_id_to_null_for_pipc
+  - before_delete_hook_does_not_anonymize_other_users_logs_or_other_provider_logs
+
+  # PIPC 준수
+  - pii_records_are_permanently_destroyed_immediately_after_lifecycle_event_without_grace_period
+  - pii_destruction_is_synchronous_to_lifecycle_transaction_completion
+  - inicis_provider_logs_are_anonymized_immediately_preserving_audit_trail_without_user_linkage
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Listeners/CleanInicisRecordOnUserWithdrawTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Listeners/CleanInicisRecordOnUserDeleteTest.php
+
+rules_layer_coverage:
+  - rule: listener-must-implement-hooklistenerinterface
+    coverage: CleanInicisRecordOnUserWithdraw + CleanInicisRecordOnUserDelete 둘 다 구현
+  - rule: listener-direct-db-facade
+    coverage: Listener 는 InicisIdentityRecordRepositoryInterface 만 의존 (DB facade 직접 호출 없음)
+  - rule: cascade-deletion-policy
+    coverage: |
+      PII 는 코어 user 삭제 시 CASCADE 미사용 — before_delete listener 가 users 행 삭제
+      직전에 명시적으로 deleteByUserId 호출 (FK 제약 위반 1451 회피 + 명시 삭제 규정 준수)
+  - rule: i18n-throw-hardcoded-korean
+    coverage: 본 listener 는 메시지 throw 없음 (silent noop) — 적용 대상 외

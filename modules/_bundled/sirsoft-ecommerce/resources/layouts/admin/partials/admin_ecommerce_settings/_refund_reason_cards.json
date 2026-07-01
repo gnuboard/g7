@@ -7,7 +7,6 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "space-y-3"
   },
   "children": [
     {
@@ -34,7 +33,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 min-w-0"
+                "className": "flex-center gap-2 min-w-0"
               },
               "children": [
                 {
@@ -60,7 +59,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 shrink-0"
+                "className": "flex-center gap-2 shrink-0"
               },
               "children": [
                 {

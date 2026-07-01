@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "주문 취소 모달 - 부분취소/전체취소 지원, 환불 예상금액 표시"
+    "description": "주문 취소 모달 - 부분취소/전체취소 지원, 환불 예상금액 표시",
+    "editor_label": "$t:user.modal_label.mypage_orders.modal_cancel_order"
   },
   "type": "composite",
   "name": "Modal",
@@ -29,6 +30,7 @@
               "cancelItems": [],
               "cancelSelectAll": false,
               "cancelReason": "",
+              "cancelReasonDetail": "",
               "refundPriority": "pg_first",
               "refundEstimate": null,
               "refundLoading": false,
@@ -387,7 +389,7 @@
                       "name": "Div",
                       "props": { "className": "text-right" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_list_price_amount ?? (_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}" },
                         {
                           "type": "basic",
                           "name": "Div",
@@ -398,7 +400,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -411,7 +413,7 @@
                       "name": "Div",
                       "props": { "className": "text-right" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_list_price_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}" },
                         {
                           "type": "basic",
                           "name": "Div",
@@ -422,7 +424,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -444,7 +446,7 @@
                       "name": "Div",
                       "props": { "className": "text-right" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.subtotal_amount ?? (_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0).toLocaleString()}}" },
                         {
                           "type": "basic",
                           "name": "Div",
@@ -455,7 +457,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -468,7 +470,7 @@
                       "name": "Div",
                       "props": { "className": "text-right" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.subtotal_amount ?? (_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0).toLocaleString()}}" },
                         {
                           "type": "basic",
                           "name": "Div",
@@ -479,7 +481,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -501,8 +503,8 @@
                       "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.product_coupon_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_product_coupon_discount_amount ?? (_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_product_coupon_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}" }
                       ]
                     },
                     {
@@ -565,8 +567,8 @@
                       "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.order_coupon_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_order_coupon_discount_amount ?? (_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_order_coupon_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}" }
                       ]
                     },
                     {
@@ -624,8 +626,8 @@
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
                     { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.code_discount" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_code_discount_amount ?? (_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_code_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}" }
                   ]
                 },
                 {
@@ -640,8 +642,8 @@
                       "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.shipping_coupon_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.shipping_discount_amount ?? (_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.shipping_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}" }
                       ]
                     },
                     {
@@ -699,8 +701,8 @@
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
                     { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.base_shipping" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.base_shipping_amount ?? (_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.base_shipping_amount ?? (_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}" }
                   ]
                 },
                 {
@@ -710,8 +712,8 @@
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
                     { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.extra_shipping" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.extra_shipping_amount ?? (_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.extra_shipping_amount ?? (_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}" }
                   ]
                 },
                 {
@@ -721,8 +723,8 @@
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
                     { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.points_used" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_points_used_amount ?? (_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_points_used_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}" }
                   ]
                 },
                 {
@@ -732,8 +734,8 @@
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
                     { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.taxable_amount" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_tax_amount ?? (_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0).toLocaleString()}}" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_tax_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0).toLocaleString()}}" }
                   ]
                 },
                 {
@@ -743,8 +745,8 @@
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
                     { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.vat_amount" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0).toLocaleString()}}" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0).toLocaleString()}}" }
                   ]
                 },
                 {
@@ -759,7 +761,7 @@
                       "name": "Div",
                       "props": { "className": "text-right" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_paid_amount ?? (_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0).toLocaleString()}}" },
                         {
                           "type": "basic",
                           "name": "Div",
@@ -770,7 +772,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block font-normal" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -783,7 +785,7 @@
                       "name": "Div",
                       "props": { "className": "text-right" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_paid_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0).toLocaleString()}}" },
                         {
                           "type": "basic",
                           "name": "Div",
@@ -794,7 +796,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block font-normal" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -833,7 +835,20 @@
                   "props": { "className": "flex justify-between text-sm font-semibold pt-3 mt-2 border-t-2 border-gray-300 dark:border-gray-600" },
                   "children": [
                     { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "$t:mypage.order_detail.cancel_modal.refund_total" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-red-600 dark:text-red-400 text-base" }, "text": "{{(_local.refundEstimate?.refund_total ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                    {
+                      "type": "basic", "name": "Div", "props": { "className": "text-right" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-600 dark:text-red-400 text-base block" }, "text": "{{_local.refundEstimate?.refund_formatted?.base?.refund_total ?? (_local.refundEstimate?.refund_total ?? 0).toLocaleString()}}" },
+                        {
+                          "comment": "결제 통화 환산 환불 예정액(base≠결제 통화일 때 병기)",
+                          "type": "basic", "name": "Span",
+                          "if": "{{_local.refundEstimate?.refund_formatted?.mc?.refund_total}}",
+                          "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 font-normal" },
+                          "iteration": { "source": "{{Object.entries(_local.refundEstimate?.refund_formatted?.mc?.refund_total ?? {})}}", "item_var": "mc" },
+                          "text": "{{mc[1]}}"
+                        }
+                      ]
+                    }
                   ]
                 },
                 {
@@ -851,7 +866,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:mypage.order_detail.cancel_modal.remaining_pg_balance" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{(_local.refundEstimate?.remaining_pg_balance ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{_local.refundEstimate?.refund_formatted?.base?.remaining_pg_balance ?? (_local.refundEstimate?.remaining_pg_balance ?? 0).toLocaleString()}}" }
                       ]
                     },
                     {
@@ -862,7 +877,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:mypage.order_detail.cancel_modal.remaining_points_balance" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{(_local.refundEstimate?.remaining_points_balance ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{_local.refundEstimate?.refund_formatted?.base?.remaining_points_balance ?? (_local.refundEstimate?.remaining_points_balance ?? 0).toLocaleString()}}" }
                       ]
                     }
                   ]
@@ -1012,6 +1027,37 @@
               "if": "{{_local.cancelValidationErrors?.reason}}",
               "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
               "text": "{{Array.isArray(_local.cancelValidationErrors?.reason) ? _local.cancelValidationErrors.reason[0] : _local.cancelValidationErrors?.reason}}"
+            },
+            {
+              "comment": "기타 선택 시 상세 사유 입력",
+              "type": "basic",
+              "name": "Textarea",
+              "if": "{{_local.cancelReason === 'etc'}}",
+              "props": {
+                "className": "{{_local.cancelValidationErrors?.reason_detail ? 'w-full px-3 py-2 min-h-20 mt-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 min-h-20 mt-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}",
+                "placeholder": "$t:mypage.order_detail.cancel_modal.cancel_reason_detail_placeholder",
+                "value": "{{_local.cancelReasonDetail ?? ''}}"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "cancelReasonDetail": "{{$event.target.value}}",
+                    "cancelValidationErrors": null,
+                    "cancelError": null
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "상세 사유 필드 에러",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.cancelValidationErrors?.reason_detail}}",
+              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+              "text": "{{Array.isArray(_local.cancelValidationErrors?.reason_detail) ? _local.cancelValidationErrors.reason_detail[0] : _local.cancelValidationErrors?.reason_detail}}"
             }
           ]
         }
@@ -1053,6 +1099,7 @@
               "params": {
                 "orderId": "{{order.data.id ?? ''}}",
                 "cancelReason": "{{_local.cancelReason ?? ''}}",
+                "cancelReasonDetail": "{{_local.cancelReasonDetail ?? ''}}",
                 "refundPriority": "{{_local.refundPriority ?? 'pg_first'}}"
               }
             }

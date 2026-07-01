@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "이용약관 모달"
+    "description": "이용약관 모달",
+    "editor_label": "$t:user.modal_label.auth.termsModal"
   },
   "id": "termsModal",
   "type": "composite",

@@ -18,6 +18,7 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Enums\PermissionType;
+use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
@@ -26,8 +27,6 @@ use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
 use App\Extension\Helpers\GithubHelper;
-use App\Providers\CoreServiceProvider;
-use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
@@ -36,9 +35,11 @@ use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
+use App\Models\IdentityPolicy;
 use App\Models\Module;
 use App\Models\Plugin;
 use App\Models\Template;
+use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
@@ -424,6 +425,14 @@ class ModuleManager implements ModuleManagerInterface
             $name = $this->convertToMultilingual($module->getName());
             $description = $this->convertToMultilingual($module->getDescription());
 
+            // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
+            $manifest = HookManager::applyFilters(
+                "module.{$module->getIdentifier()}.manifest.translations",
+                ['name' => $name, 'description' => $description]
+            );
+            $name = $manifest['name'] ?? $name;
+            $description = $manifest['description'] ?? $description;
+
             // 데이터베이스에 모듈 정보 저장
             $this->moduleRepository->updateOrCreate(
                 ['identifier' => $module->getIdentifier()],
@@ -536,7 +545,7 @@ class ModuleManager implements ModuleManagerInterface
             );
         }
 
-        // 코어 버전 호환성 사전 검증 (#306 sync 훅보다 앞쪽)
+        // 코어 버전 호환성 사전 검증
         if (! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
             CoreVersionChecker::validateExtension(
                 $module->getRequiredCoreVersion(),
@@ -635,6 +644,10 @@ class ModuleManager implements ModuleManagerInterface
 
             // 모듈 상태 캐시 무효화
             self::invalidateModuleStatusCache();
+
+            // 본인인증 route scope 캐시 무효화 — 재활성화 시 이 모듈이 선언한 정책이
+            // 다시 enforce 대상에 포함되도록 한다 (applyActiveExtensionScope 재평가).
+            IdentityPolicy::flushRouteScopeCache();
         }
 
         // 훅 발행: 모듈 활성화 완료
@@ -772,6 +785,11 @@ class ModuleManager implements ModuleManagerInterface
 
             // 모듈 상태 캐시 무효화
             self::invalidateModuleStatusCache();
+
+            // 본인인증 route scope 캐시 무효화 — 비활성 모듈이 선언한 정책이 enforce 대상에서
+            // 즉시 제외되도록 한다. 정책 행 자체는 변경하지 않으므로(enabled 운영자 설정 보존)
+            // IdentityPolicy 모델 이벤트가 발화하지 않아, 라이프사이클에서 명시적으로 호출한다.
+            IdentityPolicy::flushRouteScopeCache();
 
             // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
             HookManager::doAction('core.modules.after_deactivate', $module->getIdentifier());
@@ -1498,7 +1516,7 @@ class ModuleManager implements ModuleManagerInterface
      * 중첩 구조 의존성 배열을 순회하며 (identifier => declaredType) 를 yield 합니다.
      *
      * @param  array  $dependencies  ['modules' => [...], 'plugins' => [...]] 형식
-     * @return \Generator<string, string>  identifier => 'module'|'plugin'
+     * @return \Generator<string, string> identifier => 'module'|'plugin'
      */
     private function iterateNestedDependencies(array $dependencies): \Generator
     {
@@ -1891,7 +1909,6 @@ class ModuleManager implements ModuleManagerInterface
             'total_storage_size_formatted' => $this->formatBytes($totalStorageSize),
         ];
     }
-
 
     /**
      * 단일 마이그레이션 파일을 롤백합니다.
@@ -2520,10 +2537,6 @@ class ModuleManager implements ModuleManagerInterface
 
     /**
      * 해당 source 가 기존에 등록한 IDV 정책이 있는지 확인합니다.
-     *
-     * @param  string  $sourceType
-     * @param  string  $sourceIdentifier
-     * @return bool
      */
     protected function hasExistingIdentityPolicies(string $sourceType, string $sourceIdentifier): bool
     {
@@ -2587,9 +2600,6 @@ class ModuleManager implements ModuleManagerInterface
      *
      * `$module` 에서 현재 정의된 식별자/slug 를 수집하여 helper 의 `cleanupStale*` 호출.
      * user_overrides 보존 및 `users.role_id` 참조 역할 삭제 차단은 helper 가 담당.
-     *
-     * @param  ModuleInterface  $module
-     * @return void
      */
     protected function cleanupStaleModuleEntries(ModuleInterface $module): void
     {
@@ -3274,7 +3284,7 @@ class ModuleManager implements ModuleManagerInterface
      *
      * @param  string  $moduleName  모듈명
      * @param  bool  $preserveModified  true 시 사용자가 UI에서 수정한 레이아웃은 덮어쓰지 않음
-     *                                 (original_content_hash 와 현재 content hash 비교)
+     *                                  (original_content_hash 와 현재 content hash 비교)
      * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
      *
      * @throws \Exception 모듈을 찾을 수 없거나 레이아웃 갱신 실패 시
@@ -3446,7 +3456,7 @@ class ModuleManager implements ModuleManagerInterface
         // 레이아웃 확장(extension)은 모든 활성 템플릿에 적용될 수 있으므로
         // admin 템플릿뿐만 아니라 모든 활성 템플릿에 대해 갱신
         $allActiveTemplates = $this->templateRepository->getActive();
-        $extensionStats = $this->refreshLayoutExtensions($module, $allActiveTemplates);
+        $extensionStats = $this->refreshLayoutExtensions($module, $allActiveTemplates, $preserveModified);
 
         // 레이아웃 또는 레이아웃 확장이 실제로 변경된 경우에만 캐시 버전 증가
         $extensionChanged = ($extensionStats['created'] ?? 0) > 0 || ($extensionStats['updated'] ?? 0) > 0;
@@ -3474,11 +3484,12 @@ class ModuleManager implements ModuleManagerInterface
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
      * @param  Collection  $adminTemplates  admin 템플릿 컬렉션
-     * @return array{refreshed: int, created: int, updated: int, deleted: int} 갱신 통계
+     * @param  bool  $preserveModified  관리자가 편집한 확장을 보존할지 여부 (--layout-strategy=keep)
+     * @return array{refreshed: int, created: int, updated: int, deleted: int, skipped: int} 갱신 통계
      */
-    protected function refreshLayoutExtensions(ModuleInterface $module, $adminTemplates): array
+    protected function refreshLayoutExtensions(ModuleInterface $module, $adminTemplates, bool $preserveModified = false): array
     {
-        return $this->refreshExtensionLayoutExtensions($module, $adminTemplates, LayoutSourceType::Module);
+        return $this->refreshExtensionLayoutExtensions($module, $adminTemplates, LayoutSourceType::Module, $preserveModified);
     }
 
     /**
@@ -4032,9 +4043,13 @@ class ModuleManager implements ModuleManagerInterface
         // 버전순 정렬
         uksort($filteredSteps, 'version_compare');
 
+        // 확장 업그레이드는 코어(sudo/root)와 다른 실행 주체(php-fpm/www-data)로 실행되므로
+        // 코어 'upgrade' 채널과 로그 파일을 분리한다. 같은 파일 공유 시 root 소유 파일에
+        // www-data 가 append 하지 못해 Permission denied 로 실패하던 결함을 원천 차단.
         $context = new UpgradeContext(
             fromVersion: $fromVersion,
             toVersion: $toVersion,
+            logChannel: 'extension-upgrade',
         );
 
         foreach ($filteredSteps as $stepVersion => $step) {
@@ -4083,7 +4098,7 @@ class ModuleManager implements ModuleManagerInterface
     {
         $layouts = $this->layoutRepository->getBySourceIdentifier(
             $identifier,
-            \App\Enums\LayoutSourceType::Module,
+            LayoutSourceType::Module,
         );
 
         $modifiedLayouts = $layouts->filter(function ($layout) {
@@ -4146,8 +4161,7 @@ class ModuleManager implements ModuleManagerInterface
         ?\Closure $onUpgradeStep = null,
         ?string $sourceOverride = null,
         ?string $zipPath = null,
-    ): array
-    {
+    ): array {
         $record = $this->moduleRepository->findByIdentifier($identifier);
         if (! $record) {
             throw new \RuntimeException(__('modules.not_found', ['module' => $identifier]));
@@ -4350,6 +4364,16 @@ class ModuleManager implements ModuleManagerInterface
             try {
                 $name = $module ? $this->convertToMultilingual($module->getName()) : $record->name;
                 $description = $module ? $this->convertToMultilingual($module->getDescription()) : $record->description;
+
+                // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입 (install 경로와 동일)
+                if ($module) {
+                    $manifest = HookManager::applyFilters(
+                        "module.{$identifier}.manifest.translations",
+                        ['name' => $name, 'description' => $description]
+                    );
+                    $name = $manifest['name'] ?? $name;
+                    $description = $manifest['description'] ?? $description;
+                }
 
                 $this->moduleRepository->updateByIdentifier($identifier, [
                     'version' => $toVersion,

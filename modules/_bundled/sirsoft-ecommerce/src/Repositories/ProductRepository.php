@@ -5,8 +5,12 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 use App\Helpers\PermissionHelper;
 use App\Search\Engines\DatabaseFulltextEngine;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
+use Modules\Sirsoft\Ecommerce\Models\Category;
+use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 
@@ -22,12 +26,21 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function existsAny(): bool
+    {
+        // 소프트삭제 포함 — 삭제된 상품도 과거 base 로 생성된 이력이라 base 잠금 유지가 안전(A2)
+        return $this->model->newQuery()->withTrashed()->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function findWithOptions(int $id, bool $includeInactive = false): ?Product
     {
         $optionRelation = $includeInactive ? 'options' : 'activeOptions';
 
         return $this->model
-            ->with([$optionRelation, 'categories', 'images', 'notice', 'activeLabelAssignments.label'])
+            ->with([$optionRelation, 'additionalOptions.values', 'categories', 'images', 'notice', 'activeLabelAssignments.label'])
             ->find($id);
     }
 
@@ -46,29 +59,37 @@ class ProductRepository implements ProductRepositoryInterface
             $keyword = $filters['search_keyword'];
             $field = $filters['search_field'] ?? 'all';
 
-            // FULLTEXT 대상 필드인 경우 Scout 사용
+            // FULLTEXT 대상 필드(all/name/description)는 Scout 검색 ID 와 보조필드 LIKE 매칭 ID 의
+            // 합집합(union)을 미리 산출한 뒤 plain Eloquent whereIn 으로 조회한다.
+            // (total 계산 경로와 결과 조회 경로가 동일한 검색 조건을 보장 — Scout queryCallback
+            //  total 재계산 시 보조필드 OR 가 MATCH 절 없이 재적용되어 total=0 이 되는 결함 회피)
             if (in_array($field, ['all', 'name', 'description'])) {
-                return Product::search($keyword)
-                    ->query(function ($q) use ($filters, $keyword, $field, $perPage) {
-                        $q->with(['options', 'categories', 'images', 'brand', 'shippingPolicy']);
+                // FULLTEXT 매칭 ID (Scout 엔진 순수 검색 — queryCallback 없음)
+                $ftIds = Product::search($keyword)->keys()->all();
 
-                        // 권한 스코프 필터링
-                        PermissionHelper::applyPermissionScope($q, 'sirsoft-ecommerce.products.read');
-
-                        // FULLTEXT 외 필드 OR 조건 (all인 경우)
-                        if ($field === 'all') {
-                            $q->orWhere('product_code', 'like', "%{$keyword}%")
+                // 보조필드(product_code/sku/barcode) LIKE 매칭 ID (all 일 때만)
+                $auxIds = [];
+                if ($field === 'all') {
+                    $auxIds = $this->model->newQuery()
+                        ->where(function ($q) use ($keyword) {
+                            $q->where('product_code', 'like', "%{$keyword}%")
                                 ->orWhere('sku', 'like', "%{$keyword}%")
                                 ->orWhere('barcode', 'like', "%{$keyword}%");
-                        }
+                        })
+                        ->pluck('id')
+                        ->all();
+                }
 
-                        // 필터 적용
-                        $this->applyAdminFilters($q, $filters);
+                $matchedIds = array_values(array_unique([...$ftIds, ...$auxIds]));
 
-                        // 정렬
-                        $this->applyAdminSorting($q, $filters);
-                    })
-                    ->paginate($perPage);
+                // 매칭 ID 로 조건 한정 (빈 매칭은 존재하지 않는 ID 로 빈 결과 → total=0 이 정상)
+                $query->whereIn('id', $matchedIds ?: [0]);
+
+                // 필터 + 정렬 적용
+                $this->applyAdminFilters($query, $filters);
+                $this->applyAdminSorting($query, $filters);
+
+                return $query->paginate($perPage);
             }
 
             // FULLTEXT 미대상 필드 (product_code, sku, barcode) → LIKE 직접
@@ -123,6 +144,26 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function forceDelete(Product $product): bool
+    {
+        return (bool) $product->forceDelete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getSnapshotsByIds(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        return $this->model->whereIn('id', $ids)->get()->keyBy('id')->map->toArray()->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function bulkUpdateStatus(array $ids, string $field, string $value): int
     {
         return $this->model
@@ -137,7 +178,7 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function bulkUpdatePrice(array $ids, string $method, int $value, string $unit): int
+    public function bulkUpdatePrice(array $ids, string $method, float $value, string $unit): int
     {
         $updatedCount = 0;
 
@@ -267,9 +308,12 @@ class ProductRepository implements ProductRepositoryInterface
                 'images',
                 'brand',
                 'additionalOptions',
+                'additionalOptions.values',
                 'labelAssignments',
                 'labelAssignments.label',
                 'notice',
+                'shippingPolicy',
+                'shippingPolicy.countrySettings',
             ])
             ->find($id);
     }
@@ -277,15 +321,16 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * 새 가격 계산
      *
-     * @param  int  $currentPrice  현재 가격
+     * @param  float  $currentPrice  현재 가격
      * @param  string  $method  변경 방식
-     * @param  int  $value  변경 값
+     * @param  float  $value  변경 값
      * @param  string  $unit  단위
      */
-    protected function calculateNewPrice(int $currentPrice, string $method, int $value, string $unit): int
+    protected function calculateNewPrice(float $currentPrice, string $method, float $value, string $unit): float
     {
+        // 소수 통화 대응: 절사 대신 소수 2자리 반올림 보존
         $adjustAmount = $unit === 'percent'
-            ? (int) ($currentPrice * $value / 100)
+            ? round($currentPrice * $value / 100, 2)
             : $value;
 
         return match ($method) {
@@ -325,7 +370,7 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function getPublicList(array $filters, int $perPage = 20): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function getPublicList(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
             ->with(['images', 'categories', 'brand', 'activeLabelAssignments.label'])
@@ -333,18 +378,26 @@ class ProductRepository implements ProductRepositoryInterface
             ->withAvg('visibleReviews as rating_avg', 'rating')
             ->where('display_status', 'visible');
 
-        // 카테고리 필터 (ID)
+        // 카테고리 필터 (ID) — 선택 카테고리 + 모든 하위 카테고리 포함
         if (! empty($filters['category_id'])) {
-            $query->whereHas('categories', function ($q) use ($filters) {
-                $q->where('ecommerce_product_categories.category_id', $filters['category_id']);
+            $categoryIds = Category::selfAndDescendantIds((int) $filters['category_id']);
+            $query->whereHas('categories', function ($q) use ($categoryIds) {
+                $q->whereIn('ecommerce_product_categories.category_id', $categoryIds);
             });
         }
 
-        // 카테고리 필터 (slug)
+        // 카테고리 필터 (slug) — 선택 카테고리 + 모든 하위 카테고리 포함
         if (! empty($filters['category_slug'])) {
-            $query->whereHas('categories', function ($q) use ($filters) {
-                $q->where('ecommerce_categories.slug', $filters['category_slug']);
-            });
+            $root = Category::where('slug', $filters['category_slug'])->first(['id']);
+            if ($root) {
+                $categoryIds = Category::selfAndDescendantIds((int) $root->id);
+                $query->whereHas('categories', function ($q) use ($categoryIds) {
+                    $q->whereIn('ecommerce_product_categories.category_id', $categoryIds);
+                });
+            } else {
+                // 존재하지 않는 slug → 빈 결과 (500 아님)
+                $query->whereRaw('1 = 0');
+            }
         }
 
         // 키워드 검색 (FULLTEXT)
@@ -353,12 +406,12 @@ class ProductRepository implements ProductRepositoryInterface
             DatabaseFulltextEngine::whereFulltext($query, 'name', $keyword);
         }
 
-        // 가격 범위 필터
+        // 가격 범위 필터 (소수 통화 대응 — float 비교)
         if (! empty($filters['min_price'])) {
-            $query->where('selling_price', '>=', (int) $filters['min_price']);
+            $query->where('selling_price', '>=', (float) $filters['min_price']);
         }
         if (! empty($filters['max_price'])) {
-            $query->where('selling_price', '<=', (int) $filters['max_price']);
+            $query->where('selling_price', '<=', (float) $filters['max_price']);
         }
 
         // 브랜드 필터
@@ -370,7 +423,7 @@ class ProductRepository implements ProductRepositoryInterface
         $sort = $filters['sort'] ?? 'latest';
         match ($sort) {
             'sales' => $query
-                ->addSelect(['total_sold' => \Modules\Sirsoft\Ecommerce\Models\OrderOption::selectRaw('COALESCE(SUM(quantity), 0)')
+                ->addSelect(['total_sold' => OrderOption::selectRaw('COALESCE(SUM(quantity), 0)')
                     ->whereColumn('product_id', 'ecommerce_products.id'),
                 ])
                 ->orderByDesc('total_sold'),
@@ -385,7 +438,7 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function getPopularProducts(int $limit = 10): \Illuminate\Database\Eloquent\Collection
+    public function getPopularProducts(int $limit = 10): Collection
     {
         $thirtyDaysAgo = now()->subDays(30);
 
@@ -394,7 +447,7 @@ class ProductRepository implements ProductRepositoryInterface
             ->withCount('visibleReviews as review_count')
             ->withAvg('visibleReviews as rating_avg', 'rating')
             ->where('display_status', 'visible')
-            ->addSelect(['recent_sold' => \Modules\Sirsoft\Ecommerce\Models\OrderOption::selectRaw('COALESCE(SUM(quantity), 0)')
+            ->addSelect(['recent_sold' => OrderOption::selectRaw('COALESCE(SUM(quantity), 0)')
                 ->whereColumn('product_id', 'ecommerce_products.id')
                 ->where('created_at', '>=', $thirtyDaysAgo),
             ])
@@ -406,7 +459,7 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function getNewProducts(int $limit = 10): \Illuminate\Database\Eloquent\Collection
+    public function getNewProducts(int $limit = 10): Collection
     {
         return $this->model->newQuery()
             ->with(['images', 'categories', 'activeLabelAssignments.label'])
@@ -421,7 +474,7 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function findByIds(array $ids): \Illuminate\Database\Eloquent\Collection
+    public function findByIds(array $ids): Collection
     {
         if (empty($ids)) {
             return $this->model->newCollection();
@@ -485,9 +538,8 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * 관리자 상품 목록 필터를 쿼리에 적용합니다.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query Eloquent 쿼리 빌더
-     * @param array $filters 필터 배열
-     * @return void
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 배열
      */
     private function applyAdminFilters($query, array $filters): void
     {
@@ -549,10 +601,10 @@ class ProductRepository implements ProductRepositoryInterface
             $priceField = $filters['price_type'];
 
             if (! empty($filters['min_price'])) {
-                $query->where($priceField, '>=', (int) $filters['min_price']);
+                $query->where($priceField, '>=', (float) $filters['min_price']);
             }
             if (! empty($filters['max_price'])) {
-                $query->where($priceField, '<=', (int) $filters['max_price']);
+                $query->where($priceField, '<=', (float) $filters['max_price']);
             }
         }
 
@@ -573,9 +625,8 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * 관리자 상품 목록 정렬을 쿼리에 적용합니다.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query Eloquent 쿼리 빌더
-     * @param array $filters 필터 배열
-     * @return void
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 배열
      */
     private function applyAdminSorting($query, array $filters): void
     {
@@ -622,12 +673,12 @@ class ProductRepository implements ProductRepositoryInterface
      * ID 목록으로 상품을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  상품 ID 목록
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection ID 를 키로 하는 상품 컬렉션
      */
-    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection
+    public function findByIdsKeyed(array $ids): Collection
     {
         if (empty($ids)) {
-            return new \Illuminate\Database\Eloquent\Collection();
+            return new Collection;
         }
 
         return $this->model->whereIn('id', $ids)->get()->keyBy('id');

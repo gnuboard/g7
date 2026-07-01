@@ -90,4 +90,47 @@ class SettingsServiceProviderWebsocketConfigTest extends TestCase
 
         $this->assertSame('null', config('broadcasting.default'));
     }
+
+    /**
+     * 웹소켓 OFF + .env REVERB_APP_KEY 존재 시 reverb.key가 비워지는지 테스트합니다 (공개#50).
+     *
+     * 프론트(admin/app.blade.php)가 @if(reverb.key)로 연결을 결정하므로, OFF 시 key를 비워야
+     * .env REVERB_APP_KEY가 살아 있어도 브라우저 WebSocket 연결을 차단할 수 있다.
+     */
+    public function test_reverb_key_blanked_when_websocket_disabled(): void
+    {
+        // .env 초기 상태: REVERB_APP_KEY가 살아 있어 reverb.key가 채워진 상태
+        Config::set('broadcasting.default', 'reverb');
+        Config::set('broadcasting.connections.reverb.key', 'env-reverb-key');
+
+        $this->callApplyWebsocketConfig([
+            'websocket_enabled' => false,
+        ]);
+
+        $this->assertSame(
+            '',
+            config('broadcasting.connections.reverb.key'),
+            '웹소켓 OFF 시 reverb.key는 비워져야 함 (프론트 @if(reverb.key) 연결 차단)'
+        );
+    }
+
+    /**
+     * 웹소켓 ON 시 reverb.key가 설정값으로 유지되는지 테스트합니다 (회귀 방지, 공개#50).
+     */
+    public function test_reverb_key_preserved_when_websocket_enabled(): void
+    {
+        Config::set('broadcasting.default', 'reverb');
+        Config::set('broadcasting.connections.reverb.key', 'env-reverb-key');
+
+        $this->callApplyWebsocketConfig([
+            'websocket_enabled' => true,
+            'websocket_app_key' => 'admin-set-key',
+        ]);
+
+        $this->assertSame(
+            'admin-set-key',
+            config('broadcasting.connections.reverb.key'),
+            '웹소켓 ON 시 reverb.key는 환경설정/.env 값으로 유지되어야 함'
+        );
+    }
 }

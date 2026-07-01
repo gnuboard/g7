@@ -154,6 +154,7 @@
         "actions": "Actions",
         "view": "View",
         "preview_modal_title": "Version v{{version}} Preview",
+        "preview_modal_editor_label": "Version preview",
         "restore": "Restore",
         "current": "Current",
         "initial": "Initial",

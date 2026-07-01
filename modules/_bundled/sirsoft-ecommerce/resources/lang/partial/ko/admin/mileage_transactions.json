@@ -1,0 +1,152 @@
+{
+  "title": "마일리지 내역",
+  "description": "회원 마일리지 거래 내역을 조회하고 수동으로 지급/차감합니다.",
+  "manual_action": "수동 지급/차감",
+  "search": {
+    "field": "검색 항목",
+    "field_member": "회원명",
+    "field_member_id": "회원ID",
+    "field_email": "이메일",
+    "field_order": "주문번호",
+    "keyword_placeholder": "검색어를 입력하세요",
+    "submit": "검색",
+    "reset": "초기화"
+  },
+  "filter": {
+    "label_search": "검색",
+    "label_type": "유형",
+    "label_currency": "통화",
+    "label_date": "기간",
+    "type": "유형",
+    "type_all": "전체",
+    "type_earn": "적립",
+    "type_use": "사용",
+    "type_expire": "소멸",
+    "type_adjust": "조정",
+    "currency": "통화",
+    "currency_all": "전체",
+    "period": "기간",
+    "period_week": "1주",
+    "period_month": "1개월",
+    "period_3months": "3개월",
+    "period_all": "전체",
+    "start_date": "시작일",
+    "end_date": "종료일"
+  },
+  "table": {
+    "total_count": "총 {{count}}개"
+  },
+  "sort": {
+    "label": "정렬",
+    "created_at_desc": "최신순",
+    "amount_desc": "금액 높은순",
+    "amount_asc": "금액 낮은순"
+  },
+  "per_page": {
+    "10": "10개씩",
+    "20": "20개씩",
+    "50": "50개씩",
+    "100": "100개씩"
+  },
+  "column": {
+    "datetime": "일시",
+    "member": "회원",
+    "type": "유형",
+    "amount": "금액",
+    "remaining": "잔여",
+    "expiry": "유효기간",
+    "order": "주문",
+    "granted_by": "부여",
+    "actions": "관리"
+  },
+  "cell": {
+    "system": "시스템",
+    "view_member": "회원 정보",
+    "search_member": "이 회원으로 검색",
+    "view_admin": "관리자 정보",
+    "expired": "전체 소멸",
+    "partial_expired": "일부 소멸",
+    "expired_amount": "{{amount}} 소멸",
+    "unlimited": "무기한",
+    "none": "-"
+  },
+  "row_action": {
+    "expand": "상세 보기",
+    "linked": "연결 거래",
+    "edit": "사유·기간 변경"
+  },
+  "linked": {
+    "title": "연결 거래",
+    "consumed_lots": "소비한 적립 lot",
+    "source_order": "참조 원거래",
+    "empty": "연결 거래 없음",
+    "consumed_amount": "소비"
+  },
+  "bulk": {
+    "selected": "{{count}}건 선택",
+    "extend_expiry": "유효기간 연장",
+    "apply": "적용"
+  },
+  "modal_manual": {
+    "title": "수동 지급/차감",
+    "member_search": "회원 검색",
+    "member_search_placeholder": "회원명, 이메일로 검색",
+    "current_balance": "현재 잔액",
+    "action": "구분",
+    "action_earn": "지급",
+    "action_deduct": "차감",
+    "amount": "금액",
+    "currency": "통화",
+    "exceed_warning": "잔액 {{balance}} 초과 (실행 불가)",
+    "expiry": "유효기간",
+    "expiry_policy": "정책 따름",
+    "expiry_custom": "직접 지정",
+    "expiry_unlimited": "무기한 지급",
+    "expiry_future_only": "미래 날짜만 지정 가능합니다.",
+    "reason": "사유",
+    "reason_placeholder": "지급/차감 사유를 입력하세요",
+    "submit_earn": "지급",
+    "submit_deduct": "차감",
+    "submitting": "처리 중...",
+    "confirm": "회원·금액·구분을 확인하셨습니까?",
+    "select_member_first": "먼저 회원을 선택하세요.",
+    "no_results": "검색 결과가 없습니다.",
+    "validation_error": "입력값을 확인해주세요.",
+    "field_user_id": "대상 회원",
+    "field_amount": "금액",
+    "field_memo": "사유"
+  },
+  "modal_extend": {
+    "title": "유효기간 연장",
+    "days": "연장 일수",
+    "days_suffix": "일",
+    "submit": "연장",
+    "submitting": "처리 중...",
+    "selected_lots": "선택된 {{count}}건의 지급 lot 유효기간을 연장합니다.",
+    "validation_error": "입력값을 확인해주세요.",
+    "field_days": "연장 일수"
+  },
+  "modal_edit": {
+    "title": "적립건 사유·기간 변경",
+    "info_member": "회원",
+    "info_amount": "금액",
+    "info_type": "유형",
+    "info_earned_at": "적립일",
+    "reason": "사유",
+    "reason_placeholder": "관리자 메모를 입력하세요",
+    "expiry": "유효기간",
+    "expiry_date": "만료일",
+    "expiry_locked": "이미 소멸되었거나 모두 사용된 적립건은 만료일을 변경할 수 없습니다.",
+    "readonly_hint": "회색 항목은 변경할 수 없습니다.",
+    "submit": "저장",
+    "submitting": "저장 중...",
+    "validation_error": "입력값을 확인해주세요."
+  },
+  "message": {
+    "manual_success": "처리되었습니다.",
+    "extend_success": "유효기간이 연장되었습니다.",
+    "edit_success": "적립건이 수정되었습니다.",
+    "empty": "마일리지 거래 내역이 없습니다."
+  },
+  "cancel": "취소"
+}

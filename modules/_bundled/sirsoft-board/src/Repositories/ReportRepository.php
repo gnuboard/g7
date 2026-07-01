@@ -593,4 +593,32 @@ class ReportRepository implements ReportRepositoryInterface
 
         return Report::whereIn('id', $ids)->get()->keyBy('id');
     }
+
+    /**
+     * 전체 게시판에서 미처리 신고를 최신순으로 조회합니다 (대시보드 신고 카드용).
+     *
+     * @param  int  $limit  조회 건수
+     * @return Collection<int, Report> 미처리 신고 컬렉션
+     */
+    public function getPendingAcrossBoards(int $limit): Collection
+    {
+        return Report::query()
+            ->whereIn('status', [ReportStatus::Pending, ReportStatus::Review])
+            ->with(['board', 'author'])
+            ->orderByDesc('last_reported_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * 전체 게시판의 미처리 신고 건수를 조회합니다 (대시보드 신고 카드 합계용).
+     *
+     * @return int 미처리 신고 건수
+     */
+    public function countPendingAcrossBoards(): int
+    {
+        return Report::query()
+            ->whereIn('status', [ReportStatus::Pending, ReportStatus::Review])
+            ->count();
+    }
 }

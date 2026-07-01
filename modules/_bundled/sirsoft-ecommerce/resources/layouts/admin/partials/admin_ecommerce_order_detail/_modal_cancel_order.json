@@ -15,13 +15,17 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "space-y-4 pb-16" },
+      "props": {
+        "className": "space-y-4 pb-16"
+      },
       "children": [
         {
           "comment": "안내 메시지",
           "type": "basic",
           "name": "P",
-          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+          "props": {
+            "className": "text-label-subtle"
+          },
           "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.description"
         },
         {
@@ -29,27 +33,46 @@
           "type": "basic",
           "name": "Div",
           "if": "{{_local.cancelError}}",
-          "props": { "className": "p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg" },
+          "props": {
+            "className": "alert-danger"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex items-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-1" },
+              "props": {
+                "className": "flex-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-1"
+              },
               "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "circle-exclamation", "size": "sm" } },
-                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.pg_error_title" }
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "circle-exclamation",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.pg_error_title"
+                }
               ]
             },
             {
               "type": "basic",
               "name": "P",
-              "props": { "className": "text-red-600 dark:text-red-400 text-xs ml-6" },
+              "props": {
+                "className": "text-red-600 dark:text-red-400 text-xs ml-6"
+              },
               "text": "{{_local.cancelError}}"
             },
             {
               "type": "basic",
               "name": "P",
-              "props": { "className": "text-red-500 dark:text-red-400 text-xs ml-6 mt-1" },
+              "props": {
+                "className": "form-error-xs ml-6 mt-1"
+              },
               "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.pg_error_description"
             }
           ]
@@ -59,21 +82,38 @@
           "type": "basic",
           "name": "Div",
           "if": "{{_local.cancelValidationErrors && Object.keys(_local.cancelValidationErrors).length > 0}}",
-          "props": { "className": "p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg" },
+          "props": {
+            "className": "alert-danger"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex items-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-2" },
+              "props": {
+                "className": "flex-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-2"
+              },
               "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "size": "sm" } },
-                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.validation_error_title" }
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "triangle-exclamation",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.validation_error_title"
+                }
               ]
             },
             {
               "type": "basic",
               "name": "Ul",
-              "props": { "className": "list-disc list-inside space-y-1" },
+              "props": {
+                "className": "list-disc list-inside space-y-1"
+              },
               "children": [
                 {
                   "type": "basic",
@@ -83,7 +123,9 @@
                     "item_var": "errMsg",
                     "index_var": "errIdx"
                   },
-                  "props": { "className": "text-xs text-red-600 dark:text-red-400" },
+                  "props": {
+                    "className": "text-xs text-red-600 dark:text-red-400"
+                  },
                   "text": "{{errMsg}}"
                 }
               ]
@@ -94,18 +136,50 @@
           "comment": "취소 상품 목록 테이블",
           "type": "basic",
           "name": "Div",
-          "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden" },
+          "props": {
+            "className": "toggle-group"
+          },
           "children": [
             {
               "comment": "테이블 헤더",
               "type": "basic",
               "name": "Div",
-              "props": { "className": "grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 text-xs font-medium text-gray-500 dark:text-gray-400" },
+              "props": {
+                "className": "text-tertiary grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium"
+              },
               "children": [
-                { "type": "basic", "name": "Span", "props": { "className": "col-span-5" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_col" },
-                { "type": "basic", "name": "Span", "props": { "className": "col-span-2 text-right" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.unit_price_col" },
-                { "type": "basic", "name": "Span", "props": { "className": "col-span-3 text-center" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_quantity_col" },
-                { "type": "basic", "name": "Span", "props": { "className": "col-span-2 text-center" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.status_col" }
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "col-span-5"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_col"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "col-span-2 text-right"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.unit_price_col"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "col-span-3 text-center"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_quantity_col"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "col-span-2 text-center"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.status_col"
+                }
               ]
             },
             {
@@ -117,13 +191,17 @@
                 "item_var": "cancelItem",
                 "index_var": "cancelIdx"
               },
-              "props": { "className": "grid grid-cols-12 gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 items-center" },
+              "props": {
+                "className": "grid grid-cols-12 gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 items-center"
+              },
               "children": [
                 {
                   "comment": "상품정보",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "col-span-5 flex items-center gap-2" },
+                  "props": {
+                    "className": "col-span-5 flex-center gap-2"
+                  },
                   "children": [
                     {
                       "type": "basic",
@@ -137,19 +215,25 @@
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "min-w-0" },
+                      "props": {
+                        "className": "min-w-0"
+                      },
                       "children": [
                         {
                           "type": "basic",
                           "name": "P",
-                          "props": { "className": "text-sm font-medium text-gray-900 dark:text-gray-100 truncate" },
+                          "props": {
+                            "className": "text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+                          },
                           "text": "{{cancelItem.product_name ?? ''}}"
                         },
                         {
                           "type": "basic",
                           "name": "P",
                           "if": "{{cancelItem.product_option_name}}",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 truncate" },
+                          "props": {
+                            "className": "text-tertiary truncate"
+                          },
                           "text": "{{cancelItem.product_option_name}}"
                         }
                       ]
@@ -160,18 +244,24 @@
                   "comment": "단가 + 소계",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "col-span-2 text-right" },
+                  "props": {
+                    "className": "col-span-2 text-right"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                      "props": {
+                        "className": "text-body"
+                      },
                       "text": "{{(cancelItem.unit_price ?? 0).toLocaleString()}}원 × {{cancelItem.quantity ?? 1}}"
                     },
                     {
                       "type": "basic",
                       "name": "P",
-                      "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                      "props": {
+                        "className": "text-tertiary"
+                      },
                       "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{((cancelItem.unit_price ?? 0) * (cancelItem.quantity ?? 1)).toLocaleString()}}원"
                     }
                   ]
@@ -180,14 +270,16 @@
                   "comment": "취소수량 입력",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "col-span-3 flex justify-center" },
+                  "props": {
+                    "className": "col-span-3 flex justify-center"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Input",
                       "props": {
                         "type": "number",
-                        "className": "input w-20 text-center text-sm",
+                        "className": "input w-20 text-center",
                         "value": "{{cancelItem.cancel_quantity ?? cancelItem.quantity}}",
                         "min": "1",
                         "max": "{{cancelItem.quantity}}"
@@ -217,7 +309,11 @@
                     "size": "sm"
                   },
                   "children": [
-                    { "type": "basic", "name": "Span", "text": "{{cancelItem.option_status_label ?? cancelItem.option_status ?? ''}}" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{cancelItem.option_status_label ?? cancelItem.option_status ?? ''}}"
+                    }
                   ]
                 }
               ]
@@ -232,7 +328,9 @@
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2" },
+              "props": {
+                "className": "text-body font-medium block mb-2"
+              },
               "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label"
             },
             {
@@ -255,7 +353,14 @@
                 }
               ],
               "children": [
-                { "type": "basic", "name": "Option", "props": { "value": "" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder" },
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": {
+                    "value": ""
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder"
+                },
                 {
                   "type": "basic",
                   "name": "Option",
@@ -263,7 +368,9 @@
                     "source": "refundReasons?.data?.data ?? refundReasons?.data ?? []",
                     "item_var": "reason"
                   },
-                  "props": { "value": "{{reason.code}}" },
+                  "props": {
+                    "value": "{{reason.code}}"
+                  },
                   "text": "{{reason.localized_name}}"
                 }
               ]
@@ -273,7 +380,9 @@
               "type": "basic",
               "name": "Span",
               "if": "{{_local.cancelValidationErrors?.reason}}",
-              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+              "props": {
+                "className": "form-error-xs mt-1 block"
+              },
               "text": "{{Array.isArray(_local.cancelValidationErrors?.reason) ? _local.cancelValidationErrors.reason[0] : _local.cancelValidationErrors?.reason}}"
             },
             {
@@ -304,43 +413,120 @@
               "type": "basic",
               "name": "Span",
               "if": "{{_local.cancelValidationErrors?.reason_detail}}",
-              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+              "props": {
+                "className": "form-error-xs mt-1 block"
+              },
               "text": "{{Array.isArray(_local.cancelValidationErrors?.reason_detail) ? _local.cancelValidationErrors.reason_detail[0] : _local.cancelValidationErrors?.reason_detail}}"
             }
           ]
         },
         {
-          "comment": "환불 우선순위 라디오",
+          "comment": "환불 우선순위 라디오 — PG 환불 가능(requires_pg_cancellation)일 때 노출한다. 포인트 사용분이 없으면(total_points_used_amount=0) PG↔포인트 배분 순서가 무의미하므로 노출은 하되 선택 불가(disabled)로 둔다 (A28, PO 2026-06-22).",
           "type": "basic",
           "name": "Div",
+          "if": "{{order.data?.payment?.requires_pg_cancellation === true}}",
           "children": [
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2" },
+              "props": {
+                "className": "text-body font-medium block mb-2"
+              },
               "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_label"
+            },
+            {
+              "comment": "포인트 미사용 안내 (선택 불가 사유)",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(order.data?.total_points_used_amount ?? 0) <= 0}}",
+              "props": {
+                "className": "text-caption text-gray-500 dark:text-gray-400 block mb-2"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint"
             },
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex gap-3" },
+              "props": {
+                "className": "flex gap-3"
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Label",
-                  "props": { "className": "flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 {{_local.refundPriority === 'pg_first' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'}}" },
+                  "props": {
+                    "className": "flex-center gap-2 p-2 rounded-lg border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : (_local.refundPriority === 'pg_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "radio", "name": "refundPriority", "value": "pg_first", "checked": "{{_local.refundPriority === 'pg_first'}}", "className": "text-blue-600 dark:text-blue-400" }, "actions": [{ "type": "change", "handler": "sirsoft-ecommerce.changeRefundPriority", "params": { "priority": "pg_first", "orderId": "{{route.orderNumber}}" } }] },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_pg_first" }
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "refundPriority",
+                        "value": "pg_first",
+                        "checked": "{{_local.refundPriority === 'pg_first'}}",
+                        "disabled": "{{(order.data?.total_points_used_amount ?? 0) <= 0}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.changeRefundPriority",
+                          "params": {
+                            "priority": "pg_first",
+                            "orderId": "{{route.orderNumber}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-body"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_pg_first"
+                    }
                   ]
                 },
                 {
                   "type": "basic",
                   "name": "Label",
-                  "props": { "className": "flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 {{_local.refundPriority === 'points_first' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'}}" },
+                  "props": {
+                    "className": "flex-center gap-2 p-2 rounded-lg border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : (_local.refundPriority === 'points_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "radio", "name": "refundPriority", "value": "points_first", "checked": "{{_local.refundPriority === 'points_first'}}", "className": "text-blue-600 dark:text-blue-400" }, "actions": [{ "type": "change", "handler": "sirsoft-ecommerce.changeRefundPriority", "params": { "priority": "points_first", "orderId": "{{route.orderNumber}}" } }] },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_points_first" }
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "refundPriority",
+                        "value": "points_first",
+                        "checked": "{{_local.refundPriority === 'points_first'}}",
+                        "disabled": "{{(order.data?.total_points_used_amount ?? 0) <= 0}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.changeRefundPriority",
+                          "params": {
+                            "priority": "points_first",
+                            "orderId": "{{route.orderNumber}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-body"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_points_first"
+                    }
                   ]
                 }
               ]
@@ -351,12 +537,16 @@
           "comment": "주문금액 비교 영역",
           "type": "basic",
           "name": "Div",
-          "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4" },
+          "props": {
+            "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+          },
           "children": [
             {
               "type": "basic",
               "name": "H4",
-              "props": { "className": "text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3" },
+              "props": {
+                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3"
+              },
               "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.comparison_title"
             },
             {
@@ -364,10 +554,24 @@
               "type": "basic",
               "name": "Div",
               "if": "{{_local.refundLoading}}",
-              "props": { "className": "flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400" },
+              "props": {
+                "className": "flex-center gap-2 text-label-subtle"
+              },
               "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "spinner", "className": "animate-spin", "size": "sm" } },
-                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_loading" }
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "spinner",
+                    "className": "animate-spin",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_loading"
+                }
               ]
             },
             {
@@ -375,82 +579,163 @@
               "type": "basic",
               "name": "Div",
               "if": "{{_local.refundEstimate && !_local.refundLoading}}",
-              "props": { "className": "space-y-3" },
               "children": [
                 {
                   "comment": "비교 테이블 헤더",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 pb-2 border-b border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-400" },
+                  "props": {
+                    "className": "text-tertiary grid grid-cols-3 gap-2 border-b border-gray-200 dark:border-gray-700 font-semibold"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "text": "" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.col_before" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.col_after" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": ""
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.col_before"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.col_after"
+                    }
                   ]
                 },
                 {
                   "comment": "상품수량",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.item_count" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "{{(_local.refundEstimate?.original_snapshot?.item_count ?? 0)}}$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.count_unit" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.item_count ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.item_count ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.item_count ?? 0)}}$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.count_unit" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.item_count"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "{{(_local.refundEstimate?.original_snapshot?.item_count ?? 0)}}$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.count_unit"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right {{(_local.refundEstimate?.original_snapshot?.item_count ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.item_count ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                      },
+                      "text": "{{(_local.refundEstimate?.recalculated_snapshot?.item_count ?? 0)}}$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.count_unit"
+                    }
                   ]
                 },
                 {
                   "comment": "총 정가금액 (+ 다통화)",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.list_price_amount" },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.list_price_amount"
+                    },
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "text-right" },
+                      "props": {
+                        "className": "text-right"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-gray-100" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}원" },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-900 dark:text-gray-100"
+                          },
+                          "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_list_price_amount ?? (_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}"
+                        },
                         {
                           "type": "basic",
                           "name": "Div",
                           "if": "{{_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted}}",
-                          "props": { "className": "mt-0.5" },
-                          "children": [{
-                            "type": "basic",
-                            "name": "Span",
-                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
-                            "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
-                              "item_var": "mc"
-                            },
-                            "text": "{{mc[1]}}"
-                          }]
+                          "props": {
+                            "className": "mt-0.5"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-hint block"
+                              },
+                              "iteration": {
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "item_var": "mc"
+                              },
+                              "text": "{{mc[1]}}"
+                            }
+                          ]
                         }
                       ]
                     },
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "text-right" },
+                      "props": {
+                        "className": "text-right"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}원" },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "{{(_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                          },
+                          "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_list_price_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}"
+                        },
                         {
                           "type": "basic",
                           "name": "Div",
                           "if": "{{_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted}}",
-                          "props": { "className": "mt-0.5" },
-                          "children": [{
-                            "type": "basic",
-                            "name": "Span",
-                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
-                            "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
-                              "item_var": "mc"
-                            },
-                            "text": "{{mc[1]}}"
-                          }]
+                          "props": {
+                            "className": "mt-0.5"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-hint block"
+                              },
+                              "iteration": {
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "item_var": "mc"
+                              },
+                              "text": "{{mc[1]}}"
+                            }
+                          ]
                         }
                       ]
                     }
@@ -460,54 +745,93 @@
                   "comment": "총 판매가 금액 (+ 다통화)",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.subtotal_amount" },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.subtotal_amount"
+                    },
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "text-right" },
+                      "props": {
+                        "className": "text-right"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-gray-100" }, "text": "{{(_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0).toLocaleString()}}원" },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-900 dark:text-gray-100"
+                          },
+                          "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.subtotal_amount ?? (_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0).toLocaleString()}}"
+                        },
                         {
                           "type": "basic",
                           "name": "Div",
                           "if": "{{_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted}}",
-                          "props": { "className": "mt-0.5" },
-                          "children": [{
-                            "type": "basic",
-                            "name": "Span",
-                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
-                            "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
-                              "item_var": "mc"
-                            },
-                            "text": "{{mc[1]}}"
-                          }]
+                          "props": {
+                            "className": "mt-0.5"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-hint block"
+                              },
+                              "iteration": {
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "item_var": "mc"
+                              },
+                              "text": "{{mc[1]}}"
+                            }
+                          ]
                         }
                       ]
                     },
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "text-right" },
+                      "props": {
+                        "className": "text-right"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0).toLocaleString()}}원" },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "{{(_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                          },
+                          "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.subtotal_amount ?? (_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0).toLocaleString()}}"
+                        },
                         {
                           "type": "basic",
                           "name": "Div",
                           "if": "{{_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted}}",
-                          "props": { "className": "mt-0.5" },
-                          "children": [{
-                            "type": "basic",
-                            "name": "Span",
-                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
-                            "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
-                              "item_var": "mc"
-                            },
-                            "text": "{{mc[1]}}"
-                          }]
+                          "props": {
+                            "className": "mt-0.5"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-hint block"
+                              },
+                              "iteration": {
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "item_var": "mc"
+                              },
+                              "text": "{{mc[1]}}"
+                            }
+                          ]
                         }
                       ]
                     }
@@ -517,16 +841,41 @@
                   "comment": "상품쿠폰 할인",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "py-1.5" },
+                  "props": {
+                    "className": "py-1.5"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
+                      "props": {
+                        "className": "grid grid-cols-3 gap-2 text-sm"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_coupon_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}원" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}원" }
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-secondary"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_coupon_discount"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-right text-gray-900 dark:text-gray-100"
+                          },
+                          "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_product_coupon_discount_amount ?? (_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                          },
+                          "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_product_coupon_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}"
+                        }
                       ]
                     },
                     {
@@ -534,13 +883,20 @@
                       "type": "basic",
                       "name": "Div",
                       "if": "{{(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'product_amount' || c.target_type === 'category_amount').length > 0}}",
-                      "props": { "className": "grid grid-cols-3 gap-2 mt-0.5" },
+                      "props": {
+                        "className": "grid grid-cols-3 gap-2 mt-0.5"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span" },
+                        {
+                          "type": "basic",
+                          "name": "Span"
+                        },
                         {
                           "type": "basic",
                           "name": "Div",
-                          "props": { "className": "text-right" },
+                          "props": {
+                            "className": "text-right"
+                          },
                           "children": [
                             {
                               "type": "basic",
@@ -550,7 +906,9 @@
                                 "item_var": "pc",
                                 "index_var": "pcIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": {
+                                "className": "text-hint"
+                              },
                               "text": "{{pc.name}} -{{(pc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
@@ -558,7 +916,9 @@
                         {
                           "type": "basic",
                           "name": "Div",
-                          "props": { "className": "text-right" },
+                          "props": {
+                            "className": "text-right"
+                          },
                           "children": [
                             {
                               "type": "basic",
@@ -568,7 +928,9 @@
                                 "item_var": "rpc",
                                 "index_var": "rpcIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": {
+                                "className": "text-hint"
+                              },
                               "text": "{{rpc.name}} -{{(rpc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
@@ -581,16 +943,41 @@
                   "comment": "주문쿠폰 할인",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "py-1.5" },
+                  "props": {
+                    "className": "py-1.5"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
+                      "props": {
+                        "className": "grid grid-cols-3 gap-2 text-sm"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.order_coupon_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}원" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}원" }
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-secondary"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.order_coupon_discount"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-right text-gray-900 dark:text-gray-100"
+                          },
+                          "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_order_coupon_discount_amount ?? (_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                          },
+                          "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_order_coupon_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}"
+                        }
                       ]
                     },
                     {
@@ -598,13 +985,20 @@
                       "type": "basic",
                       "name": "Div",
                       "if": "{{(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}",
-                      "props": { "className": "grid grid-cols-3 gap-2 mt-0.5" },
+                      "props": {
+                        "className": "grid grid-cols-3 gap-2 mt-0.5"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span" },
+                        {
+                          "type": "basic",
+                          "name": "Span"
+                        },
                         {
                           "type": "basic",
                           "name": "Div",
-                          "props": { "className": "text-right" },
+                          "props": {
+                            "className": "text-right"
+                          },
                           "children": [
                             {
                               "type": "basic",
@@ -614,7 +1008,9 @@
                                 "item_var": "oc",
                                 "index_var": "ocIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": {
+                                "className": "text-hint"
+                              },
                               "text": "{{oc.name}} -{{(oc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
@@ -622,7 +1018,9 @@
                         {
                           "type": "basic",
                           "name": "Div",
-                          "props": { "className": "text-right" },
+                          "props": {
+                            "className": "text-right"
+                          },
                           "children": [
                             {
                               "type": "basic",
@@ -632,7 +1030,9 @@
                                 "item_var": "roc",
                                 "index_var": "rocIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": {
+                                "className": "text-hint"
+                              },
                               "text": "{{roc.name}} -{{(roc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
@@ -645,27 +1045,75 @@
                   "comment": "할인코드 할인",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.code_discount" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}원" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}원" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.code_discount"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_code_discount_amount ?? (_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                      },
+                      "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_code_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}"
+                    }
                   ]
                 },
                 {
                   "comment": "배송비쿠폰 할인",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "py-1.5" },
+                  "props": {
+                    "className": "py-1.5"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
+                      "props": {
+                        "className": "grid grid-cols-3 gap-2 text-sm"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.shipping_coupon_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}원" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}원" }
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-secondary"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.shipping_coupon_discount"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-right text-gray-900 dark:text-gray-100"
+                          },
+                          "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.shipping_discount_amount ?? (_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-right {{(_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                          },
+                          "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.shipping_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}"
+                        }
                       ]
                     },
                     {
@@ -673,13 +1121,20 @@
                       "type": "basic",
                       "name": "Div",
                       "if": "{{(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}",
-                      "props": { "className": "grid grid-cols-3 gap-2 mt-0.5" },
+                      "props": {
+                        "className": "grid grid-cols-3 gap-2 mt-0.5"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span" },
+                        {
+                          "type": "basic",
+                          "name": "Span"
+                        },
                         {
                           "type": "basic",
                           "name": "Div",
-                          "props": { "className": "text-right" },
+                          "props": {
+                            "className": "text-right"
+                          },
                           "children": [
                             {
                               "type": "basic",
@@ -689,7 +1144,9 @@
                                 "item_var": "sc",
                                 "index_var": "scIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": {
+                                "className": "text-hint"
+                              },
                               "text": "{{sc.name}} -{{(sc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
@@ -697,7 +1154,9 @@
                         {
                           "type": "basic",
                           "name": "Div",
-                          "props": { "className": "text-right" },
+                          "props": {
+                            "className": "text-right"
+                          },
                           "children": [
                             {
                               "type": "basic",
@@ -707,7 +1166,9 @@
                                 "item_var": "rsc",
                                 "index_var": "rscIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": {
+                                "className": "text-hint"
+                              },
                               "text": "{{rsc.name}} -{{(rsc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
@@ -720,109 +1181,263 @@
                   "comment": "기본배송비",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.base_shipping" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "{{(_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}원" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}원" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.base_shipping"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.base_shipping_amount ?? (_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right {{(_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                      },
+                      "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.base_shipping_amount ?? (_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}"
+                    }
                   ]
                 },
                 {
                   "comment": "추가배송비",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.extra_shipping" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "{{(_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}원" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}원" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.extra_shipping"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.extra_shipping_amount ?? (_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right {{(_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                      },
+                      "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.extra_shipping_amount ?? (_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}"
+                    }
                   ]
                 },
                 {
                   "comment": "포인트 사용",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.points_used" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}원" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}원" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.points_used"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_points_used_amount ?? (_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                      },
+                      "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_points_used_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}"
+                    }
                   ]
                 },
                 {
                   "comment": "과세금액",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.taxable_amount" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0).toLocaleString()}}원" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0).toLocaleString()}}원" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.taxable_amount"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_tax_amount ?? (_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0).toLocaleString()}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                      },
+                      "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_tax_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0).toLocaleString()}}"
+                    }
                   ]
                 },
                 {
                   "comment": "부가세",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.vat_amount" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0).toLocaleString()}}원" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0).toLocaleString()}}원" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.vat_amount"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0).toLocaleString()}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                      },
+                      "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0).toLocaleString()}}"
+                    }
                   ]
                 },
                 {
                   "comment": "실결제금액 (+ 다통화)",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm border-t border-gray-200 dark:border-gray-700 font-semibold" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm border-t border-gray-200 dark:border-gray-700 font-semibold"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-gray-100" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.total_paid" },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.total_paid"
+                    },
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "text-right" },
+                      "props": {
+                        "className": "text-right"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-gray-100" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0).toLocaleString()}}원" },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-900 dark:text-gray-100"
+                          },
+                          "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_paid_amount ?? (_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0).toLocaleString()}}"
+                        },
                         {
                           "type": "basic",
                           "name": "Div",
                           "if": "{{_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted}}",
-                          "props": { "className": "mt-0.5" },
-                          "children": [{
-                            "type": "basic",
-                            "name": "Span",
-                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block font-normal" },
-                            "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
-                              "item_var": "mc"
-                            },
-                            "text": "{{mc[1]}}"
-                          }]
+                          "props": {
+                            "className": "mt-0.5"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-hint block font-normal"
+                              },
+                              "iteration": {
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "item_var": "mc"
+                              },
+                              "text": "{{mc[1]}}"
+                            }
+                          ]
                         }
                       ]
                     },
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "text-right" },
+                      "props": {
+                        "className": "text-right"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0).toLocaleString()}}원" },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "{{(_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}}"
+                          },
+                          "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_paid_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0).toLocaleString()}}"
+                        },
                         {
                           "type": "basic",
                           "name": "Div",
                           "if": "{{_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted}}",
-                          "props": { "className": "mt-0.5" },
-                          "children": [{
-                            "type": "basic",
-                            "name": "Span",
-                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block font-normal" },
-                            "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
-                              "item_var": "mc"
-                            },
-                            "text": "{{mc[1]}}"
-                          }]
+                          "props": {
+                            "className": "mt-0.5"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-hint block font-normal"
+                              },
+                              "iteration": {
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "item_var": "mc"
+                              },
+                              "text": "{{mc[1]}}"
+                            }
+                          ]
                         }
                       ]
                     }
@@ -832,11 +1447,34 @@
                   "comment": "적립예정포인트",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "props": {
+                    "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.earned_points" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-gray-100" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_earned_points_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_earned_points_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.earned_points"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "{{(_local.refundEstimate?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_earned_points_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_earned_points_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                      },
+                      "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P"
+                    }
                   ]
                 },
                 {
@@ -844,20 +1482,76 @@
                   "type": "basic",
                   "name": "Div",
                   "if": "{{_local.refundEstimate?.cancel_blocked}}",
-                  "props": { "className": "flex items-start gap-2 p-3 mt-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" },
+                  "props": {
+                    "className": "alert-danger"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Icon", "props": { "name": "circle-exclamation", "className": "text-red-600 dark:text-red-400 mt-0.5", "size": "sm" } },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-xs text-red-700 dark:text-red-300" }, "text": "{{_local.refundEstimate?.cancel_blocked_reason ?? ''}}" }
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "circle-exclamation",
+                        "className": "text-red-600 dark:text-red-400 mt-0.5",
+                        "size": "sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-danger-soft"
+                      },
+                      "text": "{{_local.refundEstimate?.cancel_blocked_reason ?? ''}}"
+                    }
                   ]
                 },
                 {
                   "comment": "구분선 + 최종 환불 예정액",
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "flex justify-between text-sm font-semibold pt-3 mt-2 border-t-2 border-gray-300 dark:border-gray-600" },
+                  "props": {
+                    "className": "flex justify-between text-sm font-semibold border-t-2 border-gray-300 dark:border-gray-600"
+                  },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-gray-100" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_total" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-blue-600 dark:text-blue-400 text-base" }, "text": "{{(_local.refundEstimate?.refund_total ?? 0).toLocaleString()}}원" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_total"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-right"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-blue-600 dark:text-blue-400 text-base block"
+                          },
+                          "text": "{{_local.refundEstimate?.refund_formatted?.base?.refund_total ?? (_local.refundEstimate?.refund_total ?? 0).toLocaleString()}}"
+                        },
+                        {
+                          "comment": "결제 통화 환산 환불 예정액(base≠결제 통화일 때 병기)",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.refundEstimate?.refund_formatted?.mc?.refund_total}}",
+                          "props": {
+                            "className": "text-hint block font-normal"
+                          },
+                          "iteration": {
+                            "source": "{{Object.entries(_local.refundEstimate?.refund_formatted?.mc?.refund_total ?? {})}}",
+                            "item_var": "mc"
+                          },
+                          "text": "{{mc[1]}}"
+                        }
+                      ]
+                    }
                   ]
                 },
                 {
@@ -865,26 +1559,60 @@
                   "type": "basic",
                   "name": "Div",
                   "if": "{{(_local.refundEstimate?.remaining_pg_balance ?? null) !== null || (_local.refundEstimate?.remaining_points_balance ?? null) !== null}}",
-                  "props": { "className": "space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700" },
+                  "props": {
+                    "className": "space-y-1 border-t border-gray-100 dark:border-gray-700"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
                       "if": "{{(_local.refundEstimate?.remaining_pg_balance ?? null) !== null}}",
-                      "props": { "className": "flex justify-between text-xs" },
+                      "props": {
+                        "className": "flex justify-between text-xs"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_pg_balance" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{(_local.refundEstimate?.remaining_pg_balance ?? 0).toLocaleString()}}원" }
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-500 dark:text-gray-500"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_pg_balance"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "{{_local.refundEstimate?.refund_formatted?.base?.remaining_pg_balance ?? (_local.refundEstimate?.remaining_pg_balance ?? 0).toLocaleString()}}"
+                        }
                       ]
                     },
                     {
                       "type": "basic",
                       "name": "Div",
                       "if": "{{(_local.refundEstimate?.remaining_points_balance ?? null) !== null}}",
-                      "props": { "className": "flex justify-between text-xs" },
+                      "props": {
+                        "className": "flex justify-between text-xs"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_points_balance" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{(_local.refundEstimate?.remaining_points_balance ?? 0).toLocaleString()}}원" }
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-500 dark:text-gray-500"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_points_balance"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "{{_local.refundEstimate?.refund_formatted?.base?.remaining_points_balance ?? (_local.refundEstimate?.remaining_points_balance ?? 0).toLocaleString()}}"
+                        }
                       ]
                     }
                   ]
@@ -894,12 +1622,16 @@
                   "type": "basic",
                   "name": "Div",
                   "if": "{{(_local.refundEstimate?.restored_coupons ?? []).length > 0}}",
-                  "props": { "className": "pt-2 border-t border-gray-100 dark:border-gray-700" },
+                  "props": {
+                    "className": "border-t border-gray-100 dark:border-gray-700"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1" },
+                      "props": {
+                        "className": "text-secondary text-xs font-medium block mb-1"
+                      },
                       "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.restored_coupons_label"
                     },
                     {
@@ -910,21 +1642,41 @@
                         "item_var": "coupon",
                         "index_var": "couponIdx"
                       },
-                      "props": { "className": "flex justify-between text-xs py-0.5" },
+                      "props": {
+                        "className": "flex justify-between text-xs py-0.5"
+                      },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{coupon.coupon_name ?? ''}}" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{(coupon.discount_amount ?? 0).toLocaleString()}}원" }
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-secondary"
+                          },
+                          "text": "{{coupon.coupon_name ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "{{(coupon.discount_amount ?? 0).toLocaleString()}}원"
+                        }
                       ]
                     },
                     {
                       "type": "basic",
                       "name": "P",
-                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-1" },
+                      "props": {
+                        "className": "text-hint mt-1"
+                      },
                       "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.restored_coupons_notice"
                     }
                   ]
                 }
-              ]
+              ],
+              "props": {
+              }
             }
           ]
         }
@@ -934,48 +1686,74 @@
       "comment": "액션 버튼 (하단 고정)",
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex justify-end gap-3 pt-4 pb-1 sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 -mx-6 px-6 -mb-4" },
+      "props": {
+        "className": "flex justify-end gap-3 pt-4 pb-1 sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 -mx-6 px-6 -mb-4"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_local.isCancelling}}"
           },
-          "actions": [{ "type": "click", "handler": "sequence", "params": { "actions": [
-            { "handler": "sirsoft-ecommerce.clearCancelOrderTimers" },
-            { "handler": "closeModal" }
-          ]}}],
-          "children": [{ "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.close_btn" }]
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "sirsoft-ecommerce.clearCancelOrderTimers"
+                  },
+                  {
+                    "handler": "closeModal"
+                  }
+                ]
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.close_btn"
+            }
+          ]
         },
         {
           "type": "basic",
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}"
           },
-          "actions": [{
-            "type": "click",
-            "handler": "sirsoft-ecommerce.executeCancelOrder",
-            "params": {
-              "orderId": "{{route.orderNumber}}",
-              "cancelItems": "{{_local.cancelItems}}",
-              "cancelReason": "{{_local.cancelReason ?? ''}}",
-              "cancelReasonDetail": "{{_local.cancelReasonDetail ?? ''}}",
-              "cancelPg": "{{_local.cancelPg ?? true}}",
-              "refundPriority": "{{_local.refundPriority ?? 'pg_first'}}"
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sirsoft-ecommerce.executeCancelOrder",
+              "params": {
+                "orderId": "{{route.orderNumber}}",
+                "cancelItems": "{{_local.cancelItems}}",
+                "cancelReason": "{{_local.cancelReason ?? ''}}",
+                "cancelReasonDetail": "{{_local.cancelReasonDetail ?? ''}}",
+                "cancelPg": "{{_local.cancelPg ?? true}}",
+                "refundPriority": "{{_local.refundPriority ?? 'pg_first'}}"
+              }
             }
-          }],
+          ],
           "children": [
             {
               "type": "basic",
               "name": "Icon",
               "if": "{{_local.isCancelling}}",
-              "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
+              "props": {
+                "name": "spinner",
+                "className": "animate-spin",
+                "size": "sm"
+              }
             },
             {
               "type": "basic",

@@ -14,6 +14,16 @@ class TemplateLayoutVersionTest extends TestCase
     use RefreshDatabase;
 
     /**
+     * 같은 스위트의 레이아웃/GDPR 미들웨어 의존 테스트와 migrate:fresh 정합성을
+     * 맞추기 위해 GDPR 플러그인 마이그레이션을 일관 선언한다.
+     *
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
+
+    /**
      * 레이아웃 버전 관계 테스트
      */
     public function test_template_layout_has_versions_relationship(): void

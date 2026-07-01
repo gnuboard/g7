@@ -1,0 +1,246 @@
+{
+  "comment": "draggable = 편집기에서 드래그/팔레트 배치 가능한 컴포넌트 목록. containers.accepts = 해당 컨테이너가 자식으로 받을 수 있는 컴포넌트 이름 목록. Img/Hr/Icon 등 leaf 는 accepts:[] 로 자식 거부. composite 는 통째 이동만 허용(자체는 draggable 에 포함되나 내부 accepts 는 [] 로 비편집).",
+  "draggable": [
+    "Div",
+    "Span",
+    "P",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "A",
+    "Button",
+    "Img",
+    "Icon",
+    "Hr",
+    "Ul",
+    "Li",
+    "Nav",
+    "Container",
+    "Flex",
+    "Grid",
+    "SectionLayout",
+    "ThreeColumnLayout",
+    "ProductCard",
+    "ImageGallery",
+    "Pagination",
+    "SearchBar",
+    "Avatar",
+    "UserInfo",
+    "HtmlContent",
+    "HtmlEditor",
+    "RichTextEditor",
+    "ExpandableContent",
+    "TabNavigation",
+    "QuantitySelector",
+    "ProductImageViewer",
+    "FileUploader",
+    "AvatarUploader",
+    "SocialLoginButtons",
+    "PostReactions",
+    "Input",
+    "Textarea",
+    "Select",
+    "Checkbox",
+    "PasswordInput",
+    "Label",
+    "Form",
+    "Table"
+  ],
+  "containers": {
+    "Div": {
+      "accepts": [
+        "Div",
+        "Span",
+        "P",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "A",
+        "Button",
+        "Img",
+        "Icon",
+        "Hr",
+        "Ul",
+        "Nav",
+        "Container",
+        "Flex",
+        "Grid",
+        "SectionLayout",
+        "ThreeColumnLayout",
+        "Form",
+        "Table",
+        "ProductCard",
+        "ImageGallery",
+        "Pagination",
+        "SearchBar",
+        "Avatar",
+        "UserInfo",
+        "HtmlContent",
+        "HtmlEditor",
+        "RichTextEditor",
+        "ExpandableContent",
+        "TabNavigation",
+        "QuantitySelector",
+        "ProductImageViewer",
+        "FileUploader",
+        "AvatarUploader",
+        "SocialLoginButtons",
+        "PostReactions",
+        "Input",
+        "Textarea",
+        "Select",
+        "Checkbox",
+        "PasswordInput",
+        "Label"
+      ]
+    },
+    "Nav": {
+      "accepts": [
+        "Ul",
+        "A",
+        "Button",
+        "Span",
+        "Icon",
+        "Div"
+      ]
+    },
+    "P": {
+      "accepts": [
+        "Span",
+        "A",
+        "Img",
+        "Icon"
+      ]
+    },
+    "Span": {
+      "accepts": [
+        "Span",
+        "A",
+        "Img",
+        "Icon"
+      ]
+    },
+    "A": {
+      "accepts": [
+        "Span",
+        "Img",
+        "Icon"
+      ]
+    },
+    "Ul": {
+      "accepts": [
+        "Li"
+      ]
+    },
+    "Li": {
+      "accepts": [
+        "Span",
+        "A",
+        "Img",
+        "Icon",
+        "P",
+        "Div",
+        "Button"
+      ]
+    },
+    "Container": {
+      "accepts": [
+        "Div",
+        "Span",
+        "P",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "A",
+        "Button",
+        "Img",
+        "Icon",
+        "Hr",
+        "Ul",
+        "Flex",
+        "Grid",
+        "SectionLayout",
+        "ThreeColumnLayout",
+        "Form",
+        "Table",
+        "ProductCard",
+        "ImageGallery",
+        "Pagination",
+        "SearchBar"
+      ]
+    },
+    "Flex": {
+      "accepts": [
+        "Div",
+        "Span",
+        "P",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "A",
+        "Button",
+        "Img",
+        "Icon",
+        "Hr",
+        "ProductCard"
+      ]
+    },
+    "Grid": {
+      "accepts": [
+        "Div",
+        "Span",
+        "P",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "A",
+        "Button",
+        "Img",
+        "Icon",
+        "ProductCard"
+      ]
+    },
+    "SectionLayout": {
+      "accepts": [
+        "Div",
+        "Container",
+        "Grid",
+        "Flex"
+      ]
+    },
+    "ThreeColumnLayout": {
+      "accepts": [
+        "Div",
+        "Container",
+        "Grid",
+        "Flex"
+      ]
+    },
+    "Form": {
+      "accepts": [
+        "Div",
+        "Span",
+        "P",
+        "Label",
+        "Input",
+        "Textarea",
+        "Select",
+        "Checkbox",
+        "PasswordInput",
+        "Button",
+        "Container",
+        "Flex",
+        "Grid",
+        "Hr"
+      ]
+    },
+    "Table": {
+      "accepts": []
+    }
+  }
+}

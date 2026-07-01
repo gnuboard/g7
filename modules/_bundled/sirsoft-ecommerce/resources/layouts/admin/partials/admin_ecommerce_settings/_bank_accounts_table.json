@@ -162,7 +162,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}"
                     }
@@ -180,7 +180,7 @@
                         "name": "{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}",
                         "value": "{{account.account_number ?? ''}}",
                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder",
-                        "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error w-full' : 'input w-full'}}",
+                        "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}",
                         "disabled": "{{_computed.isReadOnly}}"
                       }
                     },
@@ -189,7 +189,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}"
                     }
@@ -207,7 +207,7 @@
                         "name": "{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}",
                         "value": "{{account.account_holder ?? ''}}",
                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder",
-                        "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error w-full' : 'input w-full'}}",
+                        "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}",
                         "disabled": "{{_computed.isReadOnly}}"
                       }
                     },
@@ -216,7 +216,7 @@
                       "name": "Span",
                       "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "form-error"
                       },
                       "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}"
                     }

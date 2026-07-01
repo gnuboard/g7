@@ -583,7 +583,7 @@ describe('플러그인 업데이트 - 업데이트 모달', () => {
         name: 'Modal',
         props: {
           title: '$t:admin.plugins.modals.update_title',
-          size: 'small',
+          size: 'sm',
         },
         children: [
           {
@@ -769,9 +769,9 @@ describe('플러그인 업데이트 - 업데이트 모달', () => {
       expect(state._global.isPluginUpdating).toBe(false);
     });
 
-    it('모달 크기가 small로 설정되어 있다', () => {
+    it('모달 크기가 sm 으로 설정되어 있다', () => {
       const modal = updateModalLayout.modals[0];
-      expect(modal.props.size).toBe('small');
+      expect(modal.props.size).toBe('sm');
     });
   });
 

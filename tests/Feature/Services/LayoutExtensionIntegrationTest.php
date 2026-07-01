@@ -24,6 +24,16 @@ class LayoutExtensionIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 같은 스위트의 레이아웃/GDPR 미들웨어 의존 테스트와 migrate:fresh 정합성을
+     * 맞추기 위해 GDPR 플러그인 마이그레이션을 일관 선언한다.
+     *
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
+
     private LayoutExtensionService $service;
 
     private LayoutExtensionRepositoryInterface $repository;
@@ -916,6 +926,199 @@ class LayoutExtensionIntegrationTest extends TestCase
         $modalIds = array_column($result['modals'], 'id');
         $this->assertContains('ep_modal', $modalIds);
         $this->assertContains('ov_modal', $modalIds);
+    }
+
+    // =========================================================================
+    // extends 체인 base-타겟 overlay 전파 (E1 ~ E4)
+    //
+    // 배경: home(extends _user_base) 같은 자식 레이아웃을 서빙할 때, base(_user_base)
+    // 를 target_layout 으로 하는 overlay(예: 헤더 통화 슬롯 주입)가 적용되지 않던 결함.
+    // applyExtensions 가 $layout['layout_name'](="home") 으로만 overlay 를 매칭했기 때문.
+    // loadAndMergeLayout 가 부여하는 $layout['__extends_chain'] 을 매칭 대상에 포함시켜 해소.
+    // =========================================================================
+
+    /**
+     * E1: base(_user_base) 를 타겟한 overlay 가 자식(home) 서빙 시 적용된다
+     */
+    public function test_base_targeted_overlay_applies_to_child_via_extends_chain(): void
+    {
+        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
+
+        // base 레이아웃(_user_base)을 타겟하는 overlay — 헤더 통화 슬롯 주입과 동형
+        $this->service->registerExtension(
+            [
+                'target_layout' => '_user_base',
+                'injections' => [
+                    [
+                        'target_id' => 'header_currency_inject_anchor',
+                        'position' => 'append_child',
+                        'components' => [
+                            ['id' => 'ext_header_currency_selector', 'type' => 'basic', 'name' => 'Div', 'slot' => 'header_currency'],
+                        ],
+                    ],
+                ],
+            ],
+            LayoutSourceType::Module,
+            'sirsoft-ecommerce',
+            $this->template->id
+        );
+
+        // 자식(home) 서빙 시 loadAndMergeLayout 가 부여한 __extends_chain 을 가진 병합 결과
+        $layout = [
+            'layout_name' => 'home',
+            '__extends_chain' => ['_user_base'],
+            'components' => [
+                [
+                    'id' => 'header_currency_inject_anchor',
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'children' => [],
+                ],
+            ],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        // base-타겟 overlay 가 자식 서빙 결과에 주입됨
+        $anchorChildren = $result['components'][0]['children'] ?? [];
+        $this->assertCount(1, $anchorChildren, 'base(_user_base) overlay 가 자식(home)에 전파되어야 한다');
+        $this->assertEquals('ext_header_currency_selector', $anchorChildren[0]['id']);
+        $this->assertEquals('header_currency', $anchorChildren[0]['slot']);
+
+        // 내부 메타(__extends_chain)는 최종 응답에서 제거되어야 한다 (일반/편집 응답 노출 0)
+        $this->assertArrayNotHasKey('__extends_chain', $result, '__extends_chain 은 응답에서 제거되어야 한다');
+    }
+
+    /**
+     * E2: base overlay 의 init_actions 가 자식 서빙 시 호스트 init_actions 뒤에 병합된다
+     */
+    public function test_base_overlay_init_actions_merge_into_child_via_extends_chain(): void
+    {
+        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
+
+        $this->service->registerExtension(
+            [
+                'target_layout' => '_user_base',
+                'injections' => [
+                    [
+                        'target_id' => 'header_currency_inject_anchor',
+                        'position' => 'append_child',
+                        'components' => [
+                            ['id' => 'ext_currency', 'type' => 'basic', 'name' => 'Div'],
+                        ],
+                    ],
+                ],
+                'init_actions' => [
+                    ['handler' => 'sirsoft-ecommerce.initPreferredCurrency'],
+                ],
+            ],
+            LayoutSourceType::Module,
+            'sirsoft-ecommerce',
+            $this->template->id
+        );
+
+        $layout = [
+            'layout_name' => 'home',
+            '__extends_chain' => ['_user_base'],
+            'init_actions' => [
+                ['handler' => 'hostInit'],
+            ],
+            'components' => [
+                ['id' => 'header_currency_inject_anchor', 'type' => 'basic', 'name' => 'Div', 'children' => []],
+            ],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        $handlers = array_column($result['init_actions'] ?? [], 'handler');
+        $this->assertSame(['hostInit', 'sirsoft-ecommerce.initPreferredCurrency'], $handlers, '호스트 init_actions 뒤에 확장 init_actions 가 병합되어야 한다');
+    }
+
+    /**
+     * E3: 다단계 extends 체인 — 자식의 자식까지 base overlay 전파
+     */
+    public function test_base_overlay_propagates_through_multi_level_extends_chain(): void
+    {
+        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
+
+        $this->service->registerExtension(
+            [
+                'target_layout' => '_user_base',
+                'injections' => [
+                    [
+                        'target_id' => 'anchor',
+                        'position' => 'append_child',
+                        'components' => [['id' => 'ext_node', 'type' => 'basic', 'name' => 'Div']],
+                    ],
+                ],
+            ],
+            LayoutSourceType::Module,
+            'sirsoft-ecommerce',
+            $this->template->id
+        );
+
+        // shop_detail extends shop_base extends _user_base
+        $layout = [
+            'layout_name' => 'shop_detail',
+            '__extends_chain' => ['shop_base', '_user_base'],
+            'components' => [
+                ['id' => 'anchor', 'type' => 'basic', 'name' => 'Div', 'children' => []],
+            ],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        $children = $result['components'][0]['children'] ?? [];
+        $this->assertCount(1, $children, '다단계 체인 끝의 base overlay 도 전파되어야 한다');
+        $this->assertEquals('ext_node', $children[0]['id']);
+    }
+
+    /**
+     * E4: 자식 자신을 타겟한 overlay 와 base 타겟 overlay 가 한 번씩만 적용된다(중복 방지)
+     */
+    public function test_child_and_base_overlays_apply_once_each_without_duplication(): void
+    {
+        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
+
+        // base(_user_base) 타겟 overlay
+        $this->service->registerExtension(
+            [
+                'target_layout' => '_user_base',
+                'injections' => [
+                    ['target_id' => 'anchor', 'position' => 'append_child', 'components' => [['id' => 'base_node', 'type' => 'basic', 'name' => 'Div']]],
+                ],
+            ],
+            LayoutSourceType::Module,
+            'sirsoft-ecommerce',
+            $this->template->id
+        );
+
+        // 자식(home) 자신을 타겟한 overlay
+        $this->service->registerExtension(
+            [
+                'target_layout' => 'home',
+                'injections' => [
+                    ['target_id' => 'anchor', 'position' => 'append_child', 'components' => [['id' => 'child_node', 'type' => 'basic', 'name' => 'Div']]],
+                ],
+            ],
+            LayoutSourceType::Module,
+            'sirsoft-ecommerce',
+            $this->template->id
+        );
+
+        $layout = [
+            'layout_name' => 'home',
+            '__extends_chain' => ['_user_base'],
+            'components' => [
+                ['id' => 'anchor', 'type' => 'basic', 'name' => 'Div', 'children' => []],
+            ],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        $childIds = array_column($result['components'][0]['children'] ?? [], 'id');
+        sort($childIds);
+        $this->assertEquals(['base_node', 'child_node'], $childIds, '자식·base overlay 가 각각 한 번씩만 적용되어야 한다(중복 없음)');
     }
 
     /**

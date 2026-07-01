@@ -14,87 +14,92 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-base text-gray-900 dark:text-white"
-          },
-          "text": "{{_global.modal_data?.brandName}}{{$t('sirsoft-ecommerce.admin.brand.delete_modal.message_suffix')}}"
-        },
-        {
-          "type": "basic",
           "name": "Div",
-          "if": "{{(_global.modal_data?.productsCount ?? 0) > 0}}",
-          "props": {
-            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4"
-          },
           "children": [
             {
               "type": "basic",
-              "name": "Div",
+              "name": "P",
               "props": {
-                "className": "flex items-start gap-3"
+                "className": "text-primary text-base"
+              },
+              "text": "{{_global.modal_data?.brandName}}{{$t('sirsoft-ecommerce.admin.brand.delete_modal.message_suffix')}}"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_global.modal_data?.productsCount ?? 0) > 0}}",
+              "props": {
+                "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex-shrink-0 mt-0.5"
+                    "className": "flex-start gap-3"
                   },
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Icon",
+                      "name": "Div",
                       "props": {
-                        "name": "times-circle",
-                        "className": "w-5 h-5 text-red-600 dark:text-red-400"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-sm font-semibold text-red-800 dark:text-red-300 mb-1"
+                        "className": "flex-shrink-0 mt-0.5"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title"
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "times-circle",
+                            "className": "w-5 h-5 text-red-600 dark:text-red-400"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
-                      "name": "P",
+                      "name": "Div",
                       "props": {
-                        "className": "text-sm text-red-700 dark:text-red-300"
+                        "className": "flex-1"
                       },
-                      "text": "{{$t('sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete').replace('{count}', _global.modal_data?.productsCount ?? 0)}}"
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-sm font-semiboldtext-danger-soft mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-error-soft"
+                          },
+                          "text": "{{$t('sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete').replace('{count}', _global.modal_data?.productsCount ?? 0)}}"
+                        }
+                      ]
                     }
                   ]
                 }
               ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "if": "{{(_global.modal_data?.productsCount ?? 0) === 0}}",
+              "props": {
+                "className": "text-sm text-red-600 dark:text-red-400 font-medium"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.brand.delete_modal.irreversible_warning"
             }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "if": "{{(_global.modal_data?.productsCount ?? 0) === 0}}",
+          ],
           "props": {
-            "className": "text-sm text-red-600 dark:text-red-400 font-medium"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.brand.delete_modal.irreversible_warning"
+          }
         }
       ]
     },
@@ -102,7 +107,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {

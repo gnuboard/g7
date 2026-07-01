@@ -1,0 +1,554 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "moduleId": "sirsoft-page",
+  "version": "1.0.0",
+  "description": "레이아웃 편집기 스펙 — 페이지 모듈 도메인 sampleData/states. 실제 admin 레이아웃 data_source ID 4종 전수(pages/page/pageData/versions) + 사용자 페이지(/p/:slug, 약관/개인정보) byEndpointPattern. sampleGlobal 은 페이지 도메인이 _global keyspace 를 두지 않아 미작성('필요 시' 조건부 — 정당).",
+  "sampleData": {
+    "comment": "페이지 모듈이 도메인 SSoT. 사용자 페이지 상세 + 약관/개인정보 모달 트리거 데이터.",
+    "byDataSourceId": {
+      "pages": {
+        "data": {
+          "data": [
+            {
+              "id": 12,
+              "slug": "about",
+              "title": "회사 소개",
+              "published": true,
+              "published_at": "2026-05-20 15:00:00",
+              "current_version": 3,
+              "creator": {
+                "uuid": "00000000-0000-4000-8000-000000000001",
+                "name": "관리자"
+              },
+              "created_at": "2026-05-01 09:12:44",
+              "updated_at": "2026-05-20 15:00:00",
+              "is_owner": true,
+              "abilities": {
+                "can_update": true,
+                "can_delete": true
+              }
+            },
+            {
+              "id": 1,
+              "slug": "terms",
+              "title": "이용약관",
+              "published": true,
+              "published_at": "2026-03-15 10:00:00",
+              "current_version": 5,
+              "creator": {
+                "uuid": "00000000-0000-4000-8000-000000000001",
+                "name": "관리자"
+              },
+              "created_at": "2026-02-01 08:30:00",
+              "updated_at": "2026-03-15 10:00:00",
+              "is_owner": true,
+              "abilities": {
+                "can_update": true,
+                "can_delete": true
+              }
+            },
+            {
+              "id": 2,
+              "slug": "privacy",
+              "title": "개인정보처리방침",
+              "published": true,
+              "published_at": "2026-03-15 10:05:00",
+              "current_version": 4,
+              "creator": {
+                "uuid": "00000000-0000-4000-8000-000000000001",
+                "name": "관리자"
+              },
+              "created_at": "2026-02-01 08:35:00",
+              "updated_at": "2026-03-15 10:05:00",
+              "is_owner": true,
+              "abilities": {
+                "can_update": true,
+                "can_delete": true
+              }
+            },
+            {
+              "id": 7,
+              "slug": "event-notice",
+              "title": "봄맞이 이벤트 안내",
+              "published": false,
+              "published_at": null,
+              "current_version": 1,
+              "creator": {
+                "uuid": "00000000-0000-4000-8000-000000000002",
+                "name": "김편집"
+              },
+              "created_at": "2026-05-28 16:42:00",
+              "updated_at": "2026-05-28 16:42:00",
+              "is_owner": false,
+              "abilities": {
+                "can_update": true,
+                "can_delete": false
+              }
+            }
+          ],
+          "meta": {
+            "current_page": 1,
+            "last_page": 1,
+            "total": 4,
+            "per_page": 20
+          },
+          "abilities": {
+            "can_create": true,
+            "can_update": true
+          }
+        }
+      },
+      "page": {
+        "data": {
+          "id": 12,
+          "slug": "about",
+          "title": {
+            "ko": "회사 소개",
+            "en": "About Us"
+          },
+          "content": {
+            "ko": "<h2>회사 소개</h2><p>저희 시르소프트는 2018년 설립 이래 오픈소스 콘텐츠 관리 플랫폼을 만들어 온 소프트웨어 기업입니다. 누구나 손쉽게 웹사이트를 구축하고 운영할 수 있도록 직관적인 편집 도구와 확장 시스템을 제공합니다.</p><h3>핵심 가치</h3><ul><li>개방성 — 모든 코드는 오픈소스로 공개합니다.</li><li>확장성 — 모듈·플러그인·템플릿으로 무한히 확장됩니다.</li><li>안정성 — 1,200건 이상의 자동화 테스트로 품질을 보증합니다.</li></ul><h3>연혁</h3><p>2018년 법인 설립, 2021년 누적 다운로드 10만 돌파, 2024년 멀티테넌트 SaaS 출시, 2026년 G7 정식 버전 공개에 이르기까지 꾸준히 성장해 왔습니다.</p>",
+            "en": "<h2>About Us</h2><p>Sirsoft has been building an open-source content management platform since 2018. We provide intuitive editing tools and an extension system so anyone can build and run a website with ease.</p><h3>Core Values</h3><ul><li>Openness — all of our code is released as open source.</li><li>Extensibility — modules, plugins and templates extend the platform infinitely.</li><li>Reliability — quality assured by over 1,200 automated tests.</li></ul>"
+          },
+          "content_mode": "html",
+          "published": true,
+          "published_at": "2026-05-20 15:00:00",
+          "seo_meta": {
+            "title": "회사 소개 | 시르소프트",
+            "description": "오픈소스 콘텐츠 관리 플랫폼을 만드는 시르소프트의 비전과 연혁을 소개합니다.",
+            "keywords": "시르소프트, 회사소개, 오픈소스, CMS"
+          },
+          "current_version": 3,
+          "creator": {
+            "uuid": "00000000-0000-4000-8000-000000000001",
+            "name": "관리자"
+          },
+          "updater": {
+            "uuid": "00000000-0000-4000-8000-000000000001",
+            "name": "관리자"
+          },
+          "attachments": [
+            {
+              "id": 1,
+              "hash": "a1f3c9",
+              "original_filename": "회사소개서_2026.pdf",
+              "mime_type": "application/pdf",
+              "size": 2458624,
+              "size_formatted": "2.34 MB",
+              "collection": "attachments",
+              "order": 0,
+              "is_image": false,
+              "download_url": "/storage/pages/a1f3c9/회사소개서_2026.pdf",
+              "preview_url": null,
+              "created_at": "2026-05-20 14:32:10"
+            },
+            {
+              "id": 2,
+              "hash": "b7e2d4",
+              "original_filename": "오시는길_약도.png",
+              "mime_type": "image/png",
+              "size": 845120,
+              "size_formatted": "825 KB",
+              "collection": "attachments",
+              "order": 1,
+              "is_image": true,
+              "download_url": "/storage/pages/b7e2d4/오시는길_약도.png",
+              "preview_url": "/storage/pages/b7e2d4/thumb_오시는길_약도.png",
+              "created_at": "2026-05-20 14:33:02"
+            },
+            {
+              "id": 3,
+              "hash": "c0a8f1",
+              "original_filename": "조직도.xlsx",
+              "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "size": 51200,
+              "size_formatted": "50 KB",
+              "collection": "attachments",
+              "order": 2,
+              "is_image": false,
+              "download_url": "/storage/pages/c0a8f1/조직도.xlsx",
+              "preview_url": null,
+              "created_at": "2026-05-20 14:34:18"
+            }
+          ],
+          "created_at": "2026-05-01 09:12:44",
+          "updated_at": "2026-05-20 15:00:00",
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
+      },
+      "pageData": {
+        "data": {
+          "id": 12,
+          "slug": "about",
+          "title": {
+            "ko": "회사 소개",
+            "en": "About Us"
+          },
+          "content": {
+            "ko": "<h2>회사 소개</h2><p>저희 시르소프트는 2018년 설립 이래 오픈소스 콘텐츠 관리 플랫폼을 만들어 온 소프트웨어 기업입니다. 누구나 손쉽게 웹사이트를 구축하고 운영할 수 있도록 직관적인 편집 도구와 확장 시스템을 제공합니다.</p><h3>핵심 가치</h3><ul><li>개방성 — 모든 코드는 오픈소스로 공개합니다.</li><li>확장성 — 모듈·플러그인·템플릿으로 무한히 확장됩니다.</li><li>안정성 — 1,200건 이상의 자동화 테스트로 품질을 보증합니다.</li></ul><h3>연혁</h3><p>2018년 법인 설립, 2021년 누적 다운로드 10만 돌파, 2024년 멀티테넌트 SaaS 출시, 2026년 G7 정식 버전 공개에 이르기까지 꾸준히 성장해 왔습니다.</p>",
+            "en": "<h2>About Us</h2><p>Sirsoft has been building an open-source content management platform since 2018. We provide intuitive editing tools and an extension system so anyone can build and run a website with ease.</p><h3>Core Values</h3><ul><li>Openness — all of our code is released as open source.</li><li>Extensibility — modules, plugins and templates extend the platform infinitely.</li><li>Reliability — quality assured by over 1,200 automated tests.</li></ul>"
+          },
+          "content_mode": "html",
+          "published": true,
+          "published_at": "2026-05-20 15:00:00",
+          "seo_meta": {
+            "title": "회사 소개 | 시르소프트",
+            "description": "오픈소스 콘텐츠 관리 플랫폼을 만드는 시르소프트의 비전과 연혁을 소개합니다.",
+            "keywords": "시르소프트, 회사소개, 오픈소스, CMS"
+          },
+          "current_version": 3,
+          "creator": {
+            "uuid": "00000000-0000-4000-8000-000000000001",
+            "name": "관리자"
+          },
+          "attachments": [
+            {
+              "id": 1,
+              "hash": "a1f3c9",
+              "original_filename": "회사소개서_2026.pdf",
+              "mime_type": "application/pdf",
+              "size": 2458624,
+              "size_formatted": "2.34 MB",
+              "collection": "attachments",
+              "order": 0,
+              "is_image": false,
+              "download_url": "/storage/pages/a1f3c9/회사소개서_2026.pdf",
+              "preview_url": null,
+              "created_at": "2026-05-20 14:32:10"
+            },
+            {
+              "id": 2,
+              "hash": "b7e2d4",
+              "original_filename": "오시는길_약도.png",
+              "mime_type": "image/png",
+              "size": 845120,
+              "size_formatted": "825 KB",
+              "collection": "attachments",
+              "order": 1,
+              "is_image": true,
+              "download_url": "/storage/pages/b7e2d4/오시는길_약도.png",
+              "preview_url": "/storage/pages/b7e2d4/thumb_오시는길_약도.png",
+              "created_at": "2026-05-20 14:33:02"
+            },
+            {
+              "id": 3,
+              "hash": "c0a8f1",
+              "original_filename": "조직도.xlsx",
+              "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "size": 51200,
+              "size_formatted": "50 KB",
+              "collection": "attachments",
+              "order": 2,
+              "is_image": false,
+              "download_url": "/storage/pages/c0a8f1/조직도.xlsx",
+              "preview_url": null,
+              "created_at": "2026-05-20 14:34:18"
+            }
+          ],
+          "created_at": "2026-05-01 09:12:44",
+          "updated_at": "2026-05-20 15:00:00",
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
+      },
+      "versions": {
+        "data": [
+          {
+            "id": 31,
+            "page_id": 12,
+            "version": 3,
+            "title": {
+              "ko": "회사 소개",
+              "en": "About Us"
+            },
+            "content": {
+              "ko": "<h2>회사 소개</h2><p>저희 시르소프트는 2018년 설립 이래 오픈소스 콘텐츠 관리 플랫폼을 만들어 온 소프트웨어 기업입니다. 누구나 손쉽게 웹사이트를 구축하고 운영할 수 있도록 직관적인 편집 도구와 확장 시스템을 제공합니다.</p><h3>핵심 가치</h3><ul><li>개방성 — 모든 코드는 오픈소스로 공개합니다.</li><li>확장성 — 모듈·플러그인·템플릿으로 무한히 확장됩니다.</li><li>안정성 — 1,200건 이상의 자동화 테스트로 품질을 보증합니다.</li></ul><h3>연혁</h3><p>2018년 법인 설립, 2021년 누적 다운로드 10만 돌파, 2024년 멀티테넌트 SaaS 출시, 2026년 G7 정식 버전 공개에 이르기까지 꾸준히 성장해 왔습니다.</p>",
+              "en": "<h2>About Us</h2><p>Sirsoft has been building an open-source content management platform since 2018. We provide intuitive editing tools and an extension system so anyone can build and run a website with ease.</p><h3>Core Values</h3><ul><li>Openness — all of our code is released as open source.</li><li>Extensibility — modules, plugins and templates extend the platform infinitely.</li><li>Reliability — quality assured by over 1,200 automated tests.</li></ul>"
+            },
+            "content_mode": "html",
+            "seo_meta": {
+              "title": "회사 소개 | 시르소프트",
+              "description": "오픈소스 콘텐츠 관리 플랫폼을 만드는 시르소프트의 비전과 연혁을 소개합니다.",
+              "keywords": "시르소프트, 회사소개, 오픈소스, CMS"
+            },
+            "changes_summary": {
+              "restored_from": 1,
+              "changed_fields": [
+                "content",
+                "seo_meta"
+              ]
+            },
+            "creator": {
+              "uuid": "00000000-0000-4000-8000-000000000001",
+              "name": "관리자"
+            },
+            "created_at": "2026-05-20 15:00:00"
+          },
+          {
+            "id": 22,
+            "page_id": 12,
+            "version": 2,
+            "title": {
+              "ko": "회사 소개(개정)",
+              "en": "About Us (rev.)"
+            },
+            "content": {
+              "ko": "<h2>회사 소개</h2><p>저희 시르소프트는 2018년 설립 이래 오픈소스 콘텐츠 관리 플랫폼을 만들어 온 소프트웨어 기업입니다. 누구나 손쉽게 웹사이트를 구축하고 운영할 수 있도록 직관적인 편집 도구와 확장 시스템을 제공합니다.</p><h3>핵심 가치</h3><ul><li>개방성 — 모든 코드는 오픈소스로 공개합니다.</li><li>확장성 — 모듈·플러그인·템플릿으로 무한히 확장됩니다.</li><li>안정성 — 1,200건 이상의 자동화 테스트로 품질을 보증합니다.</li></ul><h3>연혁</h3><p>2018년 법인 설립, 2021년 누적 다운로드 10만 돌파, 2024년 멀티테넌트 SaaS 출시, 2026년 G7 정식 버전 공개에 이르기까지 꾸준히 성장해 왔습니다.</p>",
+              "en": "<h2>About Us</h2><p>Sirsoft has been building an open-source content management platform since 2018. We provide intuitive editing tools and an extension system so anyone can build and run a website with ease.</p><h3>Core Values</h3><ul><li>Openness — all of our code is released as open source.</li><li>Extensibility — modules, plugins and templates extend the platform infinitely.</li><li>Reliability — quality assured by over 1,200 automated tests.</li></ul>"
+            },
+            "content_mode": "html",
+            "seo_meta": {
+              "title": "회사 소개 | 시르소프트",
+              "description": "오픈소스 콘텐츠 관리 플랫폼을 만드는 시르소프트의 비전과 연혁을 소개합니다.",
+              "keywords": "시르소프트, 회사소개, 오픈소스, CMS"
+            },
+            "changes_summary": {
+              "restored_from": null,
+              "changed_fields": [
+                "title",
+                "content"
+              ]
+            },
+            "creator": {
+              "uuid": "00000000-0000-4000-8000-000000000002",
+              "name": "김편집"
+            },
+            "created_at": "2026-04-20 11:24:30"
+          },
+          {
+            "id": 11,
+            "page_id": 12,
+            "version": 1,
+            "title": {
+              "ko": "회사 소개(초안)",
+              "en": "About Us (draft)"
+            },
+            "content": {
+              "ko": "<h2>회사 소개</h2><p>저희 시르소프트는 2018년 설립 이래 오픈소스 콘텐츠 관리 플랫폼을 만들어 온 소프트웨어 기업입니다. 누구나 손쉽게 웹사이트를 구축하고 운영할 수 있도록 직관적인 편집 도구와 확장 시스템을 제공합니다.</p><h3>핵심 가치</h3><ul><li>개방성 — 모든 코드는 오픈소스로 공개합니다.</li><li>확장성 — 모듈·플러그인·템플릿으로 무한히 확장됩니다.</li><li>안정성 — 1,200건 이상의 자동화 테스트로 품질을 보증합니다.</li></ul><h3>연혁</h3><p>2018년 법인 설립, 2021년 누적 다운로드 10만 돌파, 2024년 멀티테넌트 SaaS 출시, 2026년 G7 정식 버전 공개에 이르기까지 꾸준히 성장해 왔습니다.</p>",
+              "en": "<h2>About Us</h2><p>Sirsoft has been building an open-source content management platform since 2018. We provide intuitive editing tools and an extension system so anyone can build and run a website with ease.</p><h3>Core Values</h3><ul><li>Openness — all of our code is released as open source.</li><li>Extensibility — modules, plugins and templates extend the platform infinitely.</li><li>Reliability — quality assured by over 1,200 automated tests.</li></ul>"
+            },
+            "content_mode": "html",
+            "seo_meta": {
+              "title": "회사 소개 | 시르소프트",
+              "description": "오픈소스 콘텐츠 관리 플랫폼을 만드는 시르소프트의 비전과 연혁을 소개합니다.",
+              "keywords": "시르소프트, 회사소개, 오픈소스, CMS"
+            },
+            "changes_summary": null,
+            "creator": {
+              "uuid": "00000000-0000-4000-8000-000000000001",
+              "name": "관리자"
+            },
+            "created_at": "2026-04-01 09:12:44"
+          }
+        ]
+      },
+      "termsContent": {
+        "data": {
+          "content": "<p>샘플 내용입니다.</p>",
+          "content_mode": "html",
+          "published_at": "2026-05-24 09:32:38"
+        }
+      },
+      "privacyContent": {
+        "data": {
+          "content": "<p>샘플 내용입니다.</p>",
+          "content_mode": "html",
+          "published_at": "2026-05-24 09:32:38"
+        }
+      }
+    },
+    "byEndpointPattern": {
+      "/api/modules/sirsoft-page/pages/terms": {
+        "data": {
+          "slug": "terms",
+          "title": "이용약관",
+          "body_html": "<p>샘플 이용약관 본문입니다.</p>",
+          "published_at": "2026-04-15"
+        }
+      },
+      "/api/modules/sirsoft-page/pages/privacy": {
+        "data": {
+          "slug": "privacy",
+          "title": "개인정보처리방침",
+          "body_html": "<p>샘플 개인정보처리방침 본문입니다.</p>",
+          "published_at": "2026-04-15"
+        }
+      },
+      "/api/modules/sirsoft-page/pages/*": {
+        "data": {
+          "slug": "about",
+          "title": "회사 소개",
+          "body_html": "<p>샘플 페이지 본문입니다.</p>",
+          "published_at": "2026-05-01",
+          "seo": {
+            "description": "회사 소개 페이지"
+          }
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "페이지 게시/초안 변종.",
+    "groups": [
+      {
+        "scope": {
+          "kind": "route",
+          "match": "/page/:slug"
+        },
+        "items": [
+          {
+            "id": "published",
+            "label": "$t:editor.state.published",
+            "default": true
+          },
+          {
+            "id": "draft_preview",
+            "label": "$t:editor.state.draft_preview",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "page": {
+                  "data": {
+                    "id": 12,
+                    "slug": "draft-notice",
+                    "title": "작성 중인 초안 페이지",
+                    "content": "<h2>작성 중인 초안</h2><p>아직 게시되지 않은 초안 페이지입니다. 발행 후 사용자에게 공개됩니다.</p>",
+                    "content_mode": "html",
+                    "excerpt": "아직 게시되지 않은 초안입니다.",
+                    "published": false,
+                    "published_at": null,
+                    "seo_meta": {
+                      "title": "회사 소개 | 시르소프트",
+                      "description": "오픈소스 콘텐츠 관리 플랫폼을 만드는 시르소프트의 비전과 연혁을 소개합니다.",
+                      "keywords": "시르소프트, 회사소개, 오픈소스, CMS"
+                    },
+                    "current_version": 1,
+                    "attachments": [],
+                    "created_at": "2026-05-01 09:12:44",
+                    "updated_at": "2026-05-20 15:00:00",
+                    "abilities": {
+                      "can_create": true,
+                      "can_update": true,
+                      "can_delete": true
+                    }
+                  }
+                }
+              }
+            },
+            "comment": "override 는 base 를 통째 교체. byEndpointPattern 가짜 필드(body_html/status) 대신 byDataSourceId.page(base 우선) 충실 shape + published:false 로 미게시 분기 노출. 캔버스 붕괴 가드."
+          }
+        ]
+      },
+      {
+        "comment": "admin 페이지 폼 — route.id 유무로 수정/신규 분기(본문 line 9/46). 검증 오류는 _local.errors.{field}?.[0] 경로(본문 line 251/293).",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/pages/:id/edit"
+        },
+        "items": [
+          {
+            "id": "edit_mode",
+            "label": "$t:editor.state.edit_existing",
+            "default": true,
+            "comment": "1.1-bis #9 — init_actions 가 수정 모드에서 _local.form 미시드(runtime API→form 흐름 부재). 편집기 prefill 을 위해 pageData 와 동일 값으로 _local.form 직접 시드. 읽기전용 표시/첨부는 pageData.data.",
+            "initialState": {
+              "local": {
+                "form": {
+                  "slug": "about",
+                  "published": true,
+                  "content_mode": "html",
+                  "title": {
+                    "ko": "회사 소개",
+                    "en": "About Us"
+                  },
+                  "content": {
+                    "ko": "<h2>회사 소개</h2><p>저희 시르소프트는 2018년 설립 이래 오픈소스 콘텐츠 관리 플랫폼을 만들어 온 소프트웨어 기업입니다. 누구나 손쉽게 웹사이트를 구축하고 운영할 수 있도록 직관적인 편집 도구와 확장 시스템을 제공합니다.</p><h3>핵심 가치</h3><ul><li>개방성 — 모든 코드는 오픈소스로 공개합니다.</li><li>확장성 — 모듈·플러그인·템플릿으로 무한히 확장됩니다.</li><li>안정성 — 1,200건 이상의 자동화 테스트로 품질을 보증합니다.</li></ul><h3>연혁</h3><p>2018년 법인 설립, 2021년 누적 다운로드 10만 돌파, 2024년 멀티테넌트 SaaS 출시, 2026년 G7 정식 버전 공개에 이르기까지 꾸준히 성장해 왔습니다.</p>",
+                    "en": "<h2>About Us</h2><p>Sirsoft has been building an open-source content management platform since 2018. We provide intuitive editing tools and an extension system so anyone can build and run a website with ease.</p><h3>Core Values</h3><ul><li>Openness — all of our code is released as open source.</li><li>Extensibility — modules, plugins and templates extend the platform infinitely.</li><li>Reliability — quality assured by over 1,200 automated tests.</li></ul>"
+                  },
+                  "seo_meta": {
+                    "title": "회사 소개 | 시르소프트",
+                    "description": "오픈소스 콘텐츠 관리 플랫폼을 만드는 시르소프트의 비전과 연혁을 소개합니다.",
+                    "keywords": "시르소프트, 회사소개, 오픈소스, CMS"
+                  }
+                },
+                "slugChecked": true,
+                "slugAvailable": true
+              }
+            }
+          },
+          {
+            "id": "create_mode",
+            "label": "$t:editor.state.create_mode",
+            "initialState": {
+              "route": {
+                "id": null
+              }
+            }
+          },
+          {
+            "id": "validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "formErrors": {
+              "_local.errors.slug": [
+                "필수 입력 항목입니다"
+              ]
+            },
+            "comment": "검증 오류 + 입력값 공존. _local.form prefill 유지 후 _local.errors 주입.",
+            "initialState": {
+              "local": {
+                "form": {
+                  "slug": "",
+                  "published": true,
+                  "content_mode": "html",
+                  "title": {
+                    "ko": "회사 소개",
+                    "en": "About Us"
+                  },
+                  "content": {
+                    "ko": "<h2>회사 소개</h2><p>저희 시르소프트는 2018년 설립 이래 오픈소스 콘텐츠 관리 플랫폼을 만들어 온 소프트웨어 기업입니다. 누구나 손쉽게 웹사이트를 구축하고 운영할 수 있도록 직관적인 편집 도구와 확장 시스템을 제공합니다.</p><h3>핵심 가치</h3><ul><li>개방성 — 모든 코드는 오픈소스로 공개합니다.</li><li>확장성 — 모듈·플러그인·템플릿으로 무한히 확장됩니다.</li><li>안정성 — 1,200건 이상의 자동화 테스트로 품질을 보증합니다.</li></ul><h3>연혁</h3><p>2018년 법인 설립, 2021년 누적 다운로드 10만 돌파, 2024년 멀티테넌트 SaaS 출시, 2026년 G7 정식 버전 공개에 이르기까지 꾸준히 성장해 왔습니다.</p>",
+                    "en": "<h2>About Us</h2><p>Sirsoft has been building an open-source content management platform since 2018. We provide intuitive editing tools and an extension system so anyone can build and run a website with ease.</p><h3>Core Values</h3><ul><li>Openness — all of our code is released as open source.</li><li>Extensibility — modules, plugins and templates extend the platform infinitely.</li><li>Reliability — quality assured by over 1,200 automated tests.</li></ul>"
+                  },
+                  "seo_meta": {
+                    "title": "회사 소개 | 시르소프트",
+                    "description": "오픈소스 콘텐츠 관리 플랫폼을 만드는 시르소프트의 비전과 연혁을 소개합니다.",
+                    "keywords": "시르소프트, 회사소개, 오픈소스, CMS"
+                  }
+                },
+                "slugChecked": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": " / 메커니즘 — admin 페이지 상세. 첨부파일 목록이 _local.showAttachments 토글(접힘) 게이트 뒤(본문 attachments_list if). 편집기는 정적 시뮬레이션이라 클릭 불가 → showAttachments:true 패치로 첨부 본체(image/non-image 분기) 노출. 버전 탭(versions DataGrid)·SEO 섹션은 게이트 없이 기본 노출.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/pages/:id"
+        },
+        "items": [
+          {
+            "id": "detail_default",
+            "label": "$t:editor.state.page_detail_default",
+            "default": true
+          },
+          {
+            "id": "attachments_open",
+            "label": "$t:editor.state.page_detail_attachments_open",
+            "initialState": {
+              "local": {
+                "showAttachments": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

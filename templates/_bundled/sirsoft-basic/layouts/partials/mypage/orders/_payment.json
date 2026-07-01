@@ -68,7 +68,7 @@
               "type": "basic",
               "name": "Span",
               "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.mc_subtotal_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.subtotal_amount_formatted ?? ''}}",
+              "text": "{{order.data.subtotal_amount_formatted ?? ''}}",
               "responsive": {
                 "portable": {
                   "props": { "className": "text-gray-900 dark:text-white text-sm" }
@@ -105,7 +105,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": { "className": "text-red-500 dark:text-red-400 font-medium" },
-                  "text": "-{{order.data.mc_total_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_discount_amount_formatted ?? ''}}",
+                  "text": "-{{order.data.total_discount_amount_formatted ?? ''}}",
                   "responsive": {
                     "portable": {
                       "props": { "className": "text-red-500 dark:text-red-400 font-medium text-sm" }
@@ -149,7 +149,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": { "className": "text-sm text-red-500 dark:text-red-400" },
-                      "text": "-{{order.data.mc_total_product_coupon_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_product_coupon_discount_amount_formatted ?? ''}}"
+                      "text": "-{{order.data.total_product_coupon_discount_amount_formatted ?? ''}}"
                     }
                   ]
                 },
@@ -223,7 +223,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": { "className": "text-sm text-red-500 dark:text-red-400" },
-                      "text": "-{{order.data.mc_total_order_coupon_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_order_coupon_discount_amount_formatted ?? ''}}"
+                      "text": "-{{order.data.total_order_coupon_discount_amount_formatted ?? ''}}"
                     }
                   ]
                 },
@@ -297,7 +297,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": { "className": "text-sm text-red-500 dark:text-red-400" },
-                      "text": "-{{order.data.mc_total_code_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_code_discount_amount_formatted ?? ''}}"
+                      "text": "-{{order.data.total_code_discount_amount_formatted ?? ''}}"
                     }
                   ]
                 },
@@ -364,10 +364,10 @@
               }
             },
             {
-              "comment": "무료배송",
+              "comment": "무료배송 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false → Number() 캐스팅으로 안전 비교 (유료 분기도 동일).",
               "type": "basic",
               "name": "Span",
-              "if": "{{(order.data.total_shipping_amount ?? 0) === 0}}",
+              "if": "{{Number(order.data.total_shipping_amount ?? 0) === 0}}",
               "props": { "className": "text-green-600 dark:text-green-400 font-medium" },
               "text": "$t:mypage.order_detail.free_shipping",
               "responsive": {
@@ -380,9 +380,9 @@
               "comment": "유료배송",
               "type": "basic",
               "name": "Span",
-              "if": "{{(order.data.total_shipping_amount ?? 0) > 0}}",
+              "if": "{{Number(order.data.total_shipping_amount ?? 0) > 0}}",
               "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_shipping_amount_formatted ?? ''}}",
+              "text": "{{order.data.total_shipping_amount_formatted ?? ''}}",
               "responsive": {
                 "portable": {
                   "props": { "className": "text-gray-900 dark:text-white text-sm" }
@@ -526,7 +526,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
-                  "text": "{{order.data.mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_amount_formatted ?? ''}}",
+                  "text": "{{order.data.total_amount_formatted ?? ''}}",
                   "responsive": {
                     "portable": {
                       "props": { "className": "text-lg font-bold text-gray-900 dark:text-white" }
@@ -539,7 +539,7 @@
                   "name": "Div",
                   "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
                   "iteration": {
-                    "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                    "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                     "item_var": "currency"
                   },
                   "children": [
@@ -550,6 +550,14 @@
                       "text": "{{currency[1]?.formatted ?? ''}}"
                     }
                   ]
+                },
+                {
+                  "comment": "결제 통화 실청구액 — base≠결제 통화일 때 유저가 실제 결제한 통화/금액 명시",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{order.data.payment?.is_cross_currency}}",
+                  "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5" },
+                  "text": "$t:mypage.order_detail.charged_in_payment_currency|currency={{order.data.payment?.payment_currency}}|amount={{order.data.payment?.paid_amount_formatted}}"
                 }
               ]
             }
@@ -559,7 +567,7 @@
           "comment": "적립 예정 마일리지 (있을 때만)",
           "type": "basic",
           "name": "Div",
-          "if": "{{(order.data.total_earned_points_amount ?? 0) > 0}}",
+          "if": "{{(order.data.total_earned_points_amount ?? 0) > 0 && order.data.order_status !== 'cancelled' && !order.data.is_partially_cancelled}}",
           "props": { "className": "flex items-center justify-between mt-1" },
           "children": [
             {

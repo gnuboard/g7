@@ -1,0 +1,112 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는(레이아웃 편집기 진입/셸/라우트 트리) 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트(Vitest + PHPUnit)로 커버. Phase 1 은 백엔드 source 태깅 + G7Config 메타 보강 + 프론트 셸 골격에 한정 — 캔버스 렌더는 Phase 2, 요소 배치는 Phase 3.
+
+feature: 레이아웃 편집기 셸 + 진입 경로 + 라우트 트리
+
+description: |
+  레이아웃 편집기 진입 경로(템플릿 관리 버튼 / 운영 화면 FAB) 와 편집기 셸(상단 툴바 +
+  좌측 라우트 트리 + 캔버스 영역) 골격 + 라우트 트리 데이터 구성(소스 그룹핑).
+
+  배경:
+ - 기존 MVP 위지윅 편집기는 Phase 0 에서 완전 제거됨.
+    - 신규 편집기는 G7 코어의 한 기능으로 어떤 템플릿에도 종속되지 않고,
+ 기존 템플릿 엔진(코어) 위에 얹혀진 형태로 동작 — 별도 시스템 격리 금지.
+    - TemplateApp.init() 일반 부팅 → renderTemplate() 안 checkLayoutEditorMode 분기로 진입.
+    - 셸은 state.reactRoot 에 같은 컨텍스트 래퍼 안에서 렌더(별도 createRoot/컨테이너 금지).
+    - 다국어는 lang-packs/_bundled/g7-core-{locale}/frontend/layout_editor.json 한 곳 SSoT.
+    - 활성 확장 SSoT 는 window.G7Config.activeModules / activePlugins (신규, 비파괴적).
+    - 라우트 트리 그룹핑을 위해 getRoutesDataWithModules 가 각 라우트에 source 메타 부여.
+
+axes:
+  entry_path: [template_manage_button, ops_screen_floating_fab]
+  user_state: [authenticated_with_perm, authenticated_no_perm, guest]
+  ui_mode: [normal_render, edit_mode]
+  target_template: [active, inactive]
+  route_source: [template, module, plugin, core]
+  route_label_source: [editor_label, title, path]
+  route_visibility: [visible, hidden, redirect]
+  route_nesting: [flat, has_parent]
+  modal_definition: [inline, partial_ref, inherited_from_base]
+  base_layout_present: [yes, no]
+  session_expiry_recovery: [same_tab_return, fresh_open]
+  admin_ui_locale: [ko, en, ja]
+
+exclusions:
+  - { user_state: guest, entry_path: ops_screen_floating_fab,
+      reason: "비로그인은 FAB 자체가 렌더되지 않음 — 클릭 진입 불가" }
+  - { ui_mode: edit_mode, entry_path: ops_screen_floating_fab,
+      reason: "편집 모드에서는 FAB 미표시 (8.2.2 (1))" }
+  - { user_state: authenticated_no_perm, entry_path: ops_screen_floating_fab,
+      reason: "권한 미보유 사용자는 FAB 미렌더 (8.2.2 (1))" }
+
+effects:
+  - get_routes_data_with_modules_attaches_source_kind_and_identifier_to_template_routes
+  - get_routes_data_with_modules_attaches_source_kind_and_identifier_to_module_routes
+  - get_routes_data_with_modules_attaches_source_kind_and_identifier_to_plugin_routes
+  - get_routes_data_with_modules_attaches_source_to_auto_plugin_settings_routes
+  - get_routes_data_with_modules_preserves_meta_title_editor_label_hidden_parent
+  - template_composer_exposes_active_modules_meta_with_identifier_display_name_version
+  - template_composer_exposes_active_plugins_meta_with_identifier_display_name_version
+  - user_template_composer_exposes_active_extensions_meta_same_shape
+  - active_extensions_meta_is_full_set_not_filtered_by_has_settings
+  - g7config_modules_plugins_legacy_keys_remain_unchanged_for_backward_compat
+  - admin_blade_emits_active_modules_active_plugins_keys_to_window_g7config
+  - app_blade_emits_active_modules_active_plugins_keys_to_window_g7config
+  - layout_editor_chrome_mounts_in_same_react_root_no_new_create_root
+  - layout_editor_chrome_inherits_core_translation_provider
+  - layout_editor_chrome_inherits_core_transition_provider
+  - layout_editor_chrome_inherits_core_responsive_provider
+  - layout_editor_chrome_inherits_core_slot_provider
+  - check_layout_editor_mode_recognizes_admin_layout_editor_url_pattern
+  - render_with_layout_editor_called_from_render_template_branch
+  - mount_layout_editor_does_not_call_react_dom_create_root
+  - mount_layout_editor_does_not_create_new_dom_container
+  - bootstrap_rejects_user_without_core_templates_layouts_edit_with_denial_component
+  - bootstrap_uses_window_g7config_active_modules_as_active_extensions_ssot
+  - bootstrap_uses_window_g7config_active_plugins_as_active_extensions_ssot
+  - inactive_template_can_be_opened_for_editing
+  - edit_entry_fab_renders_only_for_permitted_authenticated_users_in_normal_render
+  - edit_entry_fab_hidden_for_guest
+  - edit_entry_fab_hidden_for_authenticated_without_perm
+  - edit_entry_fab_hidden_in_edit_mode
+  - edit_entry_fab_click_assembles_route_param_from_current_path
+  - edit_entry_fab_opens_new_tab_via_openwindow
+  - edit_entry_fab_uses_left_bottom_fixed_position
+  - edit_entry_fab_uses_layout_editor_t_keys_no_hardcoded_text
+  - route_tree_groups_by_source_template_module_plugin
+  - route_tree_includes_base_group_when_extends_target_exists
+  - route_tree_includes_modal_group_collected_from_modals_sections
+  - route_tree_modal_node_carries_modal_id_and_modal_host_layout
+  - route_tree_label_resolves_editor_label_first
+  - route_tree_label_falls_back_to_title_when_editor_label_absent
+  - route_tree_label_falls_back_to_path_when_title_absent
+  - route_tree_label_source_field_records_resolution_origin
+  - route_tree_marks_hidden_routes_dimmed_with_icon
+  - route_tree_marks_redirect_routes_dimmed
+  - route_tree_nests_children_by_path_or_meta_parent
+  - route_tree_preserves_group_boundary_during_nesting
+  - route_tree_displays_shared_layout_badge_for_multi_route_layouts
+  - route_tree_panel_collapse_toggle_shrinks_chrome_grid
+  - chrome_strings_render_via_layout_editor_t_keys_no_hardcoded_text
+  - chrome_i18n_keys_have_ko_en_parity
+  - session_expiry_returns_to_editor_in_same_tab_not_new_window
+
+test_files:
+  - tests/Feature/Api/Public/PublicTemplateRoutesSourceTaggingTest.php
+  - tests/Feature/Api/Admin/LayoutEditorBootstrapTest.php
+  - tests/Unit/Services/TemplateServiceRoutesSourceTaggingTest.php
+  - tests/Feature/View/TemplateComposerActiveExtensionMetaTest.php
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorMode.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useRouteTree.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditEntryFab.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorHistory.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/RouteTreePanel.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditEntryFab.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/LayoutEditorChrome.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/i18n/chrome-i18n-coverage.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/devtools/editorTrackers.test.ts
+
+rules_layer_coverage:
+  - rule: service-direct-data-access
+    coverage: TemplateService::getRoutesDataWithModules 의 source 태깅은 라우트 메타 부여(읽기 + map 변형)만 수행, 새 mutation 없음
+  - rule: i18n-throw-hardcoded-korean
+    coverage: 편집기 chrome 의 모든 문자열은 layout_editor.* 키 — 평문 한국어 미사용. chrome-i18n-coverage.test.ts 가 정적 스캔으로 가드

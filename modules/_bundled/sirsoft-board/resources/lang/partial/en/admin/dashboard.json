@@ -1,0 +1,25 @@
+{
+  "quick_menu": {
+    "boards": "Boards",
+    "reports": "Reports"
+  },
+  "today_badges": {
+    "new_posts": "{{count}} new posts",
+    "new_comments": "{{count}} new comments"
+  },
+  "community": {
+    "title": "Community",
+    "post_graph": "Post Activity",
+    "posts": "Posts",
+    "comments": "Comments",
+    "total_posts": "Total Posts",
+    "total_comments": "Total Comments",
+    "latest_posts": "Latest Posts",
+    "report_management": "Report Management",
+    "no_posts": "No posts yet",
+    "no_reports": "No reports",
+    "updated_at": "Updated: {{time}}",
+    "go_to_boards": "All boards",
+    "go_to_reports": "View all"
+  }
+}

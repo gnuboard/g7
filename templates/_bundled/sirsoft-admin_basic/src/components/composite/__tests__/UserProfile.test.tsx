@@ -91,6 +91,20 @@ describe('UserProfile', () => {
       const dropdown = container.querySelector('.absolute.bottom-full');
       expect(dropdown).toBeInTheDocument();
     });
+
+    it('프로필 드롭다운에 언어 선택기가 없다 (언어는 헤더로 일원화, 중복 제거 — 유저 H-T7 패리티)', async () => {
+      const user = userEvent.setup();
+      render(<UserProfile user={mockUser} languageText="언어" availableLocales={['ko', 'en', 'ja']} />);
+
+      const profileButton = screen.getByText('John Doe').closest('button');
+      await user.click(profileButton!);
+
+      // 드롭다운은 열렸지만(프로필 설정 노출) 언어 섹션은 없어야 함
+      expect(screen.getByText('Profile Settings')).toBeInTheDocument();
+      expect(screen.queryByText('언어')).not.toBeInTheDocument();
+      // LanguageSelector 인라인 배지(현재 로케일 코드)도 없어야 함
+      expect(screen.queryByText('KO')).not.toBeInTheDocument();
+    });
   });
 
   describe('다국어 Props 테스트', () => {

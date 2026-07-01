@@ -84,6 +84,15 @@ interface CouponRepositoryInterface
     public function incrementIssuedCount(int $couponId, int $count = 1): void;
 
     /**
+     * 발급 수량 감소 (발급취소 시 복원)
+     *
+     * @param int $couponId 쿠폰 ID
+     * @param int $count 감소 수량
+     * @return void
+     */
+    public function decrementIssuedCount(int $couponId, int $count = 1): void;
+
+    /**
      * 적용 상품 동기화
      *
      * @param Coupon $coupon 쿠폰

@@ -76,6 +76,7 @@
     "data_sources": [
         {
             "id": "active_carriers",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.active_carriers",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active",
             "method": "GET",
@@ -104,7 +105,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -119,7 +120,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-3"
+                                    "className": "flex-center gap-3"
                                 },
                                 "children": [
                                     {
@@ -268,7 +269,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "card mb-6"
+                            "className": "admin-card mb-6"
                         },
                         "children": [
                             {
@@ -276,7 +277,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-3 pb-4 mb-4 border-b border-gray-200 dark:border-gray-700"
+                                    "className": "flex-center gap-3 pb-4 mb-4 border-b border-gray-200 dark:border-gray-700"
                                 },
                                 "children": [
                                     {
@@ -284,7 +285,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "flex items-center gap-2 hover:opacity-70"
+                                            "className": "flex-center gap-2 hover:opacity-70"
                                         },
                                         "children": [
                                             {
@@ -317,7 +318,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "px-4 py-1.5 rounded-full text-sm font-bold border border-gray-900 text-gray-900 dark:border-white dark:text-white"
+                                            "className": "text-primary px-4 py-1.5 rounded-full text-sm font-bold border border-gray-900 dark:border-white"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.order.preset.today_payment"
                                     },
@@ -326,7 +327,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                                            "className": "text-secondary px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.order.preset.bank_pending"
                                     }
@@ -337,7 +338,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-6"
+                                    "className": "flex-center flex-wrap gap-3 mb-6"
                                 },
                                 "children": [
                                     {
@@ -398,7 +399,7 @@
                                                 "props": {
                                                     "type": "text",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.order.search.placeholder",
-                                                    "className": "input w-full pr-10",
+                                                    "className": "input pr-10",
                                                     "value": "{{_local.searchKeyword}}"
                                                 },
                                                 "actions": [
@@ -483,12 +484,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-3 mb-4"
+                                            "className": "row-stack mb-4"
                                         }
                                     }
                                 },
@@ -538,7 +539,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-2"
+                                            "className": "flex-center gap-2"
                                         },
                                         "children": [
                                             {
@@ -659,12 +660,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-3 mb-4"
+                                            "className": "row-stack mb-4"
                                         }
                                     }
                                 },
@@ -903,12 +904,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-start gap-3 mb-4"
+                                    "className": "flex-start flex-wrap gap-3 mb-4"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-3 mb-4"
+                                            "className": "row-stack mb-4"
                                         }
                                     }
                                 },
@@ -917,7 +918,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "w-20 flex-shrink-0 flex items-center justify-between"
+                                            "className": "w-20 flex-shrink-0 flex-between"
                                         },
                                         "children": [
                                             {
@@ -941,12 +942,12 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex items-start gap-4 mb-3"
+                                                    "className": "flex-start gap-4 mb-3"
                                                 },
                                                 "responsive": {
                                                     "portable": {
                                                         "props": {
-                                                            "className": "flex flex-col gap-2 mb-3"
+                                                            "className": "row-stack mb-3"
                                                         }
                                                     }
                                                 },
@@ -1084,12 +1085,12 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex items-start gap-4 mb-3"
+                                                    "className": "flex-start gap-4 mb-3"
                                                 },
                                                 "responsive": {
                                                     "portable": {
                                                         "props": {
-                                                            "className": "flex flex-col gap-2 mb-3"
+                                                            "className": "row-stack mb-3"
                                                         }
                                                     }
                                                 },
@@ -1293,12 +1294,12 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex items-start gap-4"
+                                                    "className": "flex-start gap-4"
                                                 },
                                                 "responsive": {
                                                     "portable": {
                                                         "props": {
-                                                            "className": "flex flex-col gap-2"
+                                                            "className": "row-stack"
                                                         }
                                                     }
                                                 },
@@ -1548,7 +1549,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-1 text-tertiary text-xs cursor-pointer hover:text-secondary"
+                                            "className": "flex-center gap-1 text-tertiary text-xs cursor-pointer hover:text-secondary"
                                         },
                                         "children": [
                                             {
@@ -1576,12 +1577,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-3 mb-4"
+                                            "className": "row-stack mb-4"
                                         }
                                     }
                                 },
@@ -1605,7 +1606,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1627,7 +1628,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1649,7 +1650,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1671,7 +1672,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1698,12 +1699,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-3 mb-4"
+                                            "className": "row-stack mb-4"
                                         }
                                     }
                                 },
@@ -1727,7 +1728,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1749,7 +1750,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1771,7 +1772,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1793,7 +1794,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1815,7 +1816,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1837,7 +1838,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1864,12 +1865,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-3 mb-4"
+                                            "className": "row-stack mb-4"
                                         }
                                     }
                                 },
@@ -1938,12 +1939,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-3 mb-4"
+                                            "className": "row-stack mb-4"
                                         }
                                     }
                                 },
@@ -1960,7 +1961,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-2"
+                                            "className": "flex-center gap-2"
                                         },
                                         "children": [
                                             {
@@ -2035,12 +2036,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-3 mb-4"
+                                            "className": "row-stack mb-4"
                                         }
                                     }
                                 },
@@ -2071,7 +2072,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -2094,7 +2095,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -2116,7 +2117,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -2138,7 +2139,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -2160,7 +2161,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -2182,7 +2183,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -2209,12 +2210,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-6"
+                                    "className": "flex-center flex-wrap gap-3 mb-6"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-3 mb-6"
+                                            "className": "row-stack mb-6"
                                         }
                                     }
                                 },
@@ -2238,7 +2239,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -2260,7 +2261,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex items-center gap-2 text-sm text-secondary cursor-pointer"
+                                                    "className": "flex-center gap-2 text-sm text-secondary cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -2333,14 +2334,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "bg-slate-100 dark:bg-slate-800 p-4 rounded-xl mb-6 flex flex-wrap items-center justify-between gap-4"
+                            "className": "bg-slate-100 dark:bg-slate-800 p-4 rounded-xl mb-6 flex-between flex-wrap gap-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-4"
+                                    "className": "flex-center flex-wrap gap-4"
                                 },
                                 "children": [
                                     {
@@ -2464,7 +2465,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "card"
+                            "className": "admin-card"
                         },
                         "children": [
                             {
@@ -2472,7 +2473,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center justify-between gap-4 mb-6"
+                                    "className": "flex-between flex-wrap gap-4 mb-6"
                                 },
                                 "children": [
                                     {
@@ -2487,7 +2488,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-3"
+                                            "className": "flex-center gap-3"
                                         },
                                         "children": [
                                             {
@@ -2630,7 +2631,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10"
+                                                                    "className": "text-table-header py-3 px-4 text-left w-10"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2647,7 +2648,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                                    "className": "text-table-header py-3 px-4 text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.order_date"
                                                             },
@@ -2655,7 +2656,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                                    "className": "text-table-header py-3 px-4 text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.order_number"
                                                             },
@@ -2663,7 +2664,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                                    "className": "text-table-header py-3 px-4 text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.order_status"
                                                             },
@@ -2671,7 +2672,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                                    "className": "text-table-header py-3 px-4 text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.order_amount"
                                                             },
@@ -2679,7 +2680,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                                    "className": "text-table-header py-3 px-4 text-left"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.product"
                                                             },
@@ -2687,7 +2688,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                                    "className": "text-table-header py-3 px-4 text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.orderer"
                                                             },
@@ -2695,7 +2696,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                                    "className": "text-table-header py-3 px-4 text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.payment_method"
                                                             },
@@ -2703,7 +2704,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                                    "className": "text-table-header py-3 px-4 text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.country"
                                                             },
@@ -2711,7 +2712,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                                    "className": "text-table-header py-3 px-4 text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.delivery_method"
                                                             },
@@ -2719,7 +2720,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16"
+                                                                    "className": "text-table-header py-3 px-4 text-center w-16"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.order.table.columns.actions"
                                                             }
@@ -2759,7 +2760,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-secondary text-center whitespace-nowrap"
+                                                                    "className": "empty-state-cell text-sm text-secondary whitespace-nowrap"
                                                                 },
                                                                 "text": "2024-10-10\n18:25:00"
                                                             },
@@ -2767,7 +2768,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary text-center"
+                                                                    "className": "empty-state-cell text-sm text-primary"
                                                                 },
                                                                 "text": "ord251010567890"
                                                             },
@@ -2775,7 +2776,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-center"
+                                                                    "className": "empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2792,7 +2793,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-center"
+                                                                    "className": "empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2824,7 +2825,7 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex items-center gap-3"
+                                                                            "className": "flex-center gap-3"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -2864,7 +2865,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-center"
+                                                                    "className": "empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2889,7 +2890,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-secondary text-center"
+                                                                    "className": "empty-state-cell text-sm text-secondary"
                                                                 },
                                                                 "text": "토스페이"
                                                             },
@@ -2897,7 +2898,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-secondary text-center"
+                                                                    "className": "empty-state-cell text-sm text-secondary"
                                                                 },
                                                                 "text": "🇰🇷 대한민국"
                                                             },
@@ -2905,7 +2906,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-secondary text-center"
+                                                                    "className": "empty-state-cell text-sm text-secondary"
                                                                 },
                                                                 "text": "택배"
                                                             },
@@ -2913,7 +2914,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-center"
+                                                                    "className": "empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2941,28 +2942,28 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "space-y-4"
+                                                    "className": "row-stack"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "card p-4"
+                                                            "className": "admin-card"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex items-center justify-between mb-2"
+                                                                    "className": "flex-between mb-2"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex items-center gap-2"
+                                                                            "className": "flex-center gap-2"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -3173,7 +3174,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex justify-center items-center gap-2 mt-8"
+                                    "className": "flex-center justify-center gap-2 mt-8"
                                 },
                                 "children": [
                                     {
@@ -3181,7 +3182,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "w-8 h-8 flex items-center justify-center text-tertiary hover:text-secondary"
+                                            "className": "flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary"
                                         },
                                         "text": "«"
                                     },
@@ -3190,7 +3191,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "w-8 h-8 flex items-center justify-center text-tertiary hover:text-secondary"
+                                            "className": "flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary"
                                         },
                                         "text": "‹"
                                     },
@@ -3199,7 +3200,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "w-8 h-8 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded text-primary font-bold"
+                                            "className": "flex-center w-8 h-8 justify-center border border-gray-300 dark:border-gray-600 rounded text-primary font-bold"
                                         },
                                         "text": "1"
                                     },
@@ -3208,7 +3209,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "w-8 h-8 flex items-center justify-center text-tertiary hover:text-secondary"
+                                            "className": "flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary"
                                         },
                                         "text": "2"
                                     },
@@ -3217,7 +3218,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "w-8 h-8 flex items-center justify-center text-tertiary hover:text-secondary"
+                                            "className": "flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary"
                                         },
                                         "text": "›"
                                     },
@@ -3226,7 +3227,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "w-8 h-8 flex items-center justify-center text-tertiary hover:text-secondary"
+                                            "className": "flex-center w-8 h-8 justify-center text-tertiary hover:text-secondary"
                                         },
                                         "text": "»"
                                     }

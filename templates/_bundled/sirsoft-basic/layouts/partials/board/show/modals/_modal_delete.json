@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "공용 삭제 모달 - 게시글/댓글"
+    "description": "공용 삭제 모달 - 게시글/댓글",
+    "editor_label": "$t:user.modal_label.board_show.board_delete_modal"
   },
   "comment": "공용 삭제 모달 - 게시글/댓글 모두 사용 가능",
   "id": "board_delete_modal",

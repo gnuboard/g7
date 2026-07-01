@@ -1,14 +1,15 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "알림 전체 삭제 확인 모달 (User)"
+    "description": "알림 전체 삭제 확인 모달 (User)",
+    "editor_label": "$t:user.modal_label.notification_delete_all_confirm_modal"
   },
   "id": "notification_delete_all_confirm_modal",
   "type": "composite",
   "name": "Modal",
   "props": {
     "title": "$t:mypage.notifications.delete_all_title",
-    "size": "small"
+    "size": "sm"
   },
   "children": [
     {

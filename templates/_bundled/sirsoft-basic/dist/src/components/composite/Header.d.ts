@@ -37,6 +37,8 @@ interface HeaderProps {
     shopBase?: string;
     /** 추가 CSS 클래스 */
     className?: string;
+    /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
+    editorAttrs?: Record<string, unknown>;
     /** 알림 목록 (NotificationCenter에 전달) */
     notifications?: NotificationItem[];
     /** 더 불러올 페이지 존재 여부 */

@@ -1,0 +1,41 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   OrderProcessingService 의 vbank/dbank due_at 출처를 auto_cancel_days 단일 SSoT 로 통일하고
+#   vbank_due_days/dbank_due_days 설정 키를 제거한다. PHPUnit Unit/Feature 가 결제수단별
+#   due_at 산정 + per-order due_days 우선순위 + 구 키 제거 negative 단언을 커버하며 green.
+feature: 입금 대기 주문 자동취소 기한 auto_cancel_days 단일화 (A3)
+
+description: |
+  vbank/dbank 주문 생성 시 due_at 을 결제수단 무관 단일 입금기한 설정 auto_cancel_days 로 산정.
+  dbank 의 per-order $dbankInfo['due_days'] 명시 전달분은 우선순위 유지(클라이언트 입력).
+  vbank_due_days/dbank_due_days 설정 표면(레이아웃/검증/migrate/lang)을 제거하고 잔여 참조 0.
+  업그레이드 스텝이 기존 환경 구 키를 max(vbank,dbank) 로 auto_cancel_days 미설정 시 1회 흡수.
+
+axes:
+  payment_method:
+    - vbank                 # vbank_due_at = now()+auto_cancel_days
+    - dbank_default         # deposit_due_at = now()+auto_cancel_days (per-order 미지정)
+    - dbank_per_order       # $dbankInfo['due_days'] 명시 → 그 값 우선
+  auto_cancel_days:
+    - three     # 기본 3
+    - five
+    - one
+  upgrade_legacy:
+    - both_keys     # vbank=3, dbank=7 → max=7 흡수
+    - only_vbank    # vbank=5 → 5 흡수
+    - already_set   # auto_cancel_days 이미 설정 → 흡수 안 함
+    - none          # 구 키 없음 → 변경 없음
+
+effects:
+  - vbank_due_at_uses_auto_cancel_days
+  - dbank_due_at_uses_auto_cancel_days
+  - per_order_due_days_takes_priority      # 클라이언트 due_days 우선 보존
+  - legacy_keys_removed_from_rules         # 검증 규칙/페이로드에 구 키 없음(negative)
+  - upgrade_absorbs_max_legacy             # max(vbank,dbank) 흡수
+  - upgrade_skips_when_already_set
+  - settings_save_logs_activity           # auto_cancel_days 변경 시 설정 저장 활동로그
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingDueAtTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsOrderSettingsTest.php

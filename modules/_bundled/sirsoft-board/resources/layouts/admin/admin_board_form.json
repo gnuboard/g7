@@ -13,9 +13,7 @@
         "isReadOnly": "{{!!route?.id && !!boards?.data && boards?.data?.abilities?.can_update !== true}}"
     },
     "state": {
-        "activeTab": "basic",
-        "showCategoryRemoveModal": false,
-        "categoryToRemove": null,
+        "activeTab": "section_basic_card",
         "isSaving": false,
         "hasChanges": false,
         "showCancelConfirmModal": false,
@@ -33,6 +31,7 @@
     "data_sources": [
         {
             "id": "boards",
+            "label_key": "$t:sirsoft-board.editor.data_source.boards",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/admin/boards/form-data",
             "method": "GET",
@@ -63,6 +62,7 @@
         },
         {
             "id": "roles",
+            "label_key": "$t:sirsoft-board.editor.data_source.roles",
             "type": "api",
             "endpoint": "/api/admin/roles/active",
             "method": "GET",
@@ -71,13 +71,16 @@
         },
         {
             "id": "availableChannels",
+            "label_key": "$t:sirsoft-board.editor.data_source.availableChannels",
             "type": "api",
             "endpoint": "/api/admin/notification-channels",
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
             "fallback": {
-                "data": { "channels": [] }
+                "data": {
+                    "channels": []
+                }
             }
         }
     ],
@@ -87,9 +90,11 @@
                 "id": "board_form_wrapper",
                 "type": "basic",
                 "name": "Div",
-                "blur_until_loaded": true,
                 "dataKey": "form",
                 "trackChanges": true,
+                "props": {
+                    "className": "admin-page-content"
+                },
                 "children": [
                     {
                         "id": "read_only_banner",
@@ -97,7 +102,7 @@
                         "name": "Div",
                         "if": "{{_computed.isReadOnly}}",
                         "props": {
-                            "className": "mx-6 mt-4 flex items-center gap-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3"
+                            "className": "alert-warning"
                         },
                         "children": [
                             {
@@ -112,212 +117,77 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm text-amber-800 dark:text-amber-200"
+                                    "className": "text-warning-soft"
                                 },
                                 "text": "$t:sirsoft-board.admin.form.read_only_message"
                             }
                         ]
                     },
                     {
-                        "id": "sticky_header_container",
+                        "id": "page_header",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "sticky top-0 z-40 bg-gray-50 dark:bg-gray-900"
+                            "className": "page-header-fullbleed"
                         },
                         "children": [
                             {
-                                "id": "form_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "border-b border-gray-200 dark:border-gray-700 py-3 px-6"
-                                },
                                 "children": [
                                     {
-                                        "id": "header_flex_container",
                                         "type": "basic",
-                                        "name": "Div",
+                                        "name": "H1",
                                         "props": {
-                                            "className": "flex justify-between items-center"
+                                            "className": "page-title"
                                         },
-                                        "children": [
-                                            {
-                                                "id": "header_title",
-                                                "type": "basic",
-                                                "name": "H1",
-                                                "props": {
-                                                    "className": "text-xl font-semibold text-gray-900 dark:text-white"
-                                                },
-                                                "text": "{{route?.id ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}"
-                                            },
-                                            {
-                                                "id": "header_actions",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex items-center gap-3"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "id": "cancel_button",
-                                                        "type": "basic",
-                                                        "name": "Button",
-                                                        "props": {
-                                                            "type": "button",
-                                                            "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "click",
-                                                                "handler": "navigate",
-                                                                "target": "/admin/boards"
-                                                            }
-                                                        ],
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "text": "$t:sirsoft-board.common.cancel"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "save_button",
-                                                        "type": "basic",
-                                                        "name": "Button",
-                                                        "props": {
-                                                            "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
-                                                            "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "click",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "isSaving": true
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "click",
-                                                                "handler": "apiCall",
-                                                                "auth_required": true,
-                                                                "target": "{{route?.id ? '/api/modules/sirsoft-board/admin/boards/' + route.id : '/api/modules/sirsoft-board/admin/boards'}}",
-                                                                "params": {
-                                                                    "method": "{{route?.id ? 'PUT' : 'POST'}}",
-                                                                    "body": "{{_local.form}}"
-                                                                },
-                                                                "onSuccess": [
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "isSaving": false,
-                                                                            "hasChanges": false,
-                                                                            "errors": null
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "success",
-                                                                            "message": "{{route?.id ? '$t:sirsoft-board.admin.board.messages.update_success' : '$t:sirsoft-board.admin.board.messages.create_success'}}"
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "navigate",
-                                                                        "condition": "{{!route?.id}}",
-                                                                        "params": {
-                                                                            "path": "{{'/admin/boards/' + result.data.id + '/edit'}}"
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "onError": [
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "isSaving": false,
-                                                                            "errors": "{{error.errors}}"
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "{{error.message}}",
-                                                                            "icon": "triangle-exclamation"
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ],
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Icon",
-                                                                "if": "{{!_local.isSaving}}",
-                                                                "props": {
-                                                                    "name": "floppy-disk",
-                                                                    "className": "w-4 h-4"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Icon",
-                                                                "if": "{{_local.isSaving}}",
-                                                                "props": {
-                                                                    "name": "spinner",
-                                                                    "className": "w-4 h-4 animate-spin"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "text": "{{_local.isSaving ? '$t:sirsoft-board.common.saving' : '$t:sirsoft-board.common.save'}}"
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        ]
+                                        "text": "{{route?.id ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "page-description"
+                                        },
+                                        "text": "$t:sirsoft-board.admin.form.description"
                                     }
                                 ]
-                            },
-                            {
-                                "id": "tab_navigation",
-                                "type": "composite",
-                                "name": "TabNavigationScroll",
-                                "props": {
-                                    "activeTabId": "{{_local.activeTab ?? 'basic'}}",
-                                    "enableScrollSpy": true,
-                                    "scrollSpyOffset": 120,
-                                    "tabs": [
-                                        {
-                                            "id": "basic",
-                                            "label": "$t:sirsoft-board.admin.form.tabs.basic"
-                                        },
-                                        {
-                                            "id": "permissions",
-                                            "label": "$t:sirsoft-board.admin.form.tabs.permissions"
-                                        },
-                                        {
-                                            "id": "list",
-                                            "label": "$t:sirsoft-board.admin.form.tabs.list"
-                                        },
-                                        {
-                                            "id": "post",
-                                            "label": "$t:sirsoft-board.admin.form.tabs.post"
-                                        },
-                                        {
-                                            "id": "notification",
-                                            "label": "$t:sirsoft-board.admin.form.tabs.notification"
-                                        }
-                                    ]
-                                }
                             }
                         ]
+                    },
+                    {
+                        "id": "tab_navigation",
+                        "type": "composite",
+                        "name": "TabNavigationScroll",
+                        "props": {
+                            "className": "sticky-tab-nav tab-nav-default",
+                            "activeTabId": "{{_local.activeTab ?? 'section_basic_card'}}",
+                            "enableScrollSpy": true,
+                            "scrollSpyOffset": 56,
+                            "sectionIdPrefix": "",
+                            "tabs": [
+                                {
+                                    "id": "section_basic_card",
+                                    "label": "$t:sirsoft-board.admin.form.tabs.basic"
+                                },
+                                {
+                                    "id": "section_permissions_card",
+                                    "label": "$t:sirsoft-board.admin.form.tabs.permissions"
+                                },
+                                {
+                                    "id": "section_list_card",
+                                    "label": "$t:sirsoft-board.admin.form.tabs.list"
+                                },
+                                {
+                                    "id": "section_post_card",
+                                    "label": "$t:sirsoft-board.admin.form.tabs.post"
+                                },
+                                {
+                                    "id": "section_notification_card",
+                                    "label": "$t:sirsoft-board.admin.form.tabs.notification"
+                                }
+                            ]
+                        }
                     },
                     {
                         "id": "validation_error",
@@ -325,14 +195,14 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "px-6 pt-4"
+                            "className": "pt-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex gap-3"
+                                    "className": "alert-danger"
                                 },
                                 "children": [
                                     {
@@ -351,7 +221,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                    "className": "text-error-strong"
                                                 },
                                                 "text": "$t:sirsoft-board.admin.form.validation_error"
                                             },
@@ -360,7 +230,7 @@
                                                 "name": "P",
                                                 "if": "{{typeof _local.errors === 'string'}}",
                                                 "props": {
-                                                    "className": "mt-2 text-sm text-red-700 dark:text-red-300"
+                                                    "className": "text-error-soft mt-2"
                                                 },
                                                 "text": "{{_local.errors}}"
                                             },
@@ -380,7 +250,7 @@
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "text-sm text-red-700 dark:text-red-300"
+                                                            "className": "text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -397,24 +267,197 @@
                         "type": "basic",
                         "name": "Form",
                         "props": {
-                            "id": "board_form",
-                            "className": "p-6"
+                            "id": "board_form"
                         },
                         "children": [
                             {
-                                "partial": "partials/admin_board_form/_tab_basic.json"
+                                "id": "board_form_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "tab-content"
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/admin_board_form/_tab_basic.json"
+                                    },
+                                    {
+                                        "partial": "partials/admin_board_form/_tab_permissions.json"
+                                    },
+                                    {
+                                        "partial": "partials/admin_board_form/_tab_list.json"
+                                    },
+                                    {
+                                        "partial": "partials/admin_board_form/_tab_post.json"
+                                    },
+                                    {
+                                        "partial": "partials/admin_board_form/_tab_notification.json"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky-footer-buttons-between"
+                        },
+                        "children": [
+                            {
+                                "id": "footer_list_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.list"
+                                    }
+                                ],
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards"
+                                        }
+                                    }
+                                ]
                             },
                             {
-                                "partial": "partials/admin_board_form/_tab_permissions.json"
-                            },
-                            {
-                                "partial": "partials/admin_board_form/_tab_list.json"
-                            },
-                            {
-                                "partial": "partials/admin_board_form/_tab_post.json"
-                            },
-                            {
-                                "partial": "partials/admin_board_form/_tab_notification.json"
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "id": "footer_cancel_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:common.cancel"
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/boards"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "footer_save_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
+                                            "className": "btn btn-primary flex-center gap-1.5"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "if": "{{_local.isSaving}}",
+                                                "props": {
+                                                    "name": "spinner",
+                                                    "className": "spinner-sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "{{_local.isSaving ? '$t:sirsoft-board.common.saving' : '$t:sirsoft-board.common.save'}}"
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "params": {
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "isSaving": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "auth_required": true,
+                                                            "target": "{{route?.id ? '/api/modules/sirsoft-board/admin/boards/' + route.id : '/api/modules/sirsoft-board/admin/boards'}}",
+                                                            "params": {
+                                                                "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                                "body": "{{_local.form}}"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "isSaving": false,
+                                                                        "hasChanges": false,
+                                                                        "errors": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{route?.id ? '$t:sirsoft-board.admin.board.messages.update_success' : '$t:sirsoft-board.admin.board.messages.create_success'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openWindow",
+                                                                    "condition": "{{!route?.id}}",
+                                                                    "params": {
+                                                                        "path": "{{'/admin/boards/' + result.data.id + '/edit'}}",
+                                                                        "target": "_self"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "isSaving": false,
+                                                                        "errors": "{{error.errors}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -422,82 +465,5 @@
             }
         ]
     },
-    "modals": [
-        {
-            "id": "category_remove_modal",
-            "type": "composite",
-            "name": "Modal",
-            "condition": "{{_local.showCategoryRemoveModal === true}}",
-            "props": {
-                "isOpen": "{{_local.showCategoryRemoveModal}}",
-                "title": "$t:sirsoft-board.admin.form.modals.category_remove.title",
-                "size": "sm"
-            },
-            "actions": [
-                {
-                    "type": "close",
-                    "handler": "setState",
-                    "target": "_local.showCategoryRemoveModal",
-                    "value": false
-                }
-            ],
-            "children": [
-                {
-                    "id": "category_remove_modal_content",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "space-y-4"
-                    },
-                    "children": [
-                        {
-                            "id": "category_remove_modal_message",
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-300"
-                            },
-                            "text": "$t:sirsoft-board.admin.form.modals.category_remove.message"
-                        },
-                        {
-                            "id": "category_remove_modal_warning",
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
-                            },
-                            "text": "$t:sirsoft-board.admin.form.modals.category_remove.warning"
-                        },
-                        {
-                            "id": "category_remove_modal_actions",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex mt-6 justify-end"
-                            },
-                            "children": [
-                                {
-                                    "id": "category_remove_modal_confirm",
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "props": {
-                                        "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors"
-                                    },
-                                    "text": "$t:common.confirm",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "setState",
-                                            "target": "_local.showCategoryRemoveModal",
-                                            "value": false
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-    ]
+    "modals": []
 }

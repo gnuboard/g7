@@ -15,6 +15,7 @@
     "order_number": "Order Number",
     "order_date": "Order Date",
     "status": "Status",
+    "partial_cancelled_badge": "Partially Cancelled",
     "order_info": {
       "title": "Order Info",
       "order_products": "Order Products",
@@ -54,6 +55,14 @@
         "paid_shipping": "Paid Shipping",
         "shipping_fee": "Shipping Fee"
       },
+      "stock_status": {
+        "deducted": "Stock Deducted",
+        "not_deducted": "Not Deducted"
+      },
+      "earn_status": {
+        "earned": "Earned",
+        "pending": "Pending"
+      },
       "summary": {
         "total": "Total",
         "original_price": "Original Price",
@@ -85,11 +94,21 @@
         "address_detail": "Address Detail",
         "delivery_message": "Delivery Message",
         "send": "Send",
-        "phone_or_tel_hint": "Either mobile or phone number is required."
+        "phone_or_tel_hint": "Either mobile or phone number is required.",
+        "intl_address1_placeholder": "Street Address",
+        "intl_address2_placeholder": "Apt, Suite, Unit, etc.",
+        "intl_city_placeholder": "City",
+        "intl_state_placeholder": "State / Province",
+        "intl_postal_code_placeholder": "Postal Code"
       },
       "admin_memo": {
         "title": "Admin Memo",
         "placeholder": "Enter admin memo..."
+      },
+      "cancel_reason": {
+        "title": "Cancellation Reason",
+        "reason": "Reason",
+        "detail": "Details"
       },
       "save": "Save",
       "save_success": "Order information has been saved.",
@@ -100,7 +119,8 @@
       "view_member_detail": "View Member Details",
       "search_by_member": "Search by Member",
       "search_by_name": "Search by Orderer Name",
-      "search_by_phone": "Search by Phone"
+      "search_by_phone": "Search by Phone",
+      "reset_guest_password": "Reset Lookup Password"
     },
     "tabs": {
       "order_info": "Order Info",
@@ -154,6 +174,35 @@
         "sent_success": "Email has been sent successfully.",
         "sent_failed": "Failed to send email."
       },
+      "reset_guest_password": {
+        "title": "Reset Guest Lookup Password",
+        "description": "Set a new password for guest order lookup.",
+        "order_number": "Order No.",
+        "orderer_name": "Orderer",
+        "orderer_phone": "Phone",
+        "new_password": "New Password",
+        "new_password_placeholder": "At least 8 characters",
+        "new_password_confirmation": "Confirm New Password",
+        "new_password_confirmation_placeholder": "Re-enter the new password",
+        "hint": "Enter at least 8 characters. The existing password cannot be viewed and can only be reset to a new value.",
+        "cancel": "Cancel",
+        "reset": "Reset",
+        "reset_success": "Guest lookup password has been reset."
+      },
+      "confirm_deposit": {
+        "title": "Confirm Bank Deposit",
+        "description": "Verify the depositor name and amount, then record the deposit.",
+        "depositor_name": "Depositor Name",
+        "depositor_name_placeholder": "Enter the depositor name",
+        "amount": "Deposit Amount",
+        "amount_hint": "Must exactly match the amount due.",
+        "due_amount": "Amount Due",
+        "mark_order_complete": "Mark the order as paid",
+        "mark_order_complete_hint": "When checked, the order status is changed to paid along with recording the deposit (including mileage earning, stock deduction, and notifications). When unchecked, only the deposit is recorded.",
+        "cancel": "Cancel",
+        "confirm": "Confirm Deposit",
+        "confirm_success": "The deposit has been recorded."
+      },
       "batch_change": {
         "title": "Batch Change Confirmation",
         "confirm_message": "Are you sure you want to batch change {{count}} selected product(s)?",
@@ -200,6 +249,7 @@
         "refund_priority_label": "Refund Priority",
         "refund_priority_pg_first": "PG Payment First",
         "refund_priority_points_first": "Points/Mileage First",
+        "refund_priority_no_points_hint": "No mileage was used, so refund priority cannot be selected.",
         "refund_estimate_title": "Estimated Refund",
         "refund_loading": "Calculating estimated refund...",
         "refund_product_amount": "Product Refund",
@@ -369,7 +419,9 @@
       "cancelled_amount": "Cancelled Amount",
       "refunded_amount": "Refunded Amount",
       "refund_status": "Refund Status",
-      "refund_points_amount": "Mileage Refund"
+      "refund_points_amount": "Mileage Refund",
+      "payment_currency": "Payment currency: {{currency}}",
+      "charged_in_payment_currency": "Charged {{amount}} in {{currency}}"
     },
     "activity_log": {
       "title": "Activity Log",
@@ -548,7 +600,13 @@
     "orderer": "Orderer",
     "orderer_select": "Select Member",
     "orderer_search_placeholder": "Search by name or email",
-    "orderer_search_initial": "Search for a member"
+    "orderer_search_initial": "Search for a member",
+    "member_type": "Member Type",
+    "member_type_option": {
+      "all": "All",
+      "member": "Member",
+      "guest": "Guest"
+    }
   },
   "action": {
     "search": "Search",
@@ -713,6 +771,8 @@
     "shipping_fee_short": "Ship. {{amount}}",
     "paid_short": "Paid {{amount}}",
     "unpaid_short": "Unpaid {{amount}}",
+    "mileage_used_short": "Mileage -{{amount}}",
+    "points_earned_short": "Earn +{{amount}}",
     "order_status": "Status",
     "orderer": "Orderer",
     "payment_method": "Payment",

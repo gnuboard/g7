@@ -15,7 +15,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center gap-2 mb-3"
+        "className": "flex-center gap-2 mb-3"
       },
       "children": [
         {
@@ -30,7 +30,7 @@
           "type": "basic",
           "name": "Span",
           "props": {
-            "className": "text-sm font-semibold text-gray-900 dark:text-white"
+            "className": "text-primary text-sm font-semibold"
           },
           "text": "$t:sirsoft-board.admin.posts.form.reply_to"
         },
@@ -39,7 +39,7 @@
           "name": "Span",
           "if": "{{form_meta?.data?.parent_post?.is_notice}}",
           "props": {
-            "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+            "className": "text-danger-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-red-100 dark:bg-red-900"
           },
           "text": "$t:sirsoft-board.admin.posts.notice"
         },
@@ -48,7 +48,7 @@
           "name": "Span",
           "if": "{{form_meta?.data?.parent_post?.is_secret}}",
           "props": {
-            "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+            "className": "text-warning-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-yellow-100 dark:bg-yellow-900"
           },
           "text": "$t:sirsoft-board.admin.posts.secret"
         }
@@ -58,14 +58,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center gap-2 mb-2"
+        "className": "flex-center gap-2 mb-2"
       },
       "children": [
         {
           "type": "basic",
           "name": "H4",
           "props": {
-            "className": "text-base font-semibold text-gray-900 dark:text-white"
+            "className": "section-heading-md"
           },
           "text": "{{form_meta?.data?.parent_post?.title}}"
         },
@@ -94,13 +94,13 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-3"
+        "className": "flex-center gap-2 text-tertiary mb-3"
       },
       "children": [
         {
           "type": "basic",
           "name": "Span",
-          "text": "{{form_meta?.data?.parent_post?.user?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
+          "text": "{{form_meta?.data?.parent_post?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
         },
         {
           "type": "basic",
@@ -148,7 +148,7 @@
           "if": "{{(form_meta?.data?.parent_post?.content?.length ?? 0) > 150}}",
           "props": {
             "type": "button",
-            "className": "text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors flex items-center gap-1"
+            "className": "flex-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors gap-1"
           },
           "actions": [
             {

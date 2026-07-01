@@ -20,13 +20,22 @@
         {
             "pattern": "/api/modules/sirsoft-ecommerce/*",
             "headers": {
-                "X-Cart-Key": "{{_global.cartKey}}"
+                "X-Cart-Key": "{{_global.cartKey}}",
+                "X-Currency": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}",
+                "X-Shipping-Country": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
             }
         },
         {
             "pattern": "/api/auth/*",
             "headers": {
                 "X-Cart-Key": "{{_global.cartKey}}"
+            }
+        },
+        {
+            "_comment": "비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.json, guest_order_show.json).",
+            "pattern": "/api/modules/sirsoft-ecommerce/guest/orders/*",
+            "headers": {
+                "X-Guest-Order-Token": "{{_global.guestOrderToken}}"
             }
         }
     ],
@@ -46,12 +55,46 @@
             "handler": "initCartKey"
         },
         {
-            "handler": "loadFromLocalStorage",
+            "_comment": "기본 통화(default_currency)를 코어 _global.modules 노출값에서 _global 에 주입 (A1-③). loadFromLocalStorage 의 fallback 기준값.",
+            "handler": "setState",
             "params": {
-                "key": "g7_preferred_currency",
-                "stateKey": "preferredCurrency",
-                "defaultValue": "KRW"
+                "target": "global",
+                "defaultCurrency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}"
             }
+        },
+        {
+            "_comment": "선호(표시) 통화를 _global 에 동기 주입. 우선순위 = 로그인 유저 계정 영속 통화(currentUser.ecommerce_preferred_currency, D-LOGIN-CUR) > localStorage 세션값(g7_preferred_currency, ISO형식) > 게스트 사이트 언어(g7_locale) 기반 통화 추정(currencies[].locales 매핑, 회원가입 통화 부여와 동일 입력·우선순위) > default_currency > KRW. 핸들러는 이커머스 모듈 소유(sirsoft-ecommerce.initPreferredCurrency) — 통화=커머스 책임. 모듈 미설치 시 미등록 핸들러로 무동작(통화 globals 자체가 빈 값).",
+            "handler": "sirsoft-ecommerce.initPreferredCurrency",
+            "params": {
+                "defaultCurrency": "{{_global.defaultCurrency ?? 'KRW'}}"
+            }
+        },
+        {
+            "_comment": "셀렉터 통화 목록 주입 (A1-①). is_default 또는 환율>0 인 통화만 (U11-B 미설정 통화 숨김, 백엔드 buildMultiCurrencyPrices 규칙과 1:1 일치).",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "availableCurrencies": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0)}}"
+            }
+        },
+        {
+            "_comment": "선호 배송국가를 _global 에 동기 주입 (MP08 후속). 우선순위 = 계정 영속(currentUser.ecommerce_preferred_shipping_country) > localStorage(g7_preferred_shipping_country) > default_country > KR. 핸들러는 이커머스 모듈 소유 — 배송국가=커머스 책임. 모듈 미설치 시 무동작.",
+            "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
+            "params": {
+                "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+            }
+        },
+        {
+            "_comment": "헤더 배송국가 셀렉터 목록 주입 (MP08 후속). 활성 국가만 {code, name(현지화), flag_class(fi fi-xx)} 형태로. 해외배송 OFF 시 KR 만 활성이라 셀렉터 자연 숨김(2개↑ 게이트).",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "availableShippingCountries": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ code: c.code, name: (c.name?.[_global.locale] ?? c.name?.ko ?? c.code), flag_class: ('fi fi-' + (c.code ?? '').toLowerCase()) }))}}"
+            }
+        },
+        {
+            "_comment": "비회원 주문 조회 토큰 (30분 유효) — 커스텀 핸들러가 localStorage 의 g7_guest_order_token 을 G7Core.state.set 으로 _global.guestOrderToken 에 직접 저장. 표준 loadFromLocalStorage 는 context.setState 를 통해 _local 에만 영향을 주므로 _global 에 토큰이 안 들어가는 문제 회피. initCartKey 패턴 동일.",
+            "handler": "initGuestOrderToken"
         },
         {
             "handler": "setState",
@@ -64,6 +107,7 @@
     "data_sources": [
         {
             "id": "boards",
+            "label_key": "$t:editor.data_source.boards",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/board-menu",
             "method": "GET",
@@ -73,6 +117,7 @@
         },
         {
             "id": "current_user",
+            "label_key": "$t:editor.data_source.current_user",
             "type": "api",
             "endpoint": "/api/auth/user",
             "method": "GET",
@@ -81,6 +126,24 @@
             "loading_strategy": "progressive",
             "initGlobal": "currentUser",
             "fallback": { "data": [] },
+            "onSuccess": [
+                {
+                    "_comment": "로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유.",
+                    "handler": "sirsoft-ecommerce.initPreferredCurrency",
+                    "params": {
+                        "accountCurrency": "{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}",
+                        "defaultCurrency": "{{_global.defaultCurrency ?? 'KRW'}}"
+                    }
+                },
+                {
+                    "_comment": "로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다.",
+                    "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
+                    "params": {
+                        "accountCountry": "{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}",
+                        "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+                    }
+                }
+            ],
             "errorHandling": {
                 "401": {
                     "comment": "비회원의 /api/auth/user 401은 정상 — fallback 사용, 레이아웃 에러 핸들링으로 전파 방지",
@@ -90,6 +153,7 @@
         },
         {
             "id": "cart",
+            "label_key": "$t:editor.data_source.cart",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/cart/count",
             "method": "GET",
@@ -107,6 +171,7 @@
         },
         {
             "id": "notification_unread_count",
+            "label_key": "$t:editor.data_source.notification_unread_count",
             "type": "api",
             "endpoint": "/api/user/notifications/unread-count",
             "method": "GET",
@@ -126,6 +191,7 @@
         {
             "comment": "알림 목록 — 드롭다운 NotificationCenter 에서 사용. unreadOnly 토글에 따라 read 필터 동적 적용",
             "id": "notifications",
+            "label_key": "$t:editor.data_source.notifications",
             "type": "api",
             "endpoint": "/api/user/notifications",
             "method": "GET",
@@ -144,6 +210,7 @@
         },
         {
             "id": "user_notification_ws",
+            "label_key": "$t:editor.data_source.user_notification_ws",
             "type": "websocket",
             "channel": "core.user.notifications.{{_global.currentUser?.uuid}}",
             "event": "notification.received",
@@ -171,6 +238,12 @@
     ],
     "components": [
         {
+            "comment": "통화 선택기 슬롯 주입 앵커 — 이커머스 모듈이 layout_extensions 로 'header_currency' 슬롯 노드를 여기에 주입한다(slot 노드는 원위치 렌더 안 함, SlotContext 등록만 → 헤더의 SlotContainer 가 떙겨 렌더). 미설치 시 빈 슬롯(렌더 영향 0). 헤더는 주입 모듈을 모른다.",
+            "id": "header_currency_inject_anchor",
+            "type": "basic",
+            "name": "Div"
+        },
+        {
             "id": "global_toast",
             "type": "composite",
             "name": "Toast",
@@ -193,6 +266,13 @@
                 "className": "min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900"
             },
             "children": [
+                {
+                    "comment": "=== Extension Point: 모든 사용자 페이지에서 플러그인이 전역 오버레이 영역을 노출할 수 있도록 공용 확장 지점 제공 ===",
+                    "id": "user_global_overlay_slot",
+                    "type": "extension_point",
+                    "name": "user_global_overlay",
+                    "default": []
+                },
                 {
                     "comment": "=== 모바일 오버레이 (사이드 메뉴 열릴 때) ===",
                     "id": "mobile_overlay",
@@ -531,7 +611,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "shopping-cart",
-                                                "className": "w-5 h-5"
+                                                "size": "md"
                                             }
                                         },
                                         {
@@ -544,6 +624,104 @@
                                             "text": "{{_global.cartCount > 99 ? '99+' : _global.cartCount}}"
                                         }
                                     ]
+                                },
+                                {
+                                    "comment": "언어 선택(모바일) — 데스크톱 헤더와 동일하게 통화 옆 같은 줄에 노출(globe + 현재 로케일 코드). 비회원 포함 전체. setLocale 은 코어 빌트인.",
+                                    "id": "mobile_lang_selector_wrap",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{$locales.length > 1}}",
+                                    "props": { "className": "relative" },
+                                    "children": [
+                                        {
+                                            "id": "mobile_lang_btn",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "className": "flex items-center gap-1 px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer",
+                                                "aria-haspopup": "listbox",
+                                                "aria-expanded": "{{_global.mobileLangMenuOpen ?? false}}",
+                                                "aria-label": "$t:common.language"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": { "target": "global", "mobileLangMenuOpen": "{{!_global.mobileLangMenuOpen}}" }
+                                                }
+                                            ],
+                                            "children": [
+                                                { "type": "basic", "name": "Icon", "size": "sm", "props": { "name": "globe" } },
+                                                { "type": "basic", "name": "Span", "props": { "className": "font-medium uppercase" }, "text": "{{$locale}}" },
+                                                { "type": "basic", "name": "Icon", "size": "xs", "props": { "name": "chevron-down" } }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "드롭다운 메뉴",
+                                            "id": "mobile_lang_menu",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.mobileLangMenuOpen}}",
+                                            "props": {
+                                                "className": "absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 overflow-hidden",
+                                                "role": "listbox"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": { "source": "{{$locales}}", "item_var": "loc" },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "props": {
+                                                                "className": "{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}} w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer",
+                                                                "role": "option",
+                                                                "aria-selected": "{{loc === $locale}}"
+                                                            },
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        { "handler": "setLocale", "target": "{{loc}}" },
+                                                                        { "handler": "setState", "params": { "target": "global", "mobileLangMenuOpen": false } }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "children": [
+                                                                { "type": "basic", "name": "Icon", "size": "sm", "props": { "name": "globe" } },
+                                                                { "type": "basic", "name": "Span", "props": { "className": "flex-1 font-medium" }, "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}" },
+                                                                { "type": "basic", "name": "Icon", "size": "sm", "if": "{{loc === $locale}}", "props": { "name": "check" } }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "배경 클릭 시 닫기",
+                                            "id": "mobile_lang_backdrop",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.mobileLangMenuOpen}}",
+                                            "props": { "className": "fixed inset-0 z-40" },
+                                            "actions": [
+                                                { "type": "click", "handler": "setState", "params": { "target": "global", "mobileLangMenuOpen": false } }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "통화 선택 — 이커머스 모듈이 'header_currency' 슬롯에 주입(layout_extensions). 헤더는 슬롯 이름만 알고 통화/모듈을 모름. 모듈 비활성 시 빈 슬롯 → 미렌더(인프라 자동 게이트). 데스크톱 Header.tsx 의 SlotContainer 와 동일 슬롯 공유(언어와 같은 줄).",
+                                    "id": "mobile_currency_selector_wrap",
+                                    "type": "composite",
+                                    "name": "SlotContainer",
+                                    "props": {
+                                        "slotId": "header_currency",
+                                        "className": "flex items-center"
+                                    }
                                 },
                                 {
                                     "comment": "사용자 아이콘 (로그인 시) / 로그인 버튼",
@@ -568,7 +746,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "user",
-                                                "className": "w-5 h-5"
+                                                "size": "md"
                                             }
                                         }
                                     ]
@@ -597,7 +775,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "menu",
-                                                "className": "w-5 h-5"
+                                                "size": "md"
                                             }
                                         }
                                     ]
@@ -660,7 +838,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "x",
-                                                "className": "w-5 h-5"
+                                                "size": "md"
                                             }
                                         }
                                     ]
@@ -687,7 +865,8 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "search",
-                                                "className": "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500"
+                                                "size": "sm",
+                                                "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -788,7 +967,8 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "chevron-down",
-                                                "className": "{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-200"
+                                                "size": "md",
+                                                "className": "{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} text-gray-400 dark:text-gray-500 transition-transform duration-200"
                                             }
                                         }
                                     ]
@@ -823,7 +1003,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "settings",
-                                                                "className": "w-4 h-4"
+                                                                "size": "sm"
                                                             }
                                                         },
                                                         {
@@ -868,7 +1048,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "user",
-                                                                "className": "w-4 h-4"
+                                                                "size": "sm"
                                                             }
                                                         },
                                                         {
@@ -913,7 +1093,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "shopping-bag",
-                                                                "className": "w-4 h-4"
+                                                                "size": "sm"
                                                             }
                                                         },
                                                         {
@@ -958,7 +1138,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "heart",
-                                                                "className": "w-4 h-4"
+                                                                "size": "sm"
                                                             }
                                                         },
                                                         {
@@ -1012,7 +1192,7 @@
                                                                             "name": "Icon",
                                                                             "props": {
                                                                                 "name": "globe",
-                                                                                "className": "w-4 h-4"
+                                                                                "size": "sm"
                                                                             }
                                                                         },
                                                                         {
@@ -1055,7 +1235,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "log-out",
-                                                                "className": "w-4 h-4"
+                                                                "size": "sm"
                                                             }
                                                         },
                                                         {
@@ -1146,6 +1326,25 @@
                                             "text": "$t:auth.register_link"
                                         }
                                     ]
+                                },
+                                {
+                                    "comment": "비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav)",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "className": "block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                { "handler": "setState", "params": { "target": "global", "mobileMenuOpen": false } },
+                                                { "comment": "주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름.", "handler": "navigate", "params": { "path": "/login?redirect=/mypage/orders" } }
+                                            ]
+                                        }
+                                    ],
+                                    "text": "$t:shop.guest_order_form.nav_link"
                                 }
                             ]
                         },
@@ -1190,7 +1389,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "home",
-                                                "className": "w-5 h-5"
+                                                "size": "md"
                                             }
                                         },
                                         {
@@ -1233,7 +1432,8 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "flame",
-                                                "className": "w-5 h-5 text-orange-500"
+                                                "size": "md",
+                                                "className": "text-orange-500"
                                             }
                                         },
                                         {
@@ -1366,7 +1566,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "shopping-bag",
-                                                "className": "w-5 h-5"
+                                                "size": "md"
                                             }
                                         },
                                         {
@@ -1416,7 +1616,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "shopping-cart",
-                                                        "className": "w-5 h-5"
+                                                        "size": "md"
                                                     }
                                                 },
                                                 {
@@ -1678,6 +1878,8 @@
                         "maxVisibleBoards": 5,
                         "availableLocales": "{{$locales}}",
                         "currentLocale": "{{$locale}}",
+                        "availableCurrencies": "{{_global.availableCurrencies ?? []}}",
+                        "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}",
                         "className": "hidden",
                         "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
                         "notificationHasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
@@ -1937,6 +2139,13 @@
                             "discord": "{{_global.settings?.social?.discord}}"
                         }
                     }
+                },
+                {
+                    "comment": "=== Extension Point: 모든 사용자 페이지 푸터 직후에 플러그인이 정보 영역을 노출할 수 있도록 공용 확장 지점 제공 ===",
+                    "id": "user_global_footer_slot",
+                    "type": "extension_point",
+                    "name": "user_global_footer",
+                    "default": []
                 }
             ]
         }

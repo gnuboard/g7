@@ -85,14 +85,14 @@ describe('TabNavigation', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={2} />);
 
       const settingsButton = screen.getByText('설정').closest('button');
-      expect(settingsButton).toHaveClass('text-blue-600');
+      expect(settingsButton).toHaveClass('tab-btn-default-active');
     });
 
     it('activeTabId가 없으면 활성화 스타일이 없어야 함', () => {
       render(<TabNavigation tabs={mockTabs} />);
 
       const profileButton = screen.getByText('프로필').closest('button');
-      expect(profileButton).not.toHaveClass('text-blue-600');
+      expect(profileButton).not.toHaveClass('tab-btn-default-active');
     });
   });
 
@@ -215,7 +215,7 @@ describe('TabNavigation', () => {
       render(<TabNavigation tabs={tabsWithDisabled} />);
 
       const disabledButton = screen.getByText('비활성화').closest('button');
-      expect(disabledButton).toHaveClass('opacity-50', 'cursor-not-allowed');
+      expect(disabledButton).toHaveClass('tab-btn-disabled');
     });
   });
 
@@ -224,21 +224,21 @@ describe('TabNavigation', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={1} variant="default" />);
 
       const activeButton = screen.getByText('프로필').closest('button');
-      expect(activeButton).toHaveClass('bg-blue-50', 'border-b-2');
+      expect(activeButton).toHaveClass('tab-btn-default-active');
     });
 
     it('variant="pills"일 때 pill 스타일을 적용해야 함', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={1} variant="pills" />);
 
       const activeButton = screen.getByText('프로필').closest('button');
-      expect(activeButton).toHaveClass('bg-blue-600', 'rounded-lg');
+      expect(activeButton).toHaveClass('tab-btn-pills-active');
     });
 
     it('variant="underline"일 때 underline 스타일을 적용해야 함', () => {
       render(<TabNavigation tabs={mockTabs} activeTabId={1} variant="underline" />);
 
       const activeButton = screen.getByText('프로필').closest('button');
-      expect(activeButton).toHaveClass('border-b-2', 'border-blue-600');
+      expect(activeButton).toHaveClass('tab-btn-underline-active');
     });
   });
 
@@ -343,6 +343,35 @@ describe('TabNavigation', () => {
       expect(icons.length).toBe(3);
 
       expect(screen.getByText('99+')).toBeInTheDocument();
+    });
+  });
+
+  /**
+   * 편집 모드 인플레이스 측정 마커. 캔버스 인플레이스 오버레이가 탭 헤더
+   * 박스를 측정할 수 있도록, editorAttrs(data-editor-path) 주입 시 각 탭 버튼에
+   * data-editor-item-path="<node path>.props.tabs.<i>" 를 부여한다. 런타임(editorAttrs
+   * 미주입)에는 마커가 없어야 사용자 페이지에 무영향.
+   * @scenario unit=item_path_marker
+   * @effects tabnavigation_emits_item_path_marker_only_in_editor_mode, core_measures_data_editor_item_path_markers_into_cellboxes
+   */
+  describe('편집 모드 인플레이스 측정 마커(data-editor-item-path)', () => {
+    it('editorAttrs 주입 시 각 탭 버튼에 data-editor-item-path 를 부여한다', () => {
+      const { container } = render(
+        <TabNavigation
+          tabs={mockTabs}
+          editorAttrs={{ 'data-editor-path': '2.children.0' } as any}
+        />
+      );
+      const marked = container.querySelectorAll('[data-editor-item-path]');
+      expect(marked.length).toBe(3);
+      expect(marked[0].getAttribute('data-editor-item-path')).toBe('2.children.0.props.tabs.0');
+      expect(marked[1].getAttribute('data-editor-item-path')).toBe('2.children.0.props.tabs.1');
+      expect(marked[2].getAttribute('data-editor-item-path')).toBe('2.children.0.props.tabs.2');
+    });
+
+    it('editorAttrs 미주입(런타임) 시 마커를 부여하지 않는다', () => {
+      const { container } = render(<TabNavigation tabs={mockTabs} />);
+      expect(container.querySelectorAll('[data-editor-item-path]').length).toBe(0);
     });
   });
 });

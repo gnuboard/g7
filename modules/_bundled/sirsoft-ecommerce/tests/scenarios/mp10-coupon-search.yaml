@@ -1,0 +1,32 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   CouponRepository::paginate() 의 name/description 단일컬럼 LIKE 분기 + finalizeListQuery
+#   헬퍼 추출을 PHPUnit Feature 가 search_field × keyword cross product 로 커버하며 green.
+feature: 쿠폰 목록 검색 컬럼 한정 (A18①)
+
+description: |
+  검색 필드 선택(쿠폰명/설명/등록자)이 무시되고 항상 전 컬럼(FULLTEXT name+description)을
+  검색하던 결함을 수정. name 선택 시 name 단일컬럼 LIKE(설명에만 있는 단어 0건), description
+  선택 시 description 단일컬럼 LIKE(이름에만 있는 단어 0건), all 은 FULLTEXT union 유지,
+  created_by 는 creator LIKE 유지.
+
+axes:
+  search_field:
+    - all
+    - name
+    - description
+    - created_by
+  keyword:
+    - matches_name_only   # 이름에만 있는 단어
+    - matches_desc_only   # 설명에만 있는 단어
+    - matches_creator     # 등록자 name/email
+
+effects:
+  - name_field_excludes_description_match   # name 선택 + 설명 단어 → 0건(핵심)
+  - description_field_excludes_name_match   # description 선택 + 이름 단어 → 0건(핵심)
+  - all_field_matches_both                  # all → name/description 둘 다 매칭
+  - created_by_field_matches_creator        # created_by → creator 매칭
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CouponSearchFieldTest.php

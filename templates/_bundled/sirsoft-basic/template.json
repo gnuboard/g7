@@ -5,55 +5,105 @@
         "ko": "Basic",
         "en": "Basic"
     },
-    "version": "1.0.0-beta.5",
+    "version": "1.0.0",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 기본 사용자 템플릿",
         "en": "Gnuboard7 default user template"
     },
     "type": "user",
-    "locales": ["ko", "en"],
+    "locales": [
+        "ko",
+        "en"
+    ],
     "author": {
         "name": "sirsoft",
         "email": "contact@sirsoft.com",
         "url": "https://sirsoft.com"
     },
     "release_date": "2026-01-07",
-    "g7_version": ">=7.0.0-beta.4",
+    "g7_version": ">=7.0.0",
     "dependencies": {
         "modules": {
-            "sirsoft-board": ">=1.0.0-beta.4",
-            "sirsoft-ecommerce": ">=1.0.0-beta.3",
-            "sirsoft-page": ">=1.0.0-beta.3"
+            "sirsoft-board": ">=1.0.0",
+            "sirsoft-ecommerce": ">=1.0.0",
+            "sirsoft-page": ">=1.0.0"
         },
         "plugins": {
-            "sirsoft-daum_postcode": ">=1.0.0-beta.2"
+            "sirsoft-daum_postcode": ">=1.0.0"
         }
     },
     "assets": {
-        "css": ["dist/css/components.css"],
-        "js": ["dist/js/components.iife.js"],
+        "css": [
+            "dist/css/components.css"
+        ],
+        "js": [
+            "dist/js/components.iife.js"
+        ],
         "fonts": [],
         "images": []
     },
     "components": {
         "basic": [
-            "a", "button", "checkbox", "div", "form",
-            "h1", "h2", "h3", "h4", "hr", "icon", "img", "input",
-            "label", "li", "nav", "p", "section",
-            "select", "span", "svg", "table", "tbody",
-            "td", "textarea", "th", "thead", "tr", "ul"
+            "a",
+            "button",
+            "checkbox",
+            "div",
+            "form",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "hr",
+            "icon",
+            "img",
+            "input",
+            "label",
+            "li",
+            "nav",
+            "p",
+            "section",
+            "select",
+            "span",
+            "svg",
+            "table",
+            "tbody",
+            "td",
+            "textarea",
+            "th",
+            "thead",
+            "tr",
+            "ul"
         ],
         "composite": [
-            "header", "footer", "mobile-nav",
-            "product-card", "rich-text-editor", "image-gallery",
-            "quantity-selector", "post-reactions", "social-login-buttons",
-            "file-uploader", "card", "modal", "toast", "pagination",
-            "stat-card", "status-badge", "tab-navigation", "empty-state",
-            "loading-spinner", "breadcrumb", "search-bar", "dropdown"
+            "header",
+            "footer",
+            "mobile-nav",
+            "product-card",
+            "rich-text-editor",
+            "image-gallery",
+            "quantity-selector",
+            "post-reactions",
+            "social-login-buttons",
+            "file-uploader",
+            "card",
+            "modal",
+            "toast",
+            "pagination",
+            "stat-card",
+            "status-badge",
+            "tab-navigation",
+            "empty-state",
+            "loading-spinner",
+            "breadcrumb",
+            "search-bar",
+            "dropdown"
         ],
         "layout": [
-            "container", "flex", "grid", "section"
+            "container",
+            "flex",
+            "grid",
+            "section"
         ]
     },
     "preview": {
@@ -65,12 +115,12 @@
     },
     "error_config": {
         "layouts": {
-            "401": "401",
-            "404": "404",
-            "403": "403",
-            "500": "500",
-            "503": "503",
-            "maintenance": "maintenance"
+            "401": "errors/401",
+            "403": "errors/403",
+            "404": "errors/404",
+            "500": "errors/500",
+            "503": "errors/503",
+            "maintenance": "errors/maintenance"
         }
     },
     "features": {
@@ -80,5 +130,20 @@
         "multi_currency": true
     },
     "github_url": "https://github.com/gnuboard/g7-template-sirsoft-basic",
-    "github_changelog_url": "https://github.com/gnuboard/g7-template-sirsoft-basic/blob/main/CHANGELOG.md"
+    "github_changelog_url": "https://github.com/gnuboard/g7-template-sirsoft-basic/blob/main/CHANGELOG.md",
+    "externals": [
+        {
+            "id": "fontawesome",
+            "type": "style",
+            "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+            "preconnect": "https://cdnjs.cloudflare.com"
+        },
+        {
+            "id": "pretendard",
+            "type": "webfont",
+            "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css",
+            "preconnect": "https://cdn.jsdelivr.net",
+            "crossorigin": "anonymous"
+        }
+    ]
 }

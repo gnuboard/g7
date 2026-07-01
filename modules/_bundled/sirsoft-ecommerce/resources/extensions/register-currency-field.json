@@ -1,0 +1,48 @@
+{
+  "target_layout": "auth/register",
+  "injections": [
+    {
+      "target_id": "register_extension_fields",
+      "position": "append_child",
+      "components": [
+        {
+          "id": "ext_register_currency",
+          "comment": "가입폼 결제 통화 선택 (A4 / D-LOGIN-CUR — 이커머스 설치 시에만). 기본값=세션 통화(>locale 추정>기본통화). name 바인딩으로 registerForm 에 자동 포함 → /api/auth/register 제출.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "text": "$t:sirsoft-ecommerce.auth.register_currency.label"
+            },
+            {
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "preferred_currency",
+                "value": "{{_local?.registerForm?.preferred_currency ?? _global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}",
+                "options": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}",
+                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                "disabled": "{{_local?.isRegistering}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+              },
+              "text": "$t:sirsoft-ecommerce.auth.register_currency.hint"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 330
+}

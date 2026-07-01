@@ -1,0 +1,62 @@
+feature: 게시판 폼 제한 키워드/허용 확장자 입력 통일 (배열 + TagInput)
+
+description: |
+  이슈 #413 item 24 — 제한 키워드(blocked_keywords)와 허용 확장자(allowed_extensions)의
+  데이터 타입/입력 UI 불일치 및 댓글 차단 누락을 해소한다.
+
+  수정 이력:
+    - 24-(1): 댓글 생성/수정 시 제한 키워드 검증이 적용되지 않던 문제
+      · 증상: 게시글에는 제한 키워드 차단이 동작하나 댓글에는 미동작
+      · 근본 원인: StoreCommentRequest / UpdateCommentRequest 의 content 규칙에
+        BlockedKeywordsRule 누락 (게시글 Request 에만 존재)
+      · 조치: 두 댓글 Request 의 content 에 BlockedKeywordsRule 추가
+    - 24-(2)/Q4: 데이터 타입·UI 불일치 통일 (결정: 나안 = 통일)
+      · blocked_keywords / allowed_extensions 모두 배열 데이터 + TagInput UI 로 통일
+      · BoardResource 가 두 필드를 항상 배열로 직렬화 (edit/create/copy 모든 모드)
+      · BoardController.getFormData 생성 모드도 배열로 주입 (categories 와 동일 패턴)
+      · 레이아웃: 제한 키워드는 게시글 설정 탭에 유지(게시글 길이 제한 다음)하되
+        Textarea → TagInput 으로 교체
+      · 허용 확장자도 게시글 설정 탭에서 Input → TagInput 으로 교체
+
+# axis 의미:
+#   field × tab 의 cross product 로 두 제한 필드의 탭 배치를 전수 단언한다.
+#   유효 배치: blocked_keywords=post, allowed_extensions=post (둘 다 게시글 설정 탭).
+#   기본 설정 탭(basic)에는 두 필드 모두 "부재" 단언으로 커버.
+axes:
+  field: [blocked_keywords, allowed_extensions]
+  tab: [basic, post]
+
+effects:
+  # 백엔드 24-(1): 댓글 차단
+  - store_comment_blocks_matching_keyword
+  - store_comment_allows_clean_content
+  - update_comment_blocks_matching_keyword
+  # 백엔드 24-(2)/Q4: 배열 직렬화 (form-data)
+  - form_data_create_mode_returns_fields_as_array
+  - form_data_edit_mode_returns_fields_as_array
+  # 프론트 24-(2)/Q4: 레이아웃 배치/컴포넌트
+  - blocked_keywords_renders_as_taginput_on_post_tab
+  - allowed_extensions_renders_as_taginput_on_post_tab
+  - blocked_keywords_absent_from_basic_tab
+  - allowed_extensions_absent_from_basic_tab
+  - taginput_values_persist_as_array_chips_on_reentry
+
+test_files:
+  # 백엔드 — 댓글 차단 회귀 (24-1)
+  - modules/_bundled/sirsoft-board/tests/Feature/User/CommentCrudScenarioTest.php
+  # 백엔드 — form-data 배열 직렬화 (24-2/Q4)
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardManagementTest.php
+  # 프론트 — 레이아웃 JSON 구조 (탭 위치/TagInput 타입)
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-form.test.tsx
+  # E2E — 브라우저 수준 태그 입력/복원/탭 배치
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-form-restriction-fields.spec.ts
+
+validation:
+  note: |
+    - field × tab 4조합: admin-board-form.test.tsx 의 #413-24 테스트군이 docblock 마킹으로
+      전수 커버 (post 의 blocked_keywords TagInput / post 의 allowed_extensions TagInput /
+      basic 의 blocked_keywords 부재 / basic 의 allowed_extensions 부재).
+    - 댓글 차단 effects: CommentCrudScenarioTest 의 blocked_keywords 테스트군.
+    - form-data 배열 직렬화: BoardManagementTest 의 form-data array 테스트 2건(생성/수정 모드).
+    - 브라우저 수준 칩 입력/저장/재진입 복원은 board-form-restriction-fields.spec.ts 가 담당
+      (토큰 발급 환경에서 활성화).

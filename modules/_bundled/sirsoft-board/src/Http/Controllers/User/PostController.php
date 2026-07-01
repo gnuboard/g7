@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
+use App\Enums\PermissionType;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use App\Enums\PermissionType;
+use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\SecretMode;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
@@ -21,6 +22,7 @@ use Modules\Sirsoft\Board\Http\Requests\User\VerifyGuestPasswordRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
+use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
@@ -63,6 +65,7 @@ class PostController extends PublicBaseController
      * @param  string  $slug  게시판 슬러그
      * @return JsonResponse 게시글 목록 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 목록 조회. all()/header() 로 필터·페이징 파라미터만 읽음 (검증 불필요)
     public function index(Request $request, string $slug): JsonResponse
     {
         try {
@@ -86,6 +89,13 @@ class PostController extends PublicBaseController
             // 게시글 목록 조회 (simplePaginate — COUNT 쿼리 제거)
             // board 객체 전달로 Service/Repository의 중복 Board 조회 방지
             $posts = $this->postService->getPosts($slug, $listParams['filters'], $listParams['perPage'], withTrashed: $withTrashed, context: 'user', board: $board);
+
+            // board 관계 수동 주입 (목록 Repository는 board를 eager load하지 않음)
+            // Post::isNew()가 게시판 new_display_hours 설정을 사용하려면 board 관계가 필요하다.
+            // 이미 조회한 단일 $board 인스턴스를 공유 주입하므로 추가 쿼리는 없다.
+            foreach ($posts as $post) {
+                $post->setRelation('board', $board);
+            }
 
             // 일반 게시글 총 건수는 캐시에서 조회 (simplePaginate는 total 미제공)
             $totalNormalPosts = $this->postService->getCachedNormalPostCount($slug, $board->id, $listParams['filters'], $withTrashed, 'user');
@@ -117,6 +127,7 @@ class PostController extends PublicBaseController
      * @param  string|int  $id  게시글 ID
      * @return JsonResponse 게시글 상세 정보 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 상세 조회. 쿼리 파라미터만 read-only 참조 (검증 불필요)
     public function show(Request $request, string $slug, string|int $id): JsonResponse
     {
         $id = (int) $id;
@@ -206,6 +217,7 @@ class PostController extends PublicBaseController
      * @param  string|int  $id  게시글 ID
      * @return JsonResponse 이전/다음 게시글 정보
      */
+    // audit:allow controller-base-request-injection reason: GET 이전/다음 글 조회. 경로 파라미터(slug/id)만 사용 (검증 불필요)
     public function navigation(Request $request, string $slug, string|int $id): JsonResponse
     {
         $id = (int) $id;
@@ -223,6 +235,15 @@ class PostController extends PublicBaseController
             return $this->success('sirsoft-board::messages.posts.fetch_success', $empty);
         }
 
+        // navigation 판별용 메타(카테고리·부모 ID) 경량 조회
+        $meta = $this->postService->getPostNavigationMeta($id, $board->id);
+
+        // 답글(parent_id != null)은 원글 후보 쿼리에서 제외되므로 옆 글 없음으로 응답 (47-4)
+        // 답글 상세 상단의 원글 인용 블록이 원글 이동 안내를 담당한다.
+        if (($meta['parent_id'] ?? null) !== null) {
+            return $this->success('sirsoft-board::messages.posts.fetch_success', $empty);
+        }
+
         // manager 권한 + del=1 시 삭제된 게시글 포함
         $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
         $withTrashed = $canViewDeleted && $request->boolean('del');
@@ -231,6 +252,9 @@ class PostController extends PublicBaseController
             $navigation = $this->postService->getAdjacentPosts($slug, $id, filters: [
                 'order_by' => $board->order_by instanceof \BackedEnum ? $board->order_by->value : $board->order_by,
                 'order_direction' => $board->order_direction instanceof \BackedEnum ? $board->order_direction->value : $board->order_direction,
+                // 현재 글과 동일 카테고리 글만 이전/다음 후보로 제한 (47-1).
+                // 미분류(null)면 getAdjacentPosts 의 when($category) 가 미적용 → 전체 원글 순회.
+                'category' => $meta['category'] ?? null,
             ], withTrashed: $withTrashed, board: $board);
         } catch (\Throwable $e) {
             // 내부 예외는 로그만 남기고 옆 글 없음으로 degrade
@@ -378,6 +402,7 @@ class PostController extends PublicBaseController
      * @param  string|int  $id  게시글 ID
      * @return JsonResponse 삭제 결과 응답
      */
+    // audit:allow controller-base-request-injection reason: DELETE 단건 삭제. force_delete 불리언 플래그만 input()으로 읽음 (검증 불필요)
     public function destroy(Request $request, string $slug, string|int $id): JsonResponse
     {
         $id = (int) $id;
@@ -529,6 +554,7 @@ class PostController extends PublicBaseController
      * @param  string  $slug  게시판 슬러그
      * @return JsonResponse 폼 메타 데이터 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 작성 폼 메타 조회. 경로 파라미터(slug)만 사용 (검증 불필요)
     public function getFormMeta(Request $request, string $slug): JsonResponse
     {
         try {
@@ -557,7 +583,7 @@ class PostController extends PublicBaseController
 
                 // 회원 게시글이고 본인이 아닌 경우 권한 에러
                 if ($post->user_id && Auth::id() !== $post->user_id) {
-                    if (! $this->checkBoardPermission($slug, 'admin.manage')) {
+                    if (! $this->hasBoardManagePermission($slug)) {
                         return $this->error('sirsoft-board::messages.posts.no_permission', 403);
                     }
                 }
@@ -588,7 +614,9 @@ class PostController extends PublicBaseController
                 $metaData['attachments'] = $postData['attachments'] ?? [];
 
                 // 수정 시 원글 정보가 있으면 포함
-                if (! empty($postData['parent'])) {
+                // 단, 부모글이 블라인드/삭제 상태이면 원문(제목/본문) 노출을 차단
+                // — 답글 작성 후 부모가 블라인드/삭제된 경우, 답글 수정 폼에 부모 원문이 새지 않도록 함
+                if (! empty($postData['parent']) && ! $this->isParentBlindedOrDeleted($post)) {
                     $metaData['parent_post'] = $postData['parent'];
                 }
             }
@@ -601,6 +629,12 @@ class PostController extends PublicBaseController
                 }
 
                 $parentPost = $this->postService->getPost($slug, $parentId, context: 'user');
+
+                // 블라인드/삭제된 부모글에는 답글 폼 진입 자체를 차단
+                // 제출 단계(ParentPostValidationRule)뿐 아니라 폼 진입 단계에서도 막아
+                // 부모글 원문(제목/본문)이 답글 폼에 노출되지 않도록 함
+                $this->assertParentReplyable($parentPost, $parentId);
+
                 $parentPostResource = new PostResource($parentPost);
                 $metaData['parent_post'] = $parentPostResource->toFormArray($request);
             }
@@ -622,6 +656,7 @@ class PostController extends PublicBaseController
      * @param  string  $slug  게시판 슬러그
      * @return JsonResponse 폼 데이터 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 수정 폼 데이터 조회. 경로 파라미터(slug) + 쿼리만 read-only 참조 (검증 불필요)
     public function getFormData(Request $request, string $slug): JsonResponse
     {
         try {
@@ -639,7 +674,7 @@ class PostController extends PublicBaseController
 
                 // 회원 게시글이고 본인이 아니거나, 관리자도 아닌 경우 권한 에러
                 if ($post->user_id && Auth::id() !== $post->user_id) {
-                    if (! $this->checkBoardPermission($slug, 'admin.manage')) {
+                    if (! $this->hasBoardManagePermission($slug)) {
                         return $this->error('sirsoft-board::messages.posts.no_permission', 403);
                     }
                 }
@@ -686,6 +721,9 @@ class PostController extends PublicBaseController
                 }
                 $parentPost = $this->postService->getPost($slug, $parentId, context: 'user');
 
+                // 블라인드/삭제된 부모글에는 답글 폼 진입 자체를 차단
+                $this->assertParentReplyable($parentPost, $parentId);
+
                 $formData = [
                     'title' => 'Re: '.$parentPost->title,
                     'content' => '',
@@ -720,15 +758,80 @@ class PostController extends PublicBaseController
     }
 
     /**
+     * 사용자 페이지에서 게시판 관리 권한을 보유했는지 확인합니다.
+     *
+     * 관리자 페이지 권한(admin.manage)과 사용자 페이지 관리 권한(manager)을
+     * 모두 인정합니다. 사용자 페이지 화면은 manager 권한으로 can_manage 를
+     * 노출하므로, 실제 처리도 manager 를 인정해야 화면-서버 정합이 맞습니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return bool 관리 권한 보유 여부
+     */
+    private function hasBoardManagePermission(string $slug): bool
+    {
+        if (! Auth::check()) {
+            return false;
+        }
+
+        return $this->checkBoardPermission($slug, 'admin.manage')
+            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+    }
+
+    /**
+     * 부모 게시글이 답글 작성 가능한 상태인지 검증합니다.
+     *
+     * 블라인드/삭제된 부모글에는 답글 폼 진입 단계에서 차단하여,
+     * 부모글 원문(제목/본문)이 답글 폼에 노출되지 않도록 합니다.
+     * 차단은 PostNotFoundException(404)으로 처리하여 부모글의 존재 자체를 숨깁니다.
+     * (제출 단계 차단은 ParentPostValidationRule 이 별도로 수행)
+     *
+     * @param  Post  $parentPost  부모 게시글 모델
+     * @param  int  $parentId  부모 게시글 ID (예외 메시지용)
+     * @return void
+     *
+     * @throws PostNotFoundException 부모글이 블라인드/삭제 상태인 경우
+     */
+    private function assertParentReplyable(Post $parentPost, int $parentId): void
+    {
+        if ($parentPost->status === PostStatus::Blinded
+            || $parentPost->status === PostStatus::Deleted
+            || $parentPost->deleted_at !== null) {
+            throw new PostNotFoundException($parentId);
+        }
+    }
+
+    /**
+     * 답글의 부모 게시글이 블라인드/삭제 상태인지 확인합니다.
+     *
+     * 답글 수정 폼에서 부모 원문 노출을 차단할지 판단하는 데 사용합니다.
+     * parent 관계가 로드되지 않았거나 부모가 없으면 false 를 반환합니다.
+     *
+     * @param  Post  $post  답글 게시글 모델
+     * @return bool 부모가 블라인드/삭제 상태인지 여부
+     */
+    private function isParentBlindedOrDeleted(Post $post): bool
+    {
+        $parent = $post->parent;
+
+        if (! $parent) {
+            return false;
+        }
+
+        return $parent->status === PostStatus::Blinded
+            || $parent->status === PostStatus::Deleted
+            || $parent->deleted_at !== null;
+    }
+
+    /**
      * 게시글 수정/삭제 권한을 확인합니다.
      *
      * 다음 조건 중 하나라도 만족하면 수정/삭제 가능:
      * - 작성자 본인 (로그인 사용자의 user_id 일치)
      * - 비회원 게시글인 경우 비밀번호 확인
-     * - 게시판 관리자 (admin.manage 권한)
+     * - 게시판 관리자 (admin.manage 또는 사용자 페이지 manager 권한)
      * - 시스템 관리자 (Super Admin 역할)
      *
-     * @param  \Modules\Sirsoft\Board\Models\Post  $post  게시글 모델
+     * @param  Post  $post  게시글 모델
      * @param  Request  $request  HTTP 요청
      * @return bool 수정/삭제 가능 여부
      */
@@ -736,8 +839,8 @@ class PostController extends PublicBaseController
     {
         $slug = $post->board->slug;
 
-        // 1. 게시판 관리자 권한 확인 (admin.manage 권한)
-        if (Auth::check() && $this->checkBoardPermission($slug, 'admin.manage')) {
+        // 1. 게시판 관리 권한 확인 (admin.manage 또는 manager)
+        if ($this->hasBoardManagePermission($slug)) {
             return true;
         }
 
@@ -795,6 +898,7 @@ class PostController extends PublicBaseController
      * @param  User  $user  사용자 모델 (Route Model Binding, uuid 기반)
      * @return JsonResponse 게시글 목록 (페이지네이션)
      */
+    // audit:allow controller-base-request-injection reason: GET 사용자별 글 목록. per_page/sort 페이징 파라미터만 input()으로 읽음 (검증 불필요)
     public function userPosts(Request $request, User $user): JsonResponse
     {
         try {

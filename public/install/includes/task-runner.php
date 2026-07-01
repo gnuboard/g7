@@ -873,11 +873,14 @@ if (!function_exists('dependencyPrecheckSSE')) {
 
 if (!function_exists('cleanupExistingTablesSSE')) {
     /**
-     * 기존 DB 테이블 정리 (이슈 #244 대응).
+     * 기존 DB 테이블 정리.
      *
      * state.json의 existing_db_action 값에 따라 기존 테이블을 삭제합니다.
      * - skip (또는 null): 작업 없이 건너뛰기
-     * - drop_tables: FOREIGN_KEY_CHECKS=0 → 모든 테이블 DROP → FOREIGN_KEY_CHECKS=1
+     * - drop_tables: FOREIGN_KEY_CHECKS=0 → db_prefix 로 시작하는 테이블만 DROP → FOREIGN_KEY_CHECKS=1
+     *
+     * prefix 없는 타 테이블까지 삭제하던 결함 수정. db_prefix 로 시작하는
+     * 테이블만 선별 삭제하며, 빈 prefix 는 데이터 손실 방어로 삭제를 수행하지 않는다.
      */
     function cleanupExistingTablesSSE(): array
     {
@@ -907,9 +910,14 @@ if (!function_exists('cleanupExistingTablesSSE')) {
         try {
             $pdo = getDatabaseConnection($config, false);
             $database = $config['db_write_database'] ?? '';
+            $prefix = (string) ($config['db_prefix'] ?? 'g7_');
 
             $stmt = $pdo->query('SHOW TABLES');
-            $tables = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+            $allTables = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+
+            // 입력한 db_prefix 로 시작하는 테이블만 삭제 대상으로 선별.
+            // prefix 없는 타 애플리케이션/이전 설치 테이블은 동일 DB 라도 보존한다.
+            $tables = filterTablesByPrefix($allTables, $prefix);
 
             if (empty($tables)) {
                 sendSSEEvent('log', ['message' => lang('log_db_cleanup_empty')]);

@@ -1,0 +1,44 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
+#   배송정책 통화 고정 axis 는 PHPUnit(ShippingPolicyService::forceDefaultCurrency 회귀 2건)·
+#   백필 마이그레이션(BackfillShippingPolicyCurrency 3건)·Vitest(읽기전용 표시)·Playwright 가 커버하며 green 이다.
+feature: 배송정책 통화 = 상점 기본 통화 고정 (자유 지정 금지)
+
+description: |
+  배송정책 국가별 설정의 통화는 상품 등록과 동일하게 상점 기본 통화(language_currency.default_currency)로
+  서버가 강제한다. 관리자 입력값(country_settings.*.currency_code)은 무시되고, 폼은 통화를 읽기전용으로만
+  표시한다. 배송비는 항상 기본 통화 정수로 합산되므로 정책별 통화 분리는 합계 단위 혼합을 유발해 금지한다.
+  기존 데이터 중 기본 통화와 다른 통화로 저장된 행은 백필로 통일한다.
+
+axes:
+  default_currency:
+    - KRW
+    - USD
+  submitted_currency:
+    - same_as_default    # 폼이 기본 통화 전송
+    - different          # 폼이 다른 통화 전송(USD/EUR 등) → 무시되어야 함
+    - omitted            # 폼이 통화 미전송(nullable) → 기본 통화로 채움
+  operation:
+    - create             # 신규 배송정책 저장
+    - update             # 기존 배송정책 수정
+    - backfill           # 업그레이드 백필
+  surface:
+    - form_display       # 폼 읽기전용 표시
+    - persisted_value    # DB 저장값
+
+effects:
+  - currency_forced_to_default_on_create   # create 시 country_setting 통화=기본 통화 강제
+  - currency_forced_to_default_on_update   # update 시 country_setting 통화=기본 통화 강제
+  - submitted_currency_ignored             # 관리자 전송 통화 무시
+  - omitted_currency_defaults_to_base      # 미전송 통화는 기본 통화로 채움
+  - backfill_unifies_existing_rows         # 백필이 기존 비-기본 통화 행을 기본 통화로 통일
+  - backfill_supports_non_krw_default      # 비-KRW 기본 통화에서도 통일
+  - backfill_idempotent                    # 백필 재실행 안전
+  - form_shows_readonly_default_label      # 폼이 기본 통화 라벨 읽기전용 표시(Select 아님)
+  - form_currency_input_removed            # 통화 입력/변경 경로 제거(currencyOptions/updateCountryField currency_code)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingPolicyServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/BackfillShippingPolicyCurrencyTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingPolicyFormLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/shipping-policy-currency.spec.ts

@@ -13,7 +13,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center gap-2 mb-2"
+        "className": "flex-center gap-2 mb-2"
       },
       "children": [
         {
@@ -38,7 +38,7 @@
       "type": "basic",
       "name": "P",
       "props": {
-        "className": "text-sm text-green-700 dark:text-green-300"
+        "className": "text-success-soft"
       },
       "text": "이 파일은 templates/sirsoft-admin_basic/layouts/includes/_header_section.json 입니다"
     }

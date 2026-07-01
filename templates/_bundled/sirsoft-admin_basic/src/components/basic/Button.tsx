@@ -18,7 +18,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   className = '',
   ...props
 }, ref) => {
-  const baseClasses = 'inline-flex items-center justify-center';
+  const baseClasses = 'button';
 
   // G7Core.style.mergeClasses를 사용하여 충돌하는 Tailwind 클래스 병합
   const mergedClassName = G7Core()?.style?.mergeClasses?.(baseClasses, className)

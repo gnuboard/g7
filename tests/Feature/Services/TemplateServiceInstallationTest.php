@@ -5,6 +5,7 @@ namespace Tests\Feature\Services;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
+use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use App\Repositories\TemplateRepository;
@@ -54,7 +55,8 @@ class TemplateServiceInstallationTest extends TestCase
             $this->templateRepository,
             $this->templateManager,
             $this->moduleManager,
-            $this->pluginManager
+            $this->pluginManager,
+            app(LayoutVersionRepositoryInterface::class)
         );
     }
 

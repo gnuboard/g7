@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 interface QuantitySelectorProps {
     /** 현재 수량 */
     value: number;
@@ -14,6 +15,14 @@ interface QuantitySelectorProps {
     disabled?: boolean;
     /** 추가 CSS 클래스 */
     className?: string;
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+    id?: string;
+    /**
+       * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+       */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * 수량 선택 컴포넌트

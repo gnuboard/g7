@@ -1,5 +1,6 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
+import { EditorAttrs } from '../../types';
 /**
  * 전역 window 타입 확장
  * 그누보드7 Core의 AuthManager에 접근하기 위한 타입 선언
@@ -60,6 +61,8 @@ export interface ColumnSelectorProps {
      * 지정하지 않으면 columns 끝에 추가됩니다.
      */
     dynamicColumnsInsertAfter?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * ColumnSelector 집합 컴포넌트

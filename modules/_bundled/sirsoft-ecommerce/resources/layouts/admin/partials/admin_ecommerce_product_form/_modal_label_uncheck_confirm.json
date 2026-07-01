@@ -14,34 +14,44 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "space-y-4" },
       "children": [
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex items-start gap-3" },
+          "props": {
+            "className": "flex-start gap-3"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center flex-shrink-0" },
+              "props": {
+                "className": "flex-center w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 justify-center flex-shrink-0"
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Icon",
-                  "props": { "name": "exclamation-triangle", "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400" }
+                  "props": {
+                    "name": "exclamation-triangle",
+                    "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400"
+                  }
                 }
               ]
             },
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex-1" },
+              "props": {
+                "className": "flex-1"
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "P",
-                  "props": { "className": "text-gray-900 dark:text-white font-medium mb-2" },
+                  "props": {
+                    "className": "text-primary font-medium mb-2"
+                  },
                   "children": [
                     {
                       "type": "basic",
@@ -57,14 +67,18 @@
                 {
                   "type": "basic",
                   "name": "P",
-                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                  "props": {
+                    "className": "text-label"
+                  },
                   "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.message"
                 },
                 {
                   "type": "basic",
                   "name": "P",
                   "if": "{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at || ($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at}}",
-                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium" },
+                  "props": {
+                    "className": "text-label-subtle mt-2 font-medium"
+                  },
                   "text": "{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at ?? ''}} ~ {{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at ?? ''}}"
                 }
               ]
@@ -74,19 +88,32 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700" },
+          "props": {
+            "className": "flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Button",
-              "props": { "type": "button", "className": "btn btn-outline" },
+              "props": {
+                "type": "button",
+                "className": "btn btn-outline"
+              },
               "text": "$t:sirsoft-ecommerce.common.cancel",
-              "actions": [{ "type": "click", "handler": "closeModal" }]
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal"
+                }
+              ]
             },
             {
               "type": "basic",
               "name": "Button",
-              "props": { "type": "button", "className": "btn btn-warning" },
+              "props": {
+                "type": "button",
+                "className": "btn btn-warning"
+              },
               "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.confirm",
               "actions": [
                 {
@@ -97,7 +124,9 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     }
   ]
 }

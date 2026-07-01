@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "장바구니 구매불가 상품 안내 모달"
+    "description": "장바구니 구매불가 상품 안내 모달",
+    "editor_label": "$t:user.modal_label.shop.cart_unavailable_modal"
   },
   "id": "cart_unavailable_modal",
   "type": "composite",
@@ -90,6 +91,30 @@
                           "if": "{{unavailableItem.reason === 'status'}}",
                           "props": { "className": "text-xs text-red-600 dark:text-red-400" },
                           "text": "$t:shop.cart.not_on_sale"
+                        },
+                        {
+                          "comment": "최대 구매수량 초과 표시",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{unavailableItem.reason === 'max_qty'}}",
+                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
+                          "text": "$t:shop.cart.max_qty_item|limit={{unavailableItem.limit}}|requested={{unavailableItem.requested ?? unavailableItem.quantity}}"
+                        },
+                        {
+                          "comment": "최소 구매수량 미달 표시",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{unavailableItem.reason === 'min_qty'}}",
+                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
+                          "text": "$t:shop.cart.min_qty_item|limit={{unavailableItem.limit}}|requested={{unavailableItem.requested ?? unavailableItem.quantity}}"
+                        },
+                        {
+                          "comment": "구매 대상 제한 표시",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{unavailableItem.reason === 'restricted'}}",
+                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
+                          "text": "$t:shop.cart.restricted_item"
                         }
                       ]
                     }

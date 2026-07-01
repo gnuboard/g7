@@ -37,8 +37,7 @@ class CouponListCreatorTest extends ModuleTestCase
     /**
      * 테스트용 쿠폰 생성
      *
-     * @param array $attributes 오버라이드할 속성
-     * @return Coupon
+     * @param  array  $attributes  오버라이드할 속성
      */
     private function createCoupon(array $attributes = []): Coupon
     {
@@ -153,7 +152,7 @@ class CouponListCreatorTest extends ModuleTestCase
 
         // OtherCreatorUser 이름으로 검색
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?' . http_build_query([
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?'.http_build_query([
                 'search_field' => 'created_by',
                 'search_keyword' => 'OtherCreatorUser',
             ]));
@@ -189,7 +188,7 @@ class CouponListCreatorTest extends ModuleTestCase
 
         // 이메일로 검색
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?' . http_build_query([
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?'.http_build_query([
                 'search_field' => 'created_by',
                 'search_keyword' => 'unique-test-creator@example.com',
             ]));
@@ -220,7 +219,7 @@ class CouponListCreatorTest extends ModuleTestCase
         ]);
 
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?' . http_build_query([
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?'.http_build_query([
                 'search_field' => 'all',
                 'search_keyword' => 'UniqueCreator123',
             ]));
@@ -231,6 +230,41 @@ class CouponListCreatorTest extends ModuleTestCase
         $ids = collect($data)->pluck('id')->all();
 
         $this->assertContains($coupon->id, $ids);
+    }
+
+    /**
+     * A19①: search_field=all + creator 매칭 검색 시 pagination.total 이 실제 결과 행 수와 일치하는지 검증.
+     *
+     * 회귀: Scout queryCallback total 재계산 시 orWhereHas('creator') 가 MATCH 절 없이
+     * 재적용되어 total=0 으로 잘못 표시되던 결함 가드. (수정 전 total=0, count>0 → fail)
+     */
+    public function test_search_all_creator_match_total_matches_count(): void
+    {
+        $otherUser = $this->createAdminUser([
+            'sirsoft-ecommerce.promotion-coupon.read',
+        ]);
+        $otherUser->name = 'TotalConsistencyCreator';
+        $otherUser->save();
+
+        // 쿠폰명에는 키워드 없음 — creator 이름으로만 매칭
+        $this->createCoupon([
+            'name' => ['ko' => '평범한쿠폰', 'en' => 'Plain Coupon'],
+            'created_by' => $otherUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?'.http_build_query([
+                'search_field' => 'all',
+                'search_keyword' => 'TotalConsistencyCreator',
+            ]));
+
+        $response->assertOk();
+
+        $data = $response->json('data.data');
+        $total = $response->json('data.pagination.total');
+
+        $this->assertNotEmpty($data);
+        $this->assertSame(count($data), $total, 'total 은 실제 결과 행 수와 일치해야 합니다 (A19① 쿠폰 회귀).');
     }
 
     // ─────────────────────────────────────────────────────────
@@ -257,7 +291,7 @@ class CouponListCreatorTest extends ModuleTestCase
 
         // created_by 파라미터로 필터 — CouponListRequest 는 UUID 필수
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?' . http_build_query([
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?'.http_build_query([
                 'created_by' => $otherUser->uuid,
             ]));
 
@@ -278,7 +312,7 @@ class CouponListCreatorTest extends ModuleTestCase
         $this->createCoupon();
 
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?' . http_build_query([
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?'.http_build_query([
                 'created_by' => 99999,
             ]));
 
@@ -292,7 +326,7 @@ class CouponListCreatorTest extends ModuleTestCase
     public function test_filter_by_invalid_created_by_fails_validation(): void
     {
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?' . http_build_query([
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?'.http_build_query([
                 'created_by' => 'not-a-number',
             ]));
 

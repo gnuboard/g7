@@ -22,15 +22,12 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "flex flex-col gap-3"
-      },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            "className": "flex-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
           },
           "children": [
             {
@@ -45,7 +42,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2"
+                "className": "flex-center gap-2"
               },
               "children": [
                 {
@@ -92,7 +89,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            "className": "flex-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
           },
           "children": [
             {
@@ -107,7 +104,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2"
+                "className": "flex-center gap-2"
               },
               "children": [
                 {

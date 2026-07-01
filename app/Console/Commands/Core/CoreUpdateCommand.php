@@ -3,13 +3,15 @@
 namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
-use App\Exceptions\UpgradeHandoffException;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Exceptions\UpgradeHandoffException;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\CoreBackupHelper;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorMode;
 use App\Services\CoreUpdateService;
@@ -19,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 class CoreUpdateCommand extends Command
 {
     use BundledExtensionUpdatePrompt;
+    use ClearsTemplateCaches;
     use HasUnifiedConfirm;
 
     protected $signature = 'core:update
@@ -457,6 +460,11 @@ class CoreUpdateCommand extends Command
             $service->updateVersionInEnv($toVersion);
             $service->clearAllCaches();
 
+            // 코어 업데이트 후 프론트엔드가 새 lang/routes/layout 자원으로 fetch 하도록
+            // `ext.cache_version` bump. 코어 lang JSON 변경이 프론트엔드 캐시에
+            // 반영되지 않는 회귀를 차단한다 (core-frontend-i18n-infrastructure 계획서).
+            $this->incrementExtensionCacheVersion();
+
             // sudo 실행 시 composer 등 외부 프로세스가 root 로 생성한 파일의 소유권을
             // 백업 직후 수집한 원본 스냅샷 기준으로 복원 (각 경로 고유 소유자 유지).
             // detailedSnapshot 동시 전달 — PHP-FPM 쓰기 영역의 owner/group/perms 를 항목별
@@ -514,6 +522,10 @@ class CoreUpdateCommand extends Command
                 $log('일괄 확장 업데이트 후 소유권 재복원 완료');
             }
 
+            // fallback(spawn 실패)로 부모가 upgrade step 을 직접 실행한 경우, 부모가 만든
+            // upgrade 로그가 root 로 남는다 — 모든 로그 쓰기가 끝난 이 시점에 정합한다.
+            $this->restoreUpgradeLogOwnership();
+
             return Command::SUCCESS;
 
         } catch (UpgradeHandoffException $e) {
@@ -548,6 +560,10 @@ class CoreUpdateCommand extends Command
             try {
                 $service->updateVersionInEnv($toVersion);
                 $service->clearAllCaches();
+                // 핸드오프 cleanup 에서도 프론트엔드 캐시 버전 bump — 사용자가 resume 명령
+                // (execute-upgrade-steps) 을 실행하기 전이라도 이미 toVersion 으로 반영된
+                // 코어 lang/routes/layout 자원이 프론트엔드 캐시 stale 로 가려지지 않도록.
+                $this->incrementExtensionCacheVersion();
                 // Stage 4 — handoff cleanup 도 detailed snapshot 으로 정확 복원
                 $service->restoreOwnership($ownershipSnapshot, $onProgress, $detailedOwnershipSnapshot);
                 $this->surfacePermissionWarnings($service, $log);
@@ -586,6 +602,8 @@ class CoreUpdateCommand extends Command
                 $this->line("백업이 유지되었습니다: {$backupPath}");
                 $this->newLine();
             }
+
+            $this->restoreUpgradeLogOwnership();
 
             return Command::SUCCESS;
 
@@ -680,6 +698,8 @@ class CoreUpdateCommand extends Command
                 }
             }
 
+            $this->restoreUpgradeLogOwnership();
+
             return Command::FAILURE;
         }
     }
@@ -703,9 +723,9 @@ class CoreUpdateCommand extends Command
      * @param  string  $toVersion  대상 버전
      * @param  bool  $force  동일 버전 강제 실행 여부
      * @param  \Closure  $log  로그 엔트리 수집 콜백
-     * @return bool  spawn 성공 여부 (false 면 fallback 실행 필요)
+     * @return bool spawn 성공 여부 (false 면 fallback 실행 필요)
      *
-     * @throws UpgradeHandoffException  자식이 핸드오프 신호를 보낸 경우
+     * @throws UpgradeHandoffException 자식이 핸드오프 신호를 보낸 경우
      */
     private function spawnUpgradeStepsProcess(string $fromVersion, string $toVersion, bool $force, \Closure $log): bool
     {
@@ -893,9 +913,9 @@ class CoreUpdateCommand extends Command
      * @param  \Closure  $log  로그 엔트리 수집 콜백
      * @param  string  $fromVersion  업그레이드 시작 버전 (handoff afterVersion / resumeCommand 구성)
      * @param  string  $toVersion  업그레이드 대상 버전 (resumeCommand 구성)
-     * @return false  fallback 모드일 때만 반환. abort 모드는 throw 후 미반환.
+     * @return false fallback 모드일 때만 반환. abort 모드는 throw 후 미반환.
      *
-     * @throws UpgradeHandoffException  mode=abort 일 때
+     * @throws UpgradeHandoffException mode=abort 일 때
      */
     private function failSpawnWithMode(string $reason, \Closure $log, string $fromVersion, string $toVersion): bool
     {
@@ -1000,8 +1020,42 @@ class CoreUpdateCommand extends Command
         $content = $header."\n".implode("\n", $entries)."\n";
 
         file_put_contents($logPath, $content);
+        // sudo 업데이트가 로그 파일을 root 소유로 만들면 이후 www-data 의 tinker/로그 쓰기가
+        // 거부된다. 부모(storage/logs) 소유권을 상속한다(멱등, sudo 없으면 silent no-op).
+        FilePermissionHelper::inheritOwnershipFromParent($logPath);
 
         Log::info("코어 업데이트 로그 저장: {$logPath}");
+    }
+
+    /**
+     * 코어 업데이트(부모 프로세스)가 생성한 upgrade 로그 파일의 소유권을 부모(storage/logs)
+     * 로 정합합니다 — **spawn 실패로 부모가 upgrade step 을 in-process 로 직접 실행한 경우** 대비.
+     *
+     * upgrade 로그(`upgrade-YYYY-MM-DD.log`)를 만드는 주체는 두 갈래다:
+     *  - spawn 성공: 자식(ExecuteUpgradeStepsCommand)이 로그 생성 → 자식이 자기 종료 직전 정합
+     *  - spawn 실패(fallback): 부모가 runUpgradeSteps + reloadCoreConfigAndResync 를 직접 실행
+     *    하여 부모 프로세스가 upgrade 로그를 root 로 생성 → **부모가** 정합해야 한다.
+     *
+     * sudo 업데이트는 root 로 실행되어 로그를 root 소유로 만들고, 이후 www-data(php-fpm) 의
+     * module:update upgrade step 이 같은 날짜 로그에 append 하지 못해 Permission denied 로
+     * 실패한다. 본 메서드를 코어 업데이트의 모든 로그 쓰기가 끝난 종료 시점(각 return 직전)에
+     * 호출한다. **본 메서드 자체는 로그를 쓰지 않는다**(쓰면 다시 root 가 됨). silent no-op 멱등.
+     */
+    private function restoreUpgradeLogOwnership(): void
+    {
+        $logsDir = storage_path('logs');
+        if (! is_dir($logsDir)) {
+            return;
+        }
+
+        // 코어('upgrade-*.log') + 확장('extension-upgrade-*.log') 두 채널의 daily 로그를 모두
+        // 정합한다. glob 'upgrade-*.log' 는 'extension-' 접두사 파일을 매칭하지 못하므로
+        // 두 패턴을 각각 순회한다.
+        foreach (['upgrade-*.log', 'extension-upgrade-*.log'] as $pattern) {
+            foreach (glob($logsDir.DIRECTORY_SEPARATOR.$pattern) ?: [] as $logFile) {
+                FilePermissionHelper::inheritOwnershipFromParent($logFile);
+            }
+        }
     }
 
     /**
@@ -1059,9 +1113,7 @@ class CoreUpdateCommand extends Command
      * 본 메서드 호출 후 service 의 `lastPermissionWarnings` 가 다음 호출 시 초기화되므로
      * 매 `restoreOwnership` 직후 1회 호출 패턴이 정합.
      *
-     * @param  CoreUpdateService  $service
      * @param  callable  $log  내부 로그 누적 콜백 (`saveUpdateLog` 입력용)
-     * @return void
      */
     private function surfacePermissionWarnings(CoreUpdateService $service, callable $log): void
     {

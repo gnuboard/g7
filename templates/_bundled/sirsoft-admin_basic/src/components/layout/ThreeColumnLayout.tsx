@@ -1,5 +1,6 @@
 import React from 'react';
 import { Div } from '../basic/Div';
+import type { EditorAttrs } from '../../types';
 
 export interface ThreeColumnLayoutProps {
   /**
@@ -36,6 +37,15 @@ export interface ThreeColumnLayoutProps {
    * 인라인 스타일
    */
   style?: React.CSSProperties;
+
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -61,6 +71,8 @@ export const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
   rightSlot,
   className = '',
   style,
+  id,
+  editorAttrs,
 }) => {
   // 컨테이너 스타일
   const containerClasses = `flex flex-row w-full h-full ${className}`.trim();
@@ -84,7 +96,7 @@ export const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
   };
 
   return (
-    <Div className={containerClasses} style={style}>
+    <Div className={containerClasses} style={style} id={id} {...editorAttrs}>
       {/* 왼쪽 영역 */}
       <Div className="flex flex-col" style={leftStyle}>
         {leftSlot}

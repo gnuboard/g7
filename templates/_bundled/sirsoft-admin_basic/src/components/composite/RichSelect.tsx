@@ -3,6 +3,7 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
+import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -63,6 +64,12 @@ export interface RichSelectProps {
     /** 선택된 항목 표시용 레이아웃 정의 */
     selected?: any[];
   };
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -112,6 +119,8 @@ export const RichSelect: React.FC<RichSelectProps> = ({
   children,
   selectedChildren,
   __componentLayoutDefs,
+  id,
+  editorAttrs,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -223,7 +232,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
   );
 
   return (
-    <Div ref={containerRef} className={`relative ${className}`}>
+    <Div ref={containerRef} className={`relative ${className}`} id={id} {...editorAttrs}>
       {/* 트리거 버튼 */}
       <Button
         ref={buttonRef}
@@ -234,7 +243,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
           w-full px-4 py-2.5
           bg-gray-100 dark:bg-gray-700
           border-0 rounded-xl
-          text-gray-700 dark:text-gray-200 font-medium
+          text-sm text-gray-700 dark:text-gray-200 font-medium
           focus:ring-2 focus:ring-blue-500 focus:outline-none
           flex items-center justify-between gap-2
           text-left cursor-pointer
@@ -275,7 +284,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
                     onClick={() => !option.disabled && handleSelect(option.value)}
                     disabled={option.disabled}
                     className={`
-                      w-full px-4 py-3 text-left
+                      w-full px-4 py-3 text-left text-sm
                       hover:bg-gray-100 dark:hover:bg-gray-700
                       transition-colors
                       ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}

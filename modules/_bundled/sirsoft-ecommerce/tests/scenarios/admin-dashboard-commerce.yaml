@@ -1,0 +1,71 @@
+# audit:allow test-scenario-coverage reason: |
+#   axes 의 cross product 는 표현용으로 폭이 넓지만 의미 있는 입력 조합은 5개 내외다.
+#   비즈니스 로직 effects (순매출/판매수량 7종 상태 집계 / 변화율 분기 / 빈 상태 / 상태 배지) 는
+#   PHPUnit Unit (EcommerceDashboardServiceTest) + Feature (DashboardApiTest) 로 단언이 끝나고,
+#   레이아웃 구조 effects (슬롯 주입 / data_sources / 카드 4종 / iteration / 다국어) 는 Vitest 정적
+#   JSON 검증 (admin_dashboard_commerce_extension.test.tsx) 으로 가드된다. Playwright spec 은 skeleton
+#   (`test.describe.skip`) 상태로 fixture (모듈 활성/비활성 토글) 활성화 후 docblock 매핑을 추가한다.
+#   매니페스트는 그 시점까지 명세용으로 유지.
+feature: 관리자 대시보드 이커머스 영역 모듈 주입
+
+description: |
+  관리자 대시보드(`admin_dashboard`)의 이커머스 영역을 이커머스 모듈이 layout extension 으로
+  스스로 채우는 구조. 템플릿은 `admin_dashboard_quick_menu`/`admin_dashboard_commerce`
+  두 빈 슬롯만 노출하고, 이커머스 모듈이 활성일 때만 버튼·카드가 주입된다.
+
+  핵심 동작:
+    - 모듈 활성: quick_menu 슬롯에 상품/주문/리뷰/쿠폰/배송 버튼 5개 + commerce 슬롯에 카드(오늘 주문 배지 7종, 판매 추세 그래프, 최신 리뷰, 미답변 문의) 주입
+    - 모듈 비활성: 두 슬롯 모두 default([]) 로 처리되어 이커머스 흔적이 화면에서 사라짐
+    - 데이터 소스 4종: overview / sales-graph / recent-reviews / pending-inquiries — overview/sales-graph 는 ecommerce_stats 집계 테이블만, recent-reviews/pending-inquiries 는 인덱스+LIMIT N 만 조회 (원본 풀스캔 금지)
+    - 판매 수량/순매출: 주문상품(order_options) 의 매출 반영 7종 상태(option_status) 옵션만 SUM(unit_price × (quantity − cancelled_quantity)), 날짜는 orders.ordered_at 귀속
+    - 변화율: 직전 7일 데이터 부족 시 '—' 폴백 + 색상은 emerald(상승)/rose(하락)/slate(폴백)
+    - ExtensionBadge: commerce 슬롯 우상단에 sirsoft-ecommerce 모듈 배지
+
+axes:
+  module_state: [active, inactive]
+  data_state: [has_orders, no_orders, has_reviews, no_reviews, has_inquiries, no_inquiries, has_previous_week, no_previous_week]
+  user_role: [admin_with_dashboard_permission, admin_without_dashboard_permission, non_admin]
+
+exclusions:
+  - { module_state: inactive, data_state: has_orders, reason: "모듈 비활성 시 API 미호출 — 데이터 상태 무관" }
+  - { module_state: inactive, data_state: has_reviews, reason: "동일" }
+  - { module_state: inactive, data_state: has_inquiries, reason: "동일" }
+  - { module_state: inactive, data_state: has_previous_week, reason: "동일" }
+
+effects:
+  - extension_badge_visible_when_module_active
+  - quick_menu_product_button_visible_when_module_active
+  - quick_menu_order_button_visible_when_module_active
+  - quick_menu_review_button_visible_when_module_active
+  - quick_menu_coupon_button_visible_when_module_active
+  - quick_menu_shipping_button_visible_when_module_active
+  - commerce_section_visible_when_module_active
+  - today_order_status_badges_reflect_overview_api
+  - sales_graph_chart_renders_7_days_from_sales_graph_api
+  - total_quantity_displays_sum_of_7_days
+  - total_sales_displays_sum_of_7_days
+  - net_sales_sums_only_sales_eligible_statuses
+  - net_sales_deducts_cancelled_quantity
+  - net_sales_attributed_by_order_ordered_at
+  - sales_change_rate_emerald_when_positive
+  - sales_change_rate_rose_when_negative
+  - sales_change_rate_dash_when_previous_week_empty
+  - latest_reviews_card_renders_recent_reviews_api_items
+  - latest_reviews_card_empty_state_when_no_reviews
+  - pending_inquiries_card_renders_pending_inquiries_api_items
+  - pending_inquiries_card_empty_state_when_no_inquiries
+  - pending_inquiries_count_badge_shows_total
+  - sales_graph_updated_at_caption_hidden_when_no_aggregated_rows
+  - quick_menu_buttons_hidden_when_module_inactive
+  - commerce_section_hidden_when_module_inactive
+  - non_admin_blocked_from_dashboard
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/DashboardApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/AggregateEcommerceStatsCommandTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceDashboardServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_dashboard_commerce_extension.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/dashboard-commerce-injection.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

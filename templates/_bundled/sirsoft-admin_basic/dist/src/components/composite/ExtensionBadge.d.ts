@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export type ExtensionType = 'module' | 'plugin';
 /**
  * 설치된 모듈/플러그인 정보 인터페이스
@@ -25,6 +26,12 @@ export interface ExtensionBadgeProps {
     className?: string;
     /** 인라인 스타일 */
     style?: React.CSSProperties;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * ExtensionBadge 집합 컴포넌트

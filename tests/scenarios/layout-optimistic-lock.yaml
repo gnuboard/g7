@@ -1,0 +1,36 @@
+# audit:allow test-scenario-coverage reason: Phase 3 S5a-1 인프라 (낙관적 잠금) 의 핵심 effects 는 LayoutControllerEditorSaveTest 의 6 개 단위 케이스가 직접 매핑. layoutTreeUtils/nestingRules Vitest 가 보조.
+
+feature: 레이아웃 편집기 낙관적 잠금 — template_layouts / template_layout_extensions 동시 저장 가드
+
+description: |
+  코드 편집기 ↔ 레이아웃 편집기 동시 저장 시 silent overwrite 를 막기 위해
+  template_layouts / template_layout_extensions 두 테이블에 lock_version 컬럼을
+  추가하고, UpdateLayoutContentRequest / UpdateLayoutExtensionContentRequest 에
+  expected_lock_version 필수 필드를 도입. Service 가 현재 DB 버전과 비교해 불일치
+  시 ConcurrentModificationException → 409 응답.
+
+axes:
+  table: [template_layouts, template_layout_extensions]
+  request_field: [expected_lock_version_match, expected_lock_version_stale, expected_lock_version_missing]
+  http_outcome: [200_ok, 409_conflict, 422_validation]
+  follow_up: [version_history_appended, lock_version_incremented, cache_invalidated]
+
+exclusions:
+  - { request_field: expected_lock_version_missing, http_outcome: 200_ok, reason: "missing → 422" }
+  - { request_field: expected_lock_version_missing, http_outcome: 409_conflict, reason: "missing → 422" }
+  - { request_field: expected_lock_version_match, http_outcome: 409_conflict, reason: "match → 200" }
+  - { request_field: expected_lock_version_match, http_outcome: 422_validation, reason: "유효성은 별도 axis" }
+  - { request_field: expected_lock_version_stale, http_outcome: 200_ok, reason: "stale → 409" }
+  - { request_field: expected_lock_version_stale, http_outcome: 422_validation, reason: "stale → 409" }
+
+effects:
+  - golden_path_match_returns_200_and_increments_lock_version
+  - stale_expected_returns_409_with_current_and_your_version
+  - missing_expected_returns_422_validation_error
+  - concurrent_two_clients_only_first_succeeds
+  - successful_save_appends_version_history
+  - layout_extension_update_shares_same_409_semantics
+  - lock_version_exposed_in_layout_resource
+
+test_files:
+  - tests/Feature/Api/Admin/LayoutControllerEditorSaveTest.php

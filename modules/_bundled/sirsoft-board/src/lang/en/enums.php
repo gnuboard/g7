@@ -63,6 +63,7 @@ return [
         'system' => 'System',
         'auto_hide' => 'Auto Hide',
         'user' => 'User Deleted',
+        'cascade' => 'Post Deleted',
     ],
 
     // Post Status

@@ -497,4 +497,110 @@ class TemplateRouteResolverTest extends TestCase
         $this->assertNull($result['moduleIdentifier']);
         $this->assertNull($result['pluginIdentifier']);
     }
+
+    // ========================================================================
+    // routeExists() — 미등록 경로 404 판별 (공개#47)
+    // ========================================================================
+
+    /**
+     * 지정한 템플릿 타입으로 routes 를 반환하는 resolver 를 생성합니다.
+     *
+     * @param  string  $type  템플릿 타입 ('user' | 'admin')
+     * @param  array|null  $activeTemplate  활성 템플릿 (null 이면 미설치)
+     * @param  array  $routes  라우트 배열
+     * @param  bool  $routesSuccess  라우트 조회 성공 여부
+     * @return TemplateRouteResolver 설정된 resolver
+     */
+    private function createResolverForType(string $type, ?array $activeTemplate, array $routes = [], bool $routesSuccess = true): TemplateRouteResolver
+    {
+        /** @var TemplateManagerInterface|MockInterface $templateManager */
+        $templateManager = Mockery::mock(TemplateManagerInterface::class);
+        $templateManager->shouldReceive('getActiveTemplate')->with($type)->andReturn($activeTemplate);
+
+        /** @var TemplateService|MockInterface $templateService */
+        $templateService = Mockery::mock(TemplateService::class);
+        $templateService->shouldReceive('getRoutesDataWithModules')->withAnyArgs()->andReturn([
+            'success' => $routesSuccess,
+            'data' => ['routes' => $routes],
+        ]);
+
+        $moduleManager = Mockery::mock(ModuleManagerInterface::class);
+        $moduleManager->shouldReceive('getModule')->andReturn(null);
+        $pluginManager = Mockery::mock(PluginManagerInterface::class);
+        $pluginManager->shouldReceive('getPlugin')->andReturn(null);
+
+        return new TemplateRouteResolver($templateService, $templateManager, $moduleManager, $pluginManager);
+    }
+
+    /**
+     * 등록된 정적/동적/auth_required/guest_only 라우트는 모두 routeExists=true 입니다.
+     */
+    public function test_route_exists_true_for_registered_routes(): void
+    {
+        $routes = array_merge($this->getDefaultRoutes(), [
+            ['path' => '/mypage', 'layout' => 'mypage/index', 'auth_required' => true, 'guest_only' => false, 'meta' => []],
+            ['path' => '/login', 'layout' => 'auth/login', 'auth_required' => false, 'guest_only' => true, 'meta' => []],
+        ]);
+
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-user_basic'], $routes);
+
+        $this->assertTrue($resolver->routeExists('/', 'user'), '정적 라우트');
+        $this->assertTrue($resolver->routeExists('/about', 'user'), '정적 라우트 about');
+        $this->assertTrue($resolver->routeExists('/shop/products/123', 'user'), '동적 라우트');
+        $this->assertTrue($resolver->routeExists('/mypage', 'user'), 'auth_required 도 존재로 인정 — 회귀 방지 핵심');
+        $this->assertTrue($resolver->routeExists('/login', 'user'), 'guest_only 도 존재로 인정');
+    }
+
+    /**
+     * 미등록 경로 / 초과 세그먼트는 routeExists=false 입니다.
+     */
+    public function test_route_exists_false_for_unregistered_routes(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-user_basic'], $this->getDefaultRoutes());
+
+        $this->assertFalse($resolver->routeExists('/this/does/not/exist', 'user'));
+        $this->assertFalse($resolver->routeExists('/shop/products/123/extra', 'user'), '초과 세그먼트는 ^...$ 전체 매칭 실패');
+    }
+
+    /**
+     * resolve()는 auth 라우트에서 null 이지만 routeExists()는 true — 차이 명시 검증.
+     */
+    public function test_route_exists_differs_from_resolve_for_auth_routes(): void
+    {
+        $routes = [
+            ['path' => '/mypage', 'layout' => 'mypage/index', 'auth_required' => true, 'guest_only' => false, 'meta' => []],
+        ];
+
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-user_basic'], $routes);
+
+        $this->assertNull($resolver->resolve('/mypage'), 'resolve()는 auth_required 를 SEO 비대상으로 스킵');
+        $this->assertTrue($resolver->routeExists('/mypage', 'user'), 'routeExists()는 존재로 인정');
+    }
+
+    /**
+     * 활성 템플릿 미설치 / routes 로드 실패 시 routeExists=true (404 억제, 안전측 폴백).
+     */
+    public function test_route_exists_true_fallback_when_template_missing(): void
+    {
+        $noTemplate = $this->createResolverForType('user', null);
+        $this->assertTrue($noTemplate->routeExists('/anything', 'user'), '템플릿 미설치 시 404 억제');
+
+        $loadFailure = $this->createResolverForType('user', ['identifier' => 'sirsoft-user_basic'], [], routesSuccess: false);
+        $this->assertTrue($loadFailure->routeExists('/anything', 'user'), 'routes 로드 실패 시 404 억제');
+    }
+
+    /**
+     * admin 타입 라우트도 routeExists 로 판별됩니다 (admin 와일드카드 prefix → /admin/... 정규화).
+     */
+    public function test_route_exists_for_admin_type(): void
+    {
+        $routes = [
+            ['path' => '*/admin/users', 'layout' => 'admin_user_list', 'auth_required' => true, 'guest_only' => false, 'meta' => []],
+        ];
+
+        $resolver = $this->createResolverForType('admin', ['identifier' => 'sirsoft-admin_basic'], $routes);
+
+        $this->assertTrue($resolver->routeExists('/admin/users', 'admin'), '*/admin/users → /admin/users 정규화 매칭');
+        $this->assertFalse($resolver->routeExists('/admin/nonexistent', 'admin'));
+    }
 }

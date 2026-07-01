@@ -23,7 +23,7 @@
         }
       },
       "children": [
-        { "type": "basic", "name": "Icon", "props": { "name": "truck", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" } },
+        { "type": "basic", "name": "Icon", "size": "md", "props": { "name": "truck", "className": "text-gray-700 dark:text-gray-300" } },
         {
           "type": "basic",
           "name": "H2",
@@ -38,10 +38,10 @@
       ]
     },
     {
-      "comment": "저장된 배송지 탭 + 배송지 관리 버튼 (로그인 사용자만)",
+      "comment": "저장된 배송지 탭 + 배송지 관리 버튼 (로그인 사용자만). 비로그인 시 /api/auth/user 401 fallback 으로 _global.currentUser 가 [] 가 될 수 있어 `!= null` 비교는 비회원도 truthy → uuid 키 존재 여부로 판정",
       "type": "basic",
       "name": "Div",
-      "if": "{{_global.currentUser != null}}",
+      "if": "{{_global.currentUser?.uuid}}",
       "props": { "className": "flex flex-wrap gap-2 mb-4" },
       "children": [
         {
@@ -75,19 +75,23 @@
                     { "handler": "setState", "params": { "target": "local", "selectedAddressId": "{{addr.id}}" } },
                     { "handler": "setState", "params": { "target": "local", "selectedAddressObj": "{{addr}}" } },
                     {
-                      "comment": "shipping 필드명을 shipping_address API 형식에 맞춤 (UserAddress → shipping 변환)",
+                      "comment": "shipping 필드명을 shipping_address API 형식에 맞춤 (UserAddress → shipping 변환). B3: 해외 주소 선택 시 UserAddress(city/state/postal_code) → 체크아웃 폼(intl_city/intl_state/intl_postal_code) 변환 + address_line_1/2 포함. KR 주소는 intl_* 가 빈 값이므로 무해.",
                       "handler": "setState",
                       "params": {
                         "target": "local",
                         "shipping": {
                           "recipient_name": "{{addr.recipient_name}}",
                           "recipient_phone": "{{addr.recipient_phone}}",
-                          "zipcode": "{{addr.zipcode}}",
-                          "address": "{{addr.address}}",
+                          "country_code": "{{addr.country_code ?? 'KR'}}",
+                          "zipcode": "{{addr.zipcode ?? ''}}",
+                          "address": "{{addr.address ?? ''}}",
                           "address_detail": "{{addr.address_detail ?? ''}}",
                           "region": "{{addr.region ?? ''}}",
-                          "city": "{{addr.city ?? ''}}",
-                          "country_code": "{{addr.country_code ?? 'KR'}}"
+                          "address_line_1": "{{addr.address_line_1 ?? ''}}",
+                          "address_line_2": "{{addr.address_line_2 ?? ''}}",
+                          "intl_city": "{{addr.city ?? ''}}",
+                          "intl_state": "{{addr.state ?? ''}}",
+                          "intl_postal_code": "{{addr.postal_code ?? ''}}"
                         }
                       }
                     },
@@ -138,7 +142,7 @@
             }
           },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "cog", "className": "w-4 h-4" } },
+            { "type": "basic", "name": "Icon", "size": "sm", "props": { "name": "cog" } },
             { "type": "basic", "name": "Span", "text": "$t:shop.checkout.manage_addresses" }
           ],
           "actions": [
@@ -204,7 +208,7 @@
       "comment": "배송 국가 선택 (국제 배송 활성화 시만 표시)",
       "type": "basic",
       "name": "Div",
-      "if": "{{ecommerceSettings?.shipping?.international_shipping_enabled === true}}",
+      "if": "{{shippingSettings?.data?.shipping?.international_shipping_enabled === true}}",
       "props": { "className": "mb-4" },
       "responsive": {
         "portable": {
@@ -226,9 +230,9 @@
           "name": "Select",
           "props": {
             "name": "country_code",
-            "value": "{{_local.shipping?.country_code ?? 'KR'}}",
+            "value": "{{_local.shipping?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}",
             "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
-            "options": "{{(ecommerceSettings?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: c.name?.[_global.locale] ?? c.name?.ko ?? c.code }))}}"
+            "options": "{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: c.name?.[_global.locale] ?? c.name?.ko ?? c.code }))}}"
           },
           "responsive": {
             "portable": {
@@ -251,19 +255,35 @@
                   }
                 },
                 {
-                  "comment": "국가 변경 시 주소 필드 초기화",
+                  "comment": "국가 변경 시 주소 필드 초기화 (이전 국가의 우편번호/주소가 남아 다른 국가 배송비에 잘못 반영되는 것 방지)",
                   "handler": "setState",
                   "params": {
                     "target": "local",
                     "shipping.zipcode": "",
                     "shipping.address": "",
                     "shipping.address_detail": "",
-                    "shipping.intl_address1": "",
-                    "shipping.intl_address2": "",
+                    "shipping.address_line_1": "",
+                    "shipping.address_line_2": "",
                     "shipping.intl_city": "",
                     "shipping.intl_state": "",
                     "shipping.intl_postal_code": ""
                   }
+                },
+                {
+                  "comment": "배송국가 변경 시 checkout API 호출(배송비 재계산). 저장배송지 선택/주소검색 경로와 동일하게 PUT 으로 country_code 를 저장해 미리보기 금액과 주문 확정 재계산(저장값 기준)이 일치하도록 보장한다 — 주문서 선택국가가 SSoT.",
+                  "handler": "apiCall",
+                  "target": "/api/modules/sirsoft-ecommerce/checkout",
+                  "auth_mode": "optional",
+                  "params": {
+                    "method": "PUT",
+                    "body": "{{_local.checkout}}"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "updateDataSource",
+                      "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
+                    }
+                  ]
                 }
               ]
             }
@@ -591,15 +611,15 @@
               "name": "Input",
               "props": {
                 "type": "text",
-                "name": "intl_address1",
-                "value": "{{_local.shipping?.intl_address1 ?? ''}}",
+                "name": "address_line_1",
+                "value": "{{_local.shipping?.address_line_1 ?? ''}}",
                 "placeholder": "$t:shop.checkout.intl_address1_placeholder",
-                "className": "{{_local.errors?.['shipping.intl_address1'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
+                "className": "{{_local.errors?.['shipping.address_line_1'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
               },
               "responsive": {
                 "portable": {
                   "props": {
-                    "className": "{{_local.errors?.['shipping.intl_address1'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                    "className": "{{_local.errors?.['shipping.address_line_1'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
                   }
                 }
               },
@@ -607,16 +627,16 @@
                 {
                   "type": "change",
                   "handler": "setState",
-                  "params": { "target": "local", "shipping.intl_address1": "{{$event.target.value}}" }
+                  "params": { "target": "local", "shipping.address_line_1": "{{$event.target.value}}" }
                 }
               ]
             },
             {
               "type": "basic",
               "name": "Span",
-              "if": "{{_local.errors?.['shipping.intl_address1']}}",
+              "if": "{{_local.errors?.['shipping.address_line_1']}}",
               "props": { "className": "text-red-500 text-xs mt-1 block" },
-              "text": "{{_local.errors?.['shipping.intl_address1']?.[0] ?? ''}}"
+              "text": "{{_local.errors?.['shipping.address_line_1']?.[0] ?? ''}}"
             }
           ]
         },
@@ -626,8 +646,8 @@
           "name": "Input",
           "props": {
             "type": "text",
-            "name": "intl_address2",
-            "value": "{{_local.shipping?.intl_address2 ?? ''}}",
+            "name": "address_line_2",
+            "value": "{{_local.shipping?.address_line_2 ?? ''}}",
             "placeholder": "$t:shop.checkout.intl_address2_placeholder",
             "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
           },
@@ -642,7 +662,7 @@
             {
               "type": "change",
               "handler": "setState",
-              "params": { "target": "local", "shipping.intl_address2": "{{$event.target.value}}" }
+              "params": { "target": "local", "shipping.address_line_2": "{{$event.target.value}}" }
             }
           ]
         },
@@ -883,10 +903,10 @@
       ]
     },
     {
-      "comment": "배송지 저장 체크박스 (로그인 + 직접 입력한 경우만)",
+      "comment": "배송지 저장 체크박스 (로그인 + 직접 입력한 경우만). 비로그인 시 _global.currentUser 가 [] fallback 일 수 있어 uuid 키 존재 여부로 판정",
       "type": "basic",
       "name": "Div",
-      "if": "{{_global.currentUser != null && _local.selectedAddressId == null}}",
+      "if": "{{_global.currentUser?.uuid && _local.selectedAddressId == null}}",
       "props": { "className": "flex items-center gap-2 mt-4" },
       "responsive": {
         "portable": {

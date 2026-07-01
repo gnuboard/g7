@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\Admin;
 
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,7 @@ class AdminAuthTest extends TestCase
         );
 
         // isAdmin() 에 필요한 type=admin permission 최소 1개 보장
-        $adminPermission = \App\Models\Permission::firstOrCreate(
+        $adminPermission = Permission::firstOrCreate(
             ['identifier' => 'admin.test_default'],
             [
                 'name' => json_encode(['ko' => 'admin default', 'en' => 'admin default']),
@@ -103,6 +104,60 @@ class AdminAuthTest extends TestCase
     }
 
     /**
+     * Accept 헤더 없이 비인증 관리자 API 접근 시 401 JSON 반환 테스트 (공개#39).
+     *
+     * Accept 헤더가 없으면 expectsJson()===false 가 되어 Laravel 기본 폴백이
+     * route('login') redirect 를 시도 → 미정의 라우트로 HTTP 500 이 되던 결함.
+     * bootstrap/app.php 핸들러의 is('api/*') 가드로 항상 401 JSON 이 되어야 한다.
+     */
+    public function test_unauthenticated_admin_api_returns_401_without_accept_header(): void
+    {
+        // raw get() — 기본 Accept 미부착 (getJson() 은 Accept 강제하므로 재현 불가)
+        $response = $this->get('/api/admin/auth/user');
+
+        $response->assertStatus(401);
+        $response->assertHeaderMissing('Location'); // redirect 미발생
+        $this->assertArrayHasKey('message', $response->json());
+        $this->assertStringNotContainsString('login', (string) $response->getContent()); // RouteNotFoundException 미발동
+    }
+
+    /**
+     * Accept: text/html (브라우저 직접 접근) 으로 비인증 관리자 API 접근 시에도 401 JSON 반환 (공개#39).
+     */
+    public function test_unauthenticated_admin_api_returns_401_with_html_accept_header(): void
+    {
+        $response = $this->get('/api/admin/auth/user', ['Accept' => 'text/html']);
+
+        $response->assertStatus(401);
+        $response->assertHeaderMissing('Location');
+        $this->assertArrayHasKey('message', $response->json());
+    }
+
+    /**
+     * 무효 토큰 + Accept 헤더 없이 비인증 관리자 API 접근 시 401 JSON 반환 (공개#39).
+     */
+    public function test_invalid_token_admin_api_returns_401_without_accept_header(): void
+    {
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer invalid-token-value',
+        ])->get('/api/admin/auth/user');
+
+        $response->assertStatus(401);
+        $response->assertHeaderMissing('Location');
+    }
+
+    /**
+     * 단일 엔드포인트 한정이 아님 — 다른 /api/admin/* 경로도 동일하게 401 JSON 반환 (공개#39).
+     */
+    public function test_other_admin_api_endpoint_returns_401_without_accept_header(): void
+    {
+        $response = $this->get('/api/admin/dashboard/resources');
+
+        $response->assertStatus(401);
+        $response->assertHeaderMissing('Location');
+    }
+
+    /**
      * 일반 사용자는 관리자 API 접근 불가 테스트
      */
     public function test_regular_user_cannot_access_admin_api(): void
@@ -146,7 +201,7 @@ class AdminAuthTest extends TestCase
 
         // 새 토큰으로 API 접근 가능 확인
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $newToken,
+            'Authorization' => 'Bearer '.$newToken,
             'Accept' => 'application/json',
         ])->getJson('/api/admin/auth/user');
 

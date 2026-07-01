@@ -104,4 +104,22 @@ interface ProductInquiryRepositoryInterface
      * @return int 삭제된 건수
      */
     public function deleteByInquirableIds(string $inquirableType, array $inquirableIds): int;
+
+    /**
+     * 전체 상품의 최신 미답변 문의를 조회합니다 (대시보드 미답변 문의).
+     *
+     * is_answered=false 문의를 작성일 최신순으로 상위 N건 조회하며,
+     * 상품/작성자를 eager load 합니다.
+     *
+     * @param  int  $limit  조회 건수
+     * @return Collection 미답변 문의 컬렉션
+     */
+    public function getPendingRecent(int $limit): Collection;
+
+    /**
+     * 전체 미답변 문의 총 건수를 반환합니다 (대시보드 배지).
+     *
+     * @return int 미답변 문의 총 건수
+     */
+    public function countPending(): int;
 }

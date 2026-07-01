@@ -15,22 +15,22 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.identity.purposes.title"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.identity.purposes.desc"
         },
@@ -39,18 +39,18 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-4"
-          },
-          "iteration": {
-            "source": "identityPurposes?.data ?? []",
-            "item_var": "purpose"
+            "className": "row-stack"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
+              "iteration": {
+                "source": "identityPurposes?.data ?? []",
+                "item_var": "purpose"
+              },
               "props": {
-                "className": "py-3 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                "className": "flex flex-col md:flex-row md:items-center md:justify-between gap-2"
               },
               "children": [
                 {
@@ -61,7 +61,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-white block"
+                        "className": "text-heading block"
                       },
                       "text": "{{purpose.label ?? purpose.id}}"
                     },
@@ -70,7 +70,7 @@
                       "name": "P",
                       "if": "{{purpose.description}}",
                       "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-tertiary"
                       },
                       "text": "{{purpose.description ?? ''}}"
                     }
@@ -78,26 +78,44 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Select",
+                  "name": "Div",
                   "props": {
-                    "name": "identity.purpose_providers.{{purpose.id}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm",
-                    "options": "{{[{value: '', label: '$t:admin.settings.identity.purposes.use_default'}].concat((identityProviders?.data ?? []).map(function(p) { return { value: p.id, label: p.label }; }))}}"
-                  }
+                    "className": "w-full md:w-64"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Select",
+                      "props": {
+                        "name": "identity.purpose_providers.{{purpose.id}}",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['identity.purpose_providers.' + purpose.id] ? 'text-primary w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm'}}",
+                        "options": "{{[{value: '', label: '$t:admin.settings.identity.purposes.use_default'}].concat((identityProviders?.data ?? []).map(function(p) { return { value: p.id, label: p.label }; }))}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['identity.purpose_providers.' + purpose.id]}}",
+                      "props": {
+                        "className": "form-error"
+                      },
+                      "text": "{{_local.errors?.['identity.purpose_providers.' + purpose.id]?.[0] ?? ''}}"
+                    }
+                  ]
                 }
               ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(identityPurposes?.data ?? []).length === 0}}",
+              "props": {
+                "className": "text-label-subtle py-4 text-center"
+              },
+              "text": "$t:admin.settings.identity.purposes.empty"
             }
           ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(identityPurposes?.data ?? []).length === 0}}",
-          "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 py-4 text-center"
-          },
-          "text": "$t:admin.settings.identity.purposes.empty"
         }
       ]
     },
@@ -106,22 +124,22 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.identity.providers.title"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.identity.providers.desc"
         },
@@ -130,25 +148,25 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-4"
-          },
-          "iteration": {
-            "source": "identityProviders?.data ?? []",
-            "item_var": "provider"
+            "className": "card-stack"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
+              "iteration": {
+                "source": "identityProviders?.data ?? []",
+                "item_var": "provider"
+              },
               "props": {
-                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
+                "className": "card-stack-item"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center justify-between mb-2"
+                    "className": "flex-between mb-2"
                   },
                   "children": [
                     {
@@ -159,7 +177,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm font-semibold text-gray-900 dark:text-white block"
+                            "className": "text-primary text-sm font-semibold block"
                           },
                           "text": "{{provider.label}}"
                         },
@@ -167,7 +185,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400 font-mono"
+                            "className": "text-tertiary font-mono"
                           },
                           "text": "{{provider.id}}"
                         }
@@ -177,7 +195,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "{{provider.is_available ? 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' : 'text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}"
+                        "className": "{{provider.is_available ? 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-success-soft' : 'text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}"
                       },
                       "text": "{{provider.is_available ? '$t:admin.settings.identity.providers.available' : '$t:admin.settings.identity.providers.unavailable'}}"
                     }
@@ -198,7 +216,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200"
+                        "className": "text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-info-soft"
                       },
                       "text": "{{channel}}"
                     }
@@ -213,7 +231,7 @@
           "name": "Div",
           "if": "{{(identityProviders?.data ?? []).length === 0}}",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 py-4 text-center"
+            "className": "text-label-subtle py-4 text-center"
           },
           "text": "$t:admin.settings.identity.providers.empty"
         }

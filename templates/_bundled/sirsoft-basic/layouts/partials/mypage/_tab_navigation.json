@@ -26,6 +26,11 @@
         "iconName": "package"
       },
       {
+        "id": "mileage",
+        "label": "$t:mypage.tabs.mileage",
+        "iconName": "coins"
+      },
+      {
         "id": "wishlist",
         "label": "$t:mypage.tabs.wishlist",
         "iconName": "heart"

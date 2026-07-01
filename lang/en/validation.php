@@ -164,8 +164,51 @@ return [
     |--------------------------------------------------------------------------
     */
 
+    // Custom translation (dynamic i18n key) validation messages
+    'custom_translation' => [
+        'layout_name' => [
+            'required' => 'The layout name is required.',
+            'string' => 'The layout name must be a string.',
+            'max' => 'The layout name may not be greater than :max characters.',
+        ],
+        'locale' => [
+            'required' => 'The locale is required.',
+            'string' => 'The locale must be a string.',
+        ],
+        'value' => [
+            'required' => 'The translation value is required.',
+            'string' => 'The translation value must be a string.',
+        ],
+        'values' => [
+            'required' => 'The translation values are required.',
+            'array' => 'The translation values must be a locale-keyed object.',
+        ],
+        'status' => [
+            'in' => 'The status must be either active or orphaned.',
+        ],
+        'expected_lock_version' => [
+            'required' => 'expected_lock_version is missing from the save request.',
+            'integer' => 'expected_lock_version must be an integer.',
+            'min' => 'expected_lock_version must be 0 or greater.',
+        ],
+        'ids' => [
+            'required' => 'Select at least one translation key to delete.',
+            'array' => 'The deletion target must be an array of IDs.',
+            'min' => 'Select at least one translation key to delete.',
+            'integer' => 'Translation key ID must be an integer.',
+            'exists' => 'The request contains a translation key that does not exist.',
+        ],
+    ],
+
     // Layout structure validation messages
     'layout' => [
+        // Optimistic lock
+        'expected_lock_version' => [
+            'required' => 'expected_lock_version is missing from the save request.',
+            'integer' => 'expected_lock_version must be an integer.',
+            'min' => 'expected_lock_version must be 0 or greater.',
+        ],
+
         'invalid_json' => 'Invalid JSON format.',
         'must_be_array' => 'Layout data must be an array.',
         'required_field_missing' => "Required field ':field' is missing.",
@@ -177,6 +220,8 @@ return [
         'max_depth_exceeded' => 'Component nesting depth exceeds maximum allowed depth (:max).',
         'component_required_field_missing' => "Required field ':field' is missing in components[:index].",
         'component_field_must_be_string' => 'components[:index].component must be a string.',
+        'component_name_must_be_string' => 'components[:index].name must be a string.',
+        'component_type_invalid' => 'components[:index].type must be one of basic, composite, layout.',
         'props_must_be_object' => 'components[:index].props must be an object (array).',
         'children_must_be_array' => 'components[:index].children must be an array.',
         'permissions_must_be_array' => 'components[:index].permissions must be an array.',
@@ -236,11 +281,60 @@ return [
             'description' => [
                 'string' => 'The meta.description must be a string.',
             ],
+            'keywords' => [
+                'string' => 'The meta.keywords must be a string.',
+            ],
             'auth_required' => [
                 'boolean' => 'The meta.auth_required must be a boolean.',
             ],
             'is_base' => [
                 'boolean' => 'The meta.is_base must be a boolean.',
+            ],
+            'guest_only' => [
+                'boolean' => 'The meta.guest_only must be a boolean.',
+            ],
+            'is_error_layout' => [
+                'boolean' => 'The meta.is_error_layout must be a boolean.',
+            ],
+            'error_code' => [
+                'integer' => 'The meta.error_code must be an integer.',
+            ],
+            'seo' => [
+                'array' => 'The meta.seo must be an array.',
+                'enabled' => [
+                    'boolean' => 'The meta.seo.enabled must be a boolean.',
+                ],
+                'data_sources' => [
+                    'array' => 'The meta.seo.data_sources must be an array.',
+                    'string' => 'Each item in meta.seo.data_sources must be a string.',
+                ],
+                'priority' => [
+                    'numeric' => 'The meta.seo.priority must be numeric.',
+                    'min' => 'The meta.seo.priority must be at least 0.',
+                    'max' => 'The meta.seo.priority must not exceed 1.',
+                ],
+                'changefreq' => [
+                    'string' => 'The meta.seo.changefreq must be a string.',
+                    'in' => 'The meta.seo.changefreq must be one of always, hourly, daily, weekly, monthly, yearly, never.',
+                ],
+                'og' => [
+                    'array' => 'The meta.seo.og must be an array.',
+                ],
+                'structured_data' => [
+                    'array' => 'The meta.seo.structured_data must be an array.',
+                ],
+                'page_type' => [
+                    'string' => 'The meta.seo.page_type must be a string.',
+                ],
+                'toggle_setting' => [
+                    'string' => 'The meta.seo.toggle_setting must be a string.',
+                ],
+                'vars' => [
+                    'array' => 'The meta.seo.vars must be an array.',
+                ],
+                'extensions' => [
+                    'array' => 'The meta.seo.extensions must be an array.',
+                ],
             ],
         ],
         'modals' => [
@@ -257,6 +351,27 @@ return [
         ],
         'init_state' => [
             'array' => 'The init_state field must be an array.',
+        ],
+        'initLocal' => [
+            'array' => 'The initLocal field must be an array.',
+        ],
+        'initGlobal' => [
+            'array' => 'The initGlobal field must be an array.',
+        ],
+        'global_state' => [
+            'array' => 'The global_state field must be an array.',
+        ],
+        'errorHandling' => [
+            'array' => 'The errorHandling field must be an array.',
+        ],
+        'actions' => [
+            'array' => 'The actions field must be an array.',
+        ],
+        'pageConfig' => [
+            'array' => 'The pageConfig field must be an array.',
+        ],
+        'schema' => [
+            'array' => 'The schema field must be an array.',
         ],
         'routes' => [
             'array' => 'The routes field must be an array.',
@@ -317,6 +432,56 @@ return [
                 'background' => 'wait_for cannot reference background data sources (cannot block the user): :id',
                 'websocket' => 'wait_for cannot reference websocket data sources (no fetch completion event): :id',
             ],
+        ],
+    ],
+
+    // Layout extension validation messages
+    'layout_extension' => [
+        // Optimistic lock
+        'expected_lock_version' => [
+            'required' => 'expected_lock_version is missing from the save request.',
+            'integer' => 'expected_lock_version must be an integer.',
+            'min' => 'expected_lock_version must be 0 or greater.',
+        ],
+
+        'invalid_json' => 'Invalid JSON format.',
+        'must_be_array' => 'Layout extension data must be an array.',
+        'target_required' => "An extension definition requires either 'extension_point' or 'target_layout'.",
+        'target_exclusive' => "'extension_point' and 'target_layout' cannot be specified together.",
+        'extension_point_invalid' => 'The extension_point field must be a non-empty string.',
+        'target_layout_invalid' => 'The target_layout field must be a non-empty string.',
+        'components_must_be_array' => 'The components field must be an array.',
+        'injections_required' => 'An overlay extension requires the injections field.',
+        'injections_must_be_array' => 'The injections field must be an array.',
+        'injection_must_be_array' => 'injections[:index] must be an array.',
+        'injection_target_id_required' => 'injections[:index] requires the target_id field.',
+        'injection_position_invalid' => 'injections[:index].position is invalid.',
+        'injection_components_must_be_array' => 'injections[:index].components must be an array.',
+        'injection_props_must_be_array' => 'injections[:index].props must be an array.',
+        'section_must_be_array' => 'The :section field must be an array.',
+        'max_depth_exceeded' => 'Component nesting depth exceeds the maximum allowed depth (:max).',
+        'component_must_be_array' => 'components[:index] must be an array.',
+        'component_required_field_missing' => "components[:index] is missing the required field ':field'.",
+        'component_name_must_be_string' => 'components[:index].name must be a string.',
+        'component_type_invalid' => 'components[:index].type must be one of basic, composite, layout.',
+        'props_must_be_object' => 'components[:index].props must be an object (array).',
+        'children_must_be_array' => 'components[:index].children must be an array.',
+        'content' => [
+            'required' => 'Extension content is required.',
+            'array' => 'Extension content must be an array.',
+        ],
+        'priority' => [
+            'integer' => 'priority must be an integer.',
+            'min' => 'priority must be at least 0.',
+            'max' => 'priority must not exceed 9999.',
+        ],
+        'data_sources' => [
+            'array' => 'data_sources must be an array.',
+        ],
+        'preview_layout' => [
+            'string' => 'The preview layout name must be a string.',
+            'max' => 'The preview layout name must not exceed 255 characters.',
+            'required' => 'An extension point preview requires selecting a representative layout.',
         ],
     ],
 
@@ -796,6 +961,7 @@ return [
         's3_secret_key_required' => 'S3 secret key is required.',
         's3_secret_key_max' => 'S3 secret key may not be greater than 255 characters.',
         's3_url_url' => 'S3 URL must be a valid URL.',
+        's3_url_invalid' => 'S3 URL is not a valid URL format.',
         's3_url_max' => 'S3 URL may not be greater than 255 characters.',
 
         // Driver settings - Cache
@@ -852,6 +1018,15 @@ return [
         'websocket_server_scheme_invalid' => 'Please select a valid WebSocket server scheme.',
         'search_engine_driver_invalid' => 'Please select a valid search engine driver.',
 
+        // Log driver settings
+        'log_driver_required' => 'Please select a log driver.',
+        'log_driver_invalid' => 'Please select a valid log driver.',
+        'log_level_required' => 'Please select a log level.',
+        'log_level_invalid' => 'Please select a valid log level.',
+        'log_days_integer' => 'Log retention days must be an integer.',
+        'log_days_min' => 'Log retention days must be at least 1.',
+        'log_days_max' => 'Log retention days may not be greater than 365.',
+
         // Identity verification (IDV) settings
         'identity_default_provider_string' => 'Default provider must be a string.',
         'identity_default_provider_max' => 'Default provider identifier may not be longer than 100 characters.',
@@ -888,6 +1063,7 @@ return [
         'priority_integer' => 'Priority must be an integer.',
         'priority_min' => 'Priority must be at least 0.',
         'priority_max' => 'Priority may not be greater than 65535.',
+        'priority_duplicate' => 'An active policy with priority :priority already exists for the same location (:target). Since the order of enforcement would be undefined, please use a different priority or disable the existing policy.',
         'conditions_array' => 'Conditions must be an array.',
         'applies_to_required' => 'Please select applies-to.',
         'applies_to_invalid' => 'Applies-to must be one of self, admin, both.',

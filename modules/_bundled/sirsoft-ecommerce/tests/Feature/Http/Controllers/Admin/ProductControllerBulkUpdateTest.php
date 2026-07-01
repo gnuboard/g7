@@ -138,6 +138,34 @@ class ProductControllerBulkUpdateTest extends ModuleTestCase
         $this->assertEquals(ProductSalesStatus::SOLD_OUT, $this->product2->sales_status);
     }
 
+    /**     * 상품 통합 일괄 업데이트 - 성공 메시지의 :count 치환 (회귀)
+     *
+     * bulk_updated 메시지(":count개 상품이 수정되었습니다.")의 :count 가
+     * 실제 변경 건수로 치환되어야 한다. messageParams 누락 시 ':count' 가
+     * 문자 그대로 노출되는 회귀를 차단한다.
+     */
+    #[Test]
+    public function test_bulk_update_message_interpolates_count(): void
+    {
+        // Given: 상품 2개 판매상태 일괄 변경
+        $data = [
+            'ids' => [$this->product1->id, $this->product2->id],
+            'bulk_changes' => [
+                'sales_status' => ProductSalesStatus::SOLD_OUT->value,
+            ],
+        ];
+
+        // When: 통합 일괄 업데이트 API 호출
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson('/api/modules/sirsoft-ecommerce/admin/products/bulk-update', $data);
+
+        // Then: 메시지에 :count 가 치환되어 실제 건수(2)가 노출됨
+        $response->assertStatus(200);
+        $message = $response->json('message');
+        $this->assertStringNotContainsString(':count', $message, '메시지에 미치환 :count 플레이스홀더가 남아 있습니다.');
+        $this->assertStringContainsString('2', $message, '메시지에 실제 변경 건수가 포함되어야 합니다.');
+    }
+
     /**     * 상품 통합 일괄 업데이트 - bulk_changes로 전시상태 일괄 변경
      */
     #[Test]
@@ -312,6 +340,38 @@ class ProductControllerBulkUpdateTest extends ModuleTestCase
         $this->assertEquals(['ko' => '변경된 빨강', 'en' => 'Changed Red'], $this->option1->option_name);
         $this->assertEquals('NEW-SKU-001', $this->option1->sku);
         $this->assertEquals(5, $this->option3->safe_stock_quantity);
+    }
+
+    /**     * 상품 통합 일괄 업데이트 - option_name 의 비필수 로케일이 null 이어도 수정 성공 (회귀)
+     *
+     * 인라인으로 한국어 옵션명만 수정하면 프론트엔드가 저장된 다국어 객체
+     * { ko: "...", en: null, ja: null } 를 그대로 전송한다. 비필수 로케일의 null 값이
+     * 검증에서 거부되어 "option_name.en 필드는 문자열이어야 합니다" 422 가 발생하던 회귀.
+     */
+    #[Test]
+    public function test_bulk_update_option_name_allows_null_locales(): void
+    {
+        // Given: 한국어만 입력하고 en/ja 는 null 인 옵션명 (실제 저장 형태)
+        $data = [
+            'ids' => [$this->product1->id],
+            'option_items' => [
+                [
+                    'product_id' => $this->product1->id,
+                    'option_id' => $this->option1->id,
+                    'option_name' => ['ko' => '레드11', 'en' => null, 'ja' => null],
+                ],
+            ],
+        ];
+
+        // When: 통합 일괄 업데이트 API 호출
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson('/api/modules/sirsoft-ecommerce/admin/products/bulk-update', $data);
+
+        // Then: 검증 통과 및 한국어 옵션명 반영
+        $response->assertStatus(200);
+
+        $this->option1->refresh();
+        $this->assertEquals('레드11', $this->option1->option_name['ko']);
     }
 
     /**     * 상품 통합 일괄 업데이트 - 상품과 옵션 동시 변경

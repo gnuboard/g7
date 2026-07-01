@@ -45,7 +45,7 @@
             }
         }
     ],
-    "global_state": {
+    "initGlobal": {
         "searchActiveTab": "all",
         "searchBoardFilter": "",
         "searchSortBy": "relevance",
@@ -54,6 +54,7 @@
     "data_sources": [
         {
             "id": "searchResults",
+            "label_key": "$t:editor.data_source.searchResults",
             "type": "api",
             "endpoint": "/api/search?q={{query?.q}}&type={{_global.searchActiveTab ?? 'all'}}&board_slug={{_global.searchBoardFilter}}&sort={{_global.searchSortBy ?? 'relevance'}}&page={{_global.searchPage ?? 1}}&per_page={{(_global.searchActiveTab === 'products') ? 12 : 10}}",
             "method": "GET",

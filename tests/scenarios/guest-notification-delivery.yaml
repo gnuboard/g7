@@ -1,0 +1,77 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 를 null 로 읽어 expandCases 가 throw 한다(동일 한계로 다른 시나리오도
+#   audit:allow 처리됨). 본 기능은 코어 Unit(GuestNotifiable/Resolver/채널게이트) +
+#   Feature(notification_logs 적재) + 이커머스 Unit(리스너/서비스)이 모두 존재하며,
+#   아래 effects ↔ test_files 가 1:1 대응한다.
+feature: 비회원(게스트) 알림 발송 1급 지원
+
+description: |
+  user_id 없는 비회원을 1급 Notifiable(GuestNotifiable: Notifiable + HasLocalePreference)로
+  승격하여, 회원과 동일한 발송 경로(훅 → NotificationHookListener → resolver → notify)로
+  알림을 보낸다. 채널별 비회원 발송 허용 여부는 config 채널 메타 allow_guest 로 선언하며
+  (mail=허용, database=차단, 미선언=기본 차단), GenericNotification::via() 의 단일 게이트에서
+  적용된다. 비회원 발송도 기존 알림 발송 시스템(notification_logs)에 정상 기록된다.
+
+  핵심 동작:
+    - resolver 의 trigger_user 규칙이 trigger_user_id 없을 때 표준 키 guest_recipient 로 폴백
+    - dedup 키 네임스페이스 분리(user:{id} / guest:{email hash}) — null-id 게스트 미붕괴
+    - via() 게스트 게이트: 게스트 + 채널 allow_guest=false → 발송 제외(skipped 로그)
+    - 발송 로깅: 게스트는 recipient_user_id=null + recipient_identifier=email (정수 FK 미오염)
+    - 수신자 언어: 주문 시 저장된 orderer_locale → guest_recipient.locale → 메일 렌더 언어
+    - 이커머스: 비회원 주문 6종 알림이 buildOrderContext 단일 지점에서 guest_recipient 제공
+
+axes:
+  recipient_type:
+    - member        # 회원 (User)
+    - guest         # 비회원 (GuestNotifiable)
+  channel:
+    - mail          # allow_guest=true
+    - database      # allow_guest=false
+  locale_stored:
+    - present       # 주문 시 locale 저장 → 그 언어로 발송
+    - absent        # 미저장 → app locale 폴백
+
+exclusions:
+  - { recipient_type: member, locale_stored: absent, reason: "회원은 users.language 사용 (게스트 locale 폴백 무관)" }
+  - { recipient_type: member, locale_stored: present, reason: "회원은 users.language 사용 (게스트 locale 폴백 무관)" }
+
+effects:
+  # GuestNotifiable 값 객체 (Unit — GuestNotifiableTest)
+  - guest_notifiable_implements_notifiable_and_locale_contracts
+  - guest_notifiable_from_context_rejects_invalid_email
+  - guest_notifiable_key_is_deterministic_and_namespaced
+  - guest_notifiable_locale_falls_back_to_app_locale
+  # resolver 게스트 폴백 + dedup (Unit — NotificationRecipientResolverTest)
+  - trigger_user_falls_back_to_guest_recipient_when_no_user_id
+  - trigger_user_prefers_member_over_guest_recipient
+  - duplicate_guest_email_dedupes_to_one
+  - member_and_guest_coexist_without_collapsing
+  - exclude_trigger_user_does_not_break_on_guest
+  # 채널 게이트 (Unit — GenericNotificationGuestGateTest)
+  - channel_guest_allowed_reads_config_mail_true_database_false
+  - guest_passes_mail_channel
+  - guest_blocked_on_database_channel
+  - member_unaffected_by_guest_gate
+  # 발송 + 로깅 end-to-end (Feature — GuestNotificationLoggingTest)
+  - guest_mail_send_logged_with_null_user_id_and_email_identifier
+  - guest_database_channel_not_logged_as_sent
+  # 발송 파이프라인 통합 (Unit — NotificationDispatchIntegrationTest)
+  - guest_recipient_receives_mail_notification
+  - guest_recipient_without_email_sends_nothing
+  # 이커머스 소비자 (Unit — EcommerceNotificationDataListenerTest / OrderProcessingServiceTest)
+  - ecommerce_guest_order_context_exposes_guest_recipient
+  - ecommerce_guest_recipient_locale_null_when_not_stored
+  - ecommerce_order_stores_current_locale_on_address
+
+test_files:
+  - tests/Unit/Notifications/GuestNotifiableTest.php
+  - tests/Unit/Services/NotificationRecipientResolverTest.php
+  - tests/Unit/Notifications/GenericNotificationGuestGateTest.php
+  - tests/Unit/Listeners/NotificationDispatchIntegrationTest.php
+  - tests/Feature/Notifications/GuestNotificationLoggingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/EcommerceNotificationDataListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingServiceTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

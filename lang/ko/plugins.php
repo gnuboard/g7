@@ -228,6 +228,9 @@ return [
             'aborted' => '업데이트가 취소되었습니다.',
             'backup_restored' => '백업에서 이전 버전이 복원되었습니다.',
             'force_mode' => '강제 업데이트 모드: 버전 비교를 건너뛰고 재설치합니다.',
+            'layout_strategy' => '레이아웃 전략: :strategy',
+            'modified_extensions_warning' => '관리자가 편집한 레이아웃 확장 :count건이 덮어쓰기됩니다.',
+            'modified_extension_item' => '  - :target (출처: :source)',
         ],
     ],
 

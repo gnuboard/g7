@@ -229,6 +229,63 @@ class ExtensionRoleSyncHelperTest extends TestCase
         $this->assertSame($freshRole, $result);
     }
 
+    /**
+     * sync 시점에 user_overrides 자동 마킹이 비활성화되는지 테스트.
+     *
+     * 회귀 방지: HasUserOverrides trait 의 `updating` 이벤트 hook 은
+     * `app('user_overrides.seeding') === true` 일 때 자동 마킹을 건너뛴다.
+     * Helper 가 update 호출을 seeding 컨텍스트로 wrap 하지 않으면 시스템 sync
+     * 임에도 name/description 등 trackable 필드가 user_overrides 에 잘못
+     * 마킹되어 이후 sync 가 영구히 차단된다 (Menu sync 와 동일 결함).
+     */
+    public function test_sync_role_disables_user_overrides_auto_marking_during_update(): void
+    {
+        $newName = ['ko' => 'Board 관리자', 'en' => 'Board Admin'];
+        $newDescription = ['ko' => '게시판 관리 역할', 'en' => 'Board management role'];
+
+        $existingRole = $this->createModelMock(Role::class, [
+            'name' => ['ko' => '게시판 관리자', 'en' => 'Board Manager'],
+            'description' => ['ko' => '이전 설명', 'en' => 'Previous description'],
+            'user_overrides' => [],
+        ]);
+
+        $freshRole = $this->createModelMock(Role::class);
+        $existingRole->shouldReceive('fresh')->once()->andReturn($freshRole);
+
+        $this->roleRepository->shouldReceive('findByIdentifier')
+            ->once()
+            ->with('board-manager')
+            ->andReturn($existingRole);
+
+        $seedingFlagDuringUpdate = null;
+        $this->roleRepository->shouldReceive('update')
+            ->once()
+            ->with($existingRole, Mockery::any())
+            ->andReturnUsing(function () use (&$seedingFlagDuringUpdate) {
+                $seedingFlagDuringUpdate = app()->bound('user_overrides.seeding')
+                    && app('user_overrides.seeding') === true;
+
+                return true;
+            });
+
+        $this->helper->syncRole(
+            identifier: 'board-manager',
+            newName: $newName,
+            newDescription: $newDescription,
+            extensionType: ExtensionOwnerType::Module,
+            extensionIdentifier: 'sirsoft-board',
+        );
+
+        $this->assertTrue(
+            $seedingFlagDuringUpdate,
+            'update 호출 시점에 user_overrides.seeding 플래그가 true 여야 한다.'
+        );
+        $this->assertFalse(
+            app()->bound('user_overrides.seeding'),
+            'syncRole 종료 후 user_overrides.seeding 플래그가 정리되어야 한다.'
+        );
+    }
+
     // =========================================================
     // syncPermission 테스트
     // =========================================================

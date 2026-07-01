@@ -7,7 +7,7 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "card"
+    "className": "admin-card"
   },
   "children": [
     {
@@ -15,7 +15,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center gap-2 mb-4"
+        "className": "flex-center gap-2 mb-4"
       },
       "children": [
         {
@@ -41,7 +41,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center gap-2 mb-4"
+        "className": "flex-center gap-2 mb-4"
       },
       "children": [
         {
@@ -149,9 +149,6 @@
       "id": "banner_list_items",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-3"
-      },
       "children": [
         {
           "id": "banner_item_1",
@@ -285,14 +282,14 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-16 h-10 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-16 h-10 rounded bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-xl font-bold text-gray-600 dark:text-gray-400"
+                    "className": "text-secondary text-xl font-bold"
                   },
                   "text": "SALE"
                 }
@@ -309,7 +306,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -386,7 +383,9 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     }
   ]
 }

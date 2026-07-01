@@ -1,0 +1,81 @@
+feature: 레이아웃 편집기 Table 빌트인 — 캔버스 인플레이스 오버레이(시중 수준)
+
+description: |
+  표 컴포넌트(Table)를 캔버스에서 직접 셀 단위로 구조 편집한다. capability 의 일반 슬롯
+  `canvasOverlay:{kind:"table",params:{rowContainer/row/cell/headerCell/colSpanProp/rowSpanProp}}`
+  (부록4-ter)로 선언하고, 코어 빌트인 TableInplaceOverlay 를 registerCoreEditors 가
+  registerCanvasOverlay('table', ...) 로 일반 레지스트리에 등록한다(특권 분기 0 — 코어는 kind 만
+  알고 컴포넌트명/마크업 어휘를 가정하지 않음). EditorCanvasOverlay 가 선택 노드의
+  capability.canvasOverlay.kind 로 오버레이를 디스패치하고, `data-editor-path` 로 측정한 셀 박스
+  (cellBoxes)를 주입한다. 미등록 kind 는 기존 코어 선택/삽입 오버레이로 디그레이드(회귀 0).
+
+  단일 패치 경로 SSoT: 인플레이스 오버레이의 모든 구조 변형은 속성 패널 TableEditor 와 동일한
+  tableGridMutations(addRow/addColumn/mergeCells/unmergeCell/moveRow/moveColumn …) 순수 함수를
+  호출하고 onPatchNode(노드 전체 교체)로 캔버스에 반영한다. 좌표 역매핑은 cellTreePath(셀 ref →
+  표 노드 기준 상대 자식 인덱스 경로)로 cellBoxes 의 path 와 매칭한다(비-셀 형제 섞여도 정확).
+
+  핵심 동작:
+    - 셀 핸들: 각 origin 셀 위 투명 클릭 영역(선택/Shift 영역 선택). 측정 박스 좌표로 배치.
+    - 행/열 거터: 각 행 좌측·각 열 상단에 추가/삭제/이동(↑↓←→) 핸들. 이동 가능성은 canMoveRow/
+      canMoveColumn(밴드 모델 — 병합 블록 통째 이동, 섹션/표 경계 비활성).
+    - 병합/해제: 선택 셀 도구막대 — 직사각형 영역 병합(origin span + 흡수셀 제거), 병합 셀 해제.
+    - 모서리 빠른 추가: 표 우하단 + 행/+ 열.
+    - 측정 실패(캔버스 미렌더/비가시) → 오버레이 null(코어 선택 오버레이 디그레이드).
+
+axes:
+  operation: [add_row, remove_row, move_row, add_col, remove_col, move_col, merge, unmerge, select_cell]
+  dispatch: [registered_kind, unregistered_degrade, no_cellboxes_degrade]
+  span_context: [no_span, colspan, rowspan, band_block]
+  template: [sirsoft-basic, sirsoft-admin_basic]
+
+exclusions:
+  - { operation: select_cell, span_context: colspan, reason: "선택은 좌표 기반 — span 무관" }
+  - { operation: select_cell, span_context: rowspan, reason: "동일" }
+  - { operation: select_cell, span_context: band_block, reason: "동일" }
+  - { dispatch: unregistered_degrade, operation: add_row, reason: "미등록 kind 는 오버레이 미마운트 — 연산 표면 없음" }
+  - { dispatch: unregistered_degrade, operation: remove_row, reason: "동일" }
+  - { dispatch: unregistered_degrade, operation: move_row, reason: "동일" }
+  - { dispatch: unregistered_degrade, operation: add_col, reason: "동일" }
+  - { dispatch: unregistered_degrade, operation: remove_col, reason: "동일" }
+  - { dispatch: unregistered_degrade, operation: move_col, reason: "동일" }
+  - { dispatch: unregistered_degrade, operation: merge, reason: "동일" }
+  - { dispatch: unregistered_degrade, operation: unmerge, reason: "동일" }
+  - { dispatch: unregistered_degrade, operation: select_cell, reason: "동일" }
+  - { dispatch: no_cellboxes_degrade, operation: add_row, reason: "cellBoxes 미공급 시 오버레이 null — 연산 표면 없음" }
+  - { dispatch: no_cellboxes_degrade, operation: remove_row, reason: "동일" }
+  - { dispatch: no_cellboxes_degrade, operation: move_row, reason: "동일" }
+  - { dispatch: no_cellboxes_degrade, operation: add_col, reason: "동일" }
+  - { dispatch: no_cellboxes_degrade, operation: remove_col, reason: "동일" }
+  - { dispatch: no_cellboxes_degrade, operation: move_col, reason: "동일" }
+  - { dispatch: no_cellboxes_degrade, operation: merge, reason: "동일" }
+  - { dispatch: no_cellboxes_degrade, operation: unmerge, reason: "동일" }
+  - { dispatch: no_cellboxes_degrade, operation: select_cell, reason: "동일" }
+
+effects:
+  # capability/등록/디스패치
+  - table_canvas_overlay_declared_canvasoverlay_kind_table_both_templates
+  - table_inplace_overlay_registered_via_registercoreeditors_kind_agnostic
+  - editorcanvasoverlay_dispatches_canvasoverlay_by_kind_with_measured_cellboxes
+  - inplace_no_cellboxes_degrades_to_null
+  # 좌표 역매핑
+  - inplace_cell_boxes_mapped_to_grid_via_celltreepath
+  # 구조 변형(SSoT 공유)
+  - inplace_gutter_add_row_col_shares_tablegridmutations_with_property_panel
+  - inplace_shift_select_merge_sets_origin_span_removes_absorbed
+  - inplace_merged_cell_unmerge_clears_span
+  # 라이브(E2E)
+  - live_inplace_cell_edit_save_persists_to_user_page
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/TableInplaceOverlay.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/editorRegistries.test.ts
+  - tests/Playwright/specs/layout-editor/table-inplace-overlay.spec.ts
+
+validation:
+  note: |
+    Vitest 단위(TableInplaceOverlay.test.tsx)가 cellTreePath 역매핑, 셀 박스→grid 매핑, 디스패치
+    디그레이드(미공급/미등록 → null), 거터 추가·병합·해제가 속성 패널과 동일 tableGridMutations 를
+    호출함을 잠근다. editorRegistries.test.ts 가 registerCanvasOverlay('table') 등록·kind-agnostic
+    조회를 잠근다. Playwright E2E 가 라이브 편집기에서 Table 선택 → 인플레이스 오버레이 마운트 →
+    셀/거터 핸들 → 행/열 추가 → 영역 선택·병합 → 저장(PUT 200)을 브라우저로 검증한다.
+  e2e_spec: tests/Playwright/specs/layout-editor/table-inplace-overlay.spec.ts

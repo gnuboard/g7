@@ -129,8 +129,8 @@ describe('Dropdown', () => {
     // bottom-left는 화면 경계 체크 후 유지되거나 조정될 수 있음
     // 메뉴가 role="menu"로 렌더링되는지 확인
     expect(menu).toBeInTheDocument();
-    // 위치 관련 클래스 중 하나는 반드시 포함
-    const hasPositionClass = menu.className.includes('top-full') || menu.className.includes('bottom-full');
+    // 위치 관련 시맨틱 클래스 중 하나는 반드시 포함
+    const hasPositionClass = /dropdown-menu-(top|bottom)-(left|right)/.test(menu.className);
     expect(hasPositionClass).toBe(true);
   });
 

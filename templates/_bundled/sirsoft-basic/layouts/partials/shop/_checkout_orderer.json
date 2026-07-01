@@ -167,7 +167,10 @@
           "type": "basic",
           "name": "Label",
           "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
-          "text": "$t:shop.checkout.orderer_email"
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:shop.checkout.orderer_email" },
+            { "type": "basic", "name": "Span", "if": "{{!_global.currentUser?.uuid}}", "props": { "className": "text-red-500 ml-1" }, "text": "*" }
+          ]
         },
         {
           "type": "basic",
@@ -200,6 +203,141 @@
           "if": "{{_local.errors?.['orderer.email']}}",
           "props": { "className": "text-red-500 text-xs mt-1 block" },
           "text": "{{_local.errors?.['orderer.email']?.[0] ?? ''}}"
+        }
+      ]
+    },
+    {
+      "comment": "비회원 조회 비밀번호 — 비로그인 사용자만 노출. CreateOrderRequest 가 비회원 시 guest_lookup_password(min:8|confirmed) + _confirmation(required) 검증",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!_global.currentUser?.uuid}}",
+      "props": { "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700" }
+        }
+      },
+      "children": [
+        {
+          "comment": "섹션 제목 + 안내",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-1" },
+              "text": "$t:shop.checkout.guest_lookup_section"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "text": "$t:shop.checkout.guest_lookup_hint"
+            }
+          ]
+        },
+        {
+          "comment": "비밀번호 + 확인 2컬럼 (모바일 1컬럼)",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "grid grid-cols-2 gap-4" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "grid grid-cols-1 gap-3" }
+            }
+          },
+          "children": [
+            {
+              "comment": "조회 비밀번호",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "text": "$t:shop.checkout.guest_lookup_password" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-red-500 ml-1" }, "text": "*" }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "PasswordInput",
+                  "props": {
+                    "name": "guest_lookup_password",
+                    "value": "{{_local.guestLookupPassword ?? ''}}",
+                    "placeholder": "$t:shop.checkout.guest_lookup_password_placeholder",
+                    "className": "{{_local.errors?.guest_lookup_password ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}",
+                    "showToggle": true,
+                    "showValidation": true,
+                    "enableRules": ["minLength:8"],
+                    "error": "{{_local.errors?.guest_lookup_password?.[0] ?? ''}}"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "{{_local.errors?.guest_lookup_password ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": { "target": "local", "guestLookupPassword": "{{$event.target.value}}" }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "비밀번호 확인",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "text": "$t:shop.checkout.guest_lookup_password_confirmation" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-red-500 ml-1" }, "text": "*" }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "PasswordInput",
+                  "props": {
+                    "name": "guest_lookup_password_confirmation",
+                    "value": "{{_local.guestLookupPasswordConfirmation ?? ''}}",
+                    "placeholder": "$t:shop.checkout.guest_lookup_password_confirmation_placeholder",
+                    "className": "{{_local.errors?.guest_lookup_password_confirmation ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}",
+                    "showToggle": true,
+                    "isConfirmField": true,
+                    "confirmTarget": "{{_local.guestLookupPassword ?? ''}}",
+                    "error": "{{_local.errors?.guest_lookup_password_confirmation?.[0] ?? ''}}"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "{{_local.errors?.guest_lookup_password_confirmation ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": { "target": "local", "guestLookupPasswordConfirmation": "{{$event.target.value}}" }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     }

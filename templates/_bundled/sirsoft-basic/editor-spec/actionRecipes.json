@@ -1,0 +1,336 @@
+{
+  "comment": "친화 명칭 → 핸들러 JSON. params 친화 입력 + build 틀. 사용자 화면 대표 동작.",
+  "goToPage": {
+    "label": "$t:editor.action.go_to_page.label",
+    "params": [
+      {
+        "key": "url",
+        "label": "$t:editor.action.go_to_page.param_url",
+        "widget": "page-picker"
+      }
+    ],
+    "build": {
+      "handler": "navigate",
+      "params": {
+        "path": "{{url}}"
+      }
+    }
+  },
+  "showMessage": {
+    "label": "$t:editor.action.show_message.label",
+    "params": [
+      {
+        "key": "text",
+        "label": "$t:editor.action.show_message.param_text",
+        "widget": "i18n-text"
+      },
+      {
+        "key": "tone",
+        "label": "$t:editor.action.show_message.param_tone",
+        "widget": "select",
+        "options": [
+          {
+            "value": "success",
+            "label": "$t:editor.action.show_message.tone_success"
+          },
+          {
+            "value": "error",
+            "label": "$t:editor.action.show_message.tone_error"
+          },
+          {
+            "value": "info",
+            "label": "$t:editor.action.show_message.tone_info"
+          }
+        ]
+      }
+    ],
+    "build": {
+      "handler": "toast",
+      "params": {
+        "message": "{{text}}",
+        "type": "{{tone}}"
+      }
+    }
+  },
+  "changeState": {
+    "label": "$t:editor.action.change_state.label",
+    "params": [
+      {
+        "key": "key",
+        "label": "$t:editor.action.change_state.param_key",
+        "widget": "state-key-picker"
+      },
+      {
+        "key": "value",
+        "label": "$t:editor.action.change_state.param_value",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "setState",
+      "target": "local",
+      "params": {
+        "{{key}}": "{{value}}"
+      }
+    }
+  },
+  "refreshData": {
+    "label": "$t:editor.action.refresh_data.label",
+    "params": [
+      {
+        "key": "src",
+        "label": "$t:editor.action.refresh_data.param_src",
+        "widget": "datasource-picker"
+      }
+    ],
+    "build": {
+      "handler": "refetchDataSource",
+      "params": {
+        "dataSourceId": "{{src}}"
+      }
+    }
+  },
+  "callServerThen": {
+    "label": "$t:editor.action.call_server_then.label",
+    "params": [
+      {
+        "key": "endpoint",
+        "label": "$t:editor.action.call_server_then.param_endpoint",
+        "widget": "text"
+      },
+      {
+        "key": "onSuccess",
+        "label": "$t:editor.action.call_server_then.param_on_success",
+        "widget": "action-list"
+      },
+      {
+        "key": "onError",
+        "label": "$t:editor.action.call_server_then.param_on_error",
+        "widget": "action-list"
+      }
+    ],
+    "build": {
+      "handler": "apiCall",
+      "target": "{{endpoint}}",
+      "onSuccess": "{{onSuccess}}",
+      "onError": "{{onError}}"
+    }
+  },
+  "setTheme": {
+    "label": "$t:editor.action.set_theme.label",
+    "params": [
+      {
+        "key": "target",
+        "label": "$t:editor.action.set_theme.param_target",
+        "widget": "select",
+        "options": [
+          { "value": "auto", "label": "$t:editor.action.set_theme.target_auto" },
+          { "value": "light", "label": "$t:editor.action.set_theme.target_light" },
+          { "value": "dark", "label": "$t:editor.action.set_theme.target_dark" }
+        ]
+      }
+    ],
+    "build": {
+      "handler": "setTheme",
+      "params": { "target": "{{target}}" }
+    }
+  },
+  "savePreferredCurrency": {
+    "label": "$t:editor.action.save_preferred_currency.label",
+    "params": [
+      {
+        "key": "currency",
+        "label": "$t:editor.action.save_preferred_currency.param_currency",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "savePreferredCurrency",
+      "params": { "currency": "{{currency}}" }
+    }
+  },
+  "setCartOption": {
+    "label": "$t:editor.action.set_cart_option.label",
+    "params": [
+      {
+        "key": "itemId",
+        "label": "$t:editor.action.set_cart_option.param_item_id",
+        "widget": "text"
+      },
+      {
+        "key": "optionKey",
+        "label": "$t:editor.action.set_cart_option.param_option_key",
+        "widget": "text"
+      },
+      {
+        "key": "optionValue",
+        "label": "$t:editor.action.set_cart_option.param_option_value",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "setCartOption",
+      "params": {
+        "itemId": "{{itemId}}",
+        "optionKey": "{{optionKey}}",
+        "optionValue": "{{optionValue}}"
+      }
+    }
+  },
+  "openCartDeleteModal": {
+    "label": "$t:editor.action.open_cart_delete_modal.label",
+    "params": [
+      {
+        "key": "itemId",
+        "label": "$t:editor.action.open_cart_delete_modal.param_item_id",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "openCartDeleteModal",
+      "params": { "itemId": "{{itemId}}" }
+    }
+  },
+  "openCartOptionModal": {
+    "label": "$t:editor.action.open_cart_option_modal.label",
+    "params": [
+      {
+        "key": "itemId",
+        "label": "$t:editor.action.open_cart_option_modal.param_item_id",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "openCartOptionModal",
+      "params": { "itemId": "{{itemId}}" }
+    }
+  },
+  "recalculateCart": {
+    "label": "$t:editor.action.recalculate_cart.label",
+    "params": [],
+    "build": { "handler": "recalculateCart" }
+  },
+  "getDisplayPrice": {
+    "label": "$t:editor.action.get_display_price.label",
+    "params": [
+      {
+        "key": "currency",
+        "label": "$t:editor.action.get_display_price.param_currency",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "getDisplayPrice",
+      "params": { "currency": "{{currency}}" }
+    }
+  },
+  "initTheme": {
+    "label": "$t:editor.action.init_theme.label",
+    "params": [
+      {
+        "key": "target",
+        "label": "$t:editor.action.init_theme.param_target",
+        "widget": "select",
+        "options": [
+          { "value": "auto", "label": "$t:editor.action.init_theme.target_auto" },
+          { "value": "light", "label": "$t:editor.action.init_theme.target_light" },
+          { "value": "dark", "label": "$t:editor.action.init_theme.target_dark" }
+        ]
+      }
+    ],
+    "build": {
+      "handler": "initTheme",
+      "params": { "target": "{{target}}" }
+    }
+  },
+  "initCartKey": {
+    "label": "$t:editor.action.init_cart_key.label",
+    "params": [],
+    "build": { "handler": "initCartKey" }
+  },
+  "loadPreferredCurrency": {
+    "label": "$t:editor.action.load_preferred_currency.label",
+    "params": [],
+    "build": { "handler": "loadPreferredCurrency" }
+  },
+  "getCartKey": {
+    "label": "$t:editor.action.get_cart_key.label",
+    "params": [],
+    "build": { "handler": "getCartKey" }
+  },
+  "clearCartKey": {
+    "label": "$t:editor.action.clear_cart_key.label",
+    "params": [],
+    "build": { "handler": "clearCartKey" }
+  },
+  "saveToStorage": {
+    "label": "$t:editor.action.save_to_storage.label",
+    "params": [
+      {
+        "key": "key",
+        "label": "$t:editor.action.save_to_storage.param_key",
+        "widget": "text"
+      },
+      {
+        "key": "value",
+        "label": "$t:editor.action.save_to_storage.param_value",
+        "widget": "i18n-text"
+      }
+    ],
+    "build": {
+      "handler": "saveToStorage",
+      "params": { "key": "{{key}}", "value": "{{value}}" }
+    }
+  },
+  "loadFromStorage": {
+    "label": "$t:editor.action.load_from_storage.label",
+    "params": [
+      {
+        "key": "key",
+        "label": "$t:editor.action.load_from_storage.param_key",
+        "widget": "text"
+      },
+      {
+        "key": "default",
+        "label": "$t:editor.action.load_from_storage.param_default",
+        "widget": "text"
+      }
+    ],
+    "build": {
+      "handler": "loadFromStorage",
+      "params": { "key": "{{key}}", "default": "{{default}}" }
+    }
+  },
+  "saveGuestOrderToken": {
+    "comment": "비회원 주문 토큰 저장 — sirsoft-basic 템플릿 소유 핸들러(storageHandlers). verify 응답의 토큰/주문번호/만료시각을 sessionStorage + _global.guestOrderToken 에 저장. 세 입력 모두 응답값(데이터 칩).",
+    "label": "$t:editor.action.save_guest_order_token.label",
+    "params": [
+      {
+        "key": "token",
+        "label": "$t:editor.action.save_guest_order_token.param_token",
+        "widget": "data-chip",
+        "required": true
+      },
+      {
+        "key": "orderNumber",
+        "label": "$t:editor.action.save_guest_order_token.param_order_number",
+        "widget": "data-chip",
+        "required": true
+      },
+      {
+        "key": "expiresAt",
+        "label": "$t:editor.action.save_guest_order_token.param_expires_at",
+        "widget": "data-chip",
+        "required": true
+      }
+    ],
+    "build": {
+      "handler": "saveGuestOrderToken",
+      "params": {
+        "token": "{{token}}",
+        "orderNumber": "{{orderNumber}}",
+        "expiresAt": "{{expiresAt}}"
+      }
+    }
+  }
+}

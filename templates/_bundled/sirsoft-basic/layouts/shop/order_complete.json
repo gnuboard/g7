@@ -7,32 +7,62 @@
     "title": "$t:shop.order_complete.page_title",
     "description": "주문 완료/결제 완료 화면"
   },
+  "_comment": "init_actions 가드를 두지 않는 이유 — init_actions 는 _user_base 의 current_user 데이터소스(auto_fetch) 응답보다 먼저 실행되므로 _global.currentUser 가 회원이어도 null 로 평가되어 가드가 오발화한다. 대신 (1) 빈 화면 깜빡임은 blur_until_loaded 로 차단, (2) 토큰 없는 진입은 백엔드가 404 를 반환하면 errorHandling.404 가 회원/비회원 분기로 적절히 처리한다.",
   "data_sources": [
     {
+      "_comment": "주문 상세 — 회원/비회원 공유. user/orders/{N} 통합 엔드포인트가 optional.sanctum 으로 회원/비회원 모두 받으며, 백엔드 컨트롤러가 Auth::check() 로 분기한다 (회원: 본인 주문이면 OrderResource, 비회원: X-Guest-Order-Token 매칭 시 GuestOrderResource). X-Guest-Order-Token 은 이 데이터소스에만 명시적으로 주입 — globalHeaders 의 user/orders/* 광역 패턴을 쓰면 회원 전용 라우트(목록/취소/구매확정 등) 에도 토큰이 첨부되어 보안 우려가 있어 데이터소스 개별 headers 로 한정. endpoint 표현식 분기를 제거해 _global.currentUser 도착 타이밍과 무관하게 안전.",
       "id": "orderData",
+      "label_key": "$t:editor.data_source.orderData",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{route.id}}",
       "method": "GET",
       "auto_fetch": true,
-      "auth_mode": "required",
+      "auth_mode": "optional",
       "loading_strategy": "progressive",
-      "comment": "주문 상세 정보 (주문번호로 조회)"
+      "headers": {
+        "X-Guest-Order-Token": "{{_global.guestOrderToken}}"
+      },
+      "comment": "주문 상세 정보",
+      "errorHandling": {
+        "_comment": "백엔드가 회원/비회원 판단 + 메시지 + redirect_to 결정. 프론트는 단일 sequence 로 토스트 + 백엔드 지정 경로 navigate. 토큰 클리어는 여기서 하지 않음 — verify 직후 또는 다른 흐름에서 저장된 유효 토큰을 덮어쓸 위험. 토큰 만료는 redirect_to=/login 도착 후 사용자가 다시 lookup 진입 시 재발급으로 처리.",
+        "401": {
+          "handler": "sequence",
+          "params": {
+            "actions": [
+              { "handler": "toast", "params": { "type": "warning", "message": "{{error.message ?? '$t:auth.session_expired_toast'}}" } },
+              { "handler": "navigate", "params": { "path": "{{error.errors?.redirect_to ?? '/login'}}" } }
+            ]
+          }
+        },
+        "404": {
+          "handler": "sequence",
+          "params": {
+            "actions": [
+              { "handler": "toast", "params": { "type": "error", "message": "{{error.message ?? '$t:shop.order_complete.order_not_found'}}" } },
+              { "handler": "navigate", "params": { "path": "{{error.errors?.redirect_to ?? '/login'}}" } }
+            ]
+          }
+        }
+      }
     },
     {
       "id": "saveShippingAddress",
+      "label_key": "$t:editor.data_source.saveShippingAddress",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
       "method": "POST",
       "auto_fetch": false,
       "auth_mode": "required",
-      "comment": "배송지 저장"
+      "comment": "배송지 저장 (회원만 — 비회원은 배송지 저장 버튼 if 로 비노출)"
     }
   ],
   "slots": {
     "content": [
       {
+        "_comment": "blur_until_loaded: 지정한 데이터소스 응답이 도착하기 전까지 콘텐츠 가림. init_actions 가드(비로그인 + 토큰 부재)가 navigate 발화하기 전 한 프레임에서 빈 콘텐츠가 노출되는 깜빡임 회귀 방지. 객체 형태로 데이터소스 지정 — 로드 전 blur, 로드 후 해제.",
         "type": "layout",
         "name": "Container",
+        "blur_until_loaded": { "enabled": true, "data_sources": ["orderData"] },
         "props": { "className": "py-12" },
         "responsive": {
           "portable": {
@@ -60,12 +90,12 @@
                   {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center" },
+                    "props": { "className": "w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center leading-none" },
                     "children": [
                       {
                         "type": "basic",
                         "name": "Icon",
-                        "props": { "name": "clock", "className": "w-8 h-8 text-blue-600 dark:text-blue-400" }
+                        "props": { "name": "clock", "size": "lg", "className": "text-blue-600 dark:text-blue-400" }
                       }
                     ]
                   },
@@ -103,12 +133,12 @@
                   {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center" },
+                    "props": { "className": "w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center leading-none" },
                     "children": [
                       {
                         "type": "basic",
                         "name": "Icon",
-                        "props": { "name": "check", "className": "w-8 h-8 text-green-600 dark:text-green-400" }
+                        "props": { "name": "check", "size": "lg", "className": "text-green-600 dark:text-green-400" }
                       }
                     ]
                   },
@@ -287,7 +317,7 @@
                         "props": { "className": "flex justify-between pt-2 border-t border-blue-200 dark:border-blue-700 mt-2" },
                         "children": [
                           { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:shop.order_complete.deposit_due" },
-                          { "type": "basic", "name": "Span", "props": { "className": "font-medium text-red-600 dark:text-red-400" }, "text": "{{orderData?.data?.payment?.vbank_due_at}}" }
+                          { "type": "basic", "name": "Span", "props": { "className": "font-medium text-red-600 dark:text-red-400" }, "text": "{{orderData?.data?.payment?.vbank_due_at_formatted}}" }
                         ]
                       }
                     ]
@@ -297,6 +327,58 @@
                     "name": "P",
                     "props": { "className": "text-sm text-blue-700 dark:text-blue-300 mt-4" },
                     "text": "$t:shop.order_complete.vbank_notice"
+                  }
+                ]
+              },
+              {
+                "comment": "비회원 안내 — 비로그인 사용자에게 주문 조회 방법과 회원 전환 안내. 회원에게는 미노출.",
+                "type": "basic",
+                "name": "Div",
+                "if": "{{!_global.currentUser?.uuid}}",
+                "props": { "className": "bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6" },
+                "responsive": {
+                  "portable": {
+                    "props": { "className": "bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-4" }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-xs font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                    "text": "$t:shop.order_complete.guest_notice_title"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-xs text-gray-600 dark:text-gray-400" },
+                    "text": "$t:shop.order_complete.guest_notice_lookup"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-xs text-gray-600 dark:text-gray-400" },
+                    "text": "$t:shop.order_complete.guest_notice_save"
+                  }
+                ]
+              },
+              {
+                "comment": "비회원 주문 확인 메일 발송 안내 (비회원 + 주문자 이메일 존재 시)",
+                "type": "basic",
+                "name": "Div",
+                "if": "{{!orderData?.data?.user_id && orderData?.data?.orderer_email}}",
+                "props": { "className": "flex items-start gap-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-4 mb-6" },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": { "name": "envelope", "size": "sm", "className": "text-green-600 dark:text-green-400 mt-0.5" }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-sm text-green-800 dark:text-green-300" },
+                    "text": "$t:shop.order_complete.guest_email_sent"
                   }
                 ]
               },
@@ -369,6 +451,22 @@
                                     "if": "{{item.product_option_name || item.option_snapshot?.option_name}}",
                                     "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
                                     "text": "{{$localized(item.product_option_name ?? item.option_snapshot?.option_name)}}"
+                                  },
+                                  {
+                                    "comment": "선택된 추가옵션 (스냅샷 — 옵션 라인 바로 아래)",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{item.additional_options?.length > 0}}",
+                                    "props": { "className": "space-y-0.5" },
+                                    "iteration": { "source": "{{item.additional_options ?? []}}", "item_var": "addOpt" },
+                                    "children": [
+                                      {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                                        "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
+                                      }
+                                    ]
                                   },
                                   {
                                     "comment": "단가 x 수량 (주 통화)",
@@ -474,7 +572,7 @@
                       },
                       {
                         "comment": "배송지 저장 버튼 (로그인 사용자만)",
-                        "if": "{{_global.auth?.isLoggedIn}}",
+                        "if": "{{_global.currentUser?.uuid}}",
                         "type": "basic",
                         "name": "Button",
                         "props": {
@@ -531,9 +629,10 @@
                         "type": "basic", "name": "Div", "props": { "className": "flex justify-between mb-2" }, "children": [
                           { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:shop.order_complete.shipping_fee" },
                           {
+                            "comment": "Number() 캐스팅 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false 회귀",
                             "type": "basic", "name": "Span",
-                            "props": { "className": "{{(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}" },
-                            "text": "{{(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}"
+                            "props": { "className": "{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}" },
+                            "text": "{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}"
                           }
                         ]
                       },
@@ -544,6 +643,15 @@
                         "props": { "className": "flex justify-between mb-2 text-red-600 dark:text-red-400" }, "children": [
                           { "type": "basic", "name": "Span", "text": "$t:shop.order_complete.discount" },
                           { "type": "basic", "name": "Span", "text": "-{{orderData?.data?.mc_total_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_discount_amount_formatted}}" }
+                        ]
+                      },
+                      {
+                        "comment": "마일리지 사용 (있을 때만) — 마일리지는 base_currency 단일 정산이라 통화 전환 없이 *_formatted 사용",
+                        "type": "basic", "name": "Div",
+                        "if": "{{(orderData?.data?.total_points_used_amount ?? 0) > 0}}",
+                        "props": { "className": "flex justify-between mb-2 text-red-600 dark:text-red-400" }, "children": [
+                          { "type": "basic", "name": "Span", "text": "$t:shop.order_complete.points_used" },
+                          { "type": "basic", "name": "Span", "text": "-{{orderData?.data?.total_points_used_amount_formatted}}" }
                         ]
                       },
                       {
@@ -572,6 +680,15 @@
                             "text": "{{currency[1]?.formatted}}"
                           }
                         ]
+                      },
+                      {
+                        "comment": "적립 예정 마일리지 (있을 때만) — 마일리지는 base_currency 단일 정산",
+                        "type": "basic", "name": "Div",
+                        "if": "{{(orderData?.data?.total_earned_points_amount ?? 0) > 0 && orderData?.data?.order_status !== 'cancelled' && !orderData?.data?.is_partially_cancelled}}",
+                        "props": { "className": "flex justify-between mt-2 text-sm" }, "children": [
+                          { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:shop.order_complete.points_earning" },
+                          { "type": "basic", "name": "Span", "props": { "className": "font-medium text-blue-600 dark:text-blue-400" }, "text": "+{{orderData?.data?.total_earned_points_amount_formatted}}" }
+                        ]
                       }
                     ]
                   }
@@ -591,14 +708,15 @@
                   {
                     "type": "basic",
                     "name": "Button",
-                    "props": { "type": "button", "className": "px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700" },
+                    "props": { "type": "button", "className": "px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium" },
                     "responsive": {
                       "portable": {
-                        "props": { "className": "w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700" }
+                        "props": { "className": "w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium" }
                       }
                     },
                     "text": "$t:shop.order_complete.view_order_detail",
-                    "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/mypage/orders/{{orderData?.data?.order_number}}" } }]
+                    "_comment": "회원: 마이페이지 주문 상세(/mypage/orders/:order_number, auth_required:true), 비회원: 비회원 주문 상세(/{shopBase}/guest/orders/:order_number, auth_required:false + X-Guest-Order-Token globalHeader 자동 주입). 분기 없이 마이페이지로만 보내면 비회원이 라우트 가드에 막혀 로그인 페이지로 튕긴다.",
+                    "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{_global.currentUser?.uuid ? ('/mypage/orders/' + orderData?.data?.order_number) : ((_global.shopBase ?? '/shop') + '/guest/orders/' + orderData?.data?.order_number)}}" } }]
                   },
                   {
                     "type": "basic",

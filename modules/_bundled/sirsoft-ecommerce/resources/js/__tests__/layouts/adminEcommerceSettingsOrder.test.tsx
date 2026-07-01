@@ -163,23 +163,31 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
     describe('결제수단 카드 구조', () => {
         const card = findById(tab, 'payment_methods_card');
 
-        it('card 클래스를 가져야 한다', () => {
-            expect(card.props.className).toBe('card');
+        it('admin-card 클래스를 가져야 한다', () => {
+            expect(card.props.className).toBe('admin-card');
         });
 
-        it('카드 헤더에 제목과 설명이 있어야 한다', () => {
-            const header = card.children[0];
-            expect(header.props.className).toBe('card-header');
-            expect(header.children[0].text).toBe(
+        it('카드 제목과 설명이 직계 자식이어야 한다 (admin-card > card-title + card-description 평탄화)', () => {
+            const titleEl = card.children.find(
+                (c: any) => c?.name === 'H3' && typeof c?.props?.className === 'string' &&
+                    /\bcard-title\b/.test(c.props.className)
+            );
+            const descEl = card.children.find(
+                (c: any) => c?.name === 'Div' && typeof c?.props?.className === 'string' &&
+                    /\bcard-description\b/.test(c.props.className)
+            );
+            expect(titleEl).toBeDefined();
+            expect(descEl).toBeDefined();
+            expect(titleEl.text).toBe(
                 '$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.title',
             );
-            expect(header.children[1].text).toBe(
+            expect(descEl.text).toBe(
                 '$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.description',
             );
         });
 
         it('PC/모바일 반응형 분기가 있어야 한다', () => {
-            const content = card.children[1];
+            const content = card.children[2];
             // PC: partial → _payment_methods_list.json
             expect(content.children[0].partial).toContain('_payment_methods_list.json');
             // 모바일: responsive.portable → _payment_methods_cards.json
@@ -221,14 +229,19 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
         const card = findById(tab, 'auto_cancel_card');
 
         it('자동취소 Toggle이 폼 자동바인딩 name을 사용해야 한다', () => {
-            const toggleSection = card.children[1].children[0];
+            const toggleSection = card.children[2].children[0];
             const toggle = toggleSection.children[1];
             expect(toggle.name).toBe('Toggle');
             expect(toggle.props.name).toBe('order_settings.auto_cancel_expired');
         });
 
         it('자동취소 기한 섹션이 auto_cancel_expired 조건부 표시여야 한다', () => {
-            const daysSection = card.children[1].children[1];
+            // 위치 의존 제거 — 자동취소 토글 카드 본문에서 if 조건에 auto_cancel_expired 가 포함된 섹션을 탐색
+            const body = card.children[2];
+            const daysSection = (body.children ?? []).find(
+                (c: any) => typeof c?.if === 'string' && c.if.includes('auto_cancel_expired'),
+            );
+            expect(daysSection).toBeDefined();
             expect(daysSection.if).toContain('auto_cancel_expired');
         });
 
@@ -241,18 +254,18 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
             expect(input.props.max).toBe(30);
         });
 
-        it('가상계좌 입금기한 Input(vbank_due_days) 이 존재해야 한다', () => {
+        it('입금기한 단일화: 구 vbank_due_days Input 이 더 이상 존재하지 않는다', () => {
             const vbankInput = findFirst(card, (n: any) =>
                 n?.name === 'Input' && n?.props?.name === 'order_settings.vbank_due_days',
             );
-            expect(vbankInput).not.toBeNull();
+            expect(vbankInput).toBeNull();
         });
 
-        it('무통장 입금기한 Input(dbank_due_days) 이 존재해야 한다', () => {
+        it('입금기한 단일화: 구 dbank_due_days Input 이 더 이상 존재하지 않는다', () => {
             const dbankInput = findFirst(card, (n: any) =>
                 n?.name === 'Input' && n?.props?.name === 'order_settings.dbank_due_days',
             );
-            expect(dbankInput).not.toBeNull();
+            expect(dbankInput).toBeNull();
         });
     });
 
@@ -642,6 +655,55 @@ describe('은행 관리 모달 구조 검증 (_bank_management_modal.json)', () 
             expect(json).toContain('"handler":"closeModal"');
             expect(json).toContain('"id":"bank_management_modal"');
         });
+    });
+});
+
+// ─── 마일리지 차감 시점 결제수단별 컨트롤 검증 (마일리지/MP06) ───
+
+describe('마일리지 차감 시점 결제수단별 컨트롤', () => {
+    /**
+     * mileage_deduction_timing Select 노드를 찾는다 (value 바인딩 기준).
+     */
+    function findMileageTimingSelect(partial: any): any | null {
+        return findFirst(
+            partial,
+            (n) =>
+                n.name === 'Select' &&
+                typeof n.props?.value === 'string' &&
+                n.props.value.includes('mileage_deduction_timing')
+        );
+    }
+
+    it('카드 파셜에 마일리지 차감시점 Select 가 존재해야 한다', () => {
+        const select = findMileageTimingSelect(paymentMethodsCards);
+        expect(select).not.toBeNull();
+        expect(select.props.value).toContain('mileage_deduction_timing');
+    });
+
+    it('리스트 파셜에 마일리지 차감시점 Select 가 존재해야 한다', () => {
+        const select = findMileageTimingSelect(paymentMethodsList);
+        expect(select).not.toBeNull();
+    });
+
+    it('마일리지 사용이 꺼져 있으면 disabled 여야 한다 (mileage.enabled 연동)', () => {
+        const select = findMileageTimingSelect(paymentMethodsCards);
+        expect(select.props.disabled).toContain('mileage?.enabled');
+    });
+
+    it('change 핸들러가 mileage_deduction_timing 만 갱신해야 한다', () => {
+        const select = findMileageTimingSelect(paymentMethodsCards);
+        const changeAction = (select.actions ?? []).find((a: any) => a.type === 'change');
+        expect(changeAction).toBeDefined();
+        const binding = changeAction.params['form.order_settings.payment_methods'];
+        expect(binding).toContain('mileage_deduction_timing');
+    });
+
+    it('order_placed / payment_complete 두 옵션만 제공해야 한다 (none 없음)', () => {
+        const select = findMileageTimingSelect(paymentMethodsCards);
+        const values = (select.props.options ?? []).map((o: any) => o.value);
+        expect(values).toContain('order_placed');
+        expect(values).toContain('payment_complete');
+        expect(values).not.toContain('none');
     });
 });
 

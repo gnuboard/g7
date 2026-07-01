@@ -57,6 +57,21 @@ class RoleRepository implements RoleRepositoryInterface
     }
 
     /**
+     * 식별자로 역할에 소속된 사용자들을 조회합니다.
+     *
+     * 역할이 없거나 소속 사용자가 없으면 빈 컬렉션을 반환합니다.
+     *
+     * @param  string  $identifier  역할 식별자
+     * @return Collection 역할 소속 사용자 컬렉션
+     */
+    public function getUsersByIdentifier(string $identifier): Collection
+    {
+        $role = Role::where('identifier', $identifier)->first();
+
+        return $role ? $role->users()->get() : new Collection;
+    }
+
+    /**
      * 새로운 역할을 생성합니다.
      *
      * @param  array  $data  역할 생성 데이터

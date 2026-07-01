@@ -274,7 +274,16 @@ const translations = {
         update_guide_title: '업데이트 방법',
         update_guide_warning: '서버 터미널에서 실행하세요.',
         update_guide_desc: '아래 명령어를 실행하여 업데이트합니다.',
+        update_guide_cmd_comment: '# 관리자 권한으로 실행 권장 (Linux/macOS)',
+        update_guide_cmd: '$ sudo php artisan core:update',
         update_guide_note: '업데이트 전 백업을 권장합니다.',
+        upgrade_guide_link_desc: '자세한 절차는 업그레이드 가이드를 확인하세요.',
+        upgrade_guide_link_label: '업그레이드 가이드',
+        manual_update_title: '수동 업데이트',
+        manual_update_desc: '압축 해제한 코어 파일을 직접 지정할 수 있습니다.',
+        manual_update_step1: '# 업데이트 패키지 압축 해제',
+        manual_update_step2: '# 경로를 지정해 업데이트',
+        manual_update_cmd: '$ sudo php artisan core:update --source=/path/to/extracted',
       },
     },
   },
@@ -567,15 +576,15 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
 
     it('터미널 명령어 표시 영역이 있다', () => {
       const commandText = findInTree(modal.children, (n: any) =>
-        n.text === '$ php artisan core:update'
+        n.text === '$t:admin.settings.info.update_guide_cmd'
       );
       expect(commandText).toBeDefined();
       expect(commandText.props.className).toContain('font-mono');
     });
 
-    it('노란색 경고 배경이 있다', () => {
+    it('경고 시맨틱 자산(alert-warning)이 있다 (#408)', () => {
       const warningDiv = findInTree(modal.children, (n: any) =>
-        n.props?.className?.includes('bg-yellow-50')
+        n.props?.className?.includes('alert-warning')
       );
       expect(warningDiv).toBeDefined();
     });
@@ -807,7 +816,7 @@ describe('코어 업데이트 레이아웃 렌더링', () => {
       await testUtils.render();
 
       expect(screen.getByText('서버 터미널에서 실행하세요.')).toBeInTheDocument();
-      expect(screen.getByText('$ php artisan core:update')).toBeInTheDocument();
+      expect(screen.getByText('$ sudo php artisan core:update')).toBeInTheDocument();
       expect(screen.getByTestId('icon-triangle-exclamation')).toBeInTheDocument();
 
       testUtils.cleanup();

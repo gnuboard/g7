@@ -463,4 +463,123 @@ describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
       expect(pendingState.status).toBe('processing');
     });
   });
+
+  // 상품 수정 모드 이미지 업로드 후 저장 시 백엔드가 방금 올린 이미지를 삭제하는 회귀.
+  // 원인: emitEvent(업로드)의 결과(_eventResult)가 같은 sequence 의 후속 액션에 전파되지 않아
+  //       apiCall body 의 form.images 가 업로드 전 stale 스냅샷이었음.
+  // 수정(engine-v1.51.1): emitEvent 가 __g7SequenceLocalSync 에 _eventResult 를 실어
+  //       handleSequence 가 currentState 를 갱신 → 후속 setState 가 _eventResult.allFiles 를 본다.
+  describe('emitEvent 결과의 sequence 전파', () => {
+    it('emitEvent 후 setState 가 _eventResult.data.allFiles 를 form.images 로 반영해야 함', async () => {
+      const initialState = {
+        form: { name: '상품', images: [] },
+        isSaving: false,
+      };
+
+      const uploadedImages = [
+        { id: 1250, hash: 'aaa', order: 1 },
+        { id: 1251, hash: 'bbb', order: 2 },
+      ];
+
+      const mockG7Core = {
+        state: {
+          get: () => ({ _local: initialState }),
+        },
+        componentEvent: {
+          // 업로드 listener 가 allFiles(기존+신규, 순서반영)를 반환하는 것을 시뮬레이션
+          emit: vi.fn().mockResolvedValue([
+            {
+              uploadedAttachments: uploadedImages,
+              existingFiles: [],
+              allFiles: uploadedImages,
+            },
+          ]),
+        },
+      };
+      (window as any).G7Core = mockG7Core;
+
+      const sequenceAction: ActionDefinition = {
+        type: 'click',
+        handler: 'sequence',
+        actions: [
+          {
+            type: 'click',
+            handler: 'setState',
+            params: { target: 'local', isSaving: true },
+          },
+          {
+            type: 'click',
+            handler: 'emitEvent',
+            params: { event: 'upload:product_images' },
+          },
+          {
+            type: 'click',
+            handler: 'setState',
+            params: {
+              target: 'local',
+              'form.images': '{{_local._eventResult?.data?.allFiles ?? (_local.form?.images ?? [])}}',
+            },
+          },
+        ],
+      };
+
+      const handler = dispatcher.createHandler(sequenceAction);
+      await handler({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      // emit 이 호출되었는지 확인
+      expect(mockG7Core.componentEvent.emit).toHaveBeenCalledWith(
+        'upload:product_images',
+        expect.anything()
+      );
+
+      // 최종 setState 가 업로드된 이미지를 form.images 로 반영해야 함
+      const lastCall = globalStateUpdater.mock.calls[globalStateUpdater.mock.calls.length - 1][0];
+      expect(lastCall._local.form.images).toHaveLength(2);
+      expect(lastCall._local.form.images.map((i: any) => i.id)).toEqual([1250, 1251]);
+      // in-flight setState(isSaving) 도 보존
+      expect(lastCall._local.isSaving).toBe(true);
+    });
+
+    it('emitEvent 가 __g7SequenceLocalSync 에 _eventResult 를 실어야 함', async () => {
+      const initialState = { form: { images: [] } };
+      const mockG7Core = {
+        state: { get: () => ({ _local: initialState }) },
+        componentEvent: {
+          emit: vi.fn().mockResolvedValue([{ allFiles: [{ id: 9, hash: 'z' }] }]),
+        },
+      };
+      (window as any).G7Core = mockG7Core;
+
+      const sequenceAction: ActionDefinition = {
+        type: 'click',
+        handler: 'sequence',
+        actions: [
+          { type: 'click', handler: 'emitEvent', params: { event: 'upload:x' } },
+          {
+            type: 'click',
+            handler: 'setState',
+            params: {
+              target: 'local',
+              capturedListeners: '{{_local._eventResult?.listeners ?? 0}}',
+            },
+          },
+        ],
+      };
+
+      const handler = dispatcher.createHandler(sequenceAction);
+      await handler({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      const lastCall = globalStateUpdater.mock.calls[globalStateUpdater.mock.calls.length - 1][0];
+      // 후속 setState 가 _eventResult.listeners(=1) 를 읽을 수 있어야 함
+      expect(lastCall._local.capturedListeners).toBe(1);
+    });
+  });
 });

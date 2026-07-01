@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Contracts\Repositories\LanguagePackTranslationRepositoryInterface;
 use App\Enums\LanguagePackScope;
 use App\Extension\HookManager;
+use App\Listeners\LanguagePack\MergeCustomTranslations;
 use App\Listeners\LanguagePack\MergeFrontendLanguage;
 use App\Listeners\LanguagePack\RunSeedersOnLanguagePackLifecycle;
 use App\Listeners\LanguagePack\SyncDatabaseTranslations;
@@ -37,8 +39,6 @@ class LanguagePackServiceProvider extends ServiceProvider
 {
     /**
      * 컨테이너 바인딩을 등록합니다.
-     *
-     * @return void
      */
     public function register(): void
     {
@@ -68,7 +68,7 @@ class LanguagePackServiceProvider extends ServiceProvider
             return new LanguagePackBundledRegistrar(
                 $app->make(LanguagePackRepositoryInterface::class),
                 $app->make(LanguagePackRegistry::class),
-                $app->make(\App\Contracts\Extension\CacheInterface::class),
+                $app->make(CacheInterface::class),
             );
         });
 
@@ -79,8 +79,6 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 부팅 시 활성 언어팩의 번역 경로를 Translator 에 등록합니다.
      *
      * DB 가 준비되지 않았거나(설치 전) language_packs 테이블이 없으면 조용히 건너뜁니다.
-     *
-     * @return void
      */
     public function boot(): void
     {
@@ -110,8 +108,6 @@ class LanguagePackServiceProvider extends ServiceProvider
      * HookManager 필터에 LanguagePackSeedInjector 의 메서드를 등록합니다.
      *
      * 시더가 applyFilters() 를 호출하면 활성 코어 언어팩의 seed/*.json 으로 다국어 키가 보강됩니다.
-     *
-     * @return void
      */
     private function registerSeedFilters(): void
     {
@@ -143,7 +139,14 @@ class LanguagePackServiceProvider extends ServiceProvider
         $merger = $this->app->make(MergeFrontendLanguage::class);
         HookManager::addFilter('template.language.merge', function ($data, $templateIdentifier = '', $locale = 'ko') use ($merger) {
             return $merger(is_array($data) ? $data : [], (string) $templateIdentifier, (string) $locale);
-        });
+        }, 10);
+
+        // 커스텀 다국어 키 병합 — 언어팩 병합 다음(priority 20)에 실행되어
+        // template_custom_translations 의 활성 키가 언어팩 위에 덮어쓰도록 우선순위를 높게 둔다.
+        $customMerger = $this->app->make(MergeCustomTranslations::class);
+        HookManager::addFilter('template.language.merge', function ($data, $templateIdentifier = '', $locale = 'ko') use ($customMerger) {
+            return $customMerger(is_array($data) ? $data : [], (string) $templateIdentifier, (string) $locale);
+        }, 20);
     }
 
     /**
@@ -154,14 +157,14 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 우선순위로 자동 감지합니다. 후보 미발견 시 'code' 를 기본값으로 사용합니다.
      *
      * @param  LanguagePackSeedInjector  $injector  주입기
-     * @return void
      */
     public function registerExtensionSeedFilters(LanguagePackSeedInjector $injector): void
     {
         $registry = $this->app->make(LanguagePackRegistry::class);
         $candidates = collect()
             ->merge($registry->getActivePacks(LanguagePackScope::Module->value))
-            ->merge($registry->getActivePacks(LanguagePackScope::Plugin->value));
+            ->merge($registry->getActivePacks(LanguagePackScope::Plugin->value))
+            ->merge($registry->getActivePacks(LanguagePackScope::Template->value));
 
         foreach ($candidates as $pack) {
             $seedDir = $pack->resolveDirectory().DIRECTORY_SEPARATOR.'seed';
@@ -214,6 +217,15 @@ class LanguagePackServiceProvider extends ServiceProvider
 
                     continue;
                 }
+                if ($entity === 'manifest') {
+                    // 모듈/플러그인/템플릿 manifest(name/description) 동기화 시 Manager 가 발행하는 필터에 결선.
+                    $scopeStr = $pack->scope;
+                    HookManager::addFilter("{$scopeStr}.{$target}.manifest.translations", function ($manifest) use ($injector, $target, $scopeStr) {
+                        return $injector->injectExtensionManifest(is_array($manifest) ? $manifest : [], $target, $scopeStr);
+                    });
+
+                    continue;
+                }
                 HookManager::addFilter("seed.{$target}.{$entity}.translations", function ($entries) use ($injector, $target, $entity) {
                     if (! is_array($entries) || empty($entries)) {
                         return $entries;
@@ -251,8 +263,6 @@ class LanguagePackServiceProvider extends ServiceProvider
      *
      * G7 표준 훅 메커니즘(HookManager::doAction → addAction) 으로 일원화 — 별도 Event 클래스 사용 안 함.
      * 훅 명명은 모듈/플러그인/템플릿 (`core.{type}.activated/deactivated/installed/updated/uninstalled`) 와 동일.
-     *
-     * @return void
      */
     private function registerEventListeners(): void
     {
@@ -284,9 +294,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 확장(모듈/플러그인/템플릿) 설치/제거/업데이트 후크에 가상 등록 리스너를 연결합니다.
      *
      * 모듈 설치 후 모듈의 lang 디렉토리를 스캔하여 `bundled_with_extension` 가상 레코드를
-     * `language_packs` 테이블에 자동 등록합니다 (계획서 §3.6).
-     *
-     * @return void
+     * `language_packs` 테이블에 자동 등록합니다 (계획서).
      */
     private function registerBundledRegistrarHooks(): void
     {
@@ -296,7 +304,7 @@ class LanguagePackServiceProvider extends ServiceProvider
             $vendor = $this->resolveVendor($identifier, $info);
             $version = (string) ($info['version'] ?? '1.0.0');
             $langDir = $relativeBase.'/'.$identifier.'/lang';
-            if (! \Illuminate\Support\Facades\File::isDirectory(base_path($langDir))) {
+            if (! File::isDirectory(base_path($langDir))) {
                 $langDir = $relativeBase.'/'.$identifier.'/resources/lang';
             }
             $registrar->syncFromExtension($scope, $identifier, $vendor, $version, $langDir);
@@ -374,8 +382,6 @@ class LanguagePackServiceProvider extends ServiceProvider
      * Illuminate\Translation\TranslationServiceProvider 가 'translator' 와
      * 'translation.loader' 를 등록하는 시점 이후에 본 메서드가 호출되어야 하므로,
      * 부트스트랩 순서상 본 ServiceProvider 는 TranslationServiceProvider 다음에 등록됩니다.
-     *
-     * @return void
      */
     private function registerTranslatorOverride(): void
     {
@@ -394,7 +400,6 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 활성 언어팩 1건을 Translator 에 등록합니다.
      *
      * @param  LanguagePack  $pack  활성 언어팩
-     * @return void
      */
     private function registerActivePack(LanguagePack $pack): void
     {
@@ -443,7 +448,6 @@ class LanguagePackServiceProvider extends ServiceProvider
      * config('app.supported_locales') / locale_names / translatable_locales 를 갱신합니다.
      *
      * @param  LanguagePackRegistry  $registry  레지스트리
-     * @return void
      */
     private function refreshSupportedLocales(LanguagePackRegistry $registry): void
     {
@@ -506,8 +510,6 @@ class LanguagePackServiceProvider extends ServiceProvider
 
     /**
      * Laravel 기본 TranslationServiceProvider 클래스 참조 (참고용).
-     *
-     * @return string
      */
     public static function dependsOn(): string
     {

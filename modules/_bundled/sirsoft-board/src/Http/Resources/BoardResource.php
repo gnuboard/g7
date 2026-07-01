@@ -4,6 +4,8 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
@@ -67,27 +69,31 @@ class BoardResource extends BaseApiResource
             'max_comment_length' => $this->max_comment_length,
 
             // 키워드 필터링
-            'blocked_keywords' => $this->formatBlockedKeywords($isFormRequest),
+            'blocked_keywords' => $this->formatBlockedKeywords(),
 
             // 파일 업로드 설정
             'use_file_upload' => $this->use_file_upload,
             'max_file_size' => $this->max_file_size,
             'max_file_count' => $this->max_file_count,
-            'allowed_extensions' => $this->formatAllowedExtensions($isFormRequest),
+            'allowed_extensions' => $this->formatAllowedExtensions(),
+
+            // 관리자 메뉴 등록 여부 (폼 토글 초기값). 폼 요청 시에만 포함.
+            // 값은 Controller(getFormData)가 모델에 세팅한 is_in_admin_menu 속성에서 읽음.
+            'add_to_menu' => $isFormRequest ? (bool) ($this->is_in_admin_menu ?? false) : null,
 
             // 표시 설정
             'new_display_hours' => $this->new_display_hours ?? 24,
 
             // 게시판 관리 인원 (역할 기반, 역할별 1회 조회로 통합)
-            ...$this->getBoardRoleData("sirsoft-board.{$this->slug}"),
+            ...self::getBoardRoleData("sirsoft-board.{$this->slug}"),
 
             // 알림 설정
             'notify_author' => $this->notify_author,
             'notify_admin_on_post' => $this->notify_admin_on_post,
 
-            // 타임스탬프
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
+            // 타임스탬프 (UTC 저장 → 사용자 타임존 변환 출력)
+            'created_at' => $this->formatDateTimeStringForUser($this->created_at),
+            'updated_at' => $this->formatDateTimeStringForUser($this->updated_at),
 
             // 조건부 포함: 게시판 권한 설정 정보
             'permissions' => ($request->has('include_permissions') || $request->routeIs('*.show'))
@@ -218,32 +224,27 @@ class BoardResource extends BaseApiResource
     // =========================================================================
 
     /**
-     * 차단 키워드를 포맷팅합니다.
+     * 차단 키워드를 배열로 반환합니다.
      *
-     * @param  bool  $isFormRequest  폼 요청 여부
-     * @return string|array 포맷팅된 차단 키워드
+     * 폼/조회 요청 모두 배열로 반환합니다. 폼은 TagInput, 조회는 목록 표시에서
+     * 동일하게 배열을 사용합니다 (categories 와 동일 패턴).
+     *
+     * @return array 차단 키워드 배열
      */
-    private function formatBlockedKeywords(bool $isFormRequest): string|array
+    private function formatBlockedKeywords(): array
     {
-        if ($isFormRequest && is_array($this->blocked_keywords)) {
-            return implode(', ', $this->blocked_keywords);
-        }
-
         return $this->blocked_keywords ?? [];
     }
 
     /**
-     * 허용 확장자를 포맷팅합니다.
+     * 허용 확장자를 배열로 반환합니다.
      *
-     * @param  bool  $isFormRequest  폼 요청 여부
-     * @return string|array 포맷팅된 허용 확장자
+     * 폼/조회 요청 모두 배열로 반환합니다 (TagInput 입력과 일관).
+     *
+     * @return array 허용 확장자 배열
      */
-    private function formatAllowedExtensions(bool $isFormRequest): string|array
+    private function formatAllowedExtensions(): array
     {
-        if ($isFormRequest && is_array($this->allowed_extensions)) {
-            return implode(', ', $this->allowed_extensions);
-        }
-
         return $this->allowed_extensions ?? [];
     }
 
@@ -259,10 +260,13 @@ class BoardResource extends BaseApiResource
      * 기존 getBoardRoleUsers() + getBoardRoleUserIds()가 역할별 2회씩 조회하던 것을
      * 역할별 1회 조회로 통합합니다.
      *
+     * 복제(BoardService::copyBoard) 경로와 공유하기 위해 public static 으로 노출한다.
+     * (copyBoard 가 동일 산출 구조를 재사용하도록 SSoT 통합)
+     *
      * @param  string  $rolePrefix  역할 접두사 (예: "sirsoft-board.free")
      * @return array board_managers, board_steps, board_manager_ids, board_step_ids
      */
-    private function getBoardRoleData(string $rolePrefix): array
+    public static function getBoardRoleData(string $rolePrefix): array
     {
         $result = [
             'board_managers' => [],
@@ -271,7 +275,7 @@ class BoardResource extends BaseApiResource
             'board_step_ids' => [],
         ];
 
-        $roles = \App\Models\Role::whereIn('identifier', [
+        $roles = Role::whereIn('identifier', [
             "{$rolePrefix}.manager",
             "{$rolePrefix}.step",
         ])->with('users')->get();
@@ -364,7 +368,7 @@ class BoardResource extends BaseApiResource
      */
     protected function getUserBoardAbilities(Request $request): array
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = Auth::user();
         $slug = $this->getValue('slug');
         $isAdminRoute = $this->isAdminRoute($request);
@@ -405,7 +409,7 @@ class BoardResource extends BaseApiResource
                 ->get()
                 ->pluck('permissions')
                 ->flatten()
-                ->map(fn ($p) => $p->identifier . '|' . ($p->type instanceof \BackedEnum ? $p->type->value : $p->type))
+                ->map(fn ($p) => $p->identifier.'|'.($p->type instanceof \BackedEnum ? $p->type->value : $p->type))
                 ->unique()
                 ->toArray();
 
@@ -416,7 +420,7 @@ class BoardResource extends BaseApiResource
                 }
 
                 $typeValue = $permission->type instanceof \BackedEnum ? $permission->type->value : $permission->type;
-                $result[$canKey] = in_array($permission->identifier . '|' . $typeValue, $userPermissions);
+                $result[$canKey] = in_array($permission->identifier.'|'.$typeValue, $userPermissions);
             }
         } else {
             foreach ($permissionMap as $canKey => $identifier) {
@@ -445,7 +449,7 @@ class BoardResource extends BaseApiResource
         static $guestRole = null;
 
         if ($guestRole === null) {
-            $guestRole = \App\Models\Role::where('identifier', 'guest')->first();
+            $guestRole = Role::where('identifier', 'guest')->first();
         }
 
         if (! $guestRole) {

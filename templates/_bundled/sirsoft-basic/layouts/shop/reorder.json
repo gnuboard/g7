@@ -1,0 +1,284 @@
+{
+    "version": "1.0.0",
+    "layout_name": "shop/reorder",
+    "permissions": [],
+    "extends": "_user_base",
+    "state": {
+        "status": "pending",
+        "message": "",
+        "skipped": []
+    },
+    "init_actions": [
+        {
+            "comment": "재주문 API 호출 — 과거 주문의 상품 옵션을 장바구니에 일괄 추가. user 인증 토큰 필수.",
+            "handler": "apiCall",
+            "auth_required": true,
+            "target": "/api/modules/sirsoft-ecommerce/user/orders/{{route.id}}/reorder",
+            "params": {
+                "method": "POST"
+            },
+            "onSuccess": [
+                {
+                    "comment": "결과 상태 저장 (skipped 항목 노출용)",
+                    "handler": "setState",
+                    "target": "local",
+                    "params": {
+                        "status": "success",
+                        "message": "{{response.message}}",
+                        "skipped": "{{response.data?.skipped ?? []}}"
+                    }
+                },
+                {
+                    "comment": "skipped 없으면 즉시 장바구니로 이동",
+                    "if": "{{(response.data?.skipped?.length ?? 0) === 0}}",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "{{_global.shopBase}}/cart"
+                    }
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "target": "local",
+                    "params": {
+                        "status": "error",
+                        "message": "{{error.message ?? ''}}"
+                    }
+                },
+                {
+                    "handler": "toast",
+                    "params": {
+                        "type": "error",
+                        "message": "$t:shop.reorder.failed"
+                    }
+                }
+            ]
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "props": {
+                    "className": "py-12"
+                },
+                "children": [
+                    {
+                        "comment": "처리 중 — 로딩 스피너",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.status === 'pending'}}",
+                        "props": {
+                            "className": "flex flex-col items-center justify-center py-16 gap-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "loader-2",
+                                    "className": "w-10 h-10 animate-spin text-gray-500 dark:text-gray-400"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-gray-600 dark:text-gray-300"
+                                },
+                                "text": "$t:shop.reorder.processing"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "성공 + skipped 항목 존재 — 사용자에게 알린 후 장바구니로 이동",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.status === 'success' && (_local.skipped?.length ?? 0) > 0}}",
+                        "props": {
+                            "className": "max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "alert-triangle",
+                                            "className": "w-6 h-6 text-amber-500"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:shop.reorder.partial_title"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-gray-600 dark:text-gray-300 mb-6"
+                                },
+                                "text": "$t:shop.reorder.partial_message"
+                            },
+                            {
+                                "comment": "skipped 항목 목록",
+                                "type": "basic",
+                                "name": "Ul",
+                                "props": {
+                                    "className": "space-y-2 mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
+                                },
+                                "iteration": {
+                                    "items": "{{_local.skipped ?? []}}",
+                                    "item_var": "item",
+                                    "index_var": "idx"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Li",
+                                        "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "font-medium"
+                                                },
+                                                "text": "{{item.product_name ?? ''}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-gray-500 dark:text-gray-400 ml-2"
+                                                },
+                                                "text": "— {{item.reason ?? ''}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium cursor-pointer"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "{{_global.shopBase}}/cart"
+                                                }
+                                            }
+                                        ],
+                                        "text": "$t:shop.reorder.go_cart"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/mypage/orders"
+                                                }
+                                            }
+                                        ],
+                                        "text": "$t:shop.reorder.back_to_orders"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "에러 — 사용자에게 알린 후 마이페이지로 돌아가기 옵션",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.status === 'error'}}",
+                        "props": {
+                            "className": "max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "x-circle",
+                                            "className": "w-6 h-6 text-red-500"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:shop.reorder.error_title"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-gray-600 dark:text-gray-300 mb-6"
+                                },
+                                "text": "{{_local.message !== '' ? _local.message : '$t:shop.reorder.failed'}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/mypage/orders"
+                                        }
+                                    }
+                                ],
+                                "text": "$t:shop.reorder.back_to_orders"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -209,4 +209,24 @@ interface ReportRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
+
+    /**
+     * 전체 게시판에서 미처리 신고를 최신순으로 조회합니다 (대시보드 신고 카드용).
+     *
+     * 미처리 기준: status 가 pending 또는 review. last_reported_at 최신순 정렬.
+     * 게시판/작성자 관계를 eager load 합니다.
+     *
+     * @param  int  $limit  조회 건수
+     * @return Collection<int, Report> 미처리 신고 컬렉션
+     */
+    public function getPendingAcrossBoards(int $limit): Collection;
+
+    /**
+     * 전체 게시판의 미처리 신고 건수를 조회합니다 (대시보드 신고 카드 합계용).
+     *
+     * 미처리 기준: status 가 pending 또는 review.
+     *
+     * @return int 미처리 신고 건수
+     */
+    public function countPendingAcrossBoards(): int;
 }

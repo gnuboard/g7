@@ -13,11 +13,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use App\Contracts\UniqueIdServiceInterface;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
@@ -151,6 +152,23 @@ class User extends Authenticatable
     public function getRouteKeyName(): string
     {
         return 'uuid';
+    }
+
+    /**
+     * 알림 발송 시 사용할 수신자 선호 로케일을 반환합니다.
+     *
+     * 사용자 언어 SSoT 는 users.language 컬럼입니다. 지원 로케일이면 해당 값을,
+     * 빈값/미지원 로케일이면 사이트 기본 로케일을 반환합니다. (요청자 locale 폴백 없음)
+     *
+     * @return string|null 지원 로케일이면 해당 값, 아니면 사이트 기본 로케일
+     */
+    public function preferredLocale(): ?string
+    {
+        $supported = config('app.supported_locales', ['ko', 'en']);
+
+        return ($this->language && in_array($this->language, $supported, true))
+            ? $this->language
+            : config('app.locale', 'ko');
     }
 
     /**

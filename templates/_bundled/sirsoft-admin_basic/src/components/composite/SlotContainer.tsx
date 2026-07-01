@@ -39,6 +39,33 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:SlotContainer')) ??
 };
 
 /**
+ * 슬롯에 주입된 컴포넌트의 root id 를 컨테이너 id 로 스코프해 고유화한다.
+ *
+ * 같은 슬롯 컴포넌트가 여러 SlotContainer(예: 헤더 데스크톱/모바일)에서 렌더되면 주입
+ * 컴포넌트의 정적 root id 가 컨테이너마다 같은 값으로 중복 출력되어 HTML id 유일성을
+ * 위반한다. 컨테이너 고유 id 가 있고 컴포넌트가 root id 를 가지면 `{id}__{containerId}`
+ * 로 스코프한다. 둘 중 하나라도 없으면 원본 그대로(무영향).
+ *
+ * @param componentDef 주입 컴포넌트 정의
+ * @param containerId 이 SlotContainer 의 DOM id (없으면 스코프 안 함)
+ * @returns 스코프된(또는 원본) 컴포넌트 정의
+ */
+export function scopeSlotChildDef<T extends { id?: unknown }>(
+  componentDef: T,
+  containerId: string | undefined,
+): T {
+  if (
+    containerId &&
+    componentDef &&
+    typeof componentDef.id === 'string' &&
+    componentDef.id.length > 0
+  ) {
+    return { ...componentDef, id: `${componentDef.id}__${containerId}` };
+  }
+  return componentDef;
+}
+
+/**
  * SlotContainer Props
  */
 export interface SlotContainerProps {
@@ -215,10 +242,14 @@ export const SlotContainer: React.FC<SlotContainerProps> = ({
           translationContext,
         } = registration;
 
+        // 같은 슬롯 컴포넌트가 여러 SlotContainer(헤더 데스크톱/모바일)에서 렌더될 때
+        // 주입 컴포넌트 root id 를 컨테이너 id 로 스코프해 HTML id 중복을 막는다.
+        const scopedDef = scopeSlotChildDef(componentDef, id);
+
         return (
           <DynamicRenderer
-            key={componentDef.id || `slot-${slotId}-${registration.order}`}
-            componentDef={componentDef}
+            key={scopedDef.id || `slot-${slotId}-${registration.order}`}
+            componentDef={scopedDef}
             dataContext={dataContext}
             translationContext={translationContext}
             registry={g7Core.getComponentRegistry()}

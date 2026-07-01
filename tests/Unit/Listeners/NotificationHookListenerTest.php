@@ -2,10 +2,13 @@
 
 namespace Tests\Unit\Listeners;
 
+use App\Extension\HookManager;
+use App\Jobs\DispatchHookListenerJob;
 use App\Listeners\NotificationHookListener;
 use App\Models\NotificationDefinition;
 use App\Services\NotificationDefinitionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -94,5 +97,45 @@ class NotificationHookListenerTest extends TestCase
 
         // getAllActive()는 비활성 제외이므로 등록 안됨
         $this->assertTrue(true);
+    }
+
+    /**
+     * 동적 등록된 알림 훅이 발화될 때 발송 작업이 큐(DispatchHookListenerJob)로
+     * 디스패치되어야 한다 — 요청 스레드에서 동기 발송하면 수신자가 많을 때
+     * 호출 요청(주문 등)이 발송 완료까지 막힌다.
+     *
+     * 회귀 배경: registerDynamicHooks 가 다른 리스너(HookListenerRegistrar 경유)와 달리
+     * DispatchHookListenerJob 래핑 없이 $this->dispatch() 를 직접 호출해 동기 실행되던 결함.
+     * admin 수신자 1,000여 명에게 요청 스레드에서 순차 메일 발송 → 무통장 주문 hang.
+     */
+    public function test_dynamic_notification_hook_dispatches_to_queue_on_fire(): void
+    {
+        Queue::fake();
+
+        NotificationDefinition::create([
+            'type' => 'queued_hook_test',
+            'hook_prefix' => 'core.test',
+            'extension_type' => 'core',
+            'extension_identifier' => 'core',
+            'name' => ['ko' => '큐 발송 테스트'],
+            'variables' => [],
+            'channels' => ['mail'],
+            'hooks' => ['core.test.queued_action'],
+            'is_active' => true,
+            'is_default' => true,
+        ]);
+
+        app(NotificationDefinitionService::class)->invalidateAllCache();
+
+        $listener = app(NotificationHookListener::class);
+        $listener->registerDynamicHooks();
+
+        // 훅 발화 → 발송 작업이 직접 실행되지 않고 큐로 디스패치되어야 함
+        HookManager::doAction('core.test.queued_action', null);
+
+        Queue::assertPushed(
+            DispatchHookListenerJob::class,
+            fn (DispatchHookListenerJob $job) => $job->listenerClass === NotificationHookListener::class
+        );
     }
 }

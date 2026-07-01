@@ -1,14 +1,15 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "로그인 필요 안내 모달 - 비로그인 사용자가 쿠폰 다운로드 시도 시"
+    "description": "로그인 필요 안내 모달 - 비로그인 사용자가 쿠폰 다운로드 시도 시",
+    "editor_label": "$t:user.modal_label.shop_detail.login_required_modal"
   },
   "type": "composite",
   "name": "Modal",
   "id": "login_required_modal",
   "props": {
     "title": "$t:shop.coupon_download.login_required_title",
-    "size": "small"
+    "size": "sm"
   },
   "children": [
     {

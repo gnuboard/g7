@@ -36,13 +36,20 @@ class UpgradeContext
      * @param  string  $fromVersion  업그레이드 시작 버전 (현재 설치 버전)
      * @param  string  $toVersion  업그레이드 목표 버전
      * @param  string  $currentStep  현재 실행 중인 스텝 버전
+     * @param  string  $logChannel  로그 채널명 — 코어 업그레이드는 'upgrade'(기본), 확장
+     *                              (모듈/플러그인) 업그레이드는 'extension-upgrade'. 실행
+     *                              주체가 다른(root vs www-data) 두 흐름이 같은 로그 파일을
+     *                              공유하여 발생하던 소유권 충돌(Permission denied)을 파일
+     *                              분리로 원천 차단한다. step 작성자 인터페이스($context->logger)
+     *                              는 채널과 무관하게 동일하다.
      */
     public function __construct(
         public readonly string $fromVersion,
         public readonly string $toVersion,
         public readonly string $currentStep = '',
+        public readonly string $logChannel = 'upgrade',
     ) {
-        $this->logger = Log::channel('upgrade');
+        $this->logger = Log::channel($logChannel);
     }
 
     /**
@@ -71,6 +78,7 @@ class UpgradeContext
      * 현재 스텝 버전을 변경한 새 컨텍스트를 반환합니다.
      *
      * @param  string  $stepVersion  현재 실행할 스텝 버전
+     * @return self 스텝 버전만 교체하고 나머지(버전·로그 채널)를 승계한 새 컨텍스트
      */
     public function withCurrentStep(string $stepVersion): self
     {
@@ -78,6 +86,7 @@ class UpgradeContext
             fromVersion: $this->fromVersion,
             toVersion: $this->toVersion,
             currentStep: $stepVersion,
+            logChannel: $this->logChannel,
         );
     }
 

@@ -4,11 +4,17 @@ namespace App\Services;
 
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
+use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
+use App\Contracts\Repositories\LanguagePackRepositoryInterface;
+use App\Contracts\Repositories\NotificationLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
+use App\Models\NotificationLog;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * 대시보드 서비스
@@ -21,7 +27,11 @@ class DashboardService
         private UserRepositoryInterface $userRepository,
         private ActivityLogRepositoryInterface $activityLogRepository,
         private ModuleManagerInterface $moduleManager,
-        private PluginManagerInterface $pluginManager
+        private PluginManagerInterface $pluginManager,
+        private NotificationLogRepositoryInterface $notificationLogRepository,
+        private TemplateManagerInterface $templateManager,
+        private LanguagePackRepositoryInterface $languagePackRepository,
+        private LanguagePackService $languagePackService
     ) {}
 
     /**
@@ -38,6 +48,8 @@ class DashboardService
             'total_users' => $this->getUserStats(),
             'installed_modules' => $this->getModuleStats(),
             'active_plugins' => $this->getPluginStats(),
+            'installed_templates' => $this->getTemplateStats(),
+            'language_packs' => $this->getLanguagePackStats(),
             'system_status' => $this->getSystemStatus(),
         ];
 
@@ -110,6 +122,50 @@ class DashboardService
     }
 
     /**
+     * 템플릿 통계를 조회합니다.
+     *
+     * 활성 템플릿은 타입(admin/user)별로 1개씩 지정되므로, 활성 수는
+     * 활성 템플릿이 지정된 타입 수와 같습니다.
+     *
+     * @return array{total: int, active: int} 템플릿 통계 배열
+     */
+    private function getTemplateStats(): array
+    {
+        $allTemplates = $this->templateManager->getAllTemplates();
+
+        $activeCount = 0;
+        foreach (['admin', 'user'] as $type) {
+            if ($this->templateManager->getActiveTemplate($type) !== null) {
+                $activeCount++;
+            }
+        }
+
+        return [
+            'total' => count($allTemplates),
+            'active' => $activeCount,
+        ];
+    }
+
+    /**
+     * 언어팩 통계를 조회합니다.
+     *
+     * 활성 = 현재 활성화된 언어팩 레코드 수,
+     * 전체 = 활성 + 미설치 번들 팩(설치 가능 후보) 수.
+     *
+     * @return array{total: int, active: int} 언어팩 통계 배열
+     */
+    private function getLanguagePackStats(): array
+    {
+        $activeCount = $this->languagePackRepository->getActivePacks()->count();
+        $uninstalledBundledCount = $this->languagePackService->getUninstalledBundledPacks()->count();
+
+        return [
+            'total' => $activeCount + $uninstalledBundledCount,
+            'active' => $activeCount,
+        ];
+    }
+
+    /**
      * 시스템 상태를 조회합니다.
      *
      * @return array 시스템 상태 배열
@@ -150,17 +206,82 @@ class DashboardService
      */
     public function getSystemResources(): array
     {
-        // IDV 정책 가드 지점 (계획서 #297 — 민감 관리자 조회 훅 커버리지)
+        // IDV 정책 가드 지점 (민감 관리자 조회 훅 커버리지)
         HookManager::doAction('core.dashboard.before_resources');
 
+        // 각 probe 를 개별 격리한다 (공개#40).
+        // 일부 호스팅(open_basedir 제한, disable_functions, /proc 미접근)에서 한 probe 의
+        // 실패(warning → ErrorException)가 리소스 조회 전체를 500 으로 떨어뜨리지 않도록,
+        // probe 별 가드(레이어 a) 위에 safeProbe 격리(레이어 b)를 추가한다.
         $resources = [
-            'cpu' => $this->getCpuUsage(),
-            'memory' => $this->getMemoryUsage(),
-            'disk' => $this->getDiskUsage(),
+            'cpu' => $this->safeProbe(fn () => $this->getCpuUsage(), $this->fallbackCpu()),
+            'memory' => $this->safeProbe(fn () => $this->getMemoryUsage(), $this->fallbackMemory()),
+            'disk' => $this->safeProbe(fn () => $this->getDiskUsage(), $this->fallbackDisk()),
         ];
 
         // 훅을 통한 리소스 정보 확장 지원
         return HookManager::applyFilters('core.dashboard.resources', $resources);
+    }
+
+    /**
+     * 시스템 리소스 probe 를 안전하게 실행합니다.
+     *
+     * probe 가 예외(ErrorException·Error 포함)를 던지면 전파하지 않고 폴백값을 반환합니다.
+     * 시스템 리소스 수집 실패가 결코 대시보드 리소스 조회 전체를 500 으로 만들지 않게 합니다.
+     *
+     * @param  callable  $cb  실행할 probe 콜백
+     * @param  array  $fallback  실패 시 반환할 폴백 구조
+     * @return array probe 결과 또는 폴백
+     */
+    protected function safeProbe(callable $cb, array $fallback): array
+    {
+        try {
+            return $cb();
+        } catch (\Throwable $e) {
+            Log::warning('대시보드 시스템 리소스 수집 실패', ['error' => $e->getMessage()]);
+
+            return $fallback;
+        }
+    }
+
+    /**
+     * CPU 수집 불가 시 폴백 구조를 반환합니다.
+     *
+     * @return array CPU 폴백 (percentage 0, color gray)
+     */
+    protected function fallbackCpu(): array
+    {
+        return ['percentage' => 0, 'color' => 'gray'];
+    }
+
+    /**
+     * 메모리 수집 불가 시 폴백 구조를 반환합니다.
+     *
+     * @return array 메모리 폴백 (percentage 0, used/total "알 수 없음", color gray)
+     */
+    protected function fallbackMemory(): array
+    {
+        return [
+            'percentage' => 0,
+            'used' => __('common.unknown'),
+            'total' => __('common.unknown'),
+            'color' => 'gray',
+        ];
+    }
+
+    /**
+     * 디스크 수집 불가 시 폴백 구조를 반환합니다.
+     *
+     * @return array 디스크 폴백 (percentage 0, used/total "알 수 없음", color gray)
+     */
+    protected function fallbackDisk(): array
+    {
+        return [
+            'percentage' => 0,
+            'used' => __('common.unknown'),
+            'total' => __('common.unknown'),
+            'color' => 'gray',
+        ];
     }
 
     /**
@@ -178,8 +299,9 @@ class DashboardService
             // Linux/Unix: /proc/stat에서 CPU 사용률 계산
             if (function_exists('sys_getloadavg')) {
                 $load = sys_getloadavg();
-                // 1분 평균 로드를 CPU 코어 수로 나눠서 백분율로 변환
-                $cores = (int) shell_exec('nproc 2>/dev/null') ?: 1;
+                // 1분 평균 로드를 CPU 코어 수로 나눠서 백분율로 변환.
+                // disable_functions 에 shell_exec 가 있으면 호출 자체가 warning → 가드 (공개#40).
+                $cores = function_exists('shell_exec') ? ((int) @shell_exec('nproc 2>/dev/null') ?: 1) : 1;
                 $percentage = min(100, round(($load[0] / $cores) * 100));
             }
         }
@@ -234,15 +356,19 @@ class DashboardService
         if (PHP_OS_FAMILY === 'Windows') {
             [$total, $used] = $this->getWindowsMemoryUsage();
         } else {
-            // Linux: /proc/meminfo에서 메모리 정보 조회
-            if (file_exists('/proc/meminfo')) {
-                $memInfo = file_get_contents('/proc/meminfo');
-                if (preg_match('/MemTotal:\s+(\d+)/', $memInfo, $matches)) {
-                    $total = $matches[1] * 1024;
-                }
-                if (preg_match('/MemAvailable:\s+(\d+)/', $memInfo, $matches)) {
-                    $available = $matches[1] * 1024;
-                    $used = $total - $available;
+            // Linux: /proc/meminfo에서 메모리 정보 조회.
+            // open_basedir 제한 환경에서 file_get_contents 가 warning → ErrorException 이 되지
+            // 않도록 is_readable 가드 + @ 억제 + false 체크 (공개#40, SettingsService::getMemoryUsage 동형).
+            if (PHP_OS_FAMILY === 'Linux' && is_readable('/proc/meminfo')) {
+                $memInfo = @file_get_contents('/proc/meminfo');
+                if ($memInfo !== false) {
+                    if (preg_match('/MemTotal:\s+(\d+)/', $memInfo, $matches)) {
+                        $total = $matches[1] * 1024;
+                    }
+                    if (preg_match('/MemAvailable:\s+(\d+)/', $memInfo, $matches)) {
+                        $available = $matches[1] * 1024;
+                        $used = $total - $available;
+                    }
                 }
             }
         }
@@ -318,8 +444,12 @@ class DashboardService
     {
         $path = PHP_OS_FAMILY === 'Windows' ? 'C:' : '/';
 
-        $total = disk_total_space($path) ?: 0;
-        $free = disk_free_space($path) ?: 0;
+        // open_basedir 로 '/' 가 제한된 환경에서 disk_*_space 가 warning → ErrorException 이
+        // 되지 않도록 @ 억제 + numeric 체크 (공개#40). ?: 0 폴백은 예외 승격 후엔 무력하므로 @ 필수.
+        $totalRaw = @disk_total_space($path);
+        $freeRaw = @disk_free_space($path);
+        $total = is_numeric($totalRaw) ? (float) $totalRaw : 0;
+        $free = is_numeric($freeRaw) ? (float) $freeRaw : 0;
         $used = $total - $free;
 
         $percentage = $total > 0 ? round(($used / $total) * 100) : 0;
@@ -406,7 +536,7 @@ class DashboardService
     /**
      * 활동 액션에 따른 아이콘을 반환합니다.
      *
-     * @param string|null $action 액션 문자열
+     * @param  string|null  $action  액션 문자열
      * @return string 아이콘명
      */
     private function getActivityIcon(?string $action): string
@@ -439,5 +569,32 @@ class DashboardService
     public function getSystemAlerts(): array
     {
         return HookManager::applyFilters('core.dashboard.alerts', []);
+    }
+
+    /**
+     * 최근 발송된 알림 이력을 조회합니다.
+     *
+     * notification_logs 테이블에서 발송 시각 최신순으로 조회하여
+     * 대시보드 "최근 알림" 카드 표시 형식으로 변환합니다.
+     *
+     * @param  int  $limit  조회할 알림 수
+     * @return array 최근 알림 배열
+     */
+    public function getRecentNotificationLogs(int $limit = 5): array
+    {
+        $logs = $this->notificationLogRepository->getRecent($limit);
+
+        return $logs->map(function (NotificationLog $log) {
+            return [
+                'id' => $log->id,
+                'type' => $log->notification_type,
+                'channel' => $log->channel,
+                'recipient' => $log->recipientUser?->name ?? $log->recipient_name ?? $log->recipient_identifier,
+                'subject' => Str::limit((string) $log->subject, 50),
+                'status' => $log->status->value,
+                'time' => TimezoneHelper::toUserCarbon($log->sent_at ?? $log->created_at)?->diffForHumans(),
+                'timestamp' => TimezoneHelper::toUserTimezone($log->sent_at ?? $log->created_at),
+            ];
+        })->toArray();
     }
 }

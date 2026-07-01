@@ -36,6 +36,7 @@
   "processing": "처리 중...",
   "member": "회원",
   "language": "언어",
+  "currency": "통화",
   "admin_menu": "관리자",
   "theme": {
     "auto": "시스템",
@@ -53,5 +54,11 @@
   "validation_error_title": "입력 오류",
   "validation_error_description": "입력 항목을 확인해주세요.",
   "reset": "초기화",
+  "pagination": "페이지네이션",
+  "first_page": "첫 페이지",
+  "prev_page": "이전 페이지",
+  "next_page": "다음 페이지",
+  "last_page": "마지막 페이지",
+  "page_n": "페이지 {{n}}",
   "currency_unit": "원"
 }

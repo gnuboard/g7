@@ -37,6 +37,8 @@ class ValidationError
 
     public const CODE_INVALID_SCOPE = 'invalid_scope';
 
+    public const CODE_PER_USER_LIMIT = 'per_user_limit';
+
     /**
      * @param  string  $type  오류 타입 (coupon, discount_code, points)
      * @param  int  $couponId  쿠폰/코드 ID
@@ -54,6 +56,8 @@ class ValidationError
 
     /**
      * 쿠폰 검증 오류인지 확인합니다.
+     *
+     * @return bool
      */
     public function isCouponError(): bool
     {
@@ -62,6 +66,8 @@ class ValidationError
 
     /**
      * 배열로 변환합니다.
+     *
+     * @return array
      */
     public function toArray(): array
     {
@@ -78,6 +84,7 @@ class ValidationError
      * 배열에서 DTO를 생성합니다.
      *
      * @param  array  $data  배열 데이터
+     * @return self
      */
     public static function fromArray(array $data): self
     {
@@ -94,6 +101,7 @@ class ValidationError
      * 쿠폰 만료 오류를 생성합니다.
      *
      * @param  int  $couponId  쿠폰 ID
+     * @return self
      */
     public static function couponExpired(int $couponId): self
     {
@@ -111,6 +119,7 @@ class ValidationError
      * @param  int  $couponId  쿠폰 ID
      * @param  int  $minAmount  최소 주문금액
      * @param  int  $currentAmount  현재 금액
+     * @return self
      */
     public static function minAmountNotMet(int $couponId, int $minAmount, int $currentAmount): self
     {
@@ -127,9 +136,32 @@ class ValidationError
     }
 
     /**
+     * 사용자별 쿠폰 사용 한도 초과 오류를 생성합니다.
+     *
+     * @param  int  $couponId  쿠폰 ID
+     * @param  int  $limit  사용자별 사용 한도
+     * @param  int  $usedCount  현재까지 사용/적용 누적 수
+     * @return self
+     */
+    public static function perUserLimitExceeded(int $couponId, int $limit, int $usedCount): self
+    {
+        return new self(
+            type: self::TYPE_COUPON,
+            couponId: $couponId,
+            code: self::CODE_PER_USER_LIMIT,
+            message: 'sirsoft-ecommerce::messages.coupon.per_user_limit_exceeded',
+            context: [
+                'limit' => $limit,
+                'used_count' => $usedCount,
+            ],
+        );
+    }
+
+    /**
      * 중복할인 불가 오류를 생성합니다.
      *
      * @param  int  $couponId  쿠폰 ID
+     * @return self
      */
     public static function notCombinable(int $couponId): self
     {
@@ -145,6 +177,7 @@ class ValidationError
      * 적용 대상 없음 오류를 생성합니다.
      *
      * @param  int  $couponId  쿠폰 ID
+     * @return self
      */
     public static function invalidTarget(int $couponId): self
     {
@@ -160,6 +193,7 @@ class ValidationError
      * 이미 사용된 쿠폰 오류를 생성합니다.
      *
      * @param  int  $couponId  쿠폰 ID
+     * @return self
      */
     public static function alreadyUsed(int $couponId): self
     {
@@ -175,6 +209,7 @@ class ValidationError
      * 쿠폰을 찾을 수 없음 오류를 생성합니다.
      *
      * @param  int  $couponId  쿠폰 ID
+     * @return self
      */
     public static function notFound(int $couponId): self
     {

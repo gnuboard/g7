@@ -8,16 +8,19 @@ use Illuminate\Contracts\Validation\ValidationRule;
 /**
  * API 엔드포인트 화이트리스트 검증 Rule
  *
- * /api/(admin|auth|public)/ 패턴만 허용하고 다른 모든 엔드포인트를 차단합니다.
+ * 코어가 등록하는 API 라우트 네임스페이스만 허용하고 다른 모든 엔드포인트를 차단합니다.
  * 외부 URL, 내부 API, 직접 경로 접근 등을 방지하여 보안을 강화합니다.
  *
  * 허용 패턴:
  * - /api/admin/*
  * - /api/auth/*
  * - /api/public/*
+ * - /api/modules/{vendor-module}/* (ModuleRouteServiceProvider 가 등록하는 모듈 API 프리픽스)
+ * - /api/plugins/{vendor-plugin}/* (PluginRouteServiceProvider 가 등록하는 플러그인 API 프리픽스)
  *
  * 차단 패턴:
  * - /api/internal/*
+ * - /api/modules/* (확장 식별자 vendor-name 형식이 아닌 세그먼트)
  * - /admin/* (직접 경로)
  * - http://* (외부 URL)
  * - https://* (외부 URL)
@@ -26,8 +29,12 @@ class WhitelistedEndpoint implements ValidationRule
 {
     /**
      * 허용된 API 엔드포인트 패턴
+     *
+     * modules/plugins 프리픽스는 확장 식별자(vendor-name — 하이픈 포함 필수) 세그먼트가
+     * 뒤따를 때만 허용한다. 하이픈을 강제해 /api/modules/assets/ 등 비확장 세그먼트는
+     * 화이트리스트에 포함되지 않는다.
      */
-    private const ALLOWED_PATTERN = '/^\/api\/(admin|auth|public)\//';
+    private const ALLOWED_PATTERN = '/^\/api\/((admin|auth|public)\/|(modules|plugins)\/[a-z0-9][a-z0-9_]*(-[a-z0-9_]+)+\/)/';
 
     /**
      * 검증 규칙 실행
@@ -132,7 +139,7 @@ class WhitelistedEndpoint implements ValidationRule
 
         // 화이트리스트 패턴 검증
         if (! preg_match(self::ALLOWED_PATTERN, $value)) {
-            $fail(__('validation.endpoint.not_whitelisted', ['pattern' => '/api/(admin|auth|public)/']));
+            $fail(__('validation.endpoint.not_whitelisted', ['pattern' => '/api/(admin|auth|public)/, /api/(modules|plugins)/{vendor-id}/']));
 
             return;
         }

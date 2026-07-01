@@ -433,4 +433,97 @@ class NotificationDispatchIntegrationTest extends TestCase
 
         Notification::assertSentTo($superAdmin, \App\Notifications\GenericNotification::class);
     }
+
+    // ──────────────────────────────────────────────
+    // 9. 비회원(guest) 발송: trigger_user 폴백 → GuestNotifiable
+    // ──────────────────────────────────────────────
+
+    /**
+     * mail 채널 템플릿을 가진 알림 정의를 생성하는 헬퍼.
+     */
+    private function createMailDefinition(string $type, string $hook, array $recipients): NotificationDefinition
+    {
+        $definition = NotificationDefinition::create([
+            'type' => $type,
+            'hook_prefix' => 'core.test',
+            'extension_type' => 'core',
+            'extension_identifier' => 'core',
+            'name' => ['ko' => $type],
+            'variables' => [],
+            'channels' => ['mail', 'database'],
+            'hooks' => [$hook],
+            'is_active' => true,
+            'is_default' => true,
+        ]);
+
+        foreach (['mail', 'database'] as $ch) {
+            NotificationTemplate::create([
+                'definition_id' => $definition->id,
+                'channel' => $ch,
+                'subject' => ['ko' => '제목', 'en' => 'Subject'],
+                'body' => ['ko' => '본문', 'en' => 'Body'],
+                'recipients' => $recipients,
+                'is_active' => true,
+                'is_default' => true,
+            ]);
+        }
+
+        return $definition;
+    }
+
+    public function test_guest_recipient_receives_mail_notification(): void
+    {
+        $this->createMailDefinition(
+            'test_guest_send',
+            'core.test.after_guest',
+            [['type' => 'trigger_user']]
+        );
+
+        // 비회원 컨텍스트: trigger_user_id 없음 + guest_recipient 표준 키
+        HookManager::addFilter('core.test.notification.extract_data', function ($default) {
+            return [
+                'notifiable' => null,
+                'notifiables' => null,
+                'data' => ['name' => '비회원주문자'],
+                'context' => [
+                    'trigger_user_id' => null,
+                    'guest_recipient' => ['email' => 'guest@example.com', 'name' => '비회원주문자', 'locale' => 'ko'],
+                ],
+            ];
+        }, priority: 20);
+
+        $this->registerAndFire('core.test.after_guest', null);
+
+        // 비회원은 GuestNotifiable 수신자로 발송된다 (회원과 동일한 notify 경로).
+        // fake 는 같은 클래스 + getKey() 로 매칭하므로 동일 이메일 게스트로 단언한다.
+        Notification::assertSentTo(
+            new \App\Notifications\GuestNotifiable('guest@example.com'),
+            \App\Notifications\GenericNotification::class
+        );
+    }
+
+    public function test_guest_recipient_without_email_sends_nothing(): void
+    {
+        $this->createMailDefinition(
+            'test_guest_noemail',
+            'core.test.after_guest_noemail',
+            [['type' => 'trigger_user']]
+        );
+
+        HookManager::addFilter('core.test.notification.extract_data', function ($default) {
+            return [
+                'notifiable' => null,
+                'notifiables' => null,
+                'data' => ['name' => 'x'],
+                'context' => [
+                    'trigger_user_id' => null,
+                    'guest_recipient' => ['email' => ''],
+                ],
+            ];
+        }, priority: 20);
+
+        $this->registerAndFire('core.test.after_guest_noemail', null);
+
+        Notification::assertNothingSent();
+    }
 }

@@ -71,6 +71,82 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
         $this->assertEquals(20, $hooks['sirsoft-board.post.after_delete']['priority']);
     }
 
+    /**
+     * 게시판 수정 훅(board.after_update) 구독이 등록되어 있는지 확인합니다. (#413-17)
+     *
+     * 이 훅 미구독이 "게시판 정보 수정 후 SEO 메타 캐시 미무효화" 버그의 원인이었습니다.
+     *
+     * @scenario name_changed=no, description_changed=no
+     * @effects board_after_update_hook_subscribed
+     */
+    public function test_subscribes_board_after_update_hook(): void
+    {
+        $hooks = SeoBoardCacheListener::getSubscribedHooks();
+
+        $this->assertArrayHasKey('sirsoft-board.board.after_update', $hooks);
+        $this->assertEquals('onBoardUpdate', $hooks['sirsoft-board.board.after_update']['method']);
+        $this->assertEquals(20, $hooks['sirsoft-board.board.after_update']['priority']);
+    }
+
+    // ─── onBoardUpdate (#413-17) ───────────────────────────
+
+    /**
+     * 게시판 수정 시 해당 게시판 SEO 캐시가 무효화되는지 확인합니다. (#413-17)
+     *
+     * 게시판 이름/설명 변경은 게시판 목록(/board/{slug})과 인덱스(/boards)
+     * 메타에 노출되므로, 이 두 URL + 전역 레이아웃(home, search/index) +
+     * sitemap 캐시를 무효화해야 합니다. (게시글 상세는 board name 미노출이라 제외)
+     *
+     * @scenario name_changed=yes, description_changed=no
+     * @effects board_update_invalidates_board_list_url, board_update_invalidates_boards_index_url, board_update_invalidates_home_and_search_layouts, board_update_invalidates_sitemap_cache
+     */
+    public function test_on_board_update_invalidates_board_seo_caches(): void
+    {
+        $this->assertBoardUpdateInvalidatesAll('free');
+    }
+
+    /**
+     * 이름만 미변경·설명만 변경된 경우에도 동일하게 무효화된다. (cross product 커버)
+     *
+     * @scenario name_changed=no, description_changed=yes
+     */
+    public function test_on_board_update_invalidates_when_only_description_changed(): void
+    {
+        $this->assertBoardUpdateInvalidatesAll('notice');
+    }
+
+    /**
+     * 이름·설명 모두 변경된 경우에도 동일하게 무효화된다. (cross product 커버)
+     *
+     * @scenario name_changed=yes, description_changed=yes
+     */
+    public function test_on_board_update_invalidates_when_both_changed(): void
+    {
+        $this->assertBoardUpdateInvalidatesAll('qna');
+    }
+
+    /**
+     * 게시판 수정 무효화 중 예외 발생 시 graceful하게 처리되는지 확인합니다. (#413-17)
+     *
+     * @effects board_update_invalidation_graceful_on_exception
+     */
+    public function test_on_board_update_handles_exceptions_gracefully(): void
+    {
+        $board = (object) ['id' => 1, 'slug' => 'free'];
+
+        $this->cacheMock->shouldReceive('invalidateByUrl')
+            ->andThrow(new \RuntimeException('Cache service unavailable'));
+        $this->cacheMock->shouldReceive('invalidateByLayout')->andReturn(1);
+
+        Log::shouldReceive('warning')->once();
+        Log::shouldReceive('debug')->zeroOrMoreTimes();
+
+        // 예외가 외부로 전파되지 않아야 함
+        $this->listener->onBoardUpdate($board, [], []);
+
+        $this->addToAssertionCount(1);
+    }
+
     // ─── onPostCreate ──────────────────────────────────────
 
     /**
@@ -284,6 +360,54 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     }
 
     // ─── 헬퍼 ──────────────────────────────────────────────
+
+    /**
+     * 게시판 수정 시 해당 게시판 SEO 캐시 전체가 무효화되는지 단언합니다. (#413-17)
+     *
+     * 무효화 대상: /board/{slug} · /boards URL + home·search/index 레이아웃 + seo.sitemap 캐시.
+     *
+     * @param  string  $slug  대상 게시판 슬러그
+     */
+    private function assertBoardUpdateInvalidatesAll(string $slug): void
+    {
+        $board = (object) ['id' => 1, 'slug' => $slug];
+
+        $invokedUrls = [];
+        $invokedLayouts = [];
+
+        $this->cacheMock->shouldReceive('invalidateByUrl')
+            ->andReturnUsing(function (string $url) use (&$invokedUrls) {
+                $invokedUrls[] = $url;
+
+                return 1;
+            });
+
+        $this->cacheMock->shouldReceive('invalidateByLayout')
+            ->andReturnUsing(function (string $layout) use (&$invokedLayouts) {
+                $invokedLayouts[] = $layout;
+
+                return 1;
+            });
+
+        // sitemap 캐시(seo.sitemap) forget 검증 — CacheInterface
+        $cacheInterfaceMock = Mockery::mock(\App\Contracts\Extension\CacheInterface::class);
+        $cacheInterfaceMock->shouldReceive('forget')->once()->with('seo.sitemap');
+        $this->app->instance(\App\Contracts\Extension\CacheInterface::class, $cacheInterfaceMock);
+
+        Log::shouldReceive('debug')->atLeast()->once();
+
+        $this->listener->onBoardUpdate($board, [], []);
+
+        // 게시판 목록 + 인덱스 URL 무효화 (정확 매칭 + 쿼리스트링 변종 와일드카드)
+        $this->assertContains("/board/{$slug}", $invokedUrls);
+        $this->assertContains("/board/{$slug}?*", $invokedUrls);
+        $this->assertContains('/boards', $invokedUrls);
+        $this->assertContains('/boards?*', $invokedUrls);
+
+        // 전역 레이아웃 무효화 (게시판명이 목록/검색에 노출될 수 있음)
+        $this->assertContains('home', $invokedLayouts);
+        $this->assertContains('search/index', $invokedLayouts);
+    }
 
     /**
      * 게시판별 캐시 무효화 기대값을 설정합니다.

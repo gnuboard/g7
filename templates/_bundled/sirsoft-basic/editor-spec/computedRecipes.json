@@ -1,0 +1,98 @@
+{
+  "comment": "basic 소유 자동 계산 친화 보기. params 입력 → expr {key} 치환 → {{ 식 }} 한 쌍.",
+  "filter_default": {
+    "label": "$t:editor.computed.filter_default.label",
+    "group": "common",
+    "params": [
+      {
+        "key": "localPath",
+        "label": "$t:editor.computed.filter_default.param_local_path",
+        "widget": "text",
+        "required": true
+      },
+      {
+        "key": "queryKey",
+        "label": "$t:editor.computed.filter_default.param_query_key",
+        "widget": "text",
+        "required": true
+      },
+      {
+        "key": "fallback",
+        "label": "$t:editor.computed.filter_default.param_fallback",
+        "widget": "text"
+      }
+    ],
+    "expr": "_local.{localPath} ?? query.{queryKey} ?? '{fallback}'"
+  },
+  "options_from_api": {
+    "label": "$t:editor.computed.options_from_api.label",
+    "group": "common",
+    "params": [
+      {
+        "key": "source",
+        "label": "$t:editor.computed.options_from_api.param_source",
+        "widget": "binding-picker",
+        "required": true
+      },
+      {
+        "key": "filter",
+        "label": "$t:editor.computed.options_from_api.param_filter",
+        "widget": "condition"
+      },
+      {
+        "key": "valueField",
+        "label": "$t:editor.computed.options_from_api.param_value_field",
+        "widget": "text",
+        "required": true
+      },
+      {
+        "key": "labelField",
+        "label": "$t:editor.computed.options_from_api.param_label_field",
+        "widget": "text",
+        "required": true
+      }
+    ],
+    "expr": "({source} ?? []).filter({filter}).map(x => ({ value: x.{valueField}, label: x.{labelField} }))"
+  },
+  "first_of": {
+    "label": "$t:editor.computed.first_of.label",
+    "group": "more",
+    "params": [
+      {
+        "key": "candidates",
+        "label": "$t:editor.computed.first_of.param_candidates",
+        "widget": "binding-list"
+      },
+      {
+        "key": "fallback",
+        "label": "$t:editor.computed.first_of.param_fallback",
+        "widget": "text"
+      }
+    ],
+    "expr": "{candidates*} ?? '{fallback}'"
+  },
+  "group_items": {
+    "label": "$t:editor.computed.group_items.label",
+    "group": "more",
+    "params": [
+      {
+        "key": "source",
+        "label": "$t:editor.computed.group_items.param_source",
+        "widget": "binding-picker",
+        "required": true
+      },
+      {
+        "key": "keyField",
+        "label": "$t:editor.computed.group_items.param_key_field",
+        "widget": "text",
+        "required": true
+      },
+      {
+        "key": "valueExpr",
+        "label": "$t:editor.computed.group_items.param_value_expr",
+        "widget": "condition"
+      }
+    ],
+    "expr": "({source} ?? []).reduce((m, x) => ({ ...m, [x.{keyField}]: {valueExpr} }), {})"
+  }
+}

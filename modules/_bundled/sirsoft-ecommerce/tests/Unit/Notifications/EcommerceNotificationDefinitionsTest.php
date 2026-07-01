@@ -22,8 +22,11 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
      * @var array<int, string>
      */
     private array $expectedTypes = [
+        'order_pending_deposit',
+        'mileage_expiring_soon',
         'order_confirmed',
         'order_shipped',
+        'order_delivered',
         'order_completed',
         'order_cancelled',
         'new_order_admin',
@@ -33,14 +36,12 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
     /**
      * module.php::getNotificationDefinitions() 가 모든 알림 정의를 반환하는지 확인.
-     *
-     * @return void
      */
     public function test_module_getter_returns_all_definitions(): void
     {
         $definitions = $this->getModuleDefinitions();
 
-        $this->assertCount(7, $definitions);
+        $this->assertCount(count($this->expectedTypes), $definitions);
 
         $types = array_column($definitions, 'type');
         foreach ($this->expectedTypes as $expected) {
@@ -50,8 +51,6 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
     /**
      * 모든 정의의 channels 배열에 mail 과 database 모두 포함되는지 확인.
-     *
-     * @return void
      */
     public function test_all_definitions_have_both_channels(): void
     {
@@ -63,8 +62,6 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
     /**
      * 모든 정의의 templates 배열에 mail + database 두 채널 템플릿이 존재하는지 확인.
-     *
-     * @return void
      */
     public function test_all_definitions_have_both_channel_templates(): void
     {
@@ -77,8 +74,6 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
     /**
      * database 채널 템플릿에 ko/en subject/body 가 모두 존재하는지 확인.
-     *
-     * @return void
      */
     public function test_database_templates_have_bilingual_content(): void
     {
@@ -98,8 +93,6 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
     /**
      * NotificationSyncHelper 동기화 시 DB 에 NotificationTemplate 이 실제 생성되는지 확인.
-     *
-     * @return void
      */
     public function test_sync_creates_database_templates_in_db(): void
     {

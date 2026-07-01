@@ -1,0 +1,66 @@
+feature: KG이니시스 본인인증 — 라이브 모드 설정 저장 검증 + 민감 필드 암호화 + 토큰 재사용 가드
+
+description: |
+  라이브 모드 설정 검증 및 연관 결함. 코어 플러그인 설정 저장 경로
+  (PUT /api/admin/plugins/{id}/settings → UpdatePluginSettingsRequest → PluginSettingsService)에서:
+    - (라이브 검증) is_test_mode=false(라이브 모드) 진입 시 live_mid / live_api_key 를 required 로 강제.
+          조건부 검증은 코어 정적 스키마로 표현 불가하므로 ValidateInicisSettingsListener 가
+          core.plugin_settings.update_rules 필터로 동적 부여.
+    - (연관) plugin.php::getSettingsSchema() 를 결제 플러그인 동형으로 정의하고 키 필드에
+          sensitive:true 를 부여해 API 키 평문 저장 결함 해소 (저장 시 암호화 / 조회 시 복호화).
+    - (연관) verify()/cancel() 의 재처리 가드가 enum 캐스팅된 status 와
+          문자열을 비교(`=== 'verified'`)해 항상 false → 토큰 무제한 재발급. `isVerified()` 로 정정.
+
+axes:
+  mode: [test, live]                       # test: is_test_mode=true(라이브 미요구) / live: is_test_mode=false(라이브 required)
+  live_credentials: [empty, filled]        # empty: live_mid/live_api_key 공란 / filled: 양쪽 채움
+  locale: [ko, ja]                         # 검증 에러 메시지 항목 라벨이 요청 로케일로 표시되는지 (지원 로케일 동적)
+
+exclusions:
+  - { mode: test, live_credentials: filled, reason: "테스트 모드는 라이브 자격증명을 검증하지 않으므로 채움/공란 결과 동일 — empty 케이스로 대표" }
+  # locale 축은 422 검증 에러 메시지의 항목 라벨 로케일만 가른다. 에러가 발생하지 않는 케이스
+  # (mode=test = 라이브 검증 안 함 / live_credentials=filled = 200 통과)에서는 표시할 에러 라벨이
+  # 없어 locale 이 무의미하므로, 그 조합은 ko 대표 1건으로만 커버하고 ja 변형은 제외한다.
+  - { locale: ja, mode: test, reason: "테스트 모드는 422 가 없어 항목 라벨 로케일 검증 불가 — locale 무의미" }
+  - { locale: ja, live_credentials: filled, reason: "filled 는 200 통과라 에러 메시지 없음 — locale 무의미" }
+
+effects:
+  # 라이브 모드 조건부 검증
+  - live_mode_with_empty_live_credentials_returns_422_with_live_mid_and_live_api_key_errors
+  - live_mode_with_filled_live_credentials_returns_200
+  - test_mode_with_empty_live_credentials_returns_200
+  - validation_error_messages_use_korean_field_labels_not_english_keys
+  - validation_error_messages_use_japanese_field_labels_when_locale_ja   # 지원 로케일(ja) 요청 시 일본어 항목 라벨 노출 (ko/en 하드코딩 제거)
+  # (연관) 민감 필드 암호화
+  - live_api_key_is_not_stored_as_plaintext_in_settings_file
+  - live_api_key_decrypts_back_to_original_via_settings_service_get
+  # (연관) 토큰 재사용 가드
+  - verify_on_already_verified_log_throws_already_consumed_exception
+  - cancel_on_already_verified_log_returns_false_and_keeps_verified_status
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Settings/InicisLiveModeSettingsValidationTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Identity/InicisVerifyReuseGuardTest.php
+
+rules_layer_coverage:
+  - rule: filter-hook-type-marker
+    coverage: ValidateInicisSettingsListener::getSubscribedHooks() 가 core.plugin_settings.update_rules 에 type='filter' 명시 (반환값 무시 회귀 차단).
+  - rule: listener-must-implement-hooklistenerinterface
+    coverage: ValidateInicisSettingsListener implements HookListenerInterface + 정적 getSubscribedHooks().
+  - rule: i18n-key-naming
+    coverage: getSettingsSchema label 은 ko/en 다국어 배열 — 하드코딩 throw 없음. 검증 메시지는 코어 validation.php(required) 사용.
+
+design_rationale: |
+  방안 채택 (다른 번들 플러그인 설정 검증 방식 전수 조사 결과):
+   - 결제 플러그인 4종(kginicis/nhnkcp/nicepayments/toss)은 모두 plugin.php 에 getSettingsSchema()
+     를 정의하나, verification_kginicis 만 스키마를 InicisIdentityProvider 클래스에 잘못 두어
+     코어 UpdatePluginSettingsRequest 가 빈 스키마를 받음 → 검증 규칙 0개 → 무조건 통과.
+   - GDPR 은 자체 라우트+FormRequest 로 정밀 검증하나, 본인인증 플러그인엔 과함.
+   - 채택: (a) 스키마를 plugin.php 로 이전(결제 플러그인 동형 + sensitive) + (b) 라이브 조건부
+     required 는 코어가 이미 발행하는 core.plugin_settings.update_rules 필터로 주입. 코어 무수정.
+   - 라이브 검증 기준은 InicisIdentityProvider::isAvailable()(live_mid + live_api_key 비어있지 않음)
+     과 일치. live_mid 의 SRA 프리픽스는 buildLiveMid() 가 자동 부착하므로 별도 형식 검증 미도입.
+   - (라벨 로케일 보강) ServiceProvider 의 validation.attributes 라벨 등록이 ['ko','en'] 하드코딩이라
+     ja 로케일에서 일본어 라벨이 노출되지 않던 결함을 config('app.supported_locales') 동적 처리로 정정.
+     ja 번역(ライブ MID 등)은 이미 언어팩에 존재했으나 등록 로케일 누락으로 미사용 상태였다.
+     로케일 하드코딩 금지 규정(config('app.supported_locales') 사용)에도 부합.

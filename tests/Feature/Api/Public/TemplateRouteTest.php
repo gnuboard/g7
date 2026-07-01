@@ -13,6 +13,16 @@ class TemplateRouteTest extends TestCase
     use RefreshDatabase;
 
     /**
+     * 같은 스위트의 GDPR 미들웨어 의존 테스트와 migrate:fresh 정합성을 맞추기 위해
+     * GDPR 플러그인 마이그레이션을 일관 선언한다.
+     *
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
+
+    /**
      * 활성화된 템플릿의 라우트 조회 성공 테스트
      */
     public function test_can_fetch_routes_for_active_template(): void

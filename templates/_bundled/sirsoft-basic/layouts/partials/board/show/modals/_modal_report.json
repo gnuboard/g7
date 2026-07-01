@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "공용 신고 모달 - 게시글/댓글"
+    "description": "공용 신고 모달 - 게시글/댓글",
+    "editor_label": "$t:user.modal_label.board_show.board_report_modal"
   },
   "comment": "공용 신고 모달 - modals 섹션이므로 _global 사용 (페이지 _local 접근 불가)",
   "id": "board_report_modal",
@@ -387,6 +388,13 @@
                             },
                             {
                               "handler": "closeModal"
+                            },
+                            {
+                              "comment": "신고 성공 후 게시글 데이터 재조회 → is_already_reported 갱신 → 버튼이 즉시 '신고됨'으로 전환 (게시글/댓글 공통). 새로고침 없이 반영 (이슈 #413-60 증상2)",
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "post"
+                              }
                             }
                           ],
                           "onError": [
@@ -403,6 +411,10 @@
                                 "type": "error",
                                 "message": "{{error.message}}"
                               }
+                            },
+                            {
+                              "comment": "신고 실패(409 중복/403/422) 시 모달을 닫는다 → 에러 토스트만 화면에 노출되어 '진행 불가'처럼 보이던 현상 해소 (이슈 #413-60 증상1, PO 결정: 모달 닫고 토스트)",
+                              "handler": "closeModal"
                             }
                           ]
                         }

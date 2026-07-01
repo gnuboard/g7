@@ -5,13 +5,13 @@
         "ko": "Hello 모듈",
         "en": "Hello Module"
     },
-    "version": "0.1.0-beta.1",
+    "version": "0.1.0",
     "license": "MIT",
     "description": {
         "ko": "학습용 최소 샘플 모듈 (Memo CRUD)",
         "en": "Learning minimal sample module (Memo CRUD)"
     },
-    "g7_version": ">=7.0.0-beta.4",
+    "g7_version": ">=7.0.0",
     "hidden": true,
     "dependencies": {
         "modules": {},

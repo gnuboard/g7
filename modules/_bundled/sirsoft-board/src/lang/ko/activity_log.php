@@ -8,10 +8,13 @@ return [
         'blind' => '블라인드',
         'blind_content' => '콘텐츠 블라인드',
         'bulk_apply' => '일괄 적용',
+        'bulk_apply_aborted' => '일괄 적용 중단',
         'bulk_update_status' => '일괄 상태 변경',
         'create' => '생성',
         'delete' => '삭제',
         'delete_content' => '콘텐츠 삭제',
+        'download' => '다운로드',
+        'remove_from_menu' => '메뉴 제거',
         'restore' => '복원',
         'restore_content' => '콘텐츠 복원',
         'update' => '수정',
@@ -28,6 +31,7 @@ return [
         'board_delete' => '게시판 삭제 (:board_name)',
         'board_copy' => '게시판 복사 (:board_name)',
         'board_add_to_menu' => '게시판 메뉴 추가 (:board_name)',
+        'board_remove_from_menu' => '게시판 메뉴 제거 (:board_name)',
 
         // 게시판 유형 (Admin)
         'board_type_index' => '게시판 유형 목록 조회',
@@ -52,6 +56,7 @@ return [
         // 첨부파일
         'board_attachment_upload' => '첨부파일 업로드 (게시물: :post_id)',
         'board_attachment_delete' => '첨부파일 삭제 (게시물: :post_id)',
+        'board_attachment_download' => '첨부파일 다운로드 (게시물: :post_id)',
         'board_attachment_reorder' => '첨부파일 순서 변경 (게시물: :post_id)',
 
         // 신고 관리 (Admin)
@@ -66,6 +71,7 @@ return [
         // 게시판 설정
         'board_settings_index' => '게시판 설정 조회',
         'board_settings_bulk_apply' => '게시판 설정 일괄 적용',
+        'board_settings_bulk_apply_aborted' => '게시판 설정 일괄 적용 중단 (전체 롤백, 실패 게시판: :failed_board_name, :failed_at/:total)',
     ],
 
     // ChangeDetector 필드 라벨

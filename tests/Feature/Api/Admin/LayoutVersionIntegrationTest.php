@@ -24,9 +24,22 @@ class LayoutVersionIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 레이아웃/템플릿 요청 경로가 GDPR 정책 테이블을 조회하므로
+     * 해당 플러그인 마이그레이션을 테스트 DB 에 포함시킨다.
+     *
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
+
     private User $adminUser;
+
     private Template $userTemplate;
+
     private Template $adminTemplate;
+
     private string $token;
 
     /**
@@ -66,7 +79,7 @@ class LayoutVersionIntegrationTest extends TestCase
             'props' => $props,
         ];
 
-        if (!empty($children)) {
+        if (! empty($children)) {
             $component['children'] = $children;
         }
 
@@ -183,12 +196,12 @@ class LayoutVersionIntegrationTest extends TestCase
     /**
      * 전체 버전 히스토리 플로우 통합 테스트
      *
-     * 시나리오:
+     * 시나리오 (PUT 당 버전 1건 — 저장 시점 content 스냅샷):
      * 1. 레이아웃 생성
-     * 2. 레이아웃 수정 (버전 1 자동 생성)
-     * 3. 다시 수정 (버전 2 자동 생성)
-     * 4. 버전 목록 조회
-     * 5. 특정 버전 조회
+     * 2. 레이아웃 수정 (버전 1 = 첫 저장본 스냅샷)
+     * 3. 다시 수정 (버전 2 = 두 번째 저장본 스냅샷)
+     * 4. 버전 목록 조회 (2건)
+     * 5. 특정 버전 조회 (버전 1 = 첫 저장본)
      * 6. 버전 1로 복원
      * 7. 복원 후 새 버전(3) 생성 확인
      */
@@ -215,8 +228,9 @@ class LayoutVersionIntegrationTest extends TestCase
         // 초기 버전은 생성되지 않음
         $this->assertEquals(0, TemplateLayoutVersion::where('layout_id', $layout->id)->count());
 
-        // 2. 레이아웃 첫 수정 (버전 1 생성)
+        // 2. 레이아웃 첫 수정 (버전 1 생성) — factory lock_version=0 시작
         $updateData1 = [
+            'expected_lock_version' => 0,
             'content' => $this->makeLayoutContent(
                 'test-layout',
                 '/api/admin/test',
@@ -237,20 +251,30 @@ class LayoutVersionIntegrationTest extends TestCase
 
         $this->assertCount(2, $responseData['components']);
 
-        // LayoutService::updateLayoutContent 는 PUT 당 2개 버전 저장 (이전 롤백용 + 현재 기록용)
+        // 첫 수정 시: v1 = 수정 전 원본 baseline + v2 = 첫 수정본 → 2건.
         $this->assertEquals(2, TemplateLayoutVersion::where('layout_id', $layout->id)->count());
 
-        $version1 = TemplateLayoutVersion::where('layout_id', $layout->id)
-            ->where('version', 1)
-            ->first();
-
+        // 버전 1 = 수정 전 원본 baseline (header-1 만, metadata status:initial). 비교 대상 없어 변경 요약 0.
+        $version1 = TemplateLayoutVersion::where('layout_id', $layout->id)->where('version', 1)->first();
         $this->assertNotNull($version1);
         $this->assertCount(1, $version1->content['components']);
         $this->assertEquals('header-1', $version1->content['components'][0]['id']);
-        $this->assertNotNull($version1->changes_summary);
+        $this->assertEquals(['status' => 'initial'], $version1->content['metadata']);
+        $this->assertEquals(0, $version1->changes_summary['char_diff']);
 
-        // 3. 레이아웃 두 번째 수정 (버전 2 생성)
+        // 버전 2 = 첫 수정본(updateData1) — header-1 + footer-1, 원본 대비 변경 요약 0 아님.
+        $version2first = TemplateLayoutVersion::where('layout_id', $layout->id)->where('version', 2)->first();
+        $this->assertNotNull($version2first);
+        $this->assertCount(2, $version2first->content['components']);
+        $this->assertEqualsCanonicalizing(
+            ['header-1', 'footer-1'],
+            array_column($version2first->content['components'], 'id')
+        );
+        $this->assertNotEquals(0, $version2first->changes_summary['char_diff']);
+
+        // 3. 레이아웃 두 번째 수정 (버전 2 생성) — 첫 저장으로 lock_version=1
         $updateData2 = [
+            'expected_lock_version' => 1,
             'content' => $this->makeLayoutContent(
                 'test-layout',
                 '/api/admin/test',
@@ -269,19 +293,25 @@ class LayoutVersionIntegrationTest extends TestCase
 
         $response->assertStatus(200);
 
-        // 2회 PUT = 4개 버전 (PUT 당 2개)
-        $this->assertEquals(4, TemplateLayoutVersion::where('layout_id', $layout->id)->count());
+        // baseline(v1) + 첫 수정본(v2) + 두 번째 수정본(v3) = 3건.
+        $this->assertEquals(3, TemplateLayoutVersion::where('layout_id', $layout->id)->count());
 
-        // 4. 버전 목록 조회
+        // 최신 버전(버전 3)의 changes_summary 는 직전(버전 2) 대비 변경을 정확히 담는다 —
+        // sidebar-1 추가 + 변경 → char_diff 0 아님 (종전 결함: 최신 버전이 자기 비교로 항상 0).
+        $version3 = TemplateLayoutVersion::where('layout_id', $layout->id)->where('version', 3)->first();
+        $this->assertNotNull($version3);
+        $this->assertNotEquals(0, $version3->changes_summary['char_diff']);
+        // sidebar-1 추가 → 새 라인 발생 (added 카운트 > 0)
+        $this->assertGreaterThan(0, $version3->changes_summary['added']);
+
+        // 4. 버전 목록 조회 — baseline + 2회 수정 = 3건
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->userTemplate->identifier}/layouts/{$layout->name}/versions");
 
         $response->assertStatus(200);
-        // LayoutService::updateLayoutContent 는 PUT 당 2개 버전 저장 (이전 + 현재)
-        // 2회 PUT = 4개 버전
-        $this->assertCount(4, $response->json('data'));
+        $this->assertCount(3, $response->json('data'));
 
-        // 5. 특정 버전 조회 (버전 1)
+        // 5. 특정 버전 조회 (버전 1 = 수정 전 원본 baseline)
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->userTemplate->identifier}/layouts/{$layout->name}/versions/1");
 
@@ -289,6 +319,7 @@ class LayoutVersionIntegrationTest extends TestCase
 
         $versionData = $response->json('data');
         $this->assertEquals(1, (int) $versionData['version']);
+        // 버전 1 = 수정 전 원본 (header-1 만).
         $this->assertCount(1, $versionData['components']);
         $this->assertEquals('header-1', $versionData['components'][0]['id']);
 
@@ -298,10 +329,10 @@ class LayoutVersionIntegrationTest extends TestCase
 
         $response->assertStatus(200);
 
-        // 7. 복원은 saveVersion 1회 호출 (복원 전 content 저장). 4 + 1 = 5 버전
-        $this->assertEquals(5, TemplateLayoutVersion::where('layout_id', $layout->id)->count());
+        // 7. 복원은 saveVersion 1회 호출 (복원 전 content 저장). 3 + 1 = 4 버전
+        $this->assertEquals(4, TemplateLayoutVersion::where('layout_id', $layout->id)->count());
 
-        // 레이아웃의 현재 content가 버전 1로 복원되었는지 확인 (버전 번호가 아닌 실제 내용 기준)
+        // 레이아웃의 현재 content가 버전 1(수정 전 원본 = header-1 만)로 복원되었는지 확인.
         $layout->refresh();
         $this->assertCount(1, $layout->content['components']);
         $this->assertEquals('header-1', $layout->content['components'][0]['id']);
@@ -312,9 +343,9 @@ class LayoutVersionIntegrationTest extends TestCase
      * 유저 템플릿만 버전이 저장되는지 검증
      *
      * - 유저 템플릿(type='user'): 버전 저장됨
-     * - 관리자 템플릿(type='admin'): 버전 저장되지 않음 (레이아웃 편집 불가)
+     * - 관리자 템플릿(type='admin'): 버전 저장됨 (admin/user 구분 없이 모든 템플릿 편집 가능)
      */
-    public function test_version_saved_only_for_user_templates(): void
+    public function test_version_saved_for_all_template_types(): void
     {
         // 유저 템플릿 레이아웃 생성
         $userLayout = TemplateLayout::factory()->create([
@@ -338,9 +369,10 @@ class LayoutVersionIntegrationTest extends TestCase
             ),
         ]);
 
-        // 유저 템플릿 레이아웃 수정
+        // 유저 템플릿 레이아웃 수정 (factory lock_version=0)
         $this->authRequest()
             ->putJson("/api/admin/templates/{$this->userTemplate->identifier}/layouts/{$userLayout->name}", [
+                'expected_lock_version' => 0,
                 'content' => $this->makeLayoutContent(
                     'user-layout',
                     '/api/admin/user',
@@ -349,9 +381,10 @@ class LayoutVersionIntegrationTest extends TestCase
             ])
             ->assertStatus(200);
 
-        // 관리자 템플릿 레이아웃 수정
+        // 관리자 템플릿 레이아웃 수정 (factory lock_version=0)
         $this->authRequest()
             ->putJson("/api/admin/templates/{$this->adminTemplate->identifier}/layouts/{$adminLayout->name}", [
+                'expected_lock_version' => 0,
                 'content' => $this->makeLayoutContent(
                     'admin-layout',
                     '/api/admin/dashboard',
@@ -360,11 +393,11 @@ class LayoutVersionIntegrationTest extends TestCase
             ])
             ->assertStatus(200);
 
-        // 유저 템플릿은 버전이 생성됨 (PUT 당 2개: 이전 + 현재)
+        // 유저 템플릿: 첫 수정 → baseline(v1) + 수정본(v2) = 2건
         $this->assertEquals(2, TemplateLayoutVersion::where('layout_id', $userLayout->id)->count());
 
-        // 관리자 템플릿은 버전이 생성되지 않음 (레이아웃 편집 불가 정책)
-        $this->assertEquals(0, TemplateLayoutVersion::where('layout_id', $adminLayout->id)->count());
+        // 관리자 템플릿도 동일하게 버전이 생성됨 (admin/user 구분 없이 편집 가능)
+        $this->assertEquals(2, TemplateLayoutVersion::where('layout_id', $adminLayout->id)->count());
     }
 
     /**
@@ -419,6 +452,7 @@ class LayoutVersionIntegrationTest extends TestCase
 
         $response = $this->authRequest()
             ->putJson("/api/admin/templates/{$this->userTemplate->identifier}/layouts/{$layout->name}", [
+                'expected_lock_version' => 0,
                 'content' => $this->makeLayoutContent(
                     'large-layout',
                     '/api/admin/large',
@@ -432,7 +466,7 @@ class LayoutVersionIntegrationTest extends TestCase
         // 성공 확인
         $response->assertStatus(200);
 
-        // 버전이 생성되었는지 확인 (1 PUT = 2 버전: 이전 + 현재)
+        // 버전이 생성되었는지 확인 (첫 수정 = baseline + 수정본 = 2 버전)
         $this->assertEquals(2, TemplateLayoutVersion::where('layout_id', $layout->id)->count());
 
         // 성능 검증: 5초 이내 완료 (Windows + MySQL + RefreshDatabase 환경 고려한 여유값)
@@ -471,9 +505,10 @@ class LayoutVersionIntegrationTest extends TestCase
             ),
         ]);
 
-        // 복잡한 변경 수행
+        // 복잡한 변경 수행 (factory lock_version=0)
         $response = $this->authRequest()
             ->putJson("/api/admin/templates/{$this->userTemplate->identifier}/layouts/{$layout->name}", [
+                'expected_lock_version' => 0,
                 'content' => $this->makeLayoutContent(
                     'accuracy-test',
                     '/api/admin/accuracy',
@@ -496,42 +531,28 @@ class LayoutVersionIntegrationTest extends TestCase
 
         $response->assertStatus(200);
 
-        // 생성된 버전 확인
-        $version = TemplateLayoutVersion::where('layout_id', $layout->id)->first();
+        // 생성된 버전 확인 — 버전 2(수정본)의 changes_summary 검증 (v1 은 baseline, 변경 요약 0).
+        $version = TemplateLayoutVersion::where('layout_id', $layout->id)->where('version', 2)->first();
         $this->assertNotNull($version);
 
         $summary = $version->changes_summary;
         $this->assertNotNull($summary);
         $this->assertIsArray($summary);
 
-        // changes_summary 구조 검증
+        // changes_summary 구조 검증 — 라인 단위 카운트(added/removed 정수) + char_diff.
+        // modified 는 라인 diff 에 대응 개념이 없어 두지 않는다.
         $this->assertArrayHasKey('added', $summary);
         $this->assertArrayHasKey('removed', $summary);
-        $this->assertArrayHasKey('modified', $summary);
+        $this->assertArrayHasKey('char_diff', $summary);
+        $this->assertArrayNotHasKey('modified', $summary);
+        $this->assertIsInt($summary['added']);
+        $this->assertIsInt($summary['removed']);
 
-        // 3번째 컴포넌트 (sidebar)가 추가되었는지 확인
-        $addedPaths = $summary['added'];
-        $this->assertTrue(
-            collect($addedPaths)->contains(fn($path) => str_contains($path, 'components.2')),
-            'Sidebar component should be added at index 2'
-        );
-
-        // 1번째 컴포넌트 (header)의 title이 수정되었는지 확인
-        $modifiedPaths = $summary['modified'];
-        $this->assertTrue(
-            collect($modifiedPaths)->contains(fn($path) => str_contains($path, 'components.0.props.title')),
-            'Header title should be modified'
-        );
-
-        // metadata 변경 확인
-        $this->assertTrue(
-            collect($modifiedPaths)->contains(fn($path) => str_contains($path, 'metadata.status')),
-            'Metadata status should be modified'
-        );
-        $this->assertTrue(
-            collect($addedPaths)->contains(fn($path) => str_contains($path, 'metadata.version')),
-            'Metadata version should be added'
-        );
+        // sidebar 컴포넌트 추가 + header title/metadata 수정 → 추가/삭제 라인이 발생한다.
+        // (값 변경은 라인 삭제+추가로 표현되므로 added/removed 모두 양수)
+        $this->assertGreaterThan(0, $summary['added'], '추가/수정으로 새 라인이 생긴다');
+        $this->assertGreaterThan(0, $summary['removed'], '값 수정으로 옛 라인이 삭제된다');
+        $this->assertNotEquals(0, $summary['char_diff']);
     }
 
     /**
@@ -549,11 +570,12 @@ class LayoutVersionIntegrationTest extends TestCase
             ),
         ]);
 
-        // 거의 동시에 여러 번 수정
+        // 순차 수정 — 매 저장으로 lock_version 이 1씩 증가하므로 직전 값을 전달 (i-1: 0,1,2,3,4).
         $promises = [];
         for ($i = 1; $i <= 5; $i++) {
             $response = $this->authRequest()
                 ->putJson("/api/admin/templates/{$this->userTemplate->identifier}/layouts/{$layout->name}", [
+                    'expected_lock_version' => $i - 1,
                     'content' => $this->makeLayoutContent(
                         'concurrent-test',
                         '/api/admin/concurrent',
@@ -570,16 +592,15 @@ class LayoutVersionIntegrationTest extends TestCase
         }
 
         // 버전 번호가 올바르게 증가했는지 확인
-        // (LayoutService 는 PUT 당 2개 버전 저장: 이전 롤백용 + 현재 기록용 — 5회 PUT = 10 버전)
+        // (첫 PUT = baseline + 수정본 = 2건, 이후 4회 PUT = 각 1건 → 2 + 4 = 6 버전)
         $versions = TemplateLayoutVersion::where('layout_id', $layout->id)
             ->orderBy('version')
             ->pluck('version')
             ->toArray();
 
-        // 5 PUT × 2 (이전 + 현재) = 10 버전
-        $this->assertCount(10, $versions);
+        $this->assertCount(6, $versions);
         $this->assertEquals(
-            range(1, 10),
+            range(1, 6),
             $versions,
             'Version numbers should be sequential without gaps'
         );
@@ -620,9 +641,10 @@ class LayoutVersionIntegrationTest extends TestCase
             'content' => $initialContent,
         ]);
 
-        // 수정 (버전 1 생성)
+        // 수정 (factory lock_version=0) — v1=원본 baseline, v2=수정본 생성
         $this->authRequest()
             ->putJson("/api/admin/templates/{$this->userTemplate->identifier}/layouts/{$layout->name}", [
+                'expected_lock_version' => 0,
                 'content' => $this->makeLayoutContent(
                     'integrity-test',
                     '/api/admin/integrity',
@@ -689,9 +711,10 @@ class LayoutVersionIntegrationTest extends TestCase
             ),
         ]);
 
-        // 빈 배열에서 데이터 추가
+        // 빈 배열에서 데이터 추가 (factory lock_version=0)
         $response = $this->authRequest()
             ->putJson("/api/admin/templates/{$this->userTemplate->identifier}/layouts/{$layout->name}", [
+                'expected_lock_version' => 0,
                 'content' => $this->makeLayoutContent(
                     'empty-test',
                     '/api/admin/empty',
@@ -703,29 +726,21 @@ class LayoutVersionIntegrationTest extends TestCase
 
         $response->assertStatus(200);
 
-        // 버전이 생성되었는지 확인
-        $version = TemplateLayoutVersion::where('layout_id', $layout->id)->first();
+        // 버전 1 = 빈 원본 baseline — 빈 배열이 올바르게 저장되었는지 확인
+        $version = TemplateLayoutVersion::where('layout_id', $layout->id)->where('version', 1)->first();
         $this->assertNotNull($version);
-
-        // 빈 배열이 올바르게 저장되었는지 확인
         $this->assertEquals([], $version->content['components']);
         $this->assertEquals([], $version->content['data_sources']);
         $this->assertEquals([], $version->content['metadata']);
 
-        // changes_summary에서 추가 항목 확인
+        // 추가된 데이터의 변경 요약은 버전 2(수정본)에 기록된다.
+        $version = TemplateLayoutVersion::where('layout_id', $layout->id)->where('version', 2)->first();
+        $this->assertNotNull($version);
+
+        // changes_summary 에서 추가 라인 수 확인 — 컴포넌트 + 데이터소스 + 메타데이터가
+        // 통째로 추가되었으므로 여러 라인이 added 로 집계된다(카운트 정수).
         $summary = $version->changes_summary;
-        $addedPaths = $summary['added'];
-        $this->assertTrue(
-            collect($addedPaths)->contains(fn($path) => str_contains($path, 'components.0')),
-            'Header component should be added'
-        );
-        $this->assertTrue(
-            collect($addedPaths)->contains(fn($path) => str_contains($path, 'data_sources.0')),
-            'API data source should be added'
-        );
-        $this->assertTrue(
-            collect($addedPaths)->contains(fn($path) => str_contains($path, 'metadata.key')),
-            'Metadata key should be added'
-        );
+        $this->assertIsInt($summary['added']);
+        $this->assertGreaterThan(0, $summary['added'], '컴포넌트/데이터소스/메타데이터 추가로 라인이 늘어난다');
     }
 }

@@ -18,7 +18,7 @@ class Upgrade_0_16_0 implements UpgradeStepInterface
     /**
      * 업그레이드를 실행합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     public function run(UpgradeContext $context): void
     {
@@ -31,7 +31,7 @@ class Upgrade_0_16_0 implements UpgradeStepInterface
      *
      * ActivityLog 시스템으로 통합되어 별도 테이블이 불필요합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     private function dropProductLogsTable(UpgradeContext $context): void
     {
@@ -48,7 +48,7 @@ class Upgrade_0_16_0 implements UpgradeStepInterface
     /**
      * 레이아웃 캐시를 클리어합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     private function clearLayoutCache(UpgradeContext $context): void
     {

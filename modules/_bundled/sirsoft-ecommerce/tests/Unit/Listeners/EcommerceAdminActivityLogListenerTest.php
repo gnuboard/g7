@@ -3,25 +3,26 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
 use App\Enums\ActivityLogType;
+use App\Models\ActivityLog;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Log\LogManager;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\ExtraFeeTemplate;
+use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductCommonInfo;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabel;
 use Modules\Sirsoft\Ecommerce\Models\ProductNoticeTemplate;
-use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
-use App\Models\ActivityLog;
-use Illuminate\Log\LogManager;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * EcommerceAdminActivityLogListener 테스트
@@ -42,7 +43,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         parent::setUp();
         $this->app->instance('request', Request::create('/api/admin/sirsoft-ecommerce/test'));
         $this->listener = app(EcommerceAdminActivityLogListener::class);
-        $this->logChannel = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $this->logChannel = Mockery::mock(LoggerInterface::class);
         Log::shouldReceive('channel')
             ->with('activity')
             ->andReturn($this->logChannel);
@@ -53,12 +54,12 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // getSubscribedHooks
     // ═══════════════════════════════════════════
 
-    public function test_getSubscribedHooks_returns_all_hooks(): void
+    public function test_get_subscribed_hooks_returns_all_hooks(): void
     {
         $hooks = EcommerceAdminActivityLogListener::getSubscribedHooks();
 
-        // Brand(4) + Label(4) + CommonInfo(3) + NoticeTemplate(4) + ExtraFee(6) + ShippingPolicy(2) + Carrier(4) + Image(3) + Option(3) + Review(4) = 37
-        $this->assertCount(37, $hooks);
+        // Brand(4) + Label(4) + CommonInfo(3) + NoticeTemplate(5) + ExtraFee(6) + ShippingPolicy(2) + Carrier(4) + Image(3) + Option(3) + Review(4) + Settings(1) + UserCurrency(1) = 40
+        $this->assertCount(40, $hooks);
 
         // Brand
         $this->assertArrayHasKey('sirsoft-ecommerce.brand.after_create', $hooks);
@@ -86,6 +87,13 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertArrayHasKey('sirsoft-ecommerce.product-notice-template.after_update', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.product-notice-template.after_delete', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.product-notice-template.after_copy', $hooks);
+        $this->assertArrayHasKey('sirsoft-ecommerce.product-notice-template.after_toggle_active', $hooks);
+
+        // Settings
+        $this->assertArrayHasKey('sirsoft-ecommerce.settings.after_save', $hooks);
+
+        // UserCurrency (관리자 회원 통화 변경 — MP08 §A3)
+        $this->assertArrayHasKey('sirsoft-ecommerce.admin.user_currency.changed', $hooks);
 
         // ExtraFee
         $this->assertArrayHasKey('sirsoft-ecommerce.extra_fee_template.after_create', $hooks);
@@ -136,7 +144,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // Brand 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleBrandAfterCreate_logs_activity(): void
+    public function test_handle_brand_after_create_logs_activity(): void
     {
         $brand = $this->createModelMock(Brand::class, 1, 'Nike');
 
@@ -155,7 +163,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBrandAfterCreate($brand, ['name' => 'Nike']);
     }
 
-    public function test_handleBrandAfterUpdate_logs_activity_with_changes(): void
+    public function test_handle_brand_after_update_logs_activity_with_changes(): void
     {
         $brand = $this->createModelMock(Brand::class, 1, 'Nike Updated');
 
@@ -173,7 +181,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBrandAfterUpdate($brand, ['name' => 'Nike Updated'], ['id' => 1, 'name' => 'Nike']);
     }
 
-    public function test_handleBrandAfterUpdate_without_snapshot(): void
+    public function test_handle_brand_after_update_without_snapshot(): void
     {
         $brand = $this->createModelMock(Brand::class, 99, 'No Snap');
 
@@ -184,7 +192,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBrandAfterUpdate($brand, []);
     }
 
-    public function test_handleBrandAfterDelete_logs_activity(): void
+    public function test_handle_brand_after_delete_logs_activity(): void
     {
         $brandId = 10;
 
@@ -202,7 +210,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleBrandAfterDelete($brandId);
     }
 
-    public function test_handleBrandAfterToggleStatus_logs_activity(): void
+    public function test_handle_brand_after_toggle_status_logs_activity(): void
     {
         $brand = $this->createModelMock(Brand::class, 1, 'Nike');
 
@@ -223,7 +231,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // Label 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleLabelAfterCreate_logs_activity(): void
+    public function test_handle_label_after_create_logs_activity(): void
     {
         $label = $this->createModelMock(ProductLabel::class, 1, 'NEW');
 
@@ -241,7 +249,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleLabelAfterCreate($label, ['name' => 'NEW']);
     }
 
-    public function test_handleLabelAfterUpdate_logs_activity_with_changes(): void
+    public function test_handle_label_after_update_logs_activity_with_changes(): void
     {
         $label = $this->createModelMock(ProductLabel::class, 2, 'SALE');
 
@@ -259,7 +267,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleLabelAfterUpdate($label, [], ['id' => 2, 'name' => 'OLD']);
     }
 
-    public function test_handleLabelAfterUpdate_without_snapshot(): void
+    public function test_handle_label_after_update_without_snapshot(): void
     {
         $label = $this->createModelMock(ProductLabel::class, 99, 'X');
 
@@ -270,7 +278,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleLabelAfterUpdate($label, []);
     }
 
-    public function test_handleLabelAfterDelete_logs_activity(): void
+    public function test_handle_label_after_delete_logs_activity(): void
     {
         $labelId = 5;
 
@@ -287,7 +295,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleLabelAfterDelete($labelId);
     }
 
-    public function test_handleLabelAfterToggleStatus_logs_activity(): void
+    public function test_handle_label_after_toggle_status_logs_activity(): void
     {
         $label = $this->createModelMock(ProductLabel::class, 3, 'HOT');
 
@@ -308,7 +316,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // ProductCommonInfo 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleCommonInfoAfterCreate_logs_activity(): void
+    public function test_handle_common_info_after_create_logs_activity(): void
     {
         $info = $this->createModelMock(ProductCommonInfo::class, 1, 'Default Info');
 
@@ -327,7 +335,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleCommonInfoAfterCreate($info, ['name' => 'Default Info']);
     }
 
-    public function test_handleCommonInfoAfterUpdate_logs_activity_with_changes(): void
+    public function test_handle_common_info_after_update_logs_activity_with_changes(): void
     {
         $info = $this->createModelMock(ProductCommonInfo::class, 2, 'Updated Info');
 
@@ -345,7 +353,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleCommonInfoAfterUpdate($info, [], ['id' => 2, 'name' => 'Old Info']);
     }
 
-    public function test_handleCommonInfoAfterUpdate_without_snapshot(): void
+    public function test_handle_common_info_after_update_without_snapshot(): void
     {
         $info = $this->createModelMock(ProductCommonInfo::class, 99, 'X');
 
@@ -356,7 +364,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleCommonInfoAfterUpdate($info, []);
     }
 
-    public function test_handleCommonInfoAfterDelete_logs_activity(): void
+    public function test_handle_common_info_after_delete_logs_activity(): void
     {
         $infoId = 7;
 
@@ -377,7 +385,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // ProductNoticeTemplate 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleNoticeTemplateAfterCreate_logs_activity(): void
+    public function test_handle_notice_template_after_create_logs_activity(): void
     {
         $template = $this->createModelMock(ProductNoticeTemplate::class, 1, 'Food Notice');
 
@@ -395,7 +403,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleNoticeTemplateAfterCreate($template, ['name' => 'Food Notice']);
     }
 
-    public function test_handleNoticeTemplateAfterUpdate_logs_activity_with_changes(): void
+    public function test_handle_notice_template_after_update_logs_activity_with_changes(): void
     {
         $template = $this->createModelMock(ProductNoticeTemplate::class, 2, 'Updated Notice');
 
@@ -413,7 +421,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleNoticeTemplateAfterUpdate($template, [], ['id' => 2, 'name' => 'Old Notice']);
     }
 
-    public function test_handleNoticeTemplateAfterUpdate_without_snapshot(): void
+    public function test_handle_notice_template_after_update_without_snapshot(): void
     {
         $template = $this->createModelMock(ProductNoticeTemplate::class, 99, 'X');
 
@@ -424,7 +432,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleNoticeTemplateAfterUpdate($template, []);
     }
 
-    public function test_handleNoticeTemplateAfterDelete_logs_activity(): void
+    public function test_handle_notice_template_after_delete_logs_activity(): void
     {
         $templateId = 8;
 
@@ -441,7 +449,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleNoticeTemplateAfterDelete($templateId);
     }
 
-    public function test_handleNoticeTemplateAfterCopy_logs_activity(): void
+    public function test_handle_notice_template_after_copy_logs_activity(): void
     {
         $copied = $this->createModelMock(ProductNoticeTemplate::class, 10, 'Copied');
         $original = $this->createModelMock(ProductNoticeTemplate::class, 5, 'Original');
@@ -461,11 +469,44 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleNoticeTemplateAfterCopy($copied, $original);
     }
 
+    public function test_handle_notice_template_after_toggle_active_logs_activity(): void
+    {
+        $template = $this->createModelMock(ProductNoticeTemplate::class, 7, 'Toggled');
+        $template->is_active = true;
+
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function ($action, $context) {
+                return $action === 'product_notice_template.toggle_active'
+                    && $context['log_type'] === ActivityLogType::Admin
+                    && $context['description_key'] === 'sirsoft-ecommerce::activity_log.description.product_notice_template_toggle_active'
+                    && $context['description_params']['template_id'] === 7
+                    && isset($context['loggable'])
+                    && $context['properties']['is_active'] === true;
+            });
+
+        $this->listener->handleNoticeTemplateAfterToggleActive($template);
+    }
+
+    public function test_handle_settings_after_save_logs_activity(): void
+    {
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function ($action, $context) {
+                return $action === 'ecommerce_settings.update'
+                    && $context['log_type'] === ActivityLogType::Admin
+                    && $context['description_key'] === 'sirsoft-ecommerce::activity_log.description.ecommerce_settings_update'
+                    && $context['description_params']['categories'] === 'order_settings, review_settings';
+            });
+
+        $this->listener->handleSettingsAfterSave(['order_settings', 'review_settings']);
+    }
+
     // ═══════════════════════════════════════════
     // ExtraFeeTemplate 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleExtraFeeAfterCreate_logs_activity(): void
+    public function test_handle_extra_fee_after_create_logs_activity(): void
     {
         $template = $this->createModelMock(ExtraFeeTemplate::class, 1, 'Installation Fee');
 
@@ -483,7 +524,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleExtraFeeAfterCreate($template);
     }
 
-    public function test_handleExtraFeeAfterUpdate_logs_activity_with_changes(): void
+    public function test_handle_extra_fee_after_update_logs_activity_with_changes(): void
     {
         $template = $this->createModelMock(ExtraFeeTemplate::class, 2, 'Updated Fee');
 
@@ -501,7 +542,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleExtraFeeAfterUpdate($template, ['id' => 2, 'name' => 'Old Fee']);
     }
 
-    public function test_handleExtraFeeAfterUpdate_without_snapshot(): void
+    public function test_handle_extra_fee_after_update_without_snapshot(): void
     {
         $template = $this->createModelMock(ExtraFeeTemplate::class, 99, 'X');
 
@@ -512,7 +553,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleExtraFeeAfterUpdate($template, null);
     }
 
-    public function test_handleExtraFeeAfterDelete_logs_activity(): void
+    public function test_handle_extra_fee_after_delete_logs_activity(): void
     {
         $templateId = 9;
 
@@ -529,7 +570,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleExtraFeeAfterDelete($templateId);
     }
 
-    public function test_handleExtraFeeAfterToggleActive_logs_activity(): void
+    public function test_handle_extra_fee_after_toggle_active_logs_activity(): void
     {
         $template = $this->createModelMock(ExtraFeeTemplate::class, 3, 'Toggle Fee');
 
@@ -546,7 +587,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleExtraFeeAfterToggleActive($template);
     }
 
-    public function test_handleExtraFeeAfterBulkDelete_logs_per_item(): void
+    public function test_handle_extra_fee_after_bulk_delete_logs_per_item(): void
     {
         $ids = [10, 11, 12];
 
@@ -572,7 +613,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertCount(3, $loggedContexts);
     }
 
-    public function test_handleExtraFeeAfterBulkDelete_includes_snapshots(): void
+    public function test_handle_extra_fee_after_bulk_delete_includes_snapshots(): void
     {
         $ids = [10, 11];
         $snapshots = [10 => ['id' => 10, 'name' => 'Fee A'], 11 => ['id' => 11, 'name' => 'Fee B']];
@@ -596,7 +637,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals('Fee B', $loggedContexts[1]['properties']['snapshot']['name']);
     }
 
-    public function test_handleExtraFeeAfterBulkToggleActive_logs_activity(): void
+    public function test_handle_extra_fee_after_bulk_toggle_active_logs_activity(): void
     {
         // 실제 Log 채널 복원 (DB 기록용)
         Log::swap(new LogManager($this->app));
@@ -629,7 +670,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         }
     }
 
-    public function test_handleExtraFeeAfterBulkCreate_creates_per_item_logs(): void
+    public function test_handle_extra_fee_after_bulk_create_creates_per_item_logs(): void
     {
         $items = [['zipcode' => '12345', 'fee' => 3000], ['zipcode' => '67890', 'fee' => 5000]];
 
@@ -643,7 +684,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $template2->shouldReceive('getMorphClass')->andReturn('extra_fee_template');
         $template2->shouldReceive('getKey')->andReturn(2);
 
-        $collection = new \Illuminate\Database\Eloquent\Collection([$template1, $template2]);
+        $collection = new Collection([$template1, $template2]);
 
         $loggedIds = [];
         $this->logChannel->shouldReceive('info')
@@ -666,7 +707,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertContains(2, $loggedIds);
     }
 
-    public function test_handleExtraFeeAfterBulkCreate_fallback_without_collection(): void
+    public function test_handle_extra_fee_after_bulk_create_fallback_without_collection(): void
     {
         $items = [['zipcode' => '12345', 'fee' => 3000]];
 
@@ -687,7 +728,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // ShippingPolicy 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleShippingPolicyAfterBulkDelete_logs_per_item(): void
+    public function test_handle_shipping_policy_after_bulk_delete_logs_per_item(): void
     {
         $ids = [1, 2];
 
@@ -713,7 +754,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertCount(2, $loggedContexts);
     }
 
-    public function test_handleShippingPolicyAfterBulkDelete_includes_snapshots(): void
+    public function test_handle_shipping_policy_after_bulk_delete_includes_snapshots(): void
     {
         $ids = [5, 6];
         $snapshots = [5 => ['id' => 5, 'name' => 'Policy A'], 6 => ['id' => 6, 'name' => 'Policy B']];
@@ -737,7 +778,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals('Policy B', $loggedContexts[1]['properties']['snapshot']['name']);
     }
 
-    public function test_handleShippingPolicyAfterBulkToggleActive_logs_activity(): void
+    public function test_handle_shipping_policy_after_bulk_toggle_active_logs_activity(): void
     {
         // 실제 Log 채널 복원 (DB 기록용)
         Log::swap(new LogManager($this->app));
@@ -772,7 +813,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // ShippingCarrier 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleCarrierAfterCreate_logs_activity(): void
+    public function test_handle_carrier_after_create_logs_activity(): void
     {
         $carrier = $this->createModelMock(ShippingCarrier::class, 1, 'CJ대한통운');
 
@@ -790,7 +831,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleCarrierAfterCreate($carrier, ['name' => 'CJ대한통운']);
     }
 
-    public function test_handleCarrierAfterUpdate_logs_activity_with_changes(): void
+    public function test_handle_carrier_after_update_logs_activity_with_changes(): void
     {
         $carrier = $this->createModelMock(ShippingCarrier::class, 2, 'Updated Carrier');
 
@@ -808,7 +849,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleCarrierAfterUpdate($carrier, [], ['id' => 2, 'name' => 'Old Carrier']);
     }
 
-    public function test_handleCarrierAfterUpdate_without_snapshot(): void
+    public function test_handle_carrier_after_update_without_snapshot(): void
     {
         $carrier = $this->createModelMock(ShippingCarrier::class, 99, 'X');
 
@@ -819,7 +860,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleCarrierAfterUpdate($carrier, []);
     }
 
-    public function test_handleCarrierAfterDelete_logs_activity(): void
+    public function test_handle_carrier_after_delete_logs_activity(): void
     {
         $carrierId = 5;
 
@@ -836,7 +877,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleCarrierAfterDelete($carrierId);
     }
 
-    public function test_handleCarrierAfterToggleStatus_logs_activity(): void
+    public function test_handle_carrier_after_toggle_status_logs_activity(): void
     {
         $carrier = $this->createModelMock(ShippingCarrier::class, 3, 'Toggle Carrier');
 
@@ -857,7 +898,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // ProductImage 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleImageAfterUpload_logs_activity(): void
+    public function test_handle_image_after_upload_logs_activity(): void
     {
         $image = $this->createModelMock(ProductImage::class, 1);
 
@@ -874,7 +915,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleImageAfterUpload($image);
     }
 
-    public function test_handleImageAfterDelete_logs_activity(): void
+    public function test_handle_image_after_delete_logs_activity(): void
     {
         $image = $this->createModelMock(ProductImage::class, 2);
 
@@ -891,7 +932,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleImageAfterDelete($image);
     }
 
-    public function test_handleImageAfterReorder_logs_activity(): void
+    public function test_handle_image_after_reorder_logs_activity(): void
     {
         $orders = [['id' => 1, 'sort' => 0], ['id' => 2, 'sort' => 1]];
 
@@ -908,7 +949,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleImageAfterReorder($orders);
     }
 
-    public function test_handleImageAfterReorder_with_empty_orders(): void
+    public function test_handle_image_after_reorder_with_empty_orders(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -924,7 +965,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // ProductOption 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleOptionAfterBulkPriceUpdate_logs_per_option(): void
+    public function test_handle_option_after_bulk_price_update_logs_per_option(): void
     {
         $product = Product::factory()->create(['has_options' => true]);
         $option1 = ProductOption::factory()->create(['product_id' => $product->id, 'price_adjustment' => 1000]);
@@ -954,7 +995,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals($option2->id, $loggedActions[1]['option_id']);
     }
 
-    public function test_handleOptionAfterBulkStockUpdate_logs_per_option(): void
+    public function test_handle_option_after_bulk_stock_update_logs_per_option(): void
     {
         $product = Product::factory()->create(['has_options' => true]);
         $option1 = ProductOption::factory()->create(['product_id' => $product->id, 'stock_quantity' => 10]);
@@ -979,7 +1020,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertCount(2, $loggedActions);
     }
 
-    public function test_handleOptionAfterBulkPriceUpdate_logs_with_changes_when_snapshots_provided(): void
+    public function test_handle_option_after_bulk_price_update_logs_with_changes_when_snapshots_provided(): void
     {
         $product = Product::factory()->create(['has_options' => true]);
         $option = ProductOption::factory()->create(['product_id' => $product->id, 'price_adjustment' => 2000]);
@@ -997,7 +1038,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleOptionAfterBulkPriceUpdate([$option->id], 1, [$option->id => $snapshot]);
     }
 
-    public function test_handleOptionAfterBulkUpdate_logs_per_option(): void
+    public function test_handle_option_after_bulk_update_logs_per_option(): void
     {
         $product = Product::factory()->create(['has_options' => true]);
         $option1 = ProductOption::factory()->create(['product_id' => $product->id]);
@@ -1026,7 +1067,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals($option3->id, $loggedActions[2]);
     }
 
-    public function test_handleOptionAfterBulkUpdate_skips_when_no_updates(): void
+    public function test_handle_option_after_bulk_update_skips_when_no_updates(): void
     {
         $result = ['options_updated' => 0];
         $data = ['ids' => ['10-100']];
@@ -1040,7 +1081,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // ProductReview 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleReviewAfterCreate_logs_activity(): void
+    public function test_handle_review_after_create_logs_activity(): void
     {
         $review = $this->createModelMock(ProductReview::class, 1);
 
@@ -1057,7 +1098,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleReviewAfterCreate($review);
     }
 
-    public function test_handleReviewAfterDelete_logs_activity(): void
+    public function test_handle_review_after_delete_logs_activity(): void
     {
         $review = $this->createModelMock(ProductReview::class, 2);
 
@@ -1074,7 +1115,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleReviewAfterDelete($review);
     }
 
-    public function test_handleReviewAfterBulkDelete_logs_per_item(): void
+    public function test_handle_review_after_bulk_delete_logs_per_item(): void
     {
         $ids = [10, 11, 12, 13];
 
@@ -1100,7 +1141,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         $this->assertCount(4, $loggedContexts);
     }
 
-    public function test_handleReviewAfterBulkDelete_includes_snapshots(): void
+    public function test_handle_review_after_bulk_delete_includes_snapshots(): void
     {
         $ids = [10, 11];
         $snapshots = [10 => ['id' => 10, 'content' => 'Great'], 11 => ['id' => 11, 'content' => 'Good']];
@@ -1128,7 +1169,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // 에러 핸들링 테스트
     // ═══════════════════════════════════════════
 
-    public function test_logActivity_catches_exception_and_logs_error(): void
+    public function test_log_activity_catches_exception_and_logs_error(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1162,9 +1203,9 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     /**
      * 모델 Mock 생성 (범용)
      *
-     * @param string $class 모델 클래스명
-     * @param int $id 모델 ID
-     * @param string|null $name name 속성 (있는 경우)
+     * @param  string  $class  모델 클래스명
+     * @param  int  $id  모델 ID
+     * @param  string|null  $name  name 속성 (있는 경우)
      * @return mixed
      */
     private function createModelMock(string $class, int $id, ?string $name = null)
@@ -1194,5 +1235,4 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
 
         return $model;
     }
-
 }

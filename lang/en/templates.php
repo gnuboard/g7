@@ -101,6 +101,12 @@ return [
         'template_activated' => 'Template activated successfully.',
         'template_deactivated' => 'Template deactivated successfully.',
         'template_uninstalled' => 'Template uninstalled successfully.',
+        'editor_spec_empty' => 'Editor spec is empty.',
+        'editor_spec_retrieved' => 'Editor spec retrieved.',
+        'editor_assets_retrieved' => 'Editor assets retrieved.',
+        'editor_assets_missing' => 'Editor asset manifest not found (not built).',
+        'language_retrieved' => 'Language data retrieved.',
+        'language_empty' => 'Language data is empty.',
     ],
 
     'not_found' => 'Template :template not found.',
@@ -308,6 +314,28 @@ return [
             'aborted' => 'Update cancelled.',
             'backup_restored' => 'Previous version has been restored from backup.',
             'force_mode' => 'Force update mode: Skipping version comparison and reinstalling.',
+        ],
+    ],
+
+    // Layout attachments (background images, etc.)
+    'layout_attachments' => [
+        'messages' => [
+            'uploaded' => 'Attachment uploaded.',
+            'listed' => 'Attachment list retrieved.',
+            'deleted' => 'Attachment deleted.',
+        ],
+        'errors' => [
+            'upload_failed' => 'Failed to upload the attachment.',
+            'delete_failed' => 'Failed to delete the attachment.',
+            'not_found' => 'Attachment not found.',
+        ],
+        'validation' => [
+            'file_required' => 'Please select a file to upload.',
+            'file_invalid' => 'The file is invalid.',
+            'file_image' => 'Only image files can be uploaded.',
+            'file_mimes' => 'Unsupported image format (jpg, jpeg, png, gif, webp, svg).',
+            'file_max' => 'The file size may not exceed :max MB.',
+            'layout_name_max' => 'The layout name may not exceed 150 characters.',
         ],
     ],
 ];

@@ -1,3 +1,4 @@
+// e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe.
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
@@ -28,6 +29,12 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   searchable?: boolean;
   /** 검색 input placeholder */
   searchPlaceholder?: string;
+  /**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용). Select 는 커스텀 드롭다운 루트에
+   * 개별 data-editor-* 키를 spread 해야 선택/편집이 닿는다(커스텀 루트
+   * passthrough). basic 컴포넌트라 `{...props}` 로 DOM 표준 속성(id 등)도 함께 흐른다.
+   */
+  editorAttrs?: Record<string, unknown>;
 }
 
 /**
@@ -67,6 +74,7 @@ export const Select: React.FC<SelectProps> = ({
   disabled,
   searchable = false,
   searchPlaceholder,
+  editorAttrs,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -230,13 +238,20 @@ export const Select: React.FC<SelectProps> = ({
   };
 
   // options가 없으면 기본 select 사용 (children 지원)
+  // .select 시맨틱(admin main.css)을 디폴트로 머지 → 호출처가 className 미지정해도 표준 외형
+  // 호출처가 이미 'select' 토큰을 명시한 경우 중복 prepend 방지.
   if (!normalizedOptions) {
+    const tokens = (className ?? '').split(/\s+/).filter(Boolean);
+    const mergedClassName = tokens.includes('select')
+      ? (className ?? '')
+      : ['select', className].filter(Boolean).join(' ');
     return (
       <select
-        className={className}
+        className={mergedClassName}
         value={value}
         onChange={onChange as React.ChangeEventHandler<HTMLSelectElement>}
         disabled={disabled}
+        {...editorAttrs}
         {...props}
       >
         {children}
@@ -245,15 +260,27 @@ export const Select: React.FC<SelectProps> = ({
   }
 
   // 기본 스타일 (className이 없을 때 적용)
-  const hasCustomStyle = className && className.includes('bg-');
+  // variant 접두사가 붙은 유틸(disabled:bg-, dark:bg-, hover:bg- 등)은 베이스 외형이 아니므로
+  // hasCustomStyle/hasTextColor 판정에서 제외한다. 베이스 토큰만으로 커스텀 외형 여부를 판단해야
+  // 호출처가 disabled:bg-gray-100 만 추가했을 때 기본 크기 클래스(w-full px-4 py-2.5)가 유실되지 않는다.
+  const baseTokens = (className ?? '')
+    .split(/\s+/)
+    .filter((t) => t && !t.includes(':')) // variant 접두사(`disabled:`, `dark:`, `hover:` 등) 토큰 제외
+    .join(' ');
+  const hasCustomStyle = baseTokens.includes('bg-');
   // 커스텀 스타일에 텍스트 색상이 없으면 기본 텍스트 색상 보충
-  const hasTextColor = className && /text-(gray|red|blue|green|yellow|white|black|indigo|purple|pink|orange|amber|emerald|teal|cyan|slate)-\d+|text-white|text-black/.test(className);
+  const hasTextColor = /text-(gray|red|blue|green|yellow|white|black|indigo|purple|pink|orange|amber|emerald|teal|cyan|slate)-\d+|text-white|text-black/.test(baseTokens);
   const baseButtonClass = hasCustomStyle
     ? `${className}${hasTextColor ? '' : ' text-gray-700 dark:text-gray-200'}`
-    : `w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none ${className}`;
+    : `w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-sm text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none ${className}`;
+
+  // props 는 SelectHTMLAttributes 기반이라 Div(HTMLDivElement) 에 직접 spread 시 타입 불일치.
+  // 런타임 동작(편집기 data-editor-* / id 등 DOM 표준 속성 passthrough)은 동일하므로
+  // DOM-safe 레코드로 캐스팅해 커스텀 드롭다운 루트에 전달한다.
+  const rootDomProps = { ...editorAttrs, ...props } as Record<string, unknown>;
 
   return (
-    <Div ref={containerRef} className="relative">
+    <Div ref={containerRef} className="relative" {...rootDomProps}>
       <Button
         ref={buttonRef}
         type="button"
@@ -309,7 +336,7 @@ export const Select: React.FC<SelectProps> = ({
                   type="button"
                   onClick={() => !option.disabled && handleSelect(option.value)}
                   disabled={option.disabled}
-                  className={`w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                     isSelected ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'
                   } ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   role="option"

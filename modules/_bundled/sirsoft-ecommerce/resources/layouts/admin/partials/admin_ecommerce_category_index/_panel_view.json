@@ -13,14 +13,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+        "className": "px-4 panel-header"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-sm font-medium text-gray-900 dark:text-white"
+            "className": "text-heading"
           },
           "text": "$t:sirsoft-ecommerce.admin.category.info.title"
         }
@@ -31,7 +31,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "p-4 divide-y divide-gray-200 dark:divide-gray-700"
+        "className": "divider-list p-4"
       },
       "children": [
         {
@@ -46,7 +46,7 @@
               "type": "basic",
               "name": "H4",
               "props": {
-                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+                "className": "text-table-header mb-3"
               },
               "text": "$t:sirsoft-ecommerce.admin.category.info.basic"
             },
@@ -54,7 +54,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-1 md:grid-cols-2 gap-6"
+                "className": "grid-2col-responsive"
               },
               "children": [
                 {
@@ -65,7 +65,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                        "className": "form-sub-label"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.category.info.slug"
                     },
@@ -73,7 +73,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "block text-sm text-gray-900 dark:text-white font-mono"
+                        "className": "text-primary block text-sm font-mono"
                       },
                       "text": "{{_global.selectedCategory?.slug}}"
                     }
@@ -82,9 +82,6 @@
                 {
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                    "className": "space-y-3"
-                  },
                   "children": [
                     {
                       "type": "basic",
@@ -94,7 +91,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                            "className": "form-sub-label"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.category.info.status"
                         },
@@ -112,7 +109,7 @@
                           "name": "Span",
                           "if": "{{!_global.selectedCategory?.is_active}}",
                           "props": {
-                            "className": "inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                            "className": "text-secondary inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded"
                           },
                           "text": "$t:sirsoft-ecommerce.common.inactive"
                         }
@@ -126,7 +123,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-1 md:grid-cols-2 gap-6 mt-4"
+                "className": "grid-2col-responsive mt-4"
               },
               "children": [
                 {
@@ -137,16 +134,13 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                        "className": "form-sub-label"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.category.info.name"
                     },
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": {
-                        "className": "space-y-1"
-                      },
                       "iteration": {
                         "source": "{{Object.entries(_global.selectedCategory?.name || {})}}",
                         "item_var": "nameEntry"
@@ -161,7 +155,7 @@
                               "type": "basic",
                               "name": "Span",
                               "props": {
-                                "className": "inline-block text-xs text-gray-400 dark:text-gray-500 w-8 uppercase"
+                                "className": "text-hint inline-block w-8 uppercase"
                               },
                               "text": "{{nameEntry[0]}}"
                             },
@@ -169,7 +163,7 @@
                               "type": "basic",
                               "name": "Span",
                               "props": {
-                                "className": "text-sm text-gray-900 dark:text-white"
+                                "className": "text-primary text-sm"
                               },
                               "text": "{{nameEntry[1]}}"
                             }
@@ -187,16 +181,13 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                        "className": "form-sub-label"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.category.info.description"
                     },
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": {
-                        "className": "space-y-1"
-                      },
                       "iteration": {
                         "source": "{{Object.entries(_global.selectedCategory?.description || {})}}",
                         "item_var": "descEntry"
@@ -211,7 +202,7 @@
                               "type": "basic",
                               "name": "Span",
                               "props": {
-                                "className": "inline-block text-xs text-gray-400 dark:text-gray-500 w-8 align-top uppercase"
+                                "className": "text-hint inline-block w-8 align-top uppercase"
                               },
                               "text": "{{descEntry[0]}}"
                             },
@@ -219,7 +210,7 @@
                               "type": "basic",
                               "name": "Span",
                               "props": {
-                                "className": "inline text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
+                                "className": "inline text-body whitespace-pre-wrap"
                               },
                               "text": "{{descEntry[1]}}"
                             }
@@ -251,7 +242,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                    "className": "form-sub-label"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.category.info.image"
                 },
@@ -259,9 +250,6 @@
                   "type": "basic",
                   "name": "Div",
                   "if": "{{_global.selectedCategory?.images && _global.selectedCategory?.images?.length > 0}}",
-                  "props": {
-                    "className": "space-y-2"
-                  },
                   "children": [
                     {
                       "type": "basic",
@@ -270,53 +258,59 @@
                         {
                           "type": "basic",
                           "name": "Div",
-                          "iteration": {
-                            "source": "{{_global.selectedCategory?.images ?? []}}",
-                            "item_var": "image"
-                          },
                           "children": [
                             {
                               "type": "basic",
-                              "name": "Img",
-                              "props": {
-                                "src": "{{image?.download_url}}",
-                                "alt": "{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}",
-                                "className": "w-full max-h-56 py-2 object-contain rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-75 hover:shadow-md transition-all bg-gray-50 dark:bg-gray-800"
+                              "name": "Div",
+                              "iteration": {
+                                "source": "{{_global.selectedCategory?.images ?? []}}",
+                                "item_var": "image"
                               },
-                              "actions": [
+                              "children": [
                                 {
-                                  "type": "click",
-                                  "handler": "sequence",
+                                  "type": "basic",
+                                  "name": "Img",
+                                  "props": {
+                                    "src": "{{image?.download_url}}",
+                                    "alt": "{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}",
+                                    "className": "w-full max-h-56 py-2 object-contain rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-75 hover:shadow-md transition-all bg-gray-50 dark:bg-gray-800"
+                                  },
                                   "actions": [
                                     {
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "global",
-                                        "imagePreview": {
-                                          "imageUrl": "{{image?.download_url}}",
-                                          "imageAlt": "{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}"
+                                      "type": "click",
+                                      "handler": "sequence",
+                                      "actions": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "global",
+                                            "imagePreview": {
+                                              "imageUrl": "{{image?.download_url}}",
+                                              "imageAlt": "{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "handler": "openModal",
+                                          "target": "modal_image_preview"
                                         }
-                                      }
-                                    },
-                                    {
-                                      "handler": "openModal",
-                                      "target": "modal_image_preview"
+                                      ]
                                     }
                                   ]
                                 }
                               ]
                             }
                           ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-tertiary italic"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.category.info.image_click_to_enlarge"
                         }
                       ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400 italic"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.category.info.image_click_to_enlarge"
                     }
                   ]
                 },
@@ -354,7 +348,7 @@
               "type": "basic",
               "name": "H4",
               "props": {
-                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+                "className": "text-table-header mb-3"
               },
               "text": "$t:sirsoft-ecommerce.admin.category.info.hierarchy_info"
             },
@@ -362,21 +356,18 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-1 md:grid-cols-2 gap-6"
+                "className": "grid-2col-responsive"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                    "className": "space-y-1"
-                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-tertiary"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.category.info.parent_category"
                     },
@@ -384,7 +375,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "text-sm text-gray-900 dark:text-white"
+                        "className": "text-primary text-sm"
                       },
                       "children": [
                         {
@@ -406,15 +397,12 @@
                 {
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                    "className": "space-y-1"
-                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-tertiary"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.category.info.order"
                     },
@@ -422,7 +410,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "text-sm text-gray-900 dark:text-white"
+                        "className": "text-primary text-sm"
                       },
                       "text": "{{_global.selectedCategory?.sort_order ?? 0}}"
                     }
@@ -445,7 +433,7 @@
               "type": "basic",
               "name": "H4",
               "props": {
-                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+                "className": "text-table-header mb-3"
               },
               "text": "$t:sirsoft-ecommerce.admin.category.info.seo"
             },
@@ -453,7 +441,6 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "space-y-3"
               },
               "children": [
                 {
@@ -461,14 +448,14 @@
                   "name": "Div",
                   "if": "{{_global.selectedCategory?.meta_title}}",
                   "props": {
-                    "className": "flex items-start"
+                    "className": "flex-start"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                        "className": "w-24 text-label-subtle shrink-0"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.category.form.meta_title"
                     },
@@ -476,7 +463,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-900 dark:text-white"
+                        "className": "text-primary text-sm"
                       },
                       "text": "{{_global.selectedCategory?.meta_title}}"
                     }
@@ -487,14 +474,14 @@
                   "name": "Div",
                   "if": "{{_global.selectedCategory?.meta_description}}",
                   "props": {
-                    "className": "flex items-start"
+                    "className": "flex-start"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                        "className": "w-24 text-label-subtle shrink-0"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.category.form.meta_description"
                     },
@@ -502,7 +489,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                        "className": "text-body"
                       },
                       "text": "{{_global.selectedCategory?.meta_description}}"
                     }
@@ -524,7 +511,7 @@
               "type": "basic",
               "name": "H4",
               "props": {
-                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+                "className": "text-table-header mb-3"
               },
               "text": "$t:sirsoft-ecommerce.admin.category.info.statistics"
             },
@@ -546,14 +533,14 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center gap-3"
+                        "className": "flex-center gap-3"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center"
+                            "className": "flex-center w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg justify-center"
                           },
                           "children": [
                             {
@@ -583,7 +570,7 @@
                               "type": "basic",
                               "name": "P",
                               "props": {
-                                "className": "text-2xl font-bold text-primary"
+                                "className": "text-page-heading"
                               },
                               "text": "{{_global.selectedCategory?.products_count ?? 0}}"
                             }
@@ -604,14 +591,14 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center gap-3"
+                        "className": "flex-center gap-3"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center"
+                            "className": "flex-center w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg justify-center"
                           },
                           "children": [
                             {
@@ -641,7 +628,7 @@
                               "type": "basic",
                               "name": "P",
                               "props": {
-                                "className": "text-2xl font-bold text-primary"
+                                "className": "text-page-heading"
                               },
                               "text": "{{_global.selectedCategory?.children?.length ?? 0}}"
                             }
@@ -667,7 +654,7 @@
               "type": "basic",
               "name": "H4",
               "props": {
-                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+                "className": "text-table-header mb-3"
               },
               "text": "$t:sirsoft-ecommerce.admin.category.info.system"
             },
@@ -675,21 +662,18 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "grid grid-cols-1 md:grid-cols-2 gap-6"
+                "className": "grid-2col-responsive"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                    "className": "space-y-1"
-                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-tertiary"
                       },
                       "text": "$t:sirsoft-ecommerce.common.created_at"
                     },
@@ -697,7 +681,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center gap-1.5 text-sm text-gray-900 dark:text-white"
+                        "className": "flex-center text-primary gap-1.5 text-sm"
                       },
                       "children": [
                         {
@@ -720,15 +704,12 @@
                 {
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                    "className": "space-y-1"
-                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-tertiary"
                       },
                       "text": "$t:sirsoft-ecommerce.common.updated_at"
                     },
@@ -736,7 +717,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center gap-1.5 text-sm text-gray-900 dark:text-white"
+                        "className": "flex-center text-primary gap-1.5 text-sm"
                       },
                       "children": [
                         {
@@ -774,7 +755,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3"
+            "className": "flex-center gap-3"
           },
           "children": [
             {
@@ -782,7 +763,7 @@
               "name": "Button",
               "props": {
                 "disabled": "{{_global.selectedCategory?.abilities?.can_update !== true}}",
-                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               },
               "actions": [
                 {

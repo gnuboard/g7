@@ -7,9 +7,6 @@
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-  "props": {
-    "className": "mt-6 space-y-6"
-  },
   "classMap": {
     "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
     "variants": {
@@ -23,142 +20,171 @@
       "type": "layout",
       "name": "SectionLayout",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-2 border-b-2 border-gray-200 dark:border-gray-700"
+            "className": "card-title"
           },
           "text": "$t:sirsoft-board.admin.settings.sections.notification"
         },
         {
-          "id": "field_notify_author",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors border-b border-gray-200 dark:border-gray-700"
+            "className": "row-stack"
           },
           "children": [
             {
+              "id": "field_notify_author",
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex items-center gap-4 px-3 py-3" },
+              "props": {
+                "className": ""
+              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Label",
-                  "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center gap-4"
+                  },
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Input",
+                      "name": "Label",
                       "props": {
-                        "type": "checkbox",
-                        "className": "checkbox flex-shrink-0 mt-0.5",
-                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_author')}}"
+                        "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
                       },
-                      "actions": [
+                      "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_author') : [...(_local.bulkApplyFields ?? []), 'notify_author']}}"
-                          }
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "className": "checkbox-aligned",
+                            "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_author')}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_author') : [...(_local.bulkApplyFields ?? []), 'notify_author']}}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-board.admin.settings.fields.notify_author"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": {
+                                "className": "text-field-hint"
+                              },
+                              "text": "$t:sirsoft-board.admin.settings.fields.notify_author_description"
+                            }
+                          ]
                         }
                       ]
                     },
                     {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.notify_author" },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" },
-                          "text": "$t:sirsoft-board.admin.settings.fields.notify_author_description"
-                        }
-                      ]
+                      "type": "composite",
+                      "name": "Toggle",
+                      "props": {
+                        "name": "basic_defaults.notify_author",
+                        "className": "flex-shrink-0",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
                     }
                   ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "basic_defaults.notify_author",
-                    "className": "flex-shrink-0",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
                 }
               ]
-            }
-          ]
-        },
-        {
-          "id": "field_notify_admin_on_post",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors"
-          },
-          "children": [
+            },
             {
+              "id": "field_notify_admin_on_post",
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex items-center gap-4 px-3 py-3" },
+              "props": {
+                "className": ""
+              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Label",
-                  "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center gap-4"
+                  },
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Input",
+                      "name": "Label",
                       "props": {
-                        "type": "checkbox",
-                        "className": "checkbox flex-shrink-0 mt-0.5",
-                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post')}}"
+                        "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
                       },
-                      "actions": [
+                      "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_admin_on_post') : [...(_local.bulkApplyFields ?? []), 'notify_admin_on_post']}}"
-                          }
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "className": "checkbox-aligned",
+                            "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post')}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_admin_on_post') : [...(_local.bulkApplyFields ?? []), 'notify_admin_on_post']}}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": {
+                                "className": "text-field-hint"
+                              },
+                              "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post_description"
+                            }
+                          ]
                         }
                       ]
                     },
                     {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post" },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" },
-                          "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post_description"
-                        }
-                      ]
+                      "type": "composite",
+                      "name": "Toggle",
+                      "props": {
+                        "name": "basic_defaults.notify_admin_on_post",
+                        "className": "flex-shrink-0",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
                     }
                   ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "basic_defaults.notify_admin_on_post",
-                    "className": "flex-shrink-0",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
                 }
               ]
             }

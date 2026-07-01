@@ -1,0 +1,182 @@
+{
+  "palette": {
+    "div": {
+      "label": "박스"
+    },
+    "container": {
+      "label": "컨테이너",
+      "default_child_text": "여기에 콘텐츠를 넣으세요"
+    },
+    "flex": {
+      "label": "Flex 박스"
+    },
+    "grid": {
+      "label": "Grid 박스"
+    },
+    "section_layout": {
+      "label": "섹션 레이아웃"
+    },
+    "three_column_layout": {
+      "label": "3단 레이아웃"
+    },
+    "span": {
+      "label": "인라인 텍스트",
+      "default_text": "텍스트"
+    },
+    "p": {
+      "label": "단락",
+      "default_text": "여기에 단락 텍스트를 입력하세요."
+    },
+    "h1": {
+      "label": "큰 제목 (H1)",
+      "default_text": "큰 제목"
+    },
+    "h2": {
+      "label": "중간 제목 (H2)",
+      "default_text": "중간 제목"
+    },
+    "h3": {
+      "label": "소제목 (H3)",
+      "default_text": "소제목"
+    },
+    "h4": {
+      "label": "보조 제목 (H4)",
+      "default_text": "보조 제목"
+    },
+    "a": {
+      "label": "링크",
+      "default_text": "여기 클릭"
+    },
+    "button": {
+      "label": "버튼",
+      "default_text": "버튼"
+    },
+    "img": {
+      "label": "이미지",
+      "default_alt": "이미지 설명"
+    },
+    "icon": {
+      "label": "아이콘"
+    },
+    "hr": {
+      "label": "구분선"
+    },
+    "ul": {
+      "label": "글머리 목록",
+      "default_item_text": "목록 항목"
+    },
+    "li": {
+      "label": "목록 항목",
+      "default_text": "목록 항목"
+    },
+    "nav": {
+      "label": "내비게이션",
+      "default_item_text": "메뉴"
+    },
+    "html_content": {
+      "label": "HTML 콘텐츠",
+      "default_text": "HTML 콘텐츠 영역"
+    },
+    "expandable_content": {
+      "label": "접기/펼치기",
+      "default_title": "제목",
+      "default_body": "펼쳐서 보이는 내용"
+    },
+    "tab_navigation": {
+      "label": "탭",
+      "default_tab1_label": "탭 1",
+      "default_tab2_label": "탭 2"
+    },
+    "input": {
+      "label": "입력 상자",
+      "default_placeholder": "여기에 입력하세요"
+    },
+    "textarea": {
+      "label": "여러 줄 입력",
+      "default_placeholder": "여러 줄 텍스트를 입력하세요"
+    },
+    "select": {
+      "label": "선택 상자",
+      "default_option1_label": "옵션 1",
+      "default_option2_label": "옵션 2"
+    },
+    "checkbox": {
+      "label": "체크박스",
+      "default_label": "선택"
+    },
+    "password_input": {
+      "label": "비밀번호 입력",
+      "default_placeholder": "비밀번호"
+    },
+    "label": {
+      "label": "라벨",
+      "default_text": "라벨"
+    },
+    "file_uploader": {
+      "label": "파일 업로더",
+      "default_label": "파일을 업로드하세요"
+    },
+    "avatar_uploader": {
+      "label": "프로필 사진 업로더",
+      "default_label": "프로필 사진 변경"
+    },
+    "html_editor": {
+      "label": "HTML 에디터",
+      "default_placeholder": "내용을 입력하세요"
+    },
+    "rich_text_editor": {
+      "label": "리치 텍스트 에디터",
+      "default_placeholder": "내용을 입력하세요"
+    },
+    "social_login_buttons": {
+      "label": "소셜 로그인 버튼"
+    },
+    "product_card": {
+      "label": "상품 카드",
+      "default_name": "샘플 상품"
+    },
+    "image_gallery": {
+      "label": "이미지 갤러리",
+      "default_alt1": "갤러리 이미지 1",
+      "default_alt2": "갤러리 이미지 2"
+    },
+    "pagination": {
+      "label": "페이지네이션"
+    },
+    "search_bar": {
+      "label": "검색창",
+      "default_placeholder": "검색어를 입력하세요"
+    },
+    "avatar": {
+      "label": "아바타",
+      "default_alt": "사용자 아바타"
+    },
+    "user_info": {
+      "label": "사용자 정보",
+      "default_name": "사용자명"
+    },
+    "quantity_selector": {
+      "label": "수량 선택기"
+    },
+    "product_image_viewer": {
+      "label": "상품 이미지 뷰어",
+      "default_alt": "상품 이미지"
+    },
+    "post_reactions": {
+      "label": "게시글 반응"
+    },
+    "group": {
+      "design": "디자인",
+      "db": "데이터"
+    },
+    "form": {
+      "label": "폼",
+      "default_label_text": "레이블",
+      "default_input_placeholder": "입력하세요",
+      "default_submit_text": "제출"
+    },
+    "table": {
+      "label": "표"
+    }
+  }
+}

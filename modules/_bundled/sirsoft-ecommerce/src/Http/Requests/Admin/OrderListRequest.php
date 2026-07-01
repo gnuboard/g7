@@ -87,6 +87,9 @@ class OrderListRequest extends FormRequest
             // 주문자 UUID (회원 검색 필터용)
             'orderer_uuid' => ['nullable', 'uuid'],
 
+            // 회원 구분 (member: 회원 주문, guest: 비회원 주문)
+            'member_type' => ['nullable', 'in:member,guest'],
+
             // 정렬 및 페이지네이션
             'sort_by' => ['nullable', 'in:ordered_at,paid_at,total_amount'],
             'sort_order' => ['nullable', 'in:asc,desc'],
@@ -157,6 +160,7 @@ class OrderListRequest extends FormRequest
             'user_id.integer' => __('sirsoft-ecommerce::validation.orders.user_id.integer'),
             // 주문자 UUID
             'orderer_uuid.uuid' => __('sirsoft-ecommerce::validation.orders.orderer_uuid.uuid'),
+            'member_type.in' => __('sirsoft-ecommerce::validation.orders.member_type.in'),
             // 정렬 및 페이지네이션
             'sort_by.in' => __('sirsoft-ecommerce::validation.orders.sort_by.in'),
             'sort_order.in' => __('sirsoft-ecommerce::validation.orders.sort_order.in'),

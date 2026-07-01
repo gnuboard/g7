@@ -14,26 +14,39 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "space-y-4" },
       "children": [
         {
           "type": "basic",
-          "name": "P",
-          "props": { "className": "text-base text-gray-900 dark:text-white" },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.message|name={{_global.deleteTarget?.name}}"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": { "className": "text-sm text-red-600 dark:text-red-400 font-medium" },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.warning"
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-primary text-base"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.message|name={{_global.deleteTarget?.name}}"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm text-red-600 dark:text-red-400 font-medium"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.warning"
+            }
+          ],
+          "props": {
+          }
         }
       ]
     },
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex justify-end gap-3 mt-6" },
+      "props": {
+        "className": "modal-footer-buttons"
+      },
       "children": [
         {
           "type": "basic",
@@ -42,14 +55,25 @@
             "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isDeleting}}"
           },
-          "actions": [{ "type": "click", "handler": "closeModal" }],
-          "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
         },
         {
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isDeleting}}"
           },
           "actions": [
@@ -59,7 +83,10 @@
               "actions": [
                 {
                   "handler": "setState",
-                  "params": { "target": "global", "isDeleting": true }
+                  "params": {
+                    "target": "global",
+                    "isDeleting": true
+                  }
                 },
                 {
                   "handler": "apiCall",
@@ -69,14 +96,46 @@
                     "method": "DELETE"
                   },
                   "onSuccess": [
-                    { "handler": "setState", "params": { "target": "global", "isDeleting": false, "deleteTarget": null } },
-                    { "handler": "refetchDataSource", "params": { "dataSourceId": "coupons" } },
-                    { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.admin.promotion_coupon.toast.deleted" } },
-                    { "handler": "closeModal" }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isDeleting": false,
+                        "deleteTarget": null
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "coupons"
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-ecommerce.admin.promotion_coupon.toast.deleted"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
                   ],
                   "onError": [
-                    { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
-                    { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isDeleting": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{$error.message}}"
+                      }
+                    }
                   ]
                 }
               ]
@@ -87,7 +146,10 @@
               "type": "basic",
               "name": "Icon",
               "if": "{{_global.isDeleting}}",
-              "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+              "props": {
+                "name": "spinner",
+                "className": "spinner-sm"
+              }
             },
             {
               "type": "basic",

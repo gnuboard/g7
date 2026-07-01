@@ -74,7 +74,7 @@
     },
     "blocked_keywords": {
       "label": "Blocked Keywords",
-      "placeholder": "Comma-separated (e.g., spam, abuse, ads)",
+      "placeholder": "Type and press Enter (e.g., spam, abuse, ads)",
       "description": "Inappropriate words or keywords to exclude"
     },
     "use_file_upload": {
@@ -92,8 +92,8 @@
     },
     "allowed_extensions": {
       "label": "Allowed Extensions",
-      "placeholder": "Comma-separated (e.g., jpg, png, pdf)",
-      "description": "All extensions allowed if empty"
+      "placeholder": "Type and press Enter (e.g., jpg, png, pdf)",
+      "description": "Enter at least one allowed file extension"
     },
     "comment_order": {
       "label": "Comment Sort Order",
@@ -203,19 +203,14 @@
     "auto_role_notice": "Board manager and step roles are included as default values for each permission upon creation and can be modified below.",
     "create_mode_permissions_notice": "Role-based access control can be configured in the edit screen after creating the board. Default permissions are automatically applied during creation."
   },
-  "modals": {
-    "category_remove": {
-      "title": "Remove Category",
-      "warning": "This action cannot be undone",
-      "message": "Are you sure you want to remove '{{category}}' category?"
-    }
-  },
   "menu": {
-    "manual_guide": "Enter the path below in Menu Management to register.",
+    "manual_guide": "This board can be accessed via the paths below.",
     "manual_admin_label": "Admin Menu Path",
     "manual_user_label": "User Menu Path",
     "example": "e.g.",
     "add_to_admin_menu": "Add to Admin Menu",
+    "show_in_admin_menu": "Show in Admin Menu",
+    "show_in_admin_menu_desc": "Show this board in the admin menu. Applied on save, added under the [Board Management] menu.",
     "menu_added_success": "Successfully added to admin menu.",
     "menu_add_failed": "Failed to add menu."
   }

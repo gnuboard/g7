@@ -1,0 +1,34 @@
+{
+    "identifier": "sirsoft-pay_kginicis",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "KG 이니시스",
+        "en": "KG Inicis"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_kginicis",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_kginicis/blob/main/CHANGELOG.md",
+    "description": {
+        "ko": "KG 이니시스 결제 게이트웨이 (표준결제창 연동, 일본결제 지원)",
+        "en": "KG Inicis payment gateway (standard payment window, Japan payment support)"
+    },
+    "g7_version": ">=7.0.0",
+    "dependencies": {
+        "modules": {
+            "sirsoft-ecommerce": ">=1.0.0"
+        },
+        "plugins": {}
+    },
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

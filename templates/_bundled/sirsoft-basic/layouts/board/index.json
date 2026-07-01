@@ -31,6 +31,7 @@
     "data_sources": [
         {
             "id": "posts",
+            "label_key": "$t:editor.data_source.posts",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts",
             "method": "GET",
@@ -51,7 +52,7 @@
                     "handler": "sequence",
                     "actions": [
                         { "handler": "toast", "params": { "type": "info", "message": "$t:board.login_required" } },
-                        { "handler": "navigate", "params": { "path": "/login" } }
+                        { "handler": "redirectToLoginWithReturn" }
                     ]
                 },
                 "403": {

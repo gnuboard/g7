@@ -1,4 +1,9 @@
 {
+    "editor": {
+        "data_source": {
+            "settings": "Editor Settings"
+        }
+    },
     "settings": {
         "title": "CKEditor5 Settings",
         "description": "CKEditor5 WYSIWYG editor plugin configuration",

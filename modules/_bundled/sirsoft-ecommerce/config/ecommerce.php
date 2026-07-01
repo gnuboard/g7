@@ -31,11 +31,8 @@ return [
 
     // 결제 설정
     'payment' => [
-        // PG 가상계좌 입금 기한 (일)
-        'vbank_due_days' => 3,
-
-        // 수동 무통장입금 입금 기한 (일)
-        'dbank_due_days' => 7,
+        // 미입금 주문 자동취소 기한 (일) — 결제수단 무관 단일 SSoT
+        'auto_cancel_days' => 3,
 
         // 입금 기한 만료 시 자동 취소 여부
         'auto_cancel_expired' => true,
@@ -86,5 +83,12 @@ return [
         'write_deadline_days' => 90,   // 구매확정 후 리뷰 작성 가능 기간 (일)
         'max_images' => 5,             // 리뷰 이미지 최대 업로드 수
         'max_image_size_mb' => 10,     // 리뷰 이미지 최대 크기 (MB)
+    ],
+
+    // 관리자 대시보드 이커머스 영역 설정
+    'dashboard' => [
+        'scheduler_enabled' => true,   // 판매 현황 집계 스케줄러(hourly) 활성화 여부
+        'recent_limit' => 5,           // 최신 리뷰/미답변 문의 카드 표시 건수
+        'graph_days' => 7,             // 판매 추세 차트 표시 일수
     ],
 ];

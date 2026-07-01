@@ -423,6 +423,12 @@ class SettingsService
         return $firstImage?->download_url;
     }
 
+    /**
+     * 환경설정 값을 저장합니다.
+     *
+     * @param  array  $settings  카테고리별 설정 데이터
+     * @return bool 저장 성공 여부
+     */
     public function saveSettings(array $settings): bool
     {
         // Before 훅
@@ -612,6 +618,13 @@ class SettingsService
         return $this->configRepository->get($key, $default);
     }
 
+    /**
+     * 단일 설정 값을 저장합니다.
+     *
+     * @param  string  $key  설정 키 (예: 'general.site_name')
+     * @param  mixed  $value  저장할 값
+     * @return bool 저장 성공 여부
+     */
     public function setSetting(string $key, mixed $value): bool
     {
         // Before 훅
@@ -1012,9 +1025,24 @@ class SettingsService
     private function getDiskUsage(): array
     {
         $path = PHP_OS_FAMILY === 'Windows' ? 'C:' : '/';
-        $total = disk_total_space($path);
-        $free = disk_free_space($path);
-        $used = $total - $free;
+
+        // open_basedir 제한 환경에서 disk_*_space 가 warning → ErrorException 이 되지 않도록
+        // @ 억제 + numeric 체크 (공개#40, getMemoryUsage 폴백 패턴 재사용).
+        $totalRaw = @disk_total_space($path);
+        $freeRaw = @disk_free_space($path);
+        $total = is_numeric($totalRaw) ? (int) $totalRaw : 0;
+        $free = is_numeric($freeRaw) ? (int) $freeRaw : 0;
+
+        if ($total <= 0) {
+            return [
+                'total' => __('common.unknown'),
+                'used' => __('common.unknown'),
+                'free' => __('common.unknown'),
+                'percentage' => 0,
+            ];
+        }
+
+        $used = max(0, $total - $free);
 
         return [
             'total' => $this->formatBytes($total),

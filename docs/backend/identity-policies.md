@@ -28,8 +28,18 @@ applies_to 는 permission 기반 admin 판정 (User::isAdmin() — type='admin' 
 | `enabled` | 활성 여부 | bool |
 | `grace_minutes` | 통과 유예 시간 | 0 = 매번 요구, n = n분 내 verified 있으면 통과 |
 | `fail_mode` | 실패 시 동작 | `block` (예외) / `log_only` (감사 로그만) |
-| `priority` | 매칭 우선순위 | 높을수록 먼저 평가 |
+| `priority` | 매칭 우선순위 | 높을수록 먼저 평가. 동률이면 id 오름차순(먼저 생성된 정책 우선)으로 결정적 정렬. 운영자 UI 에서 같은 scope+target 에 동률 활성 정책 저장은 차단 — §1.1 |
 | `conditions` | 추가 매칭 조건 (JSON) | `http_method` / `changed_fields` / `user_role` / `signup_stage` |
+
+### 1.1 priority 동률 처리
+
+같은 `scope`+`target` 에 여러 정책이 걸릴 수 있고, enforce 는 `priority` 내림차순으로 순회해 가장 먼저 차단(428)하는 정책을 적용한다. `priority` 가 같으면 적용 순서가 비결정적이 되어 "운영자가 의도한 정책(예: 성인 인증)이 무시되고 임의 정책이 먼저 적용"되는 결함이 발생했다. 두 층위로 차단한다:
+
+1. **결정적 정렬** — `IdentityPolicyRepository::resolveByScopeTarget()` / `getRouteScopeIndex()` 가 `orderByDesc('priority')->orderBy('id')` 로 정렬. 동률이어도 항상 id 오름차순(먼저 생성된 정책 우선)이라 enforce 순서가 캐시 재빌드/실행계획과 무관하게 고정된다.
+
+2. **동률 저장 차단** — 운영자가 관리자 UI 에서 정책을 생성/수정할 때, 같은 `scope`+`target` 에 **동일 priority 활성 정책**이 이미 있으면 422 로 거부한다 (`App\Rules\UniquePolicyPriorityPerTarget`, Store/Update FormRequest). 비활성(`enabled=false`) 정책은 enforce 대상이 아니므로 동률이어도 무해 — 저장하려는 정책과 기존 정책이 **둘 다 활성**일 때만 충돌로 본다.
+
+운영자 입력 UI: 정책 폼 모달의 "우선순위" 입력칸(0~65535, 기본 100) + 정책 목록의 "우선순위" 컬럼. 코어(`sirsoft-admin_basic`)·모듈(`sirsoft-board`/`sirsoft-ecommerce`) 환경설정 정책 탭 모두 동일.
 
 ## 2. 두 가지 enforce 경로 (모두 동적 — 정책 DB toggle 만으로 즉시 효과)
 
@@ -119,6 +129,51 @@ HookManager::addFilter(
 ```
 
 **보안**: 훅이 `IdentityPolicy` 외 타입(`null` 등)을 반환하면 원본 정책이 그대로 유지됩니다 (silent retention). 의도적으로 정책을 변경하려면 반드시 `IdentityPolicy` 인스턴스를 반환할 것.
+
+## 5.1 정책 provider_id 해석 — fallback 체인
+
+`IdentityPolicyService::enforce()` 는 정책 위반 시 `IdentityVerificationRequiredException` 을 던지는데, 정책에 `provider_id` 가 명시되지 않은 경우 `resolveProviderId()` 가 환경설정의 기본 프로바이더로 자동 fallback 합니다. 운영자가 정책마다 provider 를 일일이 지정하지 않아도 환경설정 default 가 일관 적용되도록 보장합니다.
+
+해석 순서:
+
+1. 정책 `provider_id` 가 등록된 provider 면 그대로 사용
+2. 정책 미명시 또는 미등록 provider → `IdentityVerificationManager::resolveForPurpose()` 호출 (purpose 기반 fallback 체인 — 환경설정 `purpose_providers.{purpose}` → `default_provider` → 등록된 첫 provider)
+3. Manager 예외 시 정책의 원본 provider_id 그대로 반환 (정책 정보 보존)
+
+`resolveRenderHint()` 와 동일한 우선순위 체인을 적용하여 정책에 provider 가 지정되지 않아도 환경설정 default 가 모달 launcher payload 의 `provider_id` 로 정확히 전달됩니다.
+
+## 5.2 Service 라이프사이클 훅 (cancel / consume_token)
+
+`IdentityVerificationService` 는 challenge 라이프사이클 각 단계마다 `before_*` / `after_*` 페어로 hook 을 발행합니다. 외부 plugin 이 자기 record 정리·후속 작업을 listener 로 분리할 수 있습니다.
+
+| 단계 | before hook | after hook |
+| --- | --- | --- |
+| Challenge 발급 | `core.identity.before_request` | `core.identity.after_request` |
+| Verify | `core.identity.before_verify` | `core.identity.after_verify` |
+| Cancel | `core.identity.before_cancel` | `core.identity.after_cancel` |
+| Consume Token | `core.identity.before_consume_token` | `core.identity.after_consume_token` |
+
+`after_cancel` / `after_consume_token` 의 세 번째 인자는 작업 성공 여부 (`bool`). 대상 log 가 없는 경우 두 번째 인자(`$log`) 는 `null` 이고 성공 여부는 `false`. 모든 경우에 before/after 둘 다 발행됩니다.
+
+```php
+// 예: 이니시스 challenge cancel 시 자기 mapping row 정리
+class CleanInicisMappingOnCancel implements HookListenerInterface
+{
+    public static function getSubscribedHooks(): array
+    {
+        return [
+            'core.identity.after_cancel' => ['method' => 'handle', 'priority' => 20],
+        ];
+    }
+
+    public function handle(string $challengeId, ?IdentityVerificationLog $log, bool $success): void
+    {
+        if ($success && $log?->provider_id === 'inicis') {
+            $this->mappingRepository->deleteByChallengeId($challengeId);
+        }
+    }
+}
+```
 
 ## 6. 시드 정책 (코어 기본 9종, 모두 `core.*` namespace)
 

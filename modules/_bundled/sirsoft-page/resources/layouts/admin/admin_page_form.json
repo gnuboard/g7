@@ -20,6 +20,7 @@
     "data_sources": [
         {
             "id": "pageData",
+            "label_key": "$t:sirsoft-page.editor.data_source.pageData",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-page/admin/pages/{{route?.id}}",
             "method": "GET",
@@ -83,7 +84,7 @@
                 "blur_until_loaded": true,
                 "dataKey": "form",
                 "props": {
-                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900"
+                    "className": "admin-page-content-responsive-fluid"
                 },
                 "children": [
                     {
@@ -93,156 +94,7 @@
                         "props": {
                             "title": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_title_edit' : '$t:sirsoft-page.admin.page.form.page_title_create'}}",
                             "description": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_description_edit' : '$t:sirsoft-page.admin.page.form.page_description_create'}}"
-                        },
-                        "children": [
-                            {
-                                "id": "header_cancel_button",
-                                "type": "basic",
-                                "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
-                                },
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigateBack"
-                                    }
-                                ],
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:common.cancel"
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "header_save_button",
-                                "type": "basic",
-                                "name": "Button",
-                                "if": "{{!_computed.isReadOnly}}",
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{_local.saving}}",
-                                    "className": "{{_local.saving ? 'px-4 py-2 bg-blue-400 text-white rounded-lg font-medium cursor-not-allowed' : 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors'}}"
-                                },
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "conditions",
-                                        "conditions": [
-                                            {
-                                                "comment": "슬러그 중복확인 필수 체크 (생성·수정 공통)",
-                                                "if": "{{!_local.slugChecked}}",
-                                                "then": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "errors": {
-                                                                "slug": [
-                                                                    "$t:sirsoft-page.admin.page.form.fields.slug_check_required"
-                                                                ]
-                                                            }
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "$t:sirsoft-page.admin.page.form.fields.slug_check_required"
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "comment": "수정 모드이거나 중복확인 완료된 경우 저장 진행",
-                                                "then": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "saving": true,
-                                                            "errors": null
-                                                        }
-                                                    },
-                                                    {
-                                                        "comment": "FileUploader 업로드 트리거",
-                                                        "handler": "emitEvent",
-                                                        "params": {
-                                                            "event": "upload:page_attachments"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "{{route?.id ? '/api/modules/sirsoft-page/admin/pages/' + route?.id : '/api/modules/sirsoft-page/admin/pages'}}",
-                                                        "params": {
-                                                            "method": "{{route?.id ? 'PUT' : 'POST'}}",
-                                                            "body": "{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}"
-                                                        },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "saving": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "success",
-                                                                    "message": "{{route?.id ? '$t:sirsoft-page.admin.page.form.update_success' : '$t:sirsoft-page.admin.page.form.create_success'}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/pages/{{route?.id ?? response.data.id}}"
-                                                                }
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "saving": false,
-                                                                    "errors": "{{error.errors}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:sirsoft-page.admin.page.form.validation_error"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                ],
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "if": "{{!_local.saving}}",
-                                        "text": "$t:common.save"
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "if": "{{_local.saving}}",
-                                        "text": "$t:common.saving"
-                                    }
-                                ]
-                            }
-                        ]
+                        }
                     },
                     {
                         "id": "error_message_box",
@@ -250,14 +102,14 @@
                         "name": "Div",
                         "if": "{{_local.errors && Object.keys(_local.errors).length > 0}}",
                         "props": {
-                            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+                            "className": "alert-danger"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-start gap-3"
+                                    "className": "flex-start gap-3"
                                 },
                                 "children": [
                                     {
@@ -276,7 +128,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-medium text-red-800 dark:text-red-300"
+                                                    "className": "text-sm font-mediumtext-danger-soft"
                                                 },
                                                 "text": "$t:sirsoft-page.admin.page.form.validation_error"
                                             },
@@ -337,7 +189,7 @@
                         "name": "Div",
                         "if": "{{_computed.isReadOnly}}",
                         "props": {
-                            "className": "mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg flex items-center gap-3"
+                            "className": "flex-center mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg gap-3"
                         },
                         "children": [
                             {
@@ -352,7 +204,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm text-yellow-800 dark:text-yellow-300"
+                                    "className": "text-warning-soft"
                                 },
                                 "text": "$t:sirsoft-page.admin.page.form.read_only_message"
                             }
@@ -363,7 +215,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+                            "className": "admin-card"
                         },
                         "children": [
                             {
@@ -371,7 +223,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-2 mb-4"
+                                    "className": "flex-center gap-2 mb-4"
                                 },
                                 "children": [
                                     {
@@ -379,14 +231,14 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "file-lines",
-                                            "className": "text-lg text-gray-600 dark:text-gray-400"
+                                            "className": "text-secondary text-lg"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                            "className": "section-heading"
                                         },
                                         "text": "$t:sirsoft-page.admin.page.form.sections.basic_info"
                                     }
@@ -397,7 +249,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "space-y-6"
+                                    "className": "row-stack"
                                 },
                                 "children": [
                                     {
@@ -405,29 +257,19 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-2 gap-6"
-                                        },
-                                        "responsive": {
-                                            "portable": {
-                                                "props": {
-                                                    "className": "grid grid-cols-1 gap-4"
-                                                }
-                                            }
+                                            "className": "grid-2col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "id": "slug_field",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "space-y-2"
-                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "children": [
                                                             {
@@ -439,7 +281,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                                                    "className": "text-required"
                                                                 },
                                                                 "text": "*"
                                                             }
@@ -560,28 +402,19 @@
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Div",
+                                                        "name": "Span",
                                                         "props": {
-                                                            "className": "space-y-1"
+                                                            "className": "form-hint block"
                                                         },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "props": {
-                                                                    "className": "block text-xs text-gray-500 dark:text-gray-400"
-                                                                },
-                                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug ?? 'example'}}"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "props": {
-                                                                    "className": "block text-xs text-gray-400 dark:text-gray-500"
-                                                                },
-                                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_format_hint"
-                                                            }
-                                                        ]
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug ?? 'example'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "form-hint block"
+                                                        },
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_format_hint"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -597,7 +430,7 @@
                                                         "name": "Span",
                                                         "if": "{{_local.slugChecked && !_local.slugAvailable && _local.slugError}}",
                                                         "props": {
-                                                            "className": "block text-xs text-red-500 dark:text-red-400"
+                                                            "className": "form-error-xs block"
                                                         },
                                                         "text": "{{_local.slugError}}"
                                                     },
@@ -606,7 +439,7 @@
                                                         "name": "Span",
                                                         "if": "{{_local.slugChecked && !_local.slugAvailable && !_local.slugError}}",
                                                         "props": {
-                                                            "className": "block text-xs text-red-500 dark:text-red-400"
+                                                            "className": "form-error-xs block"
                                                         },
                                                         "text": "$t:sirsoft-page.admin.page.form.fields.slug_unavailable"
                                                     },
@@ -615,7 +448,7 @@
                                                         "name": "Span",
                                                         "if": "{{_local.errors?.slug && !_local.slugChecked}}",
                                                         "props": {
-                                                            "className": "block text-xs text-red-500 dark:text-red-400"
+                                                            "className": "form-error-xs block"
                                                         },
                                                         "text": "{{_local.errors?.slug?.[0]}}"
                                                     }
@@ -625,15 +458,12 @@
                                                 "id": "published_field",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "space-y-2"
-                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "children": [
                                                             {
@@ -650,7 +480,7 @@
                                                         "props": {
                                                             "value": "{{String(_local.form?.published ?? false)}}",
                                                             "disabled": "{{_computed.isReadOnly}}",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm",
+                                                            "className": "",
                                                             "options": [
                                                                 {
                                                                     "label": "$t:sirsoft-page.admin.page.published_status.published",
@@ -681,15 +511,12 @@
                                         "id": "title_field",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "space-y-2"
-                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    "className": "form-label"
                                                 },
                                                 "children": [
                                                     {
@@ -701,7 +528,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                            "className": "text-required"
                                                         },
                                                         "text": "*"
                                                     }
@@ -737,15 +564,12 @@
                                         "id": "content_field",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "space-y-2"
-                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    "className": "form-label"
                                                 },
                                                 "children": [
                                                     {
@@ -757,7 +581,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                            "className": "text-required"
                                                         },
                                                         "text": "*"
                                                     }
@@ -816,7 +640,7 @@
                                                 "name": "Span",
                                                 "if": "{{_local.errors?.['content.ko'] || _local.errors?.content}}",
                                                 "props": {
-                                                    "className": "block text-xs text-red-500 dark:text-red-400"
+                                                    "className": "form-error-xs block"
                                                 },
                                                 "text": "{{_local.errors?.['content.ko']?.[0] ?? _local.errors?.content?.[0] ?? ''}}"
                                             }
@@ -831,7 +655,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+                            "className": "admin-card"
                         },
                         "children": [
                             {
@@ -839,7 +663,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-2 mb-4"
+                                    "className": "flex-center gap-2 mb-4"
                                 },
                                 "children": [
                                     {
@@ -847,14 +671,14 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "paperclip",
-                                            "className": "text-lg text-gray-600 dark:text-gray-400"
+                                            "className": "text-secondary text-lg"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                            "className": "section-heading"
                                         },
                                         "text": "$t:sirsoft-page.admin.page.form.attachments"
                                     }
@@ -894,7 +718,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+                            "className": "admin-card"
                         },
                         "children": [
                             {
@@ -902,7 +726,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-2 mb-4"
+                                    "className": "flex-center gap-2 mb-4"
                                 },
                                 "children": [
                                     {
@@ -910,14 +734,14 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "magnifying-glass",
-                                            "className": "text-lg text-gray-600 dark:text-gray-400"
+                                            "className": "text-secondary text-lg"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                            "className": "section-heading"
                                         },
                                         "text": "$t:sirsoft-page.admin.page.form.seo.title"
                                     }
@@ -928,22 +752,19 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "space-y-4"
+                                    "className": "row-stack"
                                 },
                                 "children": [
                                     {
                                         "id": "seo_title_field",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "space-y-1"
-                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
+                                                    "className": "form-label-muted"
                                                 },
                                                 "children": [
                                                     {
@@ -961,7 +782,7 @@
                                                     "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_title_placeholder",
                                                     "value": "{{_local.form?.seo_meta?.title ?? ''}}",
                                                     "disabled": "{{_computed.isReadOnly}}",
-                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                                    "className": ""
                                                 },
                                                 "actions": [
                                                     {
@@ -980,15 +801,12 @@
                                         "id": "seo_description_field",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "space-y-1"
-                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
+                                                    "className": "form-label-muted"
                                                 },
                                                 "children": [
                                                     {
@@ -1006,7 +824,7 @@
                                                     "value": "{{_local.form?.seo_meta?.description ?? ''}}",
                                                     "disabled": "{{_computed.isReadOnly}}",
                                                     "rows": 3,
-                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                                    "className": ""
                                                 },
                                                 "actions": [
                                                     {
@@ -1025,15 +843,12 @@
                                         "id": "seo_keywords_field",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "space-y-1"
-                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
+                                                    "className": "form-label-muted"
                                                 },
                                                 "children": [
                                                     {
@@ -1051,7 +866,7 @@
                                                     "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_keywords_placeholder",
                                                     "value": "{{_local.form?.seo_meta?.keywords ?? ''}}",
                                                     "disabled": "{{_computed.isReadOnly}}",
-                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                                    "className": ""
                                                 },
                                                 "actions": [
                                                     {
@@ -1065,6 +880,163 @@
                                                 ]
                                             }
                                         ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky-footer-buttons"
+                        },
+                        "children": [
+                            {
+                                "id": "footer_cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigateBack"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "footer_save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{!_computed.isReadOnly}}",
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_local.saving}}",
+                                    "className": "{{_local.saving ? 'px-4 py-2 bg-blue-400 text-white rounded-lg font-medium cursor-not-allowed' : 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors'}}"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "conditions",
+                                        "conditions": [
+                                            {
+                                                "comment": "슬러그 중복확인 필수 체크 (생성·수정 공통)",
+                                                "if": "{{!_local.slugChecked}}",
+                                                "then": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "errors": {
+                                                                "slug": [
+                                                                    "$t:sirsoft-page.admin.page.form.fields.slug_check_required"
+                                                                ]
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:sirsoft-page.admin.page.form.fields.slug_check_required"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "수정 모드이거나 중복확인 완료된 경우 저장 진행",
+                                                "then": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "saving": true,
+                                                            "errors": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "FileUploader 업로드 트리거",
+                                                        "handler": "emitEvent",
+                                                        "params": {
+                                                            "event": "upload:page_attachments"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "auth_required": true,
+                                                        "target": "{{route?.id ? '/api/modules/sirsoft-page/admin/pages/' + route?.id : '/api/modules/sirsoft-page/admin/pages'}}",
+                                                        "params": {
+                                                            "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                            "body": "{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "saving": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{route?.id ? '$t:sirsoft-page.admin.page.form.update_success' : '$t:sirsoft-page.admin.page.form.create_success'}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/pages/{{route?.id ?? response.data.id}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "saving": false,
+                                                                    "errors": "{{error.errors}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:sirsoft-page.admin.page.form.validation_error"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.saving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.saving}}",
+                                        "text": "$t:common.saving"
                                     }
                                 ]
                             }

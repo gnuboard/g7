@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "editor_label": "$t:admin.modal_label.admin_template_layout_edit.version_history_modal"
+  },
   "layout_name": "modal_version_history",
   "id": "version_history_modal",
   "type": "composite",
@@ -12,7 +15,7 @@
       "type": "basic",
       "name": "P",
       "props": {
-        "className": "text-sm text-gray-600 dark:text-gray-400 mb-4"
+        "className": "text-label mb-4"
       },
       "text": "$t:admin.templates.modals.version_history.description|layout_name={{_global.selectedLayoutName}}"
     },
@@ -40,21 +43,21 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center justify-between"
+                "className": "flex-between"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "font-medium text-gray-900 dark:text-white"
+                        "className": "text-primary font-medium"
                       },
                       "text": "{{version.created_at}}"
                     },
@@ -74,7 +77,7 @@
                   "name": "Button",
                   "if": "{{idx !== 0}}",
                   "props": {
-                    "className": "flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "flex-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     "disabled": "{{_global.isRestoring}}"
                   },
                   "actions": [
@@ -172,7 +175,7 @@
                       "if": "{{_global.isRestoring}}",
                       "props": {
                         "name": "fa-solid fa-spinner",
-                        "className": "w-4 h-4 animate-spin"
+                        "className": "spinner-sm"
                       }
                     },
                     {
@@ -188,7 +191,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-4 mt-2 text-sm"
+                "className": "flex-center gap-4 mt-2 text-sm"
               },
               "children": [
                 {
@@ -221,7 +224,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+                "className": "mt-2 text-label-subtle"
               },
               "text": "$t:admin.templates.modals.version_history.saved_by|name={{version.created_by_name ?? 'admin'}}"
             }
@@ -233,14 +236,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+        "className": "alert-info"
       },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-2"
+            "className": "flex-center gap-2"
           },
           "children": [
             {
@@ -255,7 +258,7 @@
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "text-sm text-blue-700 dark:text-blue-300"
+                "className": "text-info-soft"
               },
               "text": "$t:admin.templates.modals.version_history.restore_note"
             }

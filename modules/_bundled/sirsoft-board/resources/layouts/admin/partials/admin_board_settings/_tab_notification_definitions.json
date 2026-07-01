@@ -7,9 +7,6 @@
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'notification_definitions'}}",
-  "props": {
-    "className": "mt-6 space-y-6"
-  },
   "children": [
     {
       "id": "board_notif_header",
@@ -19,34 +16,31 @@
         {
           "type": "basic",
           "name": "H3",
-          "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white"
-          },
           "text": "$t:sirsoft-board.admin.settings.notification_definitions.title"
         },
         {
           "type": "basic",
           "name": "P",
-          "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
-          },
           "text": "$t:sirsoft-board.admin.settings.notification_definitions.description"
         }
-      ]
+      ],
+      "props": {
+        "className": "section-header"
+      }
     },
     {
       "id": "board_channel_toggles",
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H4",
           "props": {
-            "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+            "className": "card-title"
           },
           "text": "$t:sirsoft-board.admin.settings.notification_definitions.channel_management"
         },
@@ -66,14 +60,14 @@
                 "index_var": "chIdx"
               },
               "props": {
-                "className": "flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                "className": "flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -92,7 +86,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                            "className": "text-heading"
                           },
                           "text": "{{ch.name ?? ch.id}}"
                         },
@@ -100,7 +94,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-400 dark:text-gray-500"
+                            "className": "text-hint block"
                           },
                           "text": "{{ch.source_label ?? ch.source}}"
                         }
@@ -151,7 +145,7 @@
           },
           "props": {
             "type": "button",
-            "className": "{{(_local.activeNotificationChannel ?? query.channel ?? (availableChannels?.data?.channels ?? [])[0]?.id ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2"
+            "className": "{{(_local.activeNotificationChannel ?? query.channel ?? (availableChannels?.data?.channels ?? [])[0]?.id ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
           },
           "children": [
             {
@@ -205,14 +199,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center justify-between"
+        "className": "flex-between py-3"
       },
       "children": [
         {
           "type": "basic",
           "name": "Span",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400"
+            "className": "text-label-subtle"
           },
           "text": "$t:sirsoft-board.admin.settings.notification_definitions.total_count|count={{boardNotificationDefinitions?.data?.pagination?.total ?? 0}}"
         },
@@ -220,14 +214,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-2"
+            "className": "flex-center gap-2"
           },
           "children": [
             {
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:sirsoft-board.admin.settings.notification_definitions.per_page_label"
             },
@@ -277,9 +271,6 @@
       "id": "board_notif_definitions_list",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-3"
-      },
       "children": [
         {
           "type": "basic",
@@ -290,14 +281,14 @@
             "index_var": "defIdx"
           },
           "props": {
-            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+            "className": "admin-card mb-3"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-start gap-3"
+                "className": "flex-start gap-3"
               },
               "children": [
                 {
@@ -348,7 +339,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3"
+                        "className": "flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
                       },
                       "children": [
                         {
@@ -362,14 +353,14 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "flex flex-wrap items-center gap-2 mb-1"
+                                "className": "flex-center flex-wrap gap-2 mb-1"
                               },
                               "children": [
                                 {
                                   "type": "basic",
                                   "name": "H4",
                                   "props": {
-                                    "className": "text-base font-medium text-gray-900 dark:text-white"
+                                    "className": "text-primary text-base font-medium"
                                   },
                                   "text": "$t:sirsoft-board.admin.settings.notification_definitions.types.{{def.type}}"
                                 },
@@ -377,7 +368,7 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "props": {
-                                    "className": "text-xs font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded"
+                                    "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                   },
                                   "text": "{{def.type}}"
                                 },
@@ -405,7 +396,7 @@
                               "name": "P",
                               "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
                               "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 truncate"
+                                "className": "text-label-subtle truncate"
                               },
                               "text": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}"
                             },
@@ -424,14 +415,14 @@
                               "name": "Div",
                               "if": "{{((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
                               "props": {
-                                "className": "flex flex-wrap items-center gap-1.5 mt-2"
+                                "className": "flex-center flex-wrap gap-1.5 mt-2"
                               },
                               "children": [
                                 {
                                   "type": "basic",
                                   "name": "Span",
                                   "props": {
-                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                    "className": "text-tertiary font-medium"
                                   },
                                   "text": "$t:admin.settings.notification_definitions.recipients_label"
                                 },
@@ -480,7 +471,7 @@
                                     "item_var": "v"
                                   },
                                   "props": {
-                                    "className": "text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded font-mono"
+                                    "className": "text-tertiary px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono"
                                   },
                                   "children": [
                                     {
@@ -508,7 +499,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-3 flex-shrink-0"
+                            "className": "flex-center gap-3 flex-shrink-0"
                           },
                           "children": [
                             {
@@ -626,14 +617,14 @@
                       "name": "Div",
                       "if": "{{(_local.expandedNotifications ?? {})[def.id]}}",
                       "props": {
-                        "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+                        "className": "mt-3 pt-3"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 block"
+                            "className": "text-tertiary font-medium mb-2 block"
                           },
                           "text": "$t:sirsoft-board.admin.settings.notification_definitions.body_preview"
                         },
@@ -662,24 +653,33 @@
       "name": "Div",
       "if": "{{(boardNotificationDefinitions?.data?.data ?? []).length === 0}}",
       "props": {
-        "className": "text-center py-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
-          "name": "Icon",
+          "name": "Div",
           "props": {
-            "name": "fa-solid fa-envelope",
-            "className": "text-4xl text-gray-300 dark:text-gray-600 mb-3"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400"
+            "className": "row-stack"
           },
-          "text": "$t:sirsoft-board.admin.settings.notification_definitions.empty_message"
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "fa-solid fa-envelope",
+                "className": "text-4xl text-gray-300 dark:text-gray-600 mb-3"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-label-subtle"
+              },
+              "text": "$t:sirsoft-board.admin.settings.notification_definitions.empty_message"
+            }
+          ]
         }
       ]
     },
@@ -716,5 +716,7 @@
         }
       ]
     }
-  ]
+  ],
+  "props": {
+  }
 }

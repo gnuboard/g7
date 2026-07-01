@@ -1,0 +1,96 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 를 null 로 읽어 expandCases 가 throw 한다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 본 기능은 백엔드 Unit(리스너/서비스) + Feature(알림 적재) +
+#   Playwright E2E 골격이 모두 존재하며, 아래 effects ↔ test_files docblock 이 1:1 대응한다.
+feature: 주문 상태전이 알림 중앙화 (A35 / A36 / D9)
+
+description: |
+  주문 상태를 전이시키는 모든 경로가 단일 전이 훅(order.after_status_change)을 발화하고,
+  OrderStatusNotificationListener 가 현재 상태 → 구체 알림 훅으로 매핑 발화한다.
+  관리자 상태변경(단건/일괄)·옵션 동기화·사용자 구매확정에서 결제완료/배송중/배송완료/구매확정
+  알림이 누락 없이 발송된다.
+
+  핵심 동작:
+    - update/bulkUpdate/bulkUpdateStatus/confirmOption/bulkChangeStatusWithQuantity →
+      전이 직후 order.after_status_change(order, previousStatus) 발화 (per-order)
+    - 리스너 매핑: PAYMENT_COMPLETE→after_confirm / SHIPPING→after_ship /
+      DELIVERED→after_deliver(D3 신설) / CONFIRMED→after_complete
+    - 미전이(동일 상태 재저장) 시 미발화 (current === previous early-return)
+    - completePayment/finalizeZeroAmountPayment 는 after_status_change 미발화 →
+      기존 직접 after_confirm 1회 유지 (PAYMENT_COMPLETE 이중발화 회피)
+    - D9: 관리자 경로 payment_complete 전이 시 결제완료 알림(order_confirmed) 발송
+    - A36: DELIVERED→CONFIRMED 일괄 → 각 주문 order_completed + 재고 무변동(비결함 가드)
+    - D8: order_confirmed 라벨 "주문 확인"→"결제 완료" 의미로 명확화 (type/hook/recipients 불변)
+
+axes:
+  transition_path:
+    - update                       # 관리자 단건 수정 (C0)
+    - bulk_update                  # 관리자 목록 일괄 (C1)
+    - bulk_update_status           # 단건 일괄변경 API (C2)
+    - bulk_change_with_quantity    # 옵션별 일괄(운송장) → 부모 동기화 (C3)
+    - confirm_option               # 사용자 구매확정 (C4)
+    - complete_payment             # PG/0원 자동완료 (직접발화 — 이중발화 회피)
+  target_status:
+    - payment_complete
+    - shipping
+    - delivered
+    - confirmed
+  previous_status:
+    - same_as_target      # 미전이 → 미발화
+    - different           # 전이 → 발화
+  order_count:
+    - single
+    - multi               # N건 → N발화
+
+exclusions:
+  - { transition_path: confirm_option, target_status: payment_complete, reason: "구매확정은 CONFIRMED 전이만" }
+  - { transition_path: confirm_option, target_status: shipping, reason: "구매확정은 CONFIRMED 전이만" }
+  - { transition_path: confirm_option, target_status: delivered, reason: "구매확정은 CONFIRMED 전이만" }
+  - { transition_path: complete_payment, target_status: shipping, reason: "completePayment 는 PAYMENT_COMPLETE 만" }
+  - { transition_path: complete_payment, target_status: delivered, reason: "completePayment 는 PAYMENT_COMPLETE 만" }
+  - { transition_path: complete_payment, target_status: confirmed, reason: "completePayment 는 PAYMENT_COMPLETE 만" }
+  - { transition_path: update, order_count: multi, reason: "단건 경로" }
+  - { transition_path: confirm_option, order_count: multi, reason: "옵션 단건 확정 → 부모 단건" }
+  - { transition_path: complete_payment, order_count: multi, reason: "결제 콜백 단건" }
+  - { transition_path: bulk_change_with_quantity, target_status: payment_complete, reason: "운송장 경로는 배송 상태 전이" }
+
+effects:
+  # 리스너 매핑 (Unit — OrderStatusNotificationListenerTest)
+  - listener_maps_payment_complete_to_after_confirm
+  - listener_maps_shipping_to_after_ship
+  - listener_maps_delivered_to_after_deliver         # D3
+  - listener_maps_confirmed_to_after_complete        # A36
+  - listener_no_fire_when_status_unchanged           # 재발화 금지
+  # 경로별 전이훅 발화 (Unit — OrderServiceTest / OrderOptionServiceTest)
+  - update_fires_after_status_change_on_transition
+  - bulk_update_fires_after_status_change_per_order  # A36 본체 (N→N)
+  - bulk_update_status_fires_after_status_change_per_order
+  - bulk_change_with_quantity_fires_when_parent_transitions
+  - confirm_option_fires_after_status_change_to_confirmed
+  - no_fire_when_status_unchanged_in_bulk
+  # 이중발화 회피 (Unit)
+  - complete_payment_fires_after_confirm_directly_not_after_status_change
+  - payment_complete_notified_exactly_once
+  # D9 본체 (Feature — notification_logs 적재)
+  - admin_status_update_to_payment_complete_sends_order_confirmed   # D9
+  - admin_bulk_to_payment_complete_sends_order_confirmed            # D9
+  # 신설/라벨 (Unit — 정의)
+  - order_delivered_definition_registered                          # D3
+  - order_delivered_extract_filter_handles_carrier_tracking        # D3
+  - order_confirmed_label_means_payment_complete                   # D8
+  # 비결함 회귀 가드 (Unit)
+  - confirmed_transition_does_not_change_stock                     # A36 비결함
+  - no_duplicate_payment_complete_type_created                     # 중복 type 금지
+  # 브라우저 E2E (Playwright)
+  - admin_status_change_triggers_user_notification
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderStatusNotificationListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/OrderStatusNotificationTest.php
+  - tests/Playwright/specs/admin/order-status-notification.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

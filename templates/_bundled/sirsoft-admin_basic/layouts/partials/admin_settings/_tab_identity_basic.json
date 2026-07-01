@@ -15,22 +15,22 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.identity.basic.title"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.identity.basic.desc"
         },
@@ -38,7 +38,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-6"
+            "className": "row-stack"
           },
           "children": [
             {
@@ -46,14 +46,14 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+                "className": ""
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    "className": "form-label"
                   },
                   "text": "$t:admin.settings.identity.basic.default_provider"
                 },
@@ -72,7 +72,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['identity.default_provider']}}",
                   "props": {
-                    "className": "text-red-500 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['identity.default_provider']?.[0] ?? ''}}"
                 },
@@ -80,7 +80,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                    "className": "text-hint mt-1"
                   },
                   "text": "$t:admin.settings.identity.basic.default_provider_desc"
                 }
@@ -91,14 +91,14 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+                "className": ""
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    "className": "form-label"
                   },
                   "children": [
                     {
@@ -109,7 +109,9 @@
                     {
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-red-500 ml-1" },
+                      "props": {
+                        "className": "text-red-500 ml-1"
+                      },
                       "text": "*"
                     }
                   ]
@@ -124,20 +126,24 @@
                     "min": 1,
                     "max": 1440,
                     "disabled": "{{_computed.isReadOnly}}",
-                    "className": "{{_local.errors?.['identity.challenge_ttl_minutes'] ? 'w-full md:w-48 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full md:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                    "className": "{{_local.errors?.['identity.challenge_ttl_minutes'] ? 'input-error md:w-48' : 'md:w-48'}}"
                   }
                 },
                 {
                   "type": "basic",
                   "name": "Span",
                   "if": "{{_local.errors?.['identity.challenge_ttl_minutes']}}",
-                  "props": { "className": "text-red-500 text-xs mt-1 block" },
+                  "props": {
+                    "className": "form-error"
+                  },
                   "text": "{{_local.errors?.['identity.challenge_ttl_minutes']?.[0] ?? ''}}"
                 },
                 {
                   "type": "basic",
                   "name": "P",
-                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-1" },
+                  "props": {
+                    "className": "text-hint mt-1"
+                  },
                   "text": "$t:admin.settings.identity.basic.challenge_ttl_desc"
                 }
               ]
@@ -146,12 +152,16 @@
               "id": "field_identity_max_attempts",
               "type": "basic",
               "name": "Div",
-              "props": { "className": "py-3" },
+              "props": {
+                "className": ""
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Label",
-                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+                  "props": {
+                    "className": "form-label"
+                  },
                   "children": [
                     {
                       "type": "basic",
@@ -161,7 +171,9 @@
                     {
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-red-500 ml-1" },
+                      "props": {
+                        "className": "text-red-500 ml-1"
+                      },
                       "text": "*"
                     }
                   ]
@@ -176,20 +188,24 @@
                     "min": 1,
                     "max": 20,
                     "disabled": "{{_computed.isReadOnly}}",
-                    "className": "{{_local.errors?.['identity.max_attempts'] ? 'w-full md:w-48 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full md:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                    "className": "{{_local.errors?.['identity.max_attempts'] ? 'input-error md:w-48' : 'md:w-48'}}"
                   }
                 },
                 {
                   "type": "basic",
                   "name": "Span",
                   "if": "{{_local.errors?.['identity.max_attempts']}}",
-                  "props": { "className": "text-red-500 text-xs mt-1 block" },
+                  "props": {
+                    "className": "form-error"
+                  },
                   "text": "{{_local.errors?.['identity.max_attempts']?.[0] ?? ''}}"
                 },
                 {
                   "type": "basic",
                   "name": "P",
-                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-1" },
+                  "props": {
+                    "className": "text-hint mt-1"
+                  },
                   "text": "$t:admin.settings.identity.basic.max_attempts_desc"
                 }
               ]

@@ -362,7 +362,7 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     public function test_delete_removes_shipping_policy(): void
     {
         // Given: 배송정책 존재 (id는 fillable이 아니므로 직접 설정)
-        $shippingPolicy = new ShippingPolicy();
+        $shippingPolicy = new ShippingPolicy;
         $shippingPolicy->id = 1;
 
         $this->mockRepository
@@ -417,6 +417,17 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         // Given: ID 배열
         $ids = [1, 2, 3];
 
+        // 스냅샷 캡처 (after_bulk_delete 훅 전달용) + 국가별 설정 명시적 삭제 위임
+        $this->mockRepository
+            ->shouldReceive('findByIdsKeyed')
+            ->with($ids)
+            ->once()
+            ->andReturn(new Collection);
+        $this->mockRepository
+            ->shouldReceive('deleteCountrySettingsByPolicyIds')
+            ->with($ids)
+            ->once()
+            ->andReturn(0);
         $this->mockRepository
             ->shouldReceive('bulkDelete')
             ->with($ids)
@@ -440,6 +451,12 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         $ids = [1, 2, 3];
         $isActive = false;
 
+        // 스냅샷 캡처 (after_bulk_toggle_active 훅 전달용) 위임
+        $this->mockRepository
+            ->shouldReceive('findByIdsKeyed')
+            ->with($ids)
+            ->once()
+            ->andReturn(new Collection);
         $this->mockRepository
             ->shouldReceive('bulkToggleActive')
             ->with($ids, $isActive)
@@ -476,5 +493,93 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         // Then: 컬렉션 반환
         $this->assertInstanceOf(Collection::class, $result);
         $this->assertCount(2, $result);
+    }
+
+    // ========================================
+    // 통화 강제 (forceDefaultCurrency) 테스트
+    // ========================================
+
+    public function test_create_forces_country_setting_currency_to_default(): void
+    {
+        // Given: 관리자 인증 + 비-기본통화(USD)로 country_settings 입력
+        $user = $this->createAdminUser();
+        $this->actingAs($user);
+
+        $data = [
+            'name' => ['ko' => '통화강제정책', 'en' => 'Currency Forced Policy'],
+            'is_active' => true,
+            'country_settings' => [
+                [
+                    'country_code' => 'KR',
+                    'shipping_method' => 'parcel',
+                    'currency_code' => 'USD', // 관리자가 임의로 USD 지정해도 무시되어야 함
+                    'charge_policy' => 'fixed',
+                    'base_fee' => 3000,
+                    'is_active' => true,
+                ],
+            ],
+        ];
+
+        $this->mockRepository
+            ->shouldReceive('create')
+            ->once()
+            ->andReturnUsing(fn ($createData) => ShippingPolicy::create($createData));
+
+        // When: create 호출
+        $result = $this->service->create($data);
+
+        // Then: country_setting 통화가 기본 통화(미설정 환경 폴백 KRW)로 강제됨
+        $this->assertCount(1, $result->countrySettings);
+        $this->assertSame('KRW', $result->countrySettings->first()->currency_code);
+    }
+
+    public function test_update_forces_country_setting_currency_to_default(): void
+    {
+        // Given: 관리자 인증 + 기존 정책(USD 저장 상태)
+        $user = $this->createAdminUser();
+        $this->actingAs($user);
+
+        $shippingPolicy = ShippingPolicy::create([
+            'name' => ['ko' => '기본택배', 'en' => 'Basic Parcel'],
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
+        $shippingPolicy->countrySettings()->create([
+            'country_code' => 'KR',
+            'shipping_method' => 'parcel',
+            'currency_code' => 'USD',
+            'charge_policy' => 'fixed',
+            'base_fee' => 3000,
+            'is_active' => true,
+        ]);
+
+        $data = [
+            'country_settings' => [
+                [
+                    'country_code' => 'KR',
+                    'shipping_method' => 'parcel',
+                    'currency_code' => 'EUR', // 수정 시에도 임의 통화 무시
+                    'charge_policy' => 'fixed',
+                    'base_fee' => 5000,
+                    'is_active' => true,
+                ],
+            ],
+        ];
+
+        $this->mockRepository
+            ->shouldReceive('update')
+            ->once()
+            ->andReturnUsing(function ($policy, $updateData) {
+                $policy->update($updateData);
+
+                return $policy->fresh();
+            });
+
+        // When: update 호출
+        $result = $this->service->update($shippingPolicy, $data);
+
+        // Then: country_setting 통화가 기본 통화(폴백 KRW)로 강제됨
+        $this->assertCount(1, $result->countrySettings);
+        $this->assertSame('KRW', $result->countrySettings->first()->currency_code);
     }
 }

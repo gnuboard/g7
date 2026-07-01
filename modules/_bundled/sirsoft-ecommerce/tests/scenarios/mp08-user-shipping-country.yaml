@@ -1,0 +1,63 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
+#   각 axis 조합은 PHPUnit(Resolver/User·Admin 컨트롤러/OrderProcessing 차단·저장) + Vitest(핸들러)
+#   + Playwright(설정 주입·게이트·차단) 로 커버되며 green 이다.
+feature: 유저별 배송국가 (preferred_shipping_country) — MP08 후속
+
+description: |
+  유저가 자신의 결제 통화처럼 배송국가를 별도로 설정할 수 있어야 한다. 해외배송 활성 시
+  회원정보·마이페이지·관리자·헤더·가입폼에서 배송국가를 설정하고, 주문서·주문상세·주문리스트·
+  주소록에 배송국가가 표시되며, 유저가 고른 국가에 배송정책이 없는 상품은 구매가 차단된다(혼재 시 전체 차단).
+  기본 배송국가 우선순위: 저장 국가 → GeoIP → shipping.default_country (각 후보 활성 국가일 때만).
+
+axes:
+  actor:
+    - guest               # 비로그인 (localStorage + X-Shipping-Country)
+    - member              # 로그인 (계정 영속 PUT)
+    - admin               # 관리자 (회원 배송국가 변경 / 헤더 표시 전용)
+  setting_location:
+    - profile_edit        # 마이페이지 회원정보 수정 카드
+    - profile_view        # 마이페이지 읽기전용 표시
+    - admin_user_form     # 관리자 회원 편집 폼
+    - header_dropdown     # 헤더 공용 셀렉터 (통화+배송국가)
+    - register            # 가입폼
+    - checkout_select     # 체크아웃 국가 Select
+  module_state:
+    - intl_on             # 해외배송 활성 (available_countries 다국가)
+    - intl_off            # 해외배송 비활성 (KR 만 활성 collapse)
+  shippability:
+    - all_shippable       # 전 상품 선택 국가 배송 가능
+    - mixed               # 일부 상품 배송 불가 (혼재)
+
+effects:
+  - setting_ui_injected_when_intl_on              # 설정 UI 가 해외배송 활성 시에만 주입(게이트)
+  - setting_ui_hidden_when_intl_off               # 해외배송 OFF 시 설정 UI 숨김
+  - header_dropdown_changes_country               # 헤더 드롭다운에서 배송국가 변경
+  - country_change_refetches_cart_checkout        # 국가 변경 시 cartItems/checkoutData refetch
+  - checkout_select_visible_when_intl_on          # B1 — 체크아웃 국가 Select 렌더(shippingSettings 경로)
+  - checkout_default_synced_with_header           # D5 — 체크아웃 기본값 = _global.preferredShippingCountry
+  - register_field_prefill_and_persist            # D6 — 가입폼 prefill + 가입 시 저장
+  - member_country_persisted_via_put              # 로그인 회원 PUT user/shipping-country 영속
+  - inactive_country_rejected_422                 # 비활성 국가 저장 거부
+  - not_shippable_blocks_purchase                 # D1 — 미지원 상품 구매 차단(카트/체크아웃/주문생성)
+  - mixed_cart_blocks_all                         # D1 — 혼재 시 주문 전체 차단(부분주문 없음)
+  - intl_address_persisted_on_order               # B2 — 해외 주소 필드 OrderAddress 보존
+  - addressbook_intl_mapping_on_select            # B3 — 주소록 해외주소 선택 시 체크아웃 폼 intl_* 매핑
+  - snapshot_preserves_shipping_country           # B5 — 취소/환불 스냅샷에 배송국가/우편번호 보존
+  - notification_includes_shipping_country        # B6 — 주문 알림에 배송지(국가) 변수 노출
+  - country_shown_on_order_detail_and_list        # D9 — 주문상세·목록·주소록 국가 표시(KR 포함)
+  - admin_country_change_fires_activity_log       # 관리자 변경 시 활동로그 훅 발화
+  - resolve_priority_saved_geoip_default          # D2 — 저장>GeoIP>default 우선순위(각 활성 검증)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserShippingCountryControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/AdminUserShippingCountryControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ShippingCountryResolverTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ShippingCountryListenersTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ShippingCountryNotificationAndFreeShippingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingShippingCountryTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/UserAddressShippingMappingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationShippingSnapshotTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/initPreferredShippingCountry.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingCountryLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-shipping-country.spec.ts

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
+import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -15,6 +16,8 @@ export interface LoadingSpinnerProps {
   fullscreen?: boolean;
   text?: string;
   className?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -44,6 +47,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   fullscreen = false,
   text,
   className = '',
+  editorAttrs,
 }) => {
   // size별 스피너 크기 매핑
   const sizeClassMap: Record<SpinnerSize, string> = {
@@ -91,6 +95,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90"
         aria-live="polite"
         aria-busy="true"
+        {...editorAttrs}
       >
         {spinnerContent}
       </Div>
@@ -103,6 +108,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       className="flex items-center justify-center p-4"
       aria-live="polite"
       aria-busy="true"
+      {...editorAttrs}
     >
       {spinnerContent}
     </Div>

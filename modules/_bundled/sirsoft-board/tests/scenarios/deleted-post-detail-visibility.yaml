@@ -1,0 +1,49 @@
+feature: 삭제된 게시글 상세에서 cascade 하위 데이터 노출 (표시 계층)
+
+description: |
+  이슈 #413 item 69-② 의 표시 계층. 게시글 삭제 연쇄(cascade) soft delete 가
+  DB/서비스 레벨에 구현된 뒤, 관리 권한자가 삭제된 게시글 상세를 열었을 때
+  드러난 두 회귀를 수정한다.
+
+  증상:
+    · 증상1 — 삭제된 게시글 상세에서 첨부파일이 0건으로 보임
+      (PostRepository::findWithCounts 의 attachments eager load 클로저에
+       withTrashed 누락 → SoftDeletes 글로벌 스코프가 cascade 첨부를 제외).
+    · 증상2 — cascade 로 함께 숨겨진 댓글이 사용자 직접 삭제 댓글과 동일하게
+      "삭제된 댓글입니다" 로 마스킹됨 (레이아웃이 deleted_at 유무만으로 마스킹
+       분기를 결정하고, cascade/user 를 구분할 신호가 없었음).
+
+  조치:
+    · CommentResource 가 is_cascade_deleted 플래그를 노출하고, getFilteredContent
+      가 cascade 댓글은 마스킹에서 제외해 원문을 그대로 전달한다.
+    · PostRepository::findWithCounts 가 관리 권한(admin.control / admin.manage /
+      User manager)을 조회 이전에 계산해 attachments 클로저에서도 cascade-only
+      withTrashed 를 적용한다 (댓글의 cascade-only 노출과 일관).
+    · 레이아웃(admin _comment.json / user _comment_item.json)이 is_cascade_deleted
+      를 보고 cascade 댓글은 마스킹 없이 읽기 모드 본문으로 노출한다.
+
+  표시 자격(권한)·cascade 분류는 백엔드, 모양은 프론트가 담당한다.
+
+# axis 의미:
+#   comment_trigger — 삭제된 댓글의 종류(게시글 삭제 연쇄 cascade / 사용자 직접 삭제
+#                     user)별로 표시 계층이 다르게 동작해야 하므로 핵심 축.
+#                     cascade 는 마스킹 없이 원문 + is_cascade_deleted 플래그 노출,
+#                     user 는 기존대로 마스킹 + 플래그 false.
+#   viewer(admin_manage / user_manager)는 한 메서드 안에서 동시에 단언하므로 별도
+#   축이 아니라 effects 로 커버한다.
+axes:
+  comment_trigger: [cascade, user]
+
+effects:
+  - cascade_attachment_visible_to_manager
+  - cascade_comment_content_visible
+  - cascade_comment_flag_exposed
+  - user_deleted_comment_not_flagged_cascade
+
+test_files:
+  # 삭제된 게시글 상세의 cascade 하위 데이터 노출 (백엔드)
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/DeletedPostDetailVisibilityTest.php
+  # 레이아웃 분기 계약 (관리자 화면)
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-comment-cascade-visibility.test.tsx
+  # 레이아웃 분기 계약 (유저 화면, manager 권한자)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-deleted-comment-tree.test.tsx

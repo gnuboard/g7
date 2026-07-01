@@ -5,6 +5,7 @@ import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import type { EditorAttrs } from '../../types';
 
 export interface ActionMenuItem {
   id: string | number;
@@ -43,6 +44,12 @@ export interface ActionMenuProps {
    * @param item - 클릭된 아이템 전체 객체
    */
   onItemClick?: (itemId: string | number, item: ActionMenuItem) => void;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -75,6 +82,8 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   style,
   children,
   onItemClick,
+  id,
+  editorAttrs,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -215,7 +224,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     : null;
 
   return (
-    <Div className={`relative inline-block ${className}`} style={style}>
+    <Div className={`relative inline-block ${className}`} style={style} id={id} {...editorAttrs}>
       {/* 트리거: children이 있으면 커스텀 트리거, 없으면 기본 Button */}
       {children ? (
         <Div

@@ -3,11 +3,11 @@
     "is_partial": true,
     "description": "Board Form - Notification Tab Content"
   },
-  "id": "tab_content_notification",
+  "id": "section_notification_card",
   "type": "basic",
   "name": "Div",
   "props": {
-    "id": "tab_content_notification"
+    "className": "admin-card"
   },
   "classMap": {
     "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
@@ -18,139 +18,107 @@
   },
   "children": [
     {
-      "id": "section_notification_card",
-      "type": "layout",
-      "name": "SectionLayout",
+      "id": "section_notification",
+      "type": "basic",
+      "name": "H3",
       "props": {
-        "background": "white",
-        "border": true,
-        "shadow": "md",
-        "rounded": true,
-        "padding": "xl",
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+        "className": "card-title"
+      },
+      "text": "$t:sirsoft-board.admin.form.tabs.notification"
+    },
+    {
+      "id": "section_notification_fields",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "row-stack"
       },
       "children": [
         {
-          "id": "section_notification",
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 border-b-2 border-gray-200 dark:border-gray-700"
-          },
-          "text": "$t:sirsoft-board.admin.form.tabs.notification"
-        },
-        {
-          "id": "notification_settings_section",
+          "id": "notify_author_toggle",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-0"
+            "className": "flex-start justify-between"
           },
           "children": [
             {
-              "comment": "작성자 댓글 알림",
-              "id": "notify_author_section",
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "border-b border-gray-200 dark:border-gray-700"
+                "className": "flex-1"
               },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Div",
+                  "name": "Label",
                   "props": {
-                    "className": "flex justify-between items-start py-4"
+                    "className": "text-heading"
                   },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-1"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "text-sm font-medium text-gray-900 dark:text-white"
-                          },
-                          "text": "$t:sirsoft-board.admin.form.fields.notify_author.label"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
-                          },
-                          "text": "$t:sirsoft-board.admin.form.fields.notify_author.description"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "name": "notify_author",
-                        "disabled": "{{_computed.isReadOnly}}",
-                        "className": "flex-shrink-0 ml-4"
-                      }
-                    }
-                  ]
+                  "text": "$t:sirsoft-board.admin.form.fields.notify_author.label"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.fields.notify_author.description"
                 }
               ]
             },
             {
-              "comment": "신규 게시글 관리자 알림",
-              "id": "notify_admin_on_post_section",
+              "type": "composite",
+              "name": "Toggle",
+              "props": {
+                "name": "notify_author",
+                "disabled": "{{_computed.isReadOnly}}",
+                "className": "flex-shrink-0 ml-4"
+              }
+            }
+          ]
+        },
+        {
+          "id": "notify_admin_on_post_toggle",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-start justify-between"
+          },
+          "children": [
+            {
               "type": "basic",
               "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Div",
+                  "name": "Label",
                   "props": {
-                    "className": "flex justify-between items-start py-4"
+                    "className": "text-heading"
                   },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-1"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "text-sm font-medium text-gray-900 dark:text-white"
-                          },
-                          "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.label"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
-                          },
-                          "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.description"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "name": "notify_admin_on_post",
-                        "disabled": "{{_computed.isReadOnly}}",
-                        "className": "flex-shrink-0 ml-4"
-                      }
-                    }
-                  ]
+                  "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.label"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.fields.notify_admin_on_post.description"
                 }
               ]
+            },
+            {
+              "type": "composite",
+              "name": "Toggle",
+              "props": {
+                "name": "notify_admin_on_post",
+                "disabled": "{{_computed.isReadOnly}}",
+                "className": "flex-shrink-0 ml-4"
+              }
             }
           ]
         }

@@ -1,8 +1,6 @@
 <?php
 
 return [
-    // アクションラベル（最後のセグメント基準）。
-    // ActivityLog::getActionLabelAttribute がモジュール origin のラベルをモジュール lang から優先的に解決します。
     'action' => [
         'add' => '追加',
         'bulk_create' => '一括作成',
@@ -41,8 +39,17 @@ return [
         'update_shipping_address' => '配送先変更',
         'upload' => 'アップロード',
         'use' => '使用',
+        'reset_guest_password' => '非会員照会 パスワード再設定',
+        'expire' => '失効',
+        'earn_cancel' => 'ポイント回収',
+        'admin_earn' => '管理者付与',
+        'admin_deduct' => '管理者減額',
+        'extend_expiry' => '有効期限延長',
+        'adjust' => 'ポイント加算の編集',
+        'direct_issue' => '直接発行',
+        'issue_cancel' => '発行キャンセル',
+        'change' => '変更',
     ],
-
     'description' => [
         'product_index' => '商品 目録 閲覧',
         'product_show' => '商品 詳細 閲覧 (ID: :product_id)',
@@ -159,6 +166,19 @@ return [
         'mileage_earn' => 'マイレージ積立 (:amount円)',
         'mileage_use' => 'マイレージ使用 (:amount円)',
         'mileage_restore' => 'マイレージ復元 (:amount円)',
+        'order_reset_guest_password' => '非会員照会 パスワード再設定 (:order_number)',
+        'mileage_expire' => 'マイレージ失効 (:amount円)',
+        'mileage_earn_cancel' => 'マイレージ回収 (:amount円)',
+        'mileage_admin_earn' => '管理者マイレージ付与 (:amount円)',
+        'mileage_admin_deduct' => '管理者マイレージ減額 (:amount円)',
+        'mileage_extend_expiry' => 'マイレージ有効期限延長 (:days日)',
+        'mileage_adjust' => 'マイレージ加算の編集 (:amount円)',
+        'product_notice_template_toggle_active' => '商品告示情報テンプレート有効化状態変更 (:template_name)',
+        'ecommerce_settings_update' => 'イーコマース設定保存 (:categories)',
+        'coupon_direct_issue' => 'クーポン直接発行 (:coupon_name → 会員 #:user_id)',
+        'coupon_issue_cancel' => 'クーポン発行キャンセル (:coupon_name → 会員 #:user_id)',
+        'user_currency_change' => '会員決済通貨変更',
+        'user_shipping_country_change' => '会員配送国変更',
     ],
     'fields' => [
         'is_active' => '有効化否か',
@@ -231,5 +251,6 @@ return [
         'option_name' => 'オプション名',
         'sku' => 'SKU',
         'price_adjustment' => '価格調整',
+        'delivery_memo_label' => '配送メモラベル',
     ],
 ];

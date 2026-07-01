@@ -24,6 +24,7 @@ class CalculationInput
      *         - campaign_id: 캠페인 ID (프로모션 플러그인)
      * @param  array|null  $shippingPolicySnapshots  배송정책 스냅샷 (환불 재계산용)
      * @param  array|null  $promotionSnapshots  프로모션 스냅샷 (환불 재계산용)
+     * @param  int|null  $userId  주문 사용자 ID (per_user_limit 과거 사용 검증용, 비회원은 null)
      */
     public function __construct(
         public array $items = [],
@@ -36,12 +37,14 @@ class CalculationInput
         public array $metadata = [],
         public ?array $shippingPolicySnapshots = null,
         public ?array $promotionSnapshots = null,
+        public ?int $userId = null,
     ) {}
 
     /**
      * 배열에서 DTO를 생성합니다.
      *
      * @param  array  $data  배열 데이터
+     * @return self
      */
     public static function fromArray(array $data): self
     {
@@ -66,11 +69,14 @@ class CalculationInput
             metadata: $data['metadata'] ?? [],
             shippingPolicySnapshots: $data['shipping_policy_snapshots'] ?? null,
             promotionSnapshots: $data['promotion_snapshots'] ?? null,
+            userId: $data['user_id'] ?? null,
         );
     }
 
     /**
      * 배열로 변환합니다.
+     *
+     * @return array
      */
     public function toArray(): array
     {
@@ -85,6 +91,7 @@ class CalculationInput
             'metadata' => $this->metadata,
             'shipping_policy_snapshots' => $this->shippingPolicySnapshots,
             'promotion_snapshots' => $this->promotionSnapshots,
+            'user_id' => $this->userId,
         ];
     }
 }

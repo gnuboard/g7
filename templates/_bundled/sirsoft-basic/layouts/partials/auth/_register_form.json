@@ -10,18 +10,6 @@
     "id": "registerForm",
     "className": "space-y-4 relative"
   },
-  "lifecycle": {
-    "onMount": [
-      {
-        "handler": "setState",
-        "if": "{{!_local?.registerForm?.language}}",
-        "params": {
-          "target": "local",
-          "registerForm.language": "{{$locale ?? 'ko'}}"
-        }
-      }
-    ]
-  },
   "children": [
     {
       "comment": "로딩 오버레이 (블러 처리)",
@@ -60,7 +48,7 @@
       ]
     },
     {
-      "comment": "API 에러 메시지 표시",
+      "comment": "API 에러 메시지 표시 — 전체 응답 message + form field 외 errors (identity/verification_token 등 plugin 기여 에러)",
       "type": "basic",
       "name": "Div",
       "if": "{{_local?.registerError}}",
@@ -72,9 +60,32 @@
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "text-sm text-red-600 dark:text-red-400"
+            "className": "text-sm font-medium text-red-600 dark:text-red-400"
           },
           "text": "{{_local.registerError}}"
+        },
+        {
+          "comment": "비-form-field 에러 메시지 (identity / verification_token 등 plugin 기여 에러)를 추가 안내",
+          "type": "basic",
+          "name": "Ul",
+          "if": "{{_local.errors && Object.keys(_local.errors).filter(function(k) { return ['email','password','password_confirmation','name','nickname','language','agree_terms','agree_privacy'].indexOf(k) === -1; }).length > 0}}",
+          "props": {
+            "className": "mt-2 list-disc list-inside space-y-1"
+          },
+          "iteration": {
+            "source": "Object.entries(_local.errors ?? {}).filter(function(entry) { return ['email','password','password_confirmation','name','nickname','language','agree_terms','agree_privacy'].indexOf(entry[0]) === -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })",
+            "item_var": "message"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Li",
+              "props": {
+                "className": "text-sm text-red-600 dark:text-red-400"
+              },
+              "text": "{{message}}"
+            }
+          ]
         }
       ]
     },
@@ -321,12 +332,19 @@
           "name": "Select",
           "props": {
             "name": "language",
+            "value": "{{_local?.registerForm?.language ?? $locale ?? 'ko'}}",
             "options": "{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
             "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
             "disabled": "{{_local?.isRegistering}}"
           }
         }
       ]
+    },
+    {
+      "id": "register_extension_fields",
+      "comment": "확장 주입 앵커 — 모듈이 layout_extensions 로 가입폼 추가 필드(결제 통화 등)를 주입한다. 미설치 시 빈 슬롯(렌더 영향 없음).",
+      "type": "basic",
+      "name": "Div"
     },
     {
       "comment": "약관 동의",

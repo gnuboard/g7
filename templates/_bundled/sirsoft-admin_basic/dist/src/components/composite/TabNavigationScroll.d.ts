@@ -1,5 +1,6 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
+import { EditorAttrs } from '../../types';
 /**
  * 탭 정의 인터페이스
  */
@@ -46,6 +47,12 @@ export interface TabNavigationScrollProps {
     scrollSpyOffset?: number;
     /** 스크롤 컨테이너 ID (IntersectionObserver root 및 scrollToSection 대상, 미지정 시 window) */
     scrollContainerId?: string;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * 탭 네비게이션 컴포넌트 (자동 스크롤 기능 내장)

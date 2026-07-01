@@ -17,6 +17,7 @@
     "data_sources": [
         {
             "id": "boards",
+            "label_key": "$t:sirsoft-board.editor.data_source.boards",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/admin/boards",
             "method": "GET",
@@ -46,7 +47,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900"
+                    "className": "admin-page-content-responsive-fluid"
                 },
                 "children": [
                     {
@@ -63,7 +64,7 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
-                                    "className": "p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-800 transition-colors",
+                                    "className": "btn-icon",
                                     "aria-label": "$t:common.refresh"
                                 },
                                 "actions": [
@@ -94,13 +95,15 @@
                                 "name": "Button",
                                 "props": {
                                     "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
-                                        "target": "/admin/boards/create"
+                                        "params": {
+                                            "path": "/admin/boards/create"
+                                        }
                                     }
                                 ],
                                 "children": [
@@ -126,7 +129,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+                            "className": "admin-card"
                         },
                         "children": [
                             {
@@ -215,7 +218,7 @@
                                                                     "type": "basic",
                                                                     "name": "H3",
                                                                     "props": {
-                                                                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                                        "className": "section-heading"
                                                                     },
                                                                     "text": "{{row.name}}"
                                                                 },
@@ -224,7 +227,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-label-subtle"
                                                                     },
                                                                     "text": "({{row.type}})"
                                                                 }
@@ -387,7 +390,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+                                                        "className": "flex-center gap-2 text-label"
                                                     },
                                                     "children": [
                                                         {
@@ -445,7 +448,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                "className": "text-label-subtle"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.board.index.categories_label"
                                                         },
@@ -497,7 +500,7 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-board.admin.modals.copy.title",
-                "size": "small"
+                "size": "sm"
             },
             "children": [
                 {
@@ -505,7 +508,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-4"
+                        "className": "row-stack"
                     },
                     "children": [
                         {
@@ -513,18 +516,88 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-900 dark:text-white font-medium"
+                                "className": "text-primary font-medium"
                             },
                             "text": "$t:sirsoft-board.admin.modals.copy.message|name={{_global.modal_data.name}}"
                         },
                         {
-                            "id": "copy_info",
+                            "id": "copy_info_box",
                             "type": "basic",
-                            "name": "P",
+                            "name": "Div",
                             "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                "className": "rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3"
                             },
-                            "text": "$t:sirsoft-board.admin.modals.copy.info"
+                            "children": [
+                                {
+                                    "id": "copy_info_copied",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label flex items-start gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "·"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.modals.copy.info_copied"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "copy_info_excluded",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label flex items-start gap-2 mt-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "·"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.modals.copy.info_excluded"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "copy_info_slug",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label flex items-start gap-2 mt-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "·"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.modals.copy.info_slug"
+                                        }
+                                    ]
+                                }
+                            ]
                         },
                         {
                             "id": "copy_button_group",
@@ -539,7 +612,7 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "props": {
-                                        "className": "px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
+                                        "className": "px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
                                     },
                                     "text": "$t:common.cancel",
                                     "actions": [
@@ -567,7 +640,9 @@
                                         {
                                             "type": "click",
                                             "handler": "navigate",
-                                            "target": "/admin/boards/create?copy_id={{_global.modal_data.id}}"
+                                            "params": {
+                                                "path": "/admin/boards/create?copy_id={{_global.modal_data.id}}"
+                                            }
                                         }
                                     ]
                                 }
@@ -583,7 +658,7 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-board.admin.modals.delete.title",
-                "size": "small"
+                "size": "sm"
             },
             "children": [
                 {
@@ -591,7 +666,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-3"
+                        "className": "row-stack"
                     },
                     "children": [
                         {
@@ -599,7 +674,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-900 dark:text-white font-semibold text-lg"
+                                "className": "text-primary font-semibold text-lg"
                             },
                             "text": "$t:sirsoft-board.admin.modals.delete.confirm|name={{_global.modal_data.name}}"
                         },
@@ -627,7 +702,7 @@
                             "name": "P",
                             "if": "{{_global.modal_data.posts_count > 0}}",
                             "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                "className": "text-label"
                             },
                             "text": "$t:sirsoft-board.admin.modals.delete.backup_notice"
                         }
@@ -637,7 +712,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3 mt-6"
+                        "className": "modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -665,7 +740,7 @@
                             "type": "basic",
                             "name": "Button",
                             "props": {
-                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "actions": [
@@ -755,7 +830,7 @@
                                     "if": "{{_global.isDeleting}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "w-4 h-4 animate-spin"
+                                        "className": "spinner-sm"
                                     }
                                 },
                                 {

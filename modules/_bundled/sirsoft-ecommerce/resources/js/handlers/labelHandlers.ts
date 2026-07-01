@@ -65,30 +65,24 @@ export const toggleLabelAssignmentHandler = (
     const currentAssignments = [...formLabelAssignments] as LabelAssignment[];
     const existingAssignment = currentAssignments.find(a => a.label_id === labelId);
 
-    // 이미 할당되어 있고, 기간이 설정된 경우 → 확인 모달 표시
-    // v1.16.0: 모달에서 $parent 바인딩으로 부모 _local에 직접 접근 가능
-    // - labelAssignmentsSnapshot 복사 제거 → confirmUncheckLabelHandler에서 getParent() 사용
-    // - 날짜도 $parent._local.form.label_assignments에서 직접 조회 → _global 복사 제거
-    if (existingAssignment && (existingAssignment.started_at || existingAssignment.ended_at)) {
-        G7Core?.state?.setGlobal?.({
-            labelToUncheckId: labelId,
+    // A31: 이미 할당된 칩 클릭 = 기간 패널 전환만 (할당 해제 안 함).
+    // 기간 패널이 lastClickedLabelId 단일 슬롯에 결합되어 있어, 칩 토글이 label_assignments 를
+    // 건드리면 다른 라벨로 패널을 옮길 때 의도치 않게 할당이 풀렸다.
+    // 할당 해제는 미리보기의 분리된 "할당 해제" 어포던스(modal_label_uncheck_confirm)로만 수행한다.
+    // ChipCheckbox checked 는 label_assignments.some(...) 파생이므로, 핸들러가 건드리지 않으면 체크 유지.
+    if (existingAssignment) {
+        G7Core?.state?.setLocal?.({
+            'ui.lastClickedLabelId': labelId,
         });
-        G7Core?.modal?.open?.('modal_label_uncheck_confirm');
         return;
     }
 
-    let updatedAssignments: LabelAssignment[];
-    if (existingAssignment) {
-        // 이미 할당됨 (기간 미설정) → 바로 제거
-        updatedAssignments = currentAssignments.filter(a => a.label_id !== labelId);
-    } else {
-        // 미할당 → 추가
-        updatedAssignments = [...currentAssignments, {
-            label_id: labelId,
-            started_at: null,
-            ended_at: null,
-        }];
-    }
+    // 미할당 → 추가 + 패널 전환
+    const updatedAssignments: LabelAssignment[] = [...currentAssignments, {
+        label_id: labelId,
+        started_at: null,
+        ended_at: null,
+    }];
 
     G7Core?.state?.setLocal?.({
         'form.label_assignments': updatedAssignments,
@@ -353,49 +347,83 @@ export const saveLabelSettingsHandler = async (
         ended_at: string | null;
     };
 
-    if (!editingLabelId || !labelFormData?.name?.ko) {
+    // A31: 생성/수정 겸용 — name.ko 만 필수 (editingLabelId 유무로 분기)
+    if (!labelFormData?.name?.ko) {
         return;
     }
 
     G7Core?.state?.setGlobal?.({ isSavingLabel: true });
 
     try {
-        // 1. 라벨 원본 업데이트 (name, color) - API 즉시 저장
-        const response = await G7Core.api.put(
-            `/api/modules/sirsoft-ecommerce/admin/product-labels/${editingLabelId}`,
-            {
-                name: labelFormData.name,
-                color: labelFormData.color,
-            }
-        );
+        if (editingLabelId) {
+            // 수정: 라벨 원본 업데이트 (name, color) - API 즉시 저장
+            const response = await G7Core.api.put(
+                `/api/modules/sirsoft-ecommerce/admin/product-labels/${editingLabelId}`,
+                {
+                    name: labelFormData.name,
+                    color: labelFormData.color,
+                }
+            );
 
-        if (!response?.success) {
-            throw new Error(response?.message || 'Failed to update label');
+            if (!response?.success) {
+                throw new Error(response?.message || 'Failed to update label');
+            }
+
+            // 로컬 상태에서 기간 업데이트 (상품 저장 시 반영)
+            const currentAssignments = [...formLabelAssignments] as LabelAssignment[];
+            const updatedAssignments = currentAssignments.map(a => {
+                if (a.label_id === editingLabelId) {
+                    return {
+                        ...a,
+                        started_at: labelFormData.started_at || null,
+                        ended_at: labelFormData.ended_at || null,
+                    };
+                }
+                return a;
+            });
+
+            G7Core?.state?.setLocal?.({
+                'form.label_assignments': updatedAssignments,
+                hasChanges: true,
+            });
+        } else {
+            // 생성: POST 로 신규 라벨 생성 + 새 id 를 form.label_assignments 에 추가
+            const response = await G7Core.api.post(
+                '/api/modules/sirsoft-ecommerce/admin/product-labels',
+                {
+                    name: labelFormData.name,
+                    color: labelFormData.color || '#6B7280',
+                }
+            );
+
+            if (!response?.success) {
+                throw new Error(response?.message || 'Failed to create label');
+            }
+
+            const newId = Number(response?.data?.id);
+            if (newId) {
+                const currentAssignments = [...formLabelAssignments] as LabelAssignment[];
+                const updatedAssignments = [...currentAssignments, {
+                    label_id: newId,
+                    started_at: null,
+                    ended_at: null,
+                }];
+
+                G7Core?.state?.setLocal?.({
+                    'form.label_assignments': updatedAssignments,
+                    'ui.lastClickedLabelId': newId,
+                    hasChanges: true,
+                });
+            }
         }
 
-        // 2. 로컬 상태에서 기간 업데이트 (상품 저장 시 반영)
-        const currentAssignments = [...formLabelAssignments] as LabelAssignment[];
-        const updatedAssignments = currentAssignments.map(a => {
-            if (a.label_id === editingLabelId) {
-                return {
-                    ...a,
-                    started_at: labelFormData.started_at || null,
-                    ended_at: labelFormData.ended_at || null,
-                };
-            }
-            return a;
-        });
-
-        G7Core?.state?.setLocal?.({
-            'form.label_assignments': updatedAssignments,
-            hasChanges: true,
-        });
-
-        // 3. 데이터소스 리프레시 (칩 표시에 변경된 name/color 반영)
+        // 데이터소스 리프레시 (칩 표시에 변경/추가된 name/color 반영)
         await G7Core?.dataSource?.refetch?.('product_labels');
 
         G7Core?.toast?.success?.(
-            G7Core.t?.('sirsoft-ecommerce.admin.product.labels.save_success') ?? 'Label saved.'
+            editingLabelId
+                ? (G7Core.t?.('sirsoft-ecommerce.admin.product.labels.save_success') ?? 'Label saved.')
+                : (G7Core.t?.('sirsoft-ecommerce.admin.product.labels.create_success') ?? 'Label created.')
         );
         G7Core?.modal?.close?.();
     } catch (error: any) {

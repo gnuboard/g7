@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use App\Models\Attachment;
 use App\Search\Engines\DatabaseFulltextEngine;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -69,7 +70,7 @@ class SaveSettingsRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool
+     * @return bool 권한 체크는 permission 미들웨어 체인이 담당하므로 항상 true 반환
      */
     public function authorize(): bool
     {
@@ -291,7 +292,6 @@ class SaveSettingsRequest extends FormRequest
             // 본인인증(IDV) provider 기술 파라미터 — 정책 분기는 IdentityPolicy 로 흡수됨
             'identity.default_provider' => ['nullable', 'string', 'max:100'],
             'identity.purpose_providers' => ['sometimes', 'array'],
-            'identity.purpose_providers.*' => ['nullable', 'string', 'max:100'],
             'identity.challenge_ttl_minutes' => $this->getTabRules($tab, 'identity', 'integer|min:1|max:1440'),
             'identity.max_attempts' => $this->getTabRules($tab, 'identity', 'integer|min:1|max:20'),
         ];
@@ -420,6 +420,73 @@ class SaveSettingsRequest extends FormRequest
             'min:0',
             'max:14400',
         ]);
+    }
+
+    /**
+     * 추가 검증을 위해 validator after 콜백을 등록합니다.
+     *
+     * 목적별 프로바이더(purpose_providers) 매핑은 purpose id 에 점(.)이 포함될 수
+     * 있어 단일 깊이 와일드카드 룰로는 leaf 값을 검증할 수 없습니다.
+     * 임의 깊이의 leaf 값을 재귀 순회하며 string|max:100 으로 검증합니다.
+     *
+     * @param  Validator  $validator  검증기 인스턴스
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $purposeProviders = $this->input('identity.purpose_providers');
+
+            if (is_array($purposeProviders)) {
+                $this->validatePurposeProviderLeaves(
+                    $purposeProviders,
+                    'identity.purpose_providers',
+                    $validator
+                );
+            }
+        });
+    }
+
+    /**
+     * 목적별 프로바이더 매핑을 재귀 순회하며 leaf 값을 검증합니다.
+     *
+     * purpose id 에 점(.)이 포함될 수 있습니다 (예: KG이니시스 플러그인의
+     * `inicis.adult_verification`). 프론트엔드 폼 자동 바인딩이 dot-notation name
+     * (`identity.purpose_providers.inicis.adult_verification`) 을 중첩 객체로 풀어
+     * `purpose_providers.inicis = { adult_verification: '...' }` 형태로 전송하므로,
+     * 깊이에 무관하게 각 leaf 값을 검증하고 위반 시 전체 dot-path 키로 에러를 부착합니다.
+     * 백엔드 조회(IdentityVerificationManager::resolveForPurpose) 가 config dot-path
+     * 라 이 중첩 구조 자체는 정상입니다.
+     *
+     * @param  array<string, mixed>  $node  검증할 노드 (purpose_providers 또는 중첩 하위)
+     * @param  string  $path  현재 노드의 dot-path (에러 키 prefix)
+     * @param  Validator  $validator  검증기 인스턴스
+     */
+    private function validatePurposeProviderLeaves(array $node, string $path, $validator): void
+    {
+        foreach ($node as $key => $value) {
+            $childPath = $path.'.'.$key;
+
+            if (is_array($value)) {
+                $this->validatePurposeProviderLeaves($value, $childPath, $validator);
+
+                continue;
+            }
+
+            // null / '' (기본 프로바이더 사용) 은 허용
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            if (! is_string($value)) {
+                $validator->errors()->add($childPath, __('validation.settings.identity_purpose_provider_string'));
+
+                continue;
+            }
+
+            if (mb_strlen($value) > 100) {
+                $validator->errors()->add($childPath, __('validation.settings.identity_purpose_provider_max'));
+            }
+        }
     }
 
     /**
@@ -648,8 +715,8 @@ class SaveSettingsRequest extends FormRequest
             'identity.default_provider.string' => __('validation.settings.identity_default_provider_string'),
             'identity.default_provider.max' => __('validation.settings.identity_default_provider_max'),
             'identity.purpose_providers.array' => __('validation.settings.identity_purpose_providers_array'),
-            'identity.purpose_providers.*.string' => __('validation.settings.identity_purpose_provider_string'),
-            'identity.purpose_providers.*.max' => __('validation.settings.identity_purpose_provider_max'),
+            // 목적별 프로바이더 leaf 값(점 포함 purpose id 대응)은 withValidator() 에서
+            // validation.settings.identity_purpose_provider_string / _max 를 직접 부착합니다.
             'identity.challenge_ttl_minutes.required' => __('validation.settings.identity_challenge_ttl_required'),
             'identity.challenge_ttl_minutes.integer' => __('validation.settings.identity_challenge_ttl_integer'),
             'identity.challenge_ttl_minutes.min' => __('validation.settings.identity_challenge_ttl_min'),

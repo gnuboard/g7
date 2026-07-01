@@ -57,7 +57,7 @@ export const PageTransitionIndicator: React.FC<PageTransitionIndicatorProps> = (
 
   return (
     <Div
-      className={`fixed top-0 left-0 right-0 z-50 ${className}`}
+      className={`fixed top-0 left-0 right-0 z-[999] ${className}`}
       style={style}
       role="progressbar"
       aria-label="페이지 로딩 중"

@@ -173,33 +173,31 @@ class FormatsBoardDateTest extends ModuleTestCase
     }
 
     // =========================================================================
-    // formatCreatedAt() — 요일 포함 전체 날짜 포맷 (tooltip용)
+    // formatCreatedAt() — 전체 날짜+시간 포맷 (Y-m-d H:i:s, 사용자 타임존)
+    // 코어 BaseApiResource::formatDateTimeStringForUser() / 이커머스 주문일시와 동일
     // =========================================================================
 
     #[Test]
-    public function created_at_returns_date_with_weekday_and_time(): void
+    public function created_at_returns_full_datetime_string(): void
     {
         // UTC 기준으로 Carbon 생성 후 결과 포맷만 검증 (타임존 변환은 TimezoneHelper가 처리)
         $dateTime = Carbon::now();
 
         $result = $this->subject->callFormatCreatedAt($dateTime);
 
-        // YYYY-MM-DD 요일명 HH:MM 형식인지 검증
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} [가-힣]+요일 \d{2}:\d{2}$/', $result);
+        // YYYY-MM-DD HH:MM:SS 형식인지 검증 (요일 미포함)
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result);
     }
 
     #[Test]
-    public function created_at_returns_correct_weekday(): void
+    public function created_at_matches_timezone_helper_output(): void
     {
-        // 2026-03-22 = 일요일 (UTC+0 기준, 타임존 오프셋 무관하게 같은 날)
+        // 코어 TimezoneHelper::toUserDateTimeString() 와 동일한 결과를 내야 한다
         $dateTime = Carbon::create(2026, 3, 22, 12, 0, 0, 'UTC');
-        $userCarbon = TimezoneHelper::toUserCarbon($dateTime);
-        $weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-        $expectedWeekday = $weekdays[$userCarbon->dayOfWeek].'요일';
 
         $result = $this->subject->callFormatCreatedAt($dateTime);
 
-        $this->assertStringContainsString($expectedWeekday, $result);
+        $this->assertEquals(TimezoneHelper::toUserDateTimeString($dateTime), $result);
     }
 
     #[Test]
@@ -216,17 +214,17 @@ class FormatsBoardDateTest extends ModuleTestCase
         $result = $this->subject->callFormatCreatedAt('2026-03-18 14:30:00');
 
         $this->assertStringContainsString('2026-03-18', $result);
-        $this->assertStringContainsString('요일', $result);
+        $this->assertMatchesRegularExpression('/\d{2}:\d{2}:\d{2}$/', $result);
     }
 
     #[Test]
     public function created_at_format_matches_expected_pattern(): void
     {
-        $dateTime = Carbon::create(2026, 1, 5, 9, 5, 0); // 월요일
+        $dateTime = Carbon::create(2026, 1, 5, 9, 5, 0);
 
         $result = $this->subject->callFormatCreatedAt($dateTime);
 
-        // "YYYY-MM-DD 요일명 HH:MM" 형식 검증
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} [가-힣]+요일 \d{2}:\d{2}$/', $result);
+        // "YYYY-MM-DD HH:MM:SS" 형식 검증 (요일 미포함)
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $result);
     }
 }

@@ -1,0 +1,42 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   Store/UpdateCouponRequest 의 discountValueRules(정액 min:1)·messages(discount_type 분기)·
+#   prepareForValidation(빈값 null 정규화)을 PHPUnit Feature 가 discount_type × discount_value ×
+#   min_order_amount × request(store/update) cross product 로 커버하며 green.
+feature: 쿠폰 기본정보 검증 — 정액 음수 메시지 + 최소주문금액 빈값 500 (A14)
+
+description: |
+  정액(fixed) 할인값 음수/0 입력 시 정률 전용 메시지가 아닌 정액 메시지("할인값은 1원 이상…")로
+  표시되고 min:1 로 차단된다. 정률(rate) 0 입력은 기존 정률 메시지 유지(회귀). 최소주문금액을
+  빈 문자열로 저장 시 decimal cast 500 이 아니라 null 정규화되어 정상 저장(min_order_amount/
+  discount_max_amount/total_quantity 동시 정규화).
+
+axes:
+  discount_type:
+    - fixed
+    - rate
+  discount_value:
+    - "-100"   # 음수
+    - "0"      # 0 → min:1 차단
+    - "1"      # 경계 통과
+    - "150"    # rate max:100 초과
+  min_order_amount:
+    - empty    # 빈 문자열 → null 정규화(500 회피)
+    - null     # null 입력
+    - "5000"   # 정상 입력 비파괴
+  request:
+    - store
+    - update   # sometimes 유지 확인
+
+effects:
+  - fixed_negative_shows_fixed_message     # 정액 음수 → 정액 메시지(정률 메시지 아님)
+  - fixed_zero_blocks_min1                 # 정액 0 → 422 min:1
+  - fixed_one_passes                       # 정액 1 → 통과
+  - rate_zero_shows_rate_message           # 정률 0 → 정률 메시지(회귀)
+  - rate_over_max_blocked                  # 정률 150 → 422 max:100
+  - empty_min_order_no_500_saves_null      # 최소주문금액 빈값 → 500 아님 + null 저장
+  - valid_input_preserved                  # 정상 입력 비파괴
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CouponBasicValidationTest.php

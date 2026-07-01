@@ -83,7 +83,7 @@ class AdminCommentManagementTest extends BoardTestCase
 
         // write-only 전용 역할 생성 (type=admin → isAdmin() 통과)
         $role = Role::create([
-            'identifier' => 'board-write-only-' . $slug,
+            'identifier' => 'board-write-only-'.$slug,
             'name' => ['ko' => 'Write Only', 'en' => 'Write Only'],
             'type' => 'admin',
         ]);
@@ -322,6 +322,34 @@ class AdminCommentManagementTest extends BoardTestCase
             'id' => $commentId,
             'status' => 'blinded',
         ]);
+    }
+
+    /**
+     * 댓글 블라인드 사유 1000자 → 통과 (200) (#413-71-2)
+     */
+    public function test_blind_comment_reason_at_max_length_passes(): void
+    {
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId, ['status' => 'published']);
+
+        $this->actingAs($this->adminWithManage)->patchJson(
+            $this->url("/{$postId}/comments/{$commentId}/blind"),
+            ['reason' => str_repeat('가', 1000)]
+        )->assertStatus(200);
+    }
+
+    /**
+     * 댓글 블라인드 사유 1001자 → 검증 실패 (422) (#413-71-2)
+     */
+    public function test_blind_comment_reason_over_max_length_fails(): void
+    {
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId, ['status' => 'published']);
+
+        $this->actingAs($this->adminWithManage)->patchJson(
+            $this->url("/{$postId}/comments/{$commentId}/blind"),
+            ['reason' => str_repeat('가', 1001)]
+        )->assertStatus(422)->assertJsonValidationErrors(['reason']);
     }
 
     /**

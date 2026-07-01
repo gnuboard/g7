@@ -17,6 +17,7 @@
   "data_sources": [
     {
       "id": "userProfile",
+      "label_key": "$t:editor.data_source.userProfile",
       "type": "api",
       "endpoint": "/api/users/{{route.userId}}/profile",
       "method": "GET",
@@ -35,6 +36,7 @@
     },
     {
       "id": "userPosts",
+      "label_key": "$t:editor.data_source.userPosts",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/users/{{route.userId}}/posts",
       "method": "GET",

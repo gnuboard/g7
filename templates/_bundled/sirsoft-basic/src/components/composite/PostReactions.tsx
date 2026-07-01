@@ -9,6 +9,7 @@ import React from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
+import type { EditorAttrs } from '../../types';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:PostReactions')) ?? {
@@ -43,6 +44,12 @@ interface PostReactionsProps {
   size?: 'sm' | 'md' | 'lg';
   /** 추가 CSS 클래스 */
   className?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 interface ReactionConfig {
@@ -100,6 +107,8 @@ const PostReactions: React.FC<PostReactionsProps> = ({
   onReact,
   size = 'md',
   className = '',
+  id,
+  editorAttrs,
 }) => {
   const sizeClasses = {
     sm: 'px-2 py-1 text-xs gap-1',
@@ -147,7 +156,7 @@ const PostReactions: React.FC<PostReactionsProps> = ({
   };
 
   return (
-    <Div className={`flex flex-wrap gap-2 ${className}`}>
+    <Div className={`flex flex-wrap gap-2 ${className}`} id={id} {...editorAttrs}>
       {REACTION_CONFIGS.map((config) => {
         const count = getReactionCount(config.type);
         const isActive = userReaction === config.type;

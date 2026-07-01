@@ -14,8 +14,9 @@ class ItemCalculation
      * @param  int  $productId  상품 ID
      * @param  int  $productOptionId  상품 옵션 ID
      * @param  int  $quantity  수량
-     * @param  int  $unitPrice  옵션 단가
-     * @param  int  $subtotal  소계 (단가 × 수량)
+     * @param  int  $unitPrice  옵션 단가 (원옵션가, 추가옵션 미포함)
+     * @param  int  $additionalOptionsTotal  옵션 1단위당 추가옵션 합계 (KRW 기준) → order_options.additional_options_total
+     * @param  int  $subtotal  소계 ((단가 + 추가옵션 합계) × 수량)
      * @param  int  $productCouponDiscountAmount  상품/카테고리 쿠폰 할인액 → order_options.product_coupon_discount_amount
      * @param  int  $codeDiscountAmount  할인코드 할인액 → order_options.code_discount_amount
      * @param  int  $orderCouponDiscountShare  주문 쿠폰 할인 안분액 → order_options.order_coupon_discount_amount
@@ -28,17 +29,19 @@ class ItemCalculation
      * @param  AppliedPromotions|null  $appliedPromotions  옵션별 적용 프로모션 → order_options.promotions_applied_snapshot
      * @param  string|null  $productName  상품명 (조회용)
      * @param  string|null  $optionName  옵션명 (조회용)
+     * @param  array|null  $additionalOptionsSnapshot  추가옵션 스냅샷 → order_options.additional_options_snapshot
      * @param  MultiCurrencyPrices|null  $multiCurrency  다중 통화 변환 금액
      * @param  array<string, mixed>  $metadata  플러그인 확장용 메타데이터
-     *         - deposit_used_share: 예치금 사용 안분액 (예치금 플러그인)
-     *         - gift_card_used_share: 상품권 사용 안분액 (상품권 플러그인)
-     *         - grade_discount_amount: 회원등급 할인액 (회원등급 플러그인)
+     *                                          - deposit_used_share: 예치금 사용 안분액 (예치금 플러그인)
+     *                                          - gift_card_used_share: 상품권 사용 안분액 (상품권 플러그인)
+     *                                          - grade_discount_amount: 회원등급 할인액 (회원등급 플러그인)
      */
     public function __construct(
         public int $productId = 0,
         public int $productOptionId = 0,
         public int $quantity = 0,
         public int $unitPrice = 0,
+        public int $additionalOptionsTotal = 0,
         public int $subtotal = 0,
         public int $productCouponDiscountAmount = 0,
         public int $codeDiscountAmount = 0,
@@ -52,12 +55,15 @@ class ItemCalculation
         public ?AppliedPromotions $appliedPromotions = null,
         public ?string $productName = null,
         public ?string $optionName = null,
+        public ?array $additionalOptionsSnapshot = null,
         public ?MultiCurrencyPrices $multiCurrency = null,
         public array $metadata = [],
     ) {}
 
     /**
      * 총 할인액을 반환합니다.
+     *
+     * @return int 총 할인액
      */
     public function getTotalDiscount(): int
     {
@@ -66,6 +72,8 @@ class ItemCalculation
 
     /**
      * 할인 후 금액을 반환합니다 (마일리지 사용 전).
+     *
+     * @return int 할인 후 금액
      */
     public function getDiscountedAmount(): int
     {
@@ -74,6 +82,8 @@ class ItemCalculation
 
     /**
      * 배열로 변환합니다.
+     *
+     * @return array 직렬화된 배열
      */
     public function toArray(): array
     {
@@ -84,6 +94,8 @@ class ItemCalculation
             'option_name' => $this->optionName,
             'quantity' => $this->quantity,
             'unit_price' => $this->unitPrice,
+            'additional_options_total' => $this->additionalOptionsTotal,
+            'additional_options_snapshot' => $this->additionalOptionsSnapshot,
             'subtotal' => $this->subtotal,
             'product_coupon_discount_amount' => $this->productCouponDiscountAmount,
             'code_discount_amount' => $this->codeDiscountAmount,
@@ -116,6 +128,7 @@ class ItemCalculation
      * 배열에서 DTO를 생성합니다.
      *
      * @param  array  $data  배열 데이터
+     * @return self 생성된 DTO
      */
     public static function fromArray(array $data): self
     {
@@ -124,6 +137,7 @@ class ItemCalculation
             productOptionId: $data['product_option_id'] ?? 0,
             quantity: $data['quantity'] ?? 0,
             unitPrice: $data['unit_price'] ?? 0,
+            additionalOptionsTotal: $data['additional_options_total'] ?? 0,
             subtotal: $data['subtotal'] ?? 0,
             productCouponDiscountAmount: $data['product_coupon_discount_amount'] ?? $data['coupon_discount_amount'] ?? 0,
             codeDiscountAmount: $data['code_discount_amount'] ?? 0,
@@ -141,6 +155,7 @@ class ItemCalculation
                 : null,
             productName: $data['product_name'] ?? null,
             optionName: $data['option_name'] ?? null,
+            additionalOptionsSnapshot: $data['additional_options_snapshot'] ?? null,
             multiCurrency: isset($data['multi_currency'])
                 ? MultiCurrencyPrices::fromArray($data['multi_currency'])
                 : null,

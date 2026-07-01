@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -30,9 +31,9 @@ use Illuminate\Support\Str;
  * @property int $order
  * @property array|null $meta
  * @property int|null $created_by
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property-read string $download_url
  * @property-read string|null $preview_url
  * @property-read bool $is_image
@@ -77,6 +78,7 @@ class Attachment extends Model
         'order',
         'meta',
         'created_by',
+        'trigger_type',
     ];
 
     /**

@@ -1,0 +1,45 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(다통화 입력 강등)은
+#   surface × currency_count × price_change cross product 를 Vitest 핸들러 테스트(convertCurrencyPrice
+#   formatted 동봉 + 판매가 변경 시 항상 재계산) + 레이아웃 구조 회귀 테스트(통화 입력 컬럼 제거 +
+#   판매가 셀 하단 읽기전용 세로 미리보기)가 커버하며 green. 백엔드 계약은 불변
+#   (ProductOption 에 통화 컬럼 부재 — 응답은 항상 base 에서 buildMultiCurrencyPrices 로 환산).
+feature: 옵션 다통화 입력 강등 (MP08 / 관리자 표시 환산)
+
+description: |
+  관리자 상품등록 폼·상품관리 데이터그리드의 옵션별 통화 입력 필드를 제거한다.
+  통화별 가격을 담을 DB 컬럼이 없어(ProductOption 가격 컬럼 = list_price/selling_price/
+  price_adjustment/currency_code 단일 base) 입력해도 저장·사용되지 않던 빈 UI 였다.
+  대신 base 판매가에서 환율로 항상 자동 계산된 읽기전용 환산값을 판매가 셀 하단에
+  세로로 표시한다(장바구니 _cart_item 패턴과 동일). 데이터그리드의 통화별 컬럼·컬럼선택
+  메뉴 통화 항목·"다중통화 가격 자동계산" 토글도 함께 제거한다.
+
+axes:
+  surface:
+    - product_form_option        # 상품등록/수정 폼 옵션 테이블
+    - datagrid_product_row       # 상품관리 그리드 상품 행
+    - datagrid_option_row        # 상품관리 그리드 옵션 expand 행
+  currency_count:
+    - "0"                        # 환율 설정 통화 없음 → 미리보기 미렌더
+    - "1"
+    - "4"                        # USD/JPY/CNY/EUR
+  price_change:
+    - none                       # 초기 표시
+    - selling_price_changed      # 판매가 변경 → 환산값 즉시 갱신
+
+effects:
+  - currency_input_columns_removed      # 옵션 통화 입력 컬럼(헤더/셀) 제거
+  - currency_select_menu_removed        # 컬럼선택 메뉴에서 통화 항목 제거
+  - auto_currency_toggle_removed        # "자동계산" 토글 제거
+  - readonly_preview_below_selling_price # 판매가 셀 하단 세로 환산값(읽기전용)
+  - preview_uses_formatted              # 환산값은 formatted(통화 표기) 출력
+  - convert_always_includes_formatted   # convertCurrencyPrice 가 formatted 동봉
+  - recalc_on_selling_price_change      # 판매가 변경 시 다통화 항상 재계산(토글 무관)
+  - preview_hidden_when_no_currencies   # 환율 통화 0개면 미리보기 미렌더
+  - backend_response_unchanged          # 응답은 base 에서 환산(계약 불변)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productFormLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/productOptionHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/product-option-multicurrency-readonly.spec.ts

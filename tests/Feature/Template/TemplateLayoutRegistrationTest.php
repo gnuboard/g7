@@ -138,6 +138,48 @@ class TemplateLayoutRegistrationTest extends TestCase
     }
 
     /**
+     *  (S4'') / 카테고리 D — errors/* layout_name 식별자 통일 회귀
+     *
+     * errors/{code}.json 파일의 layout_name 필드가 다른 카테고리(auth/login,
+     * board/show, mypage/profile) 와 동일하게 디렉토리 접두사를 포함한 "errors/{code}"
+     * 형식이어야 하며, DB 에도 동일 형식으로 시드되어야 routes.json 의
+     * `"layout": "errors/404"` 참조와 정합한다. 이전 결함: layout_name="404" 만
+     * 저장되어 라우트 35/36 (404/403 페이지) 가 Layout not found 로 떨어졌음.
+     */
+    public function test_install_template_seeds_errors_layouts_with_directory_prefix(): void
+    {
+        // Act
+        $result = $this->templateManager->installTemplate('sirsoft-admin_basic');
+        $this->assertTrue($result);
+
+        $template = Template::where('identifier', 'sirsoft-admin_basic')->first();
+        $this->assertNotNull($template);
+
+        // Assert — errors/{code} 형식으로 시드되어야 함
+        foreach (['errors/401', 'errors/403', 'errors/404', 'errors/500', 'errors/503', 'errors/maintenance'] as $expectedName) {
+            $layout = TemplateLayout::where('template_id', $template->id)
+                ->where('name', $expectedName)
+                ->first();
+            $this->assertNotNull(
+                $layout,
+                "{$expectedName} 레이아웃이 errors/ 접두사를 포함한 식별자로 시드되어야 합니다."
+            );
+            $this->assertSame($expectedName, $layout->content['layout_name'] ?? null);
+        }
+
+        // Assert — 접두사 없는 "404"/"403" 등은 시드되지 않아야 함
+        foreach (['401', '403', '404', '500', '503', 'maintenance'] as $bareName) {
+            $stale = TemplateLayout::where('template_id', $template->id)
+                ->where('name', $bareName)
+                ->first();
+            $this->assertNull(
+                $stale,
+                "디렉토리 접두사 없는 {$bareName} 식별자는 시드되지 않아야 합니다 (다른 카테고리 비대칭 회귀)."
+            );
+        }
+    }
+
+    /**
      * 멱등성 테스트: 같은 템플릿 2번 설치 시 레이아웃 중복 생성 방지
      */
     public function test_install_template_twice_does_not_duplicate_layouts(): void

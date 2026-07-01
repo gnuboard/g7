@@ -137,6 +137,21 @@ class ValidationApi
                 throw new Exception(lang('error_db_credentials_required'));
             }
 
+            // DB 테이블 접두사 길이 검증 (Write DB 입력에만 적용)
+            // 접두사가 길면 자동 생성 인덱스명이 MySQL identifier 한도(64자)를 초과해
+            // 일부 확장 설치 시 마이그레이션이 실패하므로 연결 시도 전에 차단한다.
+            if (! $isReadDb) {
+                $tablePrefix = (string) ($input['db_prefix'] ?? '');
+                if (strlen($tablePrefix) > MAX_DB_PREFIX_LENGTH) {
+                    throw new Exception(
+                        lang('error_db_prefix_too_long', [
+                            'max' => MAX_DB_PREFIX_LENGTH,
+                            'current' => strlen($tablePrefix),
+                        ])
+                    );
+                }
+            }
+
             // 데이터베이스 연결 시도
             $pdo = getDatabaseConnection($config, $isReadDb);
 
@@ -162,12 +177,12 @@ class ValidationApi
                 $message = lang('success_db_write_connected');
             }
 
-            // 기존 테이블 감지 (Write DB만 수행 — 이슈 #244 대응)
+            // 기존 테이블 감지 (Write DB만 수행)
             // 사용자가 입력한 db_prefix를 g7 시그니처에 적용하여 정확히 비교
             $existingTables = null;
             if (!$isReadDb) {
-                $tablePrefix = (string) ($input['db_prefix'] ?? 'g7_');
-                $existingTables = checkExistingTables($pdo, $database, $tablePrefix);
+                $detectPrefix = ($input['db_prefix'] ?? '') !== '' ? (string) $input['db_prefix'] : 'g7_';
+                $existingTables = checkExistingTables($pdo, $database, $detectPrefix);
             }
 
             // 성공 응답

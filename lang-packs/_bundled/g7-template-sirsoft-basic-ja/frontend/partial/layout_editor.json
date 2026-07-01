@@ -1,0 +1,182 @@
+{
+  "palette": {
+    "div": {
+      "label": "ボックス"
+    },
+    "container": {
+      "label": "コンテナ",
+      "default_child_text": "ここにコンテンツを配置してください"
+    },
+    "flex": {
+      "label": "Flexボックス"
+    },
+    "grid": {
+      "label": "Gridボックス"
+    },
+    "section_layout": {
+      "label": "セクションレイアウト"
+    },
+    "three_column_layout": {
+      "label": "3カラムレイアウト"
+    },
+    "span": {
+      "label": "インラインテキスト",
+      "default_text": "テキスト"
+    },
+    "p": {
+      "label": "段落",
+      "default_text": "ここに段落テキストを入力してください。"
+    },
+    "h1": {
+      "label": "大見出し (H1)",
+      "default_text": "大見出し"
+    },
+    "h2": {
+      "label": "中見出し (H2)",
+      "default_text": "中見出し"
+    },
+    "h3": {
+      "label": "小見出し (H3)",
+      "default_text": "小見出し"
+    },
+    "h4": {
+      "label": "補見出し (H4)",
+      "default_text": "補見出し"
+    },
+    "a": {
+      "label": "リンク",
+      "default_text": "ここをクリック"
+    },
+    "button": {
+      "label": "ボタン",
+      "default_text": "ボタン"
+    },
+    "img": {
+      "label": "画像",
+      "default_alt": "画像説明"
+    },
+    "icon": {
+      "label": "アイコン"
+    },
+    "hr": {
+      "label": "区切り線"
+    },
+    "ul": {
+      "label": "箇条書きリスト",
+      "default_item_text": "リスト項目"
+    },
+    "li": {
+      "label": "リスト項目",
+      "default_text": "リスト項目"
+    },
+    "nav": {
+      "label": "ナビゲーション",
+      "default_item_text": "メニュー"
+    },
+    "html_content": {
+      "label": "HTMLコンテンツ",
+      "default_text": "HTMLコンテンツ領域"
+    },
+    "expandable_content": {
+      "label": "折りたたみ/展開",
+      "default_title": "タイトル",
+      "default_body": "展開して表示されるコンテンツ"
+    },
+    "tab_navigation": {
+      "label": "タブ",
+      "default_tab1_label": "タブ 1",
+      "default_tab2_label": "タブ 2"
+    },
+    "input": {
+      "label": "入力ボックス",
+      "default_placeholder": "ここに入力してください"
+    },
+    "textarea": {
+      "label": "複数行入力",
+      "default_placeholder": "複数行のテキストを入力してください"
+    },
+    "select": {
+      "label": "選択ボックス",
+      "default_option1_label": "オプション 1",
+      "default_option2_label": "オプション 2"
+    },
+    "checkbox": {
+      "label": "チェックボックス",
+      "default_label": "選択"
+    },
+    "password_input": {
+      "label": "パスワード入力",
+      "default_placeholder": "パスワード"
+    },
+    "label": {
+      "label": "ラベル",
+      "default_text": "ラベル"
+    },
+    "file_uploader": {
+      "label": "ファイルアップローダー",
+      "default_label": "ファイルをアップロードしてください"
+    },
+    "avatar_uploader": {
+      "label": "プロフィール画像アップローダー",
+      "default_label": "プロフィール画像を変更"
+    },
+    "html_editor": {
+      "label": "HTMLエディター",
+      "default_placeholder": "内容を入力してください"
+    },
+    "rich_text_editor": {
+      "label": "リッチテキストエディター",
+      "default_placeholder": "内容を入力してください"
+    },
+    "social_login_buttons": {
+      "label": "ソーシャルログインボタン"
+    },
+    "product_card": {
+      "label": "商品カード",
+      "default_name": "サンプル商品"
+    },
+    "image_gallery": {
+      "label": "画像ギャラリー",
+      "default_alt1": "ギャラリー画像 1",
+      "default_alt2": "ギャラリー画像 2"
+    },
+    "pagination": {
+      "label": "ページネーション"
+    },
+    "search_bar": {
+      "label": "検索ボックス",
+      "default_placeholder": "検索キーワードを入力してください"
+    },
+    "avatar": {
+      "label": "アバター",
+      "default_alt": "ユーザーアバター"
+    },
+    "user_info": {
+      "label": "ユーザー情報",
+      "default_name": "ユーザー名"
+    },
+    "quantity_selector": {
+      "label": "数量選択器"
+    },
+    "product_image_viewer": {
+      "label": "商品画像ビューアー",
+      "default_alt": "商品画像"
+    },
+    "post_reactions": {
+      "label": "投稿への反応"
+    },
+    "group": {
+      "design": "デザイン",
+      "db": "データ"
+    },
+    "form": {
+      "label": "フォーム",
+      "default_label_text": "ラベル",
+      "default_input_placeholder": "入力してください",
+      "default_submit_text": "送信"
+    },
+    "table": {
+      "label": "表"
+    }
+  }
+}

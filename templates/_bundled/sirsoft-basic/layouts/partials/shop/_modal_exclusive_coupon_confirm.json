@@ -1,5 +1,6 @@
 {
     "meta": {
+        "editor_label": "$t:user.modal_label.shop.exclusiveCouponConfirm",
         "is_partial": true,
         "description": "중복 불가 쿠폰 적용 확인 모달"
     },

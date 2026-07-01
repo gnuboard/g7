@@ -18,6 +18,7 @@
   "data_sources": [
     {
       "id": "wishlist",
+      "label_key": "$t:editor.data_source.wishlist",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-ecommerce/wishlist?page={{_local.wishlistPage ?? 1}}",
       "method": "GET",

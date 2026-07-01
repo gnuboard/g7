@@ -6,7 +6,9 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Traits\HasSeederCounts;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -236,11 +238,11 @@ class PostSampleSeeder extends Seeder
      * - archive : 10건 — 비활성 게시판, ASC 정렬 확인용
      */
     private const POSTS_COUNT = [
-        'notice'  => 15,
-        'free'    => 30,
+        'notice' => 15,
+        'free' => 30,
         'gallery' => 20,
-        'event'   => 10,
-        'qna'     => 30,
+        'event' => 10,
+        'qna' => 30,
         'members' => 25,
         'inquiry' => 20,
         'archive' => 10,
@@ -260,15 +262,11 @@ class PostSampleSeeder extends Seeder
 
     /**
      * 관리자 사용자
-     *
-     * @var User|null
      */
     private ?User $adminUser = null;
 
     /**
      * 스텝 사용자
-     *
-     * @var User|null
      */
     private ?User $stepUser = null;
 
@@ -338,12 +336,105 @@ class PostSampleSeeder extends Seeder
 
         $this->command->info('');
         $this->command->info("게시글/댓글 샘플 데이터 생성 완료 — 총 게시글 {$totalStats['posts']}개, 답변글 {$totalStats['replies']}개, 댓글 {$totalStats['comments']}개");
+
+        // 시드는 모델 이벤트(BoardCommentsCountSyncListener / PostCountSyncListener)를
+        // 우회하는 raw INSERT 라 캐시 컬럼이 갱신되지 않는다. 시드 직후 게시글 상세 화면에서
+        // 댓글/답글 영역이 "comments_count > 0" 조건으로 가려져 표시 안 되는 결함이 발생하므로
+        // 일괄 재집계로 actual count 와 일치시킨다 (soft delete 제외).
+        $this->syncDenormalizedCounts();
+    }
+
+    /**
+     * 시드 종료 시 비정규화된 캐시 컬럼을 실데이터와 일괄 동기화한다.
+     *
+     * 대상:
+     *  - posts.comments_count    = 그 게시글의 미삭제 댓글 수
+     *  - posts.replies_count     = 그 게시글의 미삭제 답변글 수
+     *  - posts.attachments_count = 그 게시글의 미삭제 첨부 수
+     *  - comments.replies_count  = 그 댓글의 미삭제 자식 댓글 수
+     *  - boards.posts_count      = 그 게시판의 미삭제 게시글 수 (답글 포함)
+     *  - boards.comments_count   = 그 게시판의 미삭제 댓글 수
+     *
+     * 동일 테이블 UPDATE + 서브쿼리는 MySQL 이 거부하므로 (Error 1093) 집계 결과를
+     * 파생 테이블(`JOIN (SELECT ... GROUP BY ...) t`) 로 끌어와 갱신한다.
+     */
+    private function syncDenormalizedCounts(): void
+    {
+        $this->command->info('비정규화 카운트 컬럼 동기화 중...');
+
+        // posts.comments_count (다른 테이블 참조 — 직접 서브쿼리 가능)
+        DB::statement('
+            UPDATE g7_board_posts p
+            SET comments_count = (
+                SELECT COUNT(*) FROM g7_board_comments c
+                WHERE c.post_id = p.id AND c.deleted_at IS NULL
+            )
+        ');
+
+        // posts.replies_count (자기 참조 — 파생 테이블 사용)
+        DB::statement('
+            UPDATE g7_board_posts p
+            LEFT JOIN (
+                SELECT parent_id, COUNT(*) AS cnt
+                FROM g7_board_posts
+                WHERE parent_id IS NOT NULL AND deleted_at IS NULL
+                GROUP BY parent_id
+            ) t ON t.parent_id = p.id
+            SET p.replies_count = COALESCE(t.cnt, 0)
+        ');
+
+        // posts.attachments_count (다른 테이블 참조 — 직접 서브쿼리 가능)
+        DB::statement('
+            UPDATE g7_board_posts p
+            SET attachments_count = (
+                SELECT COUNT(*) FROM g7_board_attachments a
+                WHERE a.post_id = p.id AND a.deleted_at IS NULL
+            )
+        ');
+
+        // comments.replies_count (자기 참조 — 파생 테이블 사용)
+        DB::statement('
+            UPDATE g7_board_comments c
+            LEFT JOIN (
+                SELECT parent_id, COUNT(*) AS cnt
+                FROM g7_board_comments
+                WHERE parent_id IS NOT NULL AND deleted_at IS NULL
+                GROUP BY parent_id
+            ) t ON t.parent_id = c.id
+            SET c.replies_count = COALESCE(t.cnt, 0)
+        ');
+
+        // boards.posts_count (게시판별 미삭제 게시글 수 — 답글 포함)
+        DB::statement('
+            UPDATE g7_boards b
+            LEFT JOIN (
+                SELECT board_id, COUNT(*) AS cnt
+                FROM g7_board_posts
+                WHERE deleted_at IS NULL
+                GROUP BY board_id
+            ) t ON t.board_id = b.id
+            SET b.posts_count = COALESCE(t.cnt, 0)
+        ');
+
+        // boards.comments_count (게시판별 미삭제 댓글 수)
+        DB::statement('
+            UPDATE g7_boards b
+            LEFT JOIN (
+                SELECT board_id, COUNT(*) AS cnt
+                FROM g7_board_comments
+                WHERE deleted_at IS NULL
+                GROUP BY board_id
+            ) t ON t.board_id = b.id
+            SET b.comments_count = COALESCE(t.cnt, 0)
+        ');
+
+        $this->command->info('  ✅ posts.comments_count / posts.replies_count / posts.attachments_count / comments.replies_count / boards.posts_count / boards.comments_count 일괄 갱신 완료');
     }
 
     /**
      * 관리자/스텝 역할 사용자를 조회합니다.
      *
-     * @param  \Illuminate\Support\Collection  $users  사용자 목록
+     * @param  Collection  $users  사용자 목록
      */
     private function resolveRoleUsers($users): void
     {
@@ -412,7 +503,7 @@ class PostSampleSeeder extends Seeder
      * 특정 게시판에 게시글과 댓글을 생성합니다.
      *
      * @param  Board  $board  게시판
-     * @param  \Illuminate\Support\Collection  $users  사용자 목록
+     * @param  Collection  $users  사용자 목록
      * @param  float  $ratio  게시글 수 스케일링 비율
      * @return array{posts: int, replies: int, comments: int} 생성 통계
      */
@@ -590,7 +681,7 @@ class PostSampleSeeder extends Seeder
      * - 일반글 + 이미지 있음
      *
      * @param  Board  $board  게시판
-     * @param  \Illuminate\Support\Collection  $users  사용자 목록
+     * @param  Collection  $users  사용자 목록
      * @return array{posts: int, replies: int, comments: int} 생성 통계
      */
     private function createBadgeCasePosts(Board $board, $users): array
@@ -848,7 +939,7 @@ class PostSampleSeeder extends Seeder
      * notice는 관리자만, 나머지는 일반 사용자 + 관리자/스텝 혼합
      *
      * @param  Board  $board  게시판
-     * @param  \Illuminate\Support\Collection  $users  사용자 목록
+     * @param  Collection  $users  사용자 목록
      * @param  int  $index  현재 인덱스
      * @return User 작성자
      */
@@ -879,8 +970,8 @@ class PostSampleSeeder extends Seeder
      * @param  string|null  $category  카테고리
      * @param  array  $template  콘텐츠 템플릿
      * @param  bool  $isSecret  비밀글 여부
-     * @param  \Carbon\Carbon  $createdAt  원본 게시글 생성일
-     * @param  \Illuminate\Support\Collection  $users  사용자 목록
+     * @param  Carbon  $createdAt  원본 게시글 생성일
+     * @param  Collection  $users  사용자 목록
      * @return int 생성된 답변글 수
      */
     private function createRepliesForPost(
@@ -889,7 +980,7 @@ class PostSampleSeeder extends Seeder
         ?string $category,
         array $template,
         bool $isSecret,
-        \Carbon\Carbon $createdAt,
+        Carbon $createdAt,
         $users
     ): int {
         // inquiry 게시판은 95% 확률, 나머지는 30% 확률
@@ -906,7 +997,9 @@ class PostSampleSeeder extends Seeder
         $replyUser = ($board->slug === 'inquiry')
             ? ($this->stepUser ?? $this->adminUser ?? $users[count($users) - 1])
             : ($this->adminUser ?? $users[count($users) - 1]);
-        $replyCreatedAt = $createdAt->copy()->addHours(rand(1, 72));
+        // 부모 글 시각 + (1~72시간) 으로 자식 시각을 미루되, 현재 시각을 절대 넘기지 않는다.
+        // 부모 글이 "오늘 분포" 로 만들어졌을 때 자식이 미래로 밀려 대시보드/목록의 created_at 정렬이 뒤집히는 회귀 방지.
+        $replyCreatedAt = $this->clampToNow($createdAt->copy()->addHours(rand(1, 72)));
         $answerTemplate = self::ANSWER_TEMPLATES[array_rand(self::ANSWER_TEMPLATES)];
 
         $replyId = DB::table('board_posts')->insertGetId([
@@ -944,7 +1037,7 @@ class PostSampleSeeder extends Seeder
                 ? $users[rand(0, count($users) - 1)]
                 : ($this->stepUser ?? $this->adminUser ?? $users[count($users) - 1]);
 
-            $depthCreatedAt = $replyCreatedAt->copy()->addHours(rand(1, 48));
+            $depthCreatedAt = $this->clampToNow($replyCreatedAt->copy()->addHours(rand(1, 48)));
 
             $nestedTemplates = self::NESTED_ANSWER_TEMPLATES[$depth] ?? self::NESTED_ANSWER_TEMPLATES[3] ?? self::ANSWER_TEMPLATES;
             $nestedContent = $nestedTemplates[array_rand($nestedTemplates)];
@@ -985,8 +1078,8 @@ class PostSampleSeeder extends Seeder
      *
      * @param  Board  $board  게시판
      * @param  int  $postId  게시글 ID
-     * @param  \Carbon\Carbon  $createdAt  게시글 생성일
-     * @param  \Illuminate\Support\Collection  $users  사용자 목록
+     * @param  Carbon  $createdAt  게시글 생성일
+     * @param  Collection  $users  사용자 목록
      * @param  int  $postIndex  게시글 인덱스 (날짜 분포 결정용)
      * @param  int  $todayCount  오늘 게시글 수
      * @param  int  $weekCount  이번주 게시글 수
@@ -997,7 +1090,7 @@ class PostSampleSeeder extends Seeder
     private function createCommentsForPost(
         Board $board,
         int $postId,
-        \Carbon\Carbon $createdAt,
+        Carbon $createdAt,
         $users,
         int $postIndex,
         int $todayCount,
@@ -1023,8 +1116,8 @@ class PostSampleSeeder extends Seeder
             // 작성자: 일부는 관리자/스텝
             $commentUser = $this->pickCommentAuthor($users);
 
-            // 댓글은 게시글보다 0~7일 후 작성
-            $commentCreatedAt = $createdAt->copy()->addHours(rand(1, 168));
+            // 댓글은 게시글보다 0~7일 후 작성하되, 현재 시각을 넘지 않도록 clamp.
+            $commentCreatedAt = $this->clampToNow($createdAt->copy()->addHours(rand(1, 168)));
 
             $commentId = DB::table('board_comments')->insertGetId([
                 'board_id' => $board->id,
@@ -1062,8 +1155,8 @@ class PostSampleSeeder extends Seeder
      * @param  Board  $board  게시판
      * @param  int  $postId  게시글 ID
      * @param  int  $parentCommentId  부모 댓글 ID
-     * @param  \Carbon\Carbon  $parentCreatedAt  부모 댓글 생성일
-     * @param  \Illuminate\Support\Collection  $users  사용자 목록
+     * @param  Carbon  $parentCreatedAt  부모 댓글 생성일
+     * @param  Collection  $users  사용자 목록
      * @param  int  $maxDepth  최대 depth
      * @return int 생성된 대댓글 수
      */
@@ -1071,7 +1164,7 @@ class PostSampleSeeder extends Seeder
         Board $board,
         int $postId,
         int $parentCommentId,
-        \Carbon\Carbon $parentCreatedAt,
+        Carbon $parentCreatedAt,
         $users,
         int $maxDepth
     ): int {
@@ -1093,7 +1186,7 @@ class PostSampleSeeder extends Seeder
             }
 
             $replyUser = $this->pickCommentAuthor($users);
-            $replyCreatedAt = $currentCreatedAt->copy()->addHours(rand(1, 48));
+            $replyCreatedAt = $this->clampToNow($currentCreatedAt->copy()->addHours(rand(1, 48)));
 
             // depth별 템플릿 선택
             $templates = self::NESTED_REPLY_TEMPLATES[$depth] ?? self::NESTED_REPLY_TEMPLATES[3] ?? self::NESTED_REPLY_TEMPLATES[1];
@@ -1129,7 +1222,7 @@ class PostSampleSeeder extends Seeder
      *
      * 8% 관리자, 5% 스텝, 나머지 일반 사용자
      *
-     * @param  \Illuminate\Support\Collection  $users  사용자 목록
+     * @param  Collection  $users  사용자 목록
      * @return User 작성자
      */
     private function pickCommentAuthor($users): User
@@ -1177,9 +1270,9 @@ class PostSampleSeeder extends Seeder
      * @param  int  $todayCount  오늘 게시글 수 (방금~24시간 전)
      * @param  int  $weekCount  이번주 게시글 수 (1~7일 전)
      * @param  int  $monthCount  이번달 게시글 수 (8~30일 전)
-     * @return \Carbon\Carbon 생성일
+     * @return Carbon 생성일
      */
-    private function generateCreatedAt(int $index, int $todayCount, int $weekCount, int $monthCount): \Carbon\Carbon
+    private function generateCreatedAt(int $index, int $todayCount, int $weekCount, int $monthCount): Carbon
     {
         if ($index < $todayCount) {
             // 오늘: 방금 전 ~ 23시간 전 (모든 분/시간 구간 커버)
@@ -1209,6 +1302,23 @@ class PostSampleSeeder extends Seeder
                 default => now()->subYears(rand(1, 3)),       // 1~3년 전
             };
         }
+    }
+
+    /**
+     * Carbon 시각이 현재 시각을 넘으면 현재 시각으로 clamp 합니다.
+     *
+     * 답글/댓글 시드가 부모의 created_at + addHours() 로 자식 시각을 미루는 구조라
+     * 부모가 "오늘" 분포로 만들어진 경우 자식이 미래로 밀려 들어가 대시보드/목록 정렬을 뒤집는 회귀가 생긴다.
+     * 이 헬퍼로 모든 자식 시각의 상한을 now() 로 잡아 미래 created_at 발생 자체를 차단한다.
+     *
+     * @param  Carbon  $time  계산된 자식 시각
+     * @return Carbon 현재 시각 이하의 시각
+     */
+    private function clampToNow(Carbon $time): Carbon
+    {
+        $now = now();
+
+        return $time->greaterThan($now) ? $now : $time;
     }
 
     /**

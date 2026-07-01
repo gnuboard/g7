@@ -18,8 +18,6 @@ class OrderAddress extends Model
      * 활동 로그 변경 감지 대상 필드
      *
      * ChangeDetector가 이 필드 목록을 기반으로 변경 전/후를 비교합니다.
-     *
-     * @var array
      */
     public static array $activityLogFields = [
         'recipient_name' => [
@@ -46,12 +44,17 @@ class OrderAddress extends Model
             'label_key' => 'sirsoft-ecommerce::activity_log.fields.delivery_memo',
             'type' => 'text',
         ],
+        'delivery_memo_label' => [
+            'label_key' => 'sirsoft-ecommerce::activity_log.fields.delivery_memo_label',
+            'type' => 'text',
+        ],
     ];
 
     protected static function newFactory()
     {
         return OrderAddressFactory::new();
     }
+
     protected $table = 'ecommerce_order_addresses';
 
     protected $fillable = [
@@ -60,6 +63,7 @@ class OrderAddress extends Model
         'orderer_name',
         'orderer_phone',
         'orderer_email',
+        'orderer_locale',
         'recipient_name',
         'recipient_phone',
         'recipient_email',
@@ -77,6 +81,7 @@ class OrderAddress extends Model
         'intl_postal_code',
         'address_type_code',
         'delivery_memo',
+        'delivery_memo_label',
     ];
 
     protected $casts = [

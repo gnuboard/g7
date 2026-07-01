@@ -97,7 +97,7 @@ class BoardSampleSeeder extends Seeder
             'use_reply'                     => false,
             'use_report'                    => true,
             'use_file_upload'               => true,
-            'max_file_size'                 => 5242880, // 5MB
+            'max_file_size'                 => 5, // 5MB
             'max_file_count'                => 5,
             'allowed_extensions'            => ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip'],
             'show_view_count'               => true,
@@ -136,7 +136,7 @@ class BoardSampleSeeder extends Seeder
             'use_reply'                     => false,
             'use_report'                    => true,
             'use_file_upload'               => true,
-            'max_file_size'                 => 10485760, // 10MB
+            'max_file_size'                 => 10, // 10MB
             'max_file_count'                => 10,
             'allowed_extensions'            => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
             'show_view_count'               => true,
@@ -169,7 +169,7 @@ class BoardSampleSeeder extends Seeder
             'use_reply'                     => false,
             'use_report'                    => false,
             'use_file_upload'               => true,
-            'max_file_size'                 => 10485760, // 10MB
+            'max_file_size'                 => 10, // 10MB
             'max_file_count'                => 5,
             'allowed_extensions'            => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
             'show_view_count'               => true,
@@ -204,7 +204,7 @@ class BoardSampleSeeder extends Seeder
             'max_comment_depth'             => 5,
             'use_report'                    => true,
             'use_file_upload'               => true,
-            'max_file_size'                 => 5242880, // 5MB
+            'max_file_size'                 => 5, // 5MB
             'max_file_count'                => 3,
             'allowed_extensions'            => ['jpg', 'jpeg', 'png', 'pdf', 'zip', 'txt'],
             'show_view_count'               => true,
@@ -239,7 +239,7 @@ class BoardSampleSeeder extends Seeder
             'max_comment_depth'             => 10,
             'use_report'                    => true,
             'use_file_upload'               => true,
-            'max_file_size'                 => 5242880, // 5MB
+            'max_file_size'                 => 5, // 5MB
             'max_file_count'                => 5,
             'allowed_extensions'            => ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip'],
             'show_view_count'               => true,
@@ -274,7 +274,7 @@ class BoardSampleSeeder extends Seeder
             'max_comment_depth'             => 1,
             'use_report'                    => false,
             'use_file_upload'               => true,
-            'max_file_size'                 => 5242880, // 5MB
+            'max_file_size'                 => 5, // 5MB
             'max_file_count'                => 3,
             'allowed_extensions'            => ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip'],
             'show_view_count'               => false,

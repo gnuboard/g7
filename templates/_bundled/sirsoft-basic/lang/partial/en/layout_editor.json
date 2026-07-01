@@ -1,0 +1,182 @@
+{
+  "palette": {
+    "div": {
+      "label": "Box"
+    },
+    "container": {
+      "label": "Container",
+      "default_child_text": "Put content here"
+    },
+    "flex": {
+      "label": "Flex box"
+    },
+    "grid": {
+      "label": "Grid box"
+    },
+    "section_layout": {
+      "label": "Section layout"
+    },
+    "three_column_layout": {
+      "label": "Three-column layout"
+    },
+    "span": {
+      "label": "Inline text",
+      "default_text": "Text"
+    },
+    "p": {
+      "label": "Paragraph",
+      "default_text": "Enter paragraph text here."
+    },
+    "h1": {
+      "label": "Heading 1",
+      "default_text": "Large heading"
+    },
+    "h2": {
+      "label": "Heading 2",
+      "default_text": "Medium heading"
+    },
+    "h3": {
+      "label": "Heading 3",
+      "default_text": "Small heading"
+    },
+    "h4": {
+      "label": "Heading 4",
+      "default_text": "Sub heading"
+    },
+    "a": {
+      "label": "Link",
+      "default_text": "Click here"
+    },
+    "button": {
+      "label": "Button",
+      "default_text": "Button"
+    },
+    "img": {
+      "label": "Image",
+      "default_alt": "Image description"
+    },
+    "icon": {
+      "label": "Icon"
+    },
+    "hr": {
+      "label": "Divider"
+    },
+    "ul": {
+      "label": "Bulleted list",
+      "default_item_text": "List item"
+    },
+    "li": {
+      "label": "List item",
+      "default_text": "List item"
+    },
+    "nav": {
+      "label": "Navigation",
+      "default_item_text": "Menu"
+    },
+    "html_content": {
+      "label": "HTML content",
+      "default_text": "HTML content area"
+    },
+    "expandable_content": {
+      "label": "Expandable",
+      "default_title": "Title",
+      "default_body": "Hidden content shown when expanded"
+    },
+    "tab_navigation": {
+      "label": "Tabs",
+      "default_tab1_label": "Tab 1",
+      "default_tab2_label": "Tab 2"
+    },
+    "input": {
+      "label": "Text input",
+      "default_placeholder": "Enter text here"
+    },
+    "textarea": {
+      "label": "Multi-line input",
+      "default_placeholder": "Enter multi-line text"
+    },
+    "select": {
+      "label": "Select",
+      "default_option1_label": "Option 1",
+      "default_option2_label": "Option 2"
+    },
+    "checkbox": {
+      "label": "Checkbox",
+      "default_label": "Select"
+    },
+    "password_input": {
+      "label": "Password input",
+      "default_placeholder": "Password"
+    },
+    "label": {
+      "label": "Label",
+      "default_text": "Label"
+    },
+    "file_uploader": {
+      "label": "File uploader",
+      "default_label": "Upload a file"
+    },
+    "avatar_uploader": {
+      "label": "Avatar uploader",
+      "default_label": "Change avatar"
+    },
+    "html_editor": {
+      "label": "HTML editor",
+      "default_placeholder": "Enter content"
+    },
+    "rich_text_editor": {
+      "label": "Rich text editor",
+      "default_placeholder": "Enter content"
+    },
+    "social_login_buttons": {
+      "label": "Social login buttons"
+    },
+    "product_card": {
+      "label": "Product card",
+      "default_name": "Sample product"
+    },
+    "image_gallery": {
+      "label": "Image gallery",
+      "default_alt1": "Gallery image 1",
+      "default_alt2": "Gallery image 2"
+    },
+    "pagination": {
+      "label": "Pagination"
+    },
+    "search_bar": {
+      "label": "Search bar",
+      "default_placeholder": "Enter search keyword"
+    },
+    "avatar": {
+      "label": "Avatar",
+      "default_alt": "User avatar"
+    },
+    "user_info": {
+      "label": "User info",
+      "default_name": "Username"
+    },
+    "quantity_selector": {
+      "label": "Quantity selector"
+    },
+    "product_image_viewer": {
+      "label": "Product image viewer",
+      "default_alt": "Product image"
+    },
+    "post_reactions": {
+      "label": "Post reactions"
+    },
+    "group": {
+      "design": "Design",
+      "db": "Data"
+    },
+    "form": {
+      "label": "Form",
+      "default_label_text": "Label",
+      "default_input_placeholder": "Enter value",
+      "default_submit_text": "Submit"
+    },
+    "table": {
+      "label": "Table"
+    }
+  }
+}

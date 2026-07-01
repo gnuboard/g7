@@ -23,7 +23,7 @@ class Upgrade_0_15_0 implements UpgradeStepInterface
     /**
      * 업그레이드를 실행합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     public function run(UpgradeContext $context): void
     {
@@ -35,7 +35,7 @@ class Upgrade_0_15_0 implements UpgradeStepInterface
     /**
      * order_options 테이블에 confirmed_at 컬럼을 추가합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     private function addConfirmedAtColumn(UpgradeContext $context): void
     {
@@ -47,7 +47,7 @@ class Upgrade_0_15_0 implements UpgradeStepInterface
 
         Schema::table('ecommerce_order_options', function ($table) {
             $table->timestamp('confirmed_at')->nullable()->after('option_status')
-                  ->comment('구매확정 일시');
+                ->comment('구매확정 일시');
         });
 
         $context->logger->info('[v0.15.0] ecommerce_order_options 테이블에 confirmed_at 컬럼 추가 완료');
@@ -56,7 +56,7 @@ class Upgrade_0_15_0 implements UpgradeStepInterface
     /**
      * 사용자 권한을 생성하고 모든 역할에 할당합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     private function createUserPermissions(UpgradeContext $context): void
     {
@@ -104,7 +104,7 @@ class Upgrade_0_15_0 implements UpgradeStepInterface
     /**
      * 레이아웃 캐시를 클리어합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     private function clearLayoutCache(UpgradeContext $context): void
     {

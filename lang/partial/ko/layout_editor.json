@@ -1,0 +1,1360 @@
+{
+  "chrome": {
+    "toolbar": {
+      "toggle_route_tree": "라우트 트리 접기/펼치기",
+      "undo": "실행 취소",
+      "redo": "다시 실행",
+      "template_route_separator": " ▸ ",
+      "locale_switcher_label": "콘텐츠 언어",
+      "add_element": "요소 추가",
+      "device_desktop": "데스크톱",
+      "device_tablet": "태블릿",
+      "device_mobile": "모바일",
+      "zoom_out": "축소",
+      "zoom_in": "확대",
+      "zoom_reset": "원본 크기",
+      "page_settings": "페이지 설정",
+      "preview": "미리보기",
+      "previewing": "여는 중…",
+      "version_history": "버전 기록",
+      "edit_code": "코드 편집",
+      "save": "저장",
+      "saving": "저장 중…",
+      "exit": "나가기",
+      "exit_base_edit": "공통 레이아웃 편집 종료",
+      "exit_modal_edit": "모달 편집 종료",
+      "exit_extension_edit": "확장 편집 종료",
+      "exit_iteration_item_edit": "반복 항목 편집 종료",
+      "mode_badge": {
+        "base": "공통 레이아웃 편집 중",
+        "modal": "모달 편집 중",
+        "extension": "확장 편집 중",
+        "iteration_item": "반복 항목 편집 중"
+      },
+      "images": "이미지",
+      "translations": "다국어",
+      "data_sources": "데이터",
+      "reset": "초기화",
+      "switch_template": "다른 템플릿으로 전환"
+    },
+    "route_tree": {
+      "panel_title": "화면 / 라우트",
+      "search_placeholder": "명칭·라우트로 검색…",
+      "search_clear": "검색어 지우기",
+      "search_no_results": "검색 결과가 없습니다",
+      "group": {
+        "base": "공통 레이아웃",
+        "template": "템플릿",
+        "module": "모듈: {name}",
+        "plugin": "플러그인: {name}",
+        "modal": "모달",
+        "extension": "확장 주입"
+      },
+      "connected": {
+        "modals": "이 화면의 모달 ({count})",
+        "extensions": "주입되는 확장 ({count})"
+      },
+      "badge": {
+        "hidden": "숨김",
+        "redirect": "리다이렉트",
+        "shared_layout": "{count}개 라우트 공용",
+        "modified": "변경됨",
+        "version_tooltip": "현재 저장 버전 v{version}",
+        "extension_point": "확장점",
+        "overlay": "오버레이",
+        "priority": "p:{priority}",
+        "inactive": "비활성"
+      },
+      "empty": "표시할 라우트가 없습니다"
+    },
+    "fab": {
+      "label": "레이아웃 편집",
+      "tooltip": "이 화면을 레이아웃 편집기로 열기"
+    },
+    "denied": {
+      "title": "레이아웃 편집 권한이 없습니다",
+      "message": "이 기능을 사용하려면 관리자 권한이 필요합니다.",
+      "go_login": "로그인하기",
+      "go_home": "홈으로"
+    },
+    "dirty_guard": {
+      "title": "저장하지 않은 변경 사항이 있습니다",
+      "message": "변경 사항을 저장하지 않고 종료하시겠습니까?",
+      "stay": "편집 계속",
+      "discard": "변경 사항 버리기"
+    },
+    "canvas": {
+      "placeholder": "캔버스 영역 — Phase 2 에서 채워집니다"
+    },
+    "reset_guard": {
+      "title": "이 화면을 초기화합니다",
+      "message": "이 화면의 변경 사항을 버리고 마지막 저장 상태로 되돌립니다."
+    }
+  },
+  "preview": {
+    "empty": "왼쪽에서 편집할 라우트를 선택하세요",
+    "empty_layout": "이 레이아웃에는 표시할 컴포넌트가 없습니다",
+    "loading": "레이아웃을 불러오는 중...",
+    "error": "레이아웃을 불러오지 못했습니다: {error}",
+    "assets_loading": "편집 대상 템플릿 자산을 불러오는 중...",
+    "assets_error": "편집 대상 템플릿 자산을 불러오지 못했습니다: {error}",
+    "sample_data_badge": "샘플 데이터",
+    "extension_no_injection_title": "이 화면에는 편집할 요소가 없습니다",
+    "extension_no_injection_desc": "이 확장은 이 화면에 시각 편집할 요소를 추가하지 않습니다. 코드 편집을 이용해 주세요.",
+    "extension_gated_title": "이 상태에서는 편집할 요소가 보이지 않습니다",
+    "extension_gated_desc": "이 확장이 들어가는 영역은 특정 화면 상태에서만 나타납니다. 그 상태가 편집 설정에 정의되어 있지 않아 시각 편집할 수 없습니다. 코드 편집을 이용해 주세요.",
+    "extension_gated_desc_with_states": "이 확장이 들어가는 영역은 특정 화면 상태에서만 나타납니다. 상단의 상태 선택에서 해당 상태로 바꾸면 편집할 수 있습니다.",
+    "slot_area_label": "콘텐츠 영역"
+  },
+  "version_history": {
+    "title": "버전 기록",
+    "close": "닫기",
+    "loading": "버전 목록을 불러오는 중…",
+    "empty": "저장된 버전이 없습니다.",
+    "restore": "복원",
+    "restoring": "복원 중…",
+    "restore_confirm": "이 버전으로 복원하시겠습니까? 현재 편집 중인 변경 사항은 사라집니다.",
+    "restore_not_found": "해당 버전을 찾을 수 없습니다. 목록을 새로고침하세요.",
+    "latest": "최신",
+    "added": "+{count} 라인",
+    "removed": "-{count} 라인",
+    "chars": "({diff} 자)",
+    "saved_by": "저장자: {name}",
+    "unknown_author": "알 수 없음",
+    "compare": "비교",
+    "comparing": "비교 중…",
+    "diff_title": "v{old} → v{new} 변경 내용",
+    "diff_back": "목록",
+    "diff_identical": "두 버전의 내용이 동일합니다.",
+    "diff_too_large": "변경 내용이 너무 커서 표시할 수 없습니다."
+  },
+  "preview_action": {
+    "no_document": "미리보기할 레이아웃이 선택되지 않았습니다."
+  },
+  "access_error": {
+    "required_permission_label": "필요 권한:",
+    "detail_summary": "자세한 오류 정보",
+    "action": {
+      "sign_in": "로그인 하러 가기",
+      "go_home": "관리자 홈으로",
+      "go_admin_home": "관리자 홈으로",
+      "retry": "다시 시도"
+    },
+    "unauthorized": {
+      "title": "로그인이 필요합니다",
+      "message": "세션이 만료되었거나 로그인이 풀렸습니다. 잠시 후 로그인 페이지로 이동합니다."
+    },
+    "forbidden": {
+      "title": "이 레이아웃에 접근할 권한이 없습니다",
+      "message": "현재 계정에는 이 화면을 편집할 권한이 없습니다. 관리자에게 권한 부여를 요청하거나 다른 계정으로 다시 로그인 해 주세요."
+    },
+    "not_found": {
+      "title": "레이아웃을 찾을 수 없습니다",
+      "message": "요청하신 레이아웃이 존재하지 않거나 삭제되었습니다. 라우트를 다시 선택해 주세요."
+    },
+    "server_error": {
+      "title": "서버에서 문제가 발생했습니다",
+      "message": "레이아웃을 불러오는 중 서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+    },
+    "network": {
+      "title": "네트워크 연결을 확인해 주세요",
+      "message": "서버에 연결할 수 없습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+    },
+    "unknown": {
+      "title": "레이아웃을 불러오지 못했습니다",
+      "message": "예상치 못한 문제가 발생했습니다. 다시 시도하거나 관리자에게 문의해 주세요."
+    }
+  },
+  "device": {
+    "group_label": "디바이스 미리보기",
+    "desktop": "🖥 데스크톱",
+    "tablet": "📱 태블릿",
+    "mobile": "📲 모바일",
+    "portable": "📱 모바일+태블릿",
+    "custom": "📐 사용자 지정",
+    "custom_width_label": "너비"
+  },
+  "zoom": {
+    "label": "줌",
+    "aria_label": "캔버스 줌 슬라이더"
+  },
+  "palette": {
+    "title": "요소 추가",
+    "search_placeholder": "요소 검색…",
+    "group": {
+      "design": "디자인 요소",
+      "db": "DB 요소"
+    },
+    "category": {
+      "all": "전체",
+      "other": "기타",
+      "fallback": {
+        "basic": "기본 요소",
+        "composite": "결합 요소",
+        "layout": "레이아웃"
+      }
+    },
+    "empty": "이 위치에 추가할 수 있는 요소가 없습니다",
+    "spec_missing": "이 템플릿은 시각 편집 스펙이 없습니다. 요소 추가가 비활성화되었습니다.",
+    "default_node_missing_badge": "기본 스펙 없음",
+    "requires_default_node_missing": "이 컴포넌트는 템플릿이 기본 스타일을 정의해야 추가할 수 있습니다. editor-spec.json 의 componentPalette.entries.<이름>.defaultNode 를 정의하세요.",
+    "table": {
+      "label": "표",
+      "header_1": "제목",
+      "header_2": "내용",
+      "cell": "내용"
+    },
+    "select": {
+      "default_option1_label": "옵션 1",
+      "default_option2_label": "옵션 2"
+    }
+  },
+  "insertion": {
+    "above": "위에 추가",
+    "below": "아래에 추가",
+    "left": "왼쪽에 추가",
+    "right": "오른쪽에 추가"
+  },
+  "context_menu": {
+    "edit_props": "속성 설정",
+    "duplicate": "컴포넌트 복사",
+    "delete": "삭제",
+    "separate_branch": "이 디바이스 전용으로 분리",
+    "merge_branch": "디바이스 전용 분리 해제",
+    "separate_branch_device": "이 영역을 {device} 전용으로 분리",
+    "merge_branch_device": "{device} 전용 분리 해제",
+    "separate_branch_hint": "이 디바이스에서만 다른 구성(요소)을 두고 싶을 때 사용합니다. 색·여백 등 스타일만 다르게 할 땐 [속성 > 스타일] 탭을 쓰세요.",
+    "merge_branch_hint": "이 디바이스 전용으로 분리해 둔 구성을 제거하고 기본 구성으로 되돌립니다.",
+    "device_desktop": "데스크톱",
+    "device_tablet": "태블릿",
+    "device_mobile": "모바일",
+    "device_portable": "모바일+태블릿",
+    "device_custom": "{range}"
+  },
+  "overlay": {
+    "edit_common_layout": "공통 레이아웃 편집",
+    "edit_extension": "확장 편집",
+    "edit_iteration_item": "반복 항목 편집",
+    "edit_destination_route": "→ 이 화면 편집",
+    "cannot_drop_here": "여기엔 놓을 수 없습니다",
+    "locked_data_bound": "데이터 영역은 직접 편집할 수 없습니다",
+    "select_parent": "부모 요소 선택 (↑)",
+    "branch_mobile": "모바일 구성",
+    "branch_tablet": "태블릿 구성",
+    "branch_desktop": "데스크톱 구성",
+    "branch_custom": "{range} 구성",
+    "branch_boundary_denied": "디바이스별 구성 사이로는 옮길 수 없습니다",
+    "jump_device": "{device} 구성으로 이동",
+    "jump_device_hint": "이 영역은 {device}에 별도 구성이 정의되어 있습니다. 클릭하면 그 디바이스 보기로 전환해 편집합니다.",
+    "inherit_banner": "공통 레이아웃에서 받은 로딩 화면 설정이 있습니다. 아래에서 이 화면에 맞게 바꿀 수 있습니다.",
+    "enabled_label": "로딩 화면 표시",
+    "enabled_hint": "데이터를 불러오는 동안 보여줄 로딩 화면을 켜거나 끕니다.",
+    "on": "켬",
+    "off": "끔",
+    "scope_label": "덮는 범위",
+    "scope_full": "전체 화면",
+    "scope_region": "특정 영역",
+    "target_label": "대상 영역",
+    "fallback_label": "대체 영역",
+    "fallback_hint": "대상 영역을 찾지 못할 때 대신 덮을 영역입니다.",
+    "style_label": "표시 방식",
+    "style_opaque": "단색 가림",
+    "style_blur": "흐림",
+    "style_fade": "서서히 나타남",
+    "style_skeleton": "뼈대 표시",
+    "style_spinner": "회전 표시",
+    "anim_wave": "물결",
+    "anim_pulse": "깜빡임",
+    "anim_none": "없음",
+    "skeleton_component": "뼈대 모양",
+    "skeleton_animation": "움직임 효과",
+    "skeleton_count": "반복 개수",
+    "spinner_component": "회전 모양",
+    "spinner_text": "안내 문구",
+    "waitfor_label": "기다릴 데이터",
+    "waitfor_hint": "선택한 데이터를 모두 받을 때까지 로딩 화면을 유지합니다.",
+    "waitfor_empty": "기다릴 수 있는 데이터가 없습니다.",
+    "reset_inherit": "모두 기본값으로",
+    "inherited_badge": "상속됨",
+    "overridden_badge": "이 화면에서 바꿈",
+    "override_field": "이 화면만 바꾸기",
+    "loading_picker": {
+      "none": "선택 안 함",
+      "select": "선택",
+      "search": "모양 검색…",
+      "empty": "선택할 수 있는 모양이 없습니다."
+    }
+  },
+  "save": {
+    "success": "레이아웃을 저장했습니다",
+    "in_progress": "저장 중…",
+    "validation_failed": "유효성 검사에 실패했습니다",
+    "blocked_inactive_extension": "비활성화된 확장 컴포넌트가 새로 추가되어 저장할 수 없습니다",
+    "network_error_title": "저장 중 네트워크 오류가 발생했습니다",
+    "guard_no_document": "저장할 레이아웃 문서가 로드되지 않았습니다",
+    "concurrent": {
+      "title": "다른 사용자가 먼저 저장했습니다",
+      "message": "이 레이아웃은 다른 관리자가 먼저 저장했습니다. 최신 버전을 불러오시겠습니까?",
+      "version_info": "최신 버전: {current} / 내 버전: {yours}",
+      "load_latest": "최신 불러오기",
+      "view_my_changes": "내 변경 내용 보기",
+      "cancel": "취소"
+    },
+    "conflict": "다른 곳에서 먼저 저장되어 충돌이 발생했습니다."
+  },
+  "control": {
+    "use": "사용",
+    "default": "기본",
+    "color_hex_placeholder": "#000000 / 없음",
+    "tag_add": "+ 추가",
+    "background_image": {
+      "upload": "이미지 업로드",
+      "clear": "제거",
+      "mode_fill": "채움",
+      "mode_fit": "맞춤",
+      "mode_tile": "타일",
+      "upload_failed": "이미지 업로드에 실패했습니다"
+    },
+    "dimension": {
+      "placeholder": "예: 320px, 50%, 24rem, auto"
+    },
+    "spacing": {
+      "mode_all": "일괄",
+      "mode_sides": "개별",
+      "all": "전체",
+      "x": "좌우",
+      "y": "상하",
+      "top": "위",
+      "right": "오른쪽",
+      "bottom": "아래",
+      "left": "왼쪽"
+    }
+  },
+  "recipe": {
+    "custom_input": "직접 입력…",
+    "pick_from_list": "목록에서 고르기",
+    "page_placeholder": "이동할 경로 (예: /board)",
+    "datasource_placeholder": "데이터 이름",
+    "state_key_placeholder": "상태 키",
+    "modal_placeholder": "열 모달 선택",
+    "i18n_text_placeholder": "표시할 문구"
+  },
+  "action": {
+    "no_events": "이 요소는 동작을 설정할 수 없습니다",
+    "no_recipes": "이 템플릿은 사용할 수 있는 동작이 없습니다",
+    "add_action": "+ 동작 추가",
+    "remove": "동작 제거",
+    "advanced_action": "직접 작성된 동작",
+    "advanced_preserved": "코드 편집기에서 작성된 동작입니다 (보존됨)",
+    "event": {
+      "onClick": "클릭하면",
+      "onHover": "마우스 올리면",
+      "onChange": "값이 바뀌면",
+      "onSubmit": "제출하면",
+      "onClose": "닫으면",
+      "onFilesChange": "파일이 바뀌면",
+      "onPageChange": "페이지가 바뀌면",
+      "onReact": "반응하면",
+      "onTabChange": "탭이 바뀌면",
+      "onUploadSuccess": "업로드에 성공하면",
+      "onUploadError": "업로드에 실패하면",
+      "onButtonClick": "버튼을 누르면",
+      "onDismiss": "닫으면",
+      "onItemAdd": "항목을 추가하면",
+      "onItemClick": "항목을 누르면",
+      "onItemRemove": "항목을 삭제하면",
+      "onLanguageChange": "언어를 바꾸면",
+      "onLayoutEditClick": "레이아웃 편집을 누르면",
+      "onLogoutClick": "로그아웃을 누르면",
+      "onOrderChange": "순서를 바꾸면",
+      "onProfileClick": "프로필을 누르면",
+      "onReset": "초기화하면",
+      "onRowClick": "행을 누르면",
+      "onSelect": "선택하면",
+      "onSelectionChange": "선택이 바뀌면",
+      "onToggle": "펼치거나 접으면",
+      "onComponentEvent": "특정 이벤트가 발생하면"
+    },
+    "advanced": "고급",
+    "add_search": "동작 검색…",
+    "add_no_match": "일치하는 동작이 없습니다.",
+    "view_code": "코드 보기",
+    "source_core": "코어",
+    "source_module": "모듈",
+    "source_plugin": "플러그인",
+    "source_template": "템플릿",
+    "source_base": "공통",
+    "source_route": "이 화면",
+    "summary_missing_required": "꼭 채워야 할 값이 비어 있습니다.",
+    "group": {
+      "state": "상태 관리",
+      "nav": "화면 이동",
+      "notify": "알림·모달",
+      "data": "데이터",
+      "locale": "언어",
+      "etc": "기타",
+      "flow": "흐름 제어",
+      "error": "오류 처리",
+      "extension": "확장 동작"
+    }
+  },
+  "visibility": {
+    "no_recipes": "이 템플릿은 사용할 수 있는 표시 조건이 없습니다",
+    "show_when": "이 요소를 보여줄 조건",
+    "and": "그리고",
+    "or": "또는",
+    "remove": "조건 제거",
+    "preview": "미리보기",
+    "clear": "조건 지우기",
+    "advanced_preserved": "코드 편집기에서 작성된 조건입니다 (보존됨)"
+  },
+  "flex": {
+    "container_title": "정렬 박스",
+    "item_title": "정렬 박스 안에서",
+    "direction": "방향",
+    "justify": "자식 정렬(주축)",
+    "align": "자식 정렬(교차축)",
+    "wrap": "줄바꿈 허용",
+    "gap": "자식 간격",
+    "item_grow": "늘어남",
+    "item_align": "혼자 정렬",
+    "item_order": "순서",
+    "make_flex": "정렬 박스로 만들기",
+    "unmake_flex": "정렬 박스 해제",
+    "not_flex": "이 요소는 정렬 박스가 아닙니다"
+  },
+  "property_modal": {
+    "title": "속성 편집: {name}",
+    "settings_title": "{name} 설정",
+    "element": "요소",
+    "close": "닫기",
+    "delete_element": "이 요소 삭제",
+    "no_editable_props": "이 요소는 편집 가능한 속성이 없습니다",
+    "injected_props": {
+      "title": "확장이 주입한 속성",
+      "help": "기본 속성은 모든 화면에 적용되고, 확장 주입 속성은 이 확장이 활성일 때만 적용됩니다.",
+      "origin": "{source} 이(가) 주입함",
+      "save_target": "저장 시: 이 확장 행에 기록됩니다.",
+      "save_button": "{source} 에 저장",
+      "saving": "저장 중…",
+      "saved": "저장되었습니다.",
+      "invalid_json": "JSON 형식이 올바르지 않습니다."
+    },
+    "tab_deferred": "이 탭은 다음 단계에서 지원됩니다",
+    "advanced_deferred": "이 고급 속성은 다음 단계에서 지원됩니다",
+    "unsupported_widget": "지원하지 않는 컨트롤",
+    "value_conflict": "중복 값",
+    "settings_group": "그룹 {index}",
+    "advanced_badge": "이 요소는 코드 편집기에서 작성된 고급 설정을 포함합니다",
+    "branch_badge": "이 요소는 {device} 전용 구성에 속합니다 — 다른 디바이스에서는 다른 구성이 표시됩니다.",
+    "advanced_preserved_title": "코드 편집에서 작성된 고급 설정 {count}개 (보존됨)",
+    "advanced_kind_developer": "개발자 속성",
+    "advanced_kind_expression": "복잡 표현식",
+    "tab": {
+      "settings": "설정",
+      "props": "속성",
+      "style": "스타일",
+      "action": "동작",
+      "visibility": "표시조건",
+      "translation": "번역",
+      "advanced": "고급"
+    },
+    "advanced": {
+      "permissions": "표시 권한",
+      "blur_until_loaded": "데이터 불러올 때 흐리게 표시",
+      "blur_hint": "데이터 로딩 중 흐리게 표시",
+      "comment": "메모"
+    },
+    "scope": {
+      "scheme_light": "라이트",
+      "scheme_dark": "다크",
+      "device_base": "기본값",
+      "device_desktop": "PC",
+      "device_tablet": "태블릿",
+      "device_mobile": "모바일",
+      "device_portable": "모바일+태블릿",
+      "add_custom": "커스텀 크기",
+      "custom_min": "최소",
+      "custom_max": "최대",
+      "custom_priority_note": "커스텀 범위가 PC/태블릿/모바일보다 우선 적용됩니다.",
+      "custom_invalid": "잘못된 범위입니다 (최소 ≤ 최대, 숫자).",
+      "reset_to_base": "기본값으로 초기화"
+    },
+    "dark_code_only": "이 색상은 다크 모드에서 코드 모드로만 편집할 수 있습니다",
+    "dark_preset_only": "다크 모드에서는 패널의 프리셋 색을 고르면 적용됩니다 (직접 입력한 자유 값은 라이트 전용)"
+  },
+  "core_props": {
+    "id": {
+      "label": "요소 ID",
+      "placeholder": "예: main-content",
+      "add_data": "데이터",
+      "binding_hint": "반복 목록에서 인덱스나 행 키를 데이터로 연결하면 각 항목마다 고유한 ID가 만들어집니다 (예: item_{{$idx}})"
+    },
+    "dataKey": {
+      "placeholder": "예: form",
+      "hint": "입력칸들을 묶는 이름입니다. _global. 또는 _isolated. 접두로 전역/격리 영역에 연결할 수 있습니다.",
+      "bound_degraded": "이 값은 코드 편집기에서 설정됩니다.",
+      "label": "폼 데이터 연결점"
+    },
+    "isolatedState": {
+      "label": "격리 영역",
+      "initial_label": "격리 시작값",
+      "off_hint": "이 영역만의 독립된 상태를 두고 싶을 때 켭니다."
+    },
+    "isolatedScopeId": {
+      "label": "영역 이름",
+      "placeholder": "예: cart-scope",
+      "search": "영역 이름 검색…",
+      "duplicate": "같은 이름의 영역이 다른 곳에도 있습니다. 두 영역이 상태를 함께 씁니다."
+    }
+  },
+  "icon_picker": {
+    "search_placeholder": "아이콘 검색",
+    "none": "없음",
+    "no_results": "검색 결과가 없습니다",
+    "free_input_hint": "아이콘 이름을 직접 입력하세요"
+  },
+  "list_editor": {
+    "add": "항목 추가",
+    "remove": "삭제",
+    "move_up": "위로 이동",
+    "move_down": "아래로 이동",
+    "empty": "항목이 없습니다",
+    "item": "항목",
+    "edit_translation": "번역 편집",
+    "option_value": "값",
+    "option_label": "라벨",
+    "bound_degraded": "데이터에 연결된 목록입니다 (코드 편집)",
+    "items_title": "항목",
+    "item_text": "항목 텍스트",
+    "item_label": "라벨",
+    "item_placeholder": "안내 문구",
+    "new_item": "새 항목",
+    "add_child": "{component} 추가",
+    "no_child_component": "추가할 자식 컴포넌트가 지정되지 않았습니다"
+  },
+  "array_editor": {
+    "items_title": "항목 목록",
+    "item": "항목",
+    "add": "{item} 추가",
+    "remove": "삭제",
+    "move_up": "위로 이동",
+    "move_down": "아래로 이동",
+    "empty": "항목이 없습니다",
+    "icon_placeholder": "아이콘 이름 (예: user, cog)",
+    "bound_degraded": "데이터에 연결된 목록입니다 (코드 편집)",
+    "no_array_prop": "편집할 배열 속성이 지정되지 않았습니다",
+    "number_list_placeholder": "콤마로 구분된 숫자 (예: 10, 20, 30)"
+  },
+  "cell_tree_editor": {
+    "columns_title": "컬럼 목록",
+    "id_placeholder": "컬럼 식별자",
+    "expand_cells": "셀 내용 편집",
+    "collapse_cells": "셀 내용 닫기",
+    "add_column": "{item} 추가"
+  },
+  "table_editor": {
+    "title": "표 편집",
+    "add_row": "행 추가",
+    "add_col": "열 추가",
+    "remove_row": "행 삭제",
+    "remove_col": "열 삭제",
+    "merge_cells": "셀 병합",
+    "unmerge_cells": "병합 해제",
+    "cell_border": "셀 테두리",
+    "cell_class_placeholder": "예: border border-gray-300",
+    "move_row_up": "행 위로 이동",
+    "move_row_down": "행 아래로 이동",
+    "move_col_left": "열 왼쪽으로 이동",
+    "move_col_right": "열 오른쪽으로 이동",
+    "move_blocked_section": "표 머리글/본문 경계를 넘어 이동할 수 없습니다",
+    "header_row": "머리글 행",
+    "cell_text": "셀 텍스트",
+    "cell_i18n_label": "선택 셀 다국어",
+    "structural_cell": "구조 셀 (캔버스에서 편집)",
+    "grid_invalid": "표 구조가 정합하지 않습니다 (셀 병합/구멍 확인)",
+    "select_hint": "셀 클릭=선택, Shift+클릭=영역 선택 후 병합",
+    "cell_fill": "셀 배경색",
+    "cell_fill_none": "없음(투명)",
+    "cell_fill_custom": "직접 색 선택",
+    "cell_padding": "셀 내부 여백",
+    "cell_padding_custom": "직접",
+    "cell_color": "셀 색상",
+    "dark_free_color_hint": "다크 모드는 프리셋 색만 지정할 수 있습니다 (자유 색은 라이트 전용)"
+  },
+  "table_inplace": {
+    "select_cell": "셀 선택",
+    "add_row": "행 추가",
+    "add_col": "열 추가",
+    "remove_row": "행 삭제",
+    "remove_col": "열 삭제",
+    "move_row_up": "행 위로 이동",
+    "move_row_down": "행 아래로 이동",
+    "move_col_left": "열 왼쪽으로 이동",
+    "move_col_right": "열 오른쪽으로 이동",
+    "merge": "병합",
+    "unmerge": "해제",
+    "select_all": "전체 선택",
+    "border_apply_count": "{count}개 셀에 적용",
+    "merge_right": "오른쪽 셀과 병합",
+    "merge_down": "아래 셀과 병합",
+    "border_apply_all": "표 전체에 적용",
+    "select_cell_hint": "캔버스에서 셀을 클릭하면 병합·테두리 도구가 나타납니다.",
+    "merge_range": "영역 병합",
+    "range_selected": "{count}개 셀 선택됨",
+    "custom_color": "직접 선택"
+  },
+  "attachment_manager": {
+    "title": "이 레이아웃 이미지 관리",
+    "recent": "최근 업로드",
+    "manage_link": "이미지 관리",
+    "upload": "이미지 업로드",
+    "use_as_bg": "배경",
+    "delete": "삭제",
+    "delete_confirm": "이 이미지를 삭제하시겠습니까? 되돌릴 수 없습니다.",
+    "empty": "이 레이아웃에 업로드된 이미지가 없습니다.",
+    "loading": "불러오는 중…",
+    "close": "닫기"
+  },
+  "translation_manager": {
+    "title": "이 레이아웃 다국어 키 관리",
+    "filter_label": "상태 필터",
+    "filter_all": "전체",
+    "filter_active": "사용 중",
+    "filter_orphaned": "미사용",
+    "badge_orphaned": "미사용/연결 끊김",
+    "badge_live_in_use": "현재 캔버스 사용중",
+    "badge_live_unused": "현재 캔버스 미사용",
+    "select_aria": "{key} 선택",
+    "delete_selected": "선택 삭제 ({count})",
+    "purge_orphaned": "미사용 전체 삭제 ({count})",
+    "delete_confirm": "선택한 다국어 키 {count}개를 삭제하시겠습니까? 되돌릴 수 없습니다.",
+    "conflict": "다른 곳에서 먼저 수정되었습니다. 새로고침 후 다시 시도하세요.",
+    "save": "저장",
+    "saving": "저장 중…",
+    "delete": "삭제",
+    "empty": "이 레이아웃에 생성된 다국어 키가 없습니다.",
+    "loading": "불러오는 중…",
+    "close": "닫기"
+  },
+  "data_sources": {
+    "title": "데이터 소스",
+    "description": "이 화면이 불러오는 데이터 소스를 추가·편집·삭제합니다. 소스를 정의하면 컴포넌트의 데이터 연결에서 선택할 수 있습니다.",
+    "add": "데이터 소스 추가",
+    "edit": "편집",
+    "remove": "삭제",
+    "close": "닫기",
+    "empty": "이 화면에 정의된 데이터 소스가 없습니다.",
+    "no_label": "표시 명칭(label_key) 미지정",
+    "inherited_title": "상속된 소스 (읽기 전용)",
+    "source": {
+      "module": "모듈",
+      "plugin": "플러그인"
+    },
+    "form": {
+      "add_title": "데이터 소스 추가",
+      "edit_title": "데이터 소스 편집",
+      "save": "저장",
+      "cancel": "취소"
+    },
+    "field": {
+      "id": "ID",
+      "label_key": "표시 명칭",
+      "label_key_placeholder": "예: 상품 목록",
+      "label_key_hint": "검색형 데이터 피커에 표시될 친화 명칭입니다. 평문을 입력하면 다국어 키가 자동 생성되며, 🌐 버튼으로 언어별 값을 편집할 수 있습니다.",
+      "type": "유형",
+      "endpoint": "엔드포인트",
+      "method": "HTTP 메서드",
+      "auth_mode": "인증 모드",
+      "loading_strategy": "로딩 전략",
+      "auto_fetch": "화면 로드 시 자동 호출",
+      "params": "요청 파라미터",
+      "params_hint": "값에 {{query.page}} 같은 바인딩 표현식을 사용할 수 있습니다.",
+      "params_empty": "API 에 함께 보낼 값을 추가하세요. 예: page, per_page, 검색어 등.",
+      "params_preview": "전송될 값 미리보기",
+      "params_mode_block": "블럭으로",
+      "params_mode_code": "코드로",
+      "param_key_placeholder": "파라미터 이름",
+      "param_add": "파라미터 추가",
+      "fallback": "기본값",
+      "fallback_add": "기본값 추가",
+      "fallback_add_field": "항목 추가",
+      "fallback_clear": "기본값 제거",
+      "fallback_empty": "데이터를 불러오기 전·실패 시 대신 보여줄 값입니다. 예: data 에 빈 목록([]).",
+      "fallback_key_placeholder": "필드 이름 (예: data)",
+      "fallback_preview": "기본값 미리보기",
+      "content_type": "콘텐츠 타입",
+      "refetch_on_mount": "재진입 시 다시 불러오기",
+      "channel": "채널",
+      "event": "이벤트",
+      "channel_type": "채널 종류",
+      "target_source": "대상 소스",
+      "on_receive": "메시지 수신 시 동작"
+    },
+    "ds_type": {
+      "api": "API 호출",
+      "static": "정적 데이터",
+      "route_params": "경로 파라미터",
+      "query_params": "쿼리 파라미터",
+      "websocket": "웹소켓"
+    },
+    "auth_mode": {
+      "none": "없음 (공개)",
+      "optional": "선택 (토큰 있으면 전송)",
+      "required": "필수 (토큰 없으면 실패)"
+    },
+    "loading_strategy": {
+      "progressive": "점진적",
+      "blocking": "차단",
+      "background": "백그라운드"
+    },
+    "error": {
+      "id_required": "ID를 입력하세요.",
+      "id_invalid": "ID는 영문자/숫자/밑줄만 사용하고 숫자로 시작할 수 없습니다.",
+      "id_duplicate": "ID '{id}' 는 이미 사용 중입니다.",
+      "params_json": "요청 파라미터가 올바른 JSON 형식이 아닙니다.",
+      "params_object": "요청 파라미터는 객체(JSON) 형식이어야 합니다.",
+      "fallback_json": "기본값(fallback)이 올바른 JSON 형식이 아닙니다."
+    },
+    "global_headers": "전역 헤더",
+    "global_headers_empty": "설정된 전역 헤더가 없습니다.",
+    "global_headers_hint": "전역 헤더는 코드 편집기에서만 수정할 수 있습니다.",
+    "scripts": "외부 스크립트",
+    "scripts_empty": "추가된 외부 스크립트가 없습니다.",
+    "scripts_hint": "외부 스크립트는 코드 편집기에서만 수정할 수 있습니다.",
+    "section": {
+      "websocket": "실시간(웹소켓) 설정",
+      "on_success": "성공 시 동작",
+      "on_error": "실패 시 동작",
+      "error_handling": "오류 코드별 처리",
+      "load_condition": "불러오기 조건"
+    },
+    "add_error_code": "+ 오류 코드 추가"
+  },
+  "toolbar": {
+    "color_scheme_group": "색상 테마",
+    "color_scheme_light": "☀ 라이트",
+    "color_scheme_dark": "🌙 다크",
+    "state": "상태:"
+  },
+  "locale": {
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語",
+    "zh": "中文",
+    "vi": "Tiếng Việt"
+  },
+  "inline_edit": {
+    "aria_label": "텍스트 인라인 편집",
+    "toolbar_label": "텍스트 서식",
+    "new_key_hint": "확정 시 다국어 키가 생성됩니다",
+    "existing_key_hint": "다국어 — 현재 언어 값만 수정됩니다",
+    "open_translations": "모든 언어 편집",
+    "empty_warning": "내용을 입력하세요",
+    "format": {
+      "fontWeight": "굵게",
+      "fontBold": "굵게",
+      "fontStyle": "기울임",
+      "fontItalic": "기울임",
+      "textDecoration": "밑줄",
+      "textUnderline": "밑줄",
+      "textAlign": "정렬",
+      "fontSize": "글자 크기",
+      "textColor": "글자 색"
+    },
+    "prompt": {
+      "fontSize": "글자 크기를 입력하세요 (예: 16px, 1.2rem)",
+      "textColor": "글자 색을 입력하세요 (예: #2563eb)"
+    }
+  },
+  "translation": {
+    "key_label": "다국어 키",
+    "needs_translation": "번역 필요",
+    "not_a_key": "이 요소는 다국어 키가 아닙니다. 캔버스에서 텍스트를 더블클릭해 인라인 편집하면 키가 생성됩니다.",
+    "loading": "불러오는 중…",
+    "load_failed": "다국어 값을 불러오지 못했습니다",
+    "save": "저장",
+    "saving": "저장 중…",
+    "saved": "저장됨",
+    "save_failed": "저장에 실패했습니다",
+    "conflict": "다른 사용자가 먼저 수정했습니다. 새로고침 후 다시 시도하세요.",
+    "token_mismatch": "번역값의 데이터 연결({{ }})을 변경하거나 삭제할 수 없습니다. 데이터 연결은 [속성] 탭에서 수정하세요.",
+    "placeholder_mismatch": "번역값의 데이터 자리표시({p0} 등)를 삭제하거나 변경할 수 없습니다. 문장은 자유롭게 번역하되 자리표시는 그대로 두세요.",
+    "placeholder_locked": "데이터 칩은 글자처럼 지울 수 없습니다. 위치는 드래그로 옮기고, 연결 해제는 [속성] 탭에서 하세요."
+  },
+  "prop_i18n": {
+    "placeholder": "문구를 입력하세요",
+    "edit_languages": "언어별 편집",
+    "bound_code_only": "바인딩됨(코드 편집)",
+    "create_first": "현재 언어 값을 먼저 입력하면 다국어 키가 생성되어 언어별로 편집할 수 있습니다."
+  },
+  "value_tree": {
+    "show_source": "원본 식 보기",
+    "raw_code_only": "코드에서 수정",
+    "segmented_hint": "여러 조각이 이어진 값입니다. 조각을 추가·삭제하거나 손잡이로 순서를 바꾸세요.",
+    "drag_reorder": "끌어서 순서 변경",
+    "change_data": "데이터 바꾸기",
+    "edit": "수정",
+    "done": "완료",
+    "collapse": "접기",
+    "to_expression": "표현식으로 바꾸기",
+    "to_plain": "일반 이름으로",
+    "to_plain_lead": "표현식을 지우고 아래 값만 남깁니다:",
+    "to_plain_warn": "다른 조건·분기·데이터 연결은 모두 삭제되며 되돌릴 수 없습니다.",
+    "to_plain_ok": "이 값으로 되돌리기",
+    "to_plain_cancel": "취소",
+    "raw_expression_hint": "이미 식으로 작성된 값이라 친화 편집으로 풀어 보여 줄 수 없습니다. 식 자체는 위에서 직접 수정할 수 있고, 더 복잡한 편집은 상단 [코드 편집]을 이용하세요.",
+    "segment": {
+      "text": "고정 글자",
+      "expression": "조건에 따라 달라지는 부분",
+      "fallback": "값이 없을 때 대신",
+      "data": "데이터",
+      "remove": "이 조각 삭제",
+      "data_pick_hint": "표시할 데이터를 검색해서 선택하세요.",
+      "data_no_candidates": "이 화면에서 연결할 수 있는 데이터가 없습니다."
+    },
+    "cond": {
+      "label": "조건",
+      "code_only": "코드에서 수정",
+      "field_placeholder": "기준 값(예: 편집 모드)",
+      "value_placeholder": "비교할 값",
+      "when_true": "이 조건일 때",
+      "when_false": "그 밖의 경우",
+      "op_truthy": "값이 있을 때",
+      "op_falsy": "값이 없을 때",
+      "op_eq": "와 같음",
+      "op_neq": "와 다름",
+      "op_gt": "보다 큼",
+      "op_lt": "보다 작음",
+      "op_gte": "이상",
+      "op_lte": "이하"
+    },
+    "fallback": {
+      "primary": "기본 값",
+      "when_empty": "값이 없을 때 대신",
+      "when_falsy": "비어 있을 때 대신"
+    },
+    "concat": {
+      "hint": "여러 값을 순서대로 이어 붙입니다.",
+      "part": "{n}번째 조각"
+    }
+  },
+  "shortcuts": {
+    "title": "단축키",
+    "close": "닫기",
+    "or": "또는",
+    "footnote": "입력칸·모달에 포커스가 있을 때는 단축키가 동작하지 않습니다.",
+    "group": {
+      "clipboard": "클립보드",
+      "element": "요소",
+      "history": "실행 취소",
+      "view": "보기/도구",
+      "document": "문서"
+    },
+    "action": {
+      "copy": "복사",
+      "cut": "잘라내기",
+      "paste": "붙여넣기(다른 레이아웃 가능)",
+      "open_props": "속성 패널 열기",
+      "delete": "삭제",
+      "select_parent": "부모 요소 선택",
+      "deselect": "선택 해제",
+      "add_element": "요소 추가",
+      "undo": "실행 취소",
+      "redo": "다시 실행",
+      "edit_code": "코드 편집",
+      "preview": "미리보기",
+      "translations": "다국어 화면",
+      "help": "단축키 맵",
+      "reset": "초기화",
+      "save": "저장",
+      "exit": "나가기"
+    }
+  },
+  "binding": {
+    "section_title": "데이터 연결",
+    "search": "데이터 검색",
+    "search_placeholder": "명칭·경로로 검색…",
+    "no_results": "일치하는 데이터가 없습니다",
+    "not_connected": "연결 안 됨",
+    "clear": "해제",
+    "complex": "복합 바인딩(코드 편집)",
+    "required": "필수",
+    "item_fields": "항목 필드",
+    "shape_scalar": "단일값",
+    "shape_array": "배열",
+    "shape_object": "객체",
+    "iteration_title": "반복 데이터 연결",
+    "iteration_label": "반복 데이터 소스",
+    "iteration_hint": "이 영역이 반복할 배열 데이터입니다. 한 항목이 안쪽 구조로 렌더되어 데이터 수만큼 반복됩니다.",
+    "iteration_item_var": "항목 변수",
+    "iteration_index_var": "순번 변수"
+  },
+  "inline_binding": {
+    "section_title": "텍스트 데이터 연결",
+    "none": "이 텍스트에 연결된 데이터가 없습니다",
+    "search": "데이터 검색",
+    "search_placeholder": "명칭·경로로 검색…",
+    "no_results": "일치하는 데이터가 없습니다",
+    "clear": "해제",
+    "complex": "복합 바인딩(코드 편집)",
+    "append_hint": "텍스트 끝에 데이터 삽입",
+    "insert_data": "데이터",
+    "param_hint": "이 문구는 [번역] 탭에서 문장을 편집하고(데이터 칩 위치는 드래그로 이동), 여기서는 연결된 데이터 소스를 바꾸거나 새로 추가/해제할 수 있습니다."
+  },
+  "host_picker": {
+    "title": "대표 호스트 레이아웃 선택",
+    "description": "이 확장은 여러 화면에 주입됩니다. 어느 화면 위에서 편집할지 선택하세요. 저장한 변경은 이 확장이 주입되는 모든 화면에 반영됩니다.",
+    "description_with_label": "\"{label}\" 확장은 여러 화면에 주입됩니다. 어느 화면 위에서 편집할지 선택하세요."
+  },
+  "computed": {
+    "empty": "설정된 자동 계산 값이 없습니다.",
+    "add": "값 추가",
+    "group_common": "자주 쓰는",
+    "group_more": "그 밖에",
+    "source_base": "공통",
+    "source_overridden": "이 화면에서 덮음",
+    "overridden_hint": "공통 레이아웃의 값을 이 화면에서 덮어쓰고 있습니다.",
+    "override_notice": "공통 레이아웃의 값을 이 화면에서만 바꿉니다.",
+    "revert": "공통값으로 되돌리기",
+    "custom_open": "직접 만들기",
+    "custom_add": "추가",
+    "custom_step1": "어떤 데이터를",
+    "custom_step2": "무엇을 할까요",
+    "custom_step3": "결과 이름",
+    "custom_sum_field": "합산할 필드 (예: price)",
+    "custom_value_field": "값으로 쓸 필드",
+    "custom_label_field": "표시할 필드",
+    "custom_prop": "가져올 속성 (선택)",
+    "custom_candidates": "후보 값들 (쉼표로 구분)",
+    "custom_fallback": "없을 때 기본값",
+    "cond_add": "조건 추가",
+    "cond_field": "필드",
+    "cond_value": "값",
+    "key_duplicate": "이미 쓰고 있는 이름입니다.",
+    "kind_string": "문자",
+    "kind_number": "숫자",
+    "kind_boolean": "예·아니오",
+    "op_count": "개수 세기",
+    "op_sum": "합계 구하기",
+    "op_filter": "조건으로 거르기",
+    "op_to_options": "선택 항목으로 바꾸기",
+    "op_nth": "N번째 가져오기",
+    "op_first_of": "먼저 있는 값 쓰기",
+    "op_literal": "고정값",
+    "preview_label": "결과",
+    "preview_error": "이 값을 계산할 수 없습니다 (저장은 됩니다).",
+    "effect_preview": "이 조건일 때 화면",
+    "list_more": "외 {count}개",
+    "value_none": "없음",
+    "type_number": "숫자",
+    "type_string": "문자",
+    "type_boolean": "예·아니오",
+    "type_list": "목록",
+    "type_object": "묶음",
+    "type_null": "없음"
+  },
+  "init_actions": {
+    "empty": "추가된 화면 동작이 없습니다.",
+    "empty_self": "이 화면에 추가된 동작이 없습니다.",
+    "group_base": "공통 레이아웃 동작",
+    "group_self": "이 화면 동작",
+    "edit": "편집",
+    "remove": "삭제",
+    "drag_reorder": "끌어서 순서 바꾸기",
+    "locked_parent": "공통 항목",
+    "base_readonly_hint": "공통 레이아웃 동작은 공통(base) 레이아웃의 페이지 설정에서 수정합니다.",
+    "merge_order": "공통 레이아웃 동작이 먼저 실행된 뒤 이 화면 동작이 이어집니다.",
+    "cond_badge": "조건",
+    "if_label": "실행 조건",
+    "if_placeholder": "예: {{user?.uuid}} (조건이 참일 때만 실행)",
+    "advanced_param_hint": "이 값은 코드 편집기에서 설정합니다."
+  },
+  "action_param": {
+    "key_placeholder": "이름",
+    "value_placeholder": "값 (데이터 연결·표현식 가능)",
+    "add_pair": "값 추가",
+    "number_placeholder": "숫자 또는 데이터 연결"
+  },
+  "initstate": {
+    "legacy_state": "예전 방식으로 저장된 시작값이 있습니다. 편집하면 새 방식으로 정리됩니다.",
+    "section_local": "이 화면 시작값",
+    "section_global": "전역 시작값",
+    "section_isolated": "격리 영역 시작값",
+    "section_isolated_desc": "컴포넌트별 격리 영역의 시작값입니다.",
+    "isolated_dynamic_hint": "격리 영역은 화면을 쓰는 동안 만들어지기도 합니다.",
+    "isolated_orphan": "이 이름의 격리 영역을 쓰는 컴포넌트가 없습니다.",
+    "no_values": "설정된 값이 없습니다.",
+    "value_name": "값 이름",
+    "value_kind": "값 종류",
+    "add_value": "값 추가",
+    "revert": "되돌리기",
+    "subkey_name": "하위 이름",
+    "add_subkey": "하위 값 추가",
+    "add_item": "항목 추가",
+    "kind_string": "문자",
+    "kind_number": "숫자",
+    "kind_boolean": "예·아니오",
+    "kind_null": "없음",
+    "kind_list": "목록",
+    "kind_object": "묶음",
+    "name_required": "값 이름을 입력하세요.",
+    "name_duplicate": "같은 이름의 값이 이미 있습니다.",
+    "name_invalid": "값 이름은 영문자로 시작하고 영문·숫자·_ 만 쓸 수 있습니다."
+  },
+  "action_chip": {
+    "response_data": "응답 데이터",
+    "response_message": "응답 메시지",
+    "error_status": "오류 상태 코드",
+    "error_message": "오류 메시지",
+    "error_errors": "검증 오류 목록",
+    "error_data": "오류 응답 데이터",
+    "error_status_text": "오류 상태 텍스트",
+    "payload_data": "수신 데이터"
+  },
+  "error": {
+    "intro": "상태 코드별로 보여줄 화면이나 실행할 동작을 정합니다.",
+    "degrade": "이 템플릿은 친화 편집을 지원하지 않습니다. 코드 편집기에서 설정해 주세요.",
+    "message_placeholder": "표시할 메시지 (🔍 로 오류 정보 삽입 가능)",
+    "handler_none": "설정 안 함",
+    "handler_showErrorPage": "오류 화면 보여주기",
+    "handler_navigate": "다른 화면으로 이동",
+    "handler_openModal": "모달 열기",
+    "handler_toast": "알림 띄우기",
+    "handler_setState": "상태 바꾸기",
+    "handler_sequence": "여러 동작 차례로",
+    "handler_parallel": "여러 동작 동시에",
+    "target_content": "콘텐츠 영역만",
+    "target_full": "전체 화면",
+    "setstate_key": "상태 이름"
+  },
+  "target_picker": {
+    "canvas_pick_hint": "화면에서 연결할 요소를 클릭하세요",
+    "cancel": "취소",
+    "select_area": "영역 선택",
+    "id_placeholder": "요소 ID를 입력하거나 영역을 선택하세요",
+    "none": "선택 안 함",
+    "minimized_hint": "캔버스에서 연결할 요소를 클릭하세요",
+    "needs_id": "연결하려면 ID가 필요합니다"
+  },
+  "page_settings": {
+    "title": "{name} 설정",
+    "close": "닫기",
+    "advanced_summary": "코드 편집기에서 작성된 고급 설정 {count}개가 포함되어 있습니다",
+    "tab": {
+      "meta": "기본 정보",
+      "seo": "검색엔진",
+      "init": "화면 동작",
+      "overlay": "로딩 화면",
+      "computed": "자동 계산",
+      "state": "초기 상태",
+      "error": "에러 처리",
+      "data": "데이터"
+    },
+    "banner": {
+      "inline_hint": "⏎ 저장 · Esc 취소",
+      "dblclick_hint": "더블클릭하여 편집",
+      "advanced": "고급",
+      "open_settings": "페이지 설정 열기"
+    },
+    "meta": {
+      "title": "페이지 이름",
+      "description": "페이지 설명",
+      "icon": "메뉴 아이콘",
+      "icon_placeholder": "예: fa-solid fa-house",
+      "editor_label": "편집기 트리 이름 (선택)",
+      "editor_label_hint": "편집기 좌측 화면 목록에 표시될 이름입니다. 비우면 페이지 이름을 씁니다.",
+      "permissions": "페이지 접근 권한",
+      "permissions_hint": "선택한 권한을 가진 사용자만 이 화면을 볼 수 있습니다. 비우면 제한 없음입니다.",
+      "dynamic_hint": "동적 제목"
+    },
+    "computed": {
+      "heading": "데이터로 자동 계산되는 값을 정합니다. 제목·표시 조건 등에서 가져다 쓸 수 있습니다."
+    },
+    "init_actions": {
+      "heading": "화면이 처음 열릴 때 차례로 실행할 동작을 정합니다."
+    },
+    "initstate": {
+      "heading": "화면이 열릴 때 미리 채워둘 시작값을 정합니다."
+    },
+    "error": {
+      "heading": "데이터를 불러오다 오류가 났을 때 어떻게 할지 정합니다."
+    },
+    "seo": {
+      "title": "검색 제목",
+      "description": "검색 설명",
+      "enabled": "검색엔진 노출",
+      "disabled_note": "이 화면은 검색엔진에 노출되지 않습니다. 켜면 아래 설정을 사용할 수 있습니다.",
+      "page_type": "페이지 종류",
+      "page_type_none": "선택 안 함",
+      "page_type_free_placeholder": "페이지 종류 직접 입력",
+      "page_type_free_note": "연동 가능한 종류가 없어 직접 입력합니다.",
+      "page_type_free": "직접 입력",
+      "extensions": "확장 SEO 연동",
+      "add_extension": "확장 추가",
+      "no_extension_candidate": "연동할 수 있는 확장이 없습니다.",
+      "defaults_precondition": "기본값을 받으려면 아래 항목을 먼저 채워주세요.",
+      "missing_extensions": "연동 확장을 선택하세요.",
+      "missing_page_type": "페이지 종류를 선택하세요.",
+      "toggle_setting": "노출 스위치 설정 연동",
+      "toggle_setting_search": "설정 검색…",
+      "data_sources": "SEO 연동 데이터",
+      "data_sources_hint": "검색엔진 변수·구조화 데이터가 참조할 데이터를 선택하세요.",
+      "data_sources_empty": "이 화면에 정의된 데이터가 없습니다.",
+      "priority": "우선순위 (sitemap)",
+      "changefreq": "갱신 주기",
+      "use_default": "기본값 사용",
+      "revert_default": "되돌리기",
+      "value_placeholder": "값 입력 (데이터 연결 가능)",
+      "og_section": "Open Graph (소셜 공유)",
+      "og_type": "유형 (og:type)",
+      "og_title": "제목",
+      "og_description": "설명",
+      "og_image": "이미지",
+      "og_image_alt": "이미지 대체 텍스트",
+      "og_image_adv": "고급 이미지 옵션 (세로·형식·보안 URL)",
+      "og_image_height": "이미지 세로 (px)",
+      "og_image_type": "이미지 형식 (예: image/png)",
+      "og_image_secure_url": "이미지 보안 URL (https)",
+      "og_site_name": "사이트 이름",
+      "og_locale": "언어",
+      "og_extra": "그 밖의 속성",
+      "og_locked": "필터로 고정됨",
+      "og_intro": "비운 칸은 코어·확장이 정한 기본값을 씁니다(출처 표시). 입력하면 이 화면 값으로 덮어씁니다.",
+      "og_source_core": "코어 설정",
+      "og_source_filter": "필터 적용",
+      "og_source_inherited": "공통 레이아웃",
+      "og_source_module": "확장 제공",
+      "auto_chip_source": "확장 제공",
+      "auto_chip_replace": "다른 데이터로 바꾸기",
+      "tw_section": "Twitter 카드",
+      "tw_fallback_note": "비워두면 Open Graph 값을 그대로 씁니다.",
+      "tw_card": "카드 종류",
+      "tw_site": "사이트 계정",
+      "tw_creator": "작성자 계정",
+      "tw_title": "제목",
+      "tw_description": "설명",
+      "tw_image": "이미지",
+      "tw_image_alt": "이미지 대체 텍스트",
+      "tw_extra": "그 밖의 속성",
+      "extra_property": "속성 (property)",
+      "extra_name": "이름 (name)",
+      "extra_content": "값",
+      "add_extra": "속성 추가",
+      "remove": "삭제",
+      "structured_data": "구조화 데이터",
+      "sd_mode": "구조화 데이터 직접 지정",
+      "sd_manual_toggle": "직접 지정",
+      "sd_filter_locked": "필터로 고정됨",
+      "sd_filter_locked_note": "필터가 구조화 데이터를 대신 채우고 있어 여기서는 수정할 수 없습니다.",
+      "sd_auto_title": "자동 생성 (모듈 제공)",
+      "sd_auto_empty": "자동 생성된 구조화 데이터가 없습니다.",
+      "sd_replace_pre_warn": "직접 지정을 켜면 자동 생성 내용은 모두 사라지고 아래 내용으로 대체됩니다.",
+      "sd_replace_warn": "이 내용이 자동 생성 구조화 데이터를 전부 대체합니다.",
+      "sd_type": "@type (구조 종류)",
+      "sd_prop_key": "속성 경로 (예: offers.price)",
+      "sd_prop_value": "값",
+      "sd_add_prop": "속성 추가",
+      "sd_seed_from_module": "모듈 자동값 불러오기",
+      "sd_empty_note": "값이 비어 있는 속성은 저장할 때 제외됩니다.",
+      "sd_has_empty": "비어 있는 값이 있습니다.",
+      "vars": "동적 변수",
+      "vars_precondition": "연동 확장과 페이지 종류를 먼저 선택하면 사용할 수 있는 변수가 표시됩니다.",
+      "vars_auto_group": "자동 채움 (읽기 전용)",
+      "vars_auto": "자동",
+      "vars_data_group": "값 채우기",
+      "vars_custom_group": "직접 추가",
+      "vars_required_empty": "필수 변수입니다. 값을 입력하세요.",
+      "vars_add": "변수 추가",
+      "vars_add_name": "변수 이름",
+      "vars_value_hint": "변수는 제목·설명·구조화 데이터에서 {중괄호 이름}으로 가져다 쓸 수 있습니다.",
+      "vars_name_reserved": "{name}은(는) 자동 채움 변수와 이름이 겹칩니다.",
+      "vars_name_duplicate": "{name}은(는) 이미 추가한 변수입니다.",
+      "vars_name_not_provided": "{name}은(는) 어떤 확장도 제공하지 않는 변수입니다.",
+      "bot_preview_title": "검색 봇 미리보기",
+      "bot_preview_refresh": "새로고침",
+      "bot_preview_disabled": "이 화면은 검색엔진에 노출되지 않습니다.",
+      "bot_preview_mode_code": "코드",
+      "bot_preview_mode_render": "렌더",
+      "bot_preview_empty": "표시할 내용이 없습니다.",
+      "bot_preview_sample_note": "샘플 데이터와 저장 전 설정을 기준으로 보여줍니다."
+    }
+  },
+  "action_recipe": {
+    "set_state": {
+      "label": "화면 상태 채우기/바꾸기",
+      "param_target": "대상 (로컬/전역)",
+      "param_state": "상태 값",
+      "param_merge": "기존 값과 병합"
+    },
+    "load_local": {
+      "label": "저장된 설정 불러오기",
+      "param_key": "저장소 키",
+      "param_state_key": "담을 상태 키",
+      "param_default": "기본값"
+    },
+    "save_local": {
+      "label": "설정 저장하기",
+      "param_key": "저장소 키",
+      "param_value": "저장할 값"
+    },
+    "navigate": {
+      "label": "다른 페이지로 이동",
+      "param_path": "이동할 페이지",
+      "param_query": "쿼리 값",
+      "param_merge_query": "기존 쿼리 유지",
+      "param_scroll": "스크롤 위치",
+      "param_replace": "히스토리 대체",
+      "param_overlay_target": "이동 중 로딩 표시 영역"
+    },
+    "open_window": {
+      "label": "새 창으로 열기",
+      "param_target": "열 페이지",
+      "param_window_target": "창 방식 (새 창/현재 창)"
+    },
+    "navigate_back": {
+      "label": "뒤로 가기"
+    },
+    "navigate_forward": {
+      "label": "앞으로 가기"
+    },
+    "replace_url": {
+      "label": "URL만 바꾸기",
+      "param_path": "페이지",
+      "param_query": "쿼리 값"
+    },
+    "toast": {
+      "label": "안내 메시지 보여주기",
+      "param_message": "메시지",
+      "param_type": "종류 (정보/성공/경고/오류)",
+      "param_duration": "표시 시간(ms)",
+      "param_icon": "아이콘"
+    },
+    "open_modal": {
+      "label": "알림창 열기",
+      "param_target": "열 알림창"
+    },
+    "close_modal": {
+      "label": "알림창 닫기"
+    },
+    "show_alert": {
+      "label": "브라우저 알림 표시",
+      "param_message": "메시지"
+    },
+    "set_error": {
+      "label": "에러 상태 설정",
+      "param_message": "메시지",
+      "param_state_target": "대상 (로컬/전역)"
+    },
+    "refetch": {
+      "label": "목록 새로고침",
+      "param_data_source": "데이터 소스",
+      "param_sync": "동기 실행"
+    },
+    "append_data": {
+      "label": "목록에 데이터 더하기",
+      "param_data_source": "데이터 소스",
+      "param_data_path": "데이터 경로",
+      "param_new_data": "더할 데이터"
+    },
+    "update_data": {
+      "label": "목록 데이터 바꾸기",
+      "param_data_source": "데이터 소스",
+      "param_data": "새 데이터",
+      "param_merge": "기존과 병합"
+    },
+    "scroll": {
+      "label": "특정 위치로 스크롤",
+      "param_selector": "대상 선택자",
+      "param_behavior": "스크롤 방식 (부드럽게/즉시)",
+      "param_block": "정렬 위치"
+    },
+    "login": {
+      "label": "로그인 처리",
+      "param_body": "로그인 정보"
+    },
+    "logout": {
+      "label": "로그아웃 처리",
+      "param_target": "이동할 곳"
+    },
+    "set_locale": {
+      "label": "언어 바꾸기",
+      "param_target": "언어"
+    },
+    "emit_event": {
+      "label": "컴포넌트 이벤트 보내기",
+      "param_event": "이벤트 이름",
+      "param_data": "전달 데이터"
+    },
+    "api_call": {
+      "label": "서버에 보내고 결과 처리",
+      "param_target": "요청 주소",
+      "param_method": "방식 (GET/POST 등)",
+      "param_body": "보낼 데이터",
+      "param_query": "쿼리 값",
+      "param_identity_target_email": "본인인증 대상 이메일",
+      "param_identity_target_phone": "본인인증 대상 전화번호",
+      "param_on_success": "성공 시 동작",
+      "param_on_error": "실패 시 동작"
+    },
+    "conditions": {
+      "label": "조건에 따라 분기",
+      "param_branches": "분기 목록",
+      "param_if": "실행 조건",
+      "param_then": "실행할 동작",
+      "branch_when": "조건",
+      "branch_else": "그 외",
+      "add_branch": "분기 추가",
+      "remove_branch": "분기 삭제",
+      "move_up": "위로",
+      "move_down": "아래로"
+    },
+    "sequence": {
+      "label": "차례로 여러 동작",
+      "param_actions": "동작 목록"
+    },
+    "parallel": {
+      "label": "동시에 여러 동작",
+      "param_actions": "동작 목록"
+    },
+    "switch": {
+      "label": "값에 따라 분기",
+      "param_value": "판단할 값",
+      "param_cases": "경우별 동작"
+    },
+    "suppress": {
+      "label": "아무것도 안 함 (에러 억제)"
+    }
+  },
+  "action_list": {
+    "drag_reorder": "끌어서 순서 바꾸기",
+    "remove": "삭제",
+    "unknown": "알 수 없는 동작",
+    "view_code": "코드 보기"
+  },
+  "error_rows": {
+    "default": "기본 (그 외 모든 오류)",
+    "clear": "설정 지우기",
+    "no_action": "설정 안 함",
+    "default_warning": "위에서 정하지 않은 모든 오류에 적용되고 템플릿 기본 동작을 가립니다.",
+    "source_self": "이 페이지에서 설정함",
+    "source_inherited": "공통 레이아웃에서 상속됨",
+    "source_template": "템플릿 기본",
+    "source_none": "템플릿 기본",
+    "revert": "되돌림",
+    "override_here": "이 페이지에 덮기",
+    "override_inherited": "이 값을 바꾸면 이 페이지에만 적용되어 부모 설정을 덮습니다.",
+    "override_template": "이 동작은 템플릿 전체에 설정돼 있습니다. 여기서 바꾸면 이 페이지에만 적용되어 템플릿 설정을 덮습니다."
+  },
+  "modal": {
+    "minimized_default": "페이지 설정",
+    "restore": "복원"
+  },
+  "json_block": {
+    "mode_code": "코드로",
+    "mode_block": "블럭으로",
+    "invalid": "올바른 JSON 형식이 아닙니다.",
+    "must_be_object": "객체(JSON) 형식이어야 합니다. 예: { \"이름\": 값 }",
+    "invalid_keys": "값 이름은 영문자로 시작하고 영문·숫자·_ 만 쓸 수 있습니다: {keys}"
+  }
+}

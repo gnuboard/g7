@@ -27,6 +27,8 @@ interface FooterProps {
     linkGroups?: FooterLinkGroup[];
     /** 추가 CSS 클래스 */
     className?: string;
+    /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
+    editorAttrs?: Record<string, unknown>;
 }
 /**
  * 사이트 푸터 컴포넌트

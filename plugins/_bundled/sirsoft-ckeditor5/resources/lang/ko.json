@@ -1,4 +1,9 @@
 {
+    "editor": {
+        "data_source": {
+            "settings": "에디터 설정"
+        }
+    },
     "settings": {
         "title": "CKEditor5 설정",
         "description": "CKEditor5 WYSIWYG 에디터 플러그인 환경설정",

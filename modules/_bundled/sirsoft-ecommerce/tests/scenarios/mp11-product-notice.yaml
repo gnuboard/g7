@@ -1,0 +1,37 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   고시 무한스크롤 response.data.data 바인딩 정정 + toggle-active 라우트/컨트롤러/Service
+#   (전용 활동로그) + 드롭다운 active_only 필터를 PHPUnit Feature + Vitest 레이아웃 렌더링이
+#   커버하며 green.
+feature: 상품정보제공고시 무한스크롤/활성토글/드롭다운 필터 (A9)
+
+description: |
+  고시 목록 무한스크롤 onSuccess 바인딩을 response.data → response.data.data(배열)로 정정,
+  hasMore 도 정합. 목록에 활성/비활성 인라인 토글 신설(PATCH {id}/toggle-active, 전용
+  toggle_active 활동로그). 상품폼 고시 드롭다운에 active_only=true 추가(notice 컨트롤러는
+  active_only 파라미터를 봄 — 공통정보 is_active 와 다름). 공통정보(A10) 패널 동일 버그 동반 정정.
+
+axes:
+  template_state:
+    - active
+    - inactive
+  surface:
+    - list_toggle        # 목록 인라인 토글
+    - dropdown_visible   # 상품폼 드롭다운 노출
+    - scroll_page2       # 무한스크롤 2페이지 append
+  permission:
+    - can_update
+    - no_permission
+
+effects:
+  - infinite_scroll_appends_page2      # response.data.data 정정 → 21~ 항목 추가
+  - toggle_active_flips_is_active      # PATCH 토글 → is_active 반전
+  - toggle_active_requires_permission  # 권한 없음 403
+  - toggle_active_logs_activity        # 전용 toggle_active 활동로그
+  - dropdown_excludes_inactive         # active_only=true → 비활성 미노출
+  - common_info_scroll_fixed           # A10 동반 정정 회귀 가드
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductNoticeTemplateControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/product-notice-list-toggle.test.tsx

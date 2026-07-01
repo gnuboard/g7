@@ -140,6 +140,12 @@ import { Icon, IconName } from '../basic/Icon';
 
 → [상세 문서](components-advanced.md#컴포넌트-개발-체크리스트)
 
+### 레이아웃 편집기 capability 선언 의무
+
+새 draggable 컴포넌트(레이아웃 편집기 팔레트/캔버스에 노출)는 위 4개 파일에 더해 호스트 템플릿 `editor-spec/componentCapabilities.json` 에 capability 를 선언해야 편집기에서 "편집 불가(no-editable)"가 되지 않는다. 표시 텍스트/아이콘/select/목록·배열·표 데이터 prop 별로 `propControls`(속성 탭) / `dataProps`(데이터 연결) / `nodeEditor`·`canvasOverlay`(구조 에디터) / `styleControls`(스타일 탭) / `events`(동작 탭) 를 선언한다. 데이터 표면을 가진 컴포넌트가 편집 슬롯도 비대상 allowlist 도 없으면 audit `editor-all-draggable-data-editable` 가 차단한다. composite/layout 컴포넌트는 `editorAttrs` spread + `id` 패스스루도 필요하다.
+
+상세: [editor-spec.md "componentCapabilities"](../extension/editor-spec.md) · [components-types.md "편집기 attribute 패스스루"](components-types.md)
+
 ---
 
 ## 관련 문서

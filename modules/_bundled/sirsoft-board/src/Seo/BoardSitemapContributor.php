@@ -35,22 +35,40 @@ class BoardSitemapContributor implements SitemapContributorInterface
     {
         $urls = [];
 
+        // 'SEO 제공 페이지' 토글 — OFF 시 해당 URL 유형 제외 (기본 노출)
+        $seoBoards = (bool) g7_module_settings('sirsoft-board', 'seo.seo_boards', true);
+        $seoBoard = (bool) g7_module_settings('sirsoft-board', 'seo.seo_board', true);
+        $seoPostDetail = (bool) g7_module_settings('sirsoft-board', 'seo.seo_post_detail', true);
+
         // 게시판 목록 페이지
-        $urls[] = [
-            'url' => '/boards',
-            'changefreq' => 'weekly',
-            'priority' => 0.5,
-        ];
+        if ($seoBoards) {
+            $urls[] = [
+                'url' => '/boards',
+                'changefreq' => 'weekly',
+                'priority' => 0.5,
+            ];
+        }
+
+        // 개별 게시판/게시글 URL이 모두 OFF면 게시판 조회 자체를 생략
+        if (! $seoBoard && ! $seoPostDetail) {
+            return $urls;
+        }
 
         // 게시판별 페이지
         $boards = Board::where('is_active', true)->get(['id', 'slug', 'updated_at']);
         foreach ($boards as $board) {
-            $urls[] = [
-                'url' => "/board/{$board->slug}",
-                'lastmod' => $board->updated_at?->toW3cString(),
-                'changefreq' => 'daily',
-                'priority' => 0.6,
-            ];
+            if ($seoBoard) {
+                $urls[] = [
+                    'url' => "/board/{$board->slug}",
+                    'lastmod' => $board->updated_at?->toW3cString(),
+                    'changefreq' => 'daily',
+                    'priority' => 0.6,
+                ];
+            }
+
+            if (! $seoPostDetail) {
+                continue;
+            }
 
             // 각 게시판의 공개된 게시글 (비밀글 제외, 게시 상태만)
             $posts = Post::where('board_id', $board->id)

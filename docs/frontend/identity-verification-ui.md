@@ -53,19 +53,23 @@
 
 ## Extension Point 슬롯 명명 규칙
 
-코어 모달 파셜(`_identity_challenge_modal.json`)에 다음 슬롯이 박혀있어 외부 IDV provider 플러그인이 자기 UI 와 SDK 를 주입할 수 있습니다:
+코어 모달 파셜(`_identity_challenge_modal.json`)에 외부 IDV provider 플러그인이 자기 UI 와 SDK 를 주입할 수 있는 **단일 슬롯**이 박혀 있습니다:
 
-| 슬롯 이름 | 용도 | 기본 콘텐츠 |
+| 슬롯 이름 | 용도 | if 가드 |
 | --- | --- | --- |
-| `identity_provider_ui:text_code` | OTP 코드 입력 UI 슬롯 | 코어 default — 6자리 코드 입력 + 카운트다운 |
-| `identity_provider_ui:link` | 링크 안내 UI 슬롯 | 코어 default — 메일 안내 + 스팸함 점검 안내 |
-| `identity_provider_ui:provider` | provider 별 SDK 주입 슬롯 | 비어있음 (플러그인 미주입 시 렌더 없음) |
+| `identity_provider_ui:provider` | 외부 IDV provider UI 주입 단일 슬롯 | `provider_id` 가 truthy 이면서 코어 mail 이 아닐 때만 마운트 |
 
-플러그인은 다음 우편번호 / CKEditor5 와 동일한 G7 표준 패턴(`scripts` + `extension_point` + `callExternalEmbed`)으로 자기 콘텐츠를 주입합니다 — 코어 신규 인프라 도입 불필요.
+**코어 mail / provider 미지정 케이스의 OTP 입력 / 링크 안내 UI 는 모달 파셜의 plain Div** (Extension Point 아님) 로 정의되어 있습니다. 즉 외부 plugin 이 `mode: replace` 를 써도 코어 default UI 가 사라지지 않습니다.
+
+### 외부 plugin 가 슬롯에 콘텐츠 주입
+
+플러그인은 다음 우편번호 / CKEditor5 와 동일한 G7 표준 패턴(`scripts` + `extension_point` + `callExternalEmbed`)으로 자기 콘텐츠를 주입합니다. **반드시 `mode: append`** 를 사용하여 다른 IDV plugin 과 공존 가능하게 합니다.
 
 ```json
 {
   "extension_point": "identity_provider_ui:provider",
+  "mode": "append",
+  "priority": 100,
   "scripts": [
     { "src": "https://kcp-cdn.example.com/sdk.js", "id": "kcp_sdk" }
   ],
@@ -94,6 +98,24 @@
 }
 ```
 
+### 코어 mail 케이스 가드 패턴 (모달 / 풀페이지 공통)
+
+모달의 코어 OTP UI · 재전송 버튼 · 확인 버튼은 다음 가드 패턴으로 노출 분기:
+
+```
+if: "(!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')"
+```
+
+코어 default provider (`g7:core.mail`) 가 환경설정의 default_provider 로 자동 채워질 수 있으므로 (정책 NULL provider_id fallback), `!provider_id` 만으로 가드하면 mail 인증 시 버튼/UI 가 사라지는 회귀가 발생합니다. 반드시 `|| === 'g7:core.mail'` 을 함께 검사할 것.
+
+### 잘못된 패턴 (DO NOT)
+
+| ❌ 금지 | ✅ 올바른 사용 |
+| --- | --- |
+| `extension_point: "identity_provider_ui:text_code"` | `extension_point: "identity_provider_ui:provider"` — text_code/link 슬롯은 plain Div 로 이동했으므로 외부 plugin 은 provider 슬롯만 사용 |
+| `mode: "replace"` | `mode: "append"` — replace 는 다른 plugin 의 UI 까지 잠식하여 공존 불가 |
+| `if: "{{!_global.identityChallenge?.provider_id}}"` (재전송/확인 버튼) | `if: "{{!provider_id || provider_id === 'g7:core.mail'}}"` — default fallback 으로 mail 이 채워지는 케이스 대비 |
+
 ## `_global.identityChallenge` 네임스페이스 스키마 (CONTRACT)
 
 본인인증 흐름의 모든 상태는 `_global.identityChallenge.*` 한 네임스페이스로 일원화합니다. launcher 가 모달 open 직전에 이 객체를 set 하고, 모달의 모든 액션이 이 경로를 읽고/씁니다. 외부 IDV 프로바이더 플러그인이 자기 launcher 를 작성하는 경우에도 **이 스키마를 그대로 준수**해야 모달 / 풀페이지 / 재전송 / 카운트다운이 일관되게 동작합니다.
@@ -107,14 +129,14 @@
 | `challenge_id` | string | challenge 응답 | verify / cancel API 의 path param |
 | `expires_at` | ISO8601 string | challenge 응답 | 카운트다운 만료 기준 |
 | `public_payload` | object | challenge 응답 | 코드 길이 / 링크 힌트 등 provider 가 공개한 메타 |
-| **`target`** | **`{ email?, phone? } \| null`** | **launcher 가 폼/세션에서 추출** | **모달 재전송 시 동일 target 으로 challenge 재요청 — 누락 시 백엔드 422 `missing_target`** |
+| **`target`** | **`{ email?, phone? } \| null`** | **흐름이 apiCall `identity_target` 으로 선언 → launcher 가 payload.target 에서 사용 (없으면 로그인 세션 폴백)** | **모달 재전송 시 동일 target 으로 challenge 재요청 — 누락 시 백엔드 422 `missing_target`** |
 | `code` | string | 모달 입력 | text_code 모드 OTP 입력값 |
 | `error` | string \| null | 모달 onError | 사용자에게 보일 에러 메시지 |
 | `attempts` / `maxAttempts` | number | 모달 onError / launcher 초기값 | 시도 횟수 표시 + verify 버튼 비활성화 조건 |
 | `remainingSeconds` | number | launcher 카운트다운 | 분/초 표시 + verify 버튼 비활성화 조건 |
 | `resendCooldown` | number | 모달 재전송 onSuccess / launcher 카운트다운 | 재전송 버튼 비활성화 조건 (30초) |
 
-> 🛑 `target` 필드 누락은 흔한 회귀입니다. launcher 가 첫 challenge 시작에 사용한 target 을 반드시 같은 객체에 저장하세요 — 모달 재전송 액션이 다른 곳에서 폼 값을 읽을 수 없습니다(모달 컨텍스트는 페이지 _local 과 분리).
+> 🛑 `target` 필드 누락은 흔한 회귀입니다. 비로그인(게스트) 흐름은 428 을 유발하는 apiCall 에 `identity_target` 을 선언해야 합니다(engine-v1.51.0+) — 서버 428 payload 에는 target 이 없고(서버는 화면 입력값을 모름) 흐름이 선언해야 launcher 가 받습니다. launcher 는 첫 challenge 시작에 사용한 target 을 같은 객체(`identityChallenge.target`)에 저장하세요 — 모달 재전송 액션이 다른 곳에서 폼 값을 읽을 수 없습니다(모달 컨텍스트는 페이지 _local 과 분리). 로그인 사용자는 선언이 없어도 서버 세션이 도출합니다.
 
 ### launcher 가 채워야 하는 필드 vs 모달이 갱신하는 필드
 

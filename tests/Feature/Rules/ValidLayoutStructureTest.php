@@ -478,6 +478,54 @@ class ValidLayoutStructureTest extends TestCase
     }
 
     /**
+     * extension_point 타입 노드를 포함한 레이아웃 허용.
+     *
+     * `_user_base` 등 호스트 레이아웃은 확장 주입 지점을 `type:"extension_point"` 노드로
+     * 선언한다(예: `user_global_overlay`, `identity_provider_ui:provider`). 종전엔 type
+     * allow-list 가 basic/composite/layout 뿐이라 extension_point 를 거부 → extension_point 를
+     * 포함한 레이아웃(또는 그 레이아웃의 모달)을 편집기에서 저장 시 422
+     * (`components[N].children[0].type은 basic, composite, layout 중 하나여야 합니다`).
+     * extension_point 는 정상 노드 타입이므로 허용해야 한다.
+     */
+    public function test_allows_extension_point_type_node(): void
+    {
+        $layout = [
+            'version' => '1.0',
+            'layout_name' => '_user_base',
+            'components' => [
+                [
+                    'id' => 'user_layout_root',
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'props' => ['className' => 'min-h-screen'],
+                    'children' => [
+                        [
+                            // 확장 주입 지점 — type="extension_point" + name(슬롯명) + default/children.
+                            'id' => 'user_global_overlay_slot',
+                            'type' => 'extension_point',
+                            'name' => 'user_global_overlay',
+                            'default' => [],
+                            'children' => [],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $failed = false;
+        $failMessage = null;
+        $this->rule->validate('layout', $layout, function ($msg) use (&$failed, &$failMessage) {
+            $failed = true;
+            $failMessage = $msg;
+        });
+
+        $this->assertFalse(
+            $failed,
+            'extension_point 타입 노드를 포함한 레이아웃은 허용돼야 한다: '.((string) $failMessage)
+        );
+    }
+
+    /**
      * actions 필드 검증 테스트
      */
     public function test_blocks_actions_not_array(): void

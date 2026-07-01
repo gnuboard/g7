@@ -16,9 +16,6 @@
       "id": "bulk_stock_form",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "id": "stock_method_field",
@@ -100,7 +97,7 @@
               "props": {
                 "type": "number",
                 "placeholder": "0",
-                "className": "input w-full"
+                "className": "input"
               },
               "bindings": {
                 "value": "bulkStockValue"
@@ -132,7 +129,7 @@
               "name": "Span",
               "if": "{{(_local.bulkStockMethod || 'increase') === 'increase'}}",
               "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400"
+                "className": "text-label"
               },
               "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_increase|value={{_local.bulkStockValue || 0}}"
             },
@@ -142,7 +139,7 @@
               "name": "Span",
               "if": "{{(_local.bulkStockMethod || 'increase') === 'decrease'}}",
               "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400"
+                "className": "text-label"
               },
               "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_decrease|value={{_local.bulkStockValue || 0}}"
             },
@@ -152,13 +149,15 @@
               "name": "Span",
               "if": "{{(_local.bulkStockMethod || 'increase') === 'set'}}",
               "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400"
+                "className": "text-label"
               },
               "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_set|value={{_local.bulkStockValue || 0}}"
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     },
     {
       "id": "bulk_stock_footer",

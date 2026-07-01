@@ -431,4 +431,49 @@ describe('PasswordInput 컴포넌트', () => {
       expect(screen.getByTestId('icon-triangle-exclamation')).toBeInTheDocument();
     });
   });
+
+  // 레이아웃 편집기 표식(data-editor-*)은 내부 input 이 아니라
+  // 시각적 루트(wrapper div)에 부착되어야 캔버스 선택/드래그가 컴포넌트 전체를 잡는다.
+  describe('레이아웃 편집기 표식 부착 위치', () => {
+    it('data-editor-* / onMouseMove 는 wrapper 루트 div 에 부착', () => {
+      const onMouseMove = vi.fn();
+      const { container } = render(
+        <PasswordInput
+          wrapperClassName="vpw-root"
+          {...({
+            'data-editor-id': 'auto_PW_1',
+            'data-editor-name': 'PasswordInput',
+            'data-editor-path': '0.children.1',
+            onMouseMove,
+          } as Record<string, unknown>)}
+        />
+      );
+      // 루트 div 가 표식을 가져야 함
+      const root = container.firstElementChild as HTMLElement;
+      expect(root.tagName).toBe('DIV');
+      expect(root).toHaveClass('vpw-root');
+      expect(root.getAttribute('data-editor-id')).toBe('auto_PW_1');
+      expect(root.getAttribute('data-editor-name')).toBe('PasswordInput');
+      expect(root.getAttribute('data-editor-path')).toBe('0.children.1');
+      // 내부 input 에는 data-editor-* 가 없어야 함 (루트로만 흘러야 함)
+      const input = container.querySelector('input') as HTMLElement;
+      expect(input.getAttribute('data-editor-path')).toBeNull();
+      expect(input.getAttribute('data-editor-id')).toBeNull();
+    });
+
+    it('일반 input 속성(name/placeholder)은 내부 input 에 그대로 전달', () => {
+      const { container } = render(
+        <PasswordInput
+          name="user_password"
+          placeholder="비밀번호 입력"
+          {...({ 'data-editor-name': 'PasswordInput' } as Record<string, unknown>)}
+        />
+      );
+      const input = container.querySelector('input') as HTMLInputElement;
+      expect(input.getAttribute('name')).toBe('user_password');
+      expect(input.getAttribute('placeholder')).toBe('비밀번호 입력');
+      // 편집기 표식은 input 에 누출되지 않음
+      expect(input.getAttribute('data-editor-name')).toBeNull();
+    });
+  });
 });

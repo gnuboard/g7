@@ -20,7 +20,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-2 mb-2"
+            "className": "flex-center gap-2 mb-2"
           },
           "children": [
             {

@@ -1,160 +1,148 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "본인인증 공통 모달 — 428 응답을 가로채는 IdentityGuardInterceptor launcher 가 사용. _global.identityChallenge 네임스페이스로 모든 상태를 관리하여 launcher → 모달 → resolveIdentityChallenge 핸들러 한 줄기로 흐름 통일."
+    "description": "본인인증 공통 모달 — 428 응답을 가로채는 IdentityGuardInterceptor launcher 가 사용. _global.identityChallenge 네임스페이스로 모든 상태를 관리하여 launcher → 모달 → resolveIdentityChallenge 핸들러 한 줄기로 흐름 통일.",
+    "editor_label": "$t:user.modal_label.identity_challenge_modal"
   },
   "id": "identity-challenge-modal",
   "type": "composite",
   "name": "Modal",
   "props": {
     "title": "$t:user.identity.challenge.title",
-    "size": "small",
+    "size": "sm",
     "showCloseButton": false,
     "closeOnBackdropClick": false,
     "closeOnEscape": false
   },
   "children": [
     {
-      "comment": "render_hint = text_code (코어 기본 OTP UI). 외부 IDV 플러그인은 동일 슬롯을 override 하여 자기 SDK 를 주입할 수 있음.",
-      "type": "extension_point",
-      "id": "identity_provider_ui_text_code",
-      "name": "identity_provider_ui:text_code",
-      "if": "{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code'}}",
-      "default": [
+      "comment": "코어 기본 OTP UI (text_code) — 코어 mail provider 또는 provider_id 미지정 케이스. 외부 provider 인 경우 아래 identity_provider_ui:provider 슬롯이 자기 UI 를 주입한다.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code' && (!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')}}",
+      "props": { "className": "space-y-4" },
+      "children": [
         {
           "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+          "text": "$t:user.identity.challenge.code_subtitle"
+        },
+        {
+          "comment": "에러 알림",
+          "type": "basic",
           "name": "Div",
-          "props": { "className": "space-y-4" },
+          "if": "{{_global.identityChallenge?.error}}",
+          "props": {
+            "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg",
+            "role": "alert"
+          },
           "children": [
             {
               "type": "basic",
-              "name": "P",
-              "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
-              "text": "$t:user.identity.challenge.code_subtitle"
-            },
+              "name": "Span",
+              "props": { "className": "text-sm text-red-700 dark:text-red-300" },
+              "text": "{{_global.identityChallenge?.error ?? ''}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "text",
+            "name": "code",
+            "value": "{{_global.identityChallenge?.code ?? ''}}",
+            "inputMode": "numeric",
+            "autoComplete": "one-time-code",
+            "placeholder": "$t:user.identity.challenge.code_placeholder",
+            "maxLength": 10,
+            "className": "w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500"
+          },
+          "actions": [
             {
-              "comment": "에러 알림",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.identityChallenge?.error}}",
-              "props": {
-                "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg",
-                "role": "alert"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": { "className": "text-sm text-red-700 dark:text-red-300" },
-                  "text": "{{_global.identityChallenge?.error ?? ''}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "name": "code",
-                "value": "{{_global.identityChallenge?.code ?? ''}}",
-                "inputMode": "numeric",
-                "autoComplete": "one-time-code",
-                "placeholder": "$t:user.identity.challenge.code_placeholder",
-                "maxLength": 10,
-                "className": "w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500"
-              },
-              "actions": [
-                {
-                  "event": "onChange",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "identityChallenge.code": "{{$event.target.value}}",
-                    "identityChallenge.error": null
-                  }
-                }
-              ]
-            },
+              "event": "onChange",
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "identityChallenge.code": "{{$event.target.value}}",
+                "identityChallenge.error": null
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between text-xs",
+            "role": "status",
+            "aria-live": "polite"
+          },
+          "children": [
             {
               "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-center justify-between text-xs",
-                "role": "status",
-                "aria-live": "polite"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{(_global.identityChallenge?.remainingSeconds ?? 0) > 0}}",
-                  "props": { "className": "text-gray-600 dark:text-gray-400" },
-                  "text": "$t:user.identity.challenge.remaining_time|minutes={{Math.floor((_global.identityChallenge?.remainingSeconds ?? 0) / 60)}}|seconds={{String((_global.identityChallenge?.remainingSeconds ?? 0) % 60).padStart(2, '0')}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{(_global.identityChallenge?.remainingSeconds ?? 0) <= 0 && _global.identityChallenge?.expires_at}}",
-                  "props": { "className": "text-red-600 dark:text-red-400" },
-                  "text": "$t:user.identity.challenge.expired"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": { "className": "text-gray-500 dark:text-gray-400" },
-                  "text": "$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_global.identityChallenge?.maxAttempts ?? 5) - (_global.identityChallenge?.attempts ?? 0))}}"
-                }
-              ]
+              "name": "Span",
+              "if": "{{(_global.identityChallenge?.remainingSeconds ?? 0) > 0}}",
+              "props": { "className": "text-gray-600 dark:text-gray-400" },
+              "text": "$t:user.identity.challenge.remaining_time|minutes={{Math.floor((_global.identityChallenge?.remainingSeconds ?? 0) / 60)}}|seconds={{String((_global.identityChallenge?.remainingSeconds ?? 0) % 60).padStart(2, '0')}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(_global.identityChallenge?.remainingSeconds ?? 0) <= 0 && _global.identityChallenge?.expires_at}}",
+              "props": { "className": "text-red-600 dark:text-red-400" },
+              "text": "$t:user.identity.challenge.expired"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_global.identityChallenge?.maxAttempts ?? 0) - (_global.identityChallenge?.attempts ?? 0))}}"
             }
           ]
         }
       ]
     },
     {
-      "comment": "render_hint = link (메일 링크 안내)",
-      "type": "extension_point",
-      "id": "identity_provider_ui_link",
-      "name": "identity_provider_ui:link",
-      "if": "{{_global.identityChallenge?.render_hint === 'link'}}",
-      "default": [
+      "comment": "코어 기본 UI (link) — 코어 mail provider 또는 provider_id 미지정 케이스의 link 렌더힌트",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.identityChallenge?.render_hint === 'link' && (!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')}}",
+      "props": { "className": "space-y-4 text-center py-2" },
+      "children": [
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "space-y-4 text-center py-2" },
+          "props": { "className": "inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full" },
           "children": [
             {
               "type": "basic",
-              "name": "Div",
-              "props": { "className": "inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": { "name": "fas fa-envelope", "className": "text-2xl text-blue-600 dark:text-blue-400" }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
-              "text": "$t:user.identity.challenge.link_subtitle"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-              "text": "$t:user.identity.challenge.check_spam"
+              "name": "Icon",
+              "props": { "name": "fas fa-envelope", "className": "text-2xl text-blue-600 dark:text-blue-400" }
             }
           ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+          "text": "$t:user.identity.challenge.link_subtitle"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+          "text": "$t:user.identity.challenge.check_spam"
         }
       ]
     },
     {
-      "comment": "Provider 별 커스텀 슬롯 — KCP/PortOne 등 외부 IDV 플러그인이 자기 SDK 를 주입하는 자리. 다음 우편번호/CKEditor5 와 동일한 scripts + callExternalEmbed 패턴.",
+      "comment": "외부 IDV 플러그인 슬롯 — inicis/KCP/PortOne 등이 자기 provider_id 매칭 시 UI 주입 (mode: append). 코어 mail provider 또는 미지정 케이스에서는 마운트되지 않음.",
       "type": "extension_point",
       "id": "identity_provider_ui_provider",
       "name": "identity_provider_ui:provider",
+      "if": "{{_global.identityChallenge?.provider_id && _global.identityChallenge?.provider_id !== 'g7:core.mail'}}",
       "default": []
     },
     {
@@ -204,9 +192,10 @@
           "props": { "className": "flex items-center gap-2" },
           "children": [
             {
-              "comment": "재전송 — text_code/link 양쪽 모두 사용 가능",
+              "comment": "재전송 — 코어 mail/SMS 등 코드/링크 발송형 provider 에서만 노출. 외부 plugin (inicis 등 팝업/SDK 호출형) 은 재전송 개념 없음. 가드 패턴: provider_id 미지정 또는 코어 mail 인 경우만 노출.",
               "type": "basic",
               "name": "Button",
+              "if": "{{!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail'}}",
               "props": {
                 "type": "button",
                 "disabled": "{{(_global.identityChallenge?.resendCooldown ?? 0) > 0 || (_global.identityChallenge?.resending ?? false) || (_global.identityChallenge?.verifying ?? false)}}",
@@ -304,14 +293,14 @@
               ]
             },
             {
-              "comment": "확인 (text_code 전용)",
+              "comment": "확인 (text_code 전용) — 외부 plugin 흐름은 plugin 이 자기 verify 책임지므로 코어 확인 버튼 미노출. 가드 패턴: provider_id 미지정 또는 코어 mail 인 경우만 노출.",
               "type": "basic",
               "name": "Button",
-              "if": "{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code'}}",
+              "if": "{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code' && (!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')}}",
               "props": {
                 "type": "button",
                 "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors",
-                "disabled": "{{!_global.identityChallenge?.code || (_global.identityChallenge?.code ?? '').length < 4 || (_global.identityChallenge?.remainingSeconds ?? 0) <= 0 || (_global.identityChallenge?.attempts ?? 0) >= (_global.identityChallenge?.maxAttempts ?? 5) || (_global.identityChallenge?.verifying ?? false) || (_global.identityChallenge?.resending ?? false)}}"
+                "disabled": "{{!_global.identityChallenge?.code || (_global.identityChallenge?.code ?? '').length < 4 || (_global.identityChallenge?.remainingSeconds ?? 0) <= 0 || ((_global.identityChallenge?.maxAttempts ?? 0) > 0 && (_global.identityChallenge?.attempts ?? 0) >= (_global.identityChallenge?.maxAttempts ?? 0)) || (_global.identityChallenge?.verifying ?? false) || (_global.identityChallenge?.resending ?? false)}}"
               },
               "actions": [
                 {

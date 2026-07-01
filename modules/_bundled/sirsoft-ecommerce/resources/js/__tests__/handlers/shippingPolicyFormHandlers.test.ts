@@ -33,6 +33,9 @@ import {
     addExtraFeeRowHandler,
     removeExtraFeeRowHandler,
     applyExtraFeeTemplateHandler,
+    toggleApiRequestFieldHandler,
+    updateApiConfigFieldHandler,
+    updateApiFieldMapHandler,
 } from '../../handlers/shippingPolicyFormHandlers';
 
 // ===== 헬퍼: 중첩 경로에 값 설정 =====
@@ -1271,6 +1274,173 @@ describe('shippingPolicyFormHandlers', () => {
                 expect(updates.showApiSettings).toBe(api);
                 expect(updates.showUnitValue).toBe(unit);
             });
+        });
+    });
+
+    describe('toggleApiRequestFieldHandler', () => {
+        it('미선택 후보를 추가한다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        { ...createDefaultCountrySetting('KR'), charge_policy: 'api', api_request_fields: null },
+                    ],
+                },
+                activeCountryTab: 0,
+            };
+
+            toggleApiRequestFieldHandler(createAction({ field: 'items' }), mockContext);
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            expect(updates['form.country_settings'][0].api_request_fields).toEqual(['items']);
+        });
+
+        it('이미 선택된 후보를 제거한다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        { ...createDefaultCountrySetting('KR'), charge_policy: 'api', api_request_fields: ['items', 'group_total'] },
+                    ],
+                },
+                activeCountryTab: 0,
+            };
+
+            toggleApiRequestFieldHandler(createAction({ field: 'items' }), mockContext);
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            expect(updates['form.country_settings'][0].api_request_fields).toEqual(['group_total']);
+        });
+
+        it('마지막 후보 제거 시 null 로 정규화한다 (전체 전송)', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        { ...createDefaultCountrySetting('KR'), charge_policy: 'api', api_request_fields: ['items'] },
+                    ],
+                },
+                activeCountryTab: 0,
+            };
+
+            toggleApiRequestFieldHandler(createAction({ field: 'items' }), mockContext);
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            expect(updates['form.country_settings'][0].api_request_fields).toBeNull();
+        });
+
+        it('field 파라미터가 없으면 no-op', () => {
+            mockLocalState = {
+                form: { country_settings: [createDefaultCountrySetting('KR')] },
+                activeCountryTab: 0,
+            };
+
+            toggleApiRequestFieldHandler(createAction({}), mockContext);
+
+            expect(mockContext.setLocalState).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('updateApiConfigFieldHandler', () => {
+        it('api_config 중첩 필드를 업데이트한다 (기존 설정 보존)', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        { ...createDefaultCountrySetting('KR'), charge_policy: 'api', api_config: { http_method: 'POST' } },
+                    ],
+                },
+                activeCountryTab: 0,
+            };
+
+            updateApiConfigFieldHandler(createAction({ field: 'auth_type', value: 'bearer' }), mockContext);
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            expect(updates['form.country_settings'][0].api_config).toEqual({
+                http_method: 'POST',
+                auth_type: 'bearer',
+            });
+        });
+
+        it('api_config 가 null 이어도 새 객체로 생성한다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        { ...createDefaultCountrySetting('KR'), charge_policy: 'api', api_config: null },
+                    ],
+                },
+                activeCountryTab: 0,
+            };
+
+            updateApiConfigFieldHandler(createAction({ field: 'http_method', value: 'GET' }), mockContext);
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            expect(updates['form.country_settings'][0].api_config).toEqual({ http_method: 'GET' });
+        });
+
+        it('field 파라미터가 없으면 no-op', () => {
+            mockLocalState = {
+                form: { country_settings: [createDefaultCountrySetting('KR')] },
+                activeCountryTab: 0,
+            };
+
+            updateApiConfigFieldHandler(createAction({}), mockContext);
+
+            expect(mockContext.setLocalState).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('updateApiFieldMapHandler', () => {
+        it('외부 키 이름을 매핑에 추가한다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        { ...createDefaultCountrySetting('KR'), charge_policy: 'api', api_config: null },
+                    ],
+                },
+                activeCountryTab: 0,
+            };
+
+            updateApiFieldMapHandler(createAction({ field: 'policy_id', value: 'policyId' }), mockContext);
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            expect(updates['form.country_settings'][0].api_config.field_map).toEqual({ policy_id: 'policyId' });
+        });
+
+        it('빈 값이면 해당 매핑을 제거한다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'api',
+                            api_config: { field_map: { policy_id: 'policyId', items: 'orderItems' } },
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+            };
+
+            updateApiFieldMapHandler(createAction({ field: 'policy_id', value: '' }), mockContext);
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            expect(updates['form.country_settings'][0].api_config.field_map).toEqual({ items: 'orderItems' });
+        });
+
+        it('모든 매핑 제거 시 field_map 을 null 로 정규화한다', () => {
+            mockLocalState = {
+                form: {
+                    country_settings: [
+                        {
+                            ...createDefaultCountrySetting('KR'),
+                            charge_policy: 'api',
+                            api_config: { field_map: { policy_id: 'policyId' } },
+                        },
+                    ],
+                },
+                activeCountryTab: 0,
+            };
+
+            updateApiFieldMapHandler(createAction({ field: 'policy_id', value: '' }), mockContext);
+
+            const updates = mockContext.setLocalState.mock.calls[0][0];
+            expect(updates['form.country_settings'][0].api_config.field_map).toBeNull();
         });
     });
 });

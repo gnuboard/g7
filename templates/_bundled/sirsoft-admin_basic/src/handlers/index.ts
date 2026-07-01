@@ -20,6 +20,9 @@ import {
   updateMultilingualTagValueHandler,
 } from './multilingualTagHandler';
 import { setDateRangeHandler } from './setDateRangeHandler';
+import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
+// 게시판 첨부 다운로드 핸들러 (토큰 동반 → 활동이력 행위자 기록, #413 item 58b)
+import { downloadAttachmentHandler } from './downloadAttachment';
 
 /**
  * 핸들러 맵
@@ -46,4 +49,9 @@ export const handlerMap = {
   updateMultilingualTagValue: updateMultilingualTagValueHandler,
   // 날짜 범위 프리셋 핸들러
   setDateRange: setDateRangeHandler,
+  // 데스크톱 사이드바 접기 핸들러
+  toggleSidebar: toggleSidebarHandler,
+  initSidebar: initSidebarHandler,
+  // 게시판 첨부 다운로드 (토큰 동반 → 활동이력 행위자 기록, #413 item 58b)
+  downloadAttachment: downloadAttachmentHandler,
 } as const;

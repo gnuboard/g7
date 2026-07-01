@@ -1,0 +1,44 @@
+feature: 게시판 설정 일괄 적용 — 첫 실패 시 전체 롤백(원자성) 및 모달 안내
+
+description: |
+  게시판 환경설정 일괄 적용 도중 어느 게시판에서든 실패가 발생하면, 첫 실패 지점에서
+  즉시 중단하고 이미 적용된 변경(컬럼 일괄 업데이트 + 앞 게시판들의 권한)까지 전부
+  되돌린다(부분 적용 금지). 응답은 HTTP 200 + data.rolled_back=true 로 내려가며,
+  프론트는 모달을 닫지 않고 안내 박스 + warning 토스트로 결과를 노출한다.
+
+  실패 지점별 안내 문구 분기:
+    - 권한 실패: 실패 게시판명을 받아 "{board}에 권한 수정 중 오류가 발생하여
+      전체 변경이 취소되었습니다." (aborted_message|board=...)
+    - 컬럼 일괄 업데이트 실패: 특정 게시판을 짚을 수 없어 board=null →
+      generic 문구 "일괄 적용 중 오류가 발생하여 전체 변경이 취소되었습니다."
+      (aborted_message_generic)
+
+  수정 이력:
+    - 이슈 #413 item 26: 부분 적용 방식 → 원자적(all-or-nothing) 롤백으로 전환
+    - BoardService.bulkApplySettings 를 DB::transaction 으로 래핑, 첫 실패에서 throw
+    - BulkApplyAbortedException(forBoard/forColumns) 가 중단 지점 정보 캐리어
+    - 응답: 성공 rolled_back=false / 롤백 rolled_back=true (둘 다 200)
+    - 활동 이력 board_settings_bulk_apply_aborted 기록(직렬화 안전 배열 페이로드)
+
+axes:
+  failure_point: [permission, column, none]
+
+effects:
+  - permission_failure_rolls_back_all_boards
+  - permission_failure_response_has_rolled_back_and_board_name
+  - column_failure_rolls_back_all_changes
+  - column_failure_response_has_rolled_back_and_null_board
+  - aborted_notice_box_shown_and_modal_stays_open
+  - aborted_notice_uses_board_name_for_permission_failure
+  - aborted_notice_uses_generic_message_for_column_failure
+  - aborted_activity_log_recorded
+  - successful_bulk_apply_closes_modal_with_success_toast
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardSettingsControllerTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/BoardActivityLogListenerTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-settings.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-settings-bulk-apply-rollback.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

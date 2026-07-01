@@ -13,6 +13,7 @@ use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Services\BoardSettingsService;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Exceptions\DeletedReportStatusChangeException;
 use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
@@ -116,6 +117,7 @@ class ReportService
      * ID로 신고를 조회합니다.
      *
      * @param  int  $id  신고 ID
+     * @return Report 조회된 신고 모델
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
@@ -297,8 +299,10 @@ class ReportService
      *
      * @param  int  $id  신고 ID
      * @param  array  $data  변경할 데이터 (status, process_note)
+     * @return Report 상태가 변경된 신고 모델
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Modules\Sirsoft\Board\Exceptions\DeletedReportStatusChangeException 영구삭제 상태에서 변경 시도 시
      */
     public function updateReportStatus(int $id, array $data): Report
     {
@@ -309,9 +313,11 @@ class ReportService
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
         }
 
-        // deleted 상태에서는 다른 상태로 변경 불가
+        // deleted 상태에서는 다른 상태로 변경 불가 (2차 방어선).
+        // 정상 API 경로는 UpdateStatusRequest 검증이 422로 선차단하므로 여기 도달하지 않는다.
+        // 이 가드는 서비스 직접 호출 방어용으로 유지한다.
         if ($report->status === ReportStatus::Deleted) {
-            throw new \Exception(__('sirsoft-board::messages.reports.cannot_change_deleted_status'));
+            throw new DeletedReportStatusChangeException;
         }
 
         // 훅: before_update_status
@@ -378,7 +384,9 @@ class ReportService
         // 훅: before_bulk_update_status
         HookManager::doAction('sirsoft-board.report.before_bulk_update_status', $ids, $data);
 
-        $snapshots = Report::whereIn('id', $ids)->get()->keyBy('id')->map(fn ($r) => $r->toArray())->all();
+        $snapshots = $this->reportRepository->findByIdsKeyed($ids)
+            ->map(fn ($r) => $r->toArray())
+            ->all();
 
         // 처리 정보 설정
         $adminId = Auth::id();
@@ -529,6 +537,7 @@ class ReportService
      * 신고를 삭제합니다 (소프트 삭제).
      *
      * @param  int  $id  신고 ID
+     * @return bool 삭제 성공 여부
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */

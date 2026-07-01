@@ -6,6 +6,7 @@ import { IconName } from '../basic/IconTypes';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
+import type { EditorAttrs } from '../../types';
 
 export interface Tab {
   id: string | number;
@@ -24,6 +25,12 @@ export interface TabNavigationProps {
   style?: React.CSSProperties;
   /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
   mobileBreakpoint?: number;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -62,6 +69,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   className = '',
   style,
   mobileBreakpoint = 768,
+  id,
+  editorAttrs,
 }) => {
   // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
   const G7Core = (window as any).G7Core;
@@ -95,7 +104,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   // 모바일: Select 드롭다운 단일 렌더
   if (isMobile) {
     return (
-      <Div className={className} style={style}>
+      <Div className={className} style={style} id={id} {...editorAttrs}>
         <Select
           value={activeTabId !== undefined ? String(activeTabId) : ''}
           onChange={handleSelectChange}
@@ -112,49 +121,54 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
 
   const getTabClasses = (tab: Tab) => {
     const isActive = tab.id === activeTabId;
-    const baseClasses = 'flex items-center gap-2 px-4 py-2 font-medium text-sm transition-all';
 
     if (tab.disabled) {
-      return `${baseClasses} opacity-50 cursor-not-allowed text-gray-400 dark:text-gray-600`;
+      return 'tab-btn-base tab-btn-disabled';
     }
 
     switch (variant) {
       case 'pills':
-        return isActive
-          ? `${baseClasses} bg-blue-600 dark:bg-blue-500 text-white rounded-lg`
-          : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
+        return isActive ? 'tab-btn-base tab-btn-pills-active' : 'tab-btn-base tab-btn-pills';
 
       case 'underline':
         return isActive
-          ? `${baseClasses} text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400`
-          : `${baseClasses} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600`;
+          ? 'tab-btn-base tab-btn-underline-active'
+          : 'tab-btn-base tab-btn-underline';
 
       case 'default':
       default:
         return isActive
-          ? `${baseClasses} text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-600 dark:border-blue-400`
-          : `${baseClasses} text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 border-b-2 border-transparent`;
+          ? 'tab-btn-base tab-btn-default-active'
+          : 'tab-btn-base tab-btn-default';
     }
   };
 
-  const navClasses =
-    variant === 'underline'
-      ? 'flex gap-0 border-b border-gray-200 dark:border-gray-700'
-      : 'flex gap-2';
+  const navClasses = variant === 'underline' ? 'tab-nav-underline' : 'tab-nav-default';
+
+  // 레이아웃 편집기 인플레이스 오버레이용 탭별 측정 마커(편집 모드 전용).
+  // 탭은 자식 노드가 아니라 `props.tabs` 배열이라 `data-editor-path` 가 없다. 편집기 코어가
+  // 각 탭 헤더 박스를 측정해 인플레이스 오버레이(+추가/✕삭제/정렬)에 넘길 수 있도록, 각 탭
+  // 버튼에 `data-editor-item-path="<자기 path>.props.tabs.<i>"` 를 부여한다. 런타임에는
+  // editorAttrs 가 주입되지 않으므로(undefined) 본 마커도 렌더되지 않아 사용자 페이지 무영향.
+  const editorNodePath = editorAttrs?.['data-editor-path'];
 
   // 데스크톱: 탭 버튼 단일 렌더
   return (
     <Nav
       className={`${navClasses} ${className}`}
       style={style}
+      id={id} {...editorAttrs}
     >
-      {tabs.map((tab) => (
+      {tabs.map((tab, tabIndex) => (
         <Button
           key={tab.id}
           type="button"
           onClick={() => handleTabClick(tab)}
           disabled={tab.disabled}
           className={getTabClasses(tab)}
+          {...(editorNodePath
+            ? { 'data-editor-item-path': `${editorNodePath}.props.tabs.${tabIndex}` }
+            : {})}
         >
           {tab.iconName && (
             <Icon name={tab.iconName} className="w-4 h-4" />

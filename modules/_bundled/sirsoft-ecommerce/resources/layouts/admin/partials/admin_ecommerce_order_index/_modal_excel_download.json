@@ -22,88 +22,91 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "flex flex-col gap-4"
-      },
       "children": [
         {
           "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
-          },
+          "name": "Div",
           "children": [
             {
               "type": "basic",
-              "name": "Input",
+              "name": "Label",
               "props": {
-                "type": "radio",
-                "name": "downloadType",
-                "value": "search",
-                "checked": true,
-                "className": "mt-0.5"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Div",
+                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Span",
+                  "name": "Input",
                   "props": {
-                    "className": "font-medium text-primary block"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search"
+                    "type": "radio",
+                    "name": "downloadType",
+                    "value": "search",
+                    "checked": true,
+                    "className": "radio mt-0.5"
+                  }
                 },
                 {
                   "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-tertiary text-sm"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search_desc|count=12"
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium text-primary block"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-tertiary text-sm"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search_desc|count=12"
+                    }
+                  ]
                 }
               ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "radio",
-                "name": "downloadType",
-                "value": "selected",
-                "className": "mt-0.5"
-              }
             },
             {
               "type": "basic",
-              "name": "Div",
+              "name": "Label",
+              "props": {
+                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Span",
+                  "name": "Input",
                   "props": {
-                    "className": "font-medium text-primary block"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected"
+                    "type": "radio",
+                    "name": "downloadType",
+                    "value": "selected",
+                    "className": "radio mt-0.5"
+                  }
                 },
                 {
                   "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-tertiary text-sm"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected_desc|count=10"
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium text-primary block"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-tertiary text-sm"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected_desc|count=10"
+                    }
+                  ]
                 }
               ]
             }

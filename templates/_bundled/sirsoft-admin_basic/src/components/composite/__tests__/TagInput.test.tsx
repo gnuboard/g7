@@ -661,4 +661,48 @@ describe('TagInput 컴포넌트', () => {
       expect(callArg.target.value).toContain('as');
     });
   });
+
+  // 편집기 선택 결함 회귀 가드.
+  // TagInput 은 react-select 를 Fragment 로 직접 렌더해 루트에 id/editorAttrs(편집 모드
+  // data-editor-*)가 도달하지 못해 편집기에서 선택·편집 불가하던 결함을 정정했다.
+  // 4개 렌더 분기(싱글/멀티 × creatable/plain) 모두 루트 Div 에 id+editorAttrs 를 spread.
+  describe('편집기 editorAttrs/id passthrough', () => {
+    const editorAttrs = {
+      'data-editor-name': 'TagInput',
+      'data-editor-path': '1.children.0',
+    } as Record<string, unknown>;
+
+    it('멀티 plain 분기 루트에 id/editorAttrs 가 도달함', () => {
+      const { container } = render(
+        <TagInput value={[]} options={mockOptions} onChange={() => {}} id="tags-1" editorAttrs={editorAttrs} isMulti />
+      );
+      const root = container.querySelector('[data-editor-name="TagInput"]');
+      expect(root).toBeTruthy();
+      expect(root).toHaveAttribute('id', 'tags-1');
+      expect(root).toHaveAttribute('data-editor-path', '1.children.0');
+    });
+
+    it('싱글 plain 분기 루트에 id/editorAttrs 가 도달함', () => {
+      const { container } = render(
+        <TagInput value={null} options={mockOptions} onChange={() => {}} id="tags-2" editorAttrs={editorAttrs} isMulti={false} />
+      );
+      const root = container.querySelector('[data-editor-name="TagInput"]');
+      expect(root).toBeTruthy();
+      expect(root).toHaveAttribute('id', 'tags-2');
+    });
+
+    it('싱글 creatable 분기 루트에 editorAttrs 가 도달함', () => {
+      const { container } = render(
+        <TagInput value={null} options={mockOptions} onChange={() => {}} editorAttrs={editorAttrs} isMulti={false} creatable />
+      );
+      expect(container.querySelector('[data-editor-name="TagInput"]')).toBeTruthy();
+    });
+
+    it('멀티 creatable 분기 루트에 editorAttrs 가 도달함', () => {
+      const { container } = render(
+        <TagInput value={[]} options={mockOptions} onChange={() => {}} editorAttrs={editorAttrs} isMulti creatable />
+      );
+      expect(container.querySelector('[data-editor-name="TagInput"]')).toBeTruthy();
+    });
+  });
 });

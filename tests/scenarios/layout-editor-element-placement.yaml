@@ -1,0 +1,196 @@
+feature: 레이아웃 편집기 요소 배치 (팔레트 / 컨텍스트 + 버튼 / 드래그앤드롭 / 오버레이 / 저장)
+phase: 3
+session:
+issue: 383
+axes:
+  insertion_path: [palette_open, context_plus_button, drag_drop, duplicate_via_context_menu]
+  container_layout: [block, flex_row_single, flex_row_wrap, flex_column_single]
+  target_kind: [container_div, container_p, container_span, container_table, leaf_img, composite_settings, composite_no_settings, sortable_node]
+  dragged_kind: [div, p, span, img, composite, button]
+  nesting_decision: [allowed, denied_no_draggable, denied_no_accepts, denied_into_data_bound, denied_into_base_locked, denied_into_extension_locked, denied_into_sortable]
+  selected_node_state: [empty_selection, basic_selected, composite_selected, base_locked_selected, partial_locked_selected, extension_locked_selected, extension_point_selected, data_bound_selected, iteration_instance_selected]
+  # 잠긴 노드 선택 시 "X 다음에 추가" 안전 anchor
+  locked_insert_anchor: [none_self, extension_self, base_self, partial_self, extension_point_self, iteration_definition_node]
+  click_target_action: [no_action, navigate_internal, navigate_dynamic, navigate_external, openModal, apiCall, a_href_internal, a_href_external]
+  link_edit_destination: [route_in_tree, route_not_in_tree, external_url, dynamic_path_with_binding]
+  history_action: [undo, redo, undo_after_save]
+  save_outcome: [valid_save, validation_fails_422, optimistic_concurrency]
+  id_lazy_assignment_trigger: [none, modal_target_reference, duplicate_with_id]
+  save_payload_origin: [route_only, route_with_base_sibling, route_with_extension_child, route_with_partial_sibling, extends_with_slots, response_lock_version_meta_leaked]
+  default_node_source: [editorSpecDefaultNode, componentsJsonDefault, requiresDefaultNode_blocked, missing_defaultNode_allowed_with_badge]
+exclusions:
+  - { insertion_path: drag_drop, target_kind: sortable_node,
+      reason: "sortable 노드는 편집기 드래그 대상에서 제외 — 11.4.5 (b-2)" }
+  - { dragged_kind: composite, nesting_decision: allowed, target_kind: leaf_img,
+      reason: "Img.accepts=[] — composite 도 거부됨" }
+  - { click_target_action: a_href_external, link_edit_destination: route_in_tree,
+      reason: "외부 URL 은 트리 매칭 자체가 일어나지 않음" }
+  - { history_action: redo, save_outcome: optimistic_concurrency,
+      reason: "redo 는 in-session — 저장 동시성과 무관" }
+effects:
+  - palette_filters_by_parent_accepts
+  - palette_groups_design_and_db_per_spec_componentPalette
+  - palette_inserts_via_default_node_skeleton
+  - palette_default_node_template_spec_takes_precedence_over_core_fallback
+  - palette_default_node_core_fallback_uses_components_json_only_no_visual_hints
+  - palette_blocks_when_requires_default_node_missing
+  - palette_label_uses_i18n_key
+  - default_node_text_uses_i18n_key
+  # S5a-3 후속 — defaultNode 의 공통 디자인 className 이 신규 노드에 1:1 복제 적용
+  - palette_default_node_className_replicated_into_inserted_node
+  - palette_default_node_className_reflects_template_design_system_tokens
+  - palette_default_node_button_omits_variant_size_uses_className_only
+  - palette_default_node_composite_keeps_sample_props_without_design_className
+  - palette_card_shows_missing_default_node_badge
+  - context_plus_button_block_shows_top_bottom_only
+  - context_plus_button_flex_row_single_shows_left_right_only_with_top_bottom_disabled
+  - context_plus_button_flex_wrap_shows_four_directions
+  - context_plus_button_flex_detected_by_computed_style_not_classname
+  - drag_handle_present_only_for_nesting_draggable_components
+  - drag_handle_absent_for_sortable_nodes
+  - drag_handle_absent_for_data_bound_nodes
+  - drag_handle_absent_for_base_origin_nodes_in_route_edit_mode
+  - drop_zone_resolver_finds_deepest_accepting_ancestor
+  - drop_zone_resolver_block_uses_y_midpoint_comparison
+  - drop_zone_resolver_flex_row_uses_x_midpoint_comparison
+  - drop_zone_resolver_flex_wrap_computes_2d_flow_index
+  - drop_indicator_renders_horizontal_line_in_block
+  - drop_indicator_renders_vertical_line_in_flex
+  - drop_overlay_renders_translucent_ghost_following_pointer
+  - drop_denied_area_shows_cursor_not_allowed
+  - drop_into_sortable_internal_denied
+  - drop_into_data_bound_denied
+  - drop_into_extension_locked_denied
+  # S5b 드롭 슬롯 관련 레벨 한정 + 이동 후 선택 재복원
+  - drop_slots_scoped_to_dragged_ancestor_chain_and_sibling_nest_targets
+  - drop_slots_exclude_content_node_inner_descendants
+  - drop_slots_contents_wrapper_child_boundary_uses_descendant_union_rect
+  - drop_outer_container_row_reachable_via_ancestor_gap_slot
+  - drag_move_commits_single_node_without_dragging_siblings
+  - selection_follows_moved_node_to_new_path_after_drop
+  # 검수 10차 후속 — contents 래퍼 시각 흐름 투명화 + 채워진 카드 nest
+  - drop_slots_exclude_contents_wrapper_child_from_parent_boundary
+  - drop_slots_keep_non_contents_sibling_gaps_for_grid_placement
+  - drop_no_full_area_breakout_slot_at_contents_parent_container
+  - drop_nest_allowed_into_filled_accepting_container
+  - drag_card_inner_element_into_sibling_card_nest
+  - drop_card_beside_hero_grid_sibling_via_parent_gap_slot
+  - drop_slot_index_uses_original_tree_index_consistent_with_moveNode
+  # S5b 후속 — 컨테이너 간 이동 + 선택 기준 드래그
+  - drop_slots_span_all_accepting_containers
+  - handle_zindex_depth_ordered
+  - selection_based_drag_substitution
+  - child_reselect_under_selected_parent
+  - inner_child_nests_into_sibling_filled_card
+  # 회귀 — 어포던스(+/ⓘ/리사이즈) 클릭이 드래그 핸들 z-index 에 가로채이지 않음
+  - overlay_affordance_above_drag_handle_zindex
+  - overlay_affordance_click_not_intercepted_by_drag_handle
+  - drag_handle_depth_clamped_below_affordance_band
+  - drag_initiation_preserved_on_element_body_after_affordance_zindex_fix
+  # S5b 후속 — 네비 어포던스 / data_bound / 이터레이션 가상 묶음
+  - nav_destination_unreachable_affordance_hidden
+  - data_bound_node_draggable_and_selectable
+  - iteration_instance_not_individually_draggable
+  - iteration_virtual_group_select_move_ghost
+  - element_overlay_hover_dashed_box
+  - element_overlay_selected_solid_box_with_resize_handle_placeholders
+  - element_overlay_base_locked_shows_edit_common_layout_affordance
+  - element_overlay_extension_locked_shows_edit_extension_affordance
+  - context_menu_three_items_exactly_setting_duplicate_delete
+  - duplicate_preserves_id_absence_for_id_less_nodes
+  - duplicate_regenerates_id_for_id_bearing_nodes_to_avoid_collision
+  - canvas_click_does_not_trigger_navigate_in_edit_mode
+  - canvas_click_a_href_prevent_default_blocks_full_page_reload
+  - link_edit_affordance_internal_route_transitions_via_select_route_without_reload
+  - link_edit_affordance_external_or_unmatched_disabled_with_notice
+  - link_edit_affordance_dynamic_path_disabled_with_notice
+  - undo_redo_reverts_palette_insert_drag_move_delete_property_change_inline_edit
+  - undo_redo_history_lives_per_session_independent_of_version_history
+  - save_invokes_put_layouts_endpoint_and_creates_version
+  - save_returns_422_with_validation_errors_when_invalid
+  - dirty_guard_blocks_route_change_without_save_confirmation
+  - id_lazy_assignment_only_when_modal_target_or_duplicate_collision
+  - layout_extension_save_guard_blocks_inactive_extension_new_nodes
+  # 결함 I — 편집기 응답 메타 노드 저장 페이로드 마스킹 (클라이언트 1차 + 백엔드 2차)
+  - save_payload_strips_base_origin_nodes_client_side
+  - save_payload_strips_extension_origin_nodes_client_side
+  - save_payload_strips_partial_origin_nodes_client_side
+  - save_payload_preserves_route_origin_nodes_with_source_meta_removed
+  - save_payload_recurses_children_masking_for_route_nodes
+  - save_payload_drops_components_key_when_extends_present_and_keeps_masked_slots
+  - save_payload_drops_response_only_lock_version_meta_from_content
+  - save_payload_backend_2nd_guard_strips_inherited_nodes_when_client_skipped
+  # 결함 P — extends 자식 레이아웃 원본 보존 (응답 __editor.original 컨테이너)
+  - merge_response_attaches_editor_original_container_for_extends_child
+  - merge_response_attaches_editor_original_container_for_standalone_layout
+  - save_uses_editor_original_as_ssot_when_present
+  - save_falls_back_to_legacy_masking_when_editor_original_absent
+  - save_strips_editor_meta_container_from_payload
+  # 결함 — 빈 컨테이너 첫 자식 삽입은 그 컨테이너 자신의 accepts 로 필터
+  # (children 배열 존재가 아니라 nesting.containers 정의 기준 — 드롭 경로 isContainerComponent 와 정합)
+  - empty_container_global_palette_filters_by_own_accepts_not_parent
+  - save_strips_editor_meta_container_via_backend_2nd_guard_when_client_skipped
+  # 결함 Q — useLayoutDocument fetch URL 의 cache_version 동반 (stale 응답 회피)
+  - useLayoutDocument_fetch_appends_cache_version_query_for_editor_mode
+  - useLayoutDocument_fetch_matches_LayoutLoader_cache_version_pattern
+  # 결함 R — 편집 모드 응답에 자식 레이아웃 lock_version 동봉
+  - merge_response_top_level_lock_version_comes_from_child_layout_row_when_with_source_meta
+  - save_uses_top_level_lock_version_as_expected_lock_version_for_extends_child
+  - layout_extension_update_endpoint_keeps_separate_lock_version_response_path
+  # 결함 T / T-2 — 마스킹 정책 정정 (Path A/B 분기 + base 노드 children lifting)
+  - save_path_A_extends_with_slots_no_components_uses_slot_masking_only
+  - save_path_B_route_with_merged_components_extracts_route_content_from_merged_tree
+  - save_base_origin_node_is_lifted_so_its_children_survive_when_route_owned
+  - save_extension_origin_node_remains_fully_stripped_with_children
+  - save_partial_origin_node_wrapper_strips_but_lifts_inherited_slot_children
+  - editor_original_fallback_uses_plain_object_guard_for_string_array_null_meta
+  # 결함 U — 편집 모드 응답 캐시 무효화 누락 (clearLayoutCache + clearPublicServingCache 모두)
+  - clearLayoutCache_invalidates_with_source_meta_true_cache_key
+  - clearLayoutCache_invalidates_with_source_meta_false_cache_key
+  - clearPublicServingCache_invalidates_meta_suffix_cache_key
+  - clearPublicServingCache_invalidates_non_meta_cache_key
+  - save_followup_reload_returns_fresh_editor_response_with_new_lock_version
+  # 잠긴 영역에서도 "요소 추가"(+) 버튼 노출 + 묶음 바깥 형제 삽입
+  - locked_node_shows_insertion_plus_via_anchor_box
+  - insertion_anchor_self_for_extension_base_partial_extension_point
+  - insertion_anchor_iteration_definition_node_not_instance
+  - insertion_plus_renders_within_viewport_at_anchor_box_not_giant_parent
+  - insertion_inserts_outside_locked_group_as_sibling_of_anchor
+  - iteration_insertion_lands_after_repeat_group_not_beside_instance
+  - global_palette_locked_node_inserts_at_anchor_sibling_after
+  - added_node_in_locked_area_preserved_as_route_content_on_save
+  - none_node_insertion_unchanged_anchor_equals_self
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/dnd/nestingRules.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/dnd/dropSlots.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useInsertionPoints.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorHistory.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorHistory.devtools.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useElementSelection.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useLayoutDocument.saveGuard.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useCanvasDnd.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/layoutTreeUtils.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/ComponentPalette.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/ElementOverlay.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InsertionAffordances.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/ComponentContextMenu.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/DndCanvasLayer.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/canvas-click-action-intercept.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/link-edit-affordance.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/drag-drop-matrix.test.tsx
+  - tests/Feature/Api/Admin/LayoutControllerEditorSaveTest.php
+  # S5a-3 후속 — defaultNode 공통 디자인 className 복제 검증
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/editor-spec-default-node.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/editor-spec-default-node.test.tsx
+  - tests/Playwright/specs/layout-editor/default-node-design.spec.ts
+  # S5b — 드래그 앤 드롭 재배치 E2E (dispatchDnd PointerEvent 시퀀스)
+  - tests/Playwright/specs/layout-editor/drag-drop-reorder.spec.ts
+  # 회귀 — 어포던스 클릭 가로채기 (z-index 계약) E2E
+  - tests/Playwright/specs/layout-editor/overlay-affordance-zindex.spec.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/overlayZIndex.test.ts
+  # 잠긴 영역 요소 추가(+) 복원 (anchor 박스 + 묶음 바깥 삽입) E2E
+  - tests/Playwright/specs/layout-editor/locked-area-insertion.spec.ts
+notes: |
+  - dropZoneResolver/useCanvasDnd/DndCanvasLayer/drag-drop-matrix 등 dnd 본격 동작은 S5b (PR #4b) 에서 추가.
+  - link-edit-affordance.test.tsx 는 useElementSelection.test.ts 가 classifyNavAffordance 단위 분기를 커버하며,
+    SELECT_ROUTE 통합 동작은 LayoutEditorChrome 의 handleNavigateToDestination 단계에서 회귀.

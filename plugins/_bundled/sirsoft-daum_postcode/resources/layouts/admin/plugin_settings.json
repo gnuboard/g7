@@ -12,6 +12,7 @@
     "data_sources": [
         {
             "id": "settings",
+            "label_key": "$t:sirsoft-daum_postcode.editor.data_source.settings",
             "type": "api",
             "endpoint": "/api/admin/plugins/{{route.identifier}}/settings",
             "method": "GET",
@@ -27,11 +28,10 @@
                 "id": "plugin_settings_content",
                 "type": "basic",
                 "name": "Div",
-                "blur_until_loaded": "{{_local.isSaving}}",
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -50,7 +50,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+                            "className": "alert-info"
                         },
                         "children": [
                             {
@@ -72,7 +72,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-sm text-blue-700 dark:text-blue-300"
+                                            "className": "text-info-soft"
                                         },
                                         "text": "$t:sirsoft-daum_postcode.settings.notice"
                                     }
@@ -86,7 +86,7 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mt-6"
+                            "className": "alert-danger"
                         },
                         "children": [
                             {
@@ -112,7 +112,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                    "className": "text-error-strong"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -132,7 +132,7 @@
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "text-sm text-red-700 dark:text-red-300"
+                                                            "className": "grid-3col-responsive"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -165,7 +165,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"
+                                            "className": "text-error-soft"
                                         },
                                         "children": [
                                             {
@@ -179,7 +179,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.label"
                                                     },
@@ -187,7 +187,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.hint"
                                                     }
@@ -205,7 +205,7 @@
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "display_mode",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            "className": "focus:border-transparent"
                                                         },
                                                         "children": [
                                                             {
@@ -235,7 +235,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"
+                                            "className": "text-error-soft"
                                         },
                                         "children": [
                                             {
@@ -249,7 +249,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.popup_width.label"
                                                     },
@@ -257,7 +257,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.popup_width.hint"
                                                     }
@@ -276,7 +276,7 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "popup_width",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            "className": "focus:border-transparent"
                                                         }
                                                     }
                                                 ]
@@ -288,7 +288,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"
+                                            "className": "text-error-soft"
                                         },
                                         "children": [
                                             {
@@ -302,7 +302,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.popup_height.label"
                                                     },
@@ -310,7 +310,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.popup_height.hint"
                                                     }
@@ -329,7 +329,7 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "popup_height",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            "className": "focus:border-transparent"
                                                         }
                                                     }
                                                 ]
@@ -341,7 +341,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"
+                                            "className": "text-error-soft"
                                         },
                                         "children": [
                                             {
@@ -355,7 +355,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.theme_color.label"
                                                     },
@@ -363,7 +363,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.theme_color.hint"
                                                     }
@@ -383,7 +383,7 @@
                                                             "type": "text",
                                                             "name": "theme_color",
                                                             "placeholder": "#1D4ED8",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            "className": "focus:border-transparent"
                                                         }
                                                     }
                                                 ]
@@ -406,7 +406,7 @@
                                 "type": "basic",
                                 "name": "H3",
                                 "props": {
-                                    "className": "text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                                    "className": "section-heading mb-4"
                                 },
                                 "text": "$t:sirsoft-daum_postcode.settings.guide.title"
                             },
@@ -421,7 +421,7 @@
                                         "type": "basic",
                                         "name": "Li",
                                         "props": {
-                                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            "className": "text-label"
                                         },
                                         "text": "$t:sirsoft-daum_postcode.settings.guide.step1"
                                     },
@@ -429,7 +429,7 @@
                                         "type": "basic",
                                         "name": "Li",
                                         "props": {
-                                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            "className": "text-label"
                                         },
                                         "text": "$t:sirsoft-daum_postcode.settings.guide.step2"
                                     },
@@ -437,7 +437,7 @@
                                         "type": "basic",
                                         "name": "Li",
                                         "props": {
-                                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            "className": "text-label"
                                         },
                                         "text": "$t:sirsoft-daum_postcode.settings.guide.step3"
                                     }
@@ -450,7 +450,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex justify-end gap-3 mt-6"
+                            "className": "sticky-footer-buttons"
                         },
                         "children": [
                             {
@@ -458,7 +458,7 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
-                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                    "className": "btn btn-secondary"
                                 },
                                 "actions": [
                                     {
@@ -483,7 +483,7 @@
                                 "name": "Button",
                                 "props": {
                                     "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "flex items-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "actions": [
                                     {
@@ -557,7 +557,7 @@
                                         "if": "{{_local.isSaving}}",
                                         "props": {
                                             "name": "spinner",
-                                            "className": "w-4 h-4 animate-spin"
+                                            "className": "spinner-sm"
                                         }
                                     },
                                     {

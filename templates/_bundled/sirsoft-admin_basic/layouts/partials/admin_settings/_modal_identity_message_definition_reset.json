@@ -1,14 +1,15 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "IDV 메시지 정의 기본값 복원 확인 모달 (스피너 포함) — 알림 reset 모달 미러"
+    "description": "IDV 메시지 정의 기본값 복원 확인 모달 (스피너 포함) — 알림 reset 모달 미러",
+    "editor_label": "$t:admin.modal_label.admin_settings.modal_identity_message_definition_reset"
   },
   "id": "modal_identity_message_definition_reset",
   "type": "composite",
   "name": "Modal",
   "props": {
     "title": "$t:admin.settings.identity.messages.reset_modal.title",
-    "size": "small"
+    "size": "sm"
   },
   "children": [
     {
@@ -29,13 +30,17 @@
         {
           "type": "basic",
           "name": "Span",
-          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block mb-1" },
+          "props": {
+            "className": "form-sub-label"
+          },
           "text": "$t:admin.settings.identity.messages.reset_modal.target_label"
         },
         {
           "type": "basic",
           "name": "Span",
-          "props": { "className": "font-medium text-gray-900 dark:text-white" },
+          "props": {
+            "className": "text-primary font-medium"
+          },
           "text": "{{_global.resetIdentityMessageTargetName ?? ''}}"
         }
       ]
@@ -44,14 +49,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+        "className": "alert-danger"
       },
       "children": [
         {
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "text-sm text-red-700 dark:text-red-300"
+            "className": "text-error-soft"
           },
           "text": "$t:admin.settings.identity.messages.reset_modal.warning_message"
         }
@@ -61,7 +66,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {
@@ -69,7 +74,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "btn btn-secondary",
             "disabled": "{{_global.isResettingIdentityMessage}}"
           },
           "actions": [
@@ -86,7 +91,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isResettingIdentityMessage}}"
           },
           "actions": [
@@ -106,7 +111,9 @@
                     "handler": "apiCall",
                     "auth_required": true,
                     "target": "/api/admin/identity/messages/definitions/{{_global.resetIdentityMessageTargetId}}/reset",
-                    "params": { "method": "POST" },
+                    "params": {
+                      "method": "POST"
+                    },
                     "onSuccess": [
                       {
                         "handler": "setState",
@@ -119,7 +126,9 @@
                       },
                       {
                         "handler": "refetchDataSource",
-                        "params": { "dataSourceId": "identityMessages" }
+                        "params": {
+                          "dataSourceId": "identityMessages"
+                        }
                       },
                       {
                         "handler": "toast",
@@ -161,7 +170,7 @@
               "if": "{{_global.isResettingIdentityMessage}}",
               "props": {
                 "name": "spinner",
-                "className": "w-4 h-4 animate-spin"
+                "className": "spinner-sm"
               }
             },
             {

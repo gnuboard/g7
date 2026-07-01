@@ -15,6 +15,7 @@
     "order_number": "주문번호",
     "order_date": "주문일시",
     "status": "상태",
+    "partial_cancelled_badge": "일부취소",
     "order_info": {
       "title": "주문정보",
       "order_products": "주문상품",
@@ -54,6 +55,14 @@
         "paid_shipping": "유료배송",
         "shipping_fee": "배송비"
       },
+      "stock_status": {
+        "deducted": "재고 차감",
+        "not_deducted": "재고 미차감"
+      },
+      "earn_status": {
+        "earned": "적립완료",
+        "pending": "적립예정"
+      },
       "summary": {
         "total": "합계",
         "original_price": "정가",
@@ -85,11 +94,21 @@
         "address_detail": "상세주소",
         "delivery_message": "배송메시지",
         "send": "보내기",
-        "phone_or_tel_hint": "휴대폰 또는 전화번호 중 하나는 필수입니다."
+        "phone_or_tel_hint": "휴대폰 또는 전화번호 중 하나는 필수입니다.",
+        "intl_address1_placeholder": "주소를 입력하세요 (Street Address)",
+        "intl_address2_placeholder": "상세 주소 (Apt, Suite, Unit 등)",
+        "intl_city_placeholder": "도시명을 입력하세요",
+        "intl_state_placeholder": "주/도를 입력하세요",
+        "intl_postal_code_placeholder": "우편번호를 입력하세요"
       },
       "admin_memo": {
         "title": "관리자 메모",
         "placeholder": "관리자 메모를 입력하세요..."
+      },
+      "cancel_reason": {
+        "title": "취소 사유",
+        "reason": "사유",
+        "detail": "상세 사유"
       },
       "save": "저장",
       "save_success": "주문 정보가 저장되었습니다.",
@@ -100,7 +119,8 @@
       "view_member_detail": "상세정보 보기",
       "search_by_member": "회원으로 검색",
       "search_by_name": "주문자명으로 검색",
-      "search_by_phone": "연락처로 검색"
+      "search_by_phone": "연락처로 검색",
+      "reset_guest_password": "조회 비밀번호 재설정"
     },
     "tabs": {
       "order_info": "주문정보",
@@ -257,7 +277,9 @@
       "cancelled_amount": "취소금액",
       "refunded_amount": "환불금액",
       "refund_status": "환불상태",
-      "refund_points_amount": "마일리지 환불"
+      "refund_points_amount": "마일리지 환불",
+      "payment_currency": "결제 통화: {{currency}}",
+      "charged_in_payment_currency": "결제 통화 {{currency}} {{amount}} 청구"
     },
     "activity_log": {
       "title": "활동 로그",
@@ -314,6 +336,35 @@
         "sent_success": "이메일이 발송되었습니다.",
         "sent_failed": "이메일 발송에 실패했습니다."
       },
+      "reset_guest_password": {
+        "title": "비회원 조회 비밀번호 재설정",
+        "description": "비회원 주문 조회에 사용할 새 비밀번호를 설정합니다.",
+        "order_number": "주문번호",
+        "orderer_name": "주문자",
+        "orderer_phone": "전화번호",
+        "new_password": "새 비밀번호",
+        "new_password_placeholder": "8자 이상 입력",
+        "new_password_confirmation": "새 비밀번호 확인",
+        "new_password_confirmation_placeholder": "새 비밀번호를 다시 입력하세요",
+        "hint": "8자 이상 입력하세요. 기존 비밀번호는 확인할 수 없으며 새 값으로만 재설정됩니다.",
+        "cancel": "취소",
+        "reset": "재설정",
+        "reset_success": "비회원 조회 비밀번호가 재설정되었습니다."
+      },
+      "confirm_deposit": {
+        "title": "무통장 입금확인",
+        "description": "입금자명과 입금액을 확인하여 입금을 기록합니다.",
+        "depositor_name": "입금자명",
+        "depositor_name_placeholder": "입금자명을 입력하세요",
+        "amount": "입금액",
+        "amount_hint": "결제예정금액과 정확히 일치해야 합니다.",
+        "due_amount": "결제예정금액",
+        "mark_order_complete": "주문을 결제완료로 처리",
+        "mark_order_complete_hint": "체크하면 입금 기록과 함께 주문 상태를 결제완료로 변경합니다(마일리지 적립·재고 차감·알림 발송 포함). 체크하지 않으면 입금 내역만 기록합니다.",
+        "cancel": "취소",
+        "confirm": "입금확인",
+        "confirm_success": "입금이 확인되어 처리되었습니다."
+      },
       "batch_change": {
         "title": "일괄변경 확인",
         "confirm_message": "선택한 {{count}}개 상품의 상태를 일괄 변경하시겠습니까?",
@@ -360,6 +411,7 @@
         "refund_priority_label": "환불 우선순위",
         "refund_priority_pg_first": "PG 결제 우선 환불",
         "refund_priority_points_first": "마일리지 우선 환불",
+        "refund_priority_no_points_hint": "사용한 마일리지가 없어 환불 우선순위를 선택할 수 없습니다.",
         "refund_estimate_title": "환불 예정금액",
         "refund_loading": "환불 예정금액 계산 중...",
         "refund_product_amount": "상품 환불액",
@@ -548,7 +600,13 @@
     "orderer": "주문자",
     "orderer_select": "회원 선택",
     "orderer_search_placeholder": "이름 또는 이메일로 검색",
-    "orderer_search_initial": "회원을 검색하세요"
+    "orderer_search_initial": "회원을 검색하세요",
+    "member_type": "회원 구분",
+    "member_type_option": {
+      "all": "전체",
+      "member": "회원",
+      "guest": "비회원"
+    }
   },
   "action": {
     "search": "검색",
@@ -713,6 +771,8 @@
     "shipping_fee_short": "배송비 {{amount}}",
     "paid_short": "결제 {{amount}}",
     "unpaid_short": "미결제 {{amount}}",
+    "mileage_used_short": "마일리지 -{{amount}}",
+    "points_earned_short": "적립 +{{amount}}",
     "order_status": "주문상태",
     "orderer": "주문자명",
     "payment_method": "결제수단",

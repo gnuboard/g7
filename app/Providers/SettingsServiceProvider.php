@@ -28,6 +28,7 @@ class SettingsServiceProvider extends ServiceProvider
         'core_update',
         'geoip',
         'seo',
+        'identity',
     ];
 
     /**
@@ -49,6 +50,7 @@ class SettingsServiceProvider extends ServiceProvider
         $this->applyUploadConfig($configRepository);
         $this->applyCoreUpdateConfig($configRepository);
         $this->applyGeoIpConfig($configRepository);
+        $this->applyIdentityConfig($configRepository);
 
         // 코어 설정을 g7_settings.core prefix로 저장
         $this->loadCoreSettingsToConfig($configRepository);
@@ -168,7 +170,11 @@ class SettingsServiceProvider extends ServiceProvider
         }
 
         if (! empty($generalSettings['site_name'])) {
-            Config::set('app.name', $generalSettings['site_name']);
+            // site_name 이 다국어 JSON array 일 수 있으므로 현재/폴백 로케일 string 으로 정규화한다
+            // (공개#49). raw array 를 config('app.name') 에 넣으면 app.blade.php 의
+            // {{ config('app.name') }} (Blade e() → htmlspecialchars) 에서 TypeError 가 발생해
+            // SPA <title> 페이지가 깨진다. OG 경로(SeoMetaResolver)와 동일하게 안전화한다.
+            Config::set('app.name', $this->localizeSettingValue($generalSettings['site_name']));
         }
 
         if (! empty($generalSettings['site_url'])) {
@@ -187,10 +193,62 @@ class SettingsServiceProvider extends ServiceProvider
     }
 
     /**
+     * 설정값이 다국어 JSON array 면 현재/폴백 로케일 string 으로 정규화합니다 (공개#49).
+     *
+     * SeoMetaResolver/SeoRenderer 의 resolveLocalizedValue 와 동일 의미. 단, 이 Provider 는
+     * register() 단계(DI 컨테이너 사용 전)에서 호출되므로 SEO 트레이트에 의존하지 않고 인라인한다.
+     *
+     * @param  mixed  $value  설정값 (string / 다국어 array / scalar)
+     * @return string 현재/폴백 로케일 string
+     */
+    private function localizeSettingValue(mixed $value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_array($value)) {
+            $locale = config('app.locale', 'ko');
+            if (isset($value[$locale]) && is_string($value[$locale])) {
+                return $value[$locale];
+            }
+            $fallback = config('app.fallback_locale', 'en');
+            if (isset($value[$fallback]) && is_string($value[$fallback])) {
+                return $value[$fallback];
+            }
+            // 첫 string 값 폴백
+            foreach ($value as $candidate) {
+                if (is_string($candidate)) {
+                    return $candidate;
+                }
+            }
+
+            return '';
+        }
+
+        return (string) ($value ?? '');
+    }
+
+    /**
      * 디버그 설정을 Laravel config에 적용합니다.
+     *
+     * testing 환경(PHPUnit, .env.testing)에서는 settings JSON 의 mode 값이 .env.testing 의
+     * APP_DEBUG 를 덮어쓰지 않는다. 운영 PC 의 settings(mode=false) 때문에 PHPUnit / E2E
+     * 인프라(PlaywrightIssueToken 등)가 차단되는 회귀를 방지한다. logging 레벨도 동일 사유로
+     * 스킵한다.
+     *
+     * production 환경에서 Playwright E2E 가 production DB 에 토큰을 발급해야 하는 경우
+     * (호스트 도메인이 .env.testing 의 testing DB 가 아니라 .env 의 production DB 를 사용하는 상황),
+     * G7_PLAYWRIGHT_BYPASS=1 환경변수가 부여된 호출은 settings JSON 덮어쓰기를 건너뛰어
+     * APP_DEBUG inline override 가 유지되도록 한다. CLI 한정 + 명시 옵트인이므로
+     * 운영 admin UI 토글 SSoT 정책은 보존된다.
      */
     private function applyDebugConfig(JsonConfigRepository $configRepository): void
     {
+        if (app()->environment('testing') || env('G7_PLAYWRIGHT_BYPASS') === '1') {
+            return;
+        }
+
         $debugSettings = $configRepository->getCategory('debug');
 
         if (empty($debugSettings)) {
@@ -234,7 +292,6 @@ class SettingsServiceProvider extends ServiceProvider
      * 지정한 테스트 전용 드라이버(array/array/sync)가 무시되고 dev의 Redis 등을 공유하게 됩니다.
      * 그 결과 테스트가 dev 캐시를 오염시켜 알림 훅 등록 같은 부팅 데이터가 silent하게
      * 망가지는 치명적 상태가 발생합니다. testing 환경에서는 드라이버 오버라이드를 건너뜁니다.
-     * (이슈 #258)
      */
     private function applyDriverConfig(JsonConfigRepository $configRepository): void
     {
@@ -397,6 +454,12 @@ class SettingsServiceProvider extends ServiceProvider
     {
         if (empty($driverSettings['websocket_enabled'])) {
             Config::set('broadcasting.default', 'null');
+            // 프론트(admin/app.blade.php)가 @if(broadcasting.connections.reverb.key)로 연결을
+            // 결정하므로, OFF 시 key 를 비워 .env REVERB_APP_KEY 가 살아 있어도 브라우저 WebSocket
+            // 연결을 차단한다 (전 계층 SSoT — 공개#50). 송신(broadcasting.default='null')만으로는
+            // 프론트 직접 연결을 못 막던 빈틈을 폐쇄한다.
+            Config::set('broadcasting.connections.reverb.key', '');
+            Config::set('g7.websocket.client.host', ''); // 잔재 endpoint 정리 (방어적)
 
             return;
         }
@@ -527,6 +590,31 @@ class SettingsServiceProvider extends ServiceProvider
         if (! empty($settings['last_updated_at'])) {
             Config::set('geoip.last_updated_at', $settings['last_updated_at']);
         }
+    }
+
+    /**
+     * 본인인증(IDV) 설정을 Laravel config 에 적용합니다.
+     *
+     * IdentityVerificationManager / MailIdentityProvider / InicisIdentityProvider 등이
+     * config('settings.identity.*') dot-path 로 직접 read 하므로 이 경로로 주입합니다.
+     *
+     * 영향 항목 (admin UI 환경설정 > 본인인증):
+     * - default_provider (기본 프로바이더)
+     * - purpose_providers.{purpose} (목적별 기본 프로바이더)
+     * - challenge_ttl_minutes (코드 유효시간)
+     * - max_attempts (최대 시도 횟수)
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     */
+    private function applyIdentityConfig(JsonConfigRepository $configRepository): void
+    {
+        $settings = $configRepository->getCategory('identity');
+
+        if (empty($settings)) {
+            return;
+        }
+
+        Config::set('settings.identity', $settings);
     }
 
     /**

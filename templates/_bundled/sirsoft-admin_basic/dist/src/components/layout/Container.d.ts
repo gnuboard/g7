@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export interface ContainerProps {
     /**
      * DOM id 속성
@@ -16,6 +17,10 @@ export interface ContainerProps {
      * 자식 요소
      */
     children?: React.ReactNode;
+    /**
+     * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+     */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * Container 컴포넌트

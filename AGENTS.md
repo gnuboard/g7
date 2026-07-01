@@ -97,12 +97,13 @@
 | [handlers.md](docs/frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
 | [layouts.md](docs/frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 | 베이스: _user_base.json (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯) |
 
-### 확장 시스템 [extension/](docs/extension/) (29개)
+### 확장 시스템 [extension/](docs/extension/) (30개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
 | [cache-driver.md](docs/extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) | 모든 캐시 저장은 CacheInterface 사용 (Cache:: 직접 호출 금지) |
 | [changelog-rules.md](docs/extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) | 확장/코어 버전 업 시 CHANGELOG.md에 변경사항 기록 필수 (미기록 시 버전 업 불가) |
+| [editor-spec.md](docs/extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) | editor-spec.json = 편집기 팔레트/스타일 컨트롤/중첩 규칙/샘플 데이터/레시피의 선언 (... |
 | [extension-manager.md](docs/extension/extension-manager.md) | ExtensionManager (확장 관리자) | composer.json 수정 없음 - 런타임 오토로드 방식 사용 |
 | [extension-update-system.md](docs/extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) | 업데이트 감지 우선순위: GitHub > _bundled (2단계, _pending 미참여) |
 | [hooks.md](docs/extension/hooks.md) | 훅 시스템 (Hook System) | Action 훅: doAction() - 부가 작업 (로그, 알림, 캐시) |
@@ -131,7 +132,7 @@
 | [upgrade-step-guide.md](docs/extension/upgrade-step-guide.md) | 업그레이드 스텝 작성 가이드 (Upgrade Step Guide) | upgrade step 이 실행되는 환경은 경로에 따라 다르다 — 섹션 9 "업그레이드 경로" 먼저 읽기 |
 | [vendor-bundle.md](docs/extension/vendor-bundle.md) | Vendor 번들 시스템 (Vendor Bundle System) | - |
 
-### 공통 (4개)
+### 공통 (5개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
@@ -139,6 +140,7 @@
 | [database-guide.md](docs/database-guide.md) | 그누보드7 데이터베이스 개발 가이드 | 마이그레이션: 한국어 comment 필수, down() 구현 필수 |
 | [requirements.md](docs/requirements.md) | 그누보드7 시스템 요구사항 (System Requirements) | PHP 8.2+ 필수 |
 | [testing-guide.md](docs/testing-guide.md) | 그누보드7 테스트 가이드 | 테스트 통과 = 작업 완료 (작성만으로 불충분!) |
+| [e2e-testing.md](docs/testing/e2e-testing.md) | 그누보드7 Playwright E2E 테스트 가이드 | - |
 
 
 <!-- AUTO-GENERATED-END: docs-quick-reference -->
@@ -566,6 +568,20 @@ powershell -Command "npm run test:run"
 
 ---
 
+## npm install 규칙
+
+기본 `npm install`은 `package-lock.json`을 자동 수정할 수 있으므로, lock 파일 변경 의도가 없는 의존성 복구나 작업 환경 재구성에는 `npm install --package-lock=false`를 사용합니다.
+
+| 상황 | 권장 명령어 | 비고 |
+| ---- | ----------- | ---- |
+| 누락 의존성 복구 / 작업 환경 재구성 | `npm install --package-lock=false` | lock 파일 변경 없이 설치 |
+| clean install | `npm ci` | `package.json`과 `package-lock.json`이 동기화된 경우 |
+| 의존성 신규 추가/업데이트 | `npm install <pkg>` | lock 변경이 작업 범위에 포함된 경우만 |
+
+lock 파일 변경 의도가 없는 상황에서 `npm install` 단독 실행을 피합니다. `module.json`, `plugin.json`, `template.json`의 `version`을 바꾸면 해당 확장의 `package.json`, `package-lock.json`, `composer.json` 버전도 함께 동기화합니다. 의존성 재설치 없이 lock 파일의 version 필드만 갱신할 때는 `npm install --package-lock-only`를 사용합니다.
+
+---
+
 ## 핵심 원칙
 
 ### 1. 동적 로딩
@@ -887,6 +903,8 @@ php artisan migrate:rollback
 | `templates/**/src/components/**/*.tsx` | [components.md](docs/frontend/components.md) |
 | `modules/**/Listeners/**` | [hooks.md](docs/extension/hooks.md) |
 | `plugins/**/Listeners/**` | [hooks.md](docs/extension/hooks.md) |
+| `lang/{ko,en}/**/*.php` | [database-guide.md](docs/database-guide.md) (다국어 섹션) — 코어 백엔드 다국어 |
+| `lang/{ko,en}.json`, `lang/partial/{ko,en}/**` | [data-binding-i18n.md](docs/frontend/data-binding-i18n.md) — 코어 프론트엔드 다국어 (`$t:core.*`) |
 | `lang/**` | [database-guide.md](docs/database-guide.md) (다국어 섹션) |
 | `routes/**` | [routing.md](docs/backend/routing.md) |
 | `app/Seo/**` | [seo-system.md](docs/backend/seo-system.md) |

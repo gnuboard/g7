@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "모듈 삭제 확인 모달"
+    "description": "모듈 삭제 확인 모달",
+    "editor_label": "$t:admin.modal_label.admin_module_list.module_uninstall_modal"
   },
   "id": "module_uninstall_modal",
   "type": "composite",
@@ -30,7 +31,7 @@
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+            "className": "mt-2 text-label-subtle"
           },
           "text": "$t:admin.modules.modals.uninstall_warning"
         }
@@ -48,7 +49,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-2"
+            "className": "flex-start gap-2"
           },
           "children": [
             {
@@ -116,7 +117,7 @@
                   "name": "Label",
                   "props": {
                     "htmlFor": "delete_module_data_checkbox",
-                    "className": "text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                    "className": "text-body cursor-pointer"
                   },
                   "text": "$t:admin.modules.modals.delete_data_option"
                 },
@@ -124,7 +125,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                    "className": "form-hint"
                   },
                   "text": "$t:admin.modules.modals.delete_data_warning"
                 }
@@ -146,7 +147,7 @@
           "type": "basic",
           "name": "Span",
           "props": {
-            "className": "text-sm font-semibold text-gray-900 dark:text-white"
+            "className": "text-primary text-sm font-semibold"
           },
           "text": "$t:admin.modules.modals.extension_directory_title"
         },
@@ -155,7 +156,7 @@
           "name": "Div",
           "if": "{{!_global.moduleUninstallInfo}}",
           "props": {
-            "className": "flex items-center justify-center py-4"
+            "className": "flex-center justify-center py-4"
           },
           "children": [
             {
@@ -180,7 +181,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 mb-2"
+                "className": "flex-center gap-2 mb-2"
               },
               "children": [
                 {
@@ -195,7 +196,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                    "className": "text-body font-medium"
                   },
                   "text": "$t:admin.modules.modals.extension_directory_section"
                 },
@@ -203,7 +204,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                    "className": "text-tertiary"
                   },
                   "text": "($t:admin.modules.modals.tables_total|size={{_global.moduleUninstallInfo.extension_directory.size_formatted}})"
                 }
@@ -220,7 +221,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center justify-between px-3 py-1.5"
+                    "className": "flex-between px-3 py-1.5"
                   },
                   "children": [
                     {
@@ -235,7 +236,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-tertiary"
                       },
                       "text": "{{_global.moduleUninstallInfo.extension_directory.size_formatted}}"
                     }
@@ -267,7 +268,7 @@
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                "className": "text-primary text-sm font-semibold"
               },
               "text": "$t:admin.modules.modals.delete_data_info_title"
             }
@@ -278,7 +279,7 @@
           "name": "Div",
           "if": "{{!_global.moduleUninstallInfo}}",
           "props": {
-            "className": "flex items-center justify-center py-4"
+            "className": "flex-center justify-center py-4"
           },
           "children": [
             {
@@ -307,7 +308,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 mb-2"
+                    "className": "flex-center gap-2 mb-2"
                   },
                   "children": [
                     {
@@ -322,7 +323,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                        "className": "text-body font-medium"
                       },
                       "text": "$t:admin.modules.modals.tables_section"
                     },
@@ -331,7 +332,7 @@
                       "name": "Span",
                       "if": "{{_global.moduleUninstallInfo.tables && _global.moduleUninstallInfo.tables.length > 0}}",
                       "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-tertiary"
                       },
                       "text": "($t:admin.modules.modals.tables_total|size={{_global.moduleUninstallInfo.total_table_size_formatted}})"
                     }
@@ -342,7 +343,7 @@
                   "name": "P",
                   "if": "{{!_global.moduleUninstallInfo.tables || _global.moduleUninstallInfo.tables.length === 0}}",
                   "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400 ml-6"
+                    "className": "text-tertiary ml-6"
                   },
                   "text": "$t:admin.modules.modals.no_tables"
                 },
@@ -362,7 +363,7 @@
                         "item_var": "table"
                       },
                       "props": {
-                        "className": "flex items-center justify-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        "className": "flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                       },
                       "children": [
                         {
@@ -377,7 +378,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "{{table.size_formatted ?? '$t:admin.modules.modals.size_unknown'}}"
                         }
@@ -396,7 +397,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 mb-2"
+                    "className": "flex-center gap-2 mb-2"
                   },
                   "children": [
                     {
@@ -411,7 +412,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                        "className": "text-body font-medium"
                       },
                       "text": "$t:admin.modules.modals.shared_records_section"
                     }
@@ -432,7 +433,7 @@
                         "item_var": "rec"
                       },
                       "props": {
-                        "className": "flex items-center justify-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        "className": "flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                       },
                       "children": [
                         {
@@ -447,7 +448,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "$t:admin.modules.modals.shared_records_count|count={{rec.count}}"
                         }
@@ -465,7 +466,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 mb-2"
+                    "className": "flex-center gap-2 mb-2"
                   },
                   "children": [
                     {
@@ -480,7 +481,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                        "className": "text-body font-medium"
                       },
                       "text": "$t:admin.modules.modals.storage_section"
                     },
@@ -489,7 +490,7 @@
                       "name": "Span",
                       "if": "{{_global.moduleUninstallInfo.storage_directories && _global.moduleUninstallInfo.storage_directories.length > 0}}",
                       "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-tertiary"
                       },
                       "text": "($t:admin.modules.modals.storage_total|size={{_global.moduleUninstallInfo.total_storage_size_formatted}})"
                     }
@@ -500,7 +501,7 @@
                   "name": "P",
                   "if": "{{!_global.moduleUninstallInfo.storage_directories || _global.moduleUninstallInfo.storage_directories.length === 0}}",
                   "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400 ml-6"
+                    "className": "text-tertiary ml-6"
                   },
                   "text": "$t:admin.modules.modals.no_storage"
                 },
@@ -520,7 +521,7 @@
                         "item_var": "dir"
                       },
                       "props": {
-                        "className": "flex items-center justify-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        "className": "flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                       },
                       "children": [
                         {
@@ -535,7 +536,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "{{dir.size_formatted}}"
                         }
@@ -554,7 +555,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 mb-2"
+                    "className": "flex-center gap-2 mb-2"
                   },
                   "children": [
                     {
@@ -569,7 +570,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                        "className": "text-body font-medium"
                       },
                       "text": "$t:admin.modules.modals.vendor_section"
                     },
@@ -577,7 +578,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "text-tertiary"
                       },
                       "text": "({{_global.moduleUninstallInfo.vendor_directory.total_size_formatted}})"
                     }
@@ -598,7 +599,7 @@
                         "item_var": "vendorItem"
                       },
                       "props": {
-                        "className": "flex items-center justify-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        "className": "flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                       },
                       "children": [
                         {
@@ -613,7 +614,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "{{vendorItem.size_formatted}}"
                         }
@@ -631,14 +632,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "sticky bottom-0 flex justify-end gap-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
+        "className": "modal-footer-buttons sticky bottom-0 items-center px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
       },
       "children": [
         {
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "btn btn-secondary",
             "disabled": "{{_global.isModuleUninstalling}}"
           },
           "actions": [
@@ -659,7 +660,7 @@
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isModuleUninstalling}}"
           },
           "actions": [
@@ -759,7 +760,7 @@
               "if": "{{_global.isModuleUninstalling}}",
               "props": {
                 "name": "spinner",
-                "className": "w-4 h-4 animate-spin"
+                "className": "spinner-sm"
               }
             },
             {

@@ -1,0 +1,65 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 본 기능은 실제로 백엔드 Unit + 프론트 레이아웃 렌더링 테스트가
+#   모두 존재하고 green 이며, 브라우저 E2E 는 data-testid 보강 후 활성화 골격으로 둔다:
+#     - 백엔드 Unit(OrderResourceFieldsTest): is_stock_deducted boolean 노출,
+#       is_points_earned 가 PURCHASE_EARN 발행 시 true / 미발행·사용거래 시 false
+#       (withExists('purchaseEarnTransactions') 집계 경로 검증)
+#     - 프론트 레이아웃 렌더링(orderDetailLayouts.test.tsx): 구매수량 컬럼 재고 배지 분기,
+#       적립예정 컬럼 적립 배지 분기, Badge color prop 사용
+#     - 브라우저 E2E(order-detail-stock-earn-badges.spec.ts): data-testid 보강 후 활성화 골격
+#   effects ↔ 테스트 매핑은 본 매니페스트 effects 블록과 각 테스트가 1:1 대응한다.
+feature: 관리자 주문상세 — 재고 적용 여부 / 실제 적립 여부 배지
+
+description: |
+  관리자 주문상세 화면(`admin/ecommerce/orders/:orderNumber`) 주문상품 테이블의
+  '구매수량' 컬럼에 재고 적용 여부 배지, '적립예정' 컬럼에 실제 적립 여부 배지를 표시한다.
+
+  핵심 동작:
+    - 재고 적용 여부: OrderOption.is_stock_deducted(boolean) 를 Resource 가 노출.
+      차감 완료 → "재고 차감"(green) / 미차감 → "재고 미차감"(gray) 배지
+    - 실제 적립 여부: 해당 옵션에 구매 적립(PURCHASE_EARN) 거래가 발행되었는지로 판정.
+      Repository.findWithRelations 가 withExists('purchaseEarnTransactions') 집계 컬럼
+      (purchase_earn_transactions_exists)을 N+1 없이 로드 → Resource is_points_earned 노출.
+      적립예정액(subtotal_earned_points_amount)이 있을 때만 배지 노출하며,
+      실제 적립됨 → "적립완료"(green) / 미적립 → "적립예정"(gray)
+    - 사용/취소복원 등 비-구매적립 거래는 '적립완료' 판정에서 제외 (PURCHASE_EARN 한정)
+
+axes:
+  stock_deduction:
+    - deducted        # 재고 차감 완료 → "재고 차감" 배지
+    - not_deducted    # 재고 미차감 → "재고 미차감" 배지
+  points_earn:
+    - earned          # 구매 적립(PURCHASE_EARN) 발행됨 → "적립완료" 배지
+    - pending         # 적립예정액 있으나 미발행 → "적립예정" 배지
+    - no_points       # 적립예정액 0 → 배지 미노출
+  non_purchase_tx:
+    - none            # 적립/사용 거래 없음
+    - order_use_only  # 사용(ORDER_USE) 거래만 존재 — '적립완료'로 오탐되면 안 됨
+
+effects:
+  # 백엔드 Resource 노출 규약 (PHPUnit Unit 커버)
+  - resource_exposes_is_stock_deducted_boolean        # is_stock_deducted true/false boolean
+  - resource_is_points_earned_false_without_earn_tx   # 적립 거래 미발행 → false
+  - resource_is_points_earned_true_with_purchase_earn # PURCHASE_EARN 발행 → true
+  - resource_is_points_earned_ignores_non_purchase_tx # ORDER_USE 등 비-구매적립 → false
+  - repository_loads_earn_exists_without_n_plus_one    # withExists 집계 컬럼 단일 쿼리 로드
+  # 프론트 렌더링/구조 (Vitest 레이아웃 렌더링 커버)
+  - quantity_column_renders_stock_badge_by_deduction   # is_stock_deducted 분기 배지
+  - points_column_renders_earn_badge_when_points_exist  # 적립예정액>0 + is_points_earned 분기
+  - earn_badge_hidden_when_no_points                    # 적립예정액 0 → 배지 미노출
+  - badges_use_badge_component_with_color_prop          # Badge color prop(green/gray)
+  # 브라우저 E2E (Playwright — data-testid 보강 후 활성화)
+  - admin_sees_stock_deducted_badge_on_deducted_option
+  - admin_sees_not_deducted_badge_on_undeducted_option
+  - admin_sees_earned_badge_when_points_earned
+  - admin_sees_pending_badge_when_points_not_earned
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/OrderResourceFieldsTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderDetailLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-detail-stock-earn-badges.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

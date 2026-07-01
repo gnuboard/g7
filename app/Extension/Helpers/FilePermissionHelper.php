@@ -16,20 +16,24 @@ class FilePermissionHelper
      * - 신규 파일: 부모 디렉토리의 소유자/그룹 상속 (퍼미션은 PHP 기본 umask)
      * - removeOrphans=false: 소스에 없고 대상에만 있는 파일 유지 (사용자 추가 파일 보호)
      * - removeOrphans=true: 소스에 없고 대상에만 있는 파일/디렉토리 삭제 (excludes 제외)
+     * - preserveTopLevelOrphans=true: removeOrphans=true 라도 *최상위 한 레벨* 에서 소스에
+     *   없는 항목(디렉토리/파일)은 삭제하지 않는다. 소스에 존재하는 디렉토리 내부의
+     *   orphan 정리는 그대로 수행된다. 코어 업데이트가 `{domain}/_bundled` 를 sync 할 때
+     *   사용자가 `_bundled/` 바로 아래에 직접 만든 커스텀 확장 디렉토리를 보존하기 위함.
      *
      * 신규 항목의 소유권 상속은 sudo 로 실행된 업데이트 프로세스가 root 소유로 파일을
      * 생성하는 것을 방지한다. vendor/ 처럼 cleanDirectory 후 재생성되는 디렉토리 구조
      * 전체가 기존 부모(= vendor/) 의 소유권을 승계하도록 보장한다.
      *
-     * @param string $source 소스 디렉토리 경로
-     * @param string $destination 대상 디렉토리 경로
-     * @param \Closure|null $onProgress 진행 콜백
-     * @param array $excludes 제외할 이름 또는 경로 목록 (예: ['node_modules', '.git', 'node_modules/test_dir'])
-     * @param string $relativePath 현재 상대 경로 (내부 재귀용)
-     * @param bool $removeOrphans 소스에 없는 대상 파일/디렉토리 삭제 여부
-     * @return void
+     * @param  string  $source  소스 디렉토리 경로
+     * @param  string  $destination  대상 디렉토리 경로
+     * @param  \Closure|null  $onProgress  진행 콜백
+     * @param  array  $excludes  제외할 이름 또는 경로 목록 (예: ['node_modules', '.git', 'node_modules/test_dir'])
+     * @param  string  $relativePath  현재 상대 경로 (내부 재귀용)
+     * @param  bool  $removeOrphans  소스에 없는 대상 파일/디렉토리 삭제 여부
+     * @param  bool  $preserveTopLevelOrphans  최상위 한 레벨의 orphan 보존 여부
      */
-    public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false): void
+    public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false, bool $preserveTopLevelOrphans = false): void
     {
         if (! File::isDirectory($destination)) {
             // 신규 디렉토리: 부모 디렉토리의 퍼미션/소유권 상속
@@ -61,7 +65,8 @@ class FilePermissionHelper
             }
 
             if ($item->isDir()) {
-                static::copyDirectory($item->getPathname(), $destPath, $onProgress, $excludes, $itemRelativePath, $removeOrphans);
+                // preserveTopLevelOrphans 는 최상위 한 레벨 한정 — 자식 재귀에는 항상 false 전달.
+                static::copyDirectory($item->getPathname(), $destPath, $onProgress, $excludes, $itemRelativePath, $removeOrphans, preserveTopLevelOrphans: false);
             } else {
                 static::copyFile($item->getPathname(), $destPath);
             }
@@ -69,7 +74,7 @@ class FilePermissionHelper
 
         // 소스에 없는 대상 파일/디렉토리 삭제
         if ($removeOrphans && File::isDirectory($destination)) {
-            static::removeOrphanItems($source, $destination, $excludes, $relativePath);
+            static::removeOrphanItems($source, $destination, $excludes, $relativePath, $preserveTopLevelOrphans);
         }
     }
 
@@ -86,7 +91,7 @@ class FilePermissionHelper
      *
      * @param  string  $source  소스 symlink 경로
      * @param  string  $destination  대상 symlink 경로
-     * @return bool  symlink 복원 성공 여부 (false 면 호출자가 일반 복사로 폴백)
+     * @return bool symlink 복원 성공 여부 (false 면 호출자가 일반 복사로 폴백)
      */
     protected static function copySymlink(string $source, string $destination): bool
     {
@@ -122,14 +127,21 @@ class FilePermissionHelper
      *
      * excludes 목록에 해당하는 항목은 삭제하지 않습니다.
      *
-     * @param string $source 소스 디렉토리 경로
-     * @param string $destination 대상 디렉토리 경로
-     * @param array $excludes 제외할 이름 또는 경로 목록
-     * @param string $relativePath 현재 상대 경로
-     * @return void
+     * @param  string  $source  소스 디렉토리 경로
+     * @param  string  $destination  대상 디렉토리 경로
+     * @param  array  $excludes  제외할 이름 또는 경로 목록
+     * @param  string  $relativePath  현재 상대 경로
+     * @param  bool  $preserveTopLevelOrphans  최상위 한 레벨의 orphan 보존 여부
      */
-    protected static function removeOrphanItems(string $source, string $destination, array $excludes, string $relativePath): void
+    protected static function removeOrphanItems(string $source, string $destination, array $excludes, string $relativePath, bool $preserveTopLevelOrphans = false): void
     {
+        // 최상위 한 레벨에서 소스에 없는 항목(사용자 추가) 보존 — `_bundled/my-project` 등.
+        // 호출자(copyDirectory)는 최상위 진입 시에만 relativePath='' + 플래그 true 로 들어오며,
+        // 자식 재귀에는 항상 false 가 전달되므로 본 분기는 최상위에서만 활성화된다.
+        if ($preserveTopLevelOrphans && $relativePath === '') {
+            return;
+        }
+
         $destItems = new \FilesystemIterator($destination, \FilesystemIterator::SKIP_DOTS);
 
         foreach ($destItems as $destItem) {
@@ -165,9 +177,9 @@ class FilePermissionHelper
      * - 단순 이름 (슬래시 미포함): 모든 레벨에서 해당 이름과 매칭
      * - 경로 패턴 (슬래시 포함): 상대 경로와 정확히 매칭
      *
-     * @param string $itemName 현재 항목의 파일/디렉토리 이름
-     * @param string $itemRelativePath 루트로부터의 상대 경로
-     * @param array $excludes 제외 목록
+     * @param  string  $itemName  현재 항목의 파일/디렉토리 이름
+     * @param  string  $itemRelativePath  루트로부터의 상대 경로
+     * @param  array  $excludes  제외 목록
      * @return bool 제외 대상 여부
      */
     public static function isExcluded(string $itemName, string $itemRelativePath, array $excludes): bool
@@ -199,9 +211,8 @@ class FilePermissionHelper
      * 파일을 생성하는 문제를 방지하기 위함이다. vendor/ 내부처럼 cleanDirectory 후
      * 전량 재생성되는 경로에서 필요하다.
      *
-     * @param string $source 소스 파일
-     * @param string $destination 대상 파일
-     * @return void
+     * @param  string  $source  소스 파일
+     * @param  string  $destination  대상 파일
      */
     public static function copyFile(string $source, string $destination): void
     {
@@ -239,8 +250,7 @@ class FilePermissionHelper
     /**
      * 부모 디렉토리의 퍼미션·소유자·그룹을 상속하여 신규 디렉토리를 생성합니다.
      *
-     * @param string $path 생성할 디렉토리 경로
-     * @return void
+     * @param  string  $path  생성할 디렉토리 경로
      */
     protected static function createDirectoryInheritingParent(string $path): void
     {
@@ -262,7 +272,6 @@ class FilePermissionHelper
      * 외부 호출처(예: `SettingsMigrator::writeJsonFile`) 가 직접 호출 가능하도록 public.
      *
      * @param  string  $path  소유권을 상속받을 파일 또는 디렉토리
-     * @return void
      */
     public static function inheritOwnershipFromParent(string $path): void
     {
@@ -277,10 +286,9 @@ class FilePermissionHelper
     /**
      * 소유자·그룹을 적용합니다. sudo 없이 실행 시 silent fail 로 현행 동작 유지.
      *
-     * @param string $path 대상 경로
-     * @param int|false $owner fileowner() 반환값 (false 허용)
-     * @param int|false $group filegroup() 반환값 (false 허용)
-     * @return void
+     * @param  string  $path  대상 경로
+     * @param  int|false  $owner  fileowner() 반환값 (false 허용)
+     * @param  int|false  $group  filegroup() 반환값 (false 허용)
      */
     protected static function applyOwnership(string $path, int|false $owner, int|false $group): void
     {
@@ -303,7 +311,7 @@ class FilePermissionHelper
      * - sudo 실행된 업데이트가 원본 스냅샷을 수집하지 못한 경우의 fallback
      * - 외부 프로세스(composer 등) 가 root 로 오염시킨 경로의 원본 추정
      *
-     * @return array{0: int|false, 1: int|false, 2: string}  [owner, group, source]
+     * @return array{0: int|false, 1: int|false, 2: string} [owner, group, source]
      */
     public static function inferWebServerOwnership(): array
     {
@@ -345,9 +353,9 @@ class FilePermissionHelper
      * 처리하고 대상은 따라가지 않는다. @chown/@chgrp suppress 로 권한 부족 / chown 미지원
      * 환경에서도 silent fail.
      *
-     * @param string $path 대상 경로 (파일 또는 디렉토리)
-     * @param int $owner 기준 소유자 UID
-     * @param int|false $group 기준 그룹 GID (false = 그룹 유지)
+     * @param  string  $path  대상 경로 (파일 또는 디렉토리)
+     * @param  int  $owner  기준 소유자 UID
+     * @param  int|false  $group  기준 그룹 GID (false = 그룹 유지)
      * @return int 실제 소유권을 변경한 항목 수
      */
     public static function chownRecursive(string $path, int $owner, int|false $group): int
@@ -421,7 +429,7 @@ class FilePermissionHelper
      * - silent fail — 권한 부족·chmod 미지원 환경에서도 예외 미발생
      *
      * @param  string  $root  대상 루트 (재귀 순회)
-     * @return int  실제 chmod 한 항목 수
+     * @return int 실제 chmod 한 항목 수
      */
     public static function syncGroupWritability(string $root): int
     {

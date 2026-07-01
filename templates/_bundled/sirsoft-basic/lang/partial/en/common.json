@@ -35,6 +35,7 @@
   "processing": "Processing...",
   "member": "Member",
   "language": "Language",
+  "currency": "Currency",
   "admin_menu": "Admin",
   "theme": {
     "auto": "System",
@@ -53,5 +54,11 @@
   "validation_error_description": "Please check the input fields.",
   "error_occurred": "An error occurred",
   "reset": "Reset",
+  "pagination": "Pagination",
+  "first_page": "First page",
+  "prev_page": "Previous page",
+  "next_page": "Next page",
+  "last_page": "Last page",
+  "page_n": "Page {{n}}",
   "currency_unit": ""
 }

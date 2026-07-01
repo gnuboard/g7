@@ -12,12 +12,19 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\DTO\CartWithCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\Summary;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
+use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\AdditionalOptionSelectionService;
 use Modules\Sirsoft\Ecommerce\Services\CartService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionMethod;
 
 /**
@@ -33,6 +40,10 @@ class CartServiceTest extends ModuleTestCase
 
     protected $mockCalculationService;
 
+    protected $mockOrderRepository;
+
+    protected $mockProductRepository;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,12 +56,44 @@ class CartServiceTest extends ModuleTestCase
         $this->mockCartRepository = Mockery::mock(CartRepositoryInterface::class);
         $this->mockProductOptionRepository = Mockery::mock(ProductOptionRepositoryInterface::class);
         $this->mockCalculationService = Mockery::mock(OrderCalculationService::class);
+        $this->mockOrderRepository = Mockery::mock(OrderRepositoryInterface::class);
+        $this->mockProductRepository = Mockery::mock(ProductRepositoryInterface::class);
+
+        // 추가옵션 선택 검증 서비스 — 기존 테스트는 추가옵션 미선택 전제이므로
+        // 빈 선택은 빈 배열을 반환하도록 실제 구현(DB 조회)을 사용한다.
+        $additionalOptionSelectionService = app(AdditionalOptionSelectionService::class);
 
         $this->service = new CartService(
             $this->mockCartRepository,
             $this->mockProductOptionRepository,
-            $this->mockCalculationService
+            $this->mockCalculationService,
+            $this->mockOrderRepository,
+            $this->mockProductRepository,
+            $additionalOptionSelectionService
         );
+
+        // 판매상태/구매수량 검증용 기본 스텁 (개별 테스트가 명시 오버라이드 가능).
+        // 기존 테스트는 판매중(on_sale)·전시중 상품 + 한도 없음을 가정하므로
+        // DB에 영속된 옵션/상품을 실제 조회해 통과시킨다.
+        $this->mockProductOptionRepository
+            ->shouldReceive('findByIdWithProduct')
+            ->andReturnUsing(fn ($id) => ProductOption::with('product')->find($id))
+            ->byDefault();
+
+        $this->mockProductOptionRepository
+            ->shouldReceive('findById')
+            ->andReturnUsing(fn ($id) => ProductOption::find($id))
+            ->byDefault();
+
+        $this->mockCartRepository
+            ->shouldReceive('sumQuantityByProduct')
+            ->andReturn(0)
+            ->byDefault();
+
+        $this->mockProductRepository
+            ->shouldReceive('find')
+            ->andReturnUsing(fn ($id) => Product::find($id))
+            ->byDefault();
     }
 
     protected function tearDown(): void
@@ -65,7 +108,6 @@ class CartServiceTest extends ModuleTestCase
      * @param  object  $object  대상 객체
      * @param  string  $methodName  메서드 이름
      * @param  array  $args  메서드 인자
-     * @return mixed
      */
     protected function invokePrivateMethod(object $object, string $methodName, array $args = []): mixed
     {
@@ -79,7 +121,6 @@ class CartServiceTest extends ModuleTestCase
      * CartService의 addToCart private 메서드를 호출합니다.
      *
      * @param  array  $data  장바구니 데이터
-     * @return Cart
      */
     protected function callAddToCart(array $data): Cart
     {
@@ -314,31 +355,11 @@ class CartServiceTest extends ModuleTestCase
             ->once()
             ->andReturn($emptyItems);
 
-        $emptyCalculationResult = new OrderCalculationResult(
-            items: [],
-            summary: new Summary(
-                subtotal: 0,
-                productCouponDiscount: 0,
-                codeDiscount: 0,
-                orderCouponDiscount: 0,
-                totalDiscount: 0,
-                baseShippingTotal: 0,
-                extraShippingTotal: 0,
-                totalShipping: 0,
-                shippingDiscount: 0,
-                taxableAmount: 0,
-                taxFreeAmount: 0,
-                pointsEarning: 0,
-                pointsUsed: 0,
-                paymentAmount: 0,
-                finalAmount: 0
-            )
-        );
-
+        // 비정상 항목 제외(U13②/U4) 후 계산 대상이 없으면 calculate 호출 없이
+        // 빈 계산 결과를 반환한다. (빈 장바구니 → 즉시 빈 결과)
         $this->mockCalculationService
             ->shouldReceive('calculate')
-            ->once()
-            ->andReturn($emptyCalculationResult);
+            ->never();
 
         // When
         $result = $this->service->getCartWithCalculation($user->id, null);
@@ -424,10 +445,10 @@ class CartServiceTest extends ModuleTestCase
         ];
 
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $option->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
         // Mock stock validation
         $this->mockProductOptionRepository
@@ -470,10 +491,10 @@ class CartServiceTest extends ModuleTestCase
         ];
 
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $option->id)
             ->once()
-            ->andReturn($existingCart);
+            ->andReturn(new Collection([$existingCart]));
 
         // Mock stock validation
         $this->mockProductOptionRepository
@@ -512,10 +533,10 @@ class CartServiceTest extends ModuleTestCase
         ];
 
         $this->mockCartRepository
-            ->shouldReceive('findByCartKeyAndOption')
+            ->shouldReceive('findAllByCartKeyAndOption')
             ->with($cartKey, $option->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
         // Mock stock validation
         $this->mockProductOptionRepository
@@ -715,10 +736,10 @@ class CartServiceTest extends ModuleTestCase
             ->andReturn($option);
 
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $option->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
         $this->mockCartRepository
             ->shouldReceive('update')
@@ -762,10 +783,10 @@ class CartServiceTest extends ModuleTestCase
             ->andReturn($option);
 
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $option->id)
             ->once()
-            ->andReturn($userCart);
+            ->andReturn(new Collection([$userCart]));
 
         $combinedCart = clone $userCart;
         $combinedCart->quantity = 5;
@@ -839,10 +860,10 @@ class CartServiceTest extends ModuleTestCase
 
         // 새 옵션(옵션2)에 대해서는 기존 아이템 없음
         $this->mockCartRepository
-            ->shouldReceive('findByCartKeyAndOption')
+            ->shouldReceive('findAllByCartKeyAndOption')
             ->with($cartKey, $option2->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
         // Mock stock validation
         $this->mockProductOptionRepository
@@ -918,10 +939,10 @@ class CartServiceTest extends ModuleTestCase
 
         // 새 옵션이 이미 장바구니에 없음
         $this->mockCartRepository
-            ->shouldReceive('findByCartKeyAndOption')
+            ->shouldReceive('findAllByCartKeyAndOption')
             ->with($cartKey, $option2->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
         $updatedCart = clone $cart;
         $updatedCart->product_option_id = $option2->id;
@@ -976,10 +997,10 @@ class CartServiceTest extends ModuleTestCase
             ->andReturn($option2);
 
         $this->mockCartRepository
-            ->shouldReceive('findByCartKeyAndOption')
+            ->shouldReceive('findAllByCartKeyAndOption')
             ->with($cartKey, $option2->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
         $updatedCart = clone $cart;
         $updatedCart->product_option_id = $option2->id;
@@ -1050,10 +1071,10 @@ class CartServiceTest extends ModuleTestCase
 
         // 옵션B가 이미 장바구니에 존재
         $this->mockCartRepository
-            ->shouldReceive('findByCartKeyAndOption')
+            ->shouldReceive('findAllByCartKeyAndOption')
             ->with($cartKey, $optionB->id)
             ->once()
-            ->andReturn($cartB);
+            ->andReturn(new Collection([$cartB]));
 
         // update 결과로 quantity가 5인 객체 반환
         $mergedCart = Mockery::mock(Cart::class)->makePartial();
@@ -1153,10 +1174,10 @@ class CartServiceTest extends ModuleTestCase
 
         // 옵션A: 회원 장바구니에 존재 → 합산
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $optionA->id)
             ->once()
-            ->andReturn($userCartA);
+            ->andReturn(new Collection([$userCartA]));
 
         $mergedCartA = clone $userCartA;
         $mergedCartA->quantity = 5;
@@ -1176,10 +1197,10 @@ class CartServiceTest extends ModuleTestCase
 
         // 옵션B: 회원 장바구니에 없음 → user_id 업데이트
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $optionB->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
         $updatedGuestCartB = clone $guestCartB;
         $updatedGuestCartB->user_id = $user->id;
@@ -1275,10 +1296,10 @@ class CartServiceTest extends ModuleTestCase
 
         // 기존 장바구니 없음
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $option->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
         // Mock stock validation - 재고 5개 반환
         $this->mockProductOptionRepository
@@ -1287,20 +1308,22 @@ class CartServiceTest extends ModuleTestCase
             ->once()
             ->andReturn($option);
 
-        // Then: 예외 발생 예상
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage(__('sirsoft-ecommerce::exceptions.stock_exceeded', [
-            'available' => 5,
-            'requested' => 10,
-        ]));
-
-        // When: 재고 초과 수량 담기 시도
-        $this->callAddToCart([
-            'user_id' => $user->id,
-            'product_id' => $product->id,
-            'product_option_id' => $option->id,
-            'quantity' => 10, // 재고 5개 < 요청 10개
-        ]);
+        // Then: CartUnavailableException(reason stock) — 컨트롤러에서 422 로 매핑됨 (MP07 §1-b)
+        try {
+            $this->callAddToCart([
+                'user_id' => $user->id,
+                'product_id' => $product->id,
+                'product_option_id' => $option->id,
+                'quantity' => 10, // 재고 5개 < 요청 10개
+            ]);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasStockIssue());
+            $this->assertStringContainsString(
+                __('sirsoft-ecommerce::exceptions.stock_exceeded', ['available' => 5, 'requested' => 10]),
+                $e->getUserMessage()
+            );
+        }
     }
 
     /**
@@ -1324,10 +1347,10 @@ class CartServiceTest extends ModuleTestCase
 
         // 기존 장바구니 있음
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $option->id)
             ->once()
-            ->andReturn($existingCart);
+            ->andReturn(new Collection([$existingCart]));
 
         // Mock stock validation - 재고 5개 반환
         $this->mockProductOptionRepository
@@ -1336,20 +1359,22 @@ class CartServiceTest extends ModuleTestCase
             ->once()
             ->andReturn($option);
 
-        // Then: 예외 발생 예상
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage(__('sirsoft-ecommerce::exceptions.stock_exceeded', [
-            'available' => 5,
-            'requested' => 8, // 3 + 5 = 8
-        ]));
-
-        // When: 추가 5개 담기 시도 (합산 8개 > 재고 5개)
-        $this->callAddToCart([
-            'user_id' => $user->id,
-            'product_id' => $product->id,
-            'product_option_id' => $option->id,
-            'quantity' => 5,
-        ]);
+        // Then: CartUnavailableException(reason stock) — 합산 8개 > 재고 5개 (MP07 §1-b)
+        try {
+            $this->callAddToCart([
+                'user_id' => $user->id,
+                'product_id' => $product->id,
+                'product_option_id' => $option->id,
+                'quantity' => 5,
+            ]);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasStockIssue());
+            $this->assertStringContainsString(
+                __('sirsoft-ecommerce::exceptions.stock_exceeded', ['available' => 5, 'requested' => 8]),
+                $e->getUserMessage()
+            );
+        }
     }
 
     /**
@@ -1368,10 +1393,10 @@ class CartServiceTest extends ModuleTestCase
 
         // 기존 장바구니 없음
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $option->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
         // Mock stock validation - 재고 0개 반환
         $this->mockProductOptionRepository
@@ -1380,17 +1405,21 @@ class CartServiceTest extends ModuleTestCase
             ->once()
             ->andReturn($option);
 
-        // Then: 예외 발생 예상
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage(__('sirsoft-ecommerce::exceptions.out_of_stock'));
-
-        // When: 품절 상품 담기 시도
-        $this->callAddToCart([
-            'user_id' => $user->id,
-            'product_id' => $product->id,
-            'product_option_id' => $option->id,
-            'quantity' => 1,
-        ]);
+        // Then: CartUnavailableException(reason stock) — 품절(재고0)도 stock 사유 (MP07 §1-b)
+        try {
+            $this->callAddToCart([
+                'user_id' => $user->id,
+                'product_id' => $product->id,
+                'product_option_id' => $option->id,
+                'quantity' => 1,
+            ]);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasStockIssue());
+            $items = $e->getUnavailableItems();
+            $this->assertSame('stock', $items[0]['reason'] ?? null);
+            $this->assertSame(0, $items[0]['stock'] ?? null);
+        }
     }
 
     /**
@@ -1424,15 +1453,17 @@ class CartServiceTest extends ModuleTestCase
             ->once()
             ->andReturn($option);
 
-        // Then: 예외 발생 예상
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage(__('sirsoft-ecommerce::exceptions.stock_exceeded', [
-            'available' => 5,
-            'requested' => 10,
-        ]));
-
-        // When: 수량 10개로 변경 시도 (재고 5개 < 요청 10개)
-        $this->service->updateQuantity($cart->id, 10, $user->id, null);
+        // Then: CartUnavailableException(reason stock) — 수량변경 재고초과 (MP07 §1-b)
+        try {
+            $this->service->updateQuantity($cart->id, 10, $user->id, null);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasStockIssue());
+            $this->assertStringContainsString(
+                __('sirsoft-ecommerce::exceptions.stock_exceeded', ['available' => 5, 'requested' => 10]),
+                $e->getUserMessage()
+            );
+        }
     }
 
     /**
@@ -1470,20 +1501,22 @@ class CartServiceTest extends ModuleTestCase
 
         // 새 옵션으로 기존에 담긴 것 없음
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $newOption->id)
             ->once()
-            ->andReturn(null);
+            ->andReturn(new Collection);
 
-        // Then: 예외 발생 예상
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage(__('sirsoft-ecommerce::exceptions.stock_exceeded', [
-            'available' => 5,
-            'requested' => 7,
-        ]));
-
-        // When: 새 옵션으로 변경 시도 (재고 5개 < 기존 수량 7개)
-        $this->service->changeOption($cart->id, $newOption->id, $cart->quantity, $user->id, null);
+        // Then: CartUnavailableException(reason stock) — 옵션변경 재고초과 (MP07 §1-b)
+        try {
+            $this->service->changeOption($cart->id, $newOption->id, $cart->quantity, $user->id, null);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasStockIssue());
+            $this->assertStringContainsString(
+                __('sirsoft-ecommerce::exceptions.stock_exceeded', ['available' => 5, 'requested' => 7]),
+                $e->getUserMessage()
+            );
+        }
     }
 
     /**
@@ -1573,10 +1606,10 @@ class CartServiceTest extends ModuleTestCase
 
         // 회원 장바구니에 같은 옵션 있음
         $this->mockCartRepository
-            ->shouldReceive('findByUserAndOption')
+            ->shouldReceive('findAllByUserAndOption')
             ->with($user->id, $option->id)
             ->once()
-            ->andReturn($userCart);
+            ->andReturn(new Collection([$userCart]));
 
         // 기대: 수량을 재고(5개)로 조정하여 업데이트
         $updatedUserCart = clone $userCart;
@@ -1689,5 +1722,284 @@ class CartServiceTest extends ModuleTestCase
 
         // Then
         $this->assertEquals(0, $result);
+    }
+
+    // ========================================
+    // U13②/U4: 판매상태 담기 차단 테스트
+    // ========================================
+
+    /**
+     * 판매중지 상품을 담으려 하면 CartUnavailableException(status) 이 발생합니다.
+     */
+    #[DataProvider('unavailableSalesStateProvider')]
+    public function test_add_to_cart_blocks_unavailable_product(string $factoryState): void
+    {
+        // Given: 비정상 판매상태 상품 + 옵션
+        $user = User::factory()->create();
+        $product = ProductFactory::new()->{$factoryState}()->create();
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+
+        $this->mockCartRepository
+            ->shouldReceive('findAllByUserAndOption')
+            ->andReturn(new Collection);
+
+        // When / Then: 판매상태 차단 (reason status)
+        try {
+            $this->callAddToCart([
+                'user_id' => $user->id,
+                'product_id' => $product->id,
+                'product_option_id' => $option->id,
+                'quantity' => 1,
+            ]);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasStatusIssue());
+        }
+    }
+
+    /**
+     * 판매중(on_sale)+전시중(visible) 상품은 정상적으로 담깁니다 (회귀 가드).
+     */
+    public function test_add_to_cart_allows_purchasable_product(): void
+    {
+        // Given
+        $user = User::factory()->create();
+        $product = ProductFactory::new()->onSale()->create();
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+
+        $this->mockCartRepository
+            ->shouldReceive('findAllByUserAndOption')
+            ->andReturn(new Collection);
+
+        $newCart = new Cart([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'quantity' => 1,
+        ]);
+        $newCart->id = 1;
+
+        $this->mockCartRepository
+            ->shouldReceive('create')
+            ->once()
+            ->andReturn($newCart);
+
+        // When
+        $result = $this->callAddToCart([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'quantity' => 1,
+        ]);
+
+        // Then
+        $this->assertEquals($option->id, $result->product_option_id);
+    }
+
+    /**
+     * 판매중지/품절/출시예정/전시중지 상태 데이터 제공자.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function unavailableSalesStateProvider(): array
+    {
+        return [
+            'suspended' => ['suspended'],
+            'sold_out' => ['soldOut'],
+            'coming_soon' => ['comingSoon'],
+            'hidden' => ['hidden'],
+        ];
+    }
+
+    // ========================================
+    // A25: 구매수량 한도 담기 차단 테스트
+    // ========================================
+
+    /**
+     * 최소 구매수량 미만으로 담으면 CartUnavailableException(min_qty) 이 발생합니다.
+     */
+    public function test_bulk_add_blocks_below_min_purchase_qty(): void
+    {
+        // Given: 최소 3개 상품
+        $user = User::factory()->create();
+        $product = ProductFactory::new()->onSale()->create([
+            'min_purchase_qty' => 3,
+            'max_purchase_qty' => 0,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 100,
+            'is_default' => true,
+        ]);
+
+        $this->mockProductOptionRepository
+            ->shouldReceive('getByProductId')
+            ->with($product->id)
+            ->andReturn(new Collection([$option]));
+
+        // When / Then: 1개 담기 시도 → min_qty 차단
+        try {
+            $this->service->bulkAddToCart([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'cart_key' => null,
+                'items' => [['quantity' => 1]],
+            ]);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasMinQtyIssue());
+        }
+    }
+
+    /**
+     * 최대 구매수량 초과(기존 장바구니 + 신규 합산)로 담으면 max_qty 차단됩니다.
+     */
+    public function test_bulk_add_blocks_above_max_purchase_qty_with_existing_cart(): void
+    {
+        // Given: 최대 5개 상품, 기존 장바구니 4개 보유
+        $user = User::factory()->create();
+        $product = ProductFactory::new()->onSale()->create([
+            'min_purchase_qty' => 1,
+            'max_purchase_qty' => 5,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 100,
+            'is_default' => true,
+        ]);
+
+        $this->mockProductOptionRepository
+            ->shouldReceive('getByProductId')
+            ->with($product->id)
+            ->andReturn(new Collection([$option]));
+
+        // 기존 장바구니 4개 (자기 product)
+        $this->mockCartRepository
+            ->shouldReceive('sumQuantityByProduct')
+            ->with($product->id, $user->id, null)
+            ->andReturn(4);
+
+        // When / Then: 신규 3개 → 합산 7 > 5 차단
+        try {
+            $this->service->bulkAddToCart([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'cart_key' => null,
+                'items' => [['quantity' => 3]],
+            ]);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasMaxQtyIssue());
+        }
+    }
+
+    /**
+     * max_purchase_qty = 0 은 무제한 — 대량 담기도 통과합니다 (경계).
+     */
+    public function test_bulk_add_allows_unlimited_when_max_qty_zero(): void
+    {
+        // Given: max=0(무제한), min=1
+        $user = User::factory()->create();
+        $product = ProductFactory::new()->onSale()->create([
+            'min_purchase_qty' => 1,
+            'max_purchase_qty' => 0,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create([
+            'stock_quantity' => 1000,
+            'is_default' => true,
+        ]);
+
+        $this->mockProductOptionRepository
+            ->shouldReceive('getByProductId')
+            ->with($product->id)
+            ->andReturn(new Collection([$option]));
+
+        $this->mockCartRepository
+            ->shouldReceive('findAllByUserAndOption')
+            ->andReturn(new Collection);
+
+        $newCart = new Cart([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'product_option_id' => $option->id,
+            'quantity' => 50,
+        ]);
+        $newCart->id = 1;
+
+        $this->mockCartRepository
+            ->shouldReceive('create')
+            ->andReturn($newCart);
+
+        $this->mockCartRepository
+            ->shouldReceive('countItems')
+            ->andReturn(1);
+
+        // When: 50개 담기
+        $result = $this->service->bulkAddToCart([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'cart_key' => null,
+            'items' => [['quantity' => 50]],
+        ]);
+
+        // Then: 통과
+        $this->assertCount(1, $result['items']);
+    }
+
+    // ========================================
+    // validateStock() — 재고 예외 도메인화 (MP07 §1-b, U9/U8)
+    // 품절(재고0)·재고초과는 generic \Exception(→500) 이 아닌
+    // CartUnavailableException(reason: stock, →422) 이어야 한다.
+    // ========================================
+
+    /**
+     * 재고 0 옵션 검증 → CartUnavailableException(reason stock) (수정 전엔 generic \Exception → 500).
+     */
+    public function test_validate_stock_out_of_stock_throws_cart_unavailable_stock(): void
+    {
+        $product = ProductFactory::new()->onSale()->create();
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 0]);
+
+        try {
+            $this->invokePrivateMethod($this->service, 'validateStock', [$option->id, 1, 0]);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasStockIssue(), 'reason=stock 이어야 합니다.');
+            $items = $e->getUnavailableItems();
+            $this->assertSame('stock', $items[0]['reason'] ?? null);
+            $this->assertSame($option->id, $items[0]['product_option_id'] ?? null);
+        }
+    }
+
+    /**
+     * 요청 수량 > 재고 → CartUnavailableException(reason stock) + 치환 메타(quantity/stock).
+     */
+    public function test_validate_stock_exceeding_throws_cart_unavailable_with_meta(): void
+    {
+        $product = ProductFactory::new()->onSale()->create();
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 3]);
+
+        try {
+            // 현재 2 + 요청 5 = 7 > 재고 3
+            $this->invokePrivateMethod($this->service, 'validateStock', [$option->id, 5, 2]);
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasStockIssue());
+            $items = $e->getUnavailableItems();
+            // getUserMessage 의 stock 분기가 quantity(요청합산)/stock(가용)을 치환에 사용
+            $this->assertSame(7, $items[0]['quantity'] ?? null);
+            $this->assertSame(3, $items[0]['stock'] ?? null);
+        }
+    }
+
+    /**
+     * 정상 재고 → 예외 없음 (회귀 보호).
+     */
+    public function test_validate_stock_within_stock_does_not_throw(): void
+    {
+        $product = ProductFactory::new()->onSale()->create();
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 10]);
+
+        // 예외 없이 통과해야 함
+        $this->invokePrivateMethod($this->service, 'validateStock', [$option->id, 5, 0]);
+        $this->assertTrue(true);
     }
 }

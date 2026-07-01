@@ -31,7 +31,8 @@
             {
               "type": "basic",
               "name": "Icon",
-              "props": { "name": "truck", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" }
+              "props": { "name": "truck", "size": "md",
+              "className": "text-gray-700 dark:text-gray-300" }
             },
             {
               "type": "basic",
@@ -47,31 +48,35 @@
           ]
         },
         {
-          "comment": "배송지 수정 버튼 - 배송 전 상태에서만 표시",
+          "comment": "배송지 수정 버튼 - 배송 전 상태 (회원/비회원 공통). 공유 partial 이라 비회원 상세(guest_order_show)에서도 재사용되며, 비회원은 모달에서 탭 없이 직접입력 폼만 노출된다.",
           "type": "basic",
           "name": "Button",
           "if": "{{order.data.order_status === 'pending_payment' || order.data.order_status === 'payment_complete'}}",
           "props": { "type": "button", "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "pen-to-square", "className": "w-3.5 h-3.5" } },
+            { "type": "basic", "name": "Icon", "size": "sm", "props": { "name": "pen-to-square" } },
             { "type": "basic", "name": "Span", "text": "$t:mypage.order_detail.change_shipping_address" }
           ],
           "actions": [
             {
+              "comment": "배송지 변경 모달 열기 — 모달은 부모 _local 을 못 읽으므로(별도 컨텍스트), 공유 상태를 _global 로 전달. 열 때마다 전부 덮어써서 이전 잔존값 무해화. changeAddressMode 는 회원=saved(탭 선택 가능)/비회원=manual(탭 없이 직접입력) 분기. 직접입력 초기값은 현재 배송지(order.data.shipping_address). _modal_address.json(_global.editingAddress) 와 동일 패턴.",
               "type": "click",
               "handler": "sequence",
               "actions": [
                 {
                   "handler": "setState",
                   "params": {
-                    "target": "local",
-                    "changeAddressMode": "saved",
-                    "manualAddress": {
+                    "target": "global",
+                    "changeAddressMode": "{{_global.currentUser?.uuid ? 'saved' : 'manual'}}",
+                    "selectedAddressId": null,
+                    "editingShippingAddress": {
                       "recipient_name": "{{order.data.shipping_address?.recipient_name ?? ''}}",
                       "recipient_phone": "{{order.data.shipping_address?.recipient_phone ?? ''}}",
                       "zipcode": "{{order.data.shipping_address?.zipcode ?? ''}}",
                       "address": "{{order.data.shipping_address?.address ?? ''}}",
-                      "address_detail": "{{order.data.shipping_address?.address_detail ?? ''}}"
+                      "address_detail": "{{order.data.shipping_address?.address_detail ?? ''}}",
+                      "region": "{{order.data.shipping_address?.region ?? ''}}",
+                      "city": "{{order.data.shipping_address?.city ?? ''}}"
                     }
                   }
                 },
@@ -110,6 +115,36 @@
               "name": "Span",
               "props": { "className": "text-gray-900 dark:text-white" },
               "text": "{{order.data.shipping_address?.recipient_name ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "배송국가 (D9 — 항상 표시, KR 포함)",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-start" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "w-28 flex-shrink-0 text-gray-500 dark:text-gray-400" },
+              "text": "$t:shop.checkout.shipping_country",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "w-20 flex-shrink-0 text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white" },
+              "text": "{{order.data.shipping_address?.recipient_country_name?.[_global.locale] ?? order.data.shipping_address?.recipient_country_name?.ko ?? order.data.shipping_address?.recipient_country_code ?? 'KR'}}",
               "responsive": {
                 "portable": {
                   "props": { "className": "text-gray-900 dark:text-white text-sm" }
@@ -182,7 +217,7 @@
           "comment": "배송 메모 (있는 경우만 표시)",
           "type": "basic",
           "name": "Div",
-          "if": "{{order.data.shipping_address?.delivery_memo}}",
+          "if": "{{order.data.shipping_address?.delivery_memo_label || order.data.shipping_address?.delivery_memo}}",
           "props": { "className": "flex items-start" },
           "children": [
             {
@@ -200,7 +235,7 @@
               "type": "basic",
               "name": "Span",
               "props": { "className": "text-gray-900 dark:text-white" },
-              "text": "{{order.data.shipping_address?.delivery_memo ?? ''}}",
+              "text": "{{order.data.shipping_address?.delivery_memo_label ?? order.data.shipping_address?.delivery_memo ?? ''}}",
               "responsive": {
                 "portable": {
                   "props": { "className": "text-gray-900 dark:text-white text-sm" }
@@ -212,10 +247,10 @@
       ]
     },
     {
-      "comment": "배송 현황 (배송 정보가 있을 때)",
+      "comment": "배송 현황 — 결제 완료 이후 OrderStatusEnum 값(payment_complete/shipping_hold/preparing/shipping_ready/shipping/delivered/confirmed)에서만 노출. pending_order/pending_payment 상태에서는 '배송대기' 라벨 노출이 사용자에게 모호하므로 비표시 (결제 안내가 우선). cancelled 도 비표시 — 취소된 주문은 배송 현황 무의미. (부분취소는 별도 상태가 아니라 잔여 옵션 기준 진행 상태로 환원되어 배송 현황이 정상 노출됨.)",
       "type": "basic",
       "name": "Div",
-      "if": "{{(order.data.shippings ?? []).length > 0}}",
+      "if": "{{(order.data.shippings ?? []).length > 0 && ['payment_complete','shipping_hold','preparing','shipping_ready','shipping','delivered','confirmed'].includes(order.data.order_status)}}",
       "props": { "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3" },
       "responsive": {
         "portable": {
@@ -231,7 +266,8 @@
             {
               "type": "basic",
               "name": "Icon",
-              "props": { "name": "box", "className": "w-4 h-4 text-gray-700 dark:text-gray-300" }
+              "props": { "name": "box", "size": "sm",
+              "className": "text-gray-700 dark:text-gray-300" }
             },
             {
               "type": "basic",
@@ -280,10 +316,11 @@
                       ]
                     },
                     {
+                      "comment": "배송비 금액 — 0원이면 '무료' 라벨(녹색), 그 외 금액 포맷. Number() 캐스팅으로 decimal:2 문자열도 안전 비교 (_payment.json 와 동일 패턴).",
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-sm text-gray-900 dark:text-white font-medium" },
-                      "text": "{{shipping.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? shipping.total_shipping_amount_formatted ?? ''}}"
+                      "props": { "className": "text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}" },
+                      "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
                     }
                   ]
                 },
@@ -329,9 +366,23 @@
                       "text": "{{shipping.carrier_name ?? ''}}"
                     },
                     {
+                      "comment": "운송장 번호 — tracking_url 있으면 택배사 배송조회 링크",
+                      "type": "basic",
+                      "name": "A",
+                      "if": "{{shipping.tracking_url}}",
+                      "props": {
+                        "href": "{{shipping.tracking_url}}",
+                        "target": "_blank",
+                        "rel": "noopener noreferrer",
+                        "className": "text-blue-600 dark:text-blue-400 font-medium underline hover:text-blue-800 dark:hover:text-blue-300"
+                      },
+                      "text": "{{shipping.tracking_number ?? ''}} ($t:mypage.order_detail.track_shipment)"
+                    },
+                    {
+                      "comment": "운송장 번호 폴백 — tracking_url 없을 때 텍스트만",
                       "type": "basic",
                       "name": "Span",
-                      "if": "{{shipping.tracking_number}}",
+                      "if": "{{!shipping.tracking_url && shipping.tracking_number}}",
                       "props": { "className": "text-blue-600 dark:text-blue-400 font-medium" },
                       "text": "{{shipping.tracking_number ?? ''}}"
                     }

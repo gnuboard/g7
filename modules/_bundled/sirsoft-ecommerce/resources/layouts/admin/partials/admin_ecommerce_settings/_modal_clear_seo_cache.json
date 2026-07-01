@@ -1,5 +1,8 @@
 {
-  "meta": { "is_partial": true, "description": "SEO 캐시 삭제 확인 모달" },
+  "meta": {
+    "is_partial": true,
+    "description": "SEO 캐시 삭제 확인 모달"
+  },
   "id": "modal_clear_seo_cache",
   "type": "composite",
   "name": "Modal",
@@ -11,22 +14,42 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "relative flex flex-col gap-4" },
+      "props": {
+        "className": "relative"
+      },
       "children": [
         {
           "comment": "삭제 중 오버레이 (spinner + blur)",
           "type": "basic",
           "name": "Div",
           "if": "{{$parent._local.isClearingCache}}",
-          "props": { "className": "absolute inset-0 bg-white/60 dark:bg-gray-900/60 z-10 flex items-center justify-center rounded-lg" },
+          "props": {
+            "className": "flex-center absolute inset-0 bg-white/60 dark:bg-gray-900/60 z-10 justify-center rounded-lg"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex flex-col items-center gap-2" },
+              "props": {
+                "className": "flex-center flex-col gap-2"
+              },
               "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "spinner", "className": "text-2xl text-blue-500 dark:text-blue-400 animate-spin" } },
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-300 font-medium" }, "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache" }
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "spinner",
+                    "className": "text-2xl text-blue-500 dark:text-blue-400 animate-spin"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-600 dark:text-gray-300 font-medium"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache"
+                }
               ]
             }
           ]
@@ -34,17 +57,24 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg" },
+          "props": {
+            "className": "alert-warning"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Icon",
-              "props": { "name": "triangle-exclamation", "className": "text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0" }
+              "props": {
+                "name": "triangle-exclamation",
+                "className": "text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"
+              }
             },
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "text-sm text-amber-800 dark:text-amber-200" },
+              "props": {
+                "className": "text-warning-soft"
+              },
               "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_confirm"
             }
           ]
@@ -52,7 +82,9 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex justify-end gap-2" },
+          "props": {
+            "className": "flex justify-end gap-2"
+          },
           "children": [
             {
               "type": "basic",
@@ -69,7 +101,11 @@
                 }
               ],
               "children": [
-                { "type": "basic", "name": "Span", "text": "$t:common.cancel" }
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:common.cancel"
+                }
               ]
             },
             {
@@ -145,7 +181,11 @@
                 }
               ],
               "children": [
-                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache" }
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache"
+                }
               ]
             },
             {
@@ -158,7 +198,11 @@
                 "disabled": true
               },
               "children": [
-                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache" }
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache"
+                }
               ]
             }
           ]

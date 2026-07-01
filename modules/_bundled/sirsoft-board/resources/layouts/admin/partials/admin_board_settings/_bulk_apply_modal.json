@@ -14,16 +14,13 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "comment": "저장/되돌릴수없음 경고 배너",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-center gap-3"
+            "className": "alert-warning"
           },
           "children": [
             {
@@ -38,7 +35,9 @@
             {
               "type": "basic",
               "name": "P",
-              "props": { "className": "text-sm text-amber-800 dark:text-amber-200" },
+              "props": {
+                "className": "text-warning-soft"
+              },
               "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.message"
             }
           ]
@@ -49,7 +48,7 @@
           "name": "Div",
           "if": "{{(function() { const fields = _global.bulkApplySnapshot?.fields ?? []; return fields.some(f => f.includes('.') || f === 'manager'); })()}}",
           "props": {
-            "className": "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-center gap-3"
+            "className": "alert-info"
           },
           "children": [
             {
@@ -64,7 +63,9 @@
             {
               "type": "basic",
               "name": "P",
-              "props": { "className": "text-sm text-blue-800 dark:text-blue-200" },
+              "props": {
+                "className": "text-info-soft"
+              },
               "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.permission_notice"
             }
           ]
@@ -74,14 +75,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+            "className": "toggle-group"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"
+                "className": "px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex-center gap-2"
               },
               "children": [
                 {
@@ -97,7 +98,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                    "className": "text-body font-medium"
                   },
                   "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.selected_fields"
                 },
@@ -149,7 +150,9 @@
                         {
                           "type": "basic",
                           "name": "Span",
-                          "props": { "className": "text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide" },
+                          "props": {
+                            "className": "text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide"
+                          },
                           "text": "$t:sirsoft-board.admin.settings.sections.{{sectionGroup.sectionKey}}"
                         }
                       ]
@@ -157,7 +160,9 @@
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "px-3 py-2 flex flex-wrap gap-1.5" },
+                      "props": {
+                        "className": "px-3 py-2 flex flex-wrap gap-1.5"
+                      },
                       "children": [
                         {
                           "type": "basic",
@@ -197,14 +202,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+            "className": "toggle-group"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"
+                "className": "px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex-center gap-2"
               },
               "children": [
                 {
@@ -220,7 +225,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                    "className": "text-body font-medium"
                   },
                   "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.selected_boards"
                 },
@@ -248,7 +253,7 @@
                   "name": "Span",
                   "if": "{{_global.bulkApplySnapshot?.applyAll !== false}}",
                   "props": {
-                    "className": "text-sm text-gray-500 dark:text-gray-400 italic"
+                    "className": "text-label-subtle italic"
                   },
                   "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.all_boards"
                 },
@@ -290,13 +295,17 @@
           "name": "Div",
           "if": "{{$parent._local.bulkApplySaveError}}",
           "props": {
-            "className": "flex items-center gap-2 text-sm text-red-600 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+            "className": "alert-danger text-red-600 dark:text-red-400"
           },
           "children": [
             {
               "type": "basic",
               "name": "Icon",
-              "props": { "name": "circle-exclamation", "className": "w-4 h-4 flex-shrink-0" }
+              "props": {
+                "name": "circle-exclamation",
+                "className": "flex-shrink-0",
+                "size": "sm"
+              }
             },
             {
               "type": "basic",
@@ -306,10 +315,64 @@
           ]
         },
         {
+          "comment": "일괄 적용 중단(전체 롤백) 안내 - rolled_back 응답 시 모달 미닫힘 + 오류(red) 박스",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{$parent._local.bulkApplyAborted}}",
+          "props": {
+            "className": "alert-danger"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "circle-exclamation",
+                "className": "text-red-600 dark:text-red-400 flex-shrink-0",
+                "size": "sm"
+              }
+            },
+            {
+              "comment": "권한 실패(board 있음) — 게시판명을 굵게 강조 + suffix 문구",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{$parent._local.bulkApplyAbortedBoard}}",
+              "props": {
+                "className": "text-red-700 dark:text-red-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "font-bold"
+                  },
+                  "text": "{{$parent._local.bulkApplyAbortedBoard}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_message_suffix"
+                }
+              ]
+            },
+            {
+              "comment": "컬럼 등 기타 실패(board null) — generic 문구",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!$parent._local.bulkApplyAbortedBoard}}",
+              "props": {
+                "className": "text-red-700 dark:text-red-300"
+              },
+              "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_message_generic"
+            }
+          ]
+        },
+        {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex justify-end gap-3 pt-2"
+            "className": "flex justify-end gap-3"
           },
           "children": [
             {
@@ -318,7 +381,7 @@
               "props": {
                 "type": "button",
                 "disabled": "{{$parent._local.isBulkApplying}}",
-                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
               },
               "actions": [
                 {
@@ -341,7 +404,7 @@
               "props": {
                 "type": "button",
                 "disabled": "{{$parent._local.isBulkApplying || !(_global.bulkApplySnapshot?.fields ?? []).length || (_global.bulkApplySnapshot?.applyAll === false && !(_global.bulkApplySnapshot?.boardIds ?? []).length)}}",
-                "className": "flex items-center gap-1.5 px-4 py-2 bg-amber-600 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                "className": "flex-center gap-1.5 px-4 py-2 bg-amber-600 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               },
               "actions": [
                 {
@@ -349,12 +412,14 @@
                   "handler": "sequence",
                   "actions": [
                     {
-                      "comment": "스냅샷은 모달 열기 전(탭 버튼 클릭 시) 이미 _global에 저장됨 - 여기서는 진행 상태만 변경",
+                      "comment": "스냅샷은 모달 열기 전(탭 버튼 클릭 시) 이미 _global에 저장됨 - 여기서는 진행 상태 변경 + 직전 롤백 안내 초기화(재시도 대비)",
                       "handler": "setState",
                       "params": {
                         "target": "$parent._local",
                         "isBulkApplying": true,
-                        "bulkApplySaveError": false
+                        "bulkApplySaveError": false,
+                        "bulkApplyAborted": false,
+                        "bulkApplyAbortedBoard": null
                       }
                     },
                     {
@@ -383,27 +448,61 @@
                           },
                           "onSuccess": [
                             {
+                              "comment": "성공/롤백 공통 — 진행 상태 해제",
                               "handler": "setState",
                               "params": {
                                 "target": "$parent._local",
-                                "isBulkApplying": false,
+                                "isBulkApplying": false
+                              }
+                            },
+                            {
+                              "comment": "성공(rolled_back=false): 적용 완료 → 상태 초기화 + 스냅샷 정리 + 모달 닫고 success 토스트",
+                              "handler": "setState",
+                              "if": "{{!response?.data?.rolled_back}}",
+                              "params": {
+                                "target": "$parent._local",
                                 "bulkApplyFields": [],
-                                "bulkApplyAll": true
+                                "bulkApplyAll": true,
+                                "bulkApplyAborted": false,
+                                "bulkApplyAbortedBoard": null
                               }
                             },
                             {
                               "handler": "setState",
+                              "if": "{{!response?.data?.rolled_back}}",
                               "params": {
                                 "target": "global",
                                 "bulkApplySnapshot": null
                               }
                             },
-                            { "handler": "closeModal" },
+                            {
+                              "handler": "closeModal",
+                              "if": "{{!response?.data?.rolled_back}}"
+                            },
                             {
                               "handler": "toast",
+                              "if": "{{!response?.data?.rolled_back}}",
                               "params": {
                                 "type": "success",
                                 "message": "$t:sirsoft-board.admin.settings.bulk_apply_modal.success|count={{response?.data?.updated_count ?? 0}}"
+                              }
+                            },
+                            {
+                              "comment": "롤백(rolled_back=true): 전체 취소됨 → 모달 유지 + 안내 박스 표시(board 유무로 문구 분기) + warning 토스트",
+                              "handler": "setState",
+                              "if": "{{response?.data?.rolled_back}}",
+                              "params": {
+                                "target": "$parent._local",
+                                "bulkApplyAborted": true,
+                                "bulkApplyAbortedBoard": "{{response?.data?.board?.name ?? null}}"
+                              }
+                            },
+                            {
+                              "handler": "toast",
+                              "if": "{{response?.data?.rolled_back}}",
+                              "params": {
+                                "type": "error",
+                                "message": "$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_toast"
                               }
                             }
                           ],
@@ -460,7 +559,7 @@
                   "if": "{{$parent._local.isBulkApplying}}",
                   "props": {
                     "name": "spinner",
-                    "className": "w-4 h-4 animate-spin"
+                    "className": "spinner-sm"
                   }
                 },
                 {
@@ -479,7 +578,10 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+        "className": "flex flex-col gap-4 pt-2"
+      }
     }
   ]
 }

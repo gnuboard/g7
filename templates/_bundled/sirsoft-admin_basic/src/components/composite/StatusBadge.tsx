@@ -2,6 +2,7 @@ import React from 'react';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import type { EditorAttrs } from '../../types';
 
 export type StatusType = 'success' | 'warning' | 'error' | 'info' | 'pending' | 'default';
 
@@ -12,6 +13,12 @@ export interface StatusBadgeProps {
   iconName?: IconName;
   className?: string;
   style?: React.CSSProperties;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -40,6 +47,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   iconName,
   className = '',
   style,
+  id,
+  editorAttrs,
 }) => {
   // 상태별 스타일 매핑
   const statusStyles: Record<StatusType, string> = {
@@ -79,6 +88,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     <Span
       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${styleClasses} ${className}`}
       style={style}
+      id={id} {...editorAttrs}
     >
       {showIcon && (
         <Icon name={displayIcon} className="w-4 h-4" />

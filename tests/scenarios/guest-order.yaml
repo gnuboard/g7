@@ -1,0 +1,217 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 이슈 #55 비회원 주문 흐름 SSoT 로 기록. axes 7종 cross product(5000조합)는 docblock 전수 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 프론트 Vitest + Playwright E2E)로 커버한다. effects 는 작업 영역(주문생성/조회/상세/구매제한/관리자/알림)을 망라 기록.
+
+feature: 비회원 주문 / 결제 / 조회 (Guest Order)
+
+description: |
+  로그인 없이 주문 생성 → 결제 → 완료 → 조회 → 상세/액션까지 회원과 동등한 흐름을
+  제공한다. 회원/비회원 분기는 _global.currentUser?.uuid 와 X-Cart-Key / X-Guest-Order-Token
+  헤더로 처리하며, 라우트는 공유(/shop/orders/:id/complete)하고 데이터소스가 if 분기로
+  user/orders ↔ guest/orders 를 호출한다.
+
+  배경:
+    - 단계 1~4: 백엔드 (CreateOrderRequest 비회원 분기, GuestOrderController store/verify/show
+      /cancel/estimate-refund/update-shipping-address/confirm-option, GuestOrderAuthService
+      30분 HMAC 토큰, VerifyGuestOrderToken 미들웨어, 회원 주문 동결 조회 비밀번호 nullable).
+    - 단계 5 A~D: 사용자 화면 (sirsoft-basic 템플릿).
+      - A: 진입 분기 (장바구니/상품상세 → 비로그인 시 /login?redirect=checkout).
+      - B: 주문서 비밀번호 필드 + 결제 엔드포인트 분기 (user/orders ↔ guest/orders).
+      - C: 결제 직후 자동 verify → 완료 화면 + 조회 폼 + 토큰 만료 처리.
+      - D: 진입 동선 (헤더 / 모바일 nav / 로그인 화면).
+
+  핵심 설계:
+    - 토큰은 특정 주문에 묶임 (verifyToken 이 order_number 일치 검증). 여러 주문은 별도 verify.
+    - 30분 TTL 고정, 자동 갱신 없음 (보안 정책).
+    - 공유 라우트 + auth_required: false + data_sources if 분기 (cart/checkout 패턴 일관).
+    - PG 결제 successUrl 은 PG 플러그인 설정값 사용 (백엔드 redirect_url 분기 불필요).
+
+axes:
+  actor: [guest, logged_in_member]
+  entry_point: [product_detail_buy_now, cart_order_button, header_lookup_link, mobile_nav_lookup_link, login_screen_lookup_link]
+  payment_method: [dbank, vbank, mileage_full, card_pg, vaccount_pg]
+  guest_lookup_password: [valid, missing, too_short, mismatch_confirmation]
+  token_state: [fresh, valid_within_30min, expired, missing, wrong_order]
+  order_action: [view_detail, cancel, estimate_refund, update_shipping_address, confirm_option]
+  e2e_browser: [chromium]
+
+exclusions:
+  - { actor: logged_in_member, guest_lookup_password: [missing, too_short, mismatch_confirmation], reason: "회원은 guest_lookup_password nullable — 검증 미적용" }
+  - { actor: logged_in_member, entry_point: [header_lookup_link, mobile_nav_lookup_link, login_screen_lookup_link], reason: "조회 진입 동선은 비회원만 노출" }
+  - { token_state: [expired, missing, wrong_order], order_action: [cancel, estimate_refund, update_shipping_address, confirm_option], reason: "토큰 없거나 만료면 미들웨어가 사전 차단 — 액션 axis 무의미" }
+
+effects:
+  # 백엔드 (단계 1~4) — 단계별 회귀 가드
+  - guest_temp_order_matched_by_cart_key_not_user_id
+  - guest_lookup_password_stored_as_hash_not_plain
+  - guest_lookup_password_not_exposed_in_any_response
+  - guest_orders_store_returns_201_with_order_number
+  - guest_orders_verify_returns_token_and_expires_at_30min
+  - guest_orders_verify_fails_with_404_for_wrong_phone_or_password
+  - guest_orders_verify_route_throttle_limits_to_20_per_minute_with_429
+  - guest_orders_show_requires_x_guest_order_token_header
+  - guest_orders_show_returns_404_for_expired_or_wrong_order_token
+  - guest_orders_show_response_excludes_admin_memo_user_user_id_promotions_snapshot
+  - guest_orders_show_response_includes_mc_subtotal_discount_shipping_total_amount  # 단계 5 그룹 C 보강
+  - guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
+  # 프론트엔드 진입 (단계 5 그룹 A)
+  - buy_now_when_guest_creates_temp_order_then_navigates_to_login_with_redirect_query
+  - cart_order_when_guest_creates_temp_order_then_navigates_to_login_with_redirect_query
+  - login_screen_shows_continue_as_guest_button_only_when_query_redirect_contains_checkout
+  - continue_as_guest_button_navigates_to_redirect_path_without_login
+  - currentUser_uuid_login_check_not_auth_isLoggedIn  # 회귀 차단
+  # 주문서 (단계 5 그룹 B)
+  - checkout_orderer_shows_guest_lookup_password_fields_only_when_no_currentUser
+  - checkout_summary_endpoint_branches_to_user_or_guest_orders_via_target_expression
+  - checkout_summary_includes_guest_lookup_password_in_body_only_for_guest
+  - checkout_summary_sends_x_cart_key_header_for_guest_temp_order_matching
+  - checkout_orderer_email_required_for_guest_optional_for_member  # 후속 — 비회원 주문자 이메일 필수(알림 수신 통로), 회원은 nullable
+  - checkout_orderer_email_shows_required_mark_only_when_no_currentUser  # 후속 — 이메일 라벨 필수 표시(*) 비회원만 노출
+  # 결제 직후 (단계 5 그룹 C)
+  - store_success_when_guest_triggers_verify_automatically_with_orderer_phone_and_password
+  - verify_success_saves_token_to_localStorage_g7_guest_order_token
+  - verify_success_sets_global_guestOrderToken_for_immediate_use
+  - navigate_to_shared_route_shop_orders_n_complete_for_both_member_and_guest
+  # 토큰 인프라 (단계 5 그룹 C)
+  - user_base_init_loads_guest_token_from_localStorage_to_global
+  - user_base_globalHeaders_auto_injects_x_guest_order_token_for_guest_orders_path
+  - globalHeaders_skips_header_when_token_null_or_empty
+  - guest_orders_path_only_pattern_isolates_token_from_user_orders_calls
+  # 완료/상세 화면 (단계 5 그룹 C)
+  - order_complete_uses_unified_user_orders_endpoint_with_optional_sanctum  # 후속 보완 3 — 회원/비회원 통합 엔드포인트 (currentUser 타이밍 결함 원천 제거)
+  - order_complete_backend_branches_member_vs_guest_by_auth_check_in_controller  # 후속 보완 3 — 백엔드 컨트롤러가 Auth::check() 로 분기
+  - order_complete_shows_30min_auto_authentication_notice_for_guest_only
+  - order_complete_401_404_clears_token_and_shows_lookup_link
+  - order_complete_pg_redirect_url_works_for_guest_via_shared_route
+  - order_complete_blur_until_orderData_loaded_prevents_flash  # 후속 보완 — 깜빡임 방지
+  - login_success_clears_guest_order_token_from_localStorage_and_global  # 후속 보완 — 컨텍스트 분리
+  - order_complete_no_init_action_guard_to_avoid_currentUser_timing_misfire  # 후속 보완 2 — 가드 제거 (타이밍 결함)
+  - guest_orders_show_route_removed_replaced_by_unified_user_orders_endpoint  # 후속 보완 3 — guest/orders/{N} GET 라우트 제거
+  - order_complete_error_handling_uses_backend_redirect_to_in_single_sequence  # 후속 보완 5 — errorHandling conditions 미지원 우회
+  - showByOrderNumber_404_includes_errors_redirect_to_for_frontend_navigation  # 후속 보완 5 — 백엔드가 회원/비회원 redirect 결정
+  - order_complete_orderData_datasource_has_explicit_x_guest_order_token_header  # 후속 보완 6 — 토큰 헤더 데이터소스 개별 명시 (globalHeaders 광역 노출 회피)
+  - guest_order_show_order_datasource_has_explicit_x_guest_order_token_header  # 후속 보완 6 — 동일 패턴
+  - guest_order_show_content_blur_until_order_loaded_prevents_empty_render  # 후속 보완 6 — 빈 데이터 화면 회귀 차단
+  # 조회 폼 (단계 5 그룹 C)
+  - guest_order_form_accepts_order_number_phone_password_three_fields
+  - guest_order_form_verify_success_saves_token_and_navigates_to_complete_route
+  - guest_order_form_verify_failure_shows_unified_not_found_message
+  - guest_order_form_member_entry_redirects_to_mypage_orders_with_toast  # 후속 보완 — 회원이 URL 직접 입력 등 비정상 경로로 진입한 경우 안전망
+  - guest_order_form_hidden_for_logged_in_member  # 후속 보완 — 회원에게 폼 노출 차단 (redirect 발화 전 깜빡 입력 방지)
+  - guest_order_form_clears_session_token_on_entry_for_standard_form_visibility  # 후속 보완 — 자동 redirect 대신 토큰 초기화. eBay/Best Buy/카페24/11번가/G마켓 표준 패턴 정합
+  - header_and_mobile_nav_order_lookup_routes_via_login_redirect_param  # 후속 보완 — '주문조회' 클릭 시 /login?redirect=/mypage/orders 진입. 회원/비회원 단일 진입점, 로그아웃된 회원 막다른 길 차단
+  - guest_order_form_failure_shows_inline_error_box_instead_of_toast  # 후속 보완 — 통일 not_found 메시지를 toast 대신 폼 상단 인라인 박스로 노출. PO UX 결정. 재시도 시 자동 초기화
+  # 진입 동선 (단계 5 그룹 D)
+  - header_lookup_link_visible_only_when_no_currentUser
+  - mobile_nav_lookup_link_visible_only_when_no_currentUser
+  - login_screen_lookup_link_visible_outside_form
+  # 상세 액션 endpoint 분기 (단계 5 그룹 D 후속 — 핸들러 토큰 분기)
+  - guest_order_show_cancel_handler_branches_to_guest_endpoint_when_token_present
+  - guest_order_show_estimate_refund_handler_branches_to_guest_endpoint_when_token_present
+  - guest_order_show_confirm_option_handler_branches_to_guest_endpoint_when_token_present
+  # 구매 대상 제한 서버 차단 (단계 0 — 회원/비회원 공통)
+  - purchase_eligibility_passes_when_product_has_no_restriction
+  - purchase_eligibility_blocks_when_user_role_not_in_allowed_roles_for_member_and_guest
+  - purchase_eligibility_uses_core_guest_role_for_unauthenticated_user
+  - order_creation_blocked_with_cart_unavailable_when_restricted_product_in_cart
+  # 관리자 비회원 주문 기능 (단계 6)
+  - admin_order_list_filters_by_member_type_guest_when_user_id_is_null
+  - admin_reset_guest_lookup_password_rejects_member_order_with_422
+  - admin_reset_guest_lookup_password_updates_hash_for_guest_order
+  - admin_reset_guest_lookup_password_logs_activity
+  - admin_reset_guest_lookup_password_modal_renders_dark_mode_variants_for_inputs_and_buttons
+  # 비회원 알림 트리거 데이터 (단계 7 — 실제 발송은 후속 이슈)
+  - order_exposes_orderer_email_and_is_guest_order_for_notification_recipients
+  - guest_order_notification_event_carries_orderer_email_and_order_number
+
+scenarios:
+  - id: guest_full_flow_dbank_e2e
+    description: 비회원 무통장입금 결제 → 자동 verify → 완료 화면 → 30분 안 재방문 (자동 인증) → 토큰 만료 후 조회 폼 재인증
+    effects:
+      - guest_orders_store_returns_201_with_order_number
+      - store_success_when_guest_triggers_verify_automatically_with_orderer_phone_and_password
+      - verify_success_saves_token_to_localStorage_g7_guest_order_token
+      - navigate_to_shared_route_shop_orders_n_complete_for_both_member_and_guest
+      - user_base_globalHeaders_auto_injects_x_guest_order_token_for_guest_orders_path
+      - order_complete_shows_30min_auto_authentication_notice_for_guest_only
+      - guest_order_form_verify_success_saves_token_and_navigates_to_complete_route
+
+  - id: guest_full_flow_pg_card_e2e
+    description: 비회원 카드 PG 결제 → PG 콜백 → 공유 라우트 완료 화면 진입 → 토큰으로 상세 표시
+    effects:
+      - order_complete_pg_redirect_url_works_for_guest_via_shared_route
+      - order_complete_data_sources_if_branches_user_orders_vs_guest_orders_by_currentUser_uuid
+      - user_base_globalHeaders_auto_injects_x_guest_order_token_for_guest_orders_path
+
+  - id: member_unchanged_e2e
+    description: 회원 결제 흐름이 비회원 분기 도입 후에도 회귀 없이 동작 (user/orders 호출, 회원 redirect_url 유지)
+    effects:
+      - checkout_summary_endpoint_branches_to_user_or_guest_orders_via_target_expression
+      - order_complete_data_sources_if_branches_user_orders_vs_guest_orders_by_currentUser_uuid
+      - navigate_to_shared_route_shop_orders_n_complete_for_both_member_and_guest
+
+  - id: token_expiry_to_form_e2e
+    description: 30분 후 상세 호출 → 401/404 → 토큰 삭제 + 조회 폼 안내 → 재인증
+    effects:
+      - order_complete_401_404_clears_token_and_shows_lookup_link
+      - guest_order_form_accepts_order_number_phone_password_three_fields
+      - guest_order_form_verify_failure_shows_unified_not_found_message
+
+  - id: guest_no_token_direct_url_redirects_to_login
+    description: 비로그인 + 토큰 부재 사용자가 /shop/orders/:n/complete 에 직접 진입하면 blur 가 콘텐츠를 가린 채 백엔드 404 응답 → errorHandling.404 비회원 분기가 토큰 정리 + 로그인 페이지로 이동
+    effects:
+      - order_complete_401_404_clears_token_and_shows_lookup_link
+      - order_complete_blur_until_orderData_loaded_prevents_flash
+      - order_complete_no_init_action_guard_to_avoid_currentUser_timing_misfire
+
+  - id: member_login_clears_residual_guest_token
+    description: 비회원으로 주문 토큰을 받은 사용자가 같은 브라우저에서 회원 로그인하면 잔존 비회원 토큰을 정리 (회원 컨텍스트에서 비회원 주문 페이지 노출 방지)
+    effects:
+      - login_success_clears_guest_order_token_from_localStorage_and_global
+
+  - id: purchase_restriction_blocks_order_for_member_and_guest
+    description: 구매 대상 제한이 설정된 상품을 허용 역할 밖 사용자(회원/비회원)가 주문 시도 → 서버가 주문 생성을 차단. 비회원은 코어 guest 역할로 판정
+    effects:
+      - purchase_eligibility_passes_when_product_has_no_restriction
+      - purchase_eligibility_blocks_when_user_role_not_in_allowed_roles_for_member_and_guest
+      - purchase_eligibility_uses_core_guest_role_for_unauthenticated_user
+      - order_creation_blocked_with_cart_unavailable_when_restricted_product_in_cart
+
+  - id: admin_guest_order_management
+    description: 관리자가 주문 목록에서 비회원 주문을 필터링하고, 비회원 조회 비밀번호를 재설정 (회원 주문은 재설정 거부)
+    effects:
+      - admin_order_list_filters_by_member_type_guest_when_user_id_is_null
+      - admin_reset_guest_lookup_password_rejects_member_order_with_422
+      - admin_reset_guest_lookup_password_updates_hash_for_guest_order
+      - admin_reset_guest_lookup_password_logs_activity
+
+  - id: guest_order_notification_trigger_data
+    description: 비회원 주문 이벤트에서 후속 이메일 발송 이슈가 사용할 주문자 이메일·주문번호 데이터를 확인 가능 (실제 발송은 본 이슈 범위 밖)
+    effects:
+      - order_exposes_orderer_email_and_is_guest_order_for_notification_recipients
+      - guest_order_notification_event_carries_orderer_email_and_order_number
+
+test_files:
+  # 백엔드 — 비회원 주문 생성/조회/인증/상세/액션 (단계 1~4)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/OrderControllerTest.php
+  # 백엔드 — 구매 대상 제한 서버 차단 (단계 0)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/PurchaseEligibilityServiceTest.php
+  # 백엔드 — 관리자 비회원 필터/비밀번호 재설정 (단계 6)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderControllerTest.php
+  # 백엔드 — 비회원 알림 트리거 데이터 (단계 7)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/EcommerceNotificationDataListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/OrderTest.php
+  # 프론트엔드 (Vitest 구조 검증)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-guest-checkout-entry.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-guest-order-flow.test.tsx  # 단계 5 그룹 C 신규
+  # 모듈 핸들러 단위 (단계 5 그룹 D 후속 — 토큰 분기)
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userCancelOrderHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userConfirmOrderHandlers.test.ts
+  # E2E
+  - tests/Playwright/specs/smoke/guest-order-form.spec.ts  # 단계 5 그룹 C+D
+
+notes: |
+  본 매니페스트는 단계 5 그룹 C 구현 시점에 작성되어 단계 1~5 전체 흐름을 망라한다.
+  단계 1~4 백엔드는 GuestOrderControllerTest.php 로, 단계 5 프론트는 Vitest 레이아웃 구조
+  검증 + Playwright E2E spec 으로 회귀 가드한다.
+
+  axes 중 `e2e_browser` 는 단일(chromium) 로 시작하며, Firefox/WebKit 확장은 그룹 D 완료 후
+  PO 결정에 따라.

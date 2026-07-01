@@ -1,0 +1,48 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 백엔드 서버 검증(상품당 총수량 합산 min/max)은 PHPUnit Unit 이
+#   진입점·합산·경계 조합을 커버하며 green. 프론트(옵션 상품 max clamp + 합계 버튼 차단/안내)
+#   레이아웃 변경은 sirsoft-basic E2E/Vitest 로 별도 커버.
+feature: 상품 최소/최대 구매수량 서버 검증 + 옵션 상품 UI (A25/MP05)
+
+description: |
+  상품당 총수량(동일 product 모든 옵션 라인 합산) 기준으로 min_purchase_qty 미만 /
+  max_purchase_qty 초과를 담기·수량변경(1차 방어선 CartService) 및 체크아웃(최종 방어선
+  TempOrderService)에서 차단한다. max=0 은 무제한. 옵션 분할 우회를 합산으로 차단한다.
+  프론트는 옵션 상품 라인 max clamp + 합계 버튼 disabled + 안내 문구를 추가한다.
+
+axes:
+  min_qty:
+    - one             # 기본 1
+    - multi           # 2 이상
+  max_qty:
+    - zero            # 0 = 무제한
+    - bounded         # 상한 존재
+  total_qty:
+    - below_min       # min-1 → min_qty 차단
+    - at_min          # ==min → 통과
+    - mid             # 범위 내 → 통과
+    - at_max          # ==max → 통과
+    - above_max       # max+1 → max_qty 차단
+  entry:
+    - bulk_add        # 담기(bulkAddToCart, 기존+신규 합산)
+    - update_qty      # 수량 변경(자기 라인 제외 합산)
+    - checkout        # 체크아웃 최종 검증(옵션 합산)
+  option_lines:
+    - single          # 단일 옵션 라인
+    - multi           # 다중 옵션 라인 합산
+
+effects:
+  - bulk_add_blocks_below_min_qty               # 담기 min 미만 차단(min_qty)
+  - bulk_add_blocks_above_max_with_existing     # 기존+신규 합산 max 초과 차단(max_qty)
+  - bulk_add_allows_unlimited_when_max_zero      # max=0 무제한 통과
+  - checkout_blocks_below_min_qty_aggregated    # 체크아웃 옵션 합산 min 미만 차단
+  - checkout_blocks_above_max_qty_aggregated    # 체크아웃 옵션 합산 max 초과 차단
+  - checkout_passes_within_qty_bounds           # 범위 내 통과(경계)
+  - option_card_max_clamps_to_product_limit     # 옵션 상품 라인 max = min(stock, max_purchase_qty)
+  - total_buttons_disabled_on_limit_violation   # 합계 min 미달/max 초과 시 버튼 disabled + 안내
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CartServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/TempOrderServiceTest.php

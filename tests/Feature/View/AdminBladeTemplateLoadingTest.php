@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\View;
 
+use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -117,7 +118,7 @@ class AdminBladeTemplateLoadingTest extends TestCase
     public function test_admin_blade_renders_without_any_template(): void
     {
         // Arrange: 모든 템플릿 비활성화
-        Template::query()->update(['status' => \App\Enums\ExtensionStatus::Inactive->value]);
+        Template::query()->update(['status' => ExtensionStatus::Inactive->value]);
 
         // Act: admin view 렌더링
         $response = $this->get('/admin');

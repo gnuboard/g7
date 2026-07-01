@@ -34,7 +34,7 @@ abstract class BaseApiCollection extends ResourceCollection
     /**
      * 컬렉션 레벨 abilities를 해석합니다.
      *
-     * @param Request $request HTTP 요청 객체
+     * @param  Request  $request  HTTP 요청 객체
      * @return array<string, bool>
      */
     public function resolveCollectionAbilities(Request $request): array
@@ -52,5 +52,33 @@ abstract class BaseApiCollection extends ResourceCollection
         }
 
         return $abilities;
+    }
+
+    /**
+     * paginator 인 경우 표준 pagination 메타를 반환합니다.
+     *
+     * 무한스크롤 화면이 전체 개수(total)와 다음 페이지 존재 여부(has_more_pages)를
+     * 정확히 판정할 수 있도록 노출합니다. 전체 조회(get) 등 paginator 가 아닌
+     * 경우에는 빈 배열을 반환하므로 toArray 에서 array_merge 로 안전하게 합칠 수 있습니다.
+     *
+     * @return array<string, mixed> ['pagination' => [...]] 또는 빈 배열
+     */
+    protected function paginationMeta(): array
+    {
+        if (! method_exists($this->resource, 'currentPage')) {
+            return [];
+        }
+
+        return [
+            'pagination' => [
+                'current_page' => $this->resource->currentPage(),
+                'last_page' => $this->resource->lastPage(),
+                'per_page' => $this->resource->perPage(),
+                'total' => $this->resource->total(),
+                'from' => $this->resource->firstItem(),
+                'to' => $this->resource->lastItem(),
+                'has_more_pages' => $this->resource->hasMorePages(),
+            ],
+        ];
     }
 }

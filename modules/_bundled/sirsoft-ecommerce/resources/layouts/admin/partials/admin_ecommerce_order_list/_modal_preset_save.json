@@ -18,7 +18,7 @@
       "props": {
         "type": "text",
         "placeholder": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder",
-        "className": "input w-full",
+        "className": "input",
         "value": "{{_local.presetName}}"
       },
       "actions": [
@@ -35,25 +35,38 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex justify-end gap-3 mt-6" },
+      "props": {
+        "className": "modal-footer-buttons"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isSaving}}"
           },
-          "actions": [{ "type": "click", "handler": "closeModal" }],
-          "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
         },
         {
           "type": "basic",
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{!_local.presetName || _local.presetName.trim() === '' || _global.isSaving}}"
           },
           "actions": [
@@ -63,7 +76,10 @@
               "actions": [
                 {
                   "handler": "setState",
-                  "params": { "target": "global", "isSaving": true }
+                  "params": {
+                    "target": "global",
+                    "isSaving": true
+                  }
                 },
                 {
                   "handler": "apiCall",
@@ -99,15 +115,52 @@
                     }
                   },
                   "onSuccess": [
-                    { "handler": "setState", "params": { "target": "global", "isSaving": false } },
-                    { "handler": "setState", "params": { "target": "local", "presetName": "" } },
-                    { "handler": "refetchDataSource", "params": { "dataSourceId": "presets" } },
-                    { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.messages.presets.created" } },
-                    { "handler": "closeModal" }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isSaving": false
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "presetName": ""
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "presets"
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-ecommerce.messages.presets.created"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
                   ],
                   "onError": [
-                    { "handler": "setState", "params": { "target": "global", "isSaving": false } },
-                    { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isSaving": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{$error.message}}"
+                      }
+                    }
                   ]
                 }
               ]
@@ -118,7 +171,10 @@
               "type": "basic",
               "name": "Icon",
               "if": "{{_global.isSaving}}",
-              "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+              "props": {
+                "name": "spinner",
+                "className": "spinner-sm"
+              }
             },
             {
               "type": "basic",

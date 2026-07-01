@@ -38,13 +38,13 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 훅 구독 수가 20개인지 확인 (기존 19 + after_confirm 1)
+     * 훅 구독 수가 21개인지 확인 (기존 20 + after_reset_guest_password 1)
      */
-    public function test_getSubscribedHooks_returns_all_20_hooks(): void
+    public function test_getSubscribedHooks_returns_all_21_hooks(): void
     {
         $hooks = OrderActivityLogListener::getSubscribedHooks();
 
-        $this->assertCount(20, $hooks);
+        $this->assertCount(21, $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_update', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_delete', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_bulk_update', $hooks);
@@ -65,6 +65,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.use', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.mileage.use', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.mileage.earn', $hooks);
+        $this->assertArrayHasKey('sirsoft-ecommerce.order.after_reset_guest_password', $hooks);
     }
 
     // ═══════════════════════════════════════════

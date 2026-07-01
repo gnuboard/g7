@@ -92,18 +92,18 @@ class ProductControllerCopyTest extends ModuleTestCase
         // Given
         $user = $this->createAdminUser(['sirsoft-ecommerce.products.read']);
         $product = Product::factory()->create([
-            'meta_title' => 'SEO Title',
-            'meta_description' => 'SEO Description',
+            'meta_title' => ['ko' => 'SEO Title', 'en' => 'SEO Title EN'],
+            'meta_description' => ['ko' => 'SEO Description', 'en' => 'SEO Description EN'],
         ]);
 
         // When: copy_seo=1로 요청
         $response = $this->actingAs($user)
             ->getJson("/api/modules/sirsoft-ecommerce/admin/products/{$product->id}/copy?copy_seo=1");
 
-        // Then: SEO 필드 포함
+        // Then: SEO 필드(다국어) 포함
         $response->assertOk();
-        $this->assertEquals('SEO Title', $response->json('data.meta_title'));
-        $this->assertEquals('SEO Description', $response->json('data.meta_description'));
+        $this->assertEquals(['ko' => 'SEO Title', 'en' => 'SEO Title EN'], $response->json('data.meta_title'));
+        $this->assertEquals(['ko' => 'SEO Description', 'en' => 'SEO Description EN'], $response->json('data.meta_description'));
     }
 
     /**

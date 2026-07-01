@@ -2,6 +2,7 @@
   "data_sources": [
     {
       "id": "board_list_for_inquiry",
+      "label_key": "$t:sirsoft-board.editor.data_source.board_list_for_inquiry",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/admin/boards",
       "method": "GET",
@@ -29,7 +30,7 @@
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "text-sm text-gray-700 dark:text-gray-300"
+            "className": "text-body"
           },
           "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.description"
         },
@@ -38,29 +39,35 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex flex-col gap-1.5"
+            "className": "row-stack"
           },
           "children": [
             {
-              "id": "inquiry_board_label",
               "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label"
-            },
-            {
-              "id": "inquiry_board_select",
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "name": "inquiry.board_slug",
-                "value": "{{_local.form?.inquiry?.board_slug ?? ''}}",
-                "options": "{{[{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}",
-                "className": "{{_local.errors?.['inquiry.board_slug'] ? 'input input-error' : 'input'}}",
-                "disabled": "{{_computed.isReadOnly}}"
-              }
+              "name": "Div",
+              "children": [
+                {
+                  "id": "inquiry_board_label",
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label"
+                },
+                {
+                  "id": "inquiry_board_select",
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "inquiry.board_slug",
+                    "value": "{{_local.form?.inquiry?.board_slug ?? ''}}",
+                    "options": "{{[{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}",
+                    "className": "{{_local.errors?.['inquiry.board_slug'] ? 'input input-error' : 'input'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
             },
             {
               "id": "inquiry_board_select_error",
@@ -68,7 +75,7 @@
               "name": "Span",
               "if": "{{_local.errors?.['inquiry.board_slug']}}",
               "props": {
-                "className": "text-red-500 text-xs mt-1 block"
+                "className": "form-error"
               },
               "text": "{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}"
             }
@@ -87,7 +94,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400"
+                "className": "text-tertiary"
               },
               "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret"
             },
@@ -96,7 +103,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400"
+                "className": "text-tertiary"
               },
               "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_category"
             },
@@ -106,7 +113,7 @@
               "name": "Div",
               "if": "{{!!(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}",
               "props": {
-                "className": "flex flex-col md:flex-row gap-3"
+                "className": "flex flex-col gap-2 md:flex-row"
               },
               "children": [
                 {
@@ -121,13 +128,16 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400"
+                        "className": "flex-start gap-1.5 text-tertiary"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Icon",
-                          "props": { "name": "gear", "className": "w-3 h-3 shrink-0 mt-0.5" }
+                          "props": {
+                            "name": "gear",
+                            "className": "w-3 h-3 shrink-0 mt-0.5"
+                          }
                         },
                         {
                           "type": "basic",
@@ -148,7 +158,10 @@
                         {
                           "type": "basic",
                           "name": "Icon",
-                          "props": { "name": "pen-to-square", "className": "w-3 h-3" }
+                          "props": {
+                            "name": "pen-to-square",
+                            "className": "w-3 h-3"
+                          }
                         },
                         {
                           "type": "basic",
@@ -180,13 +193,16 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400"
+                        "className": "flex-start gap-1.5 text-tertiary"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Icon",
-                          "props": { "name": "clipboard-list", "className": "w-3 h-3 shrink-0 mt-0.5" }
+                          "props": {
+                            "name": "clipboard-list",
+                            "className": "w-3 h-3 shrink-0 mt-0.5"
+                          }
                         },
                         {
                           "type": "basic",
@@ -214,7 +230,10 @@
                             {
                               "type": "basic",
                               "name": "Icon",
-                              "props": { "name": "list", "className": "w-3 h-3" }
+                              "props": {
+                                "name": "list",
+                                "className": "w-3 h-3"
+                              }
                             },
                             {
                               "type": "basic",
@@ -244,7 +263,10 @@
                             {
                               "type": "basic",
                               "name": "Icon",
-                              "props": { "name": "plus", "className": "w-3 h-3" }
+                              "props": {
+                                "name": "plus",
+                                "className": "w-3 h-3"
+                              }
                             },
                             {
                               "type": "basic",
@@ -257,22 +279,33 @@
                               "type": "click",
                               "handler": "apiCall",
                               "target": "/api/modules/sirsoft-board/admin/boards/{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}/add-to-menu",
-                              "params": { "method": "POST" },
+                              "params": {
+                                "method": "POST"
+                              },
                               "auth_required": true,
                               "onSuccess": [
                                 {
                                   "handler": "toast",
-                                  "params": { "type": "success", "message": "{{result.message}}" }
+                                  "params": {
+                                    "type": "success",
+                                    "message": "{{result.message}}"
+                                  }
                                 },
                                 {
                                   "handler": "refetchDataSource",
-                                  "params": { "dataSourceId": "admin_menu", "sync": true }
+                                  "params": {
+                                    "dataSourceId": "admin_menu",
+                                    "sync": true
+                                  }
                                 }
                               ],
                               "onError": [
                                 {
                                   "handler": "toast",
-                                  "params": { "type": "error", "message": "{{error.message}}" }
+                                  "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                  }
                                 }
                               ]
                             }

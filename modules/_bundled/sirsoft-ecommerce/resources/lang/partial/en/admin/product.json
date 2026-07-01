@@ -533,6 +533,7 @@
     "placeholder": "Product form will be displayed here"
   },
   "modal": {
+    "multilingual_tag_edit_editor_label": "Edit multilingual tags",
     "preset_manage": {
       "title": "Preset Management",
       "description": "Manage search presets.",
@@ -590,7 +591,8 @@
       "stock": "Change stock by {{value}}.",
       "price_change": "Bulk price change",
       "stock_change": "Bulk stock change",
-      "no_changes": "No items to change."
+      "no_changes": "No items to change.",
+      "error_section": "Change failed"
     },
     "bulk_placeholder": {
       "sales_status": "Select Sales Status",
@@ -677,6 +679,7 @@
   "messages": {
     "deleted_success": "Product has been deleted.",
     "deleted_error": "An error occurred while deleting the product.",
+    "delete_check_error": "An error occurred while checking whether the product can be deleted.",
     "code_generate_error": "Failed to generate product code.",
     "label_period_saved": "Label period has been saved.",
     "label_period_removed": "Label period has been removed.",
@@ -696,6 +699,8 @@
     "bulk_summary_price_adjustment_inline": "Price Adjustment: {value}",
     "bulk_summary_stock": "Stock: {method} {value}",
     "bulk_summary_stock_inline": "Stock: {value}",
+    "bulk_summary_safe_stock": "Safe Stock: {value}",
+    "bulk_summary_is_active": "Active: {value}",
     "bulk_summary_option_name": "Option Name: {name}",
     "bulk_summary_sku": "SKU: {sku}",
     "bulk_summary_selected": "Selected"
@@ -824,12 +829,20 @@
     "option_name_placeholder": "Option name (e.g., Color)",
     "option_values_placeholder": "Enter option values separated by comma",
     "additional_title": "Product Additional Options",
-    "additional_hint": "Additional options for customers to enter text directly. Up to 5 options can be added. (e.g., engraving text, gift message)",
-    "add_additional": "Add Additional Option",
-    "additional_name_label": "Option Name",
-    "additional_name_placeholder": "Engraving text",
+    "additional_hint": "Paid/free options customers can additionally select. Register a group name and choices (with surcharge). Up to 5 groups, 20 choices per group. (e.g., Engraving +5,000 KRW)",
+    "add_additional": "Add Option Group",
+    "additional_name_label": "Group Name",
+    "additional_name_placeholder": "e.g., Engraving",
+    "add_additional_value": "Add Choice",
+    "additional_value_name_label": "Choice Name",
+    "additional_value_name_placeholder": "e.g., Add Engraving",
+    "additional_value_price_label": "Surcharge",
+    "additional_value_default": "Default",
+    "additional_value_active": "Active",
+    "additional_value_allow_custom_text": "Custom text",
     "no_additional": "No additional options registered",
-    "auto_currency": "Auto-calculate multi-currency prices",
+    "additional_clear_confirm": "All entered additional options will be removed. Continue?",
+    "auto_currency_hint": "Foreign prices are shown automatically using the exchange rate based on the selling price",
     "items_count": "{{count}} options",
     "required": "Required",
     "columns": {
@@ -870,7 +883,9 @@
       "generated": "{count} options have been generated.",
       "name_required": "Please enter option name.",
       "add_tool_applied": "Option add tool has been applied.",
-      "additional_max_5": "You can add up to 5 additional options."
+      "additional_max_5": "You can add up to 5 option groups.",
+      "additional_value_max_20": "You can add up to 20 choices per group.",
+      "additional_value_min_1": "At least one choice is required per group."
     }
   },
   "notice": {
@@ -976,6 +991,7 @@
     "use_default": "Use default shipping policy",
     "default_badge": "Default",
     "empty_message": "No shipping policy",
+    "inactive_policy_warning": "The currently applied shipping policy has been deactivated. You can select another policy or keep it as is.",
     "detail": {
       "shipping_method": "Shipping Method",
       "carrier": "Carrier",
@@ -1054,7 +1070,7 @@
   },
   "images": {
     "drag_hint": "Drag to reorder",
-    "thumbnail_hint": "First image will be the main image",
+    "thumbnail_hint": "Click the ★ button to set the main image",
     "format_hint": "Supports JPG, PNG, GIF formats",
     "upload_complete": "Upload Complete",
     "deleted": "Image has been deleted.",
@@ -1117,16 +1133,24 @@
   "labels": {
     "title": "Labels",
     "no_available": "No labels available.",
+    "add": "Add Label",
     "edit": "Edit",
     "remove": "Delete",
+    "unassign": "Unassign",
+    "delete": "Delete Label",
     "no_period": "No period set",
     "modal_title": "Label Settings",
+    "modal_title_create": "Create Label",
+    "modal_title_edit": "Edit Label",
+    "create_success": "Label created.",
     "modal_description": "Set the label name, color, and display period.",
     "name": "Label Name",
     "color": "Color",
     "color_reset": "Reset Color",
     "start_date": "Start Date",
     "end_date": "End Date",
+    "started_at": "Select start date",
+    "ended_at": "Select end date",
     "end_date_hint": "Leave empty for indefinite",
     "date_preset": "Date Preset",
     "preset_7d": "7 Days",

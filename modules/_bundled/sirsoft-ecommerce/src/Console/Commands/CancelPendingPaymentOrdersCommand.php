@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 
@@ -81,7 +82,7 @@ class CancelPendingPaymentOrdersCommand extends Command
             foreach ($expiredOrders as $order) {
                 $paymentMethodEnum = $order->payment?->payment_method;
                 $paymentMethodValue = $paymentMethodEnum?->value ?? 'unknown';
-                $dueAt = $paymentMethodValue === 'bank'
+                $dueAt = $paymentMethodEnum === PaymentMethodEnum::DBANK
                     ? $order->payment?->deposit_due_at
                     : $order->payment?->vbank_due_at;
 

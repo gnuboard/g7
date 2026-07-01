@@ -1,0 +1,43 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(A23)은
+#   entry × action × row_count cross product 를 Vitest 핸들러 테스트 + 레이아웃 구조 회귀 테스트가
+#   커버하며 green. 백엔드 계약은 has_additional_options 미검증(StoreProductRequest)으로 중립.
+feature: 추가옵션 토글 파생화 (MP12 / A23)
+
+description: |
+  명령형 has_additional_options boolean 을 완전 제거하고 섹션 표시/토글 active 를
+  additional_options.length 파생식으로 전환한다. (엔진 이중저장소 stale 스냅샷 회귀 근본 해결)
+  - "사용" 클릭: 비어있을 때만 첫 행 시드(addAdditionalOption), 행 있으면 active 유지(no-op)
+  - "미사용" 클릭: 입력 행 있으면 확인 모달 후 비우기, 행 없으면 즉시 no-op
+  - has_additional_options 는 순수 UI 필드(백엔드 계약 없음)라 제거해도 submit 중립
+
+axes:
+  entry:
+    - create                  # 신규 등록
+    - edit_with_options       # 추가옵션 보유 상품 수정
+    - edit_without_options    # 추가옵션 미보유 상품 수정
+  action:
+    - click_use               # "사용" 클릭
+    - click_add               # "+추가옵션 추가"
+    - click_not_use_with_rows # "미사용" (행 있음 → 모달)
+    - click_not_use_no_rows   # "미사용" (행 없음 → no-op)
+  row_count:
+    - "0"
+    - "1"
+    - "5"                     # 상한
+
+effects:
+  - section_visible_when_length_gt_zero   # 섹션 if = length>0
+  - use_active_when_length_gt_zero        # "사용" active 파생
+  - not_use_active_when_length_zero       # "미사용" active 파생
+  - use_seeds_first_row_only_when_empty   # condition length===0
+  - add_after_use_keeps_section           # 핵심 회귀: 토글 미초기화
+  - not_use_with_rows_opens_clear_modal   # 확인 모달
+  - clear_modal_empties_additional_options # 확인 시 [] + 모달 닫기
+  - has_additional_options_serialized_zero # 직렬화 0회
+  - submit_contract_neutral                # 계약 중립(검증 규칙 없음)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productOptionsAdditionalToggle.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/optionHandlers.test.ts

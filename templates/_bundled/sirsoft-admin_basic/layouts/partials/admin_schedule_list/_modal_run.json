@@ -1,14 +1,15 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "스케줄 즉시 실행 확인 모달"
+    "description": "스케줄 즉시 실행 확인 모달",
+    "editor_label": "$t:admin.modal_label.admin_schedule_list.schedule_run_modal"
   },
   "id": "schedule_run_modal",
   "type": "composite",
   "name": "Modal",
   "props": {
     "title": "$t:admin.schedules.modals.run_title",
-    "size": "small"
+    "size": "sm"
   },
   "children": [
     {
@@ -29,18 +30,24 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex items-center gap-2" },
+          "props": {
+            "className": "flex-center gap-2"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "props": {
+                "className": "text-label-subtle"
+              },
               "text": "$t:admin.schedules.form.name:"
             },
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "font-medium text-gray-900 dark:text-white" },
+              "props": {
+                "className": "text-primary font-medium"
+              },
               "text": "{{_global.selectedSchedule?.name}}"
             }
           ]
@@ -48,18 +55,24 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex items-center gap-2" },
+          "props": {
+            "className": "flex-center gap-2"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "props": {
+                "className": "text-label-subtle"
+              },
               "text": "$t:admin.schedules.form.command:"
             },
             {
               "type": "basic",
               "name": "Code",
-              "props": { "className": "text-xs bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded font-mono text-gray-700 dark:text-gray-300" },
+              "props": {
+                "className": "text-xs bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded font-mono text-gray-700 dark:text-gray-300"
+              },
               "text": "{{_global.selectedSchedule?.command}}"
             }
           ]
@@ -77,24 +90,34 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex items-center gap-2 mb-2" },
+          "props": {
+            "className": "flex-center gap-2 mb-2"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Icon",
               "if": "{{_global.runResult?.status === 'success'}}",
-              "props": { "name": "check-circle", "className": "w-5 h-5 text-green-600 dark:text-green-400" }
+              "props": {
+                "name": "check-circle",
+                "className": "w-5 h-5 text-green-600 dark:text-green-400"
+              }
             },
             {
               "type": "basic",
               "name": "Icon",
               "if": "{{_global.runResult?.status !== 'success'}}",
-              "props": { "name": "x-circle", "className": "w-5 h-5 text-red-600 dark:text-red-400" }
+              "props": {
+                "name": "x-circle",
+                "className": "w-5 h-5 text-red-600 dark:text-red-400"
+              }
             },
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "font-medium {{_global.runResult?.status === 'success' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}}" },
+              "props": {
+                "className": "font-medium {{_global.runResult?.status === 'success' ? 'text-success-soft' : 'text-danger-soft'}}"
+              },
               "text": "{{_global.runResult?.status === 'success' ? '$t:admin.schedules.result.success' : '$t:admin.schedules.result.failed'}}"
             }
           ]
@@ -103,25 +126,33 @@
           "type": "basic",
           "name": "Div",
           "if": "{{_global.runResult?.duration}}",
-          "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+          "props": {
+            "className": "text-label"
+          },
           "text": "$t:admin.schedules.modals.run_duration|duration={{_global.runResult?.duration_formatted}}"
         },
         {
           "type": "basic",
           "name": "Div",
           "if": "{{_global.runResult?.output}}",
-          "props": { "className": "mt-2" },
+          "props": {
+            "className": "mt-2"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "props": {
+                "className": "text-tertiary"
+              },
               "text": "$t:admin.schedules.modals.output:"
             },
             {
               "type": "basic",
               "name": "Pre",
-              "props": { "className": "mt-1 text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-32 text-gray-700 dark:text-gray-300" },
+              "props": {
+                "className": "mt-1 text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-32 text-gray-700 dark:text-gray-300"
+              },
               "text": "{{_global.runResult?.output}}"
             }
           ]
@@ -132,7 +163,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {
@@ -168,7 +199,7 @@
           "name": "Button",
           "if": "{{!_global.runResult}}",
           "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isRunning}}"
           },
           "actions": [
@@ -187,7 +218,9 @@
                   "handler": "apiCall",
                   "auth_required": true,
                   "target": "/api/admin/schedules/{{_global.selectedSchedule?.id}}/run",
-                  "params": { "method": "POST" },
+                  "params": {
+                    "method": "POST"
+                  },
                   "onSuccess": [
                     {
                       "handler": "setState",
@@ -199,7 +232,9 @@
                     },
                     {
                       "handler": "refetchDataSource",
-                      "params": { "dataSourceId": "schedules" }
+                      "params": {
+                        "dataSourceId": "schedules"
+                      }
                     }
                   ],
                   "onError": [
@@ -227,13 +262,19 @@
               "type": "basic",
               "name": "Icon",
               "if": "{{_global.isRunning}}",
-              "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+              "props": {
+                "name": "spinner",
+                "className": "spinner-sm"
+              }
             },
             {
               "type": "basic",
               "name": "Icon",
               "if": "{{!_global.isRunning}}",
-              "props": { "name": "play", "className": "w-4 h-4" }
+              "props": {
+                "name": "play",
+                "className": "w-4 h-4"
+              }
             },
             {
               "type": "basic",

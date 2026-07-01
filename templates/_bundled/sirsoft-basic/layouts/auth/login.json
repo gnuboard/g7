@@ -2,6 +2,10 @@
   "version": "1.0.0",
   "layout_name": "auth/login",
   "extends": "_user_base",
+  "meta": {
+    "title": "$t:auth.login",
+    "guest_only": true
+  },
   "init_actions": [
     {
       "if": "{{query?.reason === 'session_expired'}}",
@@ -58,6 +62,7 @@
                     "type": "basic",
                     "name": "Button",
                     "props": {
+                      "type": "button",
                       "className": "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
                     },
                     "actions": [
@@ -75,6 +80,7 @@
                     "type": "basic",
                     "name": "Button",
                     "props": {
+                      "type": "button",
                       "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                     },
                     "actions": [
@@ -87,6 +93,95 @@
                       }
                     ],
                     "text": "$t:auth.register_link"
+                  }
+                ]
+              },
+              {
+                "comment": "비회원 주문 진입 영역 — redirect 가 checkout 일 때만 노출. Form 바깥에 두어야 type=button 명시에도 불구하고 폼 submit 으로 가로채지지 않음. 임시주문은 cartKey(localStorage)로 이미 생성됨 → redirect 경로로 그대로 이동",
+                "type": "basic",
+                "name": "Div",
+                "if": "{{query.redirect && query.redirect.includes('checkout')}}",
+                "props": { "className": "mt-6" },
+                "children": [
+                  {
+                    "comment": "구분선",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "relative my-4" },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": { "className": "absolute inset-0 flex items-center" },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "w-full border-t border-gray-200 dark:border-gray-700" }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": { "className": "relative flex justify-center" },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "px-3 bg-white dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400" },
+                            "text": "$t:auth.guest_checkout.divider"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                      "type": "button",
+                      "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                      "disabled": "{{_global.isLoggingIn}}"
+                    },
+                    "text": "$t:auth.guest_checkout.continue",
+                    "actions": [
+                      {
+                        "type": "click",
+                        "handler": "navigate",
+                        "params": { "path": "{{query.redirect}}" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "mt-2 text-center text-xs text-gray-400 dark:text-gray-500" },
+                    "text": "$t:auth.guest_checkout.hint"
+                  }
+                ]
+              },
+              {
+                "comment": "비회원 주문 조회 진입 — redirect=checkout 일 때는 비노출 (결제 진입 흐름이라 조회 안내가 무관). 일반 로그인 화면에서만 노출해 재방문 조회 사용자 동선 제공. 안내문구와 링크를 한 줄(inline)로 표시.",
+                "type": "basic",
+                "name": "Div",
+                "if": "{{!query.redirect || !query.redirect.includes('checkout')}}",
+                "props": { "className": "mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs" },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": { "className": "text-gray-500 dark:text-gray-400 mr-1" },
+                    "text": "$t:shop.guest_order_form.login_screen_hint"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "A",
+                    "props": {
+                      "href": "{{_global.shopBase}}/guest/orders",
+                      "className": "text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    },
+                    "text": "$t:shop.guest_order_form.login_screen_link"
                   }
                 ]
               }

@@ -1,14 +1,15 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "템플릿 활성화 확인 모달"
+    "description": "템플릿 활성화 확인 모달",
+    "editor_label": "$t:admin.modal_label.admin_template_list.template_activate_modal"
   },
   "id": "template_activate_modal",
   "type": "composite",
   "name": "Modal",
   "props": {
     "title": "$t:admin.templates.modals.activate_title",
-    "size": "small"
+    "size": "sm"
   },
   "children": [
     {
@@ -30,7 +31,7 @@
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+            "className": "mt-2 text-label-subtle"
           },
           "text": "$t:admin.templates.modals.activate_description"
         }
@@ -40,14 +41,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "btn btn-secondary",
             "disabled": "{{_global.isTemplateActivating}}"
           },
           "actions": [
@@ -79,7 +80,7 @@
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isTemplateActivating}}"
           },
           "actions": [
@@ -138,7 +139,9 @@
                           "if": "{{_global.selectedTemplate.type === 'admin'}}",
                           "then": {
                             "handler": "refresh",
-                            "params": { "delayMs": 800 }
+                            "params": {
+                              "delayMs": 800
+                            }
                           }
                         }
                       ]
@@ -200,7 +203,7 @@
               "if": "{{_global.isTemplateActivating}}",
               "props": {
                 "name": "spinner",
-                "className": "w-4 h-4 animate-spin"
+                "className": "spinner-sm"
               }
             },
             {

@@ -53,6 +53,57 @@ function findInObject(obj: any, pattern: string, results: string[] = [], path = 
 // 페이지네이션 경로 검증
 // ========================================
 
+describe('주문 목록 검색 Input 디바운스/Enter 검증', () => {
+    // 검색 키워드 Input: change 액션이 filter.searchKeyword 를 쓰는 Input
+    const getSearchInput = () =>
+        findNodes(
+            filterSection,
+            (n: any) =>
+                n.name === 'Input' &&
+                Array.isArray(n.actions) &&
+                n.actions.some(
+                    (a: any) =>
+                        a.type === 'change' && a.params?.['filter.searchKeyword'],
+                ),
+        )[0];
+
+    it('검색 키워드 Input 의 change 액션에 debounce 가 설정되어야 함', () => {
+        const searchInput = getSearchInput();
+        expect(searchInput).toBeDefined();
+
+        const changeAction = searchInput.actions.find(
+            (a: any) =>
+                a.type === 'change' &&
+                a.handler === 'setState' &&
+                a.params?.['filter.searchKeyword'],
+        );
+        expect(changeAction).toBeDefined();
+        // 타이핑마다 무거운 리렌더가 발생하지 않도록 디바운스 필수
+        expect(changeAction.debounce).toBeGreaterThan(0);
+    });
+
+    it('검색 키워드 Input의 Enter 는 sequence[setState 선행 → searchOrders] 여야 함', () => {
+        const searchInput = getSearchInput();
+        expect(searchInput).toBeDefined();
+
+        const enterAction = searchInput.actions.find(
+            (a: any) => a.type === 'keypress' && a.key === 'Enter'
+        );
+        expect(enterAction).toBeDefined();
+        // race 회피: debounce 대기 중 Enter 시 최신 입력값을 즉시 반영 후 navigate
+        expect(enterAction.handler).toBe('sequence');
+        expect(Array.isArray(enterAction.actions)).toBe(true);
+
+        const firstSetState = enterAction.actions[0];
+        expect(firstSetState.handler).toBe('setState');
+        expect(firstSetState.params?.['filter.searchKeyword']).toContain('$event.target.value');
+        expect(firstSetState.debounce).toBeUndefined();
+
+        const navStep = enterAction.actions.find((a: any) => a.actionRef === 'searchOrders');
+        expect(navStep).toBeDefined();
+    });
+});
+
 describe('주문 목록 페이지네이션 경로 검증', () => {
     it('DataGrid serverCurrentPage가 orders?.data?.pagination?.current_page 경로를 사용해야 함', () => {
         const datagridNode = findNodes(datagrid, (n: any) => n.name === 'DataGrid')[0];
@@ -516,6 +567,27 @@ describe('주문 목록 주문금액 셀 하위 표시 검증', () => {
         });
         expect(unpaidNodes.length).toBeGreaterThanOrEqual(1);
     });
+
+    // 마일리지 시스템 도입 전 완성된 주문목록 그리드에 마일리지 사용/적립 표시가 누락된 회귀 차단.
+    // OrderListResource 가 total_points_used_amount / total_earned_points_amount(_formatted) 를 노출하므로 셀에서 바인딩 가능.
+    it('주문금액 셀에 마일리지 사용 표시가 $t:defer: 패턴으로 존재해야 함', () => {
+        const cellJson = JSON.stringify(orderAmountColumn.cellChildren);
+        expect(cellJson).toContain('mileage_used_short');
+        expect(cellJson).toContain('total_points_used_amount_formatted');
+    });
+
+    it('주문금액 셀에 적립 예정 표시가 $t:defer: 패턴으로 존재해야 함', () => {
+        const cellJson = JSON.stringify(orderAmountColumn.cellChildren);
+        expect(cellJson).toContain('points_earned_short');
+        expect(cellJson).toContain('total_earned_points_amount_formatted');
+    });
+
+    it('마일리지 사용 표시는 total_points_used_amount > 0 조건으로 노출되어야 함', () => {
+        const usedNodes = findNodes({ children: orderAmountColumn.cellChildren }, (n: any) =>
+            typeof n.if === 'string' && n.if.includes('total_points_used_amount') && n.if.includes('> 0')
+        );
+        expect(usedNodes.length).toBeGreaterThanOrEqual(1);
+    });
 });
 
 // ========================================
@@ -600,5 +672,68 @@ describe('주문 목록 주문자 필터 검증', () => {
     it('주문자 필터 클리어 버튼이 존재해야 함', () => {
         const clearButton = findNodes(filterSection, (n: any) => n.id === 'f_162_orderer_clear_button');
         expect(clearButton.length).toBe(1);
+    });
+});
+
+// ========================================
+// 회원/비회원 구분 필터 (member_type) 검증
+// ========================================
+
+describe('주문 목록 회원 구분 필터 검증', () => {
+    const dataSources = (orderList as any).data_sources;
+    const ordersDS = dataSources.find((ds: any) => ds.id === 'orders');
+    const initActions = (orderList as any).init_actions;
+    const namedActions = (orderList as any).named_actions;
+
+    // --- 데이터소스 파라미터 검증 ---
+
+    it('orders 데이터소스에 member_type 파라미터가 있어야 함', () => {
+        expect(ordersDS.params.member_type).toBeDefined();
+        expect(ordersDS.params.member_type).toContain('query.member_type');
+    });
+
+    // --- init_actions 검증 ---
+
+    it('init_actions setState에 memberType 필터 초기화가 있어야 함', () => {
+        const setStateAction = initActions.find((a: any) =>
+            a.handler === 'setState' && a.params?._local?.filter?.memberType !== undefined
+        );
+        expect(setStateAction).toBeDefined();
+    });
+
+    // --- named_actions 검증 ---
+
+    it('searchOrders named_action에 member_type 쿼리 파라미터가 있어야 함', () => {
+        const searchQuery = namedActions.searchOrders.params.query;
+        expect(searchQuery.member_type).toBeDefined();
+        expect(searchQuery.member_type).toContain('memberType');
+    });
+
+    // --- 필터 UI 검증 ---
+
+    it('필터 섹션에 member_type_filter_row가 존재해야 함', () => {
+        const row = findNodes(filterSection, (n: any) => n.id === 'member_type_filter_row');
+        expect(row.length).toBe(1);
+    });
+
+    it('회원 구분 필터에 Select 컴포넌트가 있어야 함', () => {
+        const row = findNodes(filterSection, (n: any) => n.id === 'member_type_filter_row')[0];
+        const selects = findNodes(row, (n: any) => n.name === 'Select');
+        expect(selects.length).toBe(1);
+    });
+
+    it('Select 옵션이 전체/회원/비회원 3개 값(빈값/member/guest)을 가져야 함', () => {
+        const row = findNodes(filterSection, (n: any) => n.id === 'member_type_filter_row')[0];
+        const select = findNodes(row, (n: any) => n.name === 'Select')[0];
+        const values = select.props.options.map((o: any) => o.value);
+        expect(values).toEqual(['', 'member', 'guest']);
+    });
+
+    it('Select change 핸들러가 filter.memberType 를 setState 해야 함', () => {
+        const row = findNodes(filterSection, (n: any) => n.id === 'member_type_filter_row')[0];
+        const select = findNodes(row, (n: any) => n.name === 'Select')[0];
+        const changeAction = select.actions?.find((a: any) => a.type === 'change');
+        expect(changeAction).toBeDefined();
+        expect(changeAction.params['filter.memberType']).toBeDefined();
     });
 });

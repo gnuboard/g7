@@ -25,7 +25,7 @@
       "props": {
         "type": "text",
         "placeholder": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder",
-        "className": "input w-full"
+        "className": "input"
       }
     }
   ],

@@ -1,0 +1,98 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 본 기능의 (시작상태×목표상태) 10×10 매트릭스는 PHPUnit Unit
+#   데이터 프로바이더(OrderStatusTransitionTest, 100쌍)가 전수 커버하고, 3경로(단건/주문일괄/
+#   옵션일괄)×차단·허용·all-or-nothing·훅 미발화는 Feature 테스트가 커버하며 모두 green 이다.
+#   effects ↔ 테스트 매핑은 본 매니페스트 effects 블록과 각 테스트 docblock 의 @effects 가 대응한다.
+feature: 주문 상태 전이 규칙 도입 (A30)
+
+description: |
+  관리자 주문 관리의 단건·주문일괄·옵션일괄 3경로에서 비합법 상태 전이(역방향/비연속 역행)를 422 로 차단한다.
+
+  핵심 동작:
+    - OrderStatusEnum 을 전이 규칙 SSoT 로 삼는다: progressOrder(9단계) + allowedTransitions(forward 점프 +
+      역방향 화이트리스트) + canTransitionTo(게이트).
+    - forward 점프 허용(중간 단계 건너뛰기), self-transition 허용, 역방향 화이트리스트
+      (SHIPPING_HOLD↔PREPARING, SHIPPING→{SHIPPING_READY,PREPARING}, DELIVERED→SHIPPING)만 추가 허용.
+    - CONFIRMED 되돌림 전부 금지.
+    - CANCELLED 발 전이는 판매 반영 상태(salesEligibleStatuses)로의 복원(reactivation)만 허용
+      (재고 재차감 동반 운영 기능, PO 2026-06-23). 결제 전 상태(pending_order/pending_payment) 복귀는 차단.
+    - 취소(CANCELLED) 진입은 게이트가 통과 처리(OrderCancellationService 전담, 이중 관리 방지).
+    - 3경로 모두 FormRequest withValidator 1차 차단(422 + 다국어) + Service 진입부 2차 도메인 불변식 가드.
+    - 일괄은 all-or-nothing: 1건이라도 위반이면 전체 422, DB 무변경.
+    - 차단 시 DB 미반영이므로 부수효과 훅(after_status_change/after_ship/after_complete)이 자연 미발화.
+
+axes:
+  from_status:
+    - pending_order
+    - pending_payment
+    - payment_complete
+    - shipping_hold
+    - preparing
+    - shipping_ready
+    - shipping
+    - delivered
+    - confirmed
+    - cancelled
+  to_status:
+    - pending_order
+    - pending_payment
+    - payment_complete
+    - shipping_hold
+    - preparing
+    - shipping_ready
+    - shipping
+    - delivered
+    - confirmed
+    - cancelled
+  transition_path:
+    - single_update        # 단건 PATCH /admin/orders/{order}
+    - bulk_update          # 주문일괄 PATCH /admin/orders/bulk
+    - option_bulk          # 옵션일괄 PATCH /admin/orders/{order}/options/bulk-status
+  classification:
+    - forward_adjacent     # 인접 진행 (허용)
+    - forward_jump         # 중간 건너뛰기 (허용)
+    - self                 # 동일 상태 (허용)
+    - reverse_whitelisted  # 역방향 화이트리스트 (허용)
+    - reverse_not_whitelisted  # 그 외 역방향 (차단)
+    - cancel_target        # 목표=취소 (게이트 통과)
+    - reactivation         # 현재=취소 → 판매 반영 상태 복원 (허용, 재고 재차감 동반)
+    - from_cancelled_to_pre_payment  # 현재=취소 → 결제 전 상태 복귀 (차단)
+  verify_stage:
+    - api_status           # 200 vs 422
+    - db_status            # order_status/option_status 변경 여부
+    - hook_fired           # after_status_change 발화 여부
+    - message_text         # 다국어 차단 메시지
+
+effects:
+  # Enum 전이 게이트 (PHPUnit Unit — 100쌍 매트릭스)
+  - transition_matrix_100_pairs_match_reference   # canTransitionTo 10×10 전수 일치
+  - progress_order_nine_steps_without_cancel      # progressOrder 9단계(취소 제외)
+  - progress_order_values_mirror_enum             # progressOrderValues value 미러
+  - allowed_transitions_per_status                # 상태별 allowedTransitions 집합
+  - shipping_hold_preparing_bidirectional         # 배송보류↔준비중 양방향
+  # 단건 (PHPUnit Feature)
+  - single_reverse_transition_blocked_and_db_unchanged  # 단건 역방향 422 + DB 무변경
+  - single_forward_jump_allowed                   # 단건 forward 점프 허용
+  - single_self_transition_allowed                # 단건 self 허용
+  - blocked_transition_does_not_fire_status_change_hook  # 차단 시 after_status_change 미발화
+  # 주문일괄 (PHPUnit Feature)
+  - bulk_update_all_or_nothing_blocks_and_db_unchanged  # 일괄 1건 위반 → 전체 422 + 정상 건도 미변경
+  # 옵션일괄 (PHPUnit Feature)
+  - option_bulk_reverse_transition_blocked_no_split     # 옵션일괄 역방향 422 + 분할/병합 미발생
+  - option_bulk_all_or_nothing_blocks             # 옵션일괄 1건 위반 → 전체 422
+  - option_bulk_forward_transition_allowed        # 옵션일괄 forward 허용(회귀)
+  # 취소 → 판매 복원(reactivation) — 게이트 통과 + 기존 재차감 동작 불변 (PHPUnit Unit, 회귀 보호)
+  - cancelled_to_sales_status_reactivation_allowed  # 취소 → payment_complete 등 복원 허용 + 재고 재차감
+  - cancelled_to_pre_payment_status_blocked         # 취소 → pending_payment 등 결제 전 상태 차단
+  # 동기화 일원화 회귀 (PHPUnit Unit)
+  - sync_parent_lowest_status_unchanged_after_ssot  # syncParentOrderStatus 혼합 최저단계 선택 불변
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/OrderStatusTransitionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderOptionBulkStatusTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderServiceStockRedeductTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionServiceStockRedeductTest.php

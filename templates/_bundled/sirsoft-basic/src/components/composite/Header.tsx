@@ -33,6 +33,9 @@ import { ThemeToggle } from './ThemeToggle';
 // Avatar 컴포넌트 import
 import { Avatar } from './Avatar';
 
+// SlotContainer — 헤더 통화 등 모듈 주입 UI 를 떙겨 렌더 (헤더는 주입 모듈을 모름)
+import { SlotContainer } from './SlotContainer';
+
 // NotificationCenter 컴포넌트 import
 import { NotificationCenter, type NotificationItem } from './NotificationCenter';
 
@@ -87,6 +90,8 @@ interface HeaderProps {
   shopBase?: string;
   /** 추가 CSS 클래스 */
   className?: string;
+  /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
+  editorAttrs?: Record<string, unknown>;
 
   // ===== 알림센터 드롭다운 Props =====
   /** 알림 목록 (NotificationCenter에 전달) */
@@ -157,6 +162,7 @@ const Header: React.FC<HeaderProps> = ({
   currentLocale = 'ko',
   shopBase = '/shop',
   className = '',
+  editorAttrs,
   // 알림센터
   notifications = [],
   notificationHasMore = false,
@@ -178,10 +184,12 @@ const Header: React.FC<HeaderProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMoreBoards, setShowMoreBoards] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
 
   // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준 — 위지윅 overrideWidth 호환)
   const G7Core = (window as any).G7Core;
@@ -244,6 +252,9 @@ const Header: React.FC<HeaderProps> = ({
       if (moreButtonRef.current && !moreButtonRef.current.contains(event.target as Node)) {
         setShowMoreBoards(false);
       }
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setShowLangMenu(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -267,17 +278,25 @@ const Header: React.FC<HeaderProps> = ({
     });
   };
 
-  // 언어 변경 핸들러
+  // 언어 변경 핸들러 — 헤더 독립 언어 버튼(코어 기능)에서 호출. setLocale 은 비회원도 동작.
   const handleLocaleChange = (locale: string) => {
     (window as any).G7Core?.dispatch?.({
       handler: 'setLocale',
       target: locale,
     });
-    setShowUserMenu(false);
+    setShowLangMenu(false);
   };
 
+  // 로케일 코드 → 표시명 (활성 언어팩 native_name 우선, 폴백 사전)
+  const getLocaleName = (locale: string): string =>
+    (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale] ??
+    (locale === 'ko' ? '한국어' : locale === 'en' ? 'English' : locale === 'ja' ? '日本語' : locale === 'zh' ? '中文' : locale === 'es' ? 'Español' : locale === 'fr' ? 'Français' : locale === 'de' ? 'Deutsch' : locale.toUpperCase());
+
   return (
-    <HeaderBasic className={`sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}>
+    <HeaderBasic
+      {...((editorAttrs ?? {}) as Record<string, never>)}
+      className={`sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}
+    >
       {/* 상단 바 */}
       <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Div className="flex items-center justify-between h-16">
@@ -352,6 +371,57 @@ const Header: React.FC<HeaderProps> = ({
               )}
             </Button>
 
+            {/* 언어 선택 — 헤더 독립 버튼(코어 기능, 비회원 포함 전체 노출). 공간 절약 위해 아이콘+로케일 코드만.
+                언어는 항상 존재(이커머스 무관) → 템플릿 헤더 내장. */}
+            {availableLocales && availableLocales.length > 1 && (
+              <Div ref={langMenuRef} className="relative">
+                <Button
+                  onClick={() => setShowLangMenu(!showLangMenu)}
+                  className="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
+                  aria-haspopup="listbox"
+                  aria-expanded={showLangMenu}
+                  aria-label={t('common.language')}
+                >
+                  <Icon name="globe" className="w-4 h-4" />
+                  <Span className="font-medium uppercase">{currentLocale}</Span>
+                  <Icon name="chevron-down" className="w-3 h-3" />
+                </Button>
+                {showLangMenu && (
+                  <Div
+                    role="listbox"
+                    className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-50 overflow-hidden"
+                  >
+                    {availableLocales.map((locale) => {
+                      const isActive = locale === currentLocale;
+                      return (
+                        <Button
+                          key={locale}
+                          role="option"
+                          aria-selected={isActive}
+                          onClick={() => handleLocaleChange(locale)}
+                          className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors ${
+                            isActive
+                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          <Icon name="globe" className="w-4 h-4" />
+                          <Span className="flex-1 font-medium">{getLocaleName(locale)}</Span>
+                          {isActive && <Icon name="check" className="w-4 h-4" />}
+                        </Button>
+                      );
+                    })}
+                  </Div>
+                )}
+              </Div>
+            )}
+
+            {/* 통화 선택 — 이커머스 모듈이 'header_currency' 슬롯에 주입(layout_extensions).
+                헤더는 슬롯 이름만 알고 통화/모듈을 모름. 모듈 비활성 시 빈 슬롯 → 미렌더(인프라 자동 게이트).
+                id 지정 필수 — 같은 슬롯이 모바일 헤더 SlotContainer 와 동시 렌더되므로 주입 컴포넌트
+                root id 가 컨테이너별로 스코프되도록(SlotContainer 가 id 로 자식 root id 를 고유화) 한다. */}
+            <SlotContainer slotId="header_currency" id="header_currency_slot_desktop" className="flex items-center" />
+
             {/* 사용자 메뉴 */}
             {user?.uuid ? (
               <Div ref={userMenuRef} className="relative">
@@ -415,31 +485,7 @@ const Header: React.FC<HeaderProps> = ({
                       </Button>
                     </Div>
 
-                    {/* 언어 선택 (availableLocales가 있을 때만 표시) */}
-                    {availableLocales && availableLocales.length > 1 && (
-                      <>
-                        <Hr className="my-1 border-gray-200 dark:border-gray-700" />
-                        <Div className="py-1">
-                          <Div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                            {t('common.language')}
-                          </Div>
-                          {availableLocales.map((locale) => (
-                            <Button
-                              key={locale}
-                              onClick={() => handleLocaleChange(locale)}
-                              className={`block w-full text-left px-4 py-2 text-sm cursor-pointer ${
-                                locale === currentLocale
-                                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                              }`}
-                            >
-                              <Icon name="globe" className="inline w-4 h-4 mr-2" />
-                              {(window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale] ?? (locale === 'ko' ? '한국어' : locale === 'en' ? 'English' : locale === 'ja' ? '日本語' : locale === 'zh' ? '中文' : locale === 'es' ? 'Español' : locale === 'fr' ? 'Français' : locale === 'de' ? 'Deutsch' : locale.toUpperCase())}
-                            </Button>
-                          ))}
-                        </Div>
-                      </>
-                    )}
+                    {/* 언어 선택은 헤더 독립 버튼으로 일원화(드롭다운에서 제거) — 비회원도 헤더에서 전환 가능 */}
 
                     <Hr className="my-1 border-gray-200 dark:border-gray-700" />
                     <Button
@@ -453,16 +499,23 @@ const Header: React.FC<HeaderProps> = ({
                 )}
               </Div>
             ) : (
-              <Div className="flex items-center gap-2">
+              <Div className="flex items-center gap-1.5">
+                {/* 주문조회 — 로그인 페이지로 진입. 회원은 로그인 후 redirect 파라미터로 마이페이지 주문 내역으로 이동, 비회원은 로그인 페이지의 '비회원 주문 조회' 링크로 폼 진입. 로그아웃된 회원이 비회원 페이지에서 막다른 길에 빠지는 케이스를 차단한다. */}
+                <Button
+                  onClick={() => navigate('/login?redirect=/mypage/orders')}
+                  className="px-2.5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                >
+                  {t('shop.guest_order_form.nav_link')}
+                </Button>
                 <Button
                   onClick={() => navigate('/login')}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                  className="px-2.5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                 >
                   {t('auth.login')}
                 </Button>
                 <Button
                   onClick={() => navigate('/register')}
-                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 cursor-pointer"
+                  className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 cursor-pointer"
                 >
                   {t('auth.register_link')}
                 </Button>
@@ -487,14 +540,14 @@ const Header: React.FC<HeaderProps> = ({
       <Nav className="border-t border-gray-200 dark:border-gray-800">
         <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Div className="flex items-center gap-1 h-12 overflow-x-auto">
-            <Button onClick={() => navigate('/')} className={getNavButtonClass(isActiveRoute('/', true))}>
+            <Button onClick={() => navigate('/')} className={getNavButtonClass(isActiveRoute('/', true))} data-testid="nav-home">
               {t('nav.home')}
             </Button>
-            <Button onClick={() => navigate('/boards/popular')} className={`flex items-center gap-1 ${getNavButtonClass(isActiveRoute('/boards/popular'))}`}>
+            <Button onClick={() => navigate('/boards/popular')} className={`flex items-center gap-1 ${getNavButtonClass(isActiveRoute('/boards/popular'))}`} data-testid="nav-popular">
               <Span className="text-orange-500">🔥</Span>
               {t('nav.popular')}
             </Button>
-            <Button onClick={() => navigate(`${shopBase === '/' ? '' : shopBase}/products`)} className={`flex items-center gap-1 ${getNavButtonClass(isShopActive())}`}>
+            <Button onClick={() => navigate(`${shopBase === '/' ? '' : shopBase}/products`)} className={`flex items-center gap-1 ${getNavButtonClass(isShopActive())}`} data-testid="nav-shop">
               <Span>🛒</Span>
               {t('nav.shop')}
             </Button>

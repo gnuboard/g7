@@ -1,0 +1,75 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 세션(세션 A, 백엔드)은
+#   계산/주문생성/장바구니 합산/환불 재계산을 PHPUnit (AdditionalOptionsCalculationTest,
+#   AdditionalOptionsCartMergeTest, ProductServiceAdditionalOptionsTest) 가 커버하며 green.
+#   유저/관리자 프론트 + E2E 는 세션 B/C 에서 추가된다.
+feature: 상품 추가옵션(유료) 전 영역
+
+description: |
+  상품 추가옵션을 그룹 + 선택지(각 KRW 추가금) 구조로 도입한다.
+  - 정의는 상품 단위, 선택/적용은 장바구니 행(블럭) 단위 (D2)
+  - 안B: order_options.unit_price 는 원옵션가 유지, additional_options_total 분리 보유,
+    subtotal = (unit_price + additional_options_total) × quantity (D6)
+  - 가격은 항상 value_id 기준 서버 재조회 (클라 가격 신뢰 금지)
+  - 합산 키에 추가옵션 선택 해시 포함 (D3)
+  - 정률 적립·쿠폰은 추가옵션 포함 subtotal 기준 자동 반영, 정액(fixed) 적립은 무관 (D5)
+  - 과거 주문은 additional_options_snapshot 으로 동결 표시 (D8)
+
+axes:
+  has_additional_option:
+    - none                 # 추가옵션 미선택
+    - single_paid          # 유료 선택지 1개 (+5000)
+    - zero_priced          # 추가금 0원 선택지
+  mileage_type:
+    - percent              # 정률 적립 (추가옵션 포함)
+    - fixed                # 정액 적립 (추가옵션 무관)
+  coupon:
+    - none
+    - product_amount       # 상품금액 쿠폰 (추가옵션 포함 subtotal 기준)
+  entry:
+    - cart                 # 장바구니 경유
+    - direct_buy           # 바로구매 (장바구니 미경유)
+  ui_surface:             # 세션 B/C 프론트 노출 지점
+    - admin_product_form   # 관리자 상품폼 선택지 입력 (세션 B)
+    - product_detail_block # 유저 상품상세 옵션 블럭 내부 선택 (세션 C)
+    - cart_modal           # 장바구니 옵션변경 모달 재선택 (세션 C)
+    - order_display        # 체크아웃/주문완료/마이페이지/관리자주문서 스냅샷 표시 (세션 C)
+
+effects:
+  - subtotal_includes_additional_options      # (unit_price + add_total) × qty
+  - unit_price_keeps_original                 # unit_price 는 원옵션가 유지 (안B)
+  - additional_total_times_quantity           # 추가금 × 상품수량 (D6)
+  - price_resolved_server_side                # value_id 기준 서버 재조회 (클라 가격 무시)
+  - invalid_value_rejected_422                # 타상품/비활성 value_id → 422 (D12)
+  - required_group_unselected_rejected_422    # 필수 그룹 미선택 → 422 (D9/D12)
+  - cart_merge_distinct_by_selection_hash     # 같은 옵션 + 다른 추가옵션 → 별개 행 (D3)
+  - cart_merge_combines_same_selection        # 같은 옵션 + 같은 추가옵션 → 수량 합산
+  - percent_mileage_includes_additional       # 정률 적립 base 에 추가옵션 포함 (D5)
+  - fixed_mileage_excludes_additional         # 정액 적립은 추가옵션 무관 (D5)
+  - product_coupon_on_included_subtotal       # 상품쿠폰 산정 base 에 추가옵션 포함
+  - order_snapshot_frozen                     # additional_options_snapshot 동결 (D8)
+  - order_additional_total_persisted          # order_options.additional_options_total 기록
+  - refund_recalc_includes_snapshot           # 환불 재계산 시 스냅샷 추가옵션 반영
+  # 세션 C — 유저 흐름 + 표시 + E2E
+  - detail_block_renders_active_values_only    # 상품상세 블럭 내부 활성 선택지만 라디오/Select (V6 비활성 제외)
+  - detail_realtime_subtotal_includes_additional # 블럭 소계·총액 실시간 = (옵션가+추가옵션)×수량 (D13 클라표시)
+  - detail_required_unselected_blocks_submit   # 필수 추가옵션 미선택 시 담기/구매 클라 가드 차단 (D9)
+  - submit_sends_additional_option_selections  # 담기/바로구매 body 에 additional_option_selections 전달
+  - cart_item_displays_selected_additional     # 장바구니 항목에 선택 추가옵션·추가금 표시
+  - cart_modal_reselect_and_patch              # 옵션변경 모달 추가옵션 재선택 + PATCH additional_option_selections
+  - order_display_snapshot_additional_rows     # 체크아웃/주문완료/마이페이지/관리자주문서 스냅샷 별행 표시 (D14)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/AdditionalOptionsCalculationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/AdditionalOptionsCartMergeTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceAdditionalOptionsTest.php
+  # 세션 B 관리자 UI
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/optionHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productOptionsAdditionalToggle.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderInfoAdditionalOptions.test.ts
+  # 세션 C 유저 흐름 (템플릿 sirsoft-basic)
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/productOptionsAdditional.test.ts
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shopAdditionalOptions.test.tsx
+  # 세션 C E2E
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/shop/additional-options.spec.ts

@@ -4,8 +4,11 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Identity;
 
 use App\Enums\IdentityVerificationStatus;
 use App\Exceptions\IdentityVerificationRequiredException;
+use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
+use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Models\IdentityMessageDefinition;
 use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
 use App\Models\Role;
@@ -15,7 +18,16 @@ use App\Testing\Concerns\AssertsIdentityPolicyDeclaration;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
+use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
+use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Module;
+use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
+use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * 이커머스 모듈의 IdentityPolicy / IdentityPurpose 선언이
@@ -66,7 +78,7 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         $manager = app(IdentityVerificationManager::class);
 
         // 모듈 부팅 시 등록되는 통상 흐름과 다르게, 단위 테스트에서는 직접 등록.
-        $module = new \Modules\Sirsoft\Ecommerce\Module(
+        $module = new Module(
             'sirsoft-ecommerce',
             $this->getModuleBasePath(),
         );
@@ -85,7 +97,7 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
      */
     public function test_checkout_verification_purpose_label_resolves_via_module_lang(): void
     {
-        $module = new \Modules\Sirsoft\Ecommerce\Module(
+        $module = new Module(
             'sirsoft-ecommerce',
             $this->getModuleBasePath(),
         );
@@ -126,7 +138,7 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
      */
     public function test_checkout_verification_message_definition_synced(): void
     {
-        $module = new \Modules\Sirsoft\Ecommerce\Module(
+        $module = new Module(
             'sirsoft-ecommerce',
             $this->getModuleBasePath(),
         );
@@ -134,7 +146,7 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         $messages = $module->getIdentityMessages();
         $this->assertNotEmpty($messages, 'checkout_verification 전용 메시지가 선언되어야 함');
 
-        $helper = app(\App\Extension\Helpers\IdentityMessageSyncHelper::class);
+        $helper = app(IdentityMessageSyncHelper::class);
         foreach ($messages as $data) {
             $data['extension_type'] = 'module';
             $data['extension_identifier'] = 'sirsoft-ecommerce';
@@ -151,7 +163,7 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
             'extension_identifier' => 'sirsoft-ecommerce',
         ]);
 
-        $defId = \App\Models\IdentityMessageDefinition::query()
+        $defId = IdentityMessageDefinition::query()
             ->where('extension_identifier', 'sirsoft-ecommerce')
             ->where('scope_value', 'checkout_verification')
             ->value('id');
@@ -174,7 +186,7 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
     private function syncEcommerceIdentityPolicies(): void
     {
         $helper = app(IdentityPolicySyncHelper::class);
-        $module = new \Modules\Sirsoft\Ecommerce\Module(
+        $module = new Module(
             'sirsoft-ecommerce',
             $this->getModuleBasePath(),
         );
@@ -292,9 +304,8 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
      * 2) verified 로그 fixture 작성 (TestIdentityProvider 호출과 동등)
      * 3) verified 직후 enforce 통과
      * 4) (grace>0) 시간 경과 후 enforce 다시 throw
-     *
-     * @dataProvider ecommerceLifecycleProvider
      */
+    #[DataProvider('ecommerceLifecycleProvider')]
     public function test_ecommerce_policy_full_service_lifecycle(string $policyKey, string $purpose, string $userType, int $graceMinutes): void
     {
         $user = $userType === 'admin' ? $this->adminUser() : $this->regularUser();
@@ -311,7 +322,7 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         $this->seedVerifiedLog($user, $purpose, Carbon::now());
 
         $service->enforce($policy, $user->fresh(), []);
-        $this->assertTrue(true, "verified 직후 enforce 통과");
+        $this->assertTrue(true, 'verified 직후 enforce 통과');
 
         if ($graceMinutes > 0) {
             Carbon::setTestNow(Carbon::now()->addMinutes($graceMinutes + 1));
@@ -336,7 +347,7 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
         ];
     }
 
-    private function seedVerifiedLog(User $user, string $purpose, \Illuminate\Support\Carbon $when): void
+    private function seedVerifiedLog(User $user, string $purpose, Carbon $when): void
     {
         IdentityVerificationLog::create([
             'id' => Str::uuid()->toString(),
@@ -354,6 +365,98 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
             'created_at' => $when,
             'updated_at' => $when,
         ]);
+    }
+
+    // ===========================================================================
+    // 실경로 훅 발화 검증 (A8) — 정책 target 훅이 실제 액션 경로에서 발화되어야 enforce 가 작동
+    // ===========================================================================
+
+    /**
+     * 결제 취소 실경로(OrderCancellationService::cancelOrder)가 payment.before_cancel 훅을 발화한다.
+     *
+     * 발화 지점이 DB 트랜잭션 전이므로, 마커 예외를 던지는 리스너로 발화 자체를 입증한다.
+     *
+     * @scenario policy=cancel, enabled=on, actor=admin, verified_state=unverified
+     *
+     * @effects cancel_path_fires_when_enabled_and_unverified, dummy_payment_hooks_removed
+     */
+    public function test_cancel_path_fires_before_cancel_hook(): void
+    {
+        $order = OrderFactory::new()->create([
+            'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+        ]);
+        OrderPaymentFactory::new()->forOrder($order)->create();
+        OrderOptionFactory::new()->forOrder($order)->create([
+            'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+        ]);
+
+        $marker = new \RuntimeException('__before_cancel_fired__');
+        $cb = function () use ($marker) {
+            throw $marker;
+        };
+        HookManager::addAction('sirsoft-ecommerce.payment.before_cancel', $cb, 1);
+
+        try {
+            app(OrderCancellationService::class)
+                ->cancelOrder($order->fresh());
+            $this->fail('payment.before_cancel 훅이 발화되어 마커 예외가 전파되어야 함');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('__before_cancel_fired__', $e->getMessage());
+        } finally {
+            HookManager::removeAction('sirsoft-ecommerce.payment.before_cancel', $cb);
+        }
+    }
+
+    /**
+     * 무통장 입금확인 실경로(OrderProcessingService::confirmManualDeposit)가
+     * payment.before_confirm_deposit 훅을 발화한다.
+     *
+     * @scenario policy=confirm_deposit, enabled=on, actor=admin, verified_state=unverified
+     *
+     * @effects confirm_deposit_fires_on_dedicated_action_when_enabled
+     */
+    public function test_confirm_deposit_path_fires_hook(): void
+    {
+        $order = OrderFactory::new()->create([
+            'order_status' => OrderStatusEnum::PENDING_PAYMENT,
+        ]);
+        OrderPaymentFactory::new()->forOrder($order)->create([
+            'payment_method' => PaymentMethodEnum::DBANK,
+        ]);
+
+        $fired = false;
+        $cb = function () use (&$fired) {
+            $fired = true;
+        };
+        HookManager::addAction('sirsoft-ecommerce.payment.before_confirm_deposit', $cb, 1);
+
+        try {
+            app(OrderProcessingService::class)
+                ->confirmManualDeposit($order->fresh(), (float) $order->total_due_amount, '홍길동');
+        } finally {
+            HookManager::removeAction('sirsoft-ecommerce.payment.before_confirm_deposit', $cb);
+        }
+
+        $this->assertTrue($fired, 'confirm_deposit 전용 액션이 payment.before_confirm_deposit 훅을 발화해야 함');
+    }
+
+    /**
+     * 정책 비활성 시 실경로가 정상 동작(enforce 미발동) — 회귀 무영향.
+     *
+     * @scenario policy=cancel, enabled=off, actor=admin, verified_state=unverified
+     *
+     * @effects disabled_policy_keeps_existing_flow
+     */
+    public function test_disabled_policy_keeps_existing_flow(): void
+    {
+        // 정책 동기화만 하고 활성화하지 않음 (기본 enabled=false)
+        $this->syncEcommerceIdentityPolicies();
+        $policy = IdentityPolicy::where('key', 'sirsoft-ecommerce.payment.cancel')->first();
+        $this->assertFalse((bool) $policy->enabled);
+
+        // enforce 가 비활성 정책에 대해 즉시 통과
+        app(IdentityPolicyService::class)->enforce($policy, $this->adminUser(), []);
+        $this->assertTrue(true);
     }
 
     /** D12 — checkout.before_pay grace=30 윈도우 내 인증 이력이 있으면 enforce skip */

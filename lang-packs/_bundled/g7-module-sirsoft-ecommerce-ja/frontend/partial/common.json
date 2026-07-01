@@ -47,5 +47,8 @@
   "loading": "読み込み中...",
   "select_placeholder": "選択してください",
   "selected_count": "{{count}}個が選択されました",
-  "read_only_notice": "閲覧権限のみです。編集が必要な場合は管理者にお問い合わせください。"
+  "read_only_notice": "閲覧権限のみです。編集が必要な場合は管理者にお問い合わせください。",
+  "validation_error_notice": "入力値を確認してください。一部の項目が正しくありません。",
+  "currency_label": "通貨",
+  "shipping_country_label": "配送国"
 }

@@ -2,7 +2,7 @@
 
 return [
     'secret_mode' => [
-        'disabled' => '無効',
+        'disabled' => '使用しない',
         'enabled' => '選択使用',
         'always' => '必須使用',
     ],
@@ -21,22 +21,22 @@ return [
         'comment' => 'コメント',
     ],
     'report_reason_type' => [
-        'abuse' => '暴言・中傷',
+        'abuse' => '暴言・誹謗',
         'hate_speech' => 'ヘイト発言',
         'spam' => 'スパム・広告',
         'copyright' => '著作権侵害',
-        'privacy' => '個人情報露出',
+        'privacy' => '個人情報流出',
         'misinformation' => '虚偽情報',
         'sexual' => '性的コンテンツ',
-        'violence' => '暴力的なコンテンツ',
+        'violence' => '暴力的コンテンツ',
         'other' => 'その他',
     ],
     'report_status' => [
-        'pending' => '受理',
-        'review' => '検討中',
+        'pending' => '受付',
+        'review' => '審査中',
         'rejected' => '却下',
         'suspended' => '投稿停止',
-        'deleted' => '永久削除',
+        'deleted' => '完全削除',
     ],
     'trigger_type' => [
         'report' => '通報処理',
@@ -44,6 +44,7 @@ return [
         'system' => 'システム',
         'auto_hide' => '自動ブラインド',
         'user' => 'ユーザー直接削除',
+        'cascade' => '投稿削除',
     ],
     'post_status' => [
         'published' => '公開中',

@@ -19,12 +19,12 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex flex-row items-start justify-between gap-4 mb-4"
+            "className": "flex-start flex-row justify-between gap-4 mb-4"
           },
           "responsive": {
             "portable": {
               "props": {
-                "className": "flex flex-col gap-3 mb-4"
+                "className": "row-stack mb-4"
               }
             }
           },
@@ -42,12 +42,12 @@
                   "type": "basic",
                   "name": "H2",
                   "props": {
-                    "className": "text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap"
+                    "className": "text-primary text-xl font-semibold flex-center gap-2 flex-wrap"
                   },
                   "responsive": {
                     "portable": {
                       "props": {
-                        "className": "text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap"
+                        "className": "section-heading flex-center gap-2 flex-wrap"
                       }
                     }
                   },
@@ -146,7 +146,7 @@
               "type": "basic",
               "name": "Button",
               "props": {
-                "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors"
+                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors"
               },
               "if": "{{item.id != route.id}}",
               "actions": [
@@ -173,7 +173,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+            "className": "flex-center flex-wrap gap-2 text-label"
           },
           "children": [
             {
@@ -216,7 +216,7 @@
               "name": "Span",
               "if": "{{item.author?.is_guest}}",
               "props": {
-                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                "className": "text-heading"
               },
               "text": "{{item.author?.name}}"
             },
@@ -224,7 +224,7 @@
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "({{item.author?.email}})",
               "if": "{{item.author?.email}}"
@@ -261,7 +261,7 @@
               "name": "Div",
               "if": "{{(item.comment_count ?? 0) > 0}}",
               "props": {
-                "className": "flex items-center gap-1"
+                "className": "flex-center gap-1"
               },
               "children": [
                 {
@@ -290,7 +290,7 @@
               "name": "Span",
               "if": "{{item.ip_address}}",
               "props": {
-                "className": "text-xs text-gray-500 dark:text-gray-400"
+                "className": "text-tertiary"
               },
               "text": "IP: {{item.ip_address}}"
             }
@@ -303,7 +303,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+        "className": "panel-header-row"
       },
       "if": "{{item.has_attachment}}",
       "children": [
@@ -312,7 +312,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center justify-between cursor-pointer"
+            "className": "flex-between cursor-pointer"
           },
           "actions": [
             {
@@ -329,7 +329,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                "className": "flex-center gap-2 text-body font-medium"
               },
               "children": [
                 {
@@ -374,11 +374,20 @@
             {
               "id": "attachment_card",
               "type": "basic",
-              "name": "A",
+              "name": "Div",
               "props": {
-                "href": "{{attachment.download_url}}",
-                "className": "flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 transition-all cursor-pointer group no-underline"
+                "className": "flex-center gap-2 px-3 py-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 transition-all cursor-pointer group"
               },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "downloadAttachment",
+                  "params": {
+                    "url": "{{attachment.download_url}}",
+                    "filename": "{{attachment.original_filename}}"
+                  }
+                }
+              ],
               "children": [
                 {
                   "type": "composite",
@@ -392,7 +401,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm text-gray-900 dark:text-white truncate flex-1"
+                    "className": "text-primary text-sm truncate flex-1"
                   },
                   "text": "{{attachment.original_filename}} ({{attachment.size_formatted}})"
                 }
@@ -437,7 +446,7 @@
           "if": "{{(item?.content?.length ?? 0) > 150}}",
           "props": {
             "type": "button",
-            "className": "mt-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors flex items-center gap-1"
+            "className": "flex-center mt-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors gap-1"
           },
           "actions": [
             {

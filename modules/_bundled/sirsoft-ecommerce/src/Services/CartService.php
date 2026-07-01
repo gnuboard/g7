@@ -9,9 +9,16 @@ use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\DTO\CartWithCalculationResult;
+use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
+use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartOperationException;
+use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 
 /**
  * 장바구니 서비스
@@ -21,7 +28,10 @@ class CartService
     public function __construct(
         protected CartRepositoryInterface $cartRepository,
         protected ProductOptionRepositoryInterface $productOptionRepository,
-        protected OrderCalculationService $orderCalculationService
+        protected OrderCalculationService $orderCalculationService,
+        protected OrderRepositoryInterface $orderRepository,
+        protected ProductRepositoryInterface $productRepository,
+        protected AdditionalOptionSelectionService $additionalOptionSelectionService
     ) {}
 
     /**
@@ -101,7 +111,7 @@ class CartService
                 // 빈 배열이면 계산 생략 (선택된 상품 없음)
                 return new CartWithCalculationResult(
                     items: $items,
-                    calculation: new \Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult
+                    calculation: new OrderCalculationResult
                 );
             }
 
@@ -114,11 +124,25 @@ class CartService
             if ($itemsForCalculation->isEmpty()) {
                 return new CartWithCalculationResult(
                     items: $items,
-                    calculation: new \Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult
+                    calculation: new OrderCalculationResult
                 );
             }
         }
         // selectedCartIds가 null이면 전체 상품 계산 (기존 동작 유지)
+
+        // 비정상 항목(판매중지/품절/출시예정/전시중지) 합계 제외 (U13②/U4 빈 안전망).
+        // 응답 items 에는 남기되(2-f 플래그로 구분) 합계 계산에서만 제외한다.
+        $itemsForCalculation = $itemsForCalculation->filter(
+            fn ($cart) => $cart->product && $cart->product->isPurchasable()
+        );
+
+        // 비정상 항목 제외 후 계산 대상이 없으면 빈 계산 결과 반환
+        if ($itemsForCalculation->isEmpty()) {
+            return new CartWithCalculationResult(
+                items: $items,
+                calculation: new OrderCalculationResult
+            );
+        }
 
         // 장바구니 아이템을 CalculationItem으로 변환
         $calculationItems = $itemsForCalculation->map(function ($cart) {
@@ -126,15 +150,21 @@ class CartService
                 productId: $cart->product_id,
                 productOptionId: $cart->product_option_id,
                 quantity: $cart->quantity,
-                cartId: $cart->id
+                cartId: $cart->id,
+                additionalOptionSelections: $cart->additional_option_selections,
             );
         })->all();
 
         // 주문 계산 실행
+        // 배송국가는 요청별 결정값(ResolveShippingCountry: 헤더 X-Shipping-Country > 저장국가 > GeoIP > 기본국가)을
+        // 사용한다. 미전달 시 OrderCalculationService 가 'KR' 로 폴백해 장바구니 배송비가 항상 국내가로 계산되는
+        // 회귀를 막는다(selected_shipping_country 표시와 배송비 계산 국가 일치). 우편번호 없는 미리보기이므로
+        // 국가만으로 해당 국가 배송비를 산정한다(도서산간/주별 세부 차등은 결제 단계 주소 입력 시 반영).
         $calculationInput = new CalculationInput(
             items: $calculationItems,
             couponIssueIds: $couponIssueIds,
-            usePoints: $usePoints
+            usePoints: $usePoints,
+            shippingAddress: new ShippingAddress(countryCode: ResolveShippingCountry::getCountry()),
         );
 
         $calculationResult = $this->orderCalculationService->calculate($calculationInput);
@@ -157,27 +187,41 @@ class CartService
 
         $data = HookManager::applyFilters('sirsoft-ecommerce.cart.filter_add_data', $data);
 
-        // 동일 옵션 존재 여부 확인 (재고 검증 전에 확인)
+        // 추가옵션 선택 검증·정규화 (서버 SSoT — D9/D12)
+        $additionalSelections = $this->additionalOptionSelectionService->validateAndNormalize(
+            $data['product_id'],
+            $data['additional_option_selections'] ?? null
+        );
+        $selectionHash = Cart::normalizeAdditionalOptionSelectionHash($additionalSelections);
+
+        // 동일 옵션 + 동일 추가옵션 조합 존재 여부 확인 (합산 판정에 추가옵션 해시 포함 — D3)
         $existingItem = null;
+        $candidates = collect();
         if (! empty($data['user_id'])) {
-            $existingItem = $this->cartRepository->findByUserAndOption(
+            $candidates = $this->cartRepository->findAllByUserAndOption(
                 $data['user_id'],
                 $data['product_option_id']
             );
         } elseif (! empty($data['cart_key'])) {
-            $existingItem = $this->cartRepository->findByCartKeyAndOption(
+            $candidates = $this->cartRepository->findAllByCartKeyAndOption(
                 $data['cart_key'],
                 $data['product_option_id']
             );
         }
+        $existingItem = $candidates->first(
+            fn ($cart) => $cart->getAdditionalOptionSelectionHash() === $selectionHash
+        );
+
+        // 판매상태 검증 (판매중지/품절/출시예정/전시중지 차단 — 재고보다 우선)
+        $this->validatePurchasable($data['product_option_id']);
 
         // 재고 검증 (기존 수량 + 추가 수량)
         $currentQuantity = $existingItem ? $existingItem->quantity : 0;
         $this->validateStock($data['product_option_id'], $data['quantity'] ?? 1, $currentQuantity);
 
-        $cart = DB::transaction(function () use ($data, $existingItem) {
+        $cart = DB::transaction(function () use ($data, $existingItem, $additionalSelections) {
             if ($existingItem) {
-                // 동일 옵션 존재: 수량 증가
+                // 동일 옵션 + 동일 추가옵션 조합 존재: 수량 증가
                 return $this->cartRepository->update($existingItem, [
                     'quantity' => $existingItem->quantity + ($data['quantity'] ?? 1),
                 ]);
@@ -189,6 +233,7 @@ class CartService
                 'user_id' => $data['user_id'] ?? null,
                 'product_id' => $data['product_id'],
                 'product_option_id' => $data['product_option_id'],
+                'additional_option_selections' => ! empty($additionalSelections) ? $additionalSelections : null,
                 'quantity' => $data['quantity'] ?? 1,
             ]);
         });
@@ -215,6 +260,14 @@ class CartService
 
         // 상품의 전체 옵션 목록 조회
         $productOptions = $this->productOptionRepository->getByProductId($productId);
+
+        // 상품당 총수량(기존 장바구니 + 이번 요청) 기준 최소/최대 구매수량 검증 (A25, 1차 방어선)
+        $requestedTotal = array_sum(array_map(
+            fn ($item) => max(1, (int) ($item['quantity'] ?? 1)),
+            $data['items']
+        ));
+        $existingTotal = $this->cartRepository->sumQuantityByProduct($productId, $userId, $cartKey);
+        $this->validatePurchaseQuantityLimit($productId, $existingTotal + $requestedTotal);
 
         $addedItems = [];
 
@@ -248,6 +301,7 @@ class CartService
                 'quantity' => $quantity,
                 'user_id' => $userId,
                 'cart_key' => $cartKey,
+                'additional_option_selections' => $item['additional_option_selections'] ?? null,
             ]);
 
             $addedItems[] = $cart;
@@ -277,16 +331,28 @@ class CartService
         $cart = $this->cartRepository->find($cartId);
 
         if (! $cart) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.cart_item_not_found'));
+            throw new CartOperationException('item_not_found');
         }
 
         // 권한 확인
         if (! $this->hasAccessToCart($cart, $userId, $cartKey)) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.cart_access_denied'));
+            throw new CartOperationException('access_denied');
         }
+
+        // 판매상태 검증 (판매중지/품절/출시예정/전시중지 차단)
+        $this->validatePurchasable($cart->product_option_id);
 
         // 재고 검증 (변경 요청 수량)
         $this->validateStock($cart->product_option_id, $quantity, 0);
+
+        // 상품당 총수량(동일 product 다른 라인 + 변경 후 이 라인) 기준 구매수량 한도 검증 (A25, 우회 차단)
+        $otherLinesTotal = $this->cartRepository->sumQuantityByProduct(
+            $cart->product_id,
+            $userId,
+            $cartKey,
+            $cart->id
+        );
+        $this->validatePurchaseQuantityLimit($cart->product_id, $otherLinesTotal + $quantity);
 
         HookManager::doAction('sirsoft-ecommerce.cart.before_update_quantity', $cart, $quantity);
 
@@ -307,35 +373,49 @@ class CartService
      * @param  int  $quantity  수량
      * @param  int|null  $userId  회원 ID
      * @param  string|null  $cartKey  비회원 장바구니 키
+     * @param  array|null  $additionalOptionSelections  새 추가옵션 선택 (null이면 기존 선택 유지)
      * @return Cart 수정된 장바구니 아이템
      *
      * @throws \Exception
      */
-    public function changeOption(int $cartId, int $newProductOptionId, int $quantity, ?int $userId, ?string $cartKey): Cart
+    public function changeOption(int $cartId, int $newProductOptionId, int $quantity, ?int $userId, ?string $cartKey, ?array $additionalOptionSelections = null): Cart
     {
         $cart = $this->cartRepository->find($cartId);
 
         if (! $cart) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.cart_item_not_found'));
+            throw new CartOperationException('item_not_found');
         }
 
         if (! $this->hasAccessToCart($cart, $userId, $cartKey)) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.cart_access_denied'));
+            throw new CartOperationException('access_denied');
         }
 
         // 동일 상품 옵션 검증 (다른 상품의 옵션으로 변경 불가)
         $this->validateSameProduct($cart, $newProductOptionId);
 
-        // 변경하려는 옵션이 이미 장바구니에 있는지 확인 (재고 검증 전에 확인)
-        $existingItem = null;
+        // 판매상태 검증 (판매중지/품절/출시예정/전시중지 차단)
+        $this->validatePurchasable($newProductOptionId);
+
+        // 추가옵션: 미전달 시 기존 선택 유지, 전달 시 검증·정규화 (서버 SSoT — D3/D9/D12)
+        $newSelections = $additionalOptionSelections === null
+            ? ($cart->additional_option_selections ?? [])
+            : $this->additionalOptionSelectionService->validateAndNormalize($cart->product_id, $additionalOptionSelections);
+        $newSelectionHash = Cart::normalizeAdditionalOptionSelectionHash($newSelections);
+
+        // 변경하려는 (옵션 + 추가옵션 조합)이 이미 장바구니에 있는지 확인 (재고 검증 전에 확인 — D3)
+        $candidates = collect();
         if ($userId !== null) {
-            $existingItem = $this->cartRepository->findByUserAndOption($userId, $newProductOptionId);
+            $candidates = $this->cartRepository->findAllByUserAndOption($userId, $newProductOptionId);
         } elseif ($cartKey !== null) {
-            $existingItem = $this->cartRepository->findByCartKeyAndOption($cartKey, $newProductOptionId);
+            $candidates = $this->cartRepository->findAllByCartKeyAndOption($cartKey, $newProductOptionId);
         }
+        $existingItem = $candidates->first(
+            fn ($candidate) => $candidate->id !== $cart->id
+                && $candidate->getAdditionalOptionSelectionHash() === $newSelectionHash
+        );
 
         // 재고 검증 (합산된 수량 기준)
-        if ($existingItem && $existingItem->id !== $cart->id) {
+        if ($existingItem) {
             $this->validateStock($newProductOptionId, $quantity, $existingItem->quantity);
         } else {
             $this->validateStock($newProductOptionId, $quantity, 0);
@@ -343,9 +423,9 @@ class CartService
 
         HookManager::doAction('sirsoft-ecommerce.cart.before_change_option', $cart, $newProductOptionId, $quantity);
 
-        $cart = DB::transaction(function () use ($cart, $newProductOptionId, $quantity, $existingItem) {
-            if ($existingItem && $existingItem->id !== $cart->id) {
-                // 이미 존재하면 수량 합산 후 기존 아이템 삭제
+        $cart = DB::transaction(function () use ($cart, $newProductOptionId, $quantity, $existingItem, $newSelections) {
+            if ($existingItem) {
+                // 이미 존재(동일 옵션+추가옵션 조합)하면 수량 합산 후 기존 아이템 삭제
                 $this->cartRepository->update($existingItem, [
                     'quantity' => $existingItem->quantity + $quantity,
                 ]);
@@ -354,10 +434,11 @@ class CartService
                 return $existingItem->fresh();
             }
 
-            // 옵션과 수량 변경
+            // 옵션·수량·추가옵션 변경
             return $this->cartRepository->update($cart, [
                 'product_option_id' => $newProductOptionId,
                 'quantity' => $quantity,
+                'additional_option_selections' => ! empty($newSelections) ? $newSelections : null,
             ]);
         });
 
@@ -381,11 +462,11 @@ class CartService
         $cart = $this->cartRepository->find($cartId);
 
         if (! $cart) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.cart_item_not_found'));
+            throw new CartOperationException('item_not_found');
         }
 
         if (! $this->hasAccessToCart($cart, $userId, $cartKey)) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.cart_access_denied'));
+            throw new CartOperationException('access_denied');
         }
 
         HookManager::doAction('sirsoft-ecommerce.cart.before_delete', $cart);
@@ -451,11 +532,11 @@ class CartService
                 $productOption = $this->productOptionRepository->findById($guestItem->product_option_id);
                 $availableStock = $productOption?->stock_quantity ?? 0;
 
-                // 회원 장바구니에 동일 옵션이 있는지 확인
-                $existingItem = $this->cartRepository->findByUserAndOption(
-                    $userId,
-                    $guestItem->product_option_id
-                );
+                // 회원 장바구니에 동일 옵션 + 동일 추가옵션 조합이 있는지 확인 (D3)
+                $guestHash = $guestItem->getAdditionalOptionSelectionHash();
+                $existingItem = $this->cartRepository
+                    ->findAllByUserAndOption($userId, $guestItem->product_option_id)
+                    ->first(fn ($candidate) => $candidate->getAdditionalOptionSelectionHash() === $guestHash);
 
                 if ($existingItem) {
                     // 동일 옵션 존재: 수량 합산 (재고 초과 시 재고 최대치로 조정)
@@ -485,6 +566,86 @@ class CartService
         HookManager::doAction('sirsoft-ecommerce.cart.after_merge', $cartKey, $userId, $mergedCount);
 
         return $mergedCount;
+    }
+
+    /**
+     * 과거 주문에서 재주문 — 주문 옵션을 장바구니에 추가.
+     *
+     * 사용자의 과거 주문 (취소된 주문 포함) 에서 상품 옵션을 추출하여
+     * 현재 장바구니에 일괄 추가한다. 품절/단종/옵션 변경 등으로 추가 불가한
+     * 항목은 skip 하고 사유를 누적해 반환한다.
+     *
+     * @param  int  $orderId  대상 주문 ID
+     * @param  int  $userId  요청 사용자 ID (소유권 검증)
+     * @return array{added_count:int, skipped:list<array{product_name:string,reason:string}>, cart_count:int}
+     *
+     * @throws \Exception 주문 미존재 또는 사용자 권한 불일치 시
+     */
+    public function reorderFromOrder(int $orderId, int $userId): array
+    {
+        $order = $this->orderRepository->findWithRelations($orderId);
+
+        if (! $order) {
+            throw new \Exception(__('sirsoft-ecommerce::exceptions.order_not_found'));
+        }
+
+        if ((int) $order->user_id !== $userId) {
+            throw new \Exception(__('sirsoft-ecommerce::exceptions.unauthorized'));
+        }
+
+        HookManager::doAction('sirsoft-ecommerce.cart.before_reorder', $order, $userId);
+
+        $addedCount = 0;
+        $skipped = [];
+
+        $topLevelOptions = $order->options->filter(fn ($opt) => $opt->parent_option_id === null);
+
+        $locale = app()->getLocale();
+        foreach ($topLevelOptions as $orderOption) {
+            $rawName = $orderOption->product_name;
+            if (is_array($rawName)) {
+                $productName = (string) ($rawName[$locale] ?? $rawName['ko'] ?? $rawName['en'] ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
+            } else {
+                $productName = (string) ($rawName ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
+            }
+            $quantity = max(1, (int) $orderOption->quantity);
+
+            $productOption = $this->productOptionRepository->findById((int) $orderOption->product_option_id);
+            if (! $productOption) {
+                $skipped[] = [
+                    'product_name' => $productName,
+                    'reason' => __('sirsoft-ecommerce::messages.cart.reorder_option_not_found'),
+                ];
+
+                continue;
+            }
+
+            try {
+                $this->addToCart([
+                    'product_id' => (int) $orderOption->product_id,
+                    'product_option_id' => (int) $orderOption->product_option_id,
+                    'quantity' => $quantity,
+                    'user_id' => $userId,
+                    'cart_key' => null,
+                ]);
+                $addedCount++;
+            } catch (\Exception $e) {
+                $skipped[] = [
+                    'product_name' => $productName,
+                    'reason' => $e->getMessage(),
+                ];
+            }
+        }
+
+        $cartCount = $this->getItemCount($userId, null);
+
+        HookManager::doAction('sirsoft-ecommerce.cart.after_reorder', $order, $userId, $addedCount, $skipped);
+
+        return [
+            'added_count' => $addedCount,
+            'skipped' => $skipped,
+            'cart_count' => $cartCount,
+        ];
     }
 
     /**
@@ -558,23 +719,101 @@ class CartService
         $productOption = $this->productOptionRepository->findById($productOptionId);
 
         if (! $productOption) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.option_not_found'));
+            throw new CartOperationException('option_not_found');
         }
 
         $totalQuantity = $currentQuantity + $requestedQuantity;
         $availableStock = $productOption->stock_quantity ?? 0;
 
-        // 재고가 0 이하면 품절
-        if ($availableStock <= 0) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.out_of_stock'));
+        // 재고 0 이하(품절) 또는 요청 수량 초과 — 둘 다 422 (CartUnavailableException reason=stock).
+        // generic \Exception 으로 던지면 컨트롤러 catch-all 에 걸려 500 이 되므로,
+        // 도메인 예외로 던져 cartUnavailableResponse() 의 422 + getUserMessage() 경로를 타게 한다.
+        // (MP07 §1-b — U9/U8 5b 담기 500 결함)
+        if ($availableStock <= 0 || $totalQuantity > $availableStock) {
+            $product = $productOption->product
+                ?? $this->productOptionRepository->findByIdWithProduct($productOptionId)?->product;
+
+            throw CartUnavailableException::fromItems([[
+                'product_id' => $product?->id,
+                'product_option_id' => $productOptionId,
+                'name' => $product?->getLocalizedName() ?? '',
+                // getUserMessage() 의 stock 분기가 quantity→:requested, stock→:available 로 치환
+                'quantity' => $totalQuantity,
+                'stock' => max(0, (int) $availableStock),
+                'reason' => 'stock',
+            ]]);
+        }
+    }
+
+    /**
+     * 상품 판매 가능 여부를 검증합니다. (담기/수량변경/옵션변경 시)
+     *
+     * 판매중지/품절/출시예정/전시중지(hidden) 상품은 담을 수 없습니다.
+     * 재고 검증보다 먼저 호출하여 판매상태 메시지를 우선 노출합니다.
+     *
+     * @param  int  $productOptionId  상품 옵션 ID
+     *
+     * @throws CartUnavailableException 판매중지/품절/출시예정/전시중지 상품인 경우
+     * @throws \Exception 옵션/상품을 찾을 수 없는 경우
+     */
+    protected function validatePurchasable(int $productOptionId): void
+    {
+        $option = $this->productOptionRepository->findByIdWithProduct($productOptionId);
+
+        if (! $option || ! $option->product) {
+            throw new CartOperationException('option_not_found');
         }
 
-        // 요청 수량이 재고를 초과하면 예외
-        if ($totalQuantity > $availableStock) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.stock_exceeded', [
-                'available' => $availableStock,
+        if (! $option->product->isPurchasable()) {
+            throw CartUnavailableException::fromItems([[
+                'product_id' => $option->product->id,
+                'product_option_id' => $productOptionId,
+                'name' => $option->product->getLocalizedName(),
+                'reason' => 'status',
+            ]]);
+        }
+    }
+
+    /**
+     * 상품당 총수량 기준 최소/최대 구매수량 한도를 검증합니다. (담기/수량변경 시 1차 방어선)
+     *
+     * 동일 상품의 모든 옵션 라인 합산 수량으로 판정합니다 (옵션 분할 우회 차단).
+     * max_purchase_qty = 0 은 무제한(상한 skip), min_purchase_qty 기본 1.
+     *
+     * @param  int  $productId  상품 ID
+     * @param  int  $totalQuantity  검증 후 상품 총수량 (기존 장바구니 + 이번 요청)
+     *
+     * @throws CartUnavailableException 최소 미달/최대 초과 시
+     */
+    protected function validatePurchaseQuantityLimit(int $productId, int $totalQuantity): void
+    {
+        $product = $this->productRepository->find($productId);
+
+        if (! $product) {
+            return;
+        }
+
+        $min = (int) ($product->min_purchase_qty ?? 1);
+        $max = (int) ($product->max_purchase_qty ?? 0);
+
+        if ($min > 0 && $totalQuantity < $min) {
+            throw CartUnavailableException::fromItems([[
+                'product_id' => $productId,
+                'name' => $product->getLocalizedName(),
                 'requested' => $totalQuantity,
-            ]));
+                'limit' => $min,
+                'reason' => 'min_qty',
+            ]]);
+        }
+
+        if ($max > 0 && $totalQuantity > $max) {
+            throw CartUnavailableException::fromItems([[
+                'product_id' => $productId,
+                'name' => $product->getLocalizedName(),
+                'requested' => $totalQuantity,
+                'limit' => $max,
+                'reason' => 'max_qty',
+            ]]);
         }
     }
 
@@ -591,11 +830,11 @@ class CartService
         $newOption = $this->productOptionRepository->findById($newProductOptionId);
 
         if (! $newOption) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.option_not_found'));
+            throw new CartOperationException('option_not_found');
         }
 
         if ($cart->product_id !== $newOption->product_id) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.invalid_option_for_product'));
+            throw new CartOperationException('invalid_option');
         }
     }
 }

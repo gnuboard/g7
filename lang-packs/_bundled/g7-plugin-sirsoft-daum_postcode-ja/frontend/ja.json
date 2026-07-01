@@ -1,0 +1,56 @@
+{
+  "editor": {
+    "data_source": {
+      "settings": "住所検索設定"
+    }
+  },
+  "search_address": "住所検索",
+  "postcode": {
+    "search": "住所検索",
+    "search_button": "住所を探す",
+    "placeholder": "住所を検索してください",
+    "zonecode": "郵便番号",
+    "address": "基本住所",
+    "road_address": "道路名住所",
+    "jibun_address": "地番住所",
+    "detail_address": "詳細住所",
+    "detail_placeholder": "詳細住所を入力してください",
+    "building_name": "建物名",
+    "selected": "住所が選択されました。",
+    "error": {
+      "load_failed": "郵便番号サービスの読み込みに失敗しました。",
+      "search_failed": "住所検索に失敗しました。"
+    }
+  },
+  "settings": {
+    "title": "Daum郵便番号設定",
+    "description": "Daum郵便番号サービスの表示方式とスタイルを設定します。",
+    "notice": "Daum郵便番号サービスはAPIキーなしで無料で利用できます。",
+    "guide": {
+      "title": "使用ガイド",
+      "step1": "表示方式を選択します。ポップアップは新しいウィンドウで、レイヤーは現在のページの上にオーバーレイで表示されます。",
+      "step2": "ポップアップモードを選択した場合、ポップアップウィンドウのサイズを設定します。",
+      "step3": "テーマカラーを設定して、郵便番号検索ウィンドウのスタイルをカスタマイズできます。"
+    },
+    "fields": {
+      "display_mode": {
+        "label": "表示方式",
+        "hint": "住所検索ウィンドウを表示する方式を選択します。",
+        "popup": "ポップアップ",
+        "layer": "レイヤー"
+      },
+      "popup_width": {
+        "label": "ポップアップ幅 (px)",
+        "hint": "ポップアップモードで使用されるウィンドウ幅です。"
+      },
+      "popup_height": {
+        "label": "ポップアップ高さ (px)",
+        "hint": "ポップアップモードで使用されるウィンドウ高さです。"
+      },
+      "theme_color": {
+        "label": "テーマカラー",
+        "hint": "郵便番号検索ウィンドウのテーマカラーです。(例: #1D4ED8)"
+      }
+    }
+  }
+}

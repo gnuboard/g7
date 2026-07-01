@@ -623,6 +623,24 @@ export interface DataSource {
    * ```
    */
   onSuccess?: OnSuccessHandler;
+
+  /**
+   * 출처 메타 (편집 모드 전용 — engine-v1.50.0+)
+   *
+   * 레이아웃 편집기가 `with_source_meta=1` 로 요청할 때만 백엔드가 부여하는
+   * 소유 확장 식별 메타입니다. 동일 `id` 를 가진 data_source 가 여러 출처
+   * (템플릿/모듈/플러그인)에 정의되어 충돌할 때, 샘플 데이터 해소
+   * (`sampleDataProvider`)가 자기 출처의 샘플을 우선 선택하도록 합니다.
+   *
+   * 일반 렌더 경로에는 부여되지 않으며 저장 시 sanitize 에서 제외되므로
+   * 영속 레이아웃 JSON 에는 포함되지 않습니다.
+   *
+   * @since engine-v1.50.0
+   */
+  __source?: {
+    kind: 'template' | 'module' | 'plugin' | 'core' | 'base' | 'route';
+    identifier?: string | null;
+  };
 }
 
 /**
@@ -673,6 +691,55 @@ export interface DataSourceManagerOptions {
    * 에러 발생 시 호출될 콜백
    */
   onError?: (error: Error, source: DataSource) => void;
+
+  /**
+   * 샘플 데이터 프로바이더 (편집 모드 전용)
+   *
+   * 옵션이 주입되면 `fetchApiDataSource` 가 네트워크 fetch 대신 프로바이더의
+   * `resolve()` 결과를 반환한다. 일반 렌더 모드(편집기 외) 부팅에서는 옵션을
+   * 전달하지 않으므로 기존 동작 100% 보존. 계획서 참조.
+   *
+   * @since engine-v1.50.0
+   */
+  sampleProvider?: SampleDataProvider;
+
+  /**
+   * onSuccess 핸들러 실행에 사용할 ActionDispatcher (편집 모드 전용)
+   *
+   * 옵션이 주입되면 `executeOnSuccessHandler` 가 전역 `getActionDispatcher()` 대신
+   * 본 dispatcher 를 사용한다. 일반 렌더 모드는 옵션 미전달 → 기존 동작 보존.
+   *
+   * 동기: PreviewCanvas 가 자체 DataSourceManager 인스턴스를 만들지만, 그 인스턴스
+   * 의 onSuccess 핸들러가 호스트 ActionDispatcher 를 호출하면 호스트 `setGlobalState`
+   * 가 발화되어 호스트 `#app` 이 통째로 unmount 되는 결함이 발생한다.
+   *
+   * @since engine-v1.50.0
+   */
+  actionDispatcher?: import('./ActionDispatcher').ActionDispatcher;
+}
+
+/**
+ * 샘플 데이터 프로바이더 인터페이스 — 편집 모드 캔버스 전용
+ *
+ * `useSampleData` 가 병합 `editorSpec.sampleData`(byDataSourceId / bySource /
+ * byEndpointPattern) 로 구성한 뒤 편집 모드 부팅 시 `DataSourceManager` 옵션으로
+ * 주입한다. 미매칭 데이터소스는 도메인-중립 빈 응답으로 디그레이드한다
+ * (코어 키워드 프리셋 폐기 —-v1.50.0).
+ *
+ * @since engine-v1.50.0
+ */
+export interface SampleDataProvider {
+  /**
+   * 데이터소스 ID 가 샘플 모드의 매칭 후보인지 확인.
+   * `false` 면 일반 fetch 경로(네트워크) 로 폴백.
+   */
+  has(dataSourceId: string): boolean;
+
+  /**
+   * 데이터소스에 대해 샘플 데이터를 동기/비동기로 반환.
+   * 반환값은 일반 API 응답과 같은 shape 이어야 한다(`{ data: [...] }` 등).
+   */
+  resolve(dataSource: DataSource): unknown | Promise<unknown>;
 }
 
 /**
@@ -927,8 +994,17 @@ export class DataSourceManager {
     const results: Record<string, any> = {};
 
     // auto_fetch가 true인 데이터 소스만 처리 (websocket 타입 제외)
+    //
+    // 샘플 모드(편집기) 예외: auto_fetch:false 인 지연 소스(탭/모달 활성 시 런타임에
+    // fetch)는 정적 시뮬레이션인 편집기 캔버스에서 활성화 액션을 실행할 수 없어, 페이지
+    // 상태로 게이트를 열어도 데이터가 비어 본체가 미렌더된다(myComments
+    // 내댓글 서브탭). 샘플 모드에서는 지연 소스도 샘플 주입 대상에 포함해 게이트 노출 시
+    // 본체가 렌더되게 한다(런타임 동작과 정합 — 런타임은 탭 활성 시 동일 데이터를 fetch).
+    // 일반 렌더 모드(sampleProvider 미주입)는 기존 auto_fetch 필터를 100% 보존한다.
+    const inSampleMode = !!this.options.sampleProvider;
     const autoFetchSources = sources.filter(
-      (source) => source.auto_fetch !== false && source.type !== 'websocket'
+      (source) =>
+        (inSampleMode || source.auto_fetch !== false) && source.type !== 'websocket'
     );
 
     // 병렬 처리
@@ -1418,6 +1494,13 @@ export class DataSourceManager {
     globalState?: Record<string, any>,
     localState?: Record<string, any>,
   ): Promise<any> {
+    // 샘플 모드 분기 — 편집기 부팅 시에만 옵션이 주입됨.
+    // 일반 렌더 모드는 옵션 미주입이므로 이 분기에 진입하지 않아 기존 fetch 경로 100% 보존.
+    if (this.options.sampleProvider?.has(source.id)) {
+      const sample = await Promise.resolve(this.options.sampleProvider.resolve(source));
+      return sample;
+    }
+
     if (!source.endpoint) {
       throw new Error(`API data source ${source.id} has no endpoint`);
     }
@@ -1900,7 +1983,10 @@ export class DataSourceManager {
     onSuccess: OnSuccessHandler,
     successContext: SuccessContext
   ): Promise<void> {
-    const actionDispatcher = getActionDispatcher();
+    // 옵션 주입된 dispatcher 우선 (편집기 격리 모드), 없으면 전역 호스트 dispatcher
+    // (편집기 캔버스의 onSuccess setState 가 호스트 globalState
+    //  를 변경해 호스트 #app 이 unmount 되는 결함 방지)
+    const actionDispatcher = this.options.actionDispatcher ?? getActionDispatcher();
 
     if (!actionDispatcher) {
       logger.warn('ActionDispatcher not available, skipping onSuccess handler');

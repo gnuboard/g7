@@ -69,10 +69,15 @@ class PermissionScopeTest extends ModuleTestCase
             'owner_key' => 'created_by',
         ]);
 
-        // 사용자 생성
-        $this->scopeUser = User::factory()->create();
-        $this->otherUser = User::factory()->create();
-        $this->sameRoleUser = User::factory()->create();
+        // 사용자 생성 — factory 의 fake()->unique() 는 process 단위로만 unique 를 보장하므로
+        // 다른 테스트가 같은 Faker pool 에서 뽑아 DB 에 commit 한 email 과 충돌할 수 있다.
+        // PermissionScopeTest 는 beginDatabaseTransaction() 을 비워 트랜잭션 자동 롤백을 끄므로
+        // setUp 에서 throw 가 발생하면 tearDown 도 실행되지 않아 잔여가 누적된다.
+        // → 명시 unique email 로 충돌 가능성을 제거한다.
+        $uniq = uniqid('', true);
+        $this->scopeUser = User::factory()->create(['email' => "scope-{$uniq}-1@test.local"]);
+        $this->otherUser = User::factory()->create(['email' => "scope-{$uniq}-2@test.local"]);
+        $this->sameRoleUser = User::factory()->create(['email' => "scope-{$uniq}-3@test.local"]);
         $this->createdUserIds = [$this->scopeUser->id, $this->otherUser->id, $this->sameRoleUser->id];
 
         // 역할 생성 및 할당

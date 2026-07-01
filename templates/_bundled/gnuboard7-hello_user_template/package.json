@@ -1,6 +1,6 @@
 {
   "name": "@gnuboard7/hello-user-template",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0",
   "description": "Gnuboard7 Hello User Template - 학습용 최소 샘플 사용자 템플릿",
   "type": "module",
   "main": "dist/components.js",

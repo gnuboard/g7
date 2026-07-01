@@ -6,6 +6,9 @@ use App\Rules\LocaleRequiredTranslatable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
 /**
  * 이커머스 설정 저장 요청 검증
@@ -16,6 +19,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {
@@ -32,7 +37,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $locale = app()->getLocale();
 
         return [
-            '_tab' => ['sometimes', 'string', 'in:basic_info,language_currency,seo,order_settings,claim,shipping,review_settings,notification_definitions,notifications,inquiry'],
+            '_tab' => ['sometimes', 'string', 'in:basic_info,language_currency,seo,order_settings,claim,shipping,review_settings,notification_definitions,notifications,inquiry,mileage'],
 
             'notifications' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
@@ -68,17 +73,23 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.telecom_number' => ['nullable', 'string', 'max:100'],
 
             'language_currency' => ['sometimes', 'array'],
-            'language_currency.default_language' => ['nullable', 'string', 'max:10'],
+            // default_language 제거 (A1-⑤, D-LANG): 사이트 언어는 코어 일반설정으로 일원화. 모듈 orphan 필드.
             'language_currency.default_currency' => ['nullable', 'string', 'max:10'],
             'language_currency.currencies' => ['nullable', 'array'],
-            'language_currency.currencies.*.code' => ['required_with:language_currency.currencies', 'string', 'max:10'],
+            'language_currency.currencies.*.code' => ['required_with:language_currency.currencies', 'string', 'regex:/^[A-Z]{3}$/'],
             'language_currency.currencies.*.name' => ['required_with:language_currency.currencies', 'array'],
             'language_currency.currencies.*.name.*' => ['string', 'max:100'],
+            'language_currency.currencies.*.symbol' => ['nullable', 'string', 'max:8'],
             'language_currency.currencies.*.exchange_rate' => ['nullable', 'numeric', 'min:0'],
+            // base_unit = 그 통화가 기본일 때 환율 입력의 분모(1단위 금액). 소액통화만 묶음(KRW=1000, JPY=100).
+            'language_currency.currencies.*.base_unit' => ['nullable', 'integer', 'min:1'],
             'language_currency.currencies.*.rounding_unit' => ['nullable', 'string'],
             'language_currency.currencies.*.rounding_method' => ['nullable', 'string', 'in:floor,round,ceil'],
             'language_currency.currencies.*.decimal_places' => ['nullable', 'integer', 'min:0', 'max:8'],
             'language_currency.currencies.*.is_default' => ['nullable', 'boolean'],
+            // 통화별 언어(가입 시 통화 추정용 매핑, A4). 후보 = 시스템 지원 로케일.
+            'language_currency.currencies.*.locales' => ['nullable', 'array'],
+            'language_currency.currencies.*.locales.*' => ['string', 'in:'.implode(',', config('app.supported_locales', ['ko', 'en']))],
 
             'seo' => ['sometimes', 'array'],
             'seo.meta_category_title' => ['nullable', 'string', 'max:500'],
@@ -108,6 +119,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.payment_methods.*.is_active' => ['nullable', 'boolean'],
             'order_settings.payment_methods.*.min_order_amount' => ['nullable', 'integer', 'min:0'],
             'order_settings.payment_methods.*.stock_deduction_timing' => ['nullable', 'string', 'in:order_placed,payment_complete,none'],
+            'order_settings.payment_methods.*.mileage_deduction_timing' => ['nullable', 'string', 'in:order_placed,payment_complete'],
             'order_settings.banks' => ['nullable', 'array'],
             'order_settings.banks.*.code' => ['required_with:order_settings.banks', 'string', 'max:10'],
             'order_settings.banks.*.name' => ['required_with:order_settings.banks', 'array'],
@@ -121,8 +133,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.bank_accounts.*.is_default' => ['nullable', 'boolean'],
             'order_settings.auto_cancel_expired' => ['nullable', 'boolean'],
             'order_settings.auto_cancel_days' => ['nullable', 'integer', 'min:0', 'max:30'],
-            'order_settings.vbank_due_days' => ['nullable', 'integer', 'min:1', 'max:30'],
-            'order_settings.dbank_due_days' => ['nullable', 'integer', 'min:1', 'max:30'],
             'order_settings.cart_expiry_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'order_settings.stock_restore_on_cancel' => ['nullable', 'boolean'],
             'order_settings.confirmable_statuses' => ['nullable', 'array'],
@@ -144,6 +154,29 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'review_settings.write_deadline_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'review_settings.max_images' => ['nullable', 'integer', 'min:0', 'max:20'],
             'review_settings.max_image_size_mb' => ['nullable', 'integer', 'min:1', 'max:50'],
+
+            // mileage 섹션
+            'mileage' => ['sometimes', 'array'],
+            'mileage.enabled' => ['required_with:mileage', 'boolean'],
+            'mileage.default_earn_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            // 마일리지 차감 시점은 결제수단별(order_settings.payment_methods.*.mileage_deduction_timing)로 관리한다.
+            'mileage.earn_trigger' => ['nullable', 'string', 'in:delivered,confirmed'],
+            'mileage.earn_delay_days' => ['nullable', 'integer', 'min:0', 'max:365'],
+            'mileage.currency_rules' => ['nullable', 'array'],
+            // 통화 코드: ISO 4217 형식(3자리 영문 대문자) 강제
+            'mileage.currency_rules.*.currency_code' => ['required_with:mileage.currency_rules', 'string', 'regex:/^[A-Z]{3}$/'],
+            // 1점당 금액: 0이면 마일리지가 금전 가치 0 → 사용 불가. 최소 0 초과(0.001 단위까지 허용)
+            'mileage.currency_rules.*.point_value' => ['nullable', 'numeric', 'min:0.001'],
+            'mileage.currency_rules.*.min_use_amount' => ['nullable', 'integer', 'min:0'],
+            'mileage.currency_rules.*.use_unit' => ['nullable', 'integer', 'min:1'],
+            'mileage.currency_rules.*.max_use_type' => ['nullable', 'string', 'in:percent,fixed'],
+            'mileage.currency_rules.*.max_use_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            // 최대 사용한도(고정금액): 비합리적 거액 방지를 위해 10억 상한
+            'mileage.currency_rules.*.max_use_value' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
+            'mileage.expiry_enabled' => ['nullable', 'boolean'],
+            'mileage.expiry_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'mileage.expiry_notification_enabled' => ['nullable', 'boolean'],
+            'mileage.expiry_notification_days_before' => ['nullable', 'integer', 'min:1', 'max:365'],
 
             // shipping 섹션
             'shipping' => ['sometimes', 'array'],
@@ -198,6 +231,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $this->validateBaseCurrencyChangeable($validator);
             $this->validateUniqueCurrencyCodes($validator);
             $this->validateCurrencyNames($validator);
             $this->validateAtLeastOneActivePaymentMethod($validator);
@@ -212,7 +246,163 @@ class StoreEcommerceSettingsRequest extends FormRequest
             $this->validateShippingTypeNames($validator);
             $this->validateUniqueRefundReasonCodes($validator);
             $this->validateRefundReasonNames($validator);
+            $this->validateMileageCurrencyRules($validator);
+            $this->validateMileageEarnRate($validator);
         });
+    }
+
+    /**
+     * 기본 통화(default_currency) 변경 가능 여부 검증 (A2 — D-BASE-1)
+     *
+     * 상품 또는 주문이 1건이라도 존재하면 기본 통화 변경을 차단한다. base 통화는 모든 금액
+     * 테이블의 SSoT 이고 소급 변환이 데이터 정합성을 깨므로, 데이터가 생긴 이후에는 영구 잠금한다.
+     * (소프트삭제 포함 — 삭제분도 과거 base 로 생성된 이력) 동일 통화 재저장은 변경이 아니므로 통과.
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     */
+    protected function validateBaseCurrencyChangeable(Validator $validator): void
+    {
+        $newDefault = $this->input('language_currency.default_currency');
+        if ($newDefault === null) {
+            return; // 통화 설정 미전달 — 변경 아님
+        }
+
+        $current = app(EcommerceSettingsService::class)->getSetting('language_currency.default_currency');
+        if ($newDefault === $current) {
+            return; // 동일 통화 재저장 — 변경 아님
+        }
+
+        // 상품/주문 1건이라도 있으면 base 변경 불가 (영구 잠금, 소프트삭제 포함)
+        $hasData = app(ProductRepositoryInterface::class)->existsAny()
+            || app(OrderRepositoryInterface::class)->existsAny();
+
+        if ($hasData) {
+            $validator->errors()->add(
+                'language_currency.default_currency',
+                __('sirsoft-ecommerce::validation.custom.language_currency.base_locked_after_data')
+            );
+        }
+    }
+
+    /**
+     * 마일리지 활성화 시 기본 적립률 검증
+     *
+     * 마일리지 사용(enabled)을 켰는데 기본 적립률이 0%면 적립이 전혀 발생하지 않아
+     * 활성화 의미가 없으므로 거부한다. (비활성 상태에서는 0% 허용)
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     */
+    protected function validateMileageEarnRate(Validator $validator): void
+    {
+        if (! $this->has('mileage')) {
+            return;
+        }
+
+        $enabled = $this->boolean('mileage.enabled');
+        $rate = $this->input('mileage.default_earn_rate');
+
+        if ($enabled && $rate !== null && (float) $rate <= 0) {
+            $validator->errors()->add(
+                'mileage.default_earn_rate',
+                __('sirsoft-ecommerce::validation.mileage.earn_rate_required_when_enabled')
+            );
+        }
+    }
+
+    /**
+     * 마일리지 통화 규칙 검증
+     *
+     * 1) 통화 코드 중복 금지
+     * 2) 첫 행은 기본 통화여야 함 (기본 통화 행 보장)
+     * 3) 등록된 통화(language_currency.currencies)만 허용 (정합성)
+     *
+     * 형식(ISO 4217)은 rules() 의 regex 로 선검증되며, 여기서는 도메인 정합성만 다룬다.
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     */
+    protected function validateMileageCurrencyRules(Validator $validator): void
+    {
+        $rules = $this->input('mileage.currency_rules', []);
+
+        if (empty($rules) || ! is_array($rules)) {
+            return;
+        }
+
+        [$defaultCurrency, $registeredCodes] = $this->resolveRegisteredCurrencies();
+
+        $codes = [];
+        foreach ($rules as $index => $rule) {
+            if (! isset($rule['currency_code']) || ! is_string($rule['currency_code'])) {
+                continue;
+            }
+
+            $code = strtoupper(trim($rule['currency_code']));
+
+            // 형식 위반(regex 미통과)은 rules() 에서 이미 에러 추가됨 → 도메인 검증 스킵
+            if (! preg_match('/^[A-Z]{3}$/', $code)) {
+                $codes[] = $code;
+
+                continue;
+            }
+
+            // 1) 중복
+            if (in_array($code, $codes, true)) {
+                $validator->errors()->add(
+                    "mileage.currency_rules.{$index}.currency_code",
+                    __('sirsoft-ecommerce::validation.mileage.duplicate_currency')
+                );
+            }
+
+            // 2) 첫 행 = 기본 통화
+            if ($index === 0 && $defaultCurrency !== null && $code !== $defaultCurrency) {
+                $validator->errors()->add(
+                    'mileage.currency_rules.0.currency_code',
+                    __('sirsoft-ecommerce::validation.mileage.first_must_be_default', ['currency' => $defaultCurrency])
+                );
+            }
+
+            // 3) 등록 통화 정합성 (등록 목록이 있을 때만)
+            if (! empty($registeredCodes) && ! in_array($code, $registeredCodes, true)) {
+                $validator->errors()->add(
+                    "mileage.currency_rules.{$index}.currency_code",
+                    __('sirsoft-ecommerce::validation.mileage.currency_not_registered', ['currency' => $code])
+                );
+            }
+
+            $codes[] = $code;
+        }
+    }
+
+    /**
+     * 검증 기준이 되는 등록 통화 정보를 해석합니다.
+     *
+     * 같은 요청에 language_currency 가 함께 오면 그 값을, 아니면 현재 저장된 설정을 기준으로 한다
+     * (탭별 저장 시 마일리지 탭은 현재 통화 설정을 기준으로 정합성 검증).
+     *
+     * @return array{0: ?string, 1: array<int, string>} [기본통화코드, 등록통화코드목록]
+     */
+    protected function resolveRegisteredCurrencies(): array
+    {
+        $defaultCurrency = $this->input('language_currency.default_currency');
+        $currencies = $this->input('language_currency.currencies');
+
+        // 요청에 language_currency 가 없으면 현재 저장 설정에서 조회
+        if ($defaultCurrency === null || ! is_array($currencies)) {
+            $settings = app(EcommerceSettingsService::class);
+            $defaultCurrency = $defaultCurrency ?? $settings->getSetting('language_currency.default_currency');
+            $currencies = is_array($currencies) ? $currencies : ($settings->getSetting('language_currency.currencies') ?? []);
+        }
+
+        $codes = [];
+        foreach ((array) $currencies as $currency) {
+            if (isset($currency['code']) && is_string($currency['code'])) {
+                $codes[] = strtoupper(trim($currency['code']));
+            }
+        }
+
+        $defaultCurrency = is_string($defaultCurrency) ? strtoupper(trim($defaultCurrency)) : null;
+
+        return [$defaultCurrency, $codes];
     }
 
     /**
@@ -742,14 +932,21 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.telecom_number.string' => __('sirsoft-ecommerce::validation.custom.basic_info.telecom_number.string'),
             'basic_info.telecom_number.max' => __('sirsoft-ecommerce::validation.custom.basic_info.telecom_number.max'),
 
-            // language_currency 섹션
-            'language_currency.default_language.string' => __('sirsoft-ecommerce::validation.custom.language_currency.default_language.string'),
-            'language_currency.default_language.max' => __('sirsoft-ecommerce::validation.custom.language_currency.default_language.max'),
+            // language_currency 섹션 (default_language 제거 — A1-⑤, D-LANG)
             'language_currency.default_currency.string' => __('sirsoft-ecommerce::validation.custom.language_currency.default_currency.string'),
             'language_currency.default_currency.max' => __('sirsoft-ecommerce::validation.custom.language_currency.default_currency.max'),
             'language_currency.currencies.*.code.required_with' => __('sirsoft-ecommerce::validation.custom.language_currency.currencies.code.required_with'),
             'language_currency.currencies.*.code.string' => __('sirsoft-ecommerce::validation.custom.language_currency.currencies.code.string'),
-            'language_currency.currencies.*.code.max' => __('sirsoft-ecommerce::validation.custom.language_currency.currencies.code.max'),
+            'language_currency.currencies.*.code.regex' => __('sirsoft-ecommerce::validation.custom.language_currency.currencies.code.regex'),
+
+            // mileage 통화 규칙 섹션
+            'mileage.currency_rules.*.currency_code.required_with' => __('sirsoft-ecommerce::validation.custom.mileage.currency_rules.currency_code.required_with'),
+            'mileage.currency_rules.*.currency_code.regex' => __('sirsoft-ecommerce::validation.custom.mileage.currency_rules.currency_code.regex'),
+            'mileage.currency_rules.*.point_value.numeric' => __('sirsoft-ecommerce::validation.custom.mileage.currency_rules.point_value.numeric'),
+            'mileage.currency_rules.*.point_value.min' => __('sirsoft-ecommerce::validation.custom.mileage.currency_rules.point_value.min'),
+            'mileage.currency_rules.*.max_use_value.integer' => __('sirsoft-ecommerce::validation.custom.mileage.currency_rules.max_use_value.integer'),
+            'mileage.currency_rules.*.max_use_value.min' => __('sirsoft-ecommerce::validation.custom.mileage.currency_rules.max_use_value.min'),
+            'mileage.currency_rules.*.max_use_value.max' => __('sirsoft-ecommerce::validation.custom.mileage.currency_rules.max_use_value.max'),
             'language_currency.currencies.*.name.required_with' => __('sirsoft-ecommerce::validation.custom.language_currency.currencies.name.required_with'),
             'language_currency.currencies.*.name.array' => __('sirsoft-ecommerce::validation.custom.language_currency.currencies.name.array'),
             'language_currency.currencies.*.name.*.string' => __('sirsoft-ecommerce::validation.custom.language_currency.currencies.name.string'),
@@ -822,12 +1019,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.auto_cancel_days.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.integer'),
             'order_settings.auto_cancel_days.min' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.min'),
             'order_settings.auto_cancel_days.max' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.max'),
-            'order_settings.vbank_due_days.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.vbank_due_days.integer'),
-            'order_settings.vbank_due_days.min' => __('sirsoft-ecommerce::validation.custom.order_settings.vbank_due_days.min'),
-            'order_settings.vbank_due_days.max' => __('sirsoft-ecommerce::validation.custom.order_settings.vbank_due_days.max'),
-            'order_settings.dbank_due_days.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.dbank_due_days.integer'),
-            'order_settings.dbank_due_days.min' => __('sirsoft-ecommerce::validation.custom.order_settings.dbank_due_days.min'),
-            'order_settings.dbank_due_days.max' => __('sirsoft-ecommerce::validation.custom.order_settings.dbank_due_days.max'),
             'order_settings.cart_expiry_days.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.cart_expiry_days.integer'),
             'order_settings.cart_expiry_days.min' => __('sirsoft-ecommerce::validation.custom.order_settings.cart_expiry_days.min'),
             'order_settings.cart_expiry_days.max' => __('sirsoft-ecommerce::validation.custom.order_settings.cart_expiry_days.max'),
@@ -890,7 +1081,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'inquiry', 'notifications'];
+        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'inquiry', 'notifications', 'mileage'];
 
         return array_filter(
             $validated,

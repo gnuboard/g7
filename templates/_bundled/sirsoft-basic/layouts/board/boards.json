@@ -28,6 +28,7 @@
     "data_sources": [
         {
             "id": "boardList",
+            "label_key": "$t:editor.data_source.boardList",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards",
             "method": "GET",

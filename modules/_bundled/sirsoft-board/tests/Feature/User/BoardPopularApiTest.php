@@ -384,7 +384,7 @@ class BoardPopularApiTest extends ModuleTestCase
     }
 
     /**
-     * 인기글 응답에 created_at(요일 포함 포맷)과 created_at_formatted(표시용) 필드가 포함되는지 확인
+     * 인기글 응답에 created_at(Y-m-d H:i:s 포맷)과 created_at_formatted(표시용) 필드가 포함되는지 확인
      */
     public function test_popular_includes_created_at_and_created_at_formatted(): void
     {
@@ -401,9 +401,9 @@ class BoardPopularApiTest extends ModuleTestCase
         $this->assertNotEmpty($data);
         $item = $data[0];
 
-        // created_at: 요일 포함 전체 날짜 포맷
+        // created_at: 전체 날짜+시간 포맷 (사용자 타임존)
         $this->assertArrayHasKey('created_at', $item);
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} [가-힣]+요일 \d{2}:\d{2}$/', $item['created_at']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $item['created_at']);
 
         // created_at_formatted: 표시용 포맷 (비어있지 않은 문자열)
         $this->assertArrayHasKey('created_at_formatted', $item);

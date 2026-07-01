@@ -277,12 +277,13 @@ class ShippingPolicySeederTest extends ModuleTestCase
     {
         $this->runSeeder();
 
-        $usSetting = ShippingPolicyCountrySetting::where('currency_code', 'USD')
-            ->where('country_code', 'US')
+        $usSetting = ShippingPolicyCountrySetting::where('country_code', 'US')
             ->first();
 
         $this->assertNotNull($usSetting);
         $this->assertEquals('api', $usSetting->charge_policy->value);
+        // 통화는 상점 기본 통화(KRW)로 고정 — 해외 국가 설정도 동일
+        $this->assertEquals('KRW', $usSetting->currency_code);
     }
 
     // ========================================

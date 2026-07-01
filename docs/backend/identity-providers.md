@@ -92,6 +92,48 @@ final class SmsIdentityProvider implements VerificationProviderInterface
 
 **target 식별자 규약**: SMS 라면 E.164 정규화된 휴대폰번호, 이메일이라면 소문자, 외부 ID 라면 안정 식별자. 핵심은 challenge 시작과 verify 후 listener 가 같은 식별자를 SHA256 한다는 일관성입니다.
 
+## 3.1 VerificationChallenge DTO 필드 규약
+
+`requestChallenge()` 가 반환하는 `VerificationChallenge` DTO 는 프론트 launcher 가 모달 상태 초기화에 그대로 사용합니다. 모든 필드는 named arguments 로 호출하며, 향후 코어가 신규 필드를 추가해도 기본값으로 자동 처리되도록 named args 패턴을 유지합니다.
+
+| 필드 | 타입 | 의미 |
+| --- | --- | --- |
+| `id` | string | challenge UUID |
+| `providerId` | string | provider 식별자 |
+| `purpose` | string | signup / password_reset / self_update / sensitive_action / 확장 정의 |
+| `channel` | string | email / sms / ipin / 확장 채널 |
+| `targetHash` | string | SHA256(식별자) |
+| `expiresAt` | CarbonInterface | 만료 시각 |
+| `renderHint` | string | text_code / link / external_redirect |
+| `redirectUrl` | ?string | external_redirect 분기 시 외부 URL |
+| `publicPayload` | array | 프론트 노출용 공개 페이로드 (민감정보 제외) |
+| `metadata` | array | 서버 내부 참조용 |
+| `maxAttempts` | int (기본 0) | 허용 최대 시도 횟수. 0 은 무제한(popup/SDK 형 provider 의 기본) |
+
+`maxAttempts` 는 `toArray()` 출력의 `max_attempts` 키로 노출되어 `ChallengeResource` 응답에 그대로 전달됩니다. 프론트 launcher 는 이 값으로 모달의 "남은 시도 횟수" UI 를 초기화합니다.
+
+**코어 mail provider 패턴**:
+
+```php
+return new VerificationChallenge(
+    id: $log->id,
+    providerId: self::ID,
+    // ... 기존 필드
+    maxAttempts: $maxAttempts,  // config('settings.identity.max_attempts', 5)
+);
+```
+
+**popup/SDK 형 provider 패턴** (KG이니시스 등):
+
+```php
+return new VerificationChallenge(
+    id: $challengeId,
+    providerId: self::PROVIDER_ID,
+    // ... 기존 필드
+    // maxAttempts 미전달 시 DTO 기본값 0 (무제한)
+);
+```
+
 ## 4. verification_token 생성 방법
 
 외부 SDK 가 자체 토큰(거래번호 등)을 주더라도 **절대 그대로 client 에 전달하지 마세요**. 우리 인프라용 토큰을 별도로 생성합니다:

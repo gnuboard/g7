@@ -1,4 +1,26 @@
 {
+  "editor": {
+    "data_source": {
+      "availableChannels": "Available Channels",
+      "boardIdentityPolicies": "Board Identity Policies",
+      "boardIdentityPurposes": "Board Identity Purposes",
+      "boardNotificationDefinitions": "Board Notification Definitions",
+      "board_list_for_inquiry": "Board List for Inquiry",
+      "board_types": "Board Types",
+      "boards": "Boards",
+      "boards_list": "Board List",
+      "form_data": "Form Data",
+      "form_meta": "Form Meta",
+      "identityProviders": "Identity Providers",
+      "post": "Post",
+      "posts": "Posts",
+      "report_detail": "Report Detail",
+      "reporters_list": "Reporters List",
+      "reports": "Reports",
+      "roles": "Roles",
+      "settings": "Board Settings"
+    }
+  },
   "common": {
     "$partial": "partial/en/common.json"
   },
@@ -29,6 +51,9 @@
     },
     "ecommerce_settings": {
       "$partial": "partial/en/admin/ecommerce_settings.json"
+    },
+    "dashboard": {
+      "$partial": "partial/en/admin/dashboard.json"
     }
   },
   "board": {

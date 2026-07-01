@@ -10,6 +10,7 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Input } from '../basic/Input';
 import { Icon } from '../basic/Icon';
+import type { EditorAttrs } from '../../types';
 
 interface QuantitySelectorProps {
   /** 현재 수량 */
@@ -26,6 +27,14 @@ interface QuantitySelectorProps {
   disabled?: boolean;
   /** 추가 CSS 클래스 */
   className?: string;
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+/**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -72,6 +81,8 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   size = 'md',
   disabled = false,
   className = '',
+  id,
+  editorAttrs,
 }) => {
   const sizeClasses = {
     sm: {
@@ -128,6 +139,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   return (
     <Div
       className={`inline-flex items-center border border-gray-300 dark:border-gray-600 rounded-lg ${classes.container} ${className}`}
+      id={id} {...editorAttrs}
     >
       {/* 감소 버튼 */}
       <Button

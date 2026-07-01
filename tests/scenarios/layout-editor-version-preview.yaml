@@ -1,0 +1,72 @@
+# audit:allow test-scenario-coverage reason: 버전 기록/미리보기 UI 는 편집기 모달·캔버스(EditorModalContext/새 창 openWindow)라 8축 cross product 1911 케이스의 개별 docblock @scenario 마킹이 비현실적(9-b layout-editor-text-inline-binding.yaml 과 동일 정책). 입력 조합·후속 효과는 단위 9파일(VersionHistoryModal 12 + VersionDiffView 4 + EditorToolbar.versionPreview 7 + lineDiff + useLayoutPreview + 백엔드 LayoutVersionRepositoryTest/LayoutVersionIntegrationTest/LayoutControllerTest = 276 FE + 110 BE green)이 전수 커버하고, effects 24건은 각 테스트 docblock @effects 로 매핑, 실사용자화면 반영은 Chrome MCP T1~T7 매트릭스로 확인. 개별 케이스 마킹보다 단위 전수 + effects 매핑이 SSoT.
+feature: 레이아웃 편집기 버전 히스토리 모달 + 실데이터 미리보기 (툴바 🕘 버전 기록 / 👁 미리보기)
+phase: 3
+session: S11
+issue: 383
+axes:
+  toolbar_button: [preview, version_history]
+  edit_mode: [route, base, modal, extension]
+  layout_name_present: [present, absent]
+  versions_state: [has_versions, empty, load_error]
+  restore_action: [confirm_ok, confirm_cancel, not_found, network_error]
+  preview_result: [success, no_document, network_error]
+  version_author: [named, null_unknown]
+  compare_action: [has_prev, first_version, identical, too_large, detail_error]
+exclusions:
+  - { edit_mode: extension, layout_name_present: present,
+      reason: "extension 편집 모드는 selectedRoute.layoutName=null — 버전/미리보기 대상 없음(버튼 비활성). S9 의존 분기는 보류." }
+  - { restore_action: confirm_cancel, versions_state: empty,
+      reason: "복원 액션은 버전 행이 있어야 노출 — 빈 목록에서는 복원 자체가 불가" }
+  - { restore_action: not_found, versions_state: empty,
+      reason: "동일 — 복원은 has_versions 전제" }
+  - { preview_result: success, toolbar_button: version_history,
+      reason: "preview_result 축은 toolbar_button=preview 에만 적용" }
+  - { restore_action: confirm_ok, toolbar_button: preview,
+      reason: "restore_action 축은 toolbar_button=version_history 에만 적용" }
+  - { compare_action: has_prev, toolbar_button: preview,
+      reason: "compare_action/version_author 축은 toolbar_button=version_history 에만 적용" }
+  - { version_author: named, toolbar_button: preview,
+      reason: "동일 — 저장자 표시는 버전 히스토리 전용" }
+  - { compare_action: first_version, versions_state: empty,
+      reason: "비교는 버전 행이 있어야 노출 — 빈 목록에서는 불가" }
+effects:
+  - preview_button_disabled_when_no_layout_name
+  - preview_button_enabled_when_layout_selected
+  - preview_creates_temp_record_and_opens_window_with_token
+  - preview_button_shows_spinner_while_pending_then_restores
+  - preview_no_document_when_no_layout_or_raw
+  - version_button_disabled_when_no_layout_name
+  - version_modal_lists_saved_versions_with_change_summary
+  - version_modal_empty_state_when_no_versions
+  - version_modal_error_state_on_load_failure
+  - version_restore_confirm_posts_restore_then_reloads_document_and_closes
+  - version_restore_cancel_does_not_post
+  - version_restore_not_found_shows_message_keeps_modal_open
+  - version_and_preview_fetch_attach_bearer_token
+  - version_fetch_url_preserves_raw_layout_name_slashes
+  - version_row_shows_creator_name_or_unknown_fallback
+  - version_resource_exposes_creator_name_not_id
+  - version_compare_fetches_prev_and_current_then_shows_unified_diff
+  - version_compare_first_version_diffs_against_empty_baseline
+  - version_compare_identical_shows_identical_notice
+  - version_compare_too_large_shows_guard_notice
+  - line_diff_lcs_counts_added_removed_and_builds_hunks
+  - stable_stringify_sorts_keys_preserves_array_order
+  - changes_summary_uses_line_lcs_unit_matching_diff_view
+  - changes_summary_recalculated_for_existing_versions
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/VersionHistoryModal.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorToolbar.versionPreview.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/VersionDiffView.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/lineDiff.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useLayoutPreview.test.ts
+  - tests/Feature/Api/Admin/LayoutControllerTest.php
+  - tests/Unit/Repositories/LayoutVersionRepositoryTest.php
+  - tests/Feature/Api/Admin/LayoutVersionIntegrationTest.php
+  - tests/Playwright/specs/layout-editor/version-preview.spec.ts
+notes:
+  - 백엔드 변경량 측정(CalculatesJsonContentDiff)을 상세 비교 diff 와 동일한 라인 단위 LCS 로 통일 + changes_summary 를 라인 원문 배열 → 카운트(정수)로 축소(레이아웃 버전 저장소 한정, page 모듈 불변). 측정/복원/재계산 정합은 LayoutVersionRepositoryTest.php · LayoutVersionIntegrationTest.php 가 커버. 기타 versions/showVersion/restoreVersion/storePreview API 가드는 LayoutControllerTest.php 가 기존 커버.
+  - 미리보기 임시 데이터는 디스크 파일이 아니라 template_layout_previews 테이블(30분 TTL, 관리자×레이아웃당 1건, layout-previews:cleanup 스케줄이 만료분 삭제)에 저장됨.
+  - 복원은 restoreVersion 이 새 버전을 적재 → 호출자(LayoutEditorChrome.handleShowVersions)가 onRestored 로 useLayoutDocument.reload() 를 호출해 캔버스를 서버 최신(복원본)으로 재로드 + dirty/lock_version 재동기화.
+ - edit_mode=extension(layout_name absent) 분기는 버튼 비활성으로 자연 디그레이드 — extension 버전/미리보기 API(LayoutExtensionController) 분기는 S9 의존으로 보류 표기.
+  - preview_result/restore_action 축은 상호 배타적 버튼에만 적용 — exclusions 로 cross 차단.

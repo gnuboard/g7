@@ -364,6 +364,65 @@ class ExtensionMenuSyncHelperTest extends TestCase
     }
 
     /**
+     * sync 호출 시 update 시점에 user_overrides.seeding 플래그가 true 로 설정되는지 테스트.
+     *
+     * HasUserOverrides::bootHasUserOverrides 의 updating 이벤트 hook 이 이 플래그를 보고
+     * 자동 마킹을 건너뛴다. 미설정 시 동일 정의값을 적용해도 trackable 필드 (icon 포함) 가 dirty
+     * 로 잡혀 user_overrides 에 자동 추가되어 이후 sync 가 차단되는 결함이 발생.
+     */
+    public function test_sync_menu_disables_user_overrides_auto_marking_during_update(): void
+    {
+        $existingMenu = $this->createModelMock(Menu::class, [
+            'id' => 1,
+            'name' => ['ko' => '게시판 관리', 'en' => 'Board Management'],
+            'icon' => 'fas fa-list',
+            'order' => 10,
+            'url' => '/admin/boards',
+            'user_overrides' => [],
+        ]);
+
+        $this->menuRepository
+            ->shouldReceive('findBySlugAndExtension')
+            ->once()
+            ->andReturn($existingMenu);
+
+        $seedingFlagDuringUpdate = null;
+        $this->menuRepository
+            ->shouldReceive('update')
+            ->once()
+            ->andReturnUsing(function () use (&$seedingFlagDuringUpdate) {
+                $seedingFlagDuringUpdate = app()->bound('user_overrides.seeding')
+                    && app('user_overrides.seeding') === true;
+
+                return true;
+            });
+
+        $freshMenu = $this->createModelMock(Menu::class, ['id' => 1]);
+        $existingMenu->shouldReceive('fresh')->once()->andReturn($freshMenu);
+
+        $this->helper->syncMenu(
+            slug: 'board-management',
+            extensionType: ExtensionOwnerType::Module,
+            extensionIdentifier: 'sirsoft-board',
+            newAttributes: [
+                'name' => ['ko' => '게시판 관리', 'en' => 'Board Management'],
+                'icon' => 'fas fa-list',
+                'order' => 10,
+                'url' => '/admin/boards',
+            ],
+        );
+
+        $this->assertTrue(
+            $seedingFlagDuringUpdate,
+            'update 시점에 user_overrides.seeding 플래그가 true 여야 자동 마킹 hook 이 skip 된다.'
+        );
+        $this->assertFalse(
+            app()->bound('user_overrides.seeding'),
+            'syncMenu 종료 후 seeding 플래그는 컨테이너에서 정리되어야 한다.'
+        );
+    }
+
+    /**
      * parent_id와 is_active는 항상 확장 정의값으로 업데이트되는지 테스트
      */
     public function test_sync_menu_always_updates_parent_and_active(): void

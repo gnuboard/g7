@@ -909,8 +909,13 @@ export async function executeOrderBulkActionHandler(
         G7Core.modal?.close?.();
     } catch (error: any) {
         logger.error('[executeOrderBulkAction] Error:', error);
+        // 서버 422 검증 메시지(상태 전이 차단 사유 등)를 우선 노출한다.
+        // axios 는 error.message 에 "Request failed with status code 422" 같은 raw 문구만 담으므로
+        // 실제 사유가 들어있는 error.response.data.message 를 먼저 추출한다(confirmDeposit 동일 패턴).
+        const errorData = error?.response?.data || error?.data || {};
+        const serverMessage = errorData?.message || error?.message;
         G7Core.toast?.error?.(
-            error?.message
+            serverMessage
             || G7Core.t?.('sirsoft-ecommerce.admin.order.bulk.error')
             || '일괄 처리에 실패했습니다.'
         );

@@ -1,14 +1,15 @@
 {
     "meta": {
         "is_partial": true,
-        "description": "언어팩 제거 확인 모달 — 모듈/플러그인 uninstall 모달과 동일 수준. 위험 경고 박스, 로딩 스피너, reloadExtensions 후속 호출 포함."
+        "description": "언어팩 제거 확인 모달 — 모듈/플러그인 uninstall 모달과 동일 수준. 위험 경고 박스, 로딩 스피너, reloadExtensions 후속 호출 포함.",
+        "editor_label": "$t:admin.modal_label.admin_language_pack_list.language_pack_uninstall_modal"
     },
     "id": "language_pack_uninstall_modal",
     "type": "composite",
     "name": "Modal",
     "props": {
         "title": "$t:admin.language_packs.modal.uninstall.title",
-        "size": "small"
+        "size": "sm"
     },
     "children": [
         {
@@ -19,18 +20,18 @@
                 {
                     "type": "basic",
                     "name": "P",
-                    "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                    "props": { "className": "text-body" },
                     "text": "$t:admin.language_packs.modal.uninstall.body|scope={{_local.uninstallScope}}|target={{_local.uninstallTarget ?? '—'}}|locale={{_local.uninstallLocale}}"
                 },
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-800 dark:text-red-200" },
+                    "props": { "className": "rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-danger-soft" },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex items-start gap-2" },
+                            "props": { "className": "flex-start gap-2" },
                             "children": [
                                 { "type": "basic", "name": "Icon", "props": { "name": "fas fa-triangle-exclamation", "size": "sm", "className": "mt-0.5" } },
                                 { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.modal.uninstall.warning" }
@@ -47,7 +48,7 @@
                         {
                             "type": "basic",
                             "name": "Label",
-                            "props": { "className": "flex items-center gap-2 text-amber-800 dark:text-amber-200 cursor-pointer" },
+                            "props": { "className": "flex-center gap-2 text-warning-soft cursor-pointer" },
                             "children": [
                                 {
                                     "type": "basic",
@@ -56,7 +57,7 @@
                                         "type": "checkbox",
                                         "checked": "{{_local.uninstallCascade === true}}",
                                         "disabled": "{{_global.isLanguagePackUninstalling}}",
-                                        "className": "h-4 w-4 text-indigo-600 border-gray-300 rounded disabled:opacity-50"
+                                        "className": "h-4 w-4 text-indigo-600 rounded disabled:opacity-50"
                                     },
                                     "actions": [
                                         { "event": "onChange", "handler": "setState", "params": { "target": "local", "uninstallCascade": "{{$event.target.checked}}" } }
@@ -68,7 +69,7 @@
                         {
                             "type": "basic",
                             "name": "P",
-                            "props": { "className": "mt-1 text-xs text-amber-700 dark:text-amber-300" },
+                            "props": { "className": "mt-1 text-warning-soft" },
                             "text": "$t:admin.language_packs.modal.uninstall.cascade_hint"
                         }
                     ]
@@ -101,7 +102,7 @@
                     "props": {
                         "type": "button",
                         "disabled": "{{_global.isLanguagePackUninstalling}}",
-                        "className": "flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     },
                     "actions": [
                         {

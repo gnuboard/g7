@@ -1,0 +1,57 @@
+feature: 레이아웃 편집기 chrome 컨트롤 (디바이스 custom width / 툴바 나가기·코드편집·저장 스피너·hover / 오버레이 겹침 회피 / 팔레트 태그)
+phase: 3
+session: S5b-pre
+issue: 383
+axes:
+  preview_device: [desktop, tablet, mobile, custom]
+  custom_width_input: [below_min_320, in_range, above_max_1920, non_numeric]
+  toolbar_action: [exit_clean, exit_dirty_confirm, edit_code_navigate, save_in_progress, save_done]
+  toolbar_button_state: [enabled_hover, disabled_no_hover, focused_after_click]
+  edited_template_type: [user, admin]
+  code_editor_entry: [from_wysiwyg_with_route, direct_route_query, file_select_in_editor, extension_select_in_editor]
+  selected_box_size: [normal_ge_44, small_lt_44_width, small_lt_44_height, scaled_small]
+  affordance_kind: [info_menu, base_lock, extension_lock, nav_route_in_tree, nav_unreachable, insertion_cross]
+  palette_entry_type: [basic, composite, layout]
+exclusions:
+  - { toolbar_action: edit_code_navigate, toolbar_button_state: disabled_no_hover,
+      reason: "onEditCode 미주입(disabled) 이면 navigate 자체가 일어나지 않음" }
+  - { custom_width_input: non_numeric, preview_device: desktop,
+      reason: "custom width 입력은 preview_device=custom 일 때만 노출" }
+  - { code_editor_entry: extension_select_in_editor, edited_template_type: user,
+      reason: "확장 선택은 라우트 없음 → ?route= 를 비움. 템플릿 타입과 무관한 동작" }
+effects:
+  - preview_custom_device_uses_clamped_input_width_as_override
+  - preview_custom_width_clamped_320_to_1920
+  - preview_non_custom_ignores_custom_width
+  - toolbar_exit_navigates_to_template_list_by_type
+  - toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route
+  - code_editor_restores_layout_from_route_query
+  - code_editor_file_select_syncs_route_query
+  - code_editor_extension_select_clears_route_query
+  - toolbar_save_shows_spinner_while_pending_then_restores
+  - toolbar_buttons_hover_transition_when_enabled_not_when_disabled
+  - toolbar_buttons_no_residual_focus_outline_after_click
+  - overlay_affordances_inside_when_box_ge_44
+  - overlay_affordances_outside_when_box_lt_44_no_overlap
+  - insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip
+  - palette_card_shows_react_component_tag_badge
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useDevicePreview.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/overlayGeometry.affordancePlacement.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorToolbar.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/ComponentPalette.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/Footer.responsive.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit.test.tsx
+  - tests/Feature/Services/TemplateServiceRoutesMergeTest.php
+  - tests/Feature/Api/Admin/LayoutControllerTest.php
+  - tests/Playwright/specs/layout-editor/chrome-controls.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-route-sync.spec.ts
+notes:
+  - Footer.responsive.test.tsx 는 편집 가능 템플릿의 G7 표준 responsive 의무(viewport 미디어쿼리 금지) 회귀 가드 — preview_device 축의 디바이스 전환이 CSS 미디어쿼리가 아닌 useResponsive 로 반영됨을 컴포넌트 레벨에서 검증.
+  - overlayGeometry.affordancePlacement.test.ts 가 selected_box_size × affordance_kind cross 의 핵심 판정(resolveAffordancePlacement)을 단위로 커버. affordance_kind=insertion_cross 는 resolveInsertionCrossOffsets(박스 중심 십자 배치) 단위 + 2×2 극단 대각 비겹침을 검증.
+  - insertion_cross 결함 7 재조사: info/lock/nav 는 박스 우측 바깥 세로 분산(ElementOverlay), 4방향 삽입(+)은 박스 중심 십자(InsertionAffordances). 작은 박스가 캔버스 가장자리에 있을 때 박스 밖 버튼 잘림은 오버레이를 frame(overflow:hidden) 형제 레이어(g7le-overlay-layer, overflow:visible)로 분리해 해결 — chrome-controls.spec.ts 가 비겹침·비잘림·십자 대칭을 브라우저로 가드.
+  - chrome-controls.spec.ts(코어) 는 위지윅 chrome 책임만 — toolbar_action(exit/edit_code/save) + preview_device(custom width) + code_editor_entry=from_wysiwyg_with_route(handleEditCode 가 ?route= 를 실어 이탈). 코드편집기(텍스트 화면) 자체 동작은 템플릿 소유이므로 분리.
+  - code-editor-route-sync.spec.ts(sirsoft-admin_basic 템플릿) 는 code_editor_entry=direct_route_query(?route= 직접 진입 복원) + 무쿼리 기본 선택 보존을 커버. 코드편집기 레이아웃(admin_template_layout_edit.json)이 템플릿 소유이므로 템플릿 자체 E2E 디렉토리에 위치.
+  - edited_template_type 축: 나가기 목적지가 /admin/templates/{type} 로 분기됨. LayoutEditorChrome 이 /api/admin/templates/{id} 로 type 조회(미확정 시 user fallback). E2E 는 user(sirsoft-basic) 경로를 커버하고, admin 분기 단위 가드는 추후 보강.
+  - code_editor_entry × route_path: 코드편집기 ?route= ↔ 레이아웃 매핑은 백엔드 TemplateService.getLayoutRoutePathMap 가 SSoT(layouts API route_path). file_select/extension_select 의 replaceUrl 동기화는 admin-template-layout-edit.test.tsx 가 JSON 구조로, direct_route_query 복원은 chrome-controls.spec.ts 가 브라우저로 커버.
+  - toolbar_button_state=focused_after_click: 클릭 후 브라우저 기본 focus outline 잔류(검정 테두리) 회귀 가드 — EditorToolbar.test.tsx 가 outline:none 적용을 단위로 검증.

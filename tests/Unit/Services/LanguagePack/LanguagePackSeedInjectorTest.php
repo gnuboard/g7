@@ -47,7 +47,6 @@ class LanguagePackSeedInjectorTest extends TestCase
      *
      * @param  string  $entity  엔티티 이름 (permissions/roles/menus/notifications)
      * @param  array<string, mixed>  $seedData  seed 데이터
-     * @return void
      */
     private function setupCorePackWithSeed(string $entity, array $seedData): void
     {
@@ -295,6 +294,135 @@ class LanguagePackSeedInjectorTest extends TestCase
             $result = $this->injector->injectExtensionNotifications($defs, 'sirsoft-board');
 
             $this->assertArrayNotHasKey('ja', $result[0]['name']);
+        } finally {
+            File::deleteDirectory($packRoot);
+        }
+    }
+
+    /**
+     * manifest seed(name/description)를 활성 ja 팩 locale 로 주입하고 ko/en 을 보존합니다.
+     *
+     * @param  string  $scope  module|plugin|template
+     */
+    private function setupExtensionManifestPack(string $scope, string $target, array $seed): string
+    {
+        $packRoot = base_path("lang-packs/g7-{$scope}-{$target}-ja");
+        File::ensureDirectoryExists($packRoot.'/seed');
+        File::put($packRoot.'/seed/manifest.json', json_encode($seed));
+
+        LanguagePack::query()->create([
+            'identifier' => "g7-{$scope}-{$target}-ja",
+            'vendor' => 'g7',
+            'scope' => $scope,
+            'target_identifier' => $target,
+            'locale' => 'ja',
+            'locale_name' => 'Japanese',
+            'locale_native_name' => '日本語',
+            'text_direction' => 'ltr',
+            'version' => '1.0.0',
+            'status' => LanguagePackStatus::Active->value,
+            'is_protected' => false,
+            'manifest' => [],
+            'source_type' => 'bundled',
+        ]);
+        $this->registry->invalidate();
+
+        return $packRoot;
+    }
+
+    public function test_inject_extension_manifest_adds_ja_and_preserves_ko_en(): void
+    {
+        $packRoot = $this->setupExtensionManifestPack('plugin', 'sirsoft-gdpr', [
+            'name' => 'GDPR (一般データ保護規則)',
+            'description' => 'クッキー同意バナーを提供します。',
+        ]);
+
+        try {
+            $manifest = [
+                'name' => ['ko' => 'GDPR', 'en' => 'GDPR'],
+                'description' => ['ko' => '쿠키 동의 배너', 'en' => 'Cookie consent banner'],
+            ];
+
+            $result = $this->injector->injectExtensionManifest($manifest, 'sirsoft-gdpr', LanguagePackScope::Plugin->value);
+
+            $this->assertSame('GDPR (一般データ保護規則)', $result['name']['ja']);
+            $this->assertSame('クッキー同意バナーを提供します。', $result['description']['ja']);
+            // ko/en 보존
+            $this->assertSame('GDPR', $result['name']['ko']);
+            $this->assertSame('Cookie consent banner', $result['description']['en']);
+        } finally {
+            File::deleteDirectory($packRoot);
+        }
+    }
+
+    public function test_inject_extension_manifest_skips_when_no_pack(): void
+    {
+        $manifest = [
+            'name' => ['ko' => '게시판', 'en' => 'Board'],
+            'description' => ['ko' => '게시판 모듈', 'en' => 'Board module'],
+        ];
+
+        // 활성 ja 팩 없음 → 입력 그대로
+        $result = $this->injector->injectExtensionManifest($manifest, 'sirsoft-board', LanguagePackScope::Module->value);
+
+        $this->assertSame($manifest, $result);
+        $this->assertArrayNotHasKey('ja', $result['name']);
+    }
+
+    public function test_inject_extension_manifest_skips_other_target(): void
+    {
+        $packRoot = $this->setupExtensionManifestPack('module', 'sirsoft-ecommerce', [
+            'name' => 'eコマース',
+        ]);
+
+        try {
+            $manifest = ['name' => ['ko' => '게시판', 'en' => 'Board']];
+
+            // 다른 대상(sirsoft-board) 호출 → ja 병합 없음
+            $result = $this->injector->injectExtensionManifest($manifest, 'sirsoft-board', LanguagePackScope::Module->value);
+
+            $this->assertArrayNotHasKey('ja', $result['name']);
+        } finally {
+            File::deleteDirectory($packRoot);
+        }
+    }
+
+    public function test_inject_extension_manifest_handles_string_name_and_missing_description(): void
+    {
+        $packRoot = $this->setupExtensionManifestPack('template', 'sirsoft-basic', [
+            'name' => 'シルソフトベーシック',
+            'description' => 'ユーザーテンプレート',
+        ]);
+
+        try {
+            // name 이 string(비배열) 이고 description 누락된 입력 → 배열로 정규화 후 ja 주입
+            $manifest = ['name' => 'sirsoft-basic'];
+
+            $result = $this->injector->injectExtensionManifest($manifest, 'sirsoft-basic', LanguagePackScope::Template->value);
+
+            $this->assertIsArray($result['name']);
+            $this->assertSame('シルソフトベーシック', $result['name']['ja']);
+            $this->assertSame('ユーザーテンプレート', $result['description']['ja']);
+        } finally {
+            File::deleteDirectory($packRoot);
+        }
+    }
+
+    public function test_inject_extension_manifest_skips_empty_seed_fields(): void
+    {
+        $packRoot = $this->setupExtensionManifestPack('plugin', 'sirsoft-marketing', [
+            'name' => '',
+            'description' => 'マーケティング同意',
+        ]);
+
+        try {
+            $manifest = ['name' => ['ko' => '마케팅'], 'description' => ['ko' => '마케팅 동의']];
+
+            $result = $this->injector->injectExtensionManifest($manifest, 'sirsoft-marketing', LanguagePackScope::Plugin->value);
+
+            // 빈 name 은 주입 안 함, description 만 주입
+            $this->assertArrayNotHasKey('ja', $result['name']);
+            $this->assertSame('マーケティング同意', $result['description']['ja']);
         } finally {
             File::deleteDirectory($packRoot);
         }

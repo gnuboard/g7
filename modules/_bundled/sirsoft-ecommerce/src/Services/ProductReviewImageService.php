@@ -8,8 +8,10 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Ecommerce\Exceptions\ReviewImageUploadLimitException;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -24,10 +26,12 @@ class ProductReviewImageService
      *
      * @param  StorageInterface  $storage  모듈 스토리지 드라이버
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
+     * @param  ProductReviewImageRepositoryInterface  $repository  리뷰 이미지 리포지토리
      */
     public function __construct(
         protected StorageInterface $storage,
-        protected EcommerceSettingsService $settingsService
+        protected EcommerceSettingsService $settingsService,
+        protected ProductReviewImageRepositoryInterface $repository
     ) {}
 
     /**
@@ -37,20 +41,18 @@ class ProductReviewImageService
      * @param  ProductReview  $review  리뷰 모델
      * @return ProductReviewImage 생성된 이미지
      *
-     * @throws \RuntimeException 최대 업로드 수 초과 시
+     * @throws ReviewImageUploadLimitException 최대 업로드 수 초과 시
      */
     public function upload(UploadedFile $file, ProductReview $review): ProductReviewImage
     {
         $maxImages = (int) $this->settingsService->getSetting(
-            'review.max_images',
+            'review_settings.max_images',
             config('ecommerce.review.max_images', 5)
         );
 
         $currentCount = $review->images()->count();
         if ($currentCount >= $maxImages) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::review.image_upload_limit_exceeded', ['max' => $maxImages])
-            );
+            throw new ReviewImageUploadLimitException($maxImages);
         }
 
         HookManager::doAction('sirsoft-ecommerce.review-image.before_upload', $file, $review);
@@ -75,7 +77,7 @@ class ProductReviewImageService
 
         $maxSortOrder = $review->images()->max('sort_order') ?? 0;
 
-        $image = ProductReviewImage::create([
+        $image = $this->repository->create([
             'review_id' => $review->id,
             'original_filename' => $file->getClientOriginalName(),
             'stored_filename' => $storedFilename,
@@ -106,7 +108,7 @@ class ProductReviewImageService
      * 리뷰 이미지 삭제
      *
      * @param  ProductReviewImage  $image  이미지 모델
-     * @return bool
+     * @return bool 삭제 성공 여부
      */
     public function delete(ProductReviewImage $image): bool
     {
@@ -116,7 +118,7 @@ class ProductReviewImageService
             $this->storage->delete('images', $image->path);
         }
 
-        $result = (bool) $image->delete();
+        $result = $this->repository->delete($image);
 
         Log::info('리뷰 이미지 삭제 완료', ['image_id' => $image->id]);
 
@@ -129,18 +131,18 @@ class ProductReviewImageService
      * 해시로 이미지 조회
      *
      * @param  string  $hash  이미지 해시 (12자)
-     * @return ProductReviewImage|null
+     * @return ProductReviewImage|null 이미지 모델 (없으면 null)
      */
     public function findByHash(string $hash): ?ProductReviewImage
     {
-        return ProductReviewImage::where('hash', $hash)->first();
+        return $this->repository->findByHash($hash);
     }
 
     /**
      * 이미지 다운로드 응답 생성
      *
      * @param  string  $hash  이미지 해시 (12자)
-     * @return StreamedResponse|null
+     * @return StreamedResponse|null 다운로드 응답 (없으면 null)
      */
     public function download(string $hash): ?StreamedResponse
     {

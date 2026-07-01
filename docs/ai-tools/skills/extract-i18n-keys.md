@@ -16,7 +16,7 @@
 | `modules/_bundled/[vendor-module]/resources/layouts/**/*.json` | _bundled 모듈 레이아웃 | `modules/_bundled/[vendor-module]/resources/lang/*.json` |
 | `templates/[vendor-template]/layouts/**/*.json` | 템플릿 레이아웃 | `templates/[vendor-template]/lang/*.json` |
 | `templates/_bundled/[vendor-template]/layouts/**/*.json` | _bundled 템플릿 레이아웃 | `templates/_bundled/[vendor-template]/lang/*.json` |
-| `resources/layouts/**/*.json` | 코어 레이아웃 | `lang/*.json` |
+| `resources/layouts/**/*.json` | 코어 레이아웃 | `lang/{ko,en}.json` (+ `lang/partial/{ko,en}/*.json`) |
 
 ### $ARGUMENTS 처리
 
@@ -100,9 +100,11 @@ const regex = /\$t:(?:defer:)?([a-zA-Z][a-zA-Z0-9_.-]*(?:\.[a-zA-Z0-9_-]+)+)/g;
 modules/[vendor-module]/resources/lang/ko.json
 modules/[vendor-module]/resources/lang/en.json
 
-# 코어 언어 파일
+# 코어 프론트엔드 언어 파일 (모듈/플러그인과 동일한 구조: 엔트리 + partial 분할)
 lang/ko.json
 lang/en.json
+lang/partial/ko/*.json  # 선택적 — 엔트리에서 $partial 디렉티브로 참조
+lang/partial/en/*.json
 ```
 
 ### 3.2 기존 키 추출

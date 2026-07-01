@@ -70,6 +70,18 @@ class MailIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
+     * 채널 키 → 다국어 표시 라벨 맵을 반환합니다.
+     *
+     * @return array<string, string> 채널 키 → 라벨 맵
+     */
+    public function getChannelLabels(): array
+    {
+        return [
+            'email' => __('identity.channels.email'),
+        ];
+    }
+
+    /**
      * 기본 렌더 힌트를 반환합니다.
      *
      * @return string 렌더 힌트 (text_code, link 등)
@@ -193,6 +205,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
             renderHint: $renderHint,
             publicPayload: $publicPayload,
             metadata: [],
+            maxAttempts: $maxAttempts,
         );
     }
 
@@ -244,10 +257,16 @@ class MailIdentityProvider implements IdentityVerificationInterface
         ]);
 
         if ($storedHash === null || ! Hash::check($provided, $storedHash)) {
+            // 이번 오답으로 max_attempts 에 도달하면 잠금(Failed)으로 전환하고, 사용자에게
+            // 일반 오답 안내 대신 "최대 시도 초과 + 재요청" 안내(MAX_ATTEMPTS)를 반환한다.
+            // 프론트 모달은 도달 즉시 확인 버튼을 비활성화하므로 추가 시도를 기대할 수 없어,
+            // 막 소진된 이 응답에서 안내하지 않으면 max_attempts 문구가 사용자에게 영영 도달하지 못한다.
             if (($log->attempts + 1) >= $log->max_attempts) {
                 $this->logRepository->updateById($log->id, [
                     'status' => IdentityVerificationStatus::Failed->value,
                 ]);
+
+                return VerificationResult::failure($challengeId, self::ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts');
             }
 
             return VerificationResult::failure($challengeId, self::ID, 'INVALID_CODE', 'identity.errors.invalid_code');
@@ -349,15 +368,9 @@ class MailIdentityProvider implements IdentityVerificationInterface
     /**
      * IDV 전용 메시지 디스패처를 통해 메일을 발송합니다.
      *
-     * @param  string  $email
-     * @param  string  $purpose
      * @param  string  $renderHint  text_code | link
-     * @param  string  $challengeId
-     * @param  string|null  $policyKey
      * @param  string|null  $code  text_code 흐름 시 평문 인증 코드
      * @param  string|null  $linkToken  link 흐름 시 서명 링크용 raw 토큰
-     * @param  int  $ttlMinutes
-     * @param  Carbon  $expiresAt
      * @return bool 발송 성공 여부
      */
     protected function dispatchMessage(
@@ -411,11 +424,6 @@ class MailIdentityProvider implements IdentityVerificationInterface
 
     /**
      * link 흐름용 서명 링크를 생성합니다.
-     *
-     * @param  string  $challengeId
-     * @param  string  $linkToken
-     * @param  Carbon  $expiresAt
-     * @return string
      */
     protected function buildSignedLink(string $challengeId, string $linkToken, Carbon $expiresAt): string
     {
@@ -433,9 +441,6 @@ class MailIdentityProvider implements IdentityVerificationInterface
 
     /**
      * purpose 라벨(다국어)을 현재 로케일 문자열로 해석합니다.
-     *
-     * @param  string  $purpose
-     * @return string
      */
     protected function resolvePurposeLabel(string $purpose): string
     {

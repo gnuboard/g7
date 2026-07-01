@@ -1,0 +1,37 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 본 기능은 백엔드 전용 변경(체크아웃 마일리지 검증)으로,
+#   PHPUnit Feature 테스트가 회원/비회원 진입점과 잔액 경계 조합을 커버하며 green 이다.
+#   관리자 진입점 없음(체크아웃은 공개 CheckoutController store/update 뿐).
+feature: 마일리지 use_points 보유잔액 초과 사용 명시 차단 (U15/MP05)
+
+description: |
+  주문서 작성(체크아웃) 단계에서 use_points 가 보유 잔액(원장 기준)을 초과하면
+  조용히 클램프하지 않고 422 로 명시 차단한다. 비회원은 기존대로 0 처리(에러 아님).
+  최종 방어선(consumeFifo FOR UPDATE)·계산 클램프는 비파괴 유지하며, 본 변경은
+  상류 UX 선차단만 추가한다.
+
+axes:
+  balance_state:
+    - zero            # 잔액 0
+    - has_balance     # 잔액 보유
+  request_amount:
+    - below           # 잔액 미만 → 통과
+    - exact           # 잔액과 동일 → 통과(경계)
+    - exceed          # 잔액 초과 → 422 차단
+  entry_point:
+    - member_store    # 회원 체크아웃 생성(store)
+    - member_update   # 회원 체크아웃 수정(update)
+    - guest           # 비회원 → 항상 0 처리(에러 아님)
+
+effects:
+  - member_exceed_balance_returns_422           # 회원 초과 use_points → 422 + code=mileage_exceeds_balance
+  - member_exceed_balance_returns_422_on_update # update 진입점도 422 (generic 404 아님)
+  - member_exact_balance_passes                 # 잔액=요청 통과(경계)
+  - member_below_balance_passes                 # 잔액 미만 통과
+  - guest_use_points_ignored_zero               # 비회원 use_points>0 → 200/points_used=0
+  - available_balance_ledger_floor_integer      # availableBalance() 원장 기준 floor 정수
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/TempOrderServiceSecurityTest.php

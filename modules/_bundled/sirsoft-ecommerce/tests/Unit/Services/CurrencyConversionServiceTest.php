@@ -2,7 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
+use Illuminate\Support\Facades\Config;
 use InvalidArgumentException;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -28,7 +30,7 @@ class CurrencyConversionServiceTest extends ModuleTestCase
      */
     protected function setupTestCurrencySettings(): void
     {
-        $settingsPath = storage_path('app/modules/sirsoft-ecommerce/settings');
+        $settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         if (! is_dir($settingsPath)) {
             mkdir($settingsPath, 0755, true);
         }
@@ -84,7 +86,7 @@ class CurrencyConversionServiceTest extends ModuleTestCase
         // g7_module_settings() 는 Config::get('g7_settings.modules.{id}') 를 조회함.
         // CoreServiceProvider::loadModuleSettingsToConfig 는 활성 모듈에만 적용되므로
         // (테스트 환경에서는 모듈이 활성화 상태로 시드되지 않음) Config 를 수동으로 주입한다.
-        \Illuminate\Support\Facades\Config::set(
+        Config::set(
             'g7_settings.modules.sirsoft-ecommerce.language_currency',
             $settings
         );
@@ -96,7 +98,7 @@ class CurrencyConversionServiceTest extends ModuleTestCase
     protected function tearDown(): void
     {
         // 테스트 설정 파일 정리
-        $settingsFile = storage_path('app/modules/sirsoft-ecommerce/settings/language_currency.json');
+        $settingsFile = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/language_currency.json');
         if (file_exists($settingsFile)) {
             unlink($settingsFile);
         }
@@ -405,5 +407,204 @@ class CurrencyConversionServiceTest extends ModuleTestCase
         // USD: 소수 자릿수 2이므로 소수점 표시
         $formatted = $this->service->formatPrice(100.5, 'USD');
         $this->assertStringContainsString('.50', $formatted);
+    }
+
+    // ──────────────────────────────────────────────
+    // resolveSnapshotPaymentCharge (PG/결제 청구 SSoT)
+    // ──────────────────────────────────────────────
+
+    /**
+     * base=USD 주문 스냅샷 (실제 버그 재현 형태) — KRW 결제통화는 환산 + minor-unit 정수.
+     */
+    private function usdBaseSnapshot(string $orderCurrency): array
+    {
+        return [
+            'base_currency' => 'USD',
+            'order_currency' => $orderCurrency,
+            'exchange_rates' => [
+                // KRW: USD base 기준 환율(공식: base/1000 × rate). $6 → 7058원
+                'KRW' => ['rate' => 1176470, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0],
+                // USD: base 자기자신
+                'USD' => ['rate' => 1, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2],
+                // JPY: 현실적 환율 (≈157). $6 → (6/1000)×157000 = 942
+                'JPY' => ['rate' => 157000, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0],
+                // CNY: 환율 0 → 미지원(차단 대상)
+                'CNY' => ['rate' => 0, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2],
+            ],
+        ];
+    }
+
+    public function test_snapshot_charge_converts_base_usd_to_krw_minor_unit(): void
+    {
+        $charge = $this->service->resolveSnapshotPaymentCharge(6.0, $this->usdBaseSnapshot('KRW'));
+
+        $this->assertSame('KRW', $charge['currency']);
+        $this->assertEqualsWithDelta(7058, $charge['amount'], 0.001);
+        // KRW decimal_places=0 → minor unit = 환산금액 그대로
+        $this->assertSame(7058, $charge['minor_unit_amount']);
+        $this->assertSame(0, $charge['decimal_places']);
+    }
+
+    public function test_snapshot_charge_uses_base_amount_when_order_currency_is_base(): void
+    {
+        // 결제통화 = base(USD) → 환산 없이 $6, minor unit = $6 × 10^2 = 600 (KG "1달러=100" 규칙)
+        $charge = $this->service->resolveSnapshotPaymentCharge(6.0, $this->usdBaseSnapshot('USD'));
+
+        $this->assertSame('USD', $charge['currency']);
+        $this->assertEqualsWithDelta(6, $charge['amount'], 0.001);
+        $this->assertSame(600, $charge['minor_unit_amount']);
+        $this->assertSame(2, $charge['decimal_places']);
+    }
+
+    public function test_snapshot_charge_converts_base_usd_to_jpy_integer(): void
+    {
+        $charge = $this->service->resolveSnapshotPaymentCharge(6.0, $this->usdBaseSnapshot('JPY'));
+
+        $this->assertSame('JPY', $charge['currency']);
+        // (6/1000)×157000 = 942, floor, dp 0
+        $this->assertSame(942, $charge['minor_unit_amount']);
+        $this->assertSame(0, $charge['decimal_places']);
+    }
+
+    public function test_snapshot_charge_throws_for_zero_rate_currency(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->resolveSnapshotPaymentCharge(6.0, $this->usdBaseSnapshot('CNY'));
+    }
+
+    public function test_snapshot_charge_throws_for_currency_absent_from_snapshot(): void
+    {
+        // 스냅샷 exchange_rates 에 없는 통화 → 환율 0 폴백 → 차단
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->resolveSnapshotPaymentCharge(6.0, $this->usdBaseSnapshot('XXX'));
+    }
+
+    public function test_order_payment_charge_amount_converts_base_to_order_currency(): void
+    {
+        // 주문 래퍼: total_due_amount(base USD 6) + 스냅샷(order KRW) → 7058원(KRW minor unit)
+        $order = new Order;
+        $order->total_due_amount = 6.0;
+        $order->currency_snapshot = $this->usdBaseSnapshot('KRW');
+
+        $this->assertSame(7058, $this->service->resolveOrderPaymentChargeAmount($order));
+    }
+
+    public function test_order_payment_charge_amount_uses_base_when_order_is_base(): void
+    {
+        // base==order(USD) → 환산 없이 base 금액 그대로 minor unit (6 → 600)
+        $order = new Order;
+        $order->total_due_amount = 6.0;
+        $order->currency_snapshot = $this->usdBaseSnapshot('USD');
+
+        $this->assertSame(600, $this->service->resolveOrderPaymentChargeAmount($order));
+    }
+
+    // ──────────────────────────────────────────────
+    // base_unit (통화별 기준 단위 — MP08-3 방향 B)
+    // ──────────────────────────────────────────────
+
+    /**
+     * USD base + base_unit 명시 설정 (¥0 버그 재현/정상화 검증용).
+     */
+    private function usdBaseUnitSettings(): array
+    {
+        return [
+            ['code' => 'USD', 'is_default' => true, 'base_unit' => 1, 'exchange_rate' => null, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2],
+            ['code' => 'JPY', 'is_default' => false, 'base_unit' => 100, 'exchange_rate' => 157, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0],
+            ['code' => 'KRW', 'is_default' => false, 'base_unit' => 1000, 'exchange_rate' => 1300, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0],
+            ['code' => 'EUR', 'is_default' => false, 'base_unit' => 1, 'exchange_rate' => 0.92, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2],
+        ];
+    }
+
+    private function injectSettings(array $currencies, string $default): void
+    {
+        $payload = ['default_currency' => $default, 'currencies' => $currencies];
+        Config::set('g7_settings.modules.sirsoft-ecommerce.language_currency', $payload);
+        $this->service->clearCache();
+    }
+
+    public function test_get_base_unit_reads_setting_then_falls_back(): void
+    {
+        // 기본 픽스처(KRW base, base_unit 미설정) → 폴백: KRW=1000, JPY=100, USD/EUR=1
+        $this->assertSame(1000, $this->service->getBaseUnit('KRW'));
+        $this->assertSame(100, $this->service->getBaseUnit('JPY'));
+        $this->assertSame(1, $this->service->getBaseUnit('USD'));
+        $this->assertSame(1, $this->service->getBaseUnit('EUR'));
+        // 설정에 없는 통화 → 폴백 테이블 없으면 1
+        $this->assertSame(1, $this->service->getBaseUnit('GBP'));
+    }
+
+    public function test_get_base_unit_prefers_explicit_setting_over_fallback(): void
+    {
+        $this->injectSettings($this->usdBaseUnitSettings(), 'USD');
+
+        $this->assertSame(1, $this->service->getBaseUnit('USD'));
+        $this->assertSame(100, $this->service->getBaseUnit('JPY'));
+        $this->assertSame(1000, $this->service->getBaseUnit('KRW'));
+        $this->assertSame(1, $this->service->getDefaultBaseUnit()); // 기본=USD
+    }
+
+    public function test_usd_base_converts_without_thousand_divisor_regression_jpy_zero(): void
+    {
+        // 회귀: base=USD, base_unit=1 일 때 $3.20 → JPY 가 0 이 아니어야 함
+        $this->injectSettings($this->usdBaseUnitSettings(), 'USD');
+
+        // $3 → JPY: (3 / 1) × 157 = 471 (floor)
+        $jpy = $this->service->convertToCurrency(3, 'JPY');
+        $this->assertSame(471.0, (float) $jpy['price']);
+        $this->assertNotSame(0.0, (float) $jpy['price'], 'USD base 환산이 ÷1000 잔재로 0 이 되면 안 됨');
+
+        // $3 → KRW: (3 / 1) × 1300 = 3900
+        $this->assertSame(3900.0, (float) $this->service->convertToCurrency(3, 'KRW')['price']);
+        // $3 → EUR: (3 / 1) × 0.92 = 2.76
+        $this->assertEqualsWithDelta(2.76, (float) $this->service->convertToCurrency(3, 'EUR')['price'], 0.001);
+    }
+
+    public function test_krw_base_unit_1000_is_equivalent_to_legacy_formula(): void
+    {
+        // 등가성: KRW base + base_unit=1000 → 옛 ÷1000 공식과 동일 결과
+        $currencies = [
+            ['code' => 'KRW', 'is_default' => true, 'base_unit' => 1000, 'exchange_rate' => null, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0],
+            ['code' => 'USD', 'is_default' => false, 'base_unit' => 1, 'exchange_rate' => 0.85, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2],
+            ['code' => 'JPY', 'is_default' => false, 'base_unit' => 100, 'exchange_rate' => 115, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0],
+        ];
+        $this->injectSettings($currencies, 'KRW');
+
+        // 53000 / 1000 × 0.85 = 45.05
+        $this->assertEqualsWithDelta(45.05, (float) $this->service->convertToCurrency(53000, 'USD')['price'], 0.001);
+        // 53000 / 1000 × 115 = 6095
+        $this->assertSame(6095.0, (float) $this->service->convertToCurrency(53000, 'JPY')['price']);
+    }
+
+    public function test_snapshot_base_unit_falls_back_to_1000_for_legacy_snapshot(): void
+    {
+        // base_unit 미박제 옛 스냅샷 → 폴백 1000 (÷1000 공식 유지, 환차손 0)
+        $this->assertSame(1000, $this->service->getSnapshotBaseUnit($this->usdBaseSnapshot('JPY')));
+    }
+
+    public function test_snapshot_base_unit_reads_embedded_value(): void
+    {
+        $snap = $this->usdBaseSnapshot('JPY');
+        $snap['base_unit'] = 1; // 새 주문: base=USD, base_unit=1 박제
+        $this->assertSame(1, $this->service->getSnapshotBaseUnit($snap));
+    }
+
+    public function test_snapshot_charge_uses_embedded_base_unit_new_formula(): void
+    {
+        // 새 스냅샷: base=USD, base_unit=1, JPY rate=157 (1달러=157엔) → $6 → ¥942
+        $snap = [
+            'base_currency' => 'USD',
+            'order_currency' => 'JPY',
+            'base_unit' => 1,
+            'exchange_rates' => [
+                'USD' => ['rate' => 1, 'rounding_unit' => '0.01', 'rounding_method' => 'round', 'decimal_places' => 2, 'base_unit' => 1],
+                'JPY' => ['rate' => 157, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0],
+            ],
+        ];
+
+        $charge = $this->service->resolveSnapshotPaymentCharge(6.0, $snap);
+        // (6 / 1) × 157 = 942
+        $this->assertSame(942, $charge['minor_unit_amount']);
+        $this->assertSame('JPY', $charge['currency']);
     }
 }

@@ -14,6 +14,8 @@ class ChangeCartOptionRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -30,6 +32,12 @@ class ChangeCartOptionRequest extends FormRequest
         $rules = [
             'product_option_id' => ['required', 'integer', Rule::exists(ProductOption::class, 'id')],
             'quantity' => 'required|integer|min:1|max:9999',
+            // 추가옵션 재선택 (미전달 시 기존 선택 유지 — 서버에서 value_id 검증/가격 재조회)
+            'additional_option_selections' => 'nullable|array',
+            'additional_option_selections.*.additional_option_id' => 'required_with:additional_option_selections|integer',
+            'additional_option_selections.*.value_id' => 'required_with:additional_option_selections|integer',
+            // 직접입력 텍스트 (선택지의 allow_custom_text 여부·필수성은 서버에서 재검증)
+            'additional_option_selections.*.custom_text' => 'nullable|string|max:255',
         ];
 
         return HookManager::applyFilters('sirsoft-ecommerce.cart.change_option_validation_rules', $rules, $this);

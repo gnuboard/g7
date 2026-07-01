@@ -256,16 +256,18 @@ export async function executeCancelOrderHandler(
     const cancelPg = action.params?.cancelPg ?? local.cancelPg ?? true;
     const refundPriority = action.params?.refundPriority || local.refundPriority || 'pg_first';
 
-    // 전체 옵션 취소인지 부분 취소인지 판단
-    const orderData = G7Core.dataSource?.get?.('order')?.data;
-    const allOptions = orderData?.options || [];
-    const activeOptions = allOptions.filter((opt: any) => opt.option_status !== 'cancelled');
-    const isFullCancel = cancelItems.length >= activeOptions.length;
-
+    // 선택한 항목을 항상 items(type:partial)로 전송한다. 프론트에서 전체취소를 휴리스틱으로 판단하지 않는다.
+    // 진짜 전체취소(모든 활성 옵션 전량)도 items 전량으로 보내면 백엔드 shouldConvertToFullCancel 이 FULL 로
+    // 승격해 동작·환불 결과가 동일하다. 종전 라인수+수량 휴리스틱은 단일 항목 주문을 항상 full 로 처리해
+    // 수량을 줄여도 전량 취소되는 결함이 있었고(MP03 §9 발견#2), 유저 핸들러와도 판정 기준이 어긋났다.
     const body: Record<string, any> = {
-        type: isFullCancel ? 'full' : 'partial',
+        type: 'partial',
         cancel_pg: cancelPg,
         refund_priority: refundPriority,
+        items: cancelItems.map((item: any) => ({
+            order_option_id: item.id,
+            cancel_quantity: item.cancel_quantity,
+        })),
     };
 
     if (cancelReason) {
@@ -273,13 +275,6 @@ export async function executeCancelOrderHandler(
     }
     if (cancelReasonDetail) {
         body.reason_detail = cancelReasonDetail;
-    }
-
-    if (!isFullCancel) {
-        body.items = cancelItems.map((item: any) => ({
-            order_option_id: item.id,
-            cancel_quantity: item.cancel_quantity,
-        }));
     }
 
     G7Core.state.setLocal({ isCancelling: true, cancelError: null, cancelValidationErrors: null });
@@ -315,6 +310,9 @@ export async function executeCancelOrderHandler(
 
         const errorData = (error as any)?.response?.data || (error as any)?.data;
         const httpStatus = (error as any)?.response?.status || (error as any)?.status;
+        // 428(본인인증 필요)은 ApiClient(G7Core.api) 인터셉터가 중앙에서 처리한다 —
+        // 본인인증 모달 → verify → 원 요청 자동 재실행 후 성공 응답이 이 try 로 돌아오므로
+        // 여기서 별도 428 분기는 불필요(이중 모달 방지). 사용자가 인증 취소 시에만 에러로 전파됨.
         const isValidationError = httpStatus === 422;
         const pgError = errorData?.errors?.detail;
         const validationErrors = errorData?.errors ?? null;

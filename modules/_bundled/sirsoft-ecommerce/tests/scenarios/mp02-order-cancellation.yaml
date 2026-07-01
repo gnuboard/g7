@@ -1,0 +1,102 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 본 기능의 백엔드 axis 조합은 PHPUnit Unit/DTO 테스트가,
+#   프론트 항상-items 전송·취소 모달 조건부 UI 는 Vitest 핸들러/레이아웃 테스트가 커버하며
+#   모두 green 이다. effects ↔ 테스트 매핑은 본 매니페스트 effects 블록과 각 테스트가 대응한다.
+feature: 주문 취소·환불 도메인 통합 (U1/U2/U20①②③④/U18②③④/A28)
+
+description: |
+  주문 취소 경로의 환불 판정·상태 로직·취소 모달을 통합 정비한다.
+
+  핵심 동작:
+    - U1: 무통장(dbank) 등 PG 미사용 결제수단은 취소 시 PG 환불 훅을 건너뛰고(needsPgProvider 가드)
+      운영자 수동 환불 대기(RefundStatusEnum::APPROVED) 로 둔다. 카드/가상계좌는 기존대로 PG 환불(COMPLETED).
+    - U2/U20②: 부분취소 차단 판정(AdjustmentResult::isCancelBlocked)에 "실제 결제 발생" 게이트를 도입.
+      실결제 0원(미입금·운영자 0원 결제완료)은 무조건 허용, 실결제 주문에서만 추가결제 필요 시 차단.
+      취소 계산기(refundAmount)는 불변.
+    - U20①: 프론트(유저/관리자)는 선택 항목을 항상 items 로 전송. 전체취소 승격은 백엔드
+      shouldConvertToFullCancel 이 담당(프론트 isFullCancel 휴리스틱 제거).
+    - U20③: 취소 차단 메시지를 쿠폰 단정 없이 일반화.
+    - U20④: cancelled_at native 컬럼에 전체·부분취소 모두 기록 + Resource 노출(cancelled_at_formatted).
+    - 부분취소 모델 변경(PO 2026-06-22): partial_cancelled 주문 상태를 제거. 부분취소는 별도 상태가 아니라
+      "취소 옵션 + 잔여 활성 옵션 공존"이며, 주문 상태는 잔여 활성 옵션 기준으로 파생(syncParentOrderStatus).
+      잔여 항목 재취소는 진행 상태(payment_complete 등)가 취소 가능 목록에 있어 자연 허용. 잔여 전량 취소 시 CANCELLED 전이.
+      "일부 취소됨" 표시는 파생 플래그 is_partially_cancelled(취소옵션∧활성옵션)로 노출(목록·상세 보조 배지).
+      주문내역 카운터는 부분취소 주문을 잔여 진행 상태 카운터에 집계(별도 partial_cancelled 키 없음).
+      상품준비중 카운터↔필터 집합 통일(OrderStatusEnum::statisticsFilterGroups SSoT)은 유지.
+    - A28: 취소 모달의 'PG 함께취소' 체크박스·'환불 우선순위' 라디오를 requires_pg_cancellation /
+      포인트 사용분 기준으로 조건부 노출.
+
+axes:
+  item_selection:
+    - single_full         # 단일 옵션 전량
+    - multi_subset_full   # 다중 옵션 중 일부 전량
+    - multi_partial_qty   # 다중 옵션 일부 부분수량
+    - all_full            # 전 옵션 전량(=진짜 전체취소 → FULL 승격)
+  payment_state:
+    - unpaid_dbank        # 무통장 미입금 (payment_status≠PAID, paid=0)
+    - operator_zero_paid  # 운영자 0원 결제완료 (payment_status≠PAID, paid=0)
+    - card_paid           # 카드 결제완료 (PAID, paid>0)
+    - dbank_paid          # 무통장 입금완료 (PAID)
+    - vbank_paid          # 가상계좌 결제완료 (PAID)
+    - points_used         # 포인트 일부 사용
+  coupon:
+    - none                # 쿠폰 없음
+    - min_order_broken    # 최소주문금액 쿠폰(취소 시 조건미달)
+  verify_stage:
+    - api_response        # API 응답 성공/차단
+    - order_status        # CANCELLED vs PARTIAL_CANCELLED 전이
+    - cancel_accuracy     # 취소 옵션·수량 정확성(부분집합 유지)
+    - cancelled_at        # cancelled_at 기록(전체+부분)
+    - refund_record       # refund_method·refund_status(PG=COMPLETED, 무통장=APPROVED)
+    - block_message       # 차단 메시지 텍스트(일반화)
+
+effects:
+  # U1 — 무통장 PG 환불 스킵 + 환불상태 정상화 (PHPUnit Unit)
+  - dbank_cancel_skips_pg_and_succeeds           # 무통장 취소가 PG 훅 없이 성공
+  - dbank_cancel_refund_method_is_bank           # 무통장 환불수단 BANK
+  - dbank_cancel_refund_status_is_approved       # 무통장 환불상태 APPROVED(refunded_at null)
+  - dbank_cancel_updates_order_and_payment       # 주문/결제 상태 갱신
+  - card_cancel_fires_pg_hook_and_completes      # 카드 PG 환불 COMPLETED(비회귀)
+  - vbank_cancel_fires_pg_hook                   # 가상계좌 PG 가드 통과(비회귀)
+  # U2/U20② — 0원·미입금 부분취소 허용 (PHPUnit Unit + DTO)
+  - partial_cancel_allowed_for_unpaid_order      # 미입금 부분취소 허용
+  - partial_cancel_allowed_for_operator_zero_paid # 운영자 0원 결제완료 부분취소 허용
+  - partial_cancel_passes_for_normal_paid_order  # 정상결제 부분취소 통과+환불 생성
+  - cancel_block_gated_by_actual_payment         # isCancelBlocked 실결제 게이트(DTO)
+  - cancel_block_epsilon_rounding                # 반올림 오차 epsilon 허용(DTO)
+  - cancel_block_no_points_double_count          # 포인트 이중계산 방지(DTO)
+  # U20① — 일부 부분취소 정확성 (PHPUnit Unit + Vitest)
+  - partial_subset_keeps_remaining_active        # 부분집합 취소 시 잔여 활성 유지
+  - all_items_promotes_to_full_cancel            # 전량 취소는 백엔드 FULL 승격
+  - frontend_always_sends_items_user             # 유저 핸들러 항상 items 전송
+  - frontend_always_sends_items_admin            # 관리자 핸들러 항상 items 전송
+  # U20④ — 취소일시 (PHPUnit Unit + Resource)
+  - full_cancel_records_cancelled_at             # 전체취소 cancelled_at 기록
+  - partial_cancel_records_cancelled_at          # 부분취소 cancelled_at 기록
+  - resource_exposes_cancelled_at_formatted      # Resource cancelled_at_formatted 노출
+  # 부분취소 = 파생 상태 (PHPUnit Unit + Model)
+  - partial_cancel_keeps_status_and_sets_partial_flag  # 부분취소 후 잔여 진행 상태 유지 + is_partially_cancelled
+  - partial_cancelled_order_can_cancel_remaining       # 부분취소 주문 잔여 재취소 → 전량 시 CANCELLED 전이
+  - partially_cancelled_remains_cancellable_via_progress_status  # 진행 상태 기준 재취소 허용, cancelled 차단
+  # 카운터·필터 정합화 (PHPUnit Unit + Enum)
+  - statistics_has_no_partial_cancelled_key      # getUserStatistics partial_cancelled 키 없음(진행 상태 집계)
+  - statistics_preparing_sums_two_states         # 상품준비중 = PREPARING + SHIPPING_READY
+  - statistics_hides_pending_order               # 주문대기 숨김 유지
+  - preparing_filter_expands_to_group            # 상품준비중 필터 그룹 확장(카운터=필터 일치)
+  # A28 — 취소 모달 조건부 UI (Vitest 레이아웃)
+  - refund_priority_radio_conditional            # 환불 우선순위 라디오 조건부 노출
+  - pg_checkbox_conditional                       # PG 함께취소 체크박스 조건부 노출
+  - resource_exposes_requires_pg_cancellation    # OrderPaymentResource requires_pg_cancellation
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/DTO/AdjustmentResultTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/OrderTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/OrderRepositoryTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/OrderEnumsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/OrderResourceFieldsTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/cancelOrderHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userCancelOrderHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderCancelModalConditionalUi.test.tsx

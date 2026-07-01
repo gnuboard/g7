@@ -162,7 +162,7 @@ describe('PageTransitionIndicator', () => {
       expect(progressbar.className).toContain('top-0');
       expect(progressbar.className).toContain('left-0');
       expect(progressbar.className).toContain('right-0');
-      expect(progressbar.className).toContain('z-50');
+      expect(progressbar.className).toContain('z-[999]');
     });
   });
 });

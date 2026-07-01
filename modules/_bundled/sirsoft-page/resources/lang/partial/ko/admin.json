@@ -154,6 +154,7 @@
         "actions": "작업",
         "view": "보기",
         "preview_modal_title": "버전 v{{version}} 미리보기",
+        "preview_modal_editor_label": "버전 미리보기",
         "restore": "복원",
         "current": "현재",
         "initial": "최초 생성",

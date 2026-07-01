@@ -47,6 +47,11 @@ class TestIdentityProvider implements IdentityVerificationInterface
         return ['email'];
     }
 
+    public function getChannelLabels(): array
+    {
+        return ['email' => 'Email'];
+    }
+
     public function getRenderHint(): string
     {
         return 'text_code';

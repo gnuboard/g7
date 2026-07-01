@@ -21,6 +21,7 @@ class OrderPayment extends Model
     {
         return OrderPaymentFactory::new();
     }
+
     protected $table = 'ecommerce_order_payments';
 
     protected $fillable = [
@@ -172,13 +173,34 @@ class OrderPayment extends Model
     }
 
     /**
-     * 취소 가능 금액 계산
+     * 취소 가능 금액 계산 (결제 통화 order_currency 기준).
      *
-     * @return float 취소 가능 금액
+     * paid_amount_local 은 결제 통화 실청구액이므로 누적 취소액도 결제 통화로 맞춰야 한다.
+     * 코어가 결제 통화로 누적한 mc_cancelled_amount[order_currency] 를 우선 사용하고,
+     * 없으면(레거시 결제) base 누적 cancelled_amount 로 폴백한다.
+     *
+     * @return float 취소 가능 금액 (결제 통화)
      */
     public function getCancellableAmount(): float
     {
-        return $this->paid_amount_local - $this->cancelled_amount;
+        return $this->paid_amount_local - $this->cancelledLocalAmount();
+    }
+
+    /**
+     * 결제 통화(order_currency) 기준 누적 취소액을 반환합니다.
+     *
+     * @return float 결제 통화 기준 누적 취소액
+     */
+    public function cancelledLocalAmount(): float
+    {
+        $currency = $this->currency;
+        $mc = $this->mc_cancelled_amount ?? [];
+
+        if ($currency !== null && isset($mc[$currency])) {
+            return (float) $mc[$currency];
+        }
+
+        return (float) $this->cancelled_amount;
     }
 
     /**

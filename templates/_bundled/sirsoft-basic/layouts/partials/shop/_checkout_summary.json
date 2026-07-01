@@ -73,7 +73,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "{{_local.showTaxDetails ? 'chevron-up' : 'chevron-down'}}",
-                            "className": "w-4 h-4"
+                            "size": "sm"
                           }
                         }
                       ]
@@ -146,7 +146,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "{{_local.showDiscountDetails ? 'chevron-up' : 'chevron-down'}}",
-                            "className": "w-4 h-4"
+                            "size": "sm"
                           }
                         }
                       ]
@@ -416,13 +416,21 @@
           ]
         },
         {
+          "comment": "배송 불가 안내 (D1 — 혼재 시 전체 차단)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{checkoutData.data.has_unshippable_items === true}}",
+          "props": { "className": "mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400" },
+          "text": "$t:shop.shippability.blocks_order"
+        },
+        {
           "comment": "결제 버튼",
           "type": "basic",
           "name": "Button",
           "props": {
             "type": "button",
             "className": "w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{!_local.shipping?.zipcode || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder}}"
+            "disabled": "{{((_local.shipping?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true}}"
           },
           "responsive": {
             "portable": {
@@ -444,11 +452,17 @@
                     "params": { "target": "_local.isSubmittingOrder", "value": true }
                   },
                   {
+                    "comment": "결제 엔드포인트 — 회원/비회원 공유 단일 endpoint (optional.sanctum). PG 플러그인 fetch 인터셉터가 /user/orders 한 경로만 매칭하므로 비회원도 같은 endpoint 로 호출해 PG 결제창이 정상 노출되도록 한다. 회원/비회원 분기는 백엔드 컨트롤러가 처리.",
                     "handler": "apiCall",
                     "target": "/api/modules/sirsoft-ecommerce/user/orders",
                     "auth_mode": "optional",
+                    "identity_target": {
+                      "email": "{{_computed.ordererDefaults?.email || _local.orderer?.email || ''}}",
+                      "phone": "{{_local.orderer?.phone || _global.currentUser?.phone || _local.shipping?.recipient_phone || ''}}"
+                    },
                     "params": {
                       "method": "POST",
+                      "headers": { "X-Cart-Key": "{{_global.cartKey}}" },
                       "body": {
                         "temp_order_id": "{{checkoutData.data.temp_order_id}}",
                         "orderer": "{{_computed.ordererDefaults}}",
@@ -458,18 +472,20 @@
                         "depositor_name": "{{_local.depositorName ?? _computed.ordererDefaults?.name ?? ''}}",
                         "dbank": "{{_computed.selectedPaymentMethod === 'dbank' ? { bank_code: _local.selectedDbank?.bank_code, account_number: _local.selectedDbank?.account_number, account_holder: _local.selectedDbank?.account_holder } : null}}",
                         "expected_total_amount": "{{checkoutData.data.calculation?.summary?.final_amount ?? 0}}",
-                        "save_shipping_address": "{{_local.saveShippingAddress ?? false}}"
+                        "save_shipping_address": "{{_local.saveShippingAddress ?? false}}",
+                        "guest_lookup_password": "{{_global.currentUser?.uuid ? null : (_local.guestLookupPassword ?? '')}}",
+                        "guest_lookup_password_confirmation": "{{_global.currentUser?.uuid ? null : (_local.guestLookupPasswordConfirmation ?? '')}}"
                       }
                     },
                     "onSuccess": [
                       {
-                        "comment": "결제 방법에 따라 분기 - PG 결제는 결제창으로, 무통장/포인트 등은 완료페이지로",
+                        "comment": "결제 방법 분기 — PG provider 가 응답으로 결제 진입 핸들러명(pg_payment_handler)을 내려준 경우 그 핸들러를 그대로 dispatch (provider-agnostic, 특정 PG 하드코딩 없음). 핸들러명 미선언 PG 는 이 분기 미발화 → non-PG fallback(비회원 verify 후 완료 페이지 navigate)으로 안전 강하.",
                         "handler": "conditions",
                         "conditions": [
                           {
-                            "if": "{{response.data.requires_pg_payment && response.data.pg_provider === 'sirsoft-tosspayments'}}",
+                            "if": "{{response.data.requires_pg_payment && response.data.pg_payment_handler}}",
                             "then": {
-                              "handler": "sirsoft-tosspayments.requestPayment",
+                              "handler": "{{response.data.pg_payment_handler}}",
                               "params": {
                                 "pgPaymentData": "{{response.data.pg_payment_data}}"
                               }
@@ -477,8 +493,55 @@
                           },
                           {
                             "then": {
-                              "handler": "navigate",
-                              "params": { "path": "{{response.data.redirect_url ?? _global.shopBase + '/orders/' + response.data.order.order_number + '/complete'}}" }
+                              "handler": "sequence",
+                              "params": {
+                                "actions": [
+                                  {
+                                    "comment": "비회원만 자동 verify — non-PG 결제 흐름에서만 수행. PG 결제는 결제 완료 콜백 이후 verify 수행 필요 (별도 처리).",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                      {
+                                        "if": "{{!_global.currentUser?.uuid}}",
+                                        "then": {
+                                          "handler": "apiCall",
+                                          "target": "/api/modules/sirsoft-ecommerce/guest/orders/verify",
+                                          "auth_mode": "optional",
+                                          "params": {
+                                            "method": "POST",
+                                            "body": {
+                                              "order_number": "{{response.data.order.order_number}}",
+                                              "orderer_phone": "{{_local.orderer?.phone ?? ''}}",
+                                              "guest_lookup_password": "{{_local.guestLookupPassword ?? ''}}"
+                                            }
+                                          },
+                                          "onSuccess": [
+                                            {
+                                              "comment": "토큰 + 주문번호 + 만료시각 sessionStorage 저장 + _global.guestOrderToken 동기 set (모듈 커스텀 핸들러).",
+                                              "handler": "saveGuestOrderToken",
+                                              "params": {
+                                                "token": "{{response.data.guest_order_token}}",
+                                                "orderNumber": "{{response.data.order.order_number}}",
+                                                "expiresAt": "{{response.data.expires_at}}"
+                                              }
+                                            }
+                                          ],
+                                          "onError": [
+                                            {
+                                              "comment": "verify 실패는 결제 자체를 막지 않음 — 주문은 이미 생성되었으므로 사용자가 나중에 lookup 폼으로 재인증 가능. 토스트로만 안내.",
+                                              "handler": "toast",
+                                              "params": { "type": "warning", "message": "$t:shop.checkout.guest_token_issue_failed" }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "handler": "navigate",
+                                    "params": { "path": "{{$results[0]?.redirect_url ?? response.data.redirect_url ?? _global.shopBase + '/orders/' + response.data.order.order_number + '/complete'}}" }
+                                  }
+                                ]
+                              }
                             }
                           }
                         ]

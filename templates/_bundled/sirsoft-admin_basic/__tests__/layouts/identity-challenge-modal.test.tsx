@@ -116,26 +116,22 @@ describe('본인인증 공통 모달 (sirsoft-admin_basic) — engine-v1.46.0', 
     });
   });
 
-  describe('Extension Point 슬롯', () => {
+  describe('Extension Point 슬롯 (C안 — provider 단일 슬롯 + 코어 OTP 인라인)', () => {
     const slots: Node[] = [];
     walk(identityModal as unknown as Node, (n) => {
       if (n.type === 'extension_point') slots.push(n);
     });
 
-    it('render_hint:text_code 슬롯 존재', () => {
-      const slot = slots.find((s) => s.name === 'identity_provider_ui:text_code');
-      expect(slot).toBeDefined();
-      expect(Array.isArray(slot!.default)).toBe(true);
+    it('provider 슬롯 1개만 존재 (외부 plugin append 전용)', () => {
+      const providerSlots = slots.filter((s) => s.name === 'identity_provider_ui:provider');
+      expect(providerSlots).toHaveLength(1);
     });
 
-    it('render_hint:link 슬롯 존재', () => {
-      const slot = slots.find((s) => s.name === 'identity_provider_ui:link');
-      expect(slot).toBeDefined();
-    });
-
-    it('provider 별 슬롯 존재', () => {
-      const slot = slots.find((s) => s.name === 'identity_provider_ui:provider');
-      expect(slot).toBeDefined();
+    it('코어 OTP UI 는 슬롯이 아닌 인라인 Div 로 정의되어 mail/null provider 시 노출', () => {
+      const otherSlots = slots.filter(
+        (s) => s.name !== 'identity_provider_ui:provider',
+      );
+      expect(otherSlots).toHaveLength(0);
     });
   });
 

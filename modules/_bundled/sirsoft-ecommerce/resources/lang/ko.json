@@ -1,4 +1,53 @@
 {
+  "editor": {
+    "action": {
+      "request_pg_payment": {
+        "label": "결제 진입",
+        "param_handler": "결제 핸들러",
+        "param_data": "결제 데이터"
+      }
+    },
+    "action_chip": {
+      "response_pg_handler": "결제 핸들러(응답)",
+      "response_pg_data": "결제 데이터(응답)"
+    },
+    "data_source": {
+      "active_carriers": "활성 택배사",
+      "activity_logs": "활동 로그",
+      "availableChannels": "사용 가능 채널",
+      "brands": "브랜드 목록",
+      "carriers": "택배사 목록",
+      "categories": "카테고리 목록",
+      "commonInfos": "공통정보 목록",
+      "common_infos": "공통정보 목록",
+      "copy_source": "복사 원본",
+      "coupon": "쿠폰",
+      "couponIssues": "쿠폰 발급 내역",
+      "coupons": "쿠폰 목록",
+      "ecommerceIdentityPolicies": "쇼핑몰 본인인증 정책",
+      "ecommerceIdentityPurposes": "쇼핑몰 본인인증 목적",
+      "ecommerceNotificationDefinitions": "쇼핑몰 알림 정의",
+      "ecommerce_settings": "쇼핑몰 설정",
+      "extra_fee_templates": "추가 배송비 템플릿",
+      "identityProviders": "본인인증 제공자",
+      "notice_templates": "상품정보고시 템플릿",
+      "order": "주문",
+      "order_logs": "주문 로그",
+      "orders": "주문 목록",
+      "policy": "배송 정책",
+      "presets": "프리셋 목록",
+      "product": "상품",
+      "product_labels": "상품 라벨",
+      "products": "상품 목록",
+      "refundReasons": "환불 사유",
+      "reviews": "상품 후기",
+      "roles": "역할 목록",
+      "seoStats": "SEO 통계",
+      "settings": "설정",
+      "shipping_policies": "배송 정책 목록",
+      "templates": "템플릿 목록"
+    }
+  },
   "common": {
     "$partial": "partial/ko/common.json"
   },
@@ -6,6 +55,9 @@
     "$partial": "partial/ko/currency.json"
   },
   "admin": {
+    "dashboard": {
+      "$partial": "partial/ko/admin/dashboard.json"
+    },
     "locale": {
       "$partial": "partial/ko/admin/locale.json"
     },
@@ -51,8 +103,35 @@
     "personal_payment_detail": {
       "$partial": "partial/ko/admin/personal_payment_detail.json"
     },
-    "mileage_deposit_settings": {
-      "$partial": "partial/ko/admin/mileage_deposit_settings.json"
+    "mileage_settings": {
+      "$partial": "partial/ko/admin/mileage_settings.json"
+    },
+    "mileage_transactions": {
+      "$partial": "partial/ko/admin/mileage_transactions.json"
+    },
+    "user_mileage": {
+      "tab_label": "마일리지",
+      "title": "마일리지",
+      "available": "사용 가능",
+      "pending": "적립 예정",
+      "total_earned": "누적 적립",
+      "expiring_soon": "소멸 예정",
+      "view_history": "이 회원 내역 보기",
+      "disabled_notice": "마일리지 기능이 비활성화되어 있습니다. 환경설정에서 활성화할 수 있습니다."
+    },
+    "user_currency": {
+      "title": "결제 통화",
+      "description": "이 회원의 주문·결제 시 사용할 통화를 지정합니다.",
+      "save_button": "저장",
+      "saved": "회원 결제 통화가 변경되었습니다.",
+      "save_failed": "회원 결제 통화 변경에 실패했습니다."
+    },
+    "user_shipping_country": {
+      "title": "배송국가",
+      "description": "이 회원의 기본 배송국가를 지정합니다.",
+      "save_button": "저장",
+      "saved": "회원 배송국가가 변경되었습니다.",
+      "save_failed": "회원 배송국가 변경에 실패했습니다."
     },
     "product_notice_template": {
       "$partial": "partial/ko/admin/product_notice_template.json"
@@ -72,6 +151,23 @@
   },
   "user": {
     "$partial": "partial/ko/user.json"
+  },
+  "auth": {
+    "register_currency": {
+      "label": "결제 통화",
+      "hint": "주문·결제 시 사용할 통화입니다. 가입 후 내 정보에서 변경할 수 있습니다."
+    },
+    "register_shipping_country": {
+      "label": "배송국가",
+      "hint": "기본 배송국가입니다. 가입 후 내 정보에서 변경할 수 있습니다."
+    }
+  },
+  "user_mileage": {
+    "title": "내 마일리지",
+    "available": "사용 가능",
+    "expiring_soon": "소멸 예정 {{amount}} P",
+    "view_history": "마일리지 내역",
+    "disabled_notice": "마일리지 기능이 비활성화되어 있습니다."
   },
   "product": {
     "$partial": "partial/ko/product.json"

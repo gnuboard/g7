@@ -1,14 +1,15 @@
 {
     "meta": {
         "is_partial": true,
-        "description": "본인인증 정책 삭제 확인 모달"
+        "description": "본인인증 정책 삭제 확인 모달",
+        "editor_label": "$t:admin.modal_label.admin_settings.identity_policy_delete_modal"
     },
     "id": "identity_policy_delete_modal",
     "type": "composite",
     "name": "Modal",
     "props": {
         "title": "$t:admin.identity.policies.delete_title",
-        "size": "small"
+        "size": "sm"
     },
     "children": [
         {
@@ -23,7 +24,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-end gap-3 mt-6"
+                "className": "modal-footer-buttons"
             },
             "children": [
                 {
@@ -31,7 +32,7 @@
                     "name": "Button",
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "btn btn-secondary",
                         "disabled": "{{_global.identityPolicyDeleting}}"
                     },
                     "actions": [
@@ -48,7 +49,7 @@
                     "name": "Button",
                     "props": {
                         "type": "button",
-                        "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.identityPolicyDeleting}}"
                     },
                     "actions": [
@@ -124,7 +125,7 @@
                             "if": "{{_global.identityPolicyDeleting}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "w-4 h-4 animate-spin"
+                                "className": "spinner-sm"
                             }
                         },
                         {

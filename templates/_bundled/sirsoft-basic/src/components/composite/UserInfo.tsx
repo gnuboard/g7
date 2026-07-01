@@ -45,6 +45,7 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
+import type { EditorAttrs } from '../../types';
 
 // G7Core 참조
 const getG7Core = () => (window as any).G7Core;
@@ -177,6 +178,15 @@ export interface UserInfoProps {
   hideMenuItems?: string[];
   /** 기본 메뉴에 추가할 항목 */
   appendMenuItems?: MenuItemConfig[];
+
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+/**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 // 레이아웃별 컨테이너 클래스
@@ -234,6 +244,8 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   menuItems,
   hideMenuItems = [],
   appendMenuItems = [],
+  id,
+  editorAttrs,
 }) => {
   // 명시적 props > author 추출값 순서로 결정
   const actualUserId = userId ?? author?.uuid;
@@ -365,7 +377,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   // 비회원인 경우
   if (actualIsGuest || !actualUserId) {
     return (
-      <Div className={containerClass}>
+      <Div className={containerClass} id={id} {...editorAttrs}>
         <Div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
           <Span>{actualName}</Span>
           <Span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
@@ -380,7 +392,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   // 탈퇴한 사용자인 경우
   if (actualIsWithdrawn) {
     return (
-      <Div className={containerClass}>
+      <Div className={containerClass} id={id} {...editorAttrs}>
         <Span className="text-gray-400 dark:text-gray-500 line-through">
           {actualName}
         </Span>
@@ -399,7 +411,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     : `${defaultColorClass} font-medium`.trim();
 
   return (
-    <Div ref={containerRef} className={`relative inline-block ${className}`}>
+    <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs}>
       <Div className={LAYOUT_CLASSES[layout]}>
         <Button
           ref={buttonRef}

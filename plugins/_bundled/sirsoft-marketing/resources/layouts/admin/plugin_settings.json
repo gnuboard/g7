@@ -12,6 +12,7 @@
     "data_sources": [
         {
             "id": "settings",
+            "label_key": "$t:sirsoft-marketing.editor.data_source.settings",
             "type": "api",
             "endpoint": "/api/admin/plugins/{{route.identifier}}/settings",
             "method": "GET",
@@ -42,7 +43,9 @@
     ],
     "modals": {
         "channel_edit_modal": {
-            "meta": { "is_partial": true },
+            "meta": {
+                "is_partial": true
+            },
             "id": "channel_edit_modal",
             "type": "composite",
             "name": "Modal",
@@ -55,17 +58,23 @@
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "space-y-4" },
+                    "props": {
+                        "className": "row-stack"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex items-center justify-between" },
+                            "props": {
+                                "className": "flex-between"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
-                                    "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" },
+                                    "props": {
+                                        "className": "text-body font-medium"
+                                    },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.enabled"
                                 },
                                 {
@@ -95,7 +104,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Label",
-                                    "props": { "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                    "props": {
+                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.key"
                                 },
                                 {
@@ -106,7 +117,7 @@
                                         "value": "{{_global.editingChannel.key ?? ''}}",
                                         "readOnly": "{{_global.editingChannel.is_system || _global.editingChannel._editing}}",
                                         "placeholder": "$t:sirsoft-marketing.settings.channel_modal.key_placeholder",
-                                        "className": "w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent border-gray-300 dark:border-gray-600 read-only:bg-gray-100 dark:read-only:bg-gray-800 read-only:cursor-not-allowed"
+                                        "className": "{{_global.editingChannel.is_system || _global.editingChannel._editing ? 'input-readonly w-full' : 'w-full'}}"
                                     },
                                     "actions": [
                                         {
@@ -122,7 +133,9 @@
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.key_hint"
                                 }
                             ]
@@ -134,7 +147,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Label",
-                                    "props": { "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                    "props": {
+                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.label_ko"
                                 },
                                 {
@@ -166,7 +181,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Label",
-                                    "props": { "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                    "props": {
+                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.page_slug"
                                 },
                                 {
@@ -192,7 +209,9 @@
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.page_slug_hint"
                                 }
                             ]
@@ -202,7 +221,9 @@
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "flex justify-end gap-2 mt-4" },
+                    "props": {
+                        "className": "flex justify-end gap-2 mt-4"
+                    },
                     "children": [
                         {
                             "type": "basic",
@@ -270,7 +291,9 @@
             ]
         },
         "channel_deactivate_modal": {
-            "meta": { "is_partial": true },
+            "meta": {
+                "is_partial": true
+            },
             "id": "channel_deactivate_modal",
             "type": "composite",
             "name": "Modal",
@@ -283,18 +306,24 @@
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "space-y-4" },
+                    "props": {
+                        "className": "row-stack"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
-                            "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                            "props": {
+                                "className": "text-body"
+                            },
                             "text": "$t:sirsoft-marketing.settings.channel_deactivate_modal.message"
                         },
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex justify-end gap-2 mt-4" },
+                            "props": {
+                                "className": "flex justify-end gap-2 mt-4"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -363,11 +392,10 @@
                 "id": "plugin_settings_content",
                 "type": "basic",
                 "name": "Div",
-                "blur_until_loaded": "{{_local.isSaving}}",
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -387,7 +415,7 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mt-6"
+                            "className": "alert-danger"
                         },
                         "children": [
                             {
@@ -414,7 +442,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                    "className": "text-error-soft"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -434,7 +462,7 @@
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "text-sm text-red-700 dark:text-red-300"
+                                                            "className": "section-heading-md"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -459,14 +487,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+                                    "className": "panel-header-row"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                            "className": "text-error-strong"
                                         },
                                         "text": "$t:sirsoft-marketing.settings.section.channels"
                                     }
@@ -485,7 +513,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-2 lg:grid-cols-3 gap-4 items-center px-6 py-4"
+                                            "className": "grid-2col lg:grid-cols-3 items-center px-6 py-4"
                                         },
                                         "children": [
                                             {
@@ -499,7 +527,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.label"
                                                     },
@@ -507,7 +535,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.hint"
                                                     }
@@ -536,7 +564,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start px-6 py-4 bg-gray-100 dark:bg-gray-700"
+                                            "className": "grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700"
                                         },
                                         "children": [
                                             {
@@ -550,7 +578,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.label"
                                                     },
@@ -558,7 +586,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.hint"
                                                     }
@@ -578,7 +606,7 @@
                                                             "type": "text",
                                                             "name": "marketing_consent_terms_slug",
                                                             "placeholder": "$t:sirsoft-marketing.settings.fields.terms_slug_placeholder",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
                                                         }
                                                     }
                                                 ]
@@ -589,17 +617,23 @@
                                         "id": "channels_table_section",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "px-6 py-4" },
+                                        "props": {
+                                            "className": "px-6 py-4"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "flex items-center justify-between mb-3" },
+                                                "props": {
+                                                    "className": "flex-between mb-3"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" },
+                                                        "props": {
+                                                            "className": "text-body font-medium"
+                                                        },
                                                         "text": "$t:sirsoft-marketing.settings.fields.channels.label"
                                                     },
                                                     {
@@ -607,7 +641,7 @@
                                                         "name": "Button",
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
+                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
                                                         },
                                                         "actions": [
                                                             {
@@ -620,7 +654,10 @@
                                                                             "target": "global",
                                                                             "editingChannel": {
                                                                                 "key": "",
-                                                                                "label": { "ko": "", "en": "" },
+                                                                                "label": {
+                                                                                    "ko": "",
+                                                                                    "en": ""
+                                                                                },
                                                                                 "page_slug": "",
                                                                                 "enabled": true,
                                                                                 "is_system": false,
@@ -639,7 +676,10 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Icon",
-                                                                "props": { "name": "plus", "size": "sm" }
+                                                                "props": {
+                                                                    "name": "plus",
+                                                                    "size": "sm"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -653,42 +693,56 @@
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-3" },
+                                                "props": {
+                                                    "className": "text-tertiary mb-3"
+                                                },
                                                 "text": "$t:sirsoft-marketing.settings.channels.description"
                                             },
                                             {
                                                 "id": "channels_table",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden" },
+                                                "props": {
+                                                    "className": "border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": { "className": "grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" },
+                                                        "props": {
+                                                            "className": "text-tertiary grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 font-medium uppercase"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
-                                                                "props": { "className": "col-span-6 sm:col-span-4" },
+                                                                "props": {
+                                                                    "className": "col-span-6 sm:col-span-4"
+                                                                },
                                                                 "text": "$t:sirsoft-marketing.settings.channels.col_label"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
-                                                                "props": { "className": "hidden sm:block sm:col-span-4" },
+                                                                "props": {
+                                                                    "className": "hidden sm:block sm:col-span-4"
+                                                                },
                                                                 "text": "$t:sirsoft-marketing.settings.channels.col_slug"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
-                                                                "props": { "className": "col-span-4 sm:col-span-2 text-center" },
+                                                                "props": {
+                                                                    "className": "col-span-4 sm:col-span-2 text-center"
+                                                                },
                                                                 "text": "$t:sirsoft-marketing.settings.channels.col_enabled"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
-                                                                "props": { "className": "col-span-2 hidden sm:block" }
+                                                                "props": {
+                                                                    "className": "col-span-2 hidden sm:block"
+                                                                }
                                                             }
                                                         ]
                                                     },
@@ -696,7 +750,9 @@
                                                         "id": "channels_table_rows",
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": { "className": "divide-y divide-gray-100 dark:divide-gray-700" },
+                                                        "props": {
+                                                            "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                                                        },
                                                         "iteration": {
                                                             "source": "_global.channels ?? (typeof _local.form.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form.channels ?? []))",
                                                             "item_var": "channel",
@@ -706,29 +762,39 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
-                                                                "props": { "className": "grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50" },
+                                                                "props": {
+                                                                    "className": "grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
-                                                                        "props": { "className": "col-span-6 sm:col-span-4" },
+                                                                        "props": {
+                                                                            "className": "col-span-6 sm:col-span-4"
+                                                                        },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Div",
-                                                                                "props": { "className": "flex items-center gap-2 flex-wrap" },
+                                                                                "props": {
+                                                                                    "className": "flex-center gap-2 flex-wrap"
+                                                                                },
                                                                                 "children": [
                                                                                     {
                                                                                         "type": "basic",
                                                                                         "name": "Span",
-                                                                                        "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
+                                                                                        "props": {
+                                                                                            "className": "text-heading"
+                                                                                        },
                                                                                         "text": "{{channel.label.ko ?? channel.key}}"
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "if": "{{channel.is_system}}",
-                                                                                        "props": { "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" },
+                                                                                        "props": {
+                                                                                            "className": "text-info-soft inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900"
+                                                                                        },
                                                                                         "text": "$t:sirsoft-marketing.settings.channels.system_badge"
                                                                                     }
                                                                                 ]
@@ -736,14 +802,18 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "props": { "className": "text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5" },
+                                                                                "props": {
+                                                                                    "className": "text-hint font-mono mt-0.5"
+                                                                                },
                                                                                 "text": "{{channel.key}}"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "if": "{{!!channel.page_slug}}",
-                                                                                "props": { "className": "block sm:hidden text-xs text-blue-400 dark:text-blue-500 font-mono mt-0.5" },
+                                                                                "props": {
+                                                                                    "className": "block sm:hidden text-xs text-blue-400 dark:text-blue-500 font-mono mt-0.5"
+                                                                                },
                                                                                 "text": "{{channel.page_slug}}"
                                                                             }
                                                                         ]
@@ -751,12 +821,16 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
-                                                                        "props": { "className": "hidden sm:block sm:col-span-4" },
+                                                                        "props": {
+                                                                            "className": "hidden sm:block sm:col-span-4"
+                                                                        },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "props": { "className": "text-sm text-gray-500 dark:text-gray-400 font-mono" },
+                                                                                "props": {
+                                                                                    "className": "text-label-subtle font-mono"
+                                                                                },
                                                                                 "text": "{{channel.page_slug || '-'}}"
                                                                             }
                                                                         ]
@@ -764,7 +838,9 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
-                                                                        "props": { "className": "col-span-4 sm:col-span-2 flex justify-center" },
+                                                                        "props": {
+                                                                            "className": "col-span-4 sm:col-span-2 flex justify-center"
+                                                                        },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
@@ -802,7 +878,9 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
-                                                                        "props": { "className": "col-span-2 flex justify-end gap-1 sm:gap-2" },
+                                                                        "props": {
+                                                                            "className": "col-span-2 flex justify-end gap-1 sm:gap-2"
+                                                                        },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
@@ -834,7 +912,10 @@
                                                                                     {
                                                                                         "type": "basic",
                                                                                         "name": "Icon",
-                                                                                        "props": { "name": "pen", "size": "sm" }
+                                                                                        "props": {
+                                                                                            "name": "pen",
+                                                                                            "size": "sm"
+                                                                                        }
                                                                                     }
                                                                                 ]
                                                                             },
@@ -872,7 +953,10 @@
                                                                                     {
                                                                                         "type": "basic",
                                                                                         "name": "Icon",
-                                                                                        "props": { "name": "trash", "size": "sm" }
+                                                                                        "props": {
+                                                                                            "name": "trash",
+                                                                                            "size": "sm"
+                                                                                        }
                                                                                     }
                                                                                 ]
                                                                             }
@@ -903,14 +987,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+                                    "className": "panel-header-row"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                            "className": "text-error-strong"
                                         },
                                         "text": "$t:sirsoft-marketing.settings.section.legal"
                                     }
@@ -929,7 +1013,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-2 lg:grid-cols-3 gap-4 items-center px-6 py-4"
+                                            "className": "grid-2col lg:grid-cols-3 items-center px-6 py-4"
                                         },
                                         "children": [
                                             {
@@ -943,7 +1027,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.label"
                                                     },
@@ -951,7 +1035,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.hint"
                                                     }
@@ -980,7 +1064,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start px-6 py-4 bg-gray-100 dark:bg-gray-700"
+                                            "className": "grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700"
                                         },
                                         "children": [
                                             {
@@ -994,7 +1078,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.label"
                                                     },
@@ -1002,7 +1086,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.hint"
                                                     }
@@ -1022,7 +1106,7 @@
                                                             "type": "text",
                                                             "name": "third_party_consent_terms_slug",
                                                             "placeholder": "$t:sirsoft-marketing.settings.fields.terms_slug_placeholder",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
                                                         }
                                                     }
                                                 ]
@@ -1034,7 +1118,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-2 lg:grid-cols-3 gap-4 items-center px-6 py-4"
+                                            "className": "grid-2col lg:grid-cols-3 items-center px-6 py-4"
                                         },
                                         "children": [
                                             {
@@ -1048,7 +1132,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.label"
                                                     },
@@ -1056,7 +1140,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.hint"
                                                     }
@@ -1085,7 +1169,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start px-6 py-4 bg-gray-100 dark:bg-gray-700"
+                                            "className": "grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700"
                                         },
                                         "children": [
                                             {
@@ -1099,7 +1183,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            "className": "form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.label"
                                                     },
@@ -1107,7 +1191,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.hint"
                                                     }
@@ -1127,7 +1211,7 @@
                                                             "type": "text",
                                                             "name": "info_disclosure_terms_slug",
                                                             "placeholder": "$t:sirsoft-marketing.settings.fields.terms_slug_placeholder",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
+                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
                                                         }
                                                     }
                                                 ]
@@ -1143,7 +1227,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex justify-end gap-3 mt-6"
+                            "className": "sticky-footer-buttons"
                         },
                         "children": [
                             {
@@ -1152,7 +1236,7 @@
                                 "name": "Button",
                                 "props": {
                                     "type": "button",
-                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                    "className": "btn btn-secondary"
                                 },
                                 "actions": [
                                     {
@@ -1178,7 +1262,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "flex items-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "actions": [
                                     {
@@ -1221,7 +1305,9 @@
                                                             },
                                                             {
                                                                 "handler": "refetchDataSource",
-                                                                "params": { "dataSourceId": "settings" }
+                                                                "params": {
+                                                                    "dataSourceId": "settings"
+                                                                }
                                                             },
                                                             {
                                                                 "handler": "toast",
@@ -1281,7 +1367,7 @@
                                         "if": "{{_local.isSaving}}",
                                         "props": {
                                             "name": "spinner",
-                                            "className": "w-4 h-4 animate-spin"
+                                            "className": "spinner-sm"
                                         }
                                     },
                                     {

@@ -1,3 +1,4 @@
+// e2e:allow 편집기 ComponentRegistry 등록 정합(basic Header/Footer export 제거 — composite 와 이름 충돌 해소, SlotContainer 번들 포함). 편집기 캔버스 렌더는 Chrome MCP 라이브 실측 + Vitest(headerEditorSpecAndCurrencySlot/HeaderPropRender)로 검증. 사용자 사이트 런타임 무변경.
 /**
  * 기본 HTML 매핑 컴포넌트 Export
  *
@@ -38,8 +39,10 @@ export { Section, type SectionProps } from './Section';
 export { Svg, type SvgProps } from './Svg';
 export { Icon, type IconProps } from './Icon';
 export { Code, type CodeProps } from './Code';
-export { Footer, type FooterProps } from './Footer';
-export { Header, type HeaderProps } from './Header';
+// basic Header/Footer(HTML <header>/<footer> 래퍼)는 레이아웃 사용처 0이며 composite
+// Header/Footer 와 이름이 겹쳐 편집기 ComponentRegistry 에서 중복 등록 경고를 유발한다.
+// 사이트 헤더/푸터는 composite 컴포넌트가 담당하므로 basic 래퍼 export 를 제거한다
+// (필요 시 Div + role/시맨틱 태그로 대체). 파일 자체는 보존(직접 import 경로는 유지).
 export { Hr, type HrProps } from './Hr';
 
 // Icon 타입 정의 (enum 및 타입)

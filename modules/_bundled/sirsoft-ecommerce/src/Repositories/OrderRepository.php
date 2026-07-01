@@ -3,13 +3,17 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
@@ -22,6 +26,15 @@ class OrderRepository implements OrderRepositoryInterface
     public function __construct(
         protected Order $model
     ) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    public function existsAny(): bool
+    {
+        // 소프트삭제 포함 — 삭제된 주문도 과거 base 로 생성된 이력이라 base 잠금 유지가 안전(A2)
+        return $this->model->newQuery()->withTrashed()->exists();
+    }
 
     /**
      * {@inheritDoc}
@@ -39,15 +52,19 @@ class OrderRepository implements OrderRepositoryInterface
         return $this->model
             ->with([
                 'user',
-                'options',
+                // 옵션별 실제 구매 적립 발행 여부를 집계 컬럼(purchase_earn_transactions_exists)으로 함께 로드 (N+1 회피)
+                'options' => fn ($q) => $q->withExists('purchaseEarnTransactions'),
                 'options.product',
                 'options.shippings',
+                'options.shippings.carrier',
                 'options.review',
                 'shippingAddress',
                 'billingAddress',
                 'payment',
                 'payments',
                 'shippings',
+                // 취소 이력 — 주문상세 화면의 취소 사유/일시 표시용 (최근 취소 먼저)
+                'cancels' => fn ($q) => $q->latest('cancelled_at'),
             ])
             ->find($id);
     }
@@ -85,10 +102,10 @@ class OrderRepository implements OrderRepositoryInterface
         // 권한 스코프 필터링
         PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.orders.read');
 
-        // pending_order 상태 기본 제외 (임시 주문 상태)
-        // order_status 필터가 명시적으로 지정된 경우에만 pending_order 표시 가능
+        // 목록 기본 숨김 상태 제외 (PENDING_ORDER 등 임시 주문 상태 — OrderStatusEnum::listHiddenValues SSoT)
+        // order_status 필터가 명시적으로 지정된 경우에만 숨김 상태 표시 가능
         if (empty($filters['order_status']) && empty($filters['include_pending_order'])) {
-            $query->where('order_status', '!=', OrderStatusEnum::PENDING_ORDER->value);
+            $query->whereNotIn('order_status', OrderStatusEnum::listHiddenValues());
         }
 
         // 회원 ID 필터 (유저 주문내역 조회용)
@@ -104,6 +121,15 @@ class OrderRepository implements OrderRepositoryInterface
             } else {
                 // UUID에 해당하는 회원이 없으면 결과 없음
                 $query->whereRaw('1 = 0');
+            }
+        }
+
+        // 회원 구분 필터 (member: 회원 주문, guest: 비회원 주문)
+        if (! empty($filters['member_type'])) {
+            if ($filters['member_type'] === 'guest') {
+                $query->whereNull('user_id');
+            } elseif ($filters['member_type'] === 'member') {
+                $query->whereNotNull('user_id');
             }
         }
 
@@ -166,6 +192,16 @@ class OrderRepository implements OrderRepositoryInterface
             $statuses = is_array($filters['order_status'])
                 ? $filters['order_status']
                 : [$filters['order_status']];
+
+            // 합산 카운터 키(상품준비중 등)는 동일 상태 집합으로 확장해 카운터 수와 목록 수를 일치시킨다.
+            // 일반 상태 값은 그대로 유지된다 (OrderStatusEnum::statisticsFilterGroups SSoT).
+            $statuses = array_values(array_unique(array_merge(
+                ...array_map(
+                    fn ($s) => OrderStatusEnum::expandStatisticsFilter((string) $s),
+                    $statuses
+                )
+            )));
+
             $query->whereIn('order_status', $statuses);
         }
 
@@ -351,7 +387,10 @@ class OrderRepository implements OrderRepositoryInterface
      */
     public function bulkUpdateOptionStatus(array $ids, string $status): int
     {
+        // 취소/환불·클레임 등 별도 라이프사이클 옵션은 동기화에서 제외한다.
+        // (취소된 옵션이 결제완료/배송중 등으로 되살아나는 것을 차단 — OrderStatusEnum SSoT)
         return OrderOption::whereIn('order_id', $ids)
+            ->whereNotIn('option_status', OrderStatusEnum::syncExcludedValues())
             ->update([
                 'option_status' => $status,
                 'updated_at' => now(),
@@ -363,14 +402,14 @@ class OrderRepository implements OrderRepositoryInterface
      */
     public function getStatistics(): array
     {
-        // pending_order 제외한 전체 통계
+        // 숨김 상태(PENDING_ORDER 등) 제외한 전체 통계 (OrderStatusEnum::listHiddenValues SSoT)
         $total = $this->model
-            ->where('order_status', '!=', OrderStatusEnum::PENDING_ORDER->value)
+            ->whereNotIn('order_status', OrderStatusEnum::listHiddenValues())
             ->count();
 
-        // 주문상태별 통계 (pending_order 제외)
+        // 주문상태별 통계 (숨김 상태 제외)
         $statusCounts = $this->model
-            ->where('order_status', '!=', OrderStatusEnum::PENDING_ORDER->value)
+            ->whereNotIn('order_status', OrderStatusEnum::listHiddenValues())
             ->selectRaw('order_status, COUNT(*) as count')
             ->groupBy('order_status')
             ->pluck('count', 'order_status')
@@ -410,20 +449,28 @@ class OrderRepository implements OrderRepositoryInterface
     {
         $statusCounts = $this->model
             ->where('user_id', $userId)
-            ->where('order_status', '!=', OrderStatusEnum::PENDING_ORDER->value)
+            ->whereNotIn('order_status', OrderStatusEnum::listHiddenValues())
             ->selectRaw('order_status, COUNT(*) as count')
             ->groupBy('order_status')
             ->pluck('count', 'order_status')
             ->toArray();
 
+        // 상품준비중 카운터는 PREPARING + SHIPPING_READY 를 합산한다 — 클릭 필터도 동일 집합으로
+        // 확장되도록 그룹 SSoT(OrderStatusEnum::statisticsFilterGroups)를 공유한다.
+        $preparing = 0;
+        foreach (OrderStatusEnum::expandStatisticsFilter(OrderStatusEnum::PREPARING->value) as $value) {
+            $preparing += $statusCounts[$value] ?? 0;
+        }
+
         return [
             'pending_payment' => $statusCounts[OrderStatusEnum::PENDING_PAYMENT->value] ?? 0,
             'payment_complete' => $statusCounts[OrderStatusEnum::PAYMENT_COMPLETE->value] ?? 0,
-            'preparing' => ($statusCounts[OrderStatusEnum::PREPARING->value] ?? 0)
-                + ($statusCounts[OrderStatusEnum::SHIPPING_READY->value] ?? 0),
+            'preparing' => $preparing,
             'shipping' => $statusCounts[OrderStatusEnum::SHIPPING->value] ?? 0,
             'delivered' => $statusCounts[OrderStatusEnum::DELIVERED->value] ?? 0,
             'confirmed' => $statusCounts[OrderStatusEnum::CONFIRMED->value] ?? 0,
+            // 부분취소는 별도 주문 상태가 아니라 잔여 옵션 기준 진행 상태로 집계된다(partial_cancelled 제거).
+            // 일부 취소된 주문은 자신의 진행 단계(결제완료/준비중/배송중 등) 카운터에 그대로 잡힌다.
         ];
     }
 
@@ -460,10 +507,9 @@ class OrderRepository implements OrderRepositoryInterface
     /**
      * 클레임 필터 적용
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  Builder  $query
      * @param  array|string  $statuses
      * @param  string  $type  claim type (refund, return, exchange)
-     * @return void
      */
     protected function applyClaimFilter($query, $statuses, string $type): void
     {
@@ -487,15 +533,13 @@ class OrderRepository implements OrderRepositoryInterface
     /**
      * 필터 조건을 쿼리에 적용 (내부 헬퍼)
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  array  $filters
-     * @return void
+     * @param  Builder  $query
      */
     protected function applyFiltersToQuery($query, array $filters): void
     {
-        // pending_order 상태 기본 제외 (임시 주문 상태)
+        // 목록 기본 숨김 상태 제외 (PENDING_ORDER 등 — OrderStatusEnum::listHiddenValues SSoT)
         if (empty($filters['order_status']) && empty($filters['include_pending_order'])) {
-            $query->where('order_status', '!=', OrderStatusEnum::PENDING_ORDER->value);
+            $query->whereNotIn('order_status', OrderStatusEnum::listHiddenValues());
         }
 
         // 날짜 필터
@@ -546,12 +590,12 @@ class OrderRepository implements OrderRepositoryInterface
             ->whereHas('payment', function ($query) {
                 $query->where(function ($q) {
                     // vbank 가상계좌 입금 기한 만료
-                    $q->where('payment_method', 'vbank')
+                    $q->where('payment_method', PaymentMethodEnum::VBANK->value)
                         ->whereNotNull('vbank_due_at')
                         ->where('vbank_due_at', '<', now());
                 })->orWhere(function ($q) {
-                    // bank 수동 무통장 입금 기한 만료
-                    $q->where('payment_method', 'bank')
+                    // dbank 무통장입금(수동 입금확인) 입금 기한 만료
+                    $q->where('payment_method', PaymentMethodEnum::DBANK->value)
                         ->whereNotNull('deposit_due_at')
                         ->where('deposit_due_at', '<', now());
                 });
@@ -565,14 +609,58 @@ class OrderRepository implements OrderRepositoryInterface
      * ID 목록으로 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  ID 목록
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection ID 를 키로 하는 주문 컬렉션
      */
-    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection
+    public function findByIdsKeyed(array $ids): Collection
     {
         if (empty($ids)) {
-            return new \Illuminate\Database\Eloquent\Collection();
+            return new Collection;
         }
 
         return Order::whereIn('id', $ids)->get()->keyBy('id');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getSnapshotsByIds(array $ids): array
+    {
+        return $this->model->whereIn('id', $ids)->get()->keyBy('id')->map->toArray()->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getActivityLogsForOrder(Order $order, array $filters = []): LengthAwarePaginator
+    {
+        $perPage = (int) ($filters['per_page'] ?? 10);
+        $sortOrder = ($filters['sort_order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+
+        $optionIds = $order->options()->pluck('id')->toArray();
+        $addressIds = $order->addresses()->pluck('id')->toArray();
+
+        return ActivityLog::where(function (Builder $q) use ($order, $optionIds, $addressIds) {
+            // 주문 자체 로그
+            $q->where(function (Builder $sub) use ($order) {
+                $sub->where('loggable_type', $order->getMorphClass())
+                    ->where('loggable_id', $order->getKey());
+            });
+
+            // 해당 주문의 옵션 로그
+            if (! empty($optionIds)) {
+                $q->orWhere(function (Builder $sub) use ($optionIds) {
+                    $sub->where('loggable_type', (new OrderOption)->getMorphClass())
+                        ->whereIn('loggable_id', $optionIds);
+                });
+            }
+
+            // 해당 주문의 배송지 로그
+            if (! empty($addressIds)) {
+                $q->orWhere(function (Builder $sub) use ($addressIds) {
+                    $sub->where('loggable_type', (new OrderAddress)->getMorphClass())
+                        ->whereIn('loggable_id', $addressIds);
+                });
+            }
+        })->orderBy('created_at', $sortOrder)->paginate($perPage);
     }
 }

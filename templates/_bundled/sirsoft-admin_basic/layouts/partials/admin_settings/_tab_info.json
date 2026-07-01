@@ -7,15 +7,12 @@
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeSettingsTab || query.tab) === 'info'}}",
-  "props": {
-    "className": "mt-6 space-y-6"
-  },
   "children": [
     {
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "grid grid-cols-1 md:grid-cols-2 gap-6"
+        "className": "grid-2col-responsive"
       },
       "children": [
         {
@@ -23,22 +20,22 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+            "className": "admin-card"
           },
           "children": [
             {
               "type": "basic",
               "name": "H3",
               "props": {
-                "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+                "className": "card-title"
               },
               "text": "$t:admin.settings.info.system_info"
             },
             {
               "type": "basic",
-              "name": "P",
+              "name": "Div",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+                "className": "card-description"
               },
               "text": "$t:admin.settings.info.system_info_desc"
             },
@@ -46,75 +43,137 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "space-y-3"
+                "className": "row-stack"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
-                  },
-                  "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.os" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.os_info ?? '-'}}" }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
-                  },
-                  "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.web_server" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.web_server ?? '-'}}" }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
-                  },
-                  "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.php_version" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.php_version ?? '-'}}" }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
-                  },
-                  "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.mysql_version" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.mysql_version ?? '-'}}" }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
+                    "className": "flex-between"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.os"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.os_info ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.web_server"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.web_server ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.php_version"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.php_version ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.mysql_version"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.mysql_version ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
                       "text": "$t:admin.settings.info.g7_version"
                     },
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "flex items-center gap-2" },
+                      "props": {
+                        "className": "flex-center gap-2"
+                      },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
-                          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
+                          "props": {
+                            "className": "text-heading"
+                          },
                           "text": "{{systemInfo?.data?.g7_version ?? '-'}}"
                         },
                         {
@@ -293,11 +352,25 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex justify-between items-center py-2"
+                    "className": "flex-between"
                   },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.laravel_version" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.laravel_version ?? '-'}}" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.laravel_version"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.laravel_version ?? '-'}}"
+                    }
                   ]
                 }
               ]
@@ -309,22 +382,22 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+            "className": "admin-card"
           },
           "children": [
             {
               "type": "basic",
               "name": "H3",
               "props": {
-                "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+                "className": "card-title"
               },
               "text": "$t:admin.settings.info.system_specs"
             },
             {
               "type": "basic",
-              "name": "P",
+              "name": "Div",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+                "className": "card-description"
               },
               "text": "$t:admin.settings.info.system_specs_desc"
             },
@@ -332,73 +405,157 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "space-y-3"
+                "className": "row-stack"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
+                    "className": "flex-between"
                   },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.cpu" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.cpu_info ?? '-'}}" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.cpu"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.cpu_info ?? '-'}}"
+                    }
                   ]
                 },
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
+                    "className": "flex-between"
                   },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.memory" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.memory"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)"
+                    }
                   ]
                 },
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
+                    "className": "flex-between"
                   },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.disk" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.disk"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)"
+                    }
                   ]
                 },
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
+                    "className": "flex-between"
                   },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.php_memory" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.php_memory_limit ?? '-'}}" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.php_memory"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.php_memory_limit ?? '-'}}"
+                    }
                   ]
                 },
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700"
+                    "className": "flex-between"
                   },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.max_execution_time" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.max_execution_time ?? '-'}}" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.max_execution_time"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.max_execution_time ?? '-'}}"
+                    }
                   ]
                 },
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex justify-between items-center py-2"
+                    "className": "flex-between"
                   },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.upload_size" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.upload_max_filesize ?? '-'}}" }
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:admin.settings.info.upload_size"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "{{systemInfo?.data?.upload_max_filesize ?? '-'}}"
+                    }
                   ]
                 }
               ]
@@ -412,74 +569,154 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.info.install_paths"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.info.install_paths_desc"
         },
         {
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
-          },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex justify-between items-center py-2"
+                "className": "row-stack"
               },
               "children": [
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.install_path" },
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white break-all" }, "text": "{{systemInfo?.data?.install_path ?? '-'}}" }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between items-center py-2"
-              },
-              "children": [
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.config_file" },
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white break-all" }, "text": "{{systemInfo?.data?.config_path ?? '-'}}" }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between items-center py-2"
-              },
-              "children": [
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.log_path" },
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white break-all" }, "text": "{{systemInfo?.data?.log_path ?? '-'}}" }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex justify-between items-center py-2"
-              },
-              "children": [
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.upload_path" },
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white break-all" }, "text": "{{systemInfo?.data?.upload_path ?? '-'}}" }
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid-2col-responsive"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-between py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-label"
+                          },
+                          "text": "$t:admin.settings.info.install_path"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-primary text-sm font-mono break-all"
+                          },
+                          "text": "{{systemInfo?.data?.install_path ?? '-'}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-between py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-label"
+                          },
+                          "text": "$t:admin.settings.info.config_file"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-primary text-sm font-mono break-all"
+                          },
+                          "text": "{{systemInfo?.data?.config_path ?? '-'}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid-2col-responsive"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-between py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-label"
+                          },
+                          "text": "$t:admin.settings.info.log_path"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-primary text-sm font-mono break-all"
+                          },
+                          "text": "{{systemInfo?.data?.log_path ?? '-'}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-between py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-label"
+                          },
+                          "text": "$t:admin.settings.info.upload_path"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-primary text-sm font-mono break-all"
+                          },
+                          "text": "{{systemInfo?.data?.upload_path ?? '-'}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
               ]
             }
           ]
@@ -491,22 +728,22 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.info.database_config"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.info.database_config_desc"
         },
@@ -514,21 +751,21 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-6"
+            "className": "row-stack"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 mb-4"
+                "className": "flex-center gap-2"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                    "className": "text-body font-medium"
                   },
                   "text": "$t:admin.settings.info.config_type"
                 },
@@ -560,7 +797,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                        "className": "text-body font-medium mb-3"
                       },
                       "text": "$t:admin.settings.info.write_db"
                     },
@@ -568,51 +805,107 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "space-y-2"
+                        "className": "row-stack"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex justify-between items-center py-1.5"
+                            "className": "flex-between py-1.5"
                           },
                           "children": [
-                            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.db_host" },
-                            { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.database_config?.write?.host ?? '-'}}" }
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-label"
+                              },
+                              "text": "$t:admin.settings.info.db_host"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-primary text-sm font-mono"
+                              },
+                              "text": "{{systemInfo?.data?.database_config?.write?.host ?? '-'}}"
+                            }
                           ]
                         },
                         {
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex justify-between items-center py-1.5"
+                            "className": "flex-between py-1.5"
                           },
                           "children": [
-                            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.db_port" },
-                            { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.database_config?.write?.port ?? '-'}}" }
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-label"
+                              },
+                              "text": "$t:admin.settings.info.db_port"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-primary text-sm font-mono"
+                              },
+                              "text": "{{systemInfo?.data?.database_config?.write?.port ?? '-'}}"
+                            }
                           ]
                         },
                         {
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex justify-between items-center py-1.5"
+                            "className": "flex-between py-1.5"
                           },
                           "children": [
-                            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.db_name" },
-                            { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.database_config?.write?.database ?? '-'}}" }
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-label"
+                              },
+                              "text": "$t:admin.settings.info.db_name"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-primary text-sm font-mono"
+                              },
+                              "text": "{{systemInfo?.data?.database_config?.write?.database ?? '-'}}"
+                            }
                           ]
                         },
                         {
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex justify-between items-center py-1.5"
+                            "className": "flex-between py-1.5"
                           },
                           "children": [
-                            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.db_user" },
-                            { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.database_config?.write?.username ?? '-'}}" }
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-label"
+                              },
+                              "text": "$t:admin.settings.info.db_user"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-primary text-sm font-mono"
+                              },
+                              "text": "{{systemInfo?.data?.database_config?.write?.username ?? '-'}}"
+                            }
                           ]
                         }
                       ]
@@ -631,7 +924,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                        "className": "text-body font-medium mb-3"
                       },
                       "text": "$t:admin.settings.info.read_db"
                     },
@@ -639,7 +932,6 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "space-y-4"
                       },
                       "children": [
                         {
@@ -650,16 +942,13 @@
                             "item_var": "replica",
                             "index_var": "replicaIndex"
                           },
-                          "props": {
-                            "className": "{{(systemInfo?.data?.database_config?.read?.length ?? 0) > 1 ? 'border-b border-gray-200 dark:border-gray-700 pb-3 last:border-0 last:pb-0' : ''}}"
-                          },
                           "children": [
                             {
                               "type": "basic",
                               "name": "P",
                               "if": "{{(systemInfo?.data?.database_config?.read?.length ?? 0) > 1}}",
                               "props": {
-                                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 mb-2"
+                                "className": "text-tertiary font-medium mb-2"
                               },
                               "text": "Replica #{{replicaIndex + 1}}"
                             },
@@ -667,51 +956,107 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "space-y-2"
+                                "className": "row-stack"
                               },
                               "children": [
                                 {
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex justify-between items-center py-1.5"
+                                    "className": "flex-between py-1.5"
                                   },
                                   "children": [
-                                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.db_host" },
-                                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white" }, "text": "{{replica?.host ?? '-'}}" }
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-label"
+                                      },
+                                      "text": "$t:admin.settings.info.db_host"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-primary text-sm font-mono"
+                                      },
+                                      "text": "{{replica?.host ?? '-'}}"
+                                    }
                                   ]
                                 },
                                 {
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex justify-between items-center py-1.5"
+                                    "className": "flex-between py-1.5"
                                   },
                                   "children": [
-                                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.db_port" },
-                                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white" }, "text": "{{replica?.port ?? '-'}}" }
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-label"
+                                      },
+                                      "text": "$t:admin.settings.info.db_port"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-primary text-sm font-mono"
+                                      },
+                                      "text": "{{replica?.port ?? '-'}}"
+                                    }
                                   ]
                                 },
                                 {
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex justify-between items-center py-1.5"
+                                    "className": "flex-between py-1.5"
                                   },
                                   "children": [
-                                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.db_name" },
-                                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white" }, "text": "{{replica?.database ?? '-'}}" }
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-label"
+                                      },
+                                      "text": "$t:admin.settings.info.db_name"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-primary text-sm font-mono"
+                                      },
+                                      "text": "{{replica?.database ?? '-'}}"
+                                    }
                                   ]
                                 },
                                 {
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "flex justify-between items-center py-1.5"
+                                    "className": "flex-between py-1.5"
                                   },
                                   "children": [
-                                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.db_user" },
-                                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-mono text-gray-900 dark:text-white" }, "text": "{{replica?.username ?? '-'}}" }
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-label"
+                                      },
+                                      "text": "$t:admin.settings.info.db_user"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-primary text-sm font-mono"
+                                      },
+                                      "text": "{{replica?.username ?? '-'}}"
+                                    }
                                   ]
                                 }
                               ]
@@ -727,14 +1072,14 @@
                   "name": "Div",
                   "if": "{{!systemInfo?.data?.database_config?.has_read_write_split}}",
                   "props": {
-                    "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4 flex items-center justify-center"
+                    "className": "flex-center bg-gray-50 dark:bg-gray-900 rounded-lg p-4 justify-center"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                       },
                       "text": "$t:admin.settings.info.no_read_db"
                     }
@@ -751,22 +1096,22 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+            "className": "card-title"
           },
           "text": "$t:admin.settings.info.php_extensions"
         },
         {
           "type": "basic",
-          "name": "P",
+          "name": "Div",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+            "className": "card-description"
           },
           "text": "$t:admin.settings.info.php_extensions_desc"
         },
@@ -774,7 +1119,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-6"
+            "className": "row-stack"
           },
           "children": [
             {
@@ -785,7 +1130,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                    "className": "text-body font-medium mb-3"
                   },
                   "text": "$t:admin.settings.info.required_modules"
                 },
@@ -793,7 +1138,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
+                    "className": "module-badge-grid"
                   },
                   "children": [
                     {
@@ -804,7 +1149,7 @@
                         "item_var": "ext"
                       },
                       "props": {
-                        "className": "flex items-center gap-1.5"
+                        "className": "flex-center gap-1.5"
                       },
                       "children": [
                         {
@@ -819,7 +1164,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                            "className": "text-body"
                           },
                           "text": "{{ext[0]}}"
                         }
@@ -837,7 +1182,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                    "className": "text-body font-medium mb-3"
                   },
                   "text": "$t:admin.settings.info.optional_modules"
                 },
@@ -845,7 +1190,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
+                    "className": "module-badge-grid"
                   },
                   "children": [
                     {
@@ -856,7 +1201,7 @@
                         "item_var": "ext"
                       },
                       "props": {
-                        "className": "flex items-center gap-1.5"
+                        "className": "flex-center gap-1.5"
                       },
                       "children": [
                         {
@@ -871,7 +1216,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                            "className": "text-body"
                           },
                           "text": "{{ext[0]}}"
                         }

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Resources;
 
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -116,9 +117,9 @@ class HasMultiCurrencyPricesTest extends TestCase
     }
 
     /**
-     * @test
      * 부동소수점 오차가 decimal_places round()로 제거되는지 검증
      */
+    #[Test]
     public function price_값에_부동소수점_오차가_없어야_한다(): void
     {
         $instance = $this->createTraitInstance();
@@ -138,9 +139,9 @@ class HasMultiCurrencyPricesTest extends TestCase
     }
 
     /**
-     * @test
      * KRW 기본통화는 원래 가격 그대로 반환
      */
+    #[Test]
     public function 기본통화는_원래_가격을_반환한다(): void
     {
         $instance = $this->createTraitInstance();
@@ -151,9 +152,9 @@ class HasMultiCurrencyPricesTest extends TestCase
     }
 
     /**
-     * @test
      * decimal_places 0인 통화(JPY)는 정수값을 반환
      */
+    #[Test]
     public function decimal_places_0인_통화는_정수를_반환한다(): void
     {
         $instance = $this->createTraitInstance();
@@ -166,9 +167,9 @@ class HasMultiCurrencyPricesTest extends TestCase
     }
 
     /**
-     * @test
      * rounding_method ceil 적용 검증 (EUR)
      */
+    #[Test]
     public function ceil_절사_방법이_올바르게_적용된다(): void
     {
         $instance = $this->createTraitInstance();
@@ -179,9 +180,9 @@ class HasMultiCurrencyPricesTest extends TestCase
     }
 
     /**
-     * @test
      * rounding_unit 0.1 적용 검증 (CNY)
      */
+    #[Test]
     public function rounding_unit_0_1이_올바르게_적용된다(): void
     {
         $instance = $this->createTraitInstance();
@@ -192,9 +193,9 @@ class HasMultiCurrencyPricesTest extends TestCase
     }
 
     /**
-     * @test
      * 다양한 가격에서 부동소수점 오차가 발생하지 않는지 검증
      */
+    #[Test]
     public function 다양한_가격에서_부동소수점_오차가_없다(): void
     {
         $instance = $this->createTraitInstance();
@@ -222,9 +223,9 @@ class HasMultiCurrencyPricesTest extends TestCase
     }
 
     /**
-     * @test
      * applyRounding 내부 함수의 부동소수점 문제 직접 검증
      */
+    #[Test]
     public function applyRounding_결과에_부동소수점_오차_확인(): void
     {
         $instance = $this->createTraitInstance();

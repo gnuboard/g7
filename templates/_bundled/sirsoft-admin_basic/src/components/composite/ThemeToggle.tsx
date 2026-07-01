@@ -4,6 +4,7 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
+import type { EditorAttrs } from '../../types';
 
 /**
  * 테마 모드 타입
@@ -24,6 +25,12 @@ export interface ThemeToggleProps {
   lightText?: string;
   /** 다크 모드 텍스트 (다국어 키 사용 권장) */
   darkText?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -91,6 +98,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   autoText = 'System',
   lightText = 'Light',
   darkText = 'Dark',
+  id,
+  editorAttrs,
 }) => {
   // 초기 테마를 즉시 로드하고 적용
   const initialTheme = getInitialTheme();
@@ -154,16 +163,16 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   };
 
   return (
-    <Div ref={menuRef} className={`relative ${className}`}>
+    <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs}>
       {/* 테마 토글 버튼 */}
       <Button
         onClick={() => setShowMenu(!showMenu)}
-        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
         aria-label="Toggle theme"
       >
         <Icon
           name={getCurrentIcon()}
-          className="w-5 h-5 text-gray-600 dark:text-gray-400"
+          className="text-sm text-slate-500 dark:text-slate-400"
         />
       </Button>
 

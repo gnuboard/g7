@@ -24,7 +24,7 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
     /**
      * 업그레이드를 실행합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     public function run(UpgradeContext $context): void
     {
@@ -101,9 +101,6 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
 
     /**
      * 이커머스 알림 정의 시딩 및 메일 템플릿 이관.
-     *
-     * @param UpgradeContext $context
-     * @return void
      */
     private function migrateNotificationDefinitions(UpgradeContext $context): void
     {
@@ -168,7 +165,7 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
         $cachePrefix = 'mail_template:sirsoft-ecommerce:';
         $types = ['order_confirmed', 'order_shipped', 'order_completed', 'order_cancelled', 'new_order_admin', 'inquiry_received', 'inquiry_replied'];
         foreach ($types as $type) {
-            $cache->forget($cachePrefix . $type);
+            $cache->forget($cachePrefix.$type);
         }
 
         $context->logger->info('[v1.0.0-beta.2] 이커머스 알림 정의 이관 완료');
@@ -179,8 +176,6 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
      *
      * declarative getter 패턴 도입 이후 별도 Seeder 없이 Manager 가 자동 동기화하나,
      * 본 업그레이드 스텝은 beta.1/2 → beta.3 경로 호환을 위해 명시적으로 1회 동기화합니다.
-     *
-     * @return void
      */
     private function syncEcommerceNotificationDefinitions(): void
     {
@@ -215,9 +210,6 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
      *
      * 시더가 updateOrCreate 패턴이므로 이미 존재하는 경우 no-op입니다.
      * 시더 재실행만으로도 동일 효과이지만, 업그레이드 스텝의 멱등성 보장 목적으로 명시적 검증합니다.
-     *
-     * @param UpgradeContext $context
-     * @return void
      */
     private function ensureDatabaseChannelTemplates(UpgradeContext $context): void
     {

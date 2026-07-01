@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Support\TemplateExternals;
 use Composer\Semver\Semver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -117,6 +118,8 @@ class TemplateResource extends BaseApiResource
             'components' => $this->getValue('components', ['basic' => [], 'composite' => []]),
             'license' => $this->getValue('license'),
             'metadata' => $this->getValue('metadata', []),
+            // 외부 리소스 (template.json externals) — 정규화 책임은 TemplateExternals 에 위임
+            'externals' => TemplateExternals::normalize($this->getValue('externals', [])),
             // 의존성 상세 정보
             'dependencies' => $this->getDetailedDependencies(),
             // 타임스탬프

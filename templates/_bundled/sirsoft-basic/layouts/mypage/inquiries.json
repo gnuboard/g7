@@ -24,6 +24,7 @@
   "data_sources": [
     {
       "id": "myInquiries",
+      "label_key": "$t:editor.data_source.myInquiries",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-ecommerce/user/inquiries",
       "method": "GET",

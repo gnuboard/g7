@@ -10,10 +10,12 @@
     "shipping": "Shipping",
     "review_settings": "Review Settings",
     "notification_definitions": "Notifications",
-    "identity_policies": "Identity Policies"
+    "identity_policies": "Identity Policies",
+    "mileage": "Mileage"
   },
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
+  "save_pending_currency": "Confirm (check button) or cancel the currency you are adding before saving.",
   "validation_error": "Please check the input fields.",
   "basic_info": {
     "shop_info": {
@@ -65,27 +67,33 @@
   },
   "language_currency": {
     "language_settings": {
-      "title": "Language/Currency",
-      "description": "Configure default language and currency for the shop.",
-      "default_language": "Default Language",
+      "title": "Base Currency",
+      "description": "Configure the base currency for the shop. Site language is managed in General settings.",
       "default_currency": "Default Currency",
-      "currency_change_warning": "Cannot be changed after the first product registration."
+      "currency_change_warning": "Cannot be changed once a product or order has been registered."
     },
     "exchange_settings": {
       "title": "Exchange Rate Settings",
-      "description": "Configure exchange rates based on KRW 1,000 and rounding rules per currency.",
+      "description": "Configure exchange rates per the base currency's base unit and rounding rules per currency.",
       "default_label": "Default Currency",
       "add_currency": "Add Currency",
       "currency_code": "Currency Code",
       "currency_name": "Currency Name",
+      "currency_symbol": "Symbol",
+      "symbol_placeholder": "$",
       "exchange_rate": "Exchange Rate",
+      "base_unit": "Base Unit",
+      "base_unit_equals": "unit =",
+      "base_unit_hint": "The unit used as the basis for exchange rate input when this currency is the base currency. (e.g. KRW = 1,000 / USD = 1)",
       "rounding_unit": "Rounding Unit",
       "rounding_method": "Rounding Method",
       "decimal_places": "Decimal Places",
+      "locales": "Languages",
+      "locales_placeholder": "Select languages",
+      "locales_hint": "When a member signs up, if their browser language matches this currency's languages, this currency becomes their default payment currency.",
       "actions": "Actions",
       "delete": "Delete",
       "base_currency": "Base Currency",
-      "krw_base": "KRW 1,000 =",
       "rounding_units": {
         "1": "1 (ones place)",
         "10": "10 (tens place)",
@@ -132,6 +140,8 @@
       "timing_payment_complete": "On Payment Complete",
       "timing_none": "No Stock Deduction",
       "stock_deduction_timing": "Stock Deduction Timing",
+      "mileage_deduction_timing": "Mileage Deduction Timing",
+      "mileage_deduction_timing_disabled_hint": "Mileage usage is disabled, so the deduction timing does not apply.",
       "min_order_amount": "Min. Order Amount",
       "is_active": "Active",
       "orphaned_badge": "Plugin Not Installed",
@@ -194,11 +204,7 @@
       "toggle_description": "Automatically cancel pending payment orders after the specified period.",
       "toggle_hint": "When disabled, pending payment orders will not be auto-cancelled.",
       "days_prefix": "Pending payment orders will be auto-cancelled",
-      "days_suffix": "days after the order date.",
-      "vbank_due_days_label": "Virtual Account Due:",
-      "vbank_due_days_suffix": "days",
-      "dbank_due_days_label": "Bank Transfer Due:",
-      "dbank_due_days_suffix": "days"
+      "days_suffix": "days after the order date."
     },
     "cart_expiry": {
       "title": "Cart Expiry",
@@ -432,12 +438,12 @@
     "reset_success": "Notification has been reset to default.",
     "reset_failed": "Failed to reset notification.",
     "reset_modal": {
-        "title": "Reset to Default",
-        "confirm_message": "All channel templates of this notification will be restored to defaults.",
-        "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
-        "target_label": "Target:",
-        "btn_confirm": "Reset",
-        "btn_confirming": "Resetting..."
+      "title": "Reset to Default",
+      "confirm_message": "All channel templates of this notification will be restored to defaults.",
+      "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
+      "target_label": "Target:",
+      "btn_confirm": "Reset",
+      "btn_confirming": "Resetting..."
     },
     "no_template_for_channel": "No template for this channel.",
     "body_preview": "Body Preview",
@@ -450,7 +456,8 @@
       "order_cancelled": "Order Cancelled",
       "new_order_admin": "New Order (Admin)",
       "inquiry_received": "Product Inquiry Received (Admin)",
-      "inquiry_replied": "Product Inquiry Answered"
+      "inquiry_replied": "Product Inquiry Answered",
+      "mileage_expiring_soon": "Mileage Expiring Soon"
     },
     "btn_search": "Search",
     "btn_reset_filter": "Reset",
@@ -481,6 +488,7 @@
     }
   },
   "identity": {
+    "policy_form_editor_label": "Add/edit identity policy",
     "intro_title": "Ecommerce Identity Verification Policies",
     "intro": "Manage policies declared by the ecommerce module and policies added by operators. You can enable domain-specific policies such as identity verification before checkout.",
     "purposes_section_title": "Identity Purposes Registered by This Module",

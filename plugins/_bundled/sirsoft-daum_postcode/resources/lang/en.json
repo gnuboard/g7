@@ -1,4 +1,9 @@
 {
+  "editor": {
+    "data_source": {
+      "settings": "Address Search Settings"
+    }
+  },
   "search_address": "Search Address",
   "postcode": {
     "search": "Search Address",

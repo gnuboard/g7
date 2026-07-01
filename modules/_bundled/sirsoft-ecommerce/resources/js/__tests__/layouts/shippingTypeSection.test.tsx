@@ -95,8 +95,8 @@ describe('배송설정 탭에서 배송유형 섹션 참조', () => {
 describe('배송유형 관리 섹션 구조', () => {
     const allNodes = flattenAll(typeSection);
 
-    it('카드 구조 (card → card-header + 테이블)를 가진다', () => {
-        expect(typeSection.props?.className).toBe('card');
+    it('카드 구조 (admin-card → card-header + 테이블)를 가진다', () => {
+        expect(typeSection.props?.className).toBe('admin-card');
         const cardHeaders = allNodes.filter(
             (n: any) => n.props?.className === 'card-header'
         );

@@ -1,0 +1,586 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마이페이지 마일리지 내역 탭"
+  },
+  "type": "basic",
+  "name": "Div",
+  "blur_until_loaded": {
+    "enabled": true,
+    "data_sources": "mileage_history"
+  },
+  "props": { "className": "mt-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "mt-4" }
+    }
+  },
+  "children": [
+    {
+      "comment": "비활성화 안내 (mileage.enabled=false)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!mileage_balance?.data?.mileage?.enabled}}",
+      "props": { "className": "flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "coins", "size": "3x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3" }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-gray-500 dark:text-gray-400" },
+          "text": "$t:mypage.mileage.disabled_notice"
+        }
+      ]
+    },
+    {
+      "comment": "요약 카드 4종 (사용가능/소멸예정/누적적립/누적사용)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{mileage_balance?.data?.mileage?.enabled}}",
+      "props": { "className": "grid grid-cols-4 gap-4 mb-6" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "grid grid-cols-2 gap-3 mb-4" }
+        }
+      },
+      "children": [
+        {
+          "comment": "사용 가능",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1" },
+              "text": "$t:mypage.mileage.summary.available"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xl font-bold text-gray-900 dark:text-white" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "block text-lg font-bold text-gray-900 dark:text-white" }
+                }
+              },
+              "text": "{{(mileage_balance?.data?.mileage?.available ?? 0).toLocaleString()}} P"
+            }
+          ]
+        },
+        {
+          "comment": "소멸 예정",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1" },
+              "text": "$t:mypage.mileage.summary.expiring_soon"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xl font-bold text-amber-600 dark:text-amber-400" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "block text-lg font-bold text-amber-600 dark:text-amber-400" }
+                }
+              },
+              "text": "{{(mileage_balance?.data?.mileage?.expiring_soon ?? 0).toLocaleString()}} P"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{mileage_balance?.data?.mileage?.expiring_date}}",
+              "props": { "className": "block text-xs text-gray-400 dark:text-gray-500 mt-1" },
+              "text": "$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date}}"
+            }
+          ]
+        },
+        {
+          "comment": "누적 적립",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1" },
+              "text": "$t:mypage.mileage.summary.total_earned"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xl font-bold text-gray-900 dark:text-white" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "block text-lg font-bold text-gray-900 dark:text-white" }
+                }
+              },
+              "text": "{{(mileage_balance?.data?.mileage?.total_earned ?? 0).toLocaleString()}} P"
+            }
+          ]
+        },
+        {
+          "comment": "누적 사용",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1" },
+              "text": "$t:mypage.mileage.summary.total_used"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xl font-bold text-gray-900 dark:text-white" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "block text-lg font-bold text-gray-900 dark:text-white" }
+                }
+              },
+              "text": "{{(mileage_balance?.data?.mileage?.total_used ?? 0).toLocaleString()}} P"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "4분류 필터 (전체/적립/사용/소멸/조정)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{mileage_balance?.data?.mileage?.enabled}}",
+      "props": { "className": "flex flex-wrap gap-2 mb-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "classMap": {
+            "base": "px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer",
+            "key": "{{_local.mileageCategory ? _local.mileageCategory : 'all'}}",
+            "variants": {
+              "all": "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+            },
+            "default": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "props": { "type": "button" },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "mileageCategory": "", "mileagePage": 1 } },
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "", "page": "1" } } }
+              ]
+            }
+          ],
+          "text": "$t:mypage.mileage.filter.all"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "classMap": {
+            "base": "px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer",
+            "key": "{{_local.mileageCategory ?? ''}}",
+            "variants": {
+              "earn": "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+            },
+            "default": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "props": { "type": "button" },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "mileageCategory": "earn", "mileagePage": 1 } },
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "earn", "page": "1" } } }
+              ]
+            }
+          ],
+          "text": "$t:mypage.mileage.filter.earn"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "classMap": {
+            "base": "px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer",
+            "key": "{{_local.mileageCategory ?? ''}}",
+            "variants": {
+              "use": "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+            },
+            "default": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "props": { "type": "button" },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "mileageCategory": "use", "mileagePage": 1 } },
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "use", "page": "1" } } }
+              ]
+            }
+          ],
+          "text": "$t:mypage.mileage.filter.use"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "classMap": {
+            "base": "px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer",
+            "key": "{{_local.mileageCategory ?? ''}}",
+            "variants": {
+              "expire": "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+            },
+            "default": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "props": { "type": "button" },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "mileageCategory": "expire", "mileagePage": 1 } },
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "expire", "page": "1" } } }
+              ]
+            }
+          ],
+          "text": "$t:mypage.mileage.filter.expire"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "classMap": {
+            "base": "px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer",
+            "key": "{{_local.mileageCategory ?? ''}}",
+            "variants": {
+              "adjust": "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+            },
+            "default": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "props": { "type": "button" },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "mileageCategory": "adjust", "mileagePage": 1 } },
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "adjust", "page": "1" } } }
+              ]
+            }
+          ],
+          "text": "$t:mypage.mileage.filter.adjust"
+        }
+      ]
+    },
+    {
+      "comment": "내역 테이블 (PC) — 모바일 숨김",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{mileage_history.data.transactions.data && mileage_history.data.transactions.data.length > 0}}",
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "hidden" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Table",
+          "props": { "className": "w-full text-sm" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Thead",
+              "props": { "className": "bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "children": [
+                    { "type": "basic", "name": "Th", "props": { "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.mileage.table.date" },
+                    { "type": "basic", "name": "Th", "props": { "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.mileage.table.category" },
+                    { "type": "basic", "name": "Th", "props": { "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.mileage.table.description" },
+                    { "type": "basic", "name": "Th", "props": { "className": "px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.mileage.table.amount" },
+                    { "type": "basic", "name": "Th", "props": { "className": "px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.mileage.table.expires_at" }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Tbody",
+              "iteration": { "source": "{{mileage_history.data.transactions.data ?? []}}", "item_var": "tx" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "props": { "className": "border-b border-gray-100 dark:border-gray-700/50" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": { "className": "px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap" },
+                      "text": "{{tx.created_at_formatted ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": { "className": "px-4 py-3" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "classMap": {
+                            "base": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                            "key": "{{tx.user_display_category}}",
+                            "variants": {
+                              "earn": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                              "use": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                              "expire": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+                              "adjust": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                            },
+                            "default": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:mypage.mileage.category.{{tx.user_display_category}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": { "className": "px-4 py-3 text-gray-700 dark:text-gray-300" },
+                      "text": "{{tx.description ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": { "className": "px-4 py-3 text-right whitespace-nowrap" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "classMap": {
+                            "base": "font-semibold",
+                            "key": "{{tx.amount >= 0 ? 'plus' : 'minus'}}",
+                            "variants": {
+                              "plus": "text-green-600 dark:text-green-400",
+                              "minus": "text-blue-600 dark:text-blue-400"
+                            },
+                            "default": "text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "{{tx.amount >= 0 ? '+' : ''}}{{tx.amount_formatted}} P"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": { "className": "px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap" },
+                      "text": "{{tx.expires_at_formatted ?? '-'}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "내역 카드 목록 (모바일) — PC 숨김",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{mileage_history.data.transactions.data && mileage_history.data.transactions.data.length > 0}}",
+      "props": { "className": "hidden" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "space-y-3" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": { "source": "{{mileage_history.data.transactions.data ?? []}}", "item_var": "tx" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center justify-between mb-1" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "classMap": {
+                        "base": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+                        "key": "{{tx.user_display_category}}",
+                        "variants": {
+                          "earn": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                          "use": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                          "expire": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+                          "adjust": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                        },
+                        "default": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:mypage.mileage.category.{{tx.user_display_category}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "classMap": {
+                        "base": "font-semibold text-sm",
+                        "key": "{{tx.amount >= 0 ? 'plus' : 'minus'}}",
+                        "variants": {
+                          "plus": "text-green-600 dark:text-green-400",
+                          "minus": "text-blue-600 dark:text-blue-400"
+                        },
+                        "default": "text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "{{tx.amount >= 0 ? '+' : ''}}{{tx.amount_formatted}} P"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                  "text": "{{tx.description ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center justify-between mt-1" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{tx.created_at_formatted ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{tx.expires_at_formatted}}",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "$t:mypage.mileage.expires_label|date={{tx.expires_at_formatted}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "내역 없음",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{mileage_balance?.data?.mileage?.enabled && (!mileage_history.data.transactions.data || mileage_history.data.transactions.data.length === 0)}}",
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "coins", "size": "3x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3" },
+          "responsive": {
+            "portable": {
+              "props": { "name": "coins", "size": "2x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-2" }
+            }
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-gray-500 dark:text-gray-400" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }
+            }
+          },
+          "text": "$t:mypage.mileage.empty"
+        }
+      ]
+    },
+    {
+      "comment": "페이지네이션",
+      "type": "composite",
+      "name": "Pagination",
+      "if": "{{mileage_history.data.transactions.pagination.last_page > 1}}",
+      "props": {
+        "currentPage": "{{mileage_history.data.transactions.pagination.current_page}}",
+        "totalPages": "{{mileage_history.data.transactions.pagination.last_page}}",
+        "className": "mt-4"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "currentPage": "{{mileage_history.data.transactions.pagination.current_page}}",
+            "totalPages": "{{mileage_history.data.transactions.pagination.last_page}}",
+            "className": "mt-3"
+          }
+        }
+      },
+      "actions": [
+        {
+          "event": "onPageChange",
+          "handler": "sequence",
+          "actions": [
+            { "handler": "setState", "params": { "target": "local", "mileagePage": "{{$args[0]}}" } },
+            { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "mergeQuery": true, "query": { "page": "{{$args[0]}}" } } }
+          ]
+        }
+      ]
+    }
+  ]
+}

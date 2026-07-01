@@ -1,0 +1,82 @@
+{
+  "id": "additional_options_clear_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.common.confirm",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "text-center"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "triangle-exclamation",
+            "size": "3x",
+            "className": "text-amber-500 dark:text-amber-400 mx-auto mb-4"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-secondary"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.product.options.additional_clear_confirm"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "variant": "secondary",
+            "className": "btn btn-outline"
+          },
+          "text": "$t:sirsoft-ecommerce.common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "variant": "danger",
+            "className": "btn btn-danger"
+          },
+          "text": "$t:sirsoft-ecommerce.common.confirm",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sirsoft-ecommerce.clearAdditionalOptions"
+            },
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

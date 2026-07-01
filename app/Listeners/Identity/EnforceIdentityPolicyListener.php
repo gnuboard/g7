@@ -5,8 +5,10 @@ namespace App\Listeners\Identity;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Enums\IdentityOriginType;
+use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\IdentityPolicyService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -36,8 +38,98 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
      */
     public static function getSubscribedHooks(): array
     {
-        // 코어가 보장하는 before_* 훅 (마이그레이션 전 부팅에도 안전).
-        $coreHooks = [
+        $coreHooks = static::coreHookTargets();
+
+        // 코어 hook 만 자동발견 시점에 정적 등록한다. 모듈/플러그인 hook scope 정책 target 은
+        // 부팅 후반(모듈 로드 완료)·정책 sync·토글 시점에 syncDynamicHookSubscriptions() 가
+        // 멱등 (재)바인딩을 전담한다. 자동발견(getSubscribedHooks) 은 모듈 로드보다 먼저 1회만
+        // 호출되므로 모듈 target 을 여기서 반환하면 그 시점에 누락된 채 잠겨 결제 직전 가드가
+        // 무력화되던 결함이 있었다. 책임을 분리해 코어/동적 hook 의 등록 소유권을 겹치지 않게 한다.
+        return array_fill_keys($coreHooks, [
+            'method' => 'handle',
+            'priority' => 15, // 먼저 실행되는 가드보다 뒤, Notification 등 부작용보다 앞
+            'sync' => true,
+        ]);
+    }
+
+    /**
+     * 동적 hook target → 현재 HookManager 에 등록된 enforce 콜백 맵 (멱등 재구독용).
+     *
+     * @var array<string, callable>
+     */
+    private static array $dynamicCallbacks = [];
+
+    /**
+     * 모듈/플러그인 hook scope 정책의 target 에 enforce 구독을 멱등적으로 (재)바인딩합니다.
+     *
+     * 배경 (구독 시점 경합 결함):
+     *   getSubscribedHooks() 는 코어 리스너 자동발견(CoreServiceProvider::boot 전반부)에서
+     *   "한 번" 호출되며, 그 시점은 모듈 로드(boot 후반부)보다 앞선다. 모듈/플러그인 IDV 정책은
+     *   모듈 로드 또는 설치/활성화 시점에 비로소 identity_policies 에 적재되므로, 모듈 hook
+     *   target(예: sirsoft-ecommerce.checkout.before_payment) 을 자동발견 단계에서 등록하면
+     *   그 시점에 누락된 채 잠겨 결제 직전 가드가 영구히 무력화되던 결함이 있었다.
+     *
+     *   그래서 코어 hook 은 getSubscribedHooks() 가 정적 등록을 전담하고, 동적(모듈/플러그인)
+     *   hook target 은 이 메서드가 단독 소유한다. 설정이 바뀌는 시점(모듈/플러그인 로드 완료 후
+     *   boot, 정책 sync, 토글, 확장 설치)에만 호출되어 현재 target 목록으로 구독을 재동기화한다.
+     *   평상시 훅 발화 경로에는 추가 비용이 없다(런타임 매회 조회 아님).
+     *
+     * 멱등성: 이전에 이 메서드가 등록한 콜백을 removeAction 으로 먼저 제거한 뒤 현재 target 으로
+     * 다시 등록한다. 정적 추적($dynamicCallbacks)이 HookManager 실제 상태와 항상 일치하므로,
+     * 반복 호출/테스트 RefreshDatabase 환경에서도 이중 등록(이중 428)이 발생하지 않는다.
+     * 코어 hook 과의 중복은 코어 hook 집합을 제외해 회피한다.
+     */
+    public static function syncDynamicHookSubscriptions(): void
+    {
+        // 1) 이전에 등록한 동적 콜백 전부 해제 (멱등 재동기화)
+        foreach (self::$dynamicCallbacks as $hookName => $callback) {
+            HookManager::removeAction($hookName, $callback);
+        }
+        self::$dynamicCallbacks = [];
+
+        // 2) 코어 hook 은 getSubscribedHooks() 가 소유하므로 동적 등록 대상에서 제외
+        $coreHooks = array_fill_keys(static::coreHookTargets(), true);
+
+        // 3) 현재 hook scope 정책 target 으로 재구독
+        foreach (static::loadDynamicHookTargets() as $hookName) {
+            if (! is_string($hookName) || $hookName === '' || isset($coreHooks[$hookName])) {
+                continue;
+            }
+            if (isset(self::$dynamicCallbacks[$hookName])) {
+                continue; // 동일 target 중복 방지
+            }
+
+            // getSubscribedHooks() 의 동기(sync) 등록과 동일한 형태 — priority 15 동일.
+            $callback = static function (...$args) {
+                app(static::class)->handle(...$args);
+            };
+            self::$dynamicCallbacks[$hookName] = $callback;
+            HookManager::addAction($hookName, $callback, 15);
+        }
+    }
+
+    /**
+     * 동적 구독 추적 상태를 초기화하고 등록된 콜백을 해제합니다 (테스트 격리용).
+     */
+    public static function resetDynamicSubscriptions(): void
+    {
+        foreach (self::$dynamicCallbacks as $hookName => $callback) {
+            HookManager::removeAction($hookName, $callback);
+        }
+        self::$dynamicCallbacks = [];
+    }
+
+    /**
+     * 코어가 보장하는 before_* 훅 target 목록 (마이그레이션 전 부팅에도 안전).
+     *
+     * getSubscribedHooks() 의 정적 등록 대상이자, syncDynamicHookSubscriptions() 가
+     * 동적 등록에서 제외할 집합. 두 곳의 SSoT 이므로 한 곳에서만 정의한다.
+     *
+     * @return list<string> 코어 hook target 목록
+     */
+    protected static function coreHookTargets(): array
+    {
+        return [
             'core.auth.before_reset_password',
             'core.user.before_update',
             'core.user.before_delete',
@@ -51,18 +143,6 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
             'core.layout_preview.before_generate',
             'core.attachment.before_download_action',
         ];
-
-        // 모듈/플러그인이 declarative getter 로 등록한 hook scope 정책의 target 을 동적 구독.
-        // 부팅 시점에 identity_policies 테이블이 이미 sync 되어 있으므로 자동 작동.
-        $dynamicHooks = static::loadDynamicHookTargets();
-
-        $hookNames = array_values(array_unique(array_merge($coreHooks, $dynamicHooks)));
-
-        return array_fill_keys($hookNames, [
-            'method' => 'handle',
-            'priority' => 15, // 먼저 실행되는 가드보다 뒤, Notification 등 부작용보다 앞
-            'sync' => true,
-        ]);
     }
 
     /**
@@ -77,7 +157,7 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
     protected static function loadDynamicHookTargets(): array
     {
         try {
-            return app(\App\Contracts\Repositories\IdentityPolicyRepositoryInterface::class)->listHookTargets();
+            return app(IdentityPolicyRepositoryInterface::class)->listHookTargets();
         } catch (\Throwable) {
             return [];
         }
@@ -87,7 +167,6 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
      * before_* 훅 핸들러. 현재 실행 중인 훅 이름과 매칭되는 hook scope 정책을 enforce 합니다.
      *
      * @param  mixed  ...$args  훅별로 다양한 인자 (첫 인자는 보통 모델/payload)
-     * @return void
      */
     public function handle(...$args): void
     {
@@ -127,7 +206,7 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
      */
     protected function resolveCurrentHook(): ?string
     {
-        return \App\Extension\HookManager::getRunningHook();
+        return HookManager::getRunningHook();
     }
 
     /**
@@ -171,7 +250,7 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
     {
         try {
             $request = app('request');
-            if ($request instanceof \Illuminate\Http\Request) {
+            if ($request instanceof Request) {
                 return (string) $request->input('verification_token', '');
             }
         } catch (\Throwable) {
@@ -193,7 +272,7 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
     {
         try {
             $request = app('request');
-            if ($request instanceof \Illuminate\Http\Request) {
+            if ($request instanceof Request) {
                 return [
                     'method' => $request->getMethod(),
                     'url' => $request->fullUrl(),

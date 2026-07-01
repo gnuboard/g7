@@ -1,3 +1,4 @@
+// e2e:allow 단위 테스트 보강 (디폴트 시맨틱 머지 회귀) — 동작 무변, 컴포넌트 소스의 e2e:allow 와 동일 사이클에서 E2E spec 일괄 작성 예정.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
@@ -273,6 +274,29 @@ describe('Textarea 컴포넌트', () => {
       const { container } = render(<Textarea value={multilineText} onChange={() => {}} />);
       const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
       expect(textarea.value).toBe(multilineText);
+    });
+  });
+
+  // 디폴트 시맨틱 머지 회귀 테스트 (#369)
+  // 호출처가 이미 'textarea' 토큰을 명시한 경우 중복 prepend ("textarea textarea ...") 를 방지한다.
+  describe('디폴트 시맨틱 클래스 머지', () => {
+    it('className 미지정 시 디폴트 시맨틱 "textarea" 가 자동 적용된다', () => {
+      const { container } = render(<Textarea />);
+      const textarea = container.querySelector('textarea');
+      expect(textarea?.className).toBe('textarea');
+    });
+
+    it('className 에 시맨틱 토큰이 없으면 "textarea" 를 prepend 한다', () => {
+      const { container } = render(<Textarea className="resize-vertical" />);
+      const textarea = container.querySelector('textarea');
+      expect(textarea?.className).toBe('textarea resize-vertical');
+    });
+
+    it('className 에 이미 "textarea" 토큰이 있으면 중복 prepend 하지 않는다', () => {
+      const { container } = render(<Textarea className="textarea resize-vertical" />);
+      const textarea = container.querySelector('textarea');
+      expect(textarea?.className).toBe('textarea resize-vertical');
+      expect(textarea?.className.split(/\s+/).filter((t) => t === 'textarea')).toHaveLength(1);
     });
   });
 });

@@ -56,7 +56,7 @@ class Upgrade_0_2_1 implements UpgradeStepInterface
             }
         }
 
-        $context->logger->info("[v0.2.1] 도서산간 추가배송비 템플릿 시딩 완료: {$created}건 생성 (총 " . count($templates) . '건 중)');
+        $context->logger->info("[v0.2.1] 도서산간 추가배송비 템플릿 시딩 완료: {$created}건 생성 (총 ".count($templates).'건 중)');
     }
 
     /**

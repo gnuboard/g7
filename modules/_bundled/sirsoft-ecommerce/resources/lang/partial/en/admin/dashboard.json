@@ -1,0 +1,32 @@
+{
+  "quick_menu": {
+    "products": "Products",
+    "orders": "Orders",
+    "reviews": "Reviews",
+    "coupons": "Coupons",
+    "shipping": "Shipping"
+  },
+  "today_badges": {
+    "pending_payment": "Unpaid {{count}}",
+    "payment_complete": "Paid {{count}}",
+    "preparing": "Preparing {{count}}",
+    "shipping_ready": "Ready {{count}}",
+    "shipping": "Shipping {{count}}",
+    "cancellations": "Cancelled {{count}}",
+    "returns": "Returns {{count}}"
+  },
+  "community": {
+    "sales_graph": "Sales Overview",
+    "quantity": "Quantity",
+    "sales_amount": "Sales",
+    "total_quantity": "Total Quantity",
+    "total_sales": "Total Sales",
+    "latest_reviews": "Latest Reviews",
+    "go_to_reviews": "View All",
+    "no_reviews": "No reviews yet",
+    "unanswered_inquiries": "Unanswered Inquiries",
+    "go_to_inquiries": "View All",
+    "no_inquiries": "No unanswered inquiries",
+    "updated_at": "Updated: {{time}}"
+  }
+}

@@ -1,0 +1,34 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   CouponService::issueDirectly() per-item 발급 + 활동로그 + DR- 접두사 + IssueCouponDirectRequest
+#   를 PHPUnit Feature 가 user_set × eligibility cross product 로 커버하며 green.
+feature: 쿠폰 직접발급 (A16③ — P3→P2 승격)
+
+description: |
+  관리자가 회원(들)을 지정해 쿠폰을 즉시 발급. 회원별로 isIssuable/per_user_limit 검증 후
+  발급, 위반 회원은 skip + 사유 누적(전체 롤백 아님). 발급 코드 접두사 DR- 로 출처 식별.
+  발급 성공 N건 → direct_issue 활동로그 N건(loggable=각 CouponIssue), skip 회원 로그 미생성.
+  user_ids 빈 배열 → 422. issue_method≠direct 쿠폰도 직접발급 허용.
+
+axes:
+  user_set:
+    - single        # 회원 1명
+    - multi         # 회원 2명 이상
+    - empty         # user_ids=[] → 422
+  eligibility:
+    - issuable          # 정상 발급
+    - per_user_limit_reached # 한도 도달 회원 skip
+    - coupon_not_issuing     # 발급중단 쿠폰 → 전원 skip/에러
+
+effects:
+  - direct_issue_creates_per_user_couponissue  # 회원당 CouponIssue 1건
+  - ineligible_users_skipped_with_reason       # 위반 회원 skip + 사유
+  - issued_count_incremented_per_success       # 성공분만 issued_count 증가
+  - activity_log_one_per_issue                 # 발급 성공 N건 → 로그 N건
+  - code_prefix_DR                             # 코드 DR- 접두사
+  - empty_user_ids_rejected                    # user_ids=[] → 422
+  - download_coupon_regression_DL              # downloadCoupon 추출 후 DL- 코드 동일
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CouponDirectIssueTest.php

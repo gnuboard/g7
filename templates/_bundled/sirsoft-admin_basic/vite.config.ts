@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
+// @tailwindcss/vite 대신 @tailwindcss/postcss 사용 (postcss.config.js)
+// @source 지시문이 PostCSS에서만 작동함
 import dts from 'vite-plugin-dts';
 import path from 'path';
 
@@ -11,7 +12,7 @@ export default defineConfig({
 
   plugins: [
     react(),
-    tailwindcss(),
+    // Tailwind CSS는 postcss.config.js에서 @tailwindcss/postcss로 처리
     dts({
       insertTypesEntry: true,
       include: ['src/**/*.ts', 'src/**/*.tsx'],

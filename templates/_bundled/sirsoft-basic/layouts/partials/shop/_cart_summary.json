@@ -58,7 +58,8 @@
         {
           "type": "basic",
           "name": "Icon",
-          "props": { "name": "shopping-cart", "className": "w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" }
+          "props": { "name": "shopping-cart", "size": "3x",
+          "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3" }
         },
         {
           "type": "basic",
@@ -108,7 +109,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "{{_local.showTaxDetails ? 'chevron-up' : 'chevron-down'}}",
-                            "className": "w-4 h-4"
+                            "size": "sm"
                           }
                         }
                       ]
@@ -328,11 +329,19 @@
       ]
     },
     {
+      "comment": "배송 불가 안내 (D1 — 혼재 시 전체 차단). 배송 불가 상품 1개라도 있으면 주문하기 비활성.",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{cartItems.data.has_unshippable_items === true}}",
+      "props": { "className": "mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400" },
+      "text": "$t:shop.shippability.blocks_order"
+    },
+    {
       "type": "basic",
       "name": "Button",
       "props": {
         "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-        "disabled": "{{_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0}}"
+        "disabled": "{{_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true}}"
       },
       "children": [
         {
@@ -344,7 +353,7 @@
               "type": "basic",
               "name": "Icon",
               "if": "{{_local.isOrdering}}",
-              "props": { "name": "spinner", "spin": true, "className": "w-5 h-5" }
+              "props": { "name": "spinner", "spin": true, "size": "md" }
             },
             {
               "type": "basic",
@@ -381,7 +390,25 @@
                 "headers": { "X-Cart-Key": "{{_global.cartKey}}" }
               },
               "onSuccess": [
-                { "handler": "navigate", "params": { "path": "{{_global.shopBase}}/checkout" } }
+                {
+                  "comment": "로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨",
+                  "handler": "conditions",
+                  "conditions": [
+                    {
+                      "if": "{{_global.currentUser?.uuid}}",
+                      "then": { "handler": "navigate", "params": { "path": "{{_global.shopBase}}/checkout" } }
+                    },
+                    {
+                      "then": {
+                        "handler": "navigate",
+                        "params": {
+                          "path": "/login",
+                          "query": { "redirect": "{{_global.shopBase}}/checkout" }
+                        }
+                      }
+                    }
+                  ]
+                }
               ],
               "onError": [
                 {
@@ -425,7 +452,7 @@
                       },
                       {
                         "handler": "toast",
-                        "params": { "type": "error", "message": "{{error.message}}" }
+                        "params": { "type": "error", "message": "{{error.errors?.message ?? error.message}}" }
                       }
                     ]
                   },

@@ -11,9 +11,9 @@
     "empty_title": "掲示板がありません",
     "empty_description": "登録された掲示板がありません。",
     "filter_all_types": "すべてのタイプ",
-    "filter_type_basic": "基本形",
-    "filter_type_gallery": "ギャラリー形",
-    "filter_type_card": "カード形",
+    "filter_type_basic": "基本型",
+    "filter_type_gallery": "ギャラリー型",
+    "filter_type_card": "カード型",
     "status": "ステータス",
     "active": "有効化",
     "inactive": "無効化"

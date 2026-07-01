@@ -1,3 +1,4 @@
+// e2e:allow편집기 추가 직후 price 미지정 시 크래시("컴포넌트 로드 실패") 결함#5 수정(price 폴백). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/속성편집/저장200/reload영속/게스트 사용자화면 ₩55000 렌더)로 수행, 단위 회귀는 ProductCard.test.tsx 결함#5 describe.
 import React from 'react';
 import { Div } from '../basic/Div';
 import { Img } from '../basic/Img';
@@ -6,6 +7,7 @@ import { H3 } from '../basic/H3';
 import { P } from '../basic/P';
 import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
+import type { EditorAttrs } from '../../types';
 
 export interface ProductCardProps {
   imageUrl?: string;
@@ -21,6 +23,12 @@ export interface ProductCardProps {
   onButtonClick?: () => void;
   className?: string;
   style?: React.CSSProperties;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -61,15 +69,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onButtonClick,
   className = '',
   style,
+  id,
+  editorAttrs,
 }) => {
   const hasDiscount = discountRate && discountRate > 0;
-  const formattedPrice = price.toLocaleString();
+  // price 미지정 시에도 크래시하지 않도록 0 으로 폴백한다(레이아웃 편집기에서 추가 직후
+  // 작성자가 price 를 지정하기 전 상태를 안전하게 렌더).
+  const formattedPrice = (price ?? 0).toLocaleString();
   const formattedOriginalPrice = originalPrice?.toLocaleString();
 
   return (
     <Div
       className={`rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}
       style={style}
+      id={id} {...editorAttrs}
     >
       {/* 상품 이미지 */}
       {imageUrl && (

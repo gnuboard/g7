@@ -1,0 +1,69 @@
+feature: 블라인드·삭제 부모글 답글 폼 사전 차단 + 삭제 게시글 권한/답글/첨부 처리
+
+description: |
+  이슈 #413 item 44, 50 — 블라인드/삭제 게시글의 답글 작성 진입과 삭제 게시글의
+  원본·답글·첨부 접근을 권한 정책에 맞게 차단/허용한다.
+
+  수정 이력:
+    - 44: 블라인드/삭제 부모글 답글 폼 사전 차단
+      · 증상: /board/{slug}/write?parent_id=N 직접 접근 시 답글 폼이 먼저 열리며
+        부모글 제목/본문이 노출. 제출(ParentPostValidationRule) 단계에서만 차단.
+      · 근본 원인: PostController::getFormMeta/getFormData 의 parent_id 분기가
+        use_reply 만 검사하고 부모글 status(블라인드/삭제) 미검사.
+      · 조치: 두 메서드에 assertParentReplyable() 추가 — 부모가 블라인드/삭제면
+        PostNotFoundException(404) 으로 폼 진입 차단(부모 원문 비노출).
+        답글 수정 모드(post_id)도 부모 블라인드/삭제 시 parent_post 미포함.
+    - 50-1: 삭제 게시글 "삭제된 게시글입니다" 안내 — 오류 아님(404 유지, 현행 정책)
+    - 50-2: 삭제 게시글 원본 노출 권한 불일치
+      · 증상: 사용자 게시판 manager 가 삭제글 상세 진입은 되나 제목/본문이
+        "삭제된 게시글" 문구로 필터링됨.
+      · 근본 원인: PostResource/CommentResource 의 삭제 분기가 admin.manage 만
+        검사(진입 가드는 manager 허용 → 불일치).
+      · 조치: canViewDeletedContent() 신설 — manager/admin.manage 인정(작성자
+        본인 제외, A-1). 게시글+댓글 동시 적용(B-1).
+    - 50-3: 삭제 게시글 답변 버튼 노출
+      · 증상: 답변 버튼 if 에 status !== 'blinded' 만 있고 삭제 검사 없음.
+      · 조치: basic/show.json 답변 버튼 if 에 !deleted_at 추가.
+    - 50-4: 삭제 게시글 첨부파일 노출 (확장 발견분)
+      · 증상: 첨부 목록/다운로드/미리보기가 글 상태 미검사 → 삭제글 첨부가
+        비권한자에게 노출(해시 직접 접근 포함).
+      · 조치: getAttachmentsForResponse 에 삭제글 차단 추가, AttachmentService
+        download/preview/getFileInfo 에 assertDeletedPostAttachmentAccess()
+        추가(manager/admin 만, 삭제글 한정). 블라인드 첨부는 범위 외(별도 추적).
+
+# axis 의미:
+#   차단/허용을 가르는 핵심 변별 축은 viewer(요청자 권한)다.
+#   parent_status(published/blinded/deleted) · access_path(form_meta/form_data) ·
+#   post_state(published/deleted) 변종은 effects 와 개별 테스트 메서드로 커버한다.
+axes:
+  viewer: [regular, manager]
+
+effects:
+  # 44 — 답글 폼 진입 차단
+  - form_meta_blocks_blinded_parent_and_hides_original
+  - form_data_blocks_blinded_parent_and_hides_original
+  - form_meta_blocks_deleted_parent_and_hides_original
+  - form_data_blocks_deleted_parent_and_hides_original
+  - form_meta_allows_published_parent
+  # 50-2 — 삭제 게시글/댓글 원본 권한
+  - manager_sees_deleted_post_original_title_and_content
+  - manager_sees_deleted_comment_original_content
+  # 50-3 — 삭제 게시글 답변 버튼 차단 (레이아웃)
+  - reply_button_if_blocks_deleted_at
+  - reply_button_keeps_blinded_guard
+  # 50-4 — 삭제 게시글 첨부 접근
+  - manager_sees_deleted_post_attachments_in_detail
+  - normal_post_attachments_still_visible
+  - regular_user_cannot_download_deleted_post_attachment
+  - regular_user_can_download_normal_post_attachment_passes_gate
+  - regular_user_cannot_preview_deleted_post_attachment
+
+test_files:
+  # 44 — 답글 폼 진입 차단 (백엔드)
+  - modules/_bundled/sirsoft-board/tests/Feature/User/ReplyFormParentBlockTest.php
+  # 50-2 — 삭제 게시글/댓글 원본 권한 (백엔드)
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostDeletedToggleTest.php
+  # 50-4 — 삭제 게시글 첨부 접근 (백엔드)
+  - modules/_bundled/sirsoft-board/tests/Feature/User/DeletedPostAttachmentAccessTest.php
+  # 50-3 — 답변 버튼 차단 (프론트 레이아웃 JSON 구조)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-deleted-reply-button.test.tsx

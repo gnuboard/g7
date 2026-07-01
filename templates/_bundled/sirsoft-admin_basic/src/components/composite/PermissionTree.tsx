@@ -1,3 +1,4 @@
+// e2e:allow편집기 선택 결함#8 수정(빈 데이터 분기에 가시 placeholder + id/editorAttrs 부착). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 PermissionTree.editorAttrs.test.tsx.
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Input } from '../basic/Input';
@@ -5,6 +6,7 @@ import { Span } from '../basic/Span';
 import { Label } from '../basic/Label';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import type { EditorAttrs } from '../../types';
 import { Accordion } from './Accordion';
 import { ExtensionBadge, ExtensionInfo } from './ExtensionBadge';
 
@@ -235,6 +237,12 @@ export interface PermissionTreeProps {
   installedModules?: ExtensionInfo[];
   /** 설치된 플러그인 목록 (_global.installedPlugins에서 전달) */
   installedPlugins?: ExtensionInfo[];
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -277,6 +285,8 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
   desktopColumns = 2,
   installedModules = [],
   installedPlugins = [],
+  id,
+  editorAttrs,
 }) => {
   // onChange를 이벤트 객체 형식으로 변환하는 핸들러
   const handleChange = useCallback((newValue: PermissionValue[]) => {
@@ -634,8 +644,22 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
     );
   };
 
+  // 빈 데이터일 때도 시각적으로 렌더 + 루트에 id/editorAttrs 부착
+  // (편집기에서 0×0 비가시 노드로 선택 불가하던 문제 — 모든 분기 패리티)
+  if (data.length === 0) {
+    return (
+      <Div
+        className={`text-sm text-gray-400 dark:text-gray-500 py-4 text-center ${className}`}
+        id={id}
+        {...editorAttrs}
+      >
+        {t('common.no_data') ?? '데이터가 없습니다.'}
+      </Div>
+    );
+  }
+
   return (
-    <Div className={`space-y-2 ${className}`}>
+    <Div className={`space-y-2 ${className}`} id={id} {...editorAttrs}>
       {data.map((moduleNode) => renderModule(moduleNode))}
     </Div>
   );

@@ -33,9 +33,22 @@ class ExtensionBackupHelper
         }
 
         $timestamp = date('Ymd_His');
+        $backupRoot = storage_path('app/extension_backups');
+        $backupTypeDir = storage_path("app/extension_backups/{$type}");
         $backupPath = storage_path("app/extension_backups/{$type}/{$identifier}_{$timestamp}");
 
-        File::ensureDirectoryExists(dirname($backupPath));
+        // 백업 부모 체인(extension_backups → {type})을 php-fpm 그룹이 쓸 수 있도록 보장한다.
+        //
+        // sudo 업데이트가 이 디렉토리들을 root/운영자 소유 + g-w(0755) 로 만들어 두면, 이후
+        // www-data(php-fpm) 가 그 안에 백업 디렉토리를 mkdir 하지 못해 "mkdir(): Permission
+        // denied" 로 실패한다(백업 생성 단계 중단). 디렉토리를 g+w(0775) 로 생성하고, 이미
+        // 존재하면 부모 소유권 상속 + g+w 승격으로 정상화한다. 소유자가 아니라 chmod 가
+        // 불가한 환경에서는 silent no-op(멱등) — 운영자가 디렉토리 권한을 직접 부여한다.
+        foreach ([$backupRoot, $backupTypeDir] as $dir) {
+            File::ensureDirectoryExists($dir, 0775);
+            FilePermissionHelper::inheritOwnershipFromParent($dir);
+            FilePermissionHelper::syncGroupWritability($dir);
+        }
 
         // 파일별 복사로 진행 상세 보고
         self::copyDirectoryWithProgress($sourcePath, $backupPath, $sourcePath, $onProgress);
@@ -58,6 +71,8 @@ class ExtensionBackupHelper
         ?\Closure $onProgress = null
     ): void {
         File::ensureDirectoryExists($dest, 0775);
+        // 백업 디렉토리 트리도 부모 소유권을 상속해 sudo update 후 root 소유 잔존을 차단한다.
+        FilePermissionHelper::inheritOwnershipFromParent($dest);
         $items = new \FilesystemIterator($source, \FilesystemIterator::SKIP_DOTS);
 
         foreach ($items as $item) {

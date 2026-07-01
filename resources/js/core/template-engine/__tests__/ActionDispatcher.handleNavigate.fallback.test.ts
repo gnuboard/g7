@@ -30,7 +30,9 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
   let mockNavigate: ReturnType<typeof vi.fn>;
   let mockMatch: ReturnType<typeof vi.fn>;
   let mockWindowOpen: ReturnType<typeof vi.fn>;
+  let mockLocationAssign: ReturnType<typeof vi.fn>;
   let originalWindowOpen: typeof window.open;
+  let originalLocationAssign: typeof window.location.assign;
 
   beforeEach(() => {
     mockNavigate = vi.fn();
@@ -47,10 +49,26 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     originalWindowOpen = window.open;
     mockWindowOpen = vi.fn();
     window.open = mockWindowOpen as any;
+
+    // window.location.assign 모킹 — fallback 기본값(_self)이 `location.assign` 을 호출.
+    // jsdom 의 location 객체는 spyOn/defineProperty 가 모두 잠겨 있으므로
+    // delete + 객체 교체 패턴으로 우회.
+    originalLocationAssign = window.location.assign;
+    mockLocationAssign = vi.fn();
+    delete (window as any).location;
+    (window as any).location = {
+      assign: mockLocationAssign,
+      href: '',
+      pathname: '',
+      search: '',
+      hash: '',
+      origin: 'http://localhost',
+    };
   });
 
   afterEach(() => {
     window.open = originalWindowOpen;
+    void originalLocationAssign;
     delete (window as any).__templateApp;
     vi.clearAllMocks();
   });
@@ -69,7 +87,7 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     expect(mockWindowOpen).not.toHaveBeenCalled();
   });
 
-  it('라우트 매칭 실패 + fallback 미지정 → 기본 openWindow', async () => {
+  it('라우트 매칭 실패 + fallback 미지정 → 기본 openWindow target=_self → window.location.assign 호출 (admin↔user 교차 이동 흐름 보존)', async () => {
     mockMatch.mockReturnValue(null);
 
     await dispatcher.dispatchAction({
@@ -79,7 +97,10 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
-    expect(mockWindowOpen).toHaveBeenCalledWith('/shop/orders/123', '_blank');
+    // 기본값 _self 로 같은 탭 이동 (ActionDispatcher.handleOpenWindow + resolveNavigateFallback 본문 주석 참조).
+    // _self 는 window.open 대신 window.location.assign 을 호출한다.
+    expect(mockLocationAssign).toHaveBeenCalledWith('/shop/orders/123');
+    expect(mockWindowOpen).not.toHaveBeenCalled();
   });
 
   it('라우트 매칭 실패 + fallback: false → 기존 동작(navigate 강행)', async () => {
@@ -124,7 +145,7 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     expect(mockWindowOpen).toHaveBeenCalledWith('/shop/orders/123', '_blank');
   });
 
-  it('쿼리 파라미터가 있는 경로도 fallback pathname만 매칭', async () => {
+  it('쿼리 파라미터가 있는 경로도 fallback pathname만 매칭 → _self 기본값으로 location.assign 호출', async () => {
     mockMatch.mockReturnValue(null);
 
     await dispatcher.dispatchAction({
@@ -138,9 +159,9 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
 
     expect(mockMatch).toHaveBeenCalledWith('/shop/orders');
     expect(mockNavigate).not.toHaveBeenCalled();
-    // query가 병합된 finalPath가 openWindow로 전달됨
-    expect(mockWindowOpen).toHaveBeenCalled();
-    const openedUrl = mockWindowOpen.mock.calls[0][0];
+    // _self 기본값 — query 병합된 finalPath 가 location.assign 으로 전달됨
+    expect(mockLocationAssign).toHaveBeenCalled();
+    const openedUrl = mockLocationAssign.mock.calls[0][0];
     expect(openedUrl).toContain('/shop/orders?');
     expect(openedUrl).toContain('id=123');
     expect(openedUrl).toContain('tab=detail');

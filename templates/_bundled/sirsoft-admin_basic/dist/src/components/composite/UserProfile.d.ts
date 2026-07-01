@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 /**
  * 사용자 정보 인터페이스
  */
@@ -30,6 +31,18 @@ export interface UserProfileProps {
     logoutEndpoint?: string;
     /** 로그아웃 후 리다이렉션 경로 (기본값: /admin/login) */
     redirectPath?: string;
+    /** Chevron 아이콘 표시 여부 (기본값: true) */
+    showChevron?: boolean;
+    /** 드롭다운 열림 방향 (기본값: 'up') */
+    dropdownDirection?: 'up' | 'down';
+    /** 드롭다운만 표시 (버튼 영역 숨김, 외부 요소 클릭 트리거용) */
+    dropdownOnly?: boolean;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * UserProfile 컴포넌트

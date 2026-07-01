@@ -1,0 +1,14 @@
+{
+    "version": "1.0.0",
+    "routes": [
+        {
+            "path": "*/admin/plugins/sirsoft-gdpr/consent-log",
+            "layout": "gdpr_consent_log",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-gdpr.admin.consent_log.title",
+                "permission": "sirsoft-gdpr.privacy.view"
+            }
+        }
+    ]
+}

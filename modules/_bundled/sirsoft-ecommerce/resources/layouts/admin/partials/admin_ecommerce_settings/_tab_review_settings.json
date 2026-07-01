@@ -7,63 +7,48 @@
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'review_settings'}}",
-  "props": {
-    "className": "mt-6 space-y-6"
-  },
   "children": [
     {
       "id": "review_settings_card",
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "card"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
-          "name": "Div",
+          "name": "H3",
           "props": {
-            "className": "card-header"
+            "className": "card-title"
           },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "card-title"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.title"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "card-description"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.description"
-            }
-          ]
+          "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.title"
         },
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "space-y-4"
+            "className": "card-description"
           },
+          "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.description"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
           "children": [
             {
               "comment": "리뷰 작성 가능 기간",
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 flex-wrap"
+                "className": "flex-center gap-2 flex-wrap"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300 w-48 shrink-0"
+                    "className": "text-body w-48 shrink-0"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.write_deadline_days_label"
                 },
@@ -94,7 +79,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                    "className": "text-body"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.days_unit"
                 },
@@ -112,7 +97,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "border-t border-gray-100 dark:border-gray-700 my-2"
+                "className": "border-t border-gray-100 dark:border-gray-700"
               }
             },
             {
@@ -120,14 +105,14 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 flex-wrap"
+                "className": "flex-center gap-2 flex-wrap"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300 w-48 shrink-0"
+                    "className": "text-body w-48 shrink-0"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_images_label"
                 },
@@ -158,7 +143,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                    "className": "text-body"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.images_unit"
                 },
@@ -176,7 +161,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "border-t border-gray-100 dark:border-gray-700 my-2"
+                "className": "border-t border-gray-100 dark:border-gray-700"
               }
             },
             {
@@ -184,14 +169,14 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 flex-wrap"
+                "className": "flex-center gap-2 flex-wrap"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300 w-48 shrink-0"
+                    "className": "text-body w-48 shrink-0"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_image_size_mb_label"
                 },
@@ -223,7 +208,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                    "className": "text-body"
                   },
                   "text": "MB"
                 },
@@ -237,7 +222,10 @@
                 }
               ]
             }
-          ]
+          ],
+          "props": {
+            "className": "row-stack"
+          }
         }
       ]
     }

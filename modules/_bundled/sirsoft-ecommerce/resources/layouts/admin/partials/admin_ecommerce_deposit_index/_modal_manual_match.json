@@ -24,7 +24,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "grid grid-cols-2 gap-4"
+            "className": "grid-2col"
           },
           "children": [
             {
@@ -126,7 +126,7 @@
               "props": {
                 "type": "text",
                 "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.search_placeholder",
-                "className": "input w-full pl-10"
+                "className": "input pl-10"
               }
             },
             {
@@ -144,7 +144,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+            "className": "toggle-group"
           },
           "children": [
             {
@@ -159,7 +159,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center justify-between mb-1"
+                    "className": "flex-between mb-1"
                   },
                   "children": [
                     {
@@ -184,7 +184,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center justify-between mt-2"
+                    "className": "flex-between mt-2"
                   },
                   "children": [
                     {

@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export interface RadioOption {
     /** 라디오 버튼의 값 */
     value: string;
@@ -28,6 +29,12 @@ export interface RadioGroupProps {
     label?: string;
     /** 에러 메시지 */
     error?: string;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * RadioGroup 컴포넌트

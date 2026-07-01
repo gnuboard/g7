@@ -142,6 +142,11 @@
  * 컴포넌트 스타일
  */
 @layer components {
+  /* 레이아웃 시맨틱 유틸리티 */
+  .flex-between {
+    @apply flex items-center justify-between;
+  }
+
   /* 버튼 기본 스타일 */
   .btn {
     @apply inline-flex items-center justify-center font-medium rounded-lg transition-colors;

@@ -5,7 +5,9 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // 테스트 베이스 클래스 수동 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
@@ -61,7 +63,7 @@ class PostMutationApiTest extends BoardTestCase
         $this->otherUser = User::factory()->create(['email' => 'other@test.com']);
 
         // member 사용자에 user 역할 부여
-        $userRole = \App\Models\Role::where('identifier', 'user')->first();
+        $userRole = Role::where('identifier', 'user')->first();
         $this->memberUser->roles()->attach($userRole->id);
         $this->otherUser->roles()->attach($userRole->id);
     }
@@ -181,7 +183,7 @@ class PostMutationApiTest extends BoardTestCase
         $this->updateBoardSettings(['use_file_upload' => false]);
 
         // 테스트용 가짜 파일 생성
-        $file = \Illuminate\Http\UploadedFile::fake()->create('test.pdf', 100);
+        $file = UploadedFile::fake()->create('test.pdf', 100);
 
         // When: 파일과 함께 게시글 생성 요청
         $response = $this->actingAs($this->memberUser)
@@ -207,7 +209,7 @@ class PostMutationApiTest extends BoardTestCase
         $this->setGuestPermissions(['posts.read', 'posts.write']); // attachments.upload 없음
 
         // 테스트용 가짜 파일 생성
-        $file = \Illuminate\Http\UploadedFile::fake()->create('test.pdf', 100);
+        $file = UploadedFile::fake()->create('test.pdf', 100);
 
         // When: 비회원이 파일과 함께 게시글 생성 요청
         $response = $this->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts", [
@@ -232,7 +234,7 @@ class PostMutationApiTest extends BoardTestCase
         // 기본 설정에 attachments.upload 포함되어 있음
 
         // 테스트용 가짜 파일 생성
-        $file = \Illuminate\Http\UploadedFile::fake()->create('test.pdf', 100);
+        $file = UploadedFile::fake()->create('test.pdf', 100);
 
         // When: 비회원이 파일과 함께 게시글 생성 요청
         $response = $this->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts", [
@@ -467,6 +469,84 @@ class PostMutationApiTest extends BoardTestCase
     }
 
     /**
+     * 게시판 관리(manager) 권한자는 타인 회원 게시글을 수정할 수 있다
+     *
+     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 수정 200 (이슈 #413-20)
+     */
+    public function test_manager_can_update_other_member_post(): void
+    {
+        // Given: manager 권한을 가진 사용자 (admin.manage 미보유)
+        $this->grantUserRolePermissions(['manager']);
+        $manager = User::factory()->create(['email' => 'manager@test.com']);
+        $manager->roles()->attach(Role::where('identifier', 'user')->first()->id);
+
+        $postId = $this->createTestPost([
+            'user_id' => $this->memberUser->id,
+            'author_name' => $this->memberUser->name,
+        ]);
+
+        // When: manager 권한자가 타인 글 수정 요청
+        $response = $this->actingAs($manager)
+            ->putJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}", [
+                'title' => '관리자가 수정한 제목',
+                'content' => '게시판 관리 권한으로 수정한 내용입니다.',
+            ]);
+
+        // Then: 200 성공 (현재는 admin.manage 요구로 403 → 수정 후 200)
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.title', '관리자가 수정한 제목');
+    }
+
+    /**
+     * 게시판 관리(manager) 권한자는 타인 회원 게시글을 삭제할 수 있다
+     *
+     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 삭제 200 (이슈 #413-20)
+     */
+    public function test_manager_can_delete_other_member_post(): void
+    {
+        // Given: manager 권한을 가진 사용자 (admin.manage 미보유)
+        $this->grantUserRolePermissions(['manager']);
+        $manager = User::factory()->create(['email' => 'manager-del@test.com']);
+        $manager->roles()->attach(Role::where('identifier', 'user')->first()->id);
+
+        $postId = $this->createTestPost([
+            'user_id' => $this->memberUser->id,
+            'author_name' => $this->memberUser->name,
+        ]);
+
+        // When: manager 권한자가 타인 글 삭제 요청
+        $response = $this->actingAs($manager)
+            ->deleteJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}");
+
+        // Then: 200 성공
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+    }
+
+    /**
+     * 권한 없는 일반 사용자는 여전히 타인 게시글을 수정할 수 없다 (회귀 가드)
+     */
+    public function test_non_manager_still_cannot_update_other_member_post(): void
+    {
+        // Given: manager 권한 없는 일반 사용자
+        $postId = $this->createTestPost([
+            'user_id' => $this->memberUser->id,
+            'author_name' => $this->memberUser->name,
+        ]);
+
+        // When: otherUser(권한 없음)가 수정 요청
+        $response = $this->actingAs($this->otherUser)
+            ->putJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}", [
+                'title' => '수정 시도',
+            ]);
+
+        // Then: 403 유지
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false);
+    }
+
+    /**
      * 비회원이 올바른 비밀번호로 비회원 게시글을 수정할 수 있다
      */
     public function test_guest_can_update_own_post_with_correct_password(): void
@@ -677,9 +757,12 @@ class PostMutationApiTest extends BoardTestCase
     }
 
     /**
-     * 게시글 소프트삭제 시 댓글은 삭제되지 않고 유지됨
+     * 게시글 소프트삭제 시 살아있던 댓글이 cascade 로 함께 soft delete 된다 (#413-69-②)
+     *
+     * 그룹2 에서 동작이 변경됨: 게시글 삭제 시 하위 댓글을 보존하지 않고
+     * trigger_type='cascade' 로 연쇄 soft delete 한다 (복원 시 cascade 분만 선별 부활).
      */
-    public function test_soft_delete_post_preserves_comments(): void
+    public function test_soft_delete_post_cascades_to_comments(): void
     {
         // Given: 게시글 + 댓글 생성
         $postId = $this->createTestPost(['user_id' => $this->memberUser->id]);
@@ -690,16 +773,20 @@ class PostMutationApiTest extends BoardTestCase
             ->deleteJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}")
             ->assertStatus(200);
 
-        // Then: 댓글은 deleted_at 없이 유지
+        // Then: 댓글은 cascade 로 soft delete + trigger_type='cascade' 마킹
         $comment = DB::table('board_comments')->where('id', $commentId)->first();
-        $this->assertNotNull($comment, '댓글이 DB에 존재해야 합니다');
-        $this->assertNull($comment->deleted_at, '댓글이 소프트삭제되지 않아야 합니다');
+        $this->assertNotNull($comment, '댓글 레코드는 DB에 존재해야 합니다(soft delete)');
+        $this->assertNotNull($comment->deleted_at, '게시글 삭제 시 댓글이 cascade soft delete 되어야 합니다');
+        $this->assertSame('cascade', $comment->trigger_type, '댓글이 cascade 로 마킹되어야 합니다');
     }
 
     /**
-     * 게시글 소프트삭제 시 첨부파일 레코드는 삭제되지 않고 유지됨
+     * 게시글 소프트삭제 시 살아있던 첨부가 cascade 로 함께 soft delete 된다 (#413-69-②)
+     *
+     * 그룹2 에서 동작이 변경됨: 게시글 삭제 시 첨부 레코드를 보존하지 않고
+     * trigger_type='cascade' 로 연쇄 soft delete 한다 (복원 시 cascade 분만 선별 부활).
      */
-    public function test_soft_delete_post_preserves_attachments(): void
+    public function test_soft_delete_post_cascades_to_attachments(): void
     {
         // Given: 게시글 + 첨부파일 레코드 직접 삽입
         $postId = $this->createTestPost(['user_id' => $this->memberUser->id]);
@@ -722,9 +809,10 @@ class PostMutationApiTest extends BoardTestCase
             ->deleteJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}")
             ->assertStatus(200);
 
-        // Then: 첨부파일 레코드는 deleted_at 없이 유지
+        // Then: 첨부 레코드는 cascade 로 soft delete + trigger_type='cascade' 마킹
         $attachment = DB::table('board_attachments')->where('id', $attachmentId)->first();
-        $this->assertNotNull($attachment, '첨부파일 레코드가 DB에 존재해야 합니다');
-        $this->assertNull($attachment->deleted_at, '첨부파일이 소프트삭제되지 않아야 합니다');
+        $this->assertNotNull($attachment, '첨부 레코드는 DB에 존재해야 합니다(soft delete)');
+        $this->assertNotNull($attachment->deleted_at, '게시글 삭제 시 첨부가 cascade soft delete 되어야 합니다');
+        $this->assertSame('cascade', $attachment->trigger_type, '첨부가 cascade 로 마킹되어야 합니다');
     }
 }

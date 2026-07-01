@@ -1,0 +1,1656 @@
+{
+  "control": {
+    "text_align": {
+      "label": "Text align",
+      "left": "Left",
+      "center": "Center",
+      "right": "Right",
+      "justify": "Justify"
+    },
+    "font_size": {
+      "label": "Font size"
+    },
+    "font_weight": {
+      "label": "Weight",
+      "normal": "Normal",
+      "semibold": "Medium",
+      "bold": "Bold"
+    },
+    "text_color": {
+      "label": "Text color"
+    },
+    "background_color": {
+      "label": "Background color"
+    },
+    "color_preset": {
+      "gray_900": "Dark gray",
+      "gray_800": "Darker gray",
+      "gray_700": "Gray",
+      "gray_500": "Medium gray",
+      "gray_100": "Light gray",
+      "gray_50": "Lightest gray",
+      "white": "White",
+      "blue_600": "Blue",
+      "red_600": "Red",
+      "green_600": "Green",
+      "gray_300": "Light gray"
+    },
+    "padding": {
+      "label": "Padding"
+    },
+    "margin": {
+      "label": "Margin"
+    },
+    "width": {
+      "label": "Width",
+      "full": "Full",
+      "half": "Half"
+    },
+    "height": {
+      "label": "Height",
+      "auto": "Auto"
+    },
+    "flex_direction": {
+      "label": "Direction",
+      "row": "Row",
+      "column": "Column"
+    },
+    "flex_justify": {
+      "label": "Children alignment (main)",
+      "start": "Start",
+      "center": "Center",
+      "end": "End",
+      "between": "Space between",
+      "around": "Space around"
+    },
+    "flex_align": {
+      "label": "Children alignment (cross)",
+      "start": "Start",
+      "center": "Center",
+      "end": "End",
+      "stretch": "Stretch"
+    },
+    "flex_wrap": {
+      "label": "Allow wrapping",
+      "off": "Off",
+      "on": "On"
+    },
+    "flex_gap": {
+      "label": "Child spacing"
+    },
+    "flex_enable": {
+      "label": "Make alignment box",
+      "on": "Flex box",
+      "off": "Normal block"
+    },
+    "flex_item_grow": {
+      "label": "Grow",
+      "fixed": "Fixed",
+      "fill": "Fill",
+      "ratio": "Ratio"
+    },
+    "flex_item_align": {
+      "label": "Align self",
+      "start": "Start",
+      "center": "Center",
+      "end": "End",
+      "stretch": "Stretch"
+    },
+    "flex_item_order": {
+      "label": "Order"
+    },
+    "toggle": {
+      "on": "On",
+      "off": "Off"
+    },
+    "box_shadow": {
+      "label": "Shadow",
+      "none": "None",
+      "sm": "Small",
+      "md": "Medium",
+      "lg": "Large",
+      "xl": "Extra large",
+      "xxl": "Huge"
+    },
+    "border_style": {
+      "label": "Border style",
+      "none": "None",
+      "solid": "Solid",
+      "dashed": "Dashed",
+      "dotted": "Dotted"
+    },
+    "border_color": {
+      "label": "Border color"
+    },
+    "border_radius": {
+      "label": "Corner radius",
+      "none": "Square",
+      "sm": "Slight",
+      "md": "Medium",
+      "lg": "Rounded",
+      "xl": "Large",
+      "full": "Full"
+    },
+    "opacity": {
+      "label": "Opacity"
+    },
+    "overflow": {
+      "label": "Scroll",
+      "auto": "Auto",
+      "hidden": "Hidden",
+      "x_auto": "Horizontal auto",
+      "y_auto": "Vertical auto",
+      "visible": "Visible"
+    },
+    "font_bold": {
+      "label": "Bold"
+    },
+    "font_italic": {
+      "label": "Italic"
+    },
+    "text_underline": {
+      "label": "Underline"
+    },
+    "whitespace": {
+      "label": "Wrap",
+      "normal": "Allow",
+      "nowrap": "No wrap",
+      "pre_wrap": "Preserve spaces"
+    },
+    "icon_name": {
+      "label": "Icon",
+      "search": "Search icons"
+    },
+    "img_src": {
+      "label": "Image URL"
+    },
+    "img_alt": {
+      "label": "Alt text"
+    },
+    "link_href": {
+      "label": "Link URL"
+    },
+    "link_target": {
+      "label": "Link target",
+      "self": "Same window",
+      "blank": "New window",
+      "parent": "Parent frame",
+      "top": "Top frame"
+    },
+    "input_type": {
+      "label": "Input type",
+      "text": "Text",
+      "email": "Email",
+      "password": "Password",
+      "number": "Number",
+      "tel": "Telephone",
+      "url": "URL",
+      "date": "Date",
+      "search": "Search"
+    },
+    "input_placeholder": {
+      "label": "Placeholder"
+    },
+    "input_name": {
+      "label": "Field name"
+    },
+    "input_required": {
+      "label": "Required"
+    },
+    "input_disabled": {
+      "label": "Disabled"
+    },
+    "field_label": {
+      "label": "Label"
+    },
+    "field_error": {
+      "label": "Error message"
+    },
+    "field_helper": {
+      "label": "Helper text"
+    },
+    "html_for": {
+      "label": "For (htmlFor)"
+    },
+    "textarea_rows": {
+      "label": "Rows"
+    },
+    "elem_id": {
+      "label": "Element ID"
+    },
+    "select_placeholder": {
+      "label": "Placeholder"
+    },
+    "select_options": {
+      "label": "Options"
+    },
+    "component_size": {
+      "label": "Size",
+      "sm": "Small",
+      "md": "Medium",
+      "lg": "Large"
+    },
+    "button_variant": {
+      "label": "Button style",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "danger": "Danger",
+      "success": "Success"
+    },
+    "component_disabled": {
+      "label": "Disabled"
+    },
+    "icon_style": {
+      "label": "Icon style",
+      "solid": "Solid",
+      "regular": "Regular",
+      "light": "Light",
+      "duotone": "Duotone",
+      "brands": "Brands"
+    },
+    "icon_size": {
+      "label": "Icon size",
+      "xs": "XS",
+      "sm": "SM",
+      "lg": "LG",
+      "xl": "XL",
+      "2x": "2x",
+      "3x": "3x"
+    },
+    "icon_color": {
+      "label": "Icon color"
+    },
+    "icon_spin": {
+      "label": "Spin animation"
+    },
+    "icon_pulse": {
+      "label": "Pulse animation"
+    },
+    "icon_fixed_width": {
+      "label": "Fixed width"
+    },
+    "icon_aria": {
+      "label": "ARIA label"
+    },
+    "grid_cols": {
+      "label": "Columns"
+    },
+    "grid_gap": {
+      "label": "Gap"
+    },
+    "grid_row_gap": {
+      "label": "Row gap"
+    },
+    "grid_col_gap": {
+      "label": "Column gap"
+    },
+    "grid_auto_rows": {
+      "label": "Auto rows",
+      "auto": "Auto",
+      "min": "Min",
+      "max": "Max",
+      "fr": "Fr"
+    },
+    "grid_auto_cols": {
+      "label": "Auto cols",
+      "auto": "Auto",
+      "min": "Min",
+      "max": "Max",
+      "fr": "Fr"
+    },
+    "grid_flow": {
+      "label": "Flow",
+      "row": "Row",
+      "col": "Column",
+      "dense": "Dense",
+      "row-dense": "Row dense",
+      "col-dense": "Col dense"
+    },
+    "sec_title": {
+      "label": "Title"
+    },
+    "sec_subtitle": {
+      "label": "Subtitle"
+    },
+    "sec_padding": {
+      "label": "Padding",
+      "none": "None",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG",
+      "xl": "XL"
+    },
+    "sec_background": {
+      "label": "Background",
+      "none": "None",
+      "white": "White",
+      "gray": "Gray",
+      "primary": "Primary",
+      "secondary": "Secondary"
+    },
+    "sec_max_width": {
+      "label": "Max width",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG",
+      "xl": "XL",
+      "2xl": "2XL",
+      "4xl": "4XL",
+      "6xl": "6XL",
+      "7xl": "7XL",
+      "full": "Full"
+    },
+    "sec_centered": {
+      "label": "Centered"
+    },
+    "sec_border": {
+      "label": "Border"
+    },
+    "sec_shadow": {
+      "label": "Shadow",
+      "none": "None",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG",
+      "xl": "XL"
+    },
+    "sec_rounded": {
+      "label": "Rounded"
+    },
+    "card_title": {
+      "label": "Title"
+    },
+    "card_content": {
+      "label": "Content"
+    },
+    "card_image_url": {
+      "label": "Image URL"
+    },
+    "card_image_alt": {
+      "label": "Image alt"
+    },
+    "badge_color": {
+      "label": "Color",
+      "blue": "Blue",
+      "green": "Green",
+      "red": "Red",
+      "gray": "Gray",
+      "yellow": "Yellow",
+      "purple": "Purple",
+      "orange": "Orange",
+      "teal": "Teal",
+      "cyan": "Cyan"
+    },
+    "badge_text": {
+      "label": "Text"
+    },
+    "badge_size": {
+      "label": "Size",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG"
+    },
+    "sb_status": {
+      "label": "Status",
+      "success": "Success",
+      "warning": "Warning",
+      "error": "Error",
+      "info": "Info",
+      "pending": "Pending",
+      "default": "Default"
+    },
+    "sb_label": {
+      "label": "Label"
+    },
+    "sb_show_icon": {
+      "label": "Show icon"
+    },
+    "sb_icon_name": {
+      "label": "Icon"
+    },
+    "alert_type": {
+      "label": "Type",
+      "info": "Info",
+      "success": "Success",
+      "warning": "Warning",
+      "error": "Error"
+    },
+    "alert_message": {
+      "label": "Message"
+    },
+    "alert_dismissible": {
+      "label": "Dismissible"
+    },
+    "es_title": {
+      "label": "Title"
+    },
+    "es_desc": {
+      "label": "Description"
+    },
+    "es_icon_name": {
+      "label": "Icon"
+    },
+    "es_illust_src": {
+      "label": "Illustration URL"
+    },
+    "es_illust_alt": {
+      "label": "Illustration alt"
+    },
+    "ls_size": {
+      "label": "Size",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG",
+      "xl": "XL"
+    },
+    "ls_color": {
+      "label": "Color"
+    },
+    "ls_fullscreen": {
+      "label": "Fullscreen"
+    },
+    "ls_text": {
+      "label": "Text"
+    },
+    "ph_title": {
+      "label": "Title"
+    },
+    "ph_desc": {
+      "label": "Description"
+    },
+    "bc_separator": {
+      "label": "Separator"
+    },
+    "bc_show_home": {
+      "label": "Show home"
+    },
+    "bc_home_href": {
+      "label": "Home link"
+    },
+    "bc_max_items": {
+      "label": "Max items"
+    },
+    "tn_active_tab_id": {
+      "label": "Active tab ID"
+    },
+    "tn_variant": {
+      "label": "Variant",
+      "default": "Default",
+      "pills": "Pills",
+      "underline": "Underline"
+    },
+    "tn_mobile_breakpoint": {
+      "label": "Mobile breakpoint"
+    },
+    "tns_active_tab_id": {
+      "label": "Active tab ID"
+    },
+    "tns_section_prefix": {
+      "label": "Section ID prefix"
+    },
+    "tns_scroll_offset": {
+      "label": "Scroll offset"
+    },
+    "tns_scroll_delay": {
+      "label": "Scroll delay"
+    },
+    "tns_enable_spy": {
+      "label": "Scroll spy"
+    },
+    "tns_spy_offset": {
+      "label": "Spy offset"
+    },
+    "tns_container_id": {
+      "label": "Scroll container ID"
+    },
+    "tg_label": {
+      "label": "Label"
+    },
+    "tg_desc": {
+      "label": "Description"
+    },
+    "tg_size": {
+      "label": "Size",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG"
+    },
+    "tg_disabled": {
+      "label": "Disabled"
+    },
+    "tg_name": {
+      "label": "Name"
+    },
+    "ff_label": {
+      "label": "Label"
+    },
+    "ff_required": {
+      "label": "Required"
+    },
+    "ff_error": {
+      "label": "Error message"
+    },
+    "ff_helper": {
+      "label": "Helper text"
+    },
+    "ff_horizontal": {
+      "label": "Horizontal"
+    },
+    "ff_label_width": {
+      "label": "Label width"
+    },
+    "rg_inline": {
+      "label": "Inline"
+    },
+    "rg_size": {
+      "label": "Size",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG"
+    },
+    "fi_accept": {
+      "label": "Accept"
+    },
+    "fi_max_size": {
+      "label": "Max size"
+    },
+    "fi_button_text": {
+      "label": "Button text"
+    },
+    "fu_type": {
+      "label": "Attachmentable type"
+    },
+    "fu_collection": {
+      "label": "Collection"
+    },
+    "fu_max_files": {
+      "label": "Max files"
+    },
+    "fu_max_size": {
+      "label": "Max size"
+    },
+    "fu_accept": {
+      "label": "Accept"
+    },
+    "fu_auto_upload": {
+      "label": "Auto upload"
+    },
+    "fu_confirm_remove": {
+      "label": "Confirm before remove"
+    },
+    "fu_primary_sel": {
+      "label": "Primary selection"
+    },
+    "dg_pagination": {
+      "label": "Pagination"
+    },
+    "dg_page_size": {
+      "label": "Page size"
+    },
+    "cg_grid_cols": {
+      "label": "Columns"
+    },
+    "cg_gap": {
+      "label": "Gap"
+    },
+    "cg_pagination": {
+      "label": "Pagination"
+    },
+    "cg_page_size": {
+      "label": "Page size"
+    },
+    "pg_max_visible": {
+      "label": "Max visible pages"
+    },
+    "pg_show_first_last": {
+      "label": "Show first/last"
+    },
+    "pg_prev_text": {
+      "label": "Prev text"
+    },
+    "pg_next_text": {
+      "label": "Next text"
+    },
+    "sb_placeholder": {
+      "label": "Placeholder"
+    },
+    "sb_show_button": {
+      "label": "Show button"
+    },
+    "sb_show_suggestions": {
+      "label": "Show suggestions"
+    },
+    "sc_value": {
+      "label": "Value"
+    },
+    "sc_label": {
+      "label": "Label"
+    },
+    "sc_change": {
+      "label": "Change"
+    },
+    "sc_change_label": {
+      "label": "Change label"
+    },
+    "sc_icon_name": {
+      "label": "Icon"
+    },
+    "sc_trend": {
+      "label": "Trend",
+      "up": "Up",
+      "down": "Down",
+      "neutral": "Neutral"
+    },
+    "pc_image_url": {
+      "label": "Image URL"
+    },
+    "pc_image_alt": {
+      "label": "Image alt"
+    },
+    "pc_title": {
+      "label": "Title"
+    },
+    "pc_subtitle": {
+      "label": "Subtitle"
+    },
+    "pc_desc": {
+      "label": "Description"
+    },
+    "pc_price": {
+      "label": "Price"
+    },
+    "pc_orig_price": {
+      "label": "Original price"
+    },
+    "pc_discount": {
+      "label": "Discount rate"
+    },
+    "pc_currency": {
+      "label": "Currency"
+    },
+    "pc_button_text": {
+      "label": "Button text"
+    },
+    "tc_image": {
+      "label": "Image"
+    },
+    "tc_image_alt": {
+      "label": "Image alt"
+    },
+    "tc_vendor": {
+      "label": "Vendor"
+    },
+    "tc_name": {
+      "label": "Name"
+    },
+    "tc_version": {
+      "label": "Version"
+    },
+    "tc_status": {
+      "label": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "error": "Error"
+    },
+    "tc_update_avail": {
+      "label": "Update available"
+    },
+    "tc_latest_version": {
+      "label": "Latest version"
+    },
+    "tc_show_layout_btn": {
+      "label": "Layout edit button"
+    },
+    "bc_height": {
+      "label": "Height"
+    },
+    "bc_show_legend": {
+      "label": "Show legend"
+    },
+    "bc_show_grid": {
+      "label": "Show grid"
+    },
+    "bc_show_ygrid": {
+      "label": "Y grid"
+    },
+    "bc_show_yaxis": {
+      "label": "Show Y axis"
+    },
+    "dc_center_label": {
+      "label": "Center label"
+    },
+    "dc_center_value": {
+      "label": "Center value"
+    },
+    "dc_size": {
+      "label": "Size"
+    },
+    "dc_cutout": {
+      "label": "Cutout"
+    },
+    "dc_show_legend": {
+      "label": "Show legend"
+    },
+    "hc_is_html": {
+      "label": "Render as HTML"
+    },
+    "he_multilingual": {
+      "label": "Multilingual"
+    },
+    "he_is_html": {
+      "label": "HTML mode"
+    },
+    "he_rows": {
+      "label": "Rows"
+    },
+    "he_placeholder": {
+      "label": "Placeholder"
+    },
+    "he_label": {
+      "label": "Label"
+    },
+    "he_show_html_toggle": {
+      "label": "Show HTML toggle"
+    },
+    "he_name": {
+      "label": "Name"
+    },
+    "he_html_field_name": {
+      "label": "HTML field name"
+    },
+    "he_read_only": {
+      "label": "Read only"
+    },
+    "ig_enable_zoom": {
+      "label": "Enable zoom"
+    },
+    "ig_enable_slideshow": {
+      "label": "Slideshow"
+    },
+    "ig_enable_fullscreen": {
+      "label": "Fullscreen"
+    },
+    "ig_show_counter": {
+      "label": "Show counter"
+    },
+    "ig_show_download": {
+      "label": "Show download"
+    },
+    "ig_show_thumbnails": {
+      "label": "Show thumbnails"
+    },
+    "acc_default_open": {
+      "label": "Default open"
+    },
+    "acc_disabled": {
+      "label": "Disabled"
+    },
+    "ib_icon_name": {
+      "label": "Icon"
+    },
+    "ib_label": {
+      "label": "Label"
+    },
+    "ib_variant": {
+      "label": "Variant",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "danger": "Danger",
+      "ghost": "Ghost"
+    },
+    "ib_size": {
+      "label": "Size",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG"
+    },
+    "ib_disabled": {
+      "label": "Disabled"
+    },
+    "dd_label": {
+      "label": "Label"
+    },
+    "dd_position": {
+      "label": "Position",
+      "bottom-left": "Bottom left",
+      "bottom-right": "Bottom right",
+      "top-left": "Top left",
+      "top-right": "Top right"
+    },
+    "dd_variant": {
+      "label": "Variant",
+      "default": "Default",
+      "text": "Text"
+    },
+    "am_trigger_label": {
+      "label": "Trigger label"
+    },
+    "am_trigger_icon": {
+      "label": "Trigger icon"
+    },
+    "am_position": {
+      "label": "Position",
+      "left": "Left",
+      "right": "Right"
+    },
+    "ti_placeholder": {
+      "label": "Placeholder"
+    },
+    "ti_creatable": {
+      "label": "Creatable"
+    },
+    "ti_disabled": {
+      "label": "Disabled"
+    },
+    "ti_is_multi": {
+      "label": "Multi select"
+    },
+    "ti_clearable": {
+      "label": "Clearable"
+    },
+    "ti_searchable": {
+      "label": "Searchable"
+    },
+    "ti_max_items": {
+      "label": "Max items"
+    },
+    "sd_multiple": {
+      "label": "Multiple"
+    },
+    "sd_search_placeholder": {
+      "label": "Search placeholder"
+    },
+    "sd_disabled": {
+      "label": "Disabled"
+    },
+    "sd_trigger_label": {
+      "label": "Trigger label"
+    },
+    "sd_no_results": {
+      "label": "No results text"
+    },
+    "sd_initial": {
+      "label": "Initial text"
+    },
+    "rs_placeholder": {
+      "label": "Placeholder"
+    },
+    "rs_disabled": {
+      "label": "Disabled"
+    },
+    "rs_max_height": {
+      "label": "Max height"
+    },
+    "ts_placeholder": {
+      "label": "Placeholder"
+    },
+    "ts_disabled": {
+      "label": "Disabled"
+    },
+    "is_placeholder": {
+      "label": "Placeholder"
+    },
+    "is_search_placeholder": {
+      "label": "Search placeholder"
+    },
+    "is_no_results": {
+      "label": "No results text"
+    },
+    "is_disabled": {
+      "label": "Disabled"
+    },
+    "cc_value": {
+      "label": "Value"
+    },
+    "cc_icon": {
+      "label": "Icon"
+    },
+    "cc_label": {
+      "label": "Label"
+    },
+    "cc_variant": {
+      "label": "Variant",
+      "green": "Green",
+      "orange": "Orange",
+      "yellow": "Yellow",
+      "gray": "Gray",
+      "blue": "Blue"
+    },
+    "cc_custom_color": {
+      "label": "Custom color"
+    },
+    "mi_input_type": {
+      "label": "Input type",
+      "text": "Text",
+      "textarea": "Textarea"
+    },
+    "mi_layout": {
+      "label": "Layout",
+      "inline": "Inline",
+      "tabs": "Tabs",
+      "compact": "Compact"
+    },
+    "mi_placeholder": {
+      "label": "Placeholder"
+    },
+    "mi_required": {
+      "label": "Required"
+    },
+    "mi_disabled": {
+      "label": "Disabled"
+    },
+    "mi_max_length": {
+      "label": "Max length"
+    },
+    "mi_rows": {
+      "label": "Rows"
+    },
+    "mti_placeholder": {
+      "label": "Placeholder"
+    },
+    "mti_disabled": {
+      "label": "Disabled"
+    },
+    "mti_creatable": {
+      "label": "Creatable"
+    },
+    "mti_max_items": {
+      "label": "Max items"
+    },
+    "mti_modal_id": {
+      "label": "Modal ID"
+    },
+    "mti_state_path": {
+      "label": "State path"
+    },
+    "ls_language_text": {
+      "label": "Language text"
+    },
+    "ls_api_endpoint": {
+      "label": "API endpoint"
+    },
+    "ls_inline": {
+      "label": "Inline"
+    },
+    "ct_search_keyword": {
+      "label": "Search keyword"
+    },
+    "ct_show_product_count": {
+      "label": "Show product count"
+    },
+    "ct_selectable": {
+      "label": "Selectable"
+    },
+    "eb_type": {
+      "label": "Type",
+      "module": "Module",
+      "plugin": "Plugin"
+    },
+    "eb_identifier": {
+      "label": "Identifier"
+    },
+    "eb_name": {
+      "label": "Name"
+    },
+    "up_profile_text": {
+      "label": "Profile text"
+    },
+    "up_logout_text": {
+      "label": "Logout text"
+    },
+    "up_language_text": {
+      "label": "Language text"
+    },
+    "up_logout_endpoint": {
+      "label": "Logout endpoint"
+    },
+    "up_redirect_path": {
+      "label": "Redirect path"
+    },
+    "up_show_chevron": {
+      "label": "Show chevron"
+    },
+    "up_dropdown_dir": {
+      "label": "Dropdown direction",
+      "up": "Up",
+      "down": "Down"
+    },
+    "up_dropdown_only": {
+      "label": "Dropdown only"
+    },
+    "fg_title": {
+      "label": "Title"
+    },
+    "fg_show_reset": {
+      "label": "Show reset button"
+    },
+    "sml_selected_id": {
+      "label": "Selected ID"
+    },
+    "sml_title": {
+      "label": "Title"
+    },
+    "sml_enable_drag": {
+      "label": "Enable drag"
+    },
+    "sml_toggle_disabled": {
+      "label": "Toggle disabled"
+    },
+    "dfl_max_items": {
+      "label": "Max items"
+    },
+    "tcl_left_width": {
+      "label": "Left width"
+    },
+    "tcl_right_width": {
+      "label": "Right width"
+    },
+    "as_logo": {
+      "label": "Logo image URL"
+    },
+    "as_logo_alt": {
+      "label": "Logo alt text"
+    },
+    "as_collapsed": {
+      "label": "Collapsed state"
+    },
+    "as_current_locale": {
+      "label": "Current locale"
+    },
+    "af_copyright": {
+      "label": "Copyright text"
+    },
+    "af_version": {
+      "label": "Version"
+    },
+    "af_copyright_modal_id": {
+      "label": "Copyright modal ID"
+    },
+    "af_changelog_modal_id": {
+      "label": "Changelog modal ID"
+    },
+    "tt_auto_text": {
+      "label": "Auto mode text"
+    },
+    "tt_light_text": {
+      "label": "Light mode text"
+    },
+    "tt_dark_text": {
+      "label": "Dark mode text"
+    },
+    "nc_title_text": {
+      "label": "Title text"
+    },
+    "nc_empty_text": {
+      "label": "Empty list text"
+    },
+    "nc_mark_all_read_text": {
+      "label": "Mark all read text"
+    },
+    "nc_delete_all_text": {
+      "label": "Delete all text"
+    },
+    "nc_unread_only_text": {
+      "label": "Unread only text"
+    },
+    "nc_unread_only": {
+      "label": "Show unread only"
+    },
+    "nc_dropdown_align": {
+      "label": "Dropdown align",
+      "left": "Left",
+      "right": "Right"
+    },
+    "cs_trigger_label": {
+      "label": "Trigger label"
+    },
+    "cs_required_text": {
+      "label": "Required item text"
+    },
+    "cs_menu_title": {
+      "label": "Menu title"
+    },
+    "cs_menu_description": {
+      "label": "Menu description"
+    },
+    "cs_position": {
+      "label": "Menu position",
+      "left": "Left",
+      "right": "Right"
+    },
+    "cs_trigger_icon_name": {
+      "label": "Trigger icon"
+    },
+    "sh_title": {
+      "label": "Title"
+    },
+    "sh_description": {
+      "label": "Description"
+    }
+  },
+  "component": {
+    "h1": "Heading 1",
+    "h2": "Heading 2",
+    "h3": "Heading 3",
+    "p": "Paragraph",
+    "span": "Inline text",
+    "button": "Button",
+    "div": "Container",
+    "container": "Layout container",
+    "flex": "Flex",
+    "grid": "Grid",
+    "section_layout": "Section layout",
+    "card": "Card",
+    "table": "Table",
+    "page_header": "Page header",
+    "stat_card": "Stat card",
+    "form_field": "Form field",
+    "data_grid": "Data grid",
+    "h4": "Heading 4",
+    "a": "Link",
+    "img": "Image",
+    "icon": "Icon",
+    "hr": "Divider",
+    "ul": "List (unordered)",
+    "ol": "List (ordered)",
+    "li": "List item",
+    "nav": "Navigation",
+    "section": "Section",
+    "code": "Code",
+    "pre": "Preformatted",
+    "three_column_layout": "Three-column layout",
+    "badge": "Badge",
+    "status_badge": "Status badge",
+    "alert": "Alert",
+    "empty_state": "Empty state",
+    "loading_spinner": "Loading spinner",
+    "breadcrumb": "Breadcrumb",
+    "tab_navigation": "Tab navigation",
+    "tab_navigation_scroll": "Scroll tab navigation",
+    "toggle": "Toggle switch",
+    "input": "Input",
+    "textarea": "Textarea",
+    "label": "Label",
+    "select": "Select",
+    "checkbox": "Checkbox",
+    "radio_group": "Radio group",
+    "file_input": "File input",
+    "file_uploader": "File uploader",
+    "card_grid": "Card grid",
+    "pagination": "Pagination",
+    "search_bar": "Search bar",
+    "product_card": "Product card",
+    "template_card": "Template card",
+    "bar_chart": "Bar chart",
+    "donut_chart": "Donut chart",
+    "html_content": "HTML content",
+    "html_editor": "HTML editor",
+    "image_gallery": "Image gallery",
+    "form": "Form",
+    "accordion": "Accordion",
+    "icon_button": "Icon button",
+    "dropdown": "Dropdown",
+    "action_menu": "Action menu",
+    "tag_input": "Tag input",
+    "searchable_dropdown": "Searchable dropdown",
+    "rich_select": "Rich select",
+    "tag_select": "Tag select",
+    "icon_select": "Icon select",
+    "chip_checkbox": "Chip checkbox",
+    "multilingual_input": "Multilingual input",
+    "multilingual_tag_input": "Multilingual tag input",
+    "language_selector": "Language selector",
+    "permission_tree": "Permission tree",
+    "category_tree": "Category tree",
+    "extension_badge": "Extension badge",
+    "user_profile": "User profile",
+    "filter_group": "Filter group",
+    "sortable_menu_list": "Sortable menu list",
+    "dynamic_field_list": "Dynamic field list",
+    "td": "Table Cell",
+    "th": "Table Header Cell",
+    "admin_sidebar": "Admin Sidebar",
+    "admin_footer": "Admin Footer",
+    "theme_toggle": "Theme Toggle",
+    "notification_center": "Notification Center",
+    "column_selector": "Column Selector",
+    "section_header": "Section Header"
+  },
+  "action": {
+    "go_to_page": {
+      "label": "Go to another page",
+      "param_url": "Destination page"
+    },
+    "show_message": {
+      "label": "Show a message",
+      "param_text": "Message",
+      "param_tone": "Kind",
+      "tone_success": "Success",
+      "tone_error": "Error",
+      "tone_info": "Info"
+    },
+    "change_state": {
+      "label": "Change screen state",
+      "param_key": "State name",
+      "param_value": "Value"
+    },
+    "refresh_data": {
+      "label": "Refresh list",
+      "param_src": "Target data"
+    },
+    "call_server_then": {
+      "label": "Send to server then handle",
+      "param_endpoint": "Destination",
+      "param_on_success": "On success",
+      "param_on_error": "On error"
+    },
+    "set_locale": {
+      "label": "Change screen language",
+      "param_target": "Language",
+      "target_ko": "Korean",
+      "target_en": "English",
+      "target_ja": "Japanese"
+    },
+    "set_theme": {
+      "label": "Change screen theme",
+      "param_target": "Theme",
+      "target_auto": "Auto",
+      "target_light": "Light",
+      "target_dark": "Dark"
+    },
+    "scroll_to_section": {
+      "label": "Scroll to a section",
+      "param_section_id": "Section ID"
+    },
+    "set_date_range": {
+      "label": "Quick date range",
+      "param_preset": "Range",
+      "preset_today": "Today",
+      "preset_week": "This week",
+      "preset_month": "This month",
+      "preset_year": "This year"
+    },
+    "toggle_filter_visibility": {
+      "label": "Show/hide filter",
+      "param_filter_key": "Filter key"
+    },
+    "save_multilingual_tag": {
+      "label": "Save multilingual tag",
+      "param_tag": "Tag"
+    },
+    "init_theme": {
+      "label": "Initialize screen theme",
+      "param_target": "Theme",
+      "target_auto": "Auto",
+      "target_light": "Light",
+      "target_dark": "Dark"
+    },
+    "init_menu_from_url": {
+      "label": "Initialize menu from URL"
+    },
+    "init_filter_visibility": {
+      "label": "Initialize filter visibility"
+    }
+  },
+  "computed": {
+    "filter_default": {
+      "label": "Set a filter default",
+      "param_local_path": "Screen state path",
+      "param_query_key": "URL parameter name",
+      "param_fallback": "Default value"
+    },
+    "readonly_by_ability": {
+      "label": "Read-only when not permitted",
+      "param_source": "Data holding the permission",
+      "param_ability_key": "Permission name",
+      "param_require_route_id": "Apply only on edit screen"
+    },
+    "options_from_api": {
+      "label": "Build options from data",
+      "param_source": "Source data",
+      "param_filter": "Filter condition",
+      "param_value_field": "Field to use as value",
+      "param_label_field": "Field to display"
+    },
+    "constant": {
+      "label": "Set a fixed value",
+      "param_value_kind": "Value kind",
+      "value_kind_string": "Text",
+      "value_kind_number": "Number",
+      "value_kind_boolean": "True/false",
+      "param_value": "Value"
+    }
+  },
+  "error": {
+    "show_error_page": {
+      "label": "Show error page",
+      "param_target": "Display area"
+    },
+    "navigate": {
+      "label": "Send to another page",
+      "param_path": "Destination page"
+    },
+    "toast": {
+      "label": "Show a message",
+      "param_text": "Message"
+    },
+    "open_modal": {
+      "label": "Open a dialog",
+      "param_modal_id": "Dialog to open"
+    },
+    "set_state": {
+      "label": "Change screen state",
+      "param_target": "Target",
+      "param_state": "State value",
+      "param_merge": "Merge",
+      "param_key": "State name",
+      "param_value": "Value"
+    },
+    "sequence": {
+      "label": "Run actions in order",
+      "param_actions": "Actions to run"
+    },
+    "parallel": {
+      "label": "Run actions at once",
+      "param_actions": "Actions to run"
+    }
+  },
+  "loading": {
+    "loading_spinner": "Loading spinner",
+    "page_loading": "Page loading indicator"
+  },
+  "condition": {
+    "is_admin": "When admin",
+    "is_logged_in": "When logged in",
+    "is_saving": "When saving",
+    "not_saving": "When not saving",
+    "has_changes": "When there are changes",
+    "has_errors": "When there are errors",
+    "no_errors": "When no errors",
+    "ds_has_data": "When data exists",
+    "ds_empty": "When no data",
+    "ds_loading": "When loading data",
+    "field_equals": "When equals a value",
+    "field_not_equals": "When differs from a value",
+    "state_equals": "When screen state equals a value",
+    "is_edit_mode": "When editing (has ID)",
+    "is_create_mode": "When creating new",
+    "field_has_error": "When a field has an error",
+    "has_ability": "When this action is permitted",
+    "value_truthy": "When a value exists",
+    "value_falsy": "When a value is empty",
+    "list_non_empty": "When the list has items",
+    "list_empty": "When the list is empty",
+    "num_gt": "When a number is greater than",
+    "num_gte": "When a number is at least",
+    "num_lt": "When a number is less than",
+    "num_lte": "When a number is at most",
+    "value_is_true": "When a value is true",
+    "value_is_false": "When a value is false",
+    "value_not_false": "When a value is not false",
+    "value_not_true": "When a value is not true",
+    "value_defined": "When a value is defined",
+    "value_undefined": "When a value is undefined",
+    "value_not_null": "When a value is not null",
+    "value_is_null": "When a value is null",
+    "field_matches": "When two values are equal",
+    "field_differs": "When two values differ",
+    "param_src": "Data",
+    "param_field": "Field path",
+    "param_value": "Value",
+    "param_state_key": "State key",
+    "param_scope": "Permission scope",
+    "param_ability": "Ability key",
+    "param_path": "State/data path",
+    "param_number": "Threshold number",
+    "param_field_a": "First value path",
+    "param_field_b": "Second value path"
+  },
+  "state": {
+    "with_data": "Has data",
+    "empty_data": "No data",
+    "edit_existing": "Edit existing",
+    "create_mode": "New (create)",
+    "validation_failed": "Validation failed",
+    "page_detail_default": "Default",
+    "page_detail_attachments_open": "Attachments expanded",
+    "settings_general": "General tab",
+    "settings_seo": "SEO tab",
+    "settings_mail": "Mail tab",
+    "settings_upload": "Upload tab",
+    "settings_security": "Security tab",
+    "settings_drivers": "Drivers tab",
+    "settings_advanced": "Advanced tab",
+    "settings_notification_definitions": "Notification definitions tab",
+    "settings_language_packs": "Language packs tab",
+    "settings_identity": "Identity tab",
+    "settings_info": "Info tab",
+    "token_valid": "Token valid",
+    "token_invalid": "Token error",
+    "reset_success": "Reset complete",
+    "login_default": "Default",
+    "login_failed": "Login failed",
+    "forgot_default": "Input form",
+    "forgot_success": "Email sent",
+    "reply_mode": "Reply",
+    "challenge_text_code": "Code input",
+    "challenge_link": "Email link",
+    "challenge_external": "External auth",
+    "challenge_error": "Auth failed",
+    "test_mode_on": "Test mode",
+    "test_mode_off": "Live mode",
+    "order_detail_default": "Normal order",
+    "order_detail_partially_cancelled": "Partially cancelled",
+    "tab": {
+      "general": "General tab",
+      "basic_defaults": "Defaults tab",
+      "report_policy": "Report policy tab",
+      "spam_security": "Spam & security tab",
+      "seo": "SEO tab",
+      "notification_definitions": "Notification definitions tab",
+      "identity_policies": "Identity policy tab",
+      "basic_info": "Basic info tab",
+      "language_currency": "Language & currency tab",
+      "order_settings": "Order settings tab",
+      "claim": "Claims tab",
+      "shipping": "Shipping tab",
+      "review_settings": "Review settings tab",
+      "mileage": "Mileage tab",
+      "deposit": "Deposit tab",
+      "template_user": "User templates tab",
+      "template_admin": "Admin templates tab"
+    }
+  },
+  "cell_border": {
+    "side_all": "All",
+    "side_top": "Top",
+    "side_bottom": "Bottom",
+    "side_left": "Left",
+    "side_right": "Right",
+    "width_none": "None",
+    "width_thin": "Thin",
+    "width_medium": "Medium",
+    "width_thick": "Thick",
+    "color_gray": "Gray",
+    "color_gray_dark": "Dark gray",
+    "color_dark": "Black",
+    "color_blue": "Blue",
+    "color_red": "Red"
+  },
+  "cell_fill": {
+    "color_white": "White",
+    "color_gray": "Light Gray",
+    "color_gray_dark": "Gray",
+    "color_yellow": "Yellow",
+    "color_blue": "Blue",
+    "color_green": "Green",
+    "color_red": "Red"
+  },
+  "cell_padding": {
+    "step_none": "None",
+    "step_narrow": "Narrow",
+    "step_normal": "Normal",
+    "step_wide": "Wide"
+  },
+  "array_item": {
+    "tab": "tab",
+    "crumb": "crumb",
+    "menu_item": "menu item",
+    "column": "column",
+    "action": "button",
+    "card": "card",
+    "chart_label": "item",
+    "chart_slice": "slice",
+    "chart_dataset": "dataset",
+    "card_column": "column",
+    "option": "option"
+  },
+  "array_group": {
+    "chart_labels": "Item labels",
+    "chart_datasets": "Datasets"
+  },
+  "col_type": {
+    "input": "Input",
+    "number": "Number",
+    "select": "Select",
+    "textarea": "Textarea",
+    "multilingual": "Multilingual"
+  },
+  "array_field": {
+    "label": "Label",
+    "id": "ID",
+    "icon": "Icon",
+    "badge": "Badge",
+    "disabled": "Disabled",
+    "divider": "Divider",
+    "variant": "Variant",
+    "href": "Link",
+    "value": "Value",
+    "field": "Field",
+    "header": "Header",
+    "sortable": "Sortable",
+    "width": "Width",
+    "variant_default": "Default",
+    "variant_danger": "Danger",
+    "variant_primary": "Primary",
+    "variant_secondary": "Secondary",
+    "variant_ghost": "Ghost",
+    "chart_label": "Item name",
+    "chart_name": "Item name",
+    "chart_value": "Value",
+    "chart_color": "Color",
+    "chart_series": "Series name",
+    "chart_data": "Values",
+    "col_type": "Type",
+    "placeholder": "Placeholder"
+  },
+  "tabnav_inplace": {
+    "new_tab": "New tab",
+    "add": "Add tab",
+    "remove": "Remove tab",
+    "move_left": "Move left",
+    "move_right": "Move right"
+  },
+  "data_prop": {
+    "data": "Data",
+    "chart_data": "Chart data",
+    "tree_data": "Tree data",
+    "images": "Images",
+    "menu_items": "Menu items",
+    "items": "Items",
+    "filters": "Filters",
+    "suggestions": "Suggestions",
+    "datasets": "Datasets",
+    "tabs": "Tabs",
+    "breadcrumb_items": "Breadcrumb items",
+    "available_locales": "Available locales",
+    "user": "User",
+    "current_page": "Current page",
+    "total_pages": "Total pages",
+    "reactions": "Reactions",
+    "product": "Product",
+    "author": "Author",
+    "value": "Value",
+    "options": "Options",
+    "selected_tags": "Selected tags",
+    "selected_permissions": "Selected permissions",
+    "admin_sidebar_menu": "Sidebar menu",
+    "admin_footer_quick_links": "Quick links",
+    "notification_items": "Notification items",
+    "notification_unread_count": "Unread count",
+    "column_items": "Column items"
+  },
+  "state_label": {
+    "current_user": "Current user",
+    "current_user_name": "Current user name",
+    "current_user_email": "Current user email",
+    "current_user_id": "Current user ID",
+    "current_user_is_admin": "Is admin",
+    "site_name": "Site name",
+    "query_q": "Search query (URL)"
+  },
+  "data_source": {
+    "activityLogs": "Activity Logs",
+    "adminIdentityPolicies": "Admin Identity Policies",
+    "admin_menu": "Admin Menu",
+    "appKey": "App Key",
+    "auto_deactivated_banner": "Auto-deactivated Notice",
+    "availableChannels": "Available Channels",
+    "clone_source": "Clone Source",
+    "current_extension": "Current Extension",
+    "current_layout": "Current Layout",
+    "current_user": "Current User",
+    "dashboard_activities": "Dashboard Activities",
+    "dashboard_alerts": "Dashboard Alerts",
+    "dashboard_modules": "Dashboard Modules",
+    "dashboard_plugins": "Dashboard Plugins",
+    "dashboard_recent_notifications": "Dashboard Recent Notifications",
+    "dashboard_stats": "Dashboard Stats",
+    "dashboard_stats_ws": "Dashboard Stats (Live)",
+    "dashboard_templates": "Dashboard Templates",
+    "extension_versions": "Extension Versions",
+    "identityLogs": "Identity Logs",
+    "identityMessages": "Identity Messages",
+    "identityProviders": "Identity Providers",
+    "identityPurposes": "Identity Purposes",
+    "installed_modules": "Installed Modules",
+    "installed_plugins": "Installed Plugins",
+    "items": "Items",
+    "language_pack_changelog": "Language Pack Changelog",
+    "language_pack_detail": "Language Pack Detail",
+    "language_packs": "Language Packs",
+    "layout_extensions": "Layout Extensions",
+    "layout_files": "Layout Files",
+    "layout_versions": "Layout Versions",
+    "menus": "Menus",
+    "moduleDetail": "Module Detail",
+    "moduleInstallPreview": "Module Install Preview",
+    "modules": "Modules",
+    "notificationChannels": "Notification Channels",
+    "notificationDefinitions": "Notification Definitions",
+    "notificationLogs": "Notification Logs",
+    "notification_unread_count": "Unread Notification Count",
+    "notification_ws": "Notifications (Live)",
+    "notifications": "Notifications",
+    "permissions": "Permissions",
+    "pluginDetail": "Plugin Detail",
+    "pluginInstallPreview": "Plugin Install Preview",
+    "plugins": "Plugins",
+    "policies": "Policies",
+    "role": "Role",
+    "role_check": "Role Check",
+    "roles": "Roles",
+    "schedule_history": "Schedule History",
+    "schedules": "Schedules",
+    "settings": "Settings",
+    "systemInfo": "System Info",
+    "templateDetail": "Template Detail",
+    "templateInstallPreview": "Template Install Preview",
+    "template_info": "Template Info",
+    "templates": "Templates",
+    "tokenValidation": "Token Validation",
+    "user": "User",
+    "users": "Users"
+  }
+}

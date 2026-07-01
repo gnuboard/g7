@@ -7,7 +7,9 @@ use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
+use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Extension\HookManager;
 use App\Models\Template;
 use App\Repositories\TemplateRepository;
 use App\Services\TemplateService;
@@ -65,7 +67,8 @@ class TemplateServiceLanguageMergeTest extends TestCase
             $this->templateRepository,
             $this->templateManager,
             $this->moduleManager,
-            $this->pluginManager
+            $this->pluginManager,
+            app(LayoutVersionRepositoryInterface::class)
         );
     }
 
@@ -341,5 +344,193 @@ class TemplateServiceLanguageMergeTest extends TestCase
             '관리자 메뉴에 추가되었습니다.',
             $result['data']['sirsoft-board']['messages']['boards']['menu_added_success']
         );
+    }
+
+    /**
+     * 코어 프론트엔드 다국어 자원(`lang/{locale}.json`)이 베이스 레이어로 병합되어
+     * 어떤 템플릿이 부팅되든 `core.*` 키가 응답에 포함되는지 검증.
+     */
+    public function test_core_frontend_lang_data_is_loaded_as_base_layer(): void
+    {
+        $identifier = 'sirsoft-admin_basic';
+        $locale = 'ko';
+
+        Template::create([
+            'identifier' => $identifier,
+            'vendor' => 'sirsoft',
+            'name' => 'Admin Basic',
+            'type' => 'admin',
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+
+        $this->templateManager
+            ->shouldReceive('getTemplateInfo')
+            ->with($identifier)
+            ->andReturn([
+                'identifier' => $identifier,
+                'locales' => ['ko', 'en'],
+            ]);
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([]);
+        $this->pluginManager->shouldReceive('getActivePlugins')->andReturn([]);
+
+        $result = $this->templateService->getLanguageDataWithModules($identifier, $locale);
+
+        $this->assertTrue($result['success']);
+        $this->assertIsArray($result['data']);
+        // 코어 프론트엔드 키가 베이스로 병합됨
+        $this->assertArrayHasKey('core', $result['data']);
+        $this->assertArrayHasKey('errors', $result['data']['core']);
+        // 한국어 번역 확인
+        $this->assertEquals(
+            '활성화된 템플릿이 없습니다',
+            $result['data']['core']['errors']['template_not_found']
+        );
+        // 템플릿 키도 동시에 존재
+        $this->assertArrayHasKey('auth', $result['data']);
+    }
+
+    /**
+     * en 로케일에서도 코어 프론트엔드 키가 영어로 해석되는지 검증.
+     */
+    public function test_core_frontend_lang_data_resolved_in_english_locale(): void
+    {
+        $identifier = 'sirsoft-admin_basic';
+        $locale = 'en';
+
+        Template::create([
+            'identifier' => $identifier,
+            'vendor' => 'sirsoft',
+            'name' => 'Admin Basic',
+            'type' => 'admin',
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+
+        $this->templateManager
+            ->shouldReceive('getTemplateInfo')
+            ->with($identifier)
+            ->andReturn([
+                'identifier' => $identifier,
+                'locales' => ['ko', 'en'],
+            ]);
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([]);
+        $this->pluginManager->shouldReceive('getActivePlugins')->andReturn([]);
+
+        $result = $this->templateService->getLanguageDataWithModules($identifier, $locale);
+
+        $this->assertTrue($result['success']);
+        $this->assertEquals(
+            'No active template found',
+            $result['data']['core']['errors']['template_not_found']
+        );
+    }
+
+    /**
+     * 결함 A 회귀 테스트.
+     *
+     * 코어의 `layout_editor.chrome.*` 가 살아남으면서 sirsoft-basic 템플릿이 자체
+     * 정의한 `layout_editor.palette.*` 도 동시에 노출되어야 한다. 과거 array_merge
+     * shallow 는 템플릿 partial 의 `layout_editor` 가 코어 `layout_editor` 를 통째
+     * 덮어써서 chrome/device/zoom/save 키가 누락되었다.
+     */
+    public function test_deep_merge_preserves_core_layout_editor_chrome_when_template_defines_palette(): void
+    {
+        $identifier = 'sirsoft-basic';
+        $locale = 'ko';
+
+        Template::create([
+            'identifier' => $identifier,
+            'vendor' => 'sirsoft',
+            'name' => 'Basic',
+            'type' => 'user',
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+
+        $this->templateManager
+            ->shouldReceive('getTemplateInfo')
+            ->with($identifier)
+            ->andReturn([
+                'identifier' => $identifier,
+                'locales' => ['ko', 'en'],
+            ]);
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([]);
+        $this->pluginManager->shouldReceive('getActivePlugins')->andReturn([]);
+
+        $result = $this->templateService->getLanguageDataWithModules($identifier, $locale);
+
+        $this->assertTrue($result['success']);
+        $this->assertIsArray($result['data']);
+        $this->assertArrayHasKey('layout_editor', $result['data']);
+
+        // 코어의 chrome / device / zoom / preview / save 키가 모두 살아남아야 함
+        $layoutEditor = $result['data']['layout_editor'];
+        $this->assertArrayHasKey('chrome', $layoutEditor, 'core layout_editor.chrome 누락');
+        $this->assertArrayHasKey('device', $layoutEditor, 'core layout_editor.device 누락');
+        $this->assertArrayHasKey('zoom', $layoutEditor, 'core layout_editor.zoom 누락');
+        $this->assertArrayHasKey('preview', $layoutEditor, 'core layout_editor.preview 누락');
+        $this->assertArrayHasKey('save', $layoutEditor, 'core layout_editor.save 누락');
+
+        // 동시에 템플릿이 정의한 palette 트리도 그대로 노출
+        $this->assertArrayHasKey('palette', $layoutEditor, 'template layout_editor.palette 누락');
+        $this->assertIsArray($layoutEditor['palette']);
+    }
+
+    /**
+     * deep merge — 양쪽이 assoc 일 때 leaf 병합 + 충돌 leaf 는 뒤가 우선.
+     */
+    public function test_deep_merge_recursive_leaf_resolution(): void
+    {
+        $identifier = 'sirsoft-admin_basic';
+        $locale = 'ko';
+
+        Template::create([
+            'identifier' => $identifier,
+            'vendor' => 'sirsoft',
+            'name' => 'Admin Basic',
+            'type' => 'admin',
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+
+        $this->templateManager
+            ->shouldReceive('getTemplateInfo')
+            ->with($identifier)
+            ->andReturn([
+                'identifier' => $identifier,
+                'locales' => ['ko', 'en'],
+            ]);
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([]);
+        $this->pluginManager->shouldReceive('getActivePlugins')->andReturn([]);
+
+        // template.language.merge 훅으로 인공적인 deep merge 검증 입력 합류
+        $overrideCallback = function ($data) {
+            return array_replace_recursive($data, [
+                'core' => [
+                    'errors' => [
+                        'template_not_found' => '<<HOOK_OVERRIDE>>',
+                    ],
+                ],
+            ]);
+        };
+        HookManager::addFilter('template.language.merge', $overrideCallback);
+
+        $result = $this->templateService->getLanguageDataWithModules($identifier, $locale);
+
+        HookManager::removeFilter('template.language.merge', $overrideCallback);
+
+        $this->assertTrue($result['success']);
+        $this->assertEquals(
+            '<<HOOK_OVERRIDE>>',
+            $result['data']['core']['errors']['template_not_found']
+        );
+        // 동시에 같은 core.errors 트리의 다른 leaf 는 코어 값이 살아남아야 함
+        // (deep merge 검증 — 충돌 leaf 만 override, 동기 트리의 다른 형제는 보존)
+        $this->assertArrayHasKey('layout_load_failed', $result['data']['core']['errors']);
     }
 }

@@ -1,0 +1,1401 @@
+{
+  "comment": "entries 의 모든 사용자 가시 문자열은 다국어 키 ($t:layout_editor.palette.<component>.<key>) 사용. admin 템플릿은 Tailwind 디자인 시스템 사용 — className 토큰 적용. 다른 템플릿은 자기 CSS 시스템에 맞춰 inline style 또는 다른 토큰을 사용한다.",
+  "groups": [
+    {
+      "label": "$t:layout_editor.palette.group.design",
+      "kind": "design",
+      "components": [
+        "Div",
+        "Container",
+        "Flex",
+        "Grid",
+        "SectionLayout",
+        "ThreeColumnLayout",
+        "Section",
+        "Span",
+        "P",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "A",
+        "Button",
+        "Img",
+        "Icon",
+        "Hr",
+        "Ul",
+        "Ol",
+        "Li",
+        "Nav",
+        "Code",
+        "Pre",
+        "Card",
+        "Badge",
+        "StatusBadge",
+        "Alert",
+        "EmptyState",
+        "LoadingSpinner",
+        "PageHeader",
+        "SectionHeader",
+        "Breadcrumb",
+        "TabNavigation",
+        "TabNavigationScroll",
+        "Toggle",
+        "Accordion",
+        "FormField",
+        "Form",
+        "Table",
+        "Input",
+        "Textarea",
+        "Label",
+        "Select",
+        "Checkbox",
+        "RadioGroup",
+        "FileInput",
+        "FileUploader",
+        "HtmlContent",
+        "HtmlEditor",
+        "IconButton",
+        "Dropdown",
+        "ActionMenu",
+        "TagInput",
+        "SearchableDropdown",
+        "RichSelect",
+        "TagSelect",
+        "IconSelect",
+        "ChipCheckbox",
+        "MultilingualInput",
+        "MultilingualTagInput",
+        "LanguageSelector"
+      ]
+    },
+    {
+      "label": "$t:layout_editor.palette.group.db",
+      "kind": "data",
+      "components": [
+        "DataGrid",
+        "CardGrid",
+        "Pagination",
+        "SearchBar",
+        "StatCard",
+        "ProductCard",
+        "TemplateCard",
+        "BarChart",
+        "DonutChart",
+        "ImageGallery",
+        "PermissionTree",
+        "CategoryTree",
+        "ExtensionBadge",
+        "UserProfile",
+        "FilterGroup",
+        "SortableMenuList",
+        "DynamicFieldList"
+      ]
+    }
+  ],
+  "entries": {
+    "Div": {
+      "label": "$t:layout_editor.palette.div.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "Container": {
+      "label": "$t:layout_editor.palette.container.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "Container",
+        "props": {
+          "className": "min-h-[60px] p-4"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "text": "$t:layout_editor.palette.container.default_child_text"
+          }
+        ]
+      }
+    },
+    "Flex": {
+      "label": "$t:layout_editor.palette.flex.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "Flex",
+        "props": {
+          "className": "flex flex-wrap gap-3 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "Grid": {
+      "label": "$t:layout_editor.palette.grid.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "Grid",
+        "props": {
+          "className": "grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "SectionLayout": {
+      "label": "$t:layout_editor.palette.section_layout.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "SectionLayout",
+        "props": {
+          "className": "min-h-[80px] p-4 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "ThreeColumnLayout": {
+      "label": "$t:layout_editor.palette.three_column_layout.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "ThreeColumnLayout",
+        "props": {
+          "className": "min-h-[80px] p-4 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "Section": {
+      "label": "$t:layout_editor.palette.section.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Section",
+        "props": {
+          "className": "min-h-[40px] p-4 sm:p-6 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "Span": {
+      "label": "$t:layout_editor.palette.span.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Span",
+        "props": {
+          "className": "font-semibold text-gray-900 dark:text-white"
+        },
+        "text": "$t:layout_editor.palette.span.default_text"
+      }
+    },
+    "P": {
+      "label": "$t:layout_editor.palette.p.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "P",
+        "props": {
+          "className": "text-sm text-gray-500 dark:text-gray-400"
+        },
+        "text": "$t:layout_editor.palette.p.default_text"
+      }
+    },
+    "H1": {
+      "label": "$t:layout_editor.palette.h1.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "H1",
+        "props": {
+          "className": "text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white"
+        },
+        "text": "$t:layout_editor.palette.h1.default_text"
+      }
+    },
+    "H2": {
+      "label": "$t:layout_editor.palette.h2.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "H2",
+        "props": {
+          "className": "text-lg font-semibold text-gray-900 dark:text-white"
+        },
+        "text": "$t:layout_editor.palette.h2.default_text"
+      }
+    },
+    "H3": {
+      "label": "$t:layout_editor.palette.h3.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "H3",
+        "props": {
+          "className": "text-base font-semibold text-slate-900 dark:text-white"
+        },
+        "text": "$t:layout_editor.palette.h3.default_text"
+      }
+    },
+    "H4": {
+      "label": "$t:layout_editor.palette.h4.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "H4",
+        "props": {
+          "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+        },
+        "text": "$t:layout_editor.palette.h4.default_text"
+      }
+    },
+    "A": {
+      "label": "$t:layout_editor.palette.a.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "A",
+        "props": {
+          "href": "#",
+          "className": "text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+        },
+        "text": "$t:layout_editor.palette.a.default_text"
+      }
+    },
+    "Button": {
+      "label": "$t:layout_editor.palette.button.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        },
+        "text": "$t:layout_editor.palette.button.default_text"
+      }
+    },
+    "Img": {
+      "label": "$t:layout_editor.palette.img.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Img",
+        "props": {
+          "src": "https://via.placeholder.com/200x120",
+          "alt": "$t:layout_editor.palette.img.default_alt",
+          "className": "w-full h-auto object-cover"
+        }
+      }
+    },
+    "Icon": {
+      "label": "$t:layout_editor.palette.icon.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Icon",
+        "props": {
+          "name": "star",
+          "size": "md"
+        }
+      }
+    },
+    "Hr": {
+      "label": "$t:layout_editor.palette.hr.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Hr",
+        "props": {
+          "className": "my-3 border-t border-gray-200 dark:border-gray-700"
+        }
+      }
+    },
+    "Ul": {
+      "label": "$t:layout_editor.palette.ul.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Ul",
+        "props": {
+          "className": "mt-2 list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Li",
+            "text": "$t:layout_editor.palette.ul.default_item_text"
+          }
+        ]
+      }
+    },
+    "Ol": {
+      "label": "$t:layout_editor.palette.ol.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Ol",
+        "props": {
+          "className": "mt-2 list-decimal list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Li",
+            "text": "$t:layout_editor.palette.ol.default_item_text"
+          }
+        ]
+      }
+    },
+    "Li": {
+      "label": "$t:layout_editor.palette.li.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Li",
+        "props": {
+          "className": "text-sm text-gray-700 dark:text-gray-300"
+        },
+        "text": "$t:layout_editor.palette.li.default_text"
+      }
+    },
+    "Nav": {
+      "label": "$t:layout_editor.palette.nav.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Nav",
+        "props": {
+          "className": "flex gap-3"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "A",
+            "props": {
+              "href": "#",
+              "className": "text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+            },
+            "text": "$t:layout_editor.palette.nav.default_item_text"
+          }
+        ]
+      }
+    },
+    "Code": {
+      "label": "$t:layout_editor.palette.code.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Code",
+        "props": {
+          "className": "px-1.5 py-0.5 bg-gray-100 dark:bg-gray-900 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
+        },
+        "text": "$t:layout_editor.palette.code.default_text"
+      }
+    },
+    "Pre": {
+      "label": "$t:layout_editor.palette.pre.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Pre",
+        "props": {
+          "className": "whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-mono leading-relaxed p-3 bg-gray-100 dark:bg-gray-900 rounded overflow-auto"
+        },
+        "text": "$t:layout_editor.palette.pre.default_text"
+      }
+    },
+    "Card": {
+      "label": "$t:layout_editor.palette.card.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Card",
+        "props": {
+          "title": "$t:layout_editor.palette.card.default_title"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "text": "$t:layout_editor.palette.card.default_body"
+          }
+        ]
+      }
+    },
+    "Badge": {
+      "label": "$t:layout_editor.palette.badge.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Badge",
+        "props": {
+          "variant": "default"
+        },
+        "text": "$t:layout_editor.palette.badge.default_text"
+      }
+    },
+    "StatusBadge": {
+      "label": "$t:layout_editor.palette.status_badge.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "StatusBadge",
+        "props": {
+          "status": "active",
+          "label": "$t:layout_editor.palette.status_badge.default_label"
+        }
+      }
+    },
+    "Alert": {
+      "label": "$t:layout_editor.palette.alert.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Alert",
+        "props": {
+          "type": "info",
+          "message": "$t:layout_editor.palette.alert.default_message"
+        }
+      }
+    },
+    "EmptyState": {
+      "label": "$t:layout_editor.palette.empty_state.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "EmptyState",
+        "props": {
+          "title": "$t:layout_editor.palette.empty_state.default_title",
+          "description": "$t:layout_editor.palette.empty_state.default_description"
+        }
+      }
+    },
+    "LoadingSpinner": {
+      "label": "$t:layout_editor.palette.loading_spinner.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "LoadingSpinner",
+        "props": {
+          "size": "md"
+        }
+      }
+    },
+    "PageHeader": {
+      "label": "$t:layout_editor.palette.page_header.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "PageHeader",
+        "props": {
+          "title": "$t:layout_editor.palette.page_header.default_title",
+          "subtitle": "$t:layout_editor.palette.page_header.default_subtitle"
+        }
+      }
+    },
+    "SectionHeader": {
+      "label": "$t:layout_editor.palette.section_header.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "SectionHeader",
+        "props": {
+          "title": "$t:layout_editor.palette.section_header.default_title",
+          "description": "$t:layout_editor.palette.section_header.default_description"
+        }
+      }
+    },
+    "Breadcrumb": {
+      "label": "$t:layout_editor.palette.breadcrumb.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Breadcrumb",
+        "props": {
+          "items": [
+            {
+              "label": "$t:layout_editor.palette.breadcrumb.default_item1_label",
+              "href": "/"
+            },
+            {
+              "label": "$t:layout_editor.palette.breadcrumb.default_item2_label"
+            }
+          ]
+        }
+      }
+    },
+    "TabNavigation": {
+      "label": "$t:layout_editor.palette.tab_navigation.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "TabNavigation",
+        "props": {
+          "tabs": [
+            {
+              "key": "tab1",
+              "label": "$t:layout_editor.palette.tab_navigation.default_tab1_label"
+            },
+            {
+              "key": "tab2",
+              "label": "$t:layout_editor.palette.tab_navigation.default_tab2_label"
+            }
+          ]
+        }
+      }
+    },
+    "TabNavigationScroll": {
+      "label": "$t:layout_editor.palette.tab_navigation_scroll.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "TabNavigationScroll",
+        "props": {
+          "tabs": [
+            {
+              "key": "tab1",
+              "label": "$t:layout_editor.palette.tab_navigation_scroll.default_tab1_label"
+            },
+            {
+              "key": "tab2",
+              "label": "$t:layout_editor.palette.tab_navigation_scroll.default_tab2_label"
+            }
+          ]
+        }
+      }
+    },
+    "Toggle": {
+      "label": "$t:layout_editor.palette.toggle.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Toggle",
+        "props": {
+          "label": "$t:layout_editor.palette.toggle.default_label",
+          "checked": false
+        }
+      }
+    },
+    "FormField": {
+      "label": "$t:layout_editor.palette.form_field.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "FormField",
+        "props": {
+          "label": "$t:layout_editor.palette.form_field.default_label"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Input",
+            "props": {
+              "type": "text"
+            }
+          }
+        ]
+      }
+    },
+    "Input": {
+      "label": "$t:layout_editor.palette.input.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Input",
+        "props": {
+          "type": "text",
+          "placeholder": "$t:layout_editor.palette.input.default_placeholder",
+          "className": "input"
+        }
+      }
+    },
+    "Textarea": {
+      "label": "$t:layout_editor.palette.textarea.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Textarea",
+        "props": {
+          "rows": 4,
+          "placeholder": "$t:layout_editor.palette.textarea.default_placeholder",
+          "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+        }
+      }
+    },
+    "Label": {
+      "label": "$t:layout_editor.palette.label.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Label",
+        "props": {
+          "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        },
+        "text": "$t:layout_editor.palette.label.default_text"
+      }
+    },
+    "Select": {
+      "label": "$t:layout_editor.palette.select.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Select",
+        "props": {
+          "className": "w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+          "value": "{{_local.selectValue ?? ''}}",
+          "options": [
+            {
+              "value": "1",
+              "label": "$t:layout_editor.palette.select.default_option1_label"
+            },
+            {
+              "value": "2",
+              "label": "$t:layout_editor.palette.select.default_option2_label"
+            }
+          ]
+        },
+        "actions": [
+          {
+            "type": "change",
+            "handler": "setState",
+            "target": "local",
+            "params": {
+              "selectValue": "{{$event.target.value}}"
+            }
+          }
+        ]
+      }
+    },
+    "Checkbox": {
+      "label": "$t:layout_editor.palette.checkbox.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Checkbox",
+        "props": {
+          "label": "$t:layout_editor.palette.checkbox.default_label",
+          "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500"
+        }
+      }
+    },
+    "RadioGroup": {
+      "label": "$t:layout_editor.palette.radio_group.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "RadioGroup",
+        "props": {
+          "options": [
+            {
+              "value": "1",
+              "label": "$t:layout_editor.palette.radio_group.default_option1_label"
+            },
+            {
+              "value": "2",
+              "label": "$t:layout_editor.palette.radio_group.default_option2_label"
+            }
+          ]
+        }
+      }
+    },
+    "FileInput": {
+      "label": "$t:layout_editor.palette.file_input.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "FileInput",
+        "props": {
+          "accept": "*/*",
+          "className": "block w-full text-sm text-gray-700 dark:text-gray-300"
+        }
+      }
+    },
+    "FileUploader": {
+      "label": "$t:layout_editor.palette.file_uploader.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "FileUploader",
+        "props": {
+          "label": "$t:layout_editor.palette.file_uploader.default_label"
+        }
+      }
+    },
+    "HtmlContent": {
+      "label": "$t:layout_editor.palette.html_content.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "HtmlContent",
+        "props": {
+          "content": "$t:layout_editor.palette.html_content.default_text",
+          "isHtml": false,
+          "className": "prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"
+        }
+      }
+    },
+    "HtmlEditor": {
+      "label": "$t:layout_editor.palette.html_editor.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "HtmlEditor",
+        "props": {
+          "value": "",
+          "placeholder": "$t:layout_editor.palette.html_editor.default_placeholder"
+        }
+      }
+    },
+    "DataGrid": {
+      "label": "$t:layout_editor.palette.data_grid.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "DataGrid",
+        "props": {
+          "columns": [
+            {
+              "field": "id",
+              "header": "$t:layout_editor.palette.data_grid.default_column_id_label"
+            },
+            {
+              "field": "name",
+              "header": "$t:layout_editor.palette.data_grid.default_column_name_label"
+            }
+          ],
+          "data": []
+        }
+      }
+    },
+    "CardGrid": {
+      "label": "$t:layout_editor.palette.card_grid.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "CardGrid",
+        "props": {
+          "items": []
+        }
+      }
+    },
+    "Pagination": {
+      "label": "$t:layout_editor.palette.pagination.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Pagination",
+        "props": {
+          "total": 100,
+          "perPage": 10,
+          "currentPage": 1
+        }
+      }
+    },
+    "SearchBar": {
+      "label": "$t:layout_editor.palette.search_bar.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "SearchBar",
+        "props": {
+          "placeholder": "$t:layout_editor.palette.search_bar.default_placeholder",
+          "className": "w-64"
+        }
+      }
+    },
+    "StatCard": {
+      "label": "$t:layout_editor.palette.stat_card.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "StatCard",
+        "props": {
+          "title": "$t:layout_editor.palette.stat_card.default_title",
+          "value": "0"
+        }
+      }
+    },
+    "ProductCard": {
+      "label": "$t:layout_editor.palette.product_card.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ProductCard",
+        "props": {
+          "title": "$t:layout_editor.palette.product_card.default_name",
+          "price": 10000,
+          "imageUrl": "https://via.placeholder.com/240"
+        }
+      }
+    },
+    "TemplateCard": {
+      "label": "$t:layout_editor.palette.template_card.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "TemplateCard",
+        "props": {
+          "template": {
+            "id": "sample",
+            "name": "$t:layout_editor.palette.template_card.default_name",
+            "description": "$t:layout_editor.palette.template_card.default_description"
+          }
+        }
+      }
+    },
+    "BarChart": {
+      "label": "$t:layout_editor.palette.bar_chart.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "BarChart",
+        "props": {
+          "labels": [
+            "$t:layout_editor.palette.bar_chart.default_label1",
+            "$t:layout_editor.palette.bar_chart.default_label2"
+          ],
+          "datasets": [
+            {
+              "label": "$t:layout_editor.palette.bar_chart.label",
+              "data": [30, 70]
+            }
+          ]
+        }
+      }
+    },
+    "DonutChart": {
+      "label": "$t:layout_editor.palette.donut_chart.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "DonutChart",
+        "props": {
+          "data": [
+            {
+              "name": "$t:layout_editor.palette.donut_chart.default_label1",
+              "value": 40,
+              "color": "#8B5CF6"
+            },
+            {
+              "name": "$t:layout_editor.palette.donut_chart.default_label2",
+              "value": 60,
+              "color": "#EC4899"
+            }
+          ]
+        }
+      }
+    },
+    "ImageGallery": {
+      "label": "$t:layout_editor.palette.image_gallery.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ImageGallery",
+        "props": {
+          "images": [
+            {
+              "src": "https://via.placeholder.com/200",
+              "alt": "$t:layout_editor.palette.image_gallery.default_alt1"
+            },
+            {
+              "src": "https://via.placeholder.com/200",
+              "alt": "$t:layout_editor.palette.image_gallery.default_alt2"
+            }
+          ]
+        }
+      }
+    },
+    "Form": {
+      "label": "$t:layout_editor.palette.form.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Form",
+        "props": {
+          "className": "space-y-6"
+        },
+        "children": [
+          {
+            "type": "composite",
+            "name": "FormField",
+            "props": {
+              "label": "$t:layout_editor.palette.form.default_label_text"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Input",
+                "props": {
+                  "type": "text",
+                  "className": "input"
+                }
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Button",
+            "props": {
+              "type": "submit",
+              "className": "w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            },
+            "text": "$t:layout_editor.palette.form.default_submit_text"
+          }
+        ]
+      }
+    },
+    "Table": {
+      "label": "$t:layout_editor.palette.table.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Table",
+        "props": {
+          "className": "w-full text-sm text-left text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 border-collapse"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Thead",
+            "props": {
+              "className": "bg-gray-50 dark:bg-gray-800"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Tr",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Th",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700 font-semibold"
+                    },
+                    "text": "$t:layout_editor.palette.table.header_1"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Th",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700 font-semibold"
+                    },
+                    "text": "$t:layout_editor.palette.table.header_2"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Tbody",
+            "children": [
+              {
+                "type": "basic",
+                "name": "Tr",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Td",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:layout_editor.palette.table.cell"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Td",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:layout_editor.palette.table.cell"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "Tr",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Td",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:layout_editor.palette.table.cell"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Td",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:layout_editor.palette.table.cell"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "Accordion": {
+      "label": "$t:layout_editor.palette.accordion.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Accordion",
+        "props": {
+          "defaultOpen": false,
+          "className": "border border-gray-200 dark:border-gray-700 rounded-lg"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "p-4 text-sm text-gray-700 dark:text-gray-300"
+            },
+            "text": "$t:layout_editor.palette.accordion.default_body"
+          }
+        ]
+      }
+    },
+    "IconButton": {
+      "label": "$t:layout_editor.palette.icon_button.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "IconButton",
+        "props": {
+          "iconName": "ellipsis-vertical",
+          "label": "$t:layout_editor.palette.icon_button.default_label",
+          "variant": "ghost",
+          "size": "md"
+        }
+      }
+    },
+    "Dropdown": {
+      "label": "$t:layout_editor.palette.dropdown.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Dropdown",
+        "props": {
+          "label": "$t:layout_editor.palette.dropdown.default_label",
+          "items": [
+            {
+              "value": "1",
+              "label": "$t:layout_editor.palette.dropdown.default_item1_label"
+            },
+            {
+              "value": "2",
+              "label": "$t:layout_editor.palette.dropdown.default_item2_label"
+            }
+          ]
+        }
+      }
+    },
+    "ActionMenu": {
+      "label": "$t:layout_editor.palette.action_menu.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ActionMenu",
+        "props": {
+          "triggerLabel": "$t:layout_editor.palette.action_menu.default_trigger_label",
+          "items": [
+            {
+              "id": "edit",
+              "label": "$t:layout_editor.palette.action_menu.default_item1_label",
+              "iconName": "pen"
+            },
+            {
+              "id": "delete",
+              "label": "$t:layout_editor.palette.action_menu.default_item2_label",
+              "iconName": "trash"
+            }
+          ]
+        }
+      }
+    },
+    "TagInput": {
+      "label": "$t:layout_editor.palette.tag_input.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "TagInput",
+        "props": {
+          "value": [],
+          "options": [
+            {
+              "value": "1",
+              "label": "$t:layout_editor.palette.tag_input.default_option1_label"
+            },
+            {
+              "value": "2",
+              "label": "$t:layout_editor.palette.tag_input.default_option2_label"
+            }
+          ],
+          "placeholder": "$t:layout_editor.palette.tag_input.default_placeholder"
+        }
+      }
+    },
+    "SearchableDropdown": {
+      "label": "$t:layout_editor.palette.searchable_dropdown.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "SearchableDropdown",
+        "props": {
+          "value": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "$t:layout_editor.palette.searchable_dropdown.default_option1_label"
+            },
+            {
+              "value": "2",
+              "label": "$t:layout_editor.palette.searchable_dropdown.default_option2_label"
+            }
+          ],
+          "searchPlaceholder": "$t:layout_editor.palette.searchable_dropdown.default_search_placeholder"
+        }
+      }
+    },
+    "RichSelect": {
+      "label": "$t:layout_editor.palette.rich_select.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "RichSelect",
+        "props": {
+          "value": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "$t:layout_editor.palette.rich_select.default_option1_label"
+            },
+            {
+              "value": "2",
+              "label": "$t:layout_editor.palette.rich_select.default_option2_label"
+            }
+          ],
+          "placeholder": "$t:layout_editor.palette.rich_select.default_placeholder"
+        }
+      }
+    },
+    "TagSelect": {
+      "label": "$t:layout_editor.palette.tag_select.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "TagSelect",
+        "props": {
+          "value": [],
+          "options": [
+            {
+              "value": "1",
+              "label": "$t:layout_editor.palette.tag_select.default_option1_label"
+            },
+            {
+              "value": "2",
+              "label": "$t:layout_editor.palette.tag_select.default_option2_label"
+            }
+          ],
+          "placeholder": "$t:layout_editor.palette.tag_select.default_placeholder"
+        }
+      }
+    },
+    "IconSelect": {
+      "label": "$t:layout_editor.palette.icon_select.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "IconSelect",
+        "props": {
+          "value": "",
+          "placeholder": "$t:layout_editor.palette.icon_select.default_placeholder",
+          "searchPlaceholder": "$t:layout_editor.palette.icon_select.default_search_placeholder"
+        }
+      }
+    },
+    "ChipCheckbox": {
+      "label": "$t:layout_editor.palette.chip_checkbox.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ChipCheckbox",
+        "props": {
+          "value": "1",
+          "checked": false,
+          "label": "$t:layout_editor.palette.chip_checkbox.default_label"
+        }
+      }
+    },
+    "MultilingualInput": {
+      "label": "$t:layout_editor.palette.multilingual_input.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "MultilingualInput",
+        "props": {
+          "value": {},
+          "inputType": "text",
+          "placeholder": "$t:layout_editor.palette.multilingual_input.default_placeholder"
+        }
+      }
+    },
+    "MultilingualTagInput": {
+      "label": "$t:layout_editor.palette.multilingual_tag_input.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "MultilingualTagInput",
+        "props": {
+          "value": {},
+          "placeholder": "$t:layout_editor.palette.multilingual_tag_input.default_placeholder"
+        }
+      }
+    },
+    "LanguageSelector": {
+      "label": "$t:layout_editor.palette.language_selector.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "LanguageSelector",
+        "props": {
+          "inline": true
+        }
+      }
+    },
+    "PermissionTree": {
+      "label": "$t:layout_editor.palette.permission_tree.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "PermissionTree",
+        "props": {
+          "data": [],
+          "value": []
+        }
+      }
+    },
+    "CategoryTree": {
+      "label": "$t:layout_editor.palette.category_tree.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "CategoryTree",
+        "props": {
+          "data": [
+            {
+              "id": 1,
+              "name": "$t:layout_editor.palette.category_tree.sample_node1",
+              "products_count": 12,
+              "children": [
+                {
+                  "id": 2,
+                  "name": "$t:layout_editor.palette.category_tree.sample_node2",
+                  "products_count": 5,
+                  "children": []
+                }
+              ]
+            }
+          ],
+          "selectable": true
+        }
+      }
+    },
+    "ExtensionBadge": {
+      "label": "$t:layout_editor.palette.extension_badge.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ExtensionBadge",
+        "props": {
+          "type": "module",
+          "name": "$t:layout_editor.palette.extension_badge.default_name"
+        }
+      }
+    },
+    "UserProfile": {
+      "label": "$t:layout_editor.palette.user_profile.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "UserProfile",
+        "props": {
+          "user": {
+            "name": "$t:layout_editor.palette.user_profile.default_name",
+            "email": "user@example.com"
+          }
+        }
+      }
+    },
+    "FilterGroup": {
+      "label": "$t:layout_editor.palette.filter_group.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "FilterGroup",
+        "props": {
+          "title": "$t:layout_editor.palette.filter_group.default_title",
+          "filters": []
+        }
+      }
+    },
+    "SortableMenuList": {
+      "label": "$t:layout_editor.palette.sortable_menu_list.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "SortableMenuList",
+        "props": {
+          "title": "$t:layout_editor.palette.sortable_menu_list.label",
+          "items": [
+            {
+              "id": 1,
+              "name": "$t:layout_editor.palette.sortable_menu_list.sample_item1",
+              "slug": "item-1",
+              "url": "#",
+              "icon": "fas fa-bars",
+              "order": 1,
+              "is_active": true,
+              "parent_id": null,
+              "module_id": null,
+              "children": []
+            },
+            {
+              "id": 2,
+              "name": "$t:layout_editor.palette.sortable_menu_list.sample_item2",
+              "slug": "item-2",
+              "url": "#",
+              "icon": "fas fa-bars",
+              "order": 2,
+              "is_active": true,
+              "parent_id": null,
+              "module_id": null,
+              "children": []
+            }
+          ],
+          "enableDrag": true
+        }
+      }
+    },
+    "DynamicFieldList": {
+      "label": "$t:layout_editor.palette.dynamic_field_list.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "DynamicFieldList",
+        "props": {
+          "items": [],
+          "columns": [],
+          "addLabel": "$t:layout_editor.palette.dynamic_field_list.default_add_label"
+        }
+      }
+    }
+  }
+}

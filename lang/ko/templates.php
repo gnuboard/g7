@@ -101,6 +101,12 @@ return [
         'template_activated' => '템플릿이 활성화되었습니다.',
         'template_deactivated' => '템플릿이 비활성화되었습니다.',
         'template_uninstalled' => '템플릿이 제거되었습니다.',
+        'editor_spec_empty' => '편집기 스펙이 비어 있습니다.',
+        'editor_spec_retrieved' => '편집기 스펙을 조회했습니다.',
+        'editor_assets_retrieved' => '편집기 자산 정보를 조회했습니다.',
+        'editor_assets_missing' => '편집기 자산 매니페스트가 없습니다 (빌드되지 않음).',
+        'language_retrieved' => '다국어 데이터를 조회했습니다.',
+        'language_empty' => '다국어 데이터가 비어 있습니다.',
     ],
 
     'not_found' => '템플릿 :template을(를) 찾을 수 없습니다.',
@@ -308,6 +314,28 @@ return [
             'aborted' => '업데이트가 취소되었습니다.',
             'backup_restored' => '백업에서 이전 버전이 복원되었습니다.',
             'force_mode' => '강제 업데이트 모드: 버전 비교를 건너뛰고 재설치합니다.',
+        ],
+    ],
+
+    // 레이아웃 첨부 파일 (배경 이미지 등)
+    'layout_attachments' => [
+        'messages' => [
+            'uploaded' => '첨부 파일을 업로드했습니다.',
+            'listed' => '첨부 파일 목록을 조회했습니다.',
+            'deleted' => '첨부 파일을 삭제했습니다.',
+        ],
+        'errors' => [
+            'upload_failed' => '첨부 파일 업로드에 실패했습니다.',
+            'delete_failed' => '첨부 파일 삭제에 실패했습니다.',
+            'not_found' => '첨부 파일을 찾을 수 없습니다.',
+        ],
+        'validation' => [
+            'file_required' => '업로드할 파일을 선택해 주세요.',
+            'file_invalid' => '올바른 파일이 아닙니다.',
+            'file_image' => '이미지 파일만 업로드할 수 있습니다.',
+            'file_mimes' => '지원하는 이미지 형식이 아닙니다 (jpg, jpeg, png, gif, webp, svg).',
+            'file_max' => '파일 크기는 최대 :max MB까지 허용됩니다.',
+            'layout_name_max' => '레이아웃 이름은 최대 150자까지 허용됩니다.',
         ],
     ],
 ];

@@ -141,10 +141,14 @@ class OrderActivityLogListenerTest extends TestCase
 
 ---
 
-## 확장 마이그레이션 자동 로드 (requiredExtensions)
+## 확장 격리 (requiredExtensions)
 
-코어 테스트에서 확장(모듈/플러그인)의 DB 테이블이 필요한 경우, `$requiredExtensions` 프로퍼티를 선언합니다.
-`RefreshDatabase`의 `migrate:fresh` 실행 시 해당 확장의 마이그레이션도 함께 실행됩니다.
+코어 테스트는 기본적으로 확장(모듈/플러그인)이 격리된 상태로 실행됩니다.
+테스트가 특정 확장을 필요로 하면 `$requiredExtensions` 프로퍼티로 명시합니다.
+이 선언은 두 가지를 동시에 수행합니다:
+
+1. **마이그레이션 로드** — `RefreshDatabase`의 `migrate:fresh` 실행 시 해당 확장의 마이그레이션도 함께 실행
+2. **확장 로딩 allowlist** — testing 환경에서 명시한 확장의 ServiceProvider / route 만 등록 허용
 
 ```php
 class ResourceAbilitiesTest extends TestCase
@@ -152,13 +156,28 @@ class ResourceAbilitiesTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * sirsoft-marketing 플러그인이 User 리소스 훅에 개입하므로 마이그레이션 필요
+     * sirsoft-marketing 플러그인이 User 리소스 훅에 개입하므로 명시
      */
     protected array $requiredExtensions = [
         'plugins/sirsoft-marketing',
     ];
 }
 ```
+
+### 격리 동작 (allowlist)
+
+`$requiredExtensions` 미선언 코어 테스트는 어떤 모듈/플러그인의 ServiceProvider 도
+등록되지 않습니다. 이로써 한 확장의 전역 미들웨어(예: GDPR `CookieConsentMiddleware`)가
+무관한 코어 테스트에 개입하는 것을 차단합니다.
+
+- 확장의 ServiceProvider 바인딩 / route / 전역 미들웨어가 필요한 테스트는
+  그 확장을 `$requiredExtensions` 에 명시해야 합니다.
+- 확장 자체 테스트(`ModuleTestCase` / `PluginTestCase` 상속)는 테스트 파일 경로로
+  자기 확장을 자동 탐지(`selfExtension()`)하므로 별도 선언이 불필요합니다.
+  다른 확장에 의존하는 경우(예: 이커머스 테스트가 결제 플러그인 필요)만 명시합니다.
+- 격리는 testing 환경에서만 동작합니다 — 운영/개발 환경의 확장 로딩은 영향받지 않습니다.
+- `ModuleManager::loadModules` / `PluginManager::loadPlugins`(hook listener / config /
+  채널 등록 경로)에는 격리가 적용되지 않습니다.
 
 ### 경로 형식
 
@@ -172,10 +191,15 @@ class ResourceAbilitiesTest extends TestCase
 
 ### 동작 원리
 
-`TestCase::setUpTraits()`에서 `RefreshDatabase::refreshDatabase()` 호출 전에 확장 마이그레이션 경로를 `migrator`에 등록합니다:
+마이그레이션 등록과 allowlist 주입은 서로 다른 훅 시점에 일어납니다:
 
-1. `setUpTraits()` → `loadExtensionMigrations()` (확장 경로 등록)
-2. `parent::setUpTraits()` → `RefreshDatabase::refreshDatabase()` → `migrate:fresh` (코어 + 확장 함께 실행)
+- **allowlist 주입** — `TestCase::setUp()` 최상단에서 `ExtensionTestAllowlist::set()` 호출.
+  `parent::setUp()`의 `createApplication()`(= 모든 ServiceProvider register/boot)보다
+  먼저 실행되어야 provider 가드가 올바른 시점에 적용됩니다.
+- **마이그레이션 등록** — `TestCase::setUpTraits()`에서 `RefreshDatabase::refreshDatabase()`
+  호출 전에 확장 마이그레이션 경로를 `migrator`에 등록:
+  1. `setUpTraits()` → `loadExtensionMigrations()` (확장 경로 등록)
+  2. `parent::setUpTraits()` → `RefreshDatabase::refreshDatabase()` → `migrate:fresh` (코어 + 확장 함께 실행)
 
 ### 주의사항
 

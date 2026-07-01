@@ -1,0 +1,75 @@
+# audit:allow test-scenario-coverage reason: axes cross product 의 회귀 가드는 test_files 의 단위(s7-followup-style-controls=recipeEngine apply/reverse 라운드트립 전 컨트롤×전 옵션, property-controls=TagInput 식별자)·Feature(PermissionServiceTest 리프 필터)·E2E(property-editor-new-style-controls.spec.ts // @scenario/@effects)가 cover.
+
+feature: 레이아웃 편집기 속성 모달 — 신규 스타일 컨트롤(그림자/테두리/라운드/투명도/스크롤/텍스트 서식) + 고급 탭 권한 식별자
+
+description: |
+  속성 편집 모달 [스타일] 탭에 박스/텍스트 스타일 컨트롤을 추가하고, [고급] 탭 권한 후보를
+  리프(할당 가능) 권한으로 한정하며 식별자를 함께 노출한다. 모든 컨트롤은 classToken 레시피
+  (editor-spec SSoT)로 적용·역해석되며 캔버스 라이브 반영 + 저장 후 실제 유저 페이지에 표시된다.
+
+  핵심 동작:
+    - 컨테이너 컴포넌트: 글자색(부모 상속)/그림자/테두리 모양·색/모서리 라운드/투명도/스크롤
+    - 텍스트 컴포넌트: 기울임/밑줄 토글 + 줄바꿈 select + 정렬 justify 옵션
+    - 굵기 충돌 회피: fontWeight 보유 컴포넌트에는 fontBold 미부착(같은 font-bold 토큰 이중 group 금지)
+    - borderStyle 옵션 전환 시 폭(border/border-0)+스타일 토큰 exact 정리, borderColor 와 독립
+    - 투명도/스크롤은 opacity-*/overflow-* group 토큰 교체
+    - 권한 후보: Permission.isAssignable(리프)만, 각 후보·칩에 식별자(key) 표시
+
+axes:
+  component_kind: [text_with_fontweight, text_without_fontweight, container]
+  control: [textColor, boxShadow, borderStyle, borderColor, borderRadius, opacity, overflow, fontBold, fontItalic, textUnderline, whitespace, textAlign_justify]
+  value_state: [default_unset, preset_token, free_value, toggle_on, toggle_off]
+  template: [sirsoft-basic, sirsoft-admin_basic]
+  permission_candidate: [leaf_assignable, category_parent]
+
+exclusions:
+  - { component_kind: text_with_fontweight, control: fontBold, reason: "fontWeight 보유 컴포넌트에는 fontBold 미부착(충돌 회피)" }
+  - { control: borderColor, value_state: toggle_on, reason: "color 위젯은 토글 아님(프리셋/자유값)" }
+  - { control: borderColor, value_state: toggle_off, reason: "동일" }
+  - { control: boxShadow, value_state: free_value, reason: "select 컨트롤 — 고정 옵션만" }
+  - { control: borderStyle, value_state: free_value, reason: "동일" }
+  - { control: borderRadius, value_state: free_value, reason: "동일" }
+  - { control: overflow, value_state: free_value, reason: "동일" }
+  - { control: fontItalic, value_state: preset_token, reason: "toggle — on/off 만" }
+  - { control: textUnderline, value_state: preset_token, reason: "동일" }
+  - { permission_candidate: category_parent, control: textColor, reason: "권한 axis 는 control 무관(고급 탭 단일 축)" }
+
+effects:
+  # 스타일 컨트롤 적용/역해석
+  - boxShadow_select_applies_shadow_token_replacing_prior_in_group
+  - borderRadius_select_applies_rounded_token_roundtrips
+  - opacity_slider_applies_opacity_scale_token_roundtrips
+  - overflow_select_applies_overflow_token_roundtrips
+  - borderStyle_solid_applies_border_width_and_style_tokens
+  - borderStyle_none_clears_width_and_style_tokens
+  - borderColor_preset_applies_border_color_token_independent_of_borderStyle
+  - borderColor_free_hex_synthesizes_border_arbitrary_token_and_reverse_extracts
+  - textColor_attachable_to_parent_container_without_own_text
+  - fontItalic_toggle_on_adds_italic_off_removes
+  - textUnderline_toggle_on_adds_underline_off_removes
+  - fontBold_attached_only_when_fontWeight_absent
+  - whitespace_select_replaces_within_group
+  - textAlign_justify_option_applies_text_justify
+  # 충돌 회피 + 무손실
+  - fontWeight_and_fontBold_never_coexist_on_same_component
+  - control_change_preserves_unrelated_tokens
+  # 고급 탭 권한
+  - permission_candidates_exclude_category_parents_leaf_only
+  - permission_candidate_shows_identifier_alongside_label
+  - permission_chip_shows_identifier_when_label_differs
+  # 라이브 + 저장 + 실페이지
+  - control_change_reflects_on_canvas_live
+  - save_persists_new_tokens_in_layout_json
+  - real_user_page_renders_saved_tokens_with_correct_computed_css
+  # 템플릿/화면/엘리먼트 패리티
+  - both_templates_expose_same_new_controls
+  - controls_render_across_screens_and_element_types
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/s7-followup-style-controls.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls.test.tsx
+  - tests/Unit/Services/PermissionServiceTest.php
+  - tests/Playwright/specs/layout-editor/property-editor-new-style-controls.spec.ts
+
+validation:
+  e2e_spec: tests/Playwright/specs/layout-editor/property-editor-new-style-controls.spec.ts

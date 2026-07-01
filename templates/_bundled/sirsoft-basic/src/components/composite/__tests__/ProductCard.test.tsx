@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ProductCard from '../ProductCard';
 
@@ -468,6 +468,119 @@ describe('ProductCard 컴포넌트', () => {
       expect(fullStars.length).toBe(3);
       expect(halfStars.length).toBe(1);
       expect(emptyStars.length).toBe(1);
+    });
+  });
+
+  describe('다중 통화 표시 (선택 통화 환산)', () => {
+    const multiCurrencyProduct = {
+      id: 7,
+      name_localized: '면 손수건',
+      thumbnail_url: '/img/handkerchief.jpg',
+      selling_price: 3000,
+      selling_price_formatted: '3,000원',
+      list_price: 5000,
+      list_price_formatted: '5,000원',
+      discount_rate: 40,
+      multi_currency_selling_price: {
+        KRW: { value: 3000, formatted: '3,000원' },
+        USD: { value: 2.55, formatted: '$2.55' },
+        JPY: { value: 345, formatted: '¥345' },
+      },
+      multi_currency_list_price: {
+        KRW: { value: 5000, formatted: '5,000원' },
+        USD: { value: 4.25, formatted: '$4.25' },
+        JPY: { value: 575, formatted: '¥575' },
+      },
+    };
+
+    /**
+     * 실 환경처럼 G7Core.state.get() 은 인자(key)를 무시하고 _global 전체 객체를 반환한다.
+     * (G7CoreGlobals.ts: get: () => templateApp.getGlobalState())
+     * ProductCard 가 키 접근/구독을 올바로 하지 않으면 이 mock 에서 KRW 폴백으로 회귀한다.
+     */
+    const installGlobalState = (preferredCurrency: string) => {
+      const listeners: Array<(s: any) => void> = [];
+      const state = { preferredCurrency };
+      (window as any).__templateApp = {
+        getGlobalState: () => state,
+        onGlobalStateChange: (l: (s: any) => void) => {
+          listeners.push(l);
+          return () => {
+            const i = listeners.indexOf(l);
+            if (i >= 0) listeners.splice(i, 1);
+          };
+        },
+      };
+      (window as any).G7Core = {
+        ...mockG7Core,
+        state: {
+          get: () => state, // key 무시, 전체 객체 반환 (실 동작)
+          set: (updates: Record<string, any>) => {
+            Object.assign(state, updates);
+            listeners.forEach((l) => l(state));
+          },
+          subscribe: (l: (s: any) => void) => {
+            listeners.push(l);
+            return () => {
+              const i = listeners.indexOf(l);
+              if (i >= 0) listeners.splice(i, 1);
+            };
+          },
+        },
+      };
+    };
+
+    it('USD 선택 시 판매가/정가가 USD 로 표시되어야 함 (KRW 고정 회귀 차단)', () => {
+      installGlobalState('USD');
+      render(<ProductCard product={multiCurrencyProduct} />);
+      expect(screen.getByText('$2.55')).toBeInTheDocument();
+      expect(screen.getByText('$4.25')).toBeInTheDocument();
+      expect(screen.queryByText('3,000원')).not.toBeInTheDocument();
+      expect(screen.queryByText('5,000원')).not.toBeInTheDocument();
+    });
+
+    it('JPY 선택 시 JPY 로 표시되어야 함', () => {
+      installGlobalState('JPY');
+      render(<ProductCard product={multiCurrencyProduct} />);
+      expect(screen.getByText('¥345')).toBeInTheDocument();
+      expect(screen.getByText('¥575')).toBeInTheDocument();
+    });
+
+    it('KRW(기본) 선택 시 KRW 로 표시되어야 함', () => {
+      installGlobalState('KRW');
+      render(<ProductCard product={multiCurrencyProduct} />);
+      expect(screen.getByText('3,000원')).toBeInTheDocument();
+      expect(screen.getByText('5,000원')).toBeInTheDocument();
+    });
+
+    it('통화를 USD 로 변경하면 리렌더되어 USD 로 갱신되어야 함 (반응성 회귀 차단)', async () => {
+      installGlobalState('KRW');
+      render(<ProductCard product={multiCurrencyProduct} />);
+      expect(screen.getByText('3,000원')).toBeInTheDocument();
+
+      // 헤더에서 통화 변경 → 전역 상태 갱신 (set 이 구독자에게 통지)
+      await act(async () => {
+        (window as any).G7Core.state.set({ preferredCurrency: 'USD' });
+      });
+
+      expect(screen.getByText('$2.55')).toBeInTheDocument();
+      expect(screen.queryByText('3,000원')).not.toBeInTheDocument();
+    });
+
+    it('multi_currency 데이터가 없으면 기본 포맷(_formatted)으로 폴백해야 함', () => {
+      installGlobalState('USD');
+      render(
+        <ProductCard
+          product={{
+            id: 8,
+            name_localized: '단순 상품',
+            thumbnail_url: '/img/x.jpg',
+            selling_price: 10000,
+            selling_price_formatted: '10,000원',
+          }}
+        />
+      );
+      expect(screen.getByText('10,000원')).toBeInTheDocument();
     });
   });
 

@@ -5,6 +5,7 @@ import { Span } from '../basic/Span';
 import { P } from '../basic/P';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import type { EditorAttrs } from '../../types';
 
 export interface StatCardProps {
   value: string | number;
@@ -15,6 +16,12 @@ export interface StatCardProps {
   trend?: 'up' | 'down' | 'neutral';
   className?: string;
   style?: React.CSSProperties;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -48,36 +55,39 @@ export const StatCard: React.FC<StatCardProps> = ({
   trend = 'neutral',
   className = '',
   style,
+  id,
+  editorAttrs,
 }) => {
   const isPositive = trend === 'up';
   const isNegative = trend === 'down';
   const changeValue = change !== undefined ? Math.abs(change) : 0;
 
-  const trendColor = isPositive
-    ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
+  const trendClass = isPositive
+    ? 'stats-trend-up'
     : isNegative
-      ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
-      : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700';
+      ? 'stats-trend-down'
+      : 'stats-trend-neutral';
 
   const trendIcon = isPositive ? IconName.ArrowUp : isNegative ? IconName.ArrowDown : undefined;
 
   return (
     <Div
-      className={`rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 ${className}`}
+      className={`stat-card ${className}`}
       style={style}
+      id={id} {...editorAttrs}
     >
       {/* 헤더: 아이콘과 변화율 */}
-      <Div className="flex items-center justify-between mb-4">
+      <Div className="flex-between mb-md">
         {iconName && (
-          <Div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <Icon name={iconName} className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <Div className="stats-icon stats-icon-blue">
+            <Icon name={iconName} className="icon-lg" />
           </Div>
         )}
 
         {change !== undefined && (
-          <Div className={`flex items-center gap-1 px-2 py-1 rounded-md ${trendColor}`}>
+          <Div className={`stats-change ${trendClass}`}>
             {trendIcon && (
-              <Icon name={trendIcon} className="w-4 h-4" />
+              <Icon name={trendIcon} className="icon-sm" />
             )}
             <Span className="text-sm font-semibold">
               {changeValue}%
@@ -87,18 +97,18 @@ export const StatCard: React.FC<StatCardProps> = ({
       </Div>
 
       {/* 통계 수치 */}
-      <H3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+      <H3 className="stats-value-lg">
         {typeof value === 'number' ? value.toLocaleString() : value}
       </H3>
 
       {/* 라벨 */}
-      <P className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+      <P className="stats-label">
         {label}
       </P>
 
       {/* 변화율 설명 */}
       {change !== undefined && changeLabel && (
-        <Div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <Div className="stats-sublabel">
           <Span>
             {changeLabel}
           </Span>

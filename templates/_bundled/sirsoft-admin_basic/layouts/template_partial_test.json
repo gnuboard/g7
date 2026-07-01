@@ -13,7 +13,7 @@
         "type": "basic",
         "name": "Div",
         "props": {
-          "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
+          "className": "admin-page-content-responsive"
         },
         "children": [
           {
@@ -28,7 +28,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex items-center gap-3 mb-2"
+                  "className": "flex-center gap-3 mb-2"
                 },
                 "children": [
                   {
@@ -43,7 +43,7 @@
                     "type": "basic",
                     "name": "H1",
                     "props": {
-                      "className": "text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white"
+                      "className": "text-page-heading sm:text-3xl"
                     },
                     "text": "템플릿 Partial 시스템 테스트"
                   }
@@ -53,7 +53,7 @@
                 "type": "basic",
                 "name": "P",
                 "props": {
-                  "className": "text-sm text-gray-600 dark:text-gray-400"
+                  "className": "text-label"
                 },
                 "text": "sirsoft-admin_basic 템플릿의 레이아웃 Partial 기능을 테스트합니다"
               }
@@ -78,7 +78,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                      "className": "flex items-center gap-2 mb-4"
+                      "className": "flex-center gap-2 mb-4"
                     },
                     "children": [
                       {
@@ -157,7 +157,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                      "className": "text-label"
                     },
                     "text": "위의 모든 섹션이 정상적으로 표시되면 템플릿 Partial 시스템이 정상 작동하는 것입니다."
                   }

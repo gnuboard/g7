@@ -1,0 +1,38 @@
+feature: 게시판 생성/수정 시 관리자 메뉴 표시 토글
+
+description: |
+  게시판 생성/수정 폼의 "관리자 메뉴에 표시" 토글(add_to_menu). 켜고 저장하면 좌측
+  관리자 메뉴(/admin/board/{slug})에 게시판이 등록되고, 끄고 저장하면 제거된다.
+  모든 반영은 폼 저장(Submit) 시점에 변화분만 처리한다.
+
+  수정 이력:
+    - 이슈 #413 item 15-(1): 신규 게시판 생성 시 관리자 메뉴 미등록 (편집화면 수동 버튼으로만 가능) 해소
+    - 생성/수정 공용 토글로 통일, 편집화면 수동 add-to-menu 버튼 제거
+    - createBoard/updateBoard 가 add_to_menu 토글에 따라 메뉴 추가/제거 (변화분만)
+    - 메뉴 식별은 URL(/admin/board/{slug}) 기준 — 동일 게시판 재등록만 스킵
+    - 이슈 #413 item 15-(2): 이름 중복 차단은 미적용 (코어 메뉴/그누보드5 정책과 동일, slug만 식별자)
+    - removeFromAdminMenu 신규 + board.remove_from_menu 활동로그 추가
+
+axes:
+  mode: [create, update]
+  toggle: [on, off]
+
+effects:
+  - create_with_toggle_on_registers_menu
+  - create_without_toggle_keeps_menu_empty
+  - update_off_to_on_adds_menu
+  - update_on_to_off_removes_menu
+  - update_no_change_does_not_duplicate
+  - same_name_boards_both_register_without_block
+  - add_to_menu_non_boolean_rejected_422
+  - form_data_returns_current_menu_state_as_toggle_initial
+  - menu_registered_under_board_management_parent
+  - menu_name_has_board_suffix
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardMenuToggleTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-form.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-menu-toggle.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

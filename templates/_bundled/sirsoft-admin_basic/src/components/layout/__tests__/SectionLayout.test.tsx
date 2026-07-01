@@ -46,10 +46,14 @@ describe('SectionLayout 컴포넌트', () => {
   });
 
   describe('Padding', () => {
-    it('padding none이 적용된다', () => {
+    it('padding none이 적용되면 padding 토큰을 추가하지 않는다 (#408)', () => {
+      // 호출처 className 자산(admin-card 등)이 padding 을 책임지도록 컴포넌트가
+      // padding 토큰을 prepend 하지 않음. p-0 도 호출처 자산의 padding 을
+      // 의도치 않게 무력화하므로 추가하지 않는다.
       const { container } = render(<SectionLayout padding="none">Content</SectionLayout>);
       const section = container.firstChild as HTMLElement;
-      expect(section.className).toContain('p-0');
+      expect(section.className).not.toContain('p-0');
+      expect(section.className).not.toMatch(/\bp-\d+\b/);
     });
 
     it('padding sm이 적용된다', () => {

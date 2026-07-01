@@ -7,7 +7,7 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "card"
+    "className": "admin-card"
   },
   "children": [
     {
@@ -15,7 +15,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center justify-between mb-6"
+        "className": "flex-between mb-6"
       },
       "children": [
         {
@@ -30,7 +30,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-2"
+            "className": "flex-center gap-2"
           },
           "children": [
             {
@@ -83,7 +83,7 @@
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "form-label mb-1"
+                "className": "form-label"
               },
               "children": [
                 {
@@ -95,7 +95,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 ml-1"
+                    "className": "text-required"
                   },
                   "text": "*"
                 }
@@ -107,7 +107,7 @@
               "props": {
                 "type": "text",
                 "name": "common_info_name",
-                "className": "input w-full",
+                "className": "input",
                 "placeholder": "$t:sirsoft-ecommerce.admin.common_info.form.name_placeholder"
               }
             }
@@ -118,7 +118,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "grid grid-cols-2 gap-4 mb-6"
+            "className": "grid-2col mb-6"
           },
           "children": [
             {
@@ -140,7 +140,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -190,7 +190,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center justify-between"
+                    "className": "flex-between"
                   },
                   "children": [
                     {
@@ -256,14 +256,14 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center justify-between mb-4"
+                "className": "flex-between mb-4"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -306,7 +306,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center justify-between mb-4"
+                "className": "flex-between mb-4"
               },
               "children": [
                 {

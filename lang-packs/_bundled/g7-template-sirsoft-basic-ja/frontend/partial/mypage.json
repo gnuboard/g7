@@ -15,7 +15,8 @@
     "wishlist": "お気に入り一覧",
     "addresses": "配送先",
     "notifications": "通知",
-    "inquiries": "商品問い合わせ"
+    "inquiries": "商品問い合わせ",
+    "mileage": "マイレージ"
   },
   "notification_settings": {
     "title": "掲示板通知設定",
@@ -149,6 +150,7 @@
       "confirmed": "購入確定",
       "cancelled": "キャンセル"
     },
+    "partial_cancelled_badge": "一部キャンセル",
     "total_amount": "決済金額",
     "shipping_fee": "配送料金",
     "free_shipping": "無料",
@@ -161,7 +163,9 @@
       "shipped": "配送中",
       "delivered": "配送完了",
       "cancelled": "キャンセル"
-    }
+    },
+    "points_used": "マイレージ使用",
+    "points_earning": "ポイント加算予定"
   },
   "order_detail": {
     "back": "注文履歴",
@@ -211,7 +215,7 @@
       "content_label": "レビュー内容",
       "content_placeholder": "商品に対する誠実なレビューを作成してください。(最小10文字)",
       "content_min_length": "最小10文字以上",
-      "image_label": "画像添付(最大5枚)",
+      "image_label": "画像添付(最大{{count}}枚)",
       "add_image": "画像追加",
       "submit_button": "登録"
     },
@@ -281,7 +285,8 @@
       "error_title": "キャンセル処理失敗",
       "validation_error_title": "入力値を確認してください。",
       "confirm": "注文キャンセル",
-      "close": "閉じる"
+      "close": "閉じる",
+      "cancel_reason_detail_placeholder": "詳細な理由を入力してください（選択）"
     },
     "cancel_success": "注文がキャンセルされました。",
     "change_shipping_address": "配送先編集",
@@ -289,7 +294,18 @@
     "manual_input": "直接入力",
     "apply_change": "変更を適用",
     "shipping_address_changed": "配送先が変更されました。",
-    "confirm_change_address": "配送先を変更されますか?"
+    "confirm_change_address": "配送先を変更されますか?",
+    "orderer_title": "注文者情報",
+    "orderer_name": "注文者",
+    "orderer_phone": "連絡先",
+    "orderer_email": "メール",
+    "review_deadline_passed": "レビュー作成期間が終了しました",
+    "track_shipment": "配送追跡",
+    "cancelled_at": "キャンセル日時",
+    "cancel_reason_title": "キャンセル理由",
+    "cancel_reason": "理由",
+    "cancel_reason_detail": "詳細な理由",
+    "charged_in_payment_currency": "決済通貨 {{currency}} {{amount}} 請求"
   },
   "addresses": {
     "title": "配送先管理",
@@ -439,5 +455,54 @@
     "confirm_checkbox": "上記の内容を確認し、退会に同意します。",
     "confirm_button": "退会する",
     "success": "会員退会が完了しました。"
+  },
+  "mileage": {
+    "title": "マイレージ",
+    "summary": {
+      "available": "使用可能",
+      "expiring_soon": "失効予定",
+      "expiring_until": "{{date}}まで",
+      "total_earned": "累積加算",
+      "total_used": "累積使用"
+    },
+    "filter": {
+      "all": "すべて",
+      "earn": "加算",
+      "use": "使用",
+      "expire": "失効",
+      "adjust": "調整"
+    },
+    "category": {
+      "earn": "加算",
+      "use": "使用",
+      "expire": "失効",
+      "adjust": "調整"
+    },
+    "table": {
+      "date": "一時",
+      "category": "区分",
+      "description": "内容",
+      "amount": "マイレージ",
+      "expires_at": "有効期限"
+    },
+    "expires_label": "有効期限 {{date}}",
+    "empty": "マイレージ履歴がありません。",
+    "disabled_notice": "マイレージ機能は無効化されています。"
+  },
+  "currency_settings": {
+    "title": "決済通貨",
+    "description": "注文·決済時に使用する通貨を選択します。",
+    "edit_hint": "通貨は会員情報修正で一緒に変更されます。",
+    "save_button": "保存",
+    "saved": "決済通貨が変更されました。",
+    "save_failed": "決済通貨の変更に失敗しました。"
+  },
+  "shipping_country_settings": {
+    "title": "配送国",
+    "description": "デフォルトの配送国を選択します。",
+    "edit_hint": "配送国は会員情報の修正時に一緒に変更されます。",
+    "save_button": "保存",
+    "saved": "配送国が変更されました。",
+    "save_failed": "配送国の変更に失敗しました。"
   }
 }

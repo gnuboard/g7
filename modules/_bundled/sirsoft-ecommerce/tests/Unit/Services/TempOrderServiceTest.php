@@ -11,14 +11,20 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\TempOrderFactory;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
+use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
 use Modules\Sirsoft\Ecommerce\DTO\Summary;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
+use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\TempOrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\AdditionalOptionSelectionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
+use Modules\Sirsoft\Ecommerce\Services\PurchaseEligibilityService;
 use Modules\Sirsoft\Ecommerce\Services\TempOrderService;
+use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -38,6 +44,8 @@ class TempOrderServiceTest extends ModuleTestCase
 
     protected $mockCalculationService;
 
+    protected $mockPurchaseEligibilityService;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,13 +55,26 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->mockCouponIssueRepository = Mockery::mock(CouponIssueRepositoryInterface::class);
         $this->mockProductOptionRepository = Mockery::mock(ProductOptionRepositoryInterface::class);
         $this->mockCalculationService = Mockery::mock(OrderCalculationService::class);
+        $this->mockPurchaseEligibilityService = Mockery::mock(PurchaseEligibilityService::class);
+
+        // 기본값: 모든 상품 구매 가능 (구매 대상 제한 검사 통과)
+        $this->mockPurchaseEligibilityService->shouldReceive('resolveRoleIds')->andReturn([])->byDefault();
+        $this->mockPurchaseEligibilityService->shouldReceive('isPurchasableBy')->andReturn(true)->byDefault();
+
+        // 마일리지 검증은 advisory — 기본적으로 사용 가능으로 통과
+        $mockUserMileageService = Mockery::mock(UserMileageService::class);
+        $mockUserMileageService->shouldReceive('canUse')->andReturn(true)->byDefault();
+        $mockUserMileageService->shouldReceive('getBalance')->andReturn(['available' => 0])->byDefault();
 
         $this->service = new TempOrderService(
             $this->mockTempOrderRepository,
             $this->mockCartRepository,
             $this->mockCouponIssueRepository,
             $this->mockProductOptionRepository,
-            $this->mockCalculationService
+            $this->mockCalculationService,
+            $this->mockPurchaseEligibilityService,
+            $mockUserMileageService,
+            app(AdditionalOptionSelectionService::class)
         );
     }
 
@@ -135,7 +156,7 @@ class TempOrderServiceTest extends ModuleTestCase
     public function test_create_temp_order_throws_exception_for_empty_cart(): void
     {
         // Given
-        $cartItems = new Collection();
+        $cartItems = new Collection;
 
         // Then
         $this->expectException(\Exception::class);
@@ -283,7 +304,7 @@ class TempOrderServiceTest extends ModuleTestCase
         // 쿠폰 소유권 검증 mock
         $this->mockCouponIssueRepository
             ->shouldReceive('findByIdsForUser')
-            ->andReturn(new Collection());
+            ->andReturn(new Collection);
 
         $newCalculationResult = new OrderCalculationResult(
             items: [],
@@ -421,7 +442,7 @@ class TempOrderServiceTest extends ModuleTestCase
         // 쿠폰 소유권 mock — item_coupons 의 9130 과 order_coupon 10375 를 사용자가 소유한 것으로
         // 처리. validateSingleCoupon 은 isNotEmpty() 만 체크하므로 동일 mock 사용 가능.
         $ownedCoupons = new Collection([
-            (new \Modules\Sirsoft\Ecommerce\Models\CouponIssue())->forceFill(['id' => 9130]),
+            (new CouponIssue)->forceFill(['id' => 9130]),
         ]);
         $this->mockCouponIssueRepository
             ->shouldReceive('findByIdsForUser')
@@ -449,7 +470,7 @@ class TempOrderServiceTest extends ModuleTestCase
             cartKey: null,
             promotions: [],       // 프로모션 필드 미전송
             usePoints: null,      // 마일리지 미전송
-            shippingAddress: new \Modules\Sirsoft\Ecommerce\DTO\ShippingAddress(
+            shippingAddress: new ShippingAddress(
                 countryCode: 'KR',
                 zipcode: '06234'
             )
@@ -517,7 +538,7 @@ class TempOrderServiceTest extends ModuleTestCase
 
         $this->mockCouponIssueRepository
             ->shouldReceive('findByIdsForUser')
-            ->andReturn(new Collection());
+            ->andReturn(new Collection);
 
         $updatedTempOrder = clone $existingTempOrder;
         $updatedTempOrder->calculation_result = $newCalculationResult->toArray();
@@ -614,7 +635,7 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->mockCouponIssueRepository
             ->shouldReceive('findByIdsForUser')
             ->andReturn(new Collection([
-                (new \Modules\Sirsoft\Ecommerce\Models\CouponIssue())->forceFill(['id' => 0]),
+                (new CouponIssue)->forceFill(['id' => 0]),
             ]));
 
         $updatedTempOrder = clone $existingTempOrder;
@@ -686,6 +707,47 @@ class TempOrderServiceTest extends ModuleTestCase
 
         // When
         $result = $this->service->deleteTempOrder(99999, null);
+
+        // Then
+        $this->assertFalse($result);
+    }
+
+    public function test_delete_temp_order_by_id_deletes_existing_order(): void
+    {
+        // 비회원 PG 결제 완료 시점: user_id/cart_key 없이 temp_order_id 로 삭제
+        // Given
+        $tempOrder = TempOrderFactory::new()->guest()->create();
+
+        $this->mockTempOrderRepository
+            ->shouldReceive('find')
+            ->with($tempOrder->id)
+            ->once()
+            ->andReturn($tempOrder);
+
+        $this->mockTempOrderRepository
+            ->shouldReceive('delete')
+            ->with($tempOrder)
+            ->once()
+            ->andReturn(true);
+
+        // When
+        $result = $this->service->deleteTempOrderById($tempOrder->id);
+
+        // Then
+        $this->assertTrue($result);
+    }
+
+    public function test_delete_temp_order_by_id_returns_false_when_not_found(): void
+    {
+        // Given
+        $this->mockTempOrderRepository
+            ->shouldReceive('find')
+            ->with(99999)
+            ->once()
+            ->andReturn(null);
+
+        // When
+        $result = $this->service->deleteTempOrderById(99999);
 
         // Then
         $this->assertFalse($result);
@@ -795,5 +857,116 @@ class TempOrderServiceTest extends ModuleTestCase
 
         // Then
         $this->assertNull($result);
+    }
+
+    // ========================================
+    // validateCartItemsAvailability() — 판매상태/구매수량 최종 방어선 (U13②/U4/A25)
+    // ========================================
+
+    /**
+     * protected validateCartItemsAvailability 를 호출합니다.
+     *
+     * @param  Collection  $cartItems  장바구니 아이템
+     */
+    private function invokeValidateAvailability(Collection $cartItems): void
+    {
+        $method = new \ReflectionMethod($this->service, 'validateCartItemsAvailability');
+        $method->setAccessible(true);
+        $method->invoke($this->service, $cartItems, []);
+    }
+
+    /**
+     * 판매중지/품절/출시예정/전시중지 상품은 체크아웃 검증에서 차단됩니다 (status).
+     */
+    public function test_checkout_validation_blocks_hidden_product(): void
+    {
+        // Given: 판매중이지만 전시중지(hidden) 상품 — isPurchasable 통일로 차단되어야 함
+        $user = User::factory()->create();
+        $product = ProductFactory::new()->onSale()->hidden()->create();
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+        $cart = CartFactory::new()->forUser($user)->forOption($option)->create(['quantity' => 1]);
+        $cart->load(['product', 'productOption']);
+
+        // When / Then
+        try {
+            $this->invokeValidateAvailability(new Collection([$cart]));
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasStatusIssue());
+        }
+    }
+
+    /**
+     * 상품당 총수량이 최소 구매수량 미만이면 체크아웃 검증에서 차단됩니다 (min_qty, 옵션 합산).
+     */
+    public function test_checkout_validation_blocks_below_min_qty_aggregated(): void
+    {
+        // Given: 최소 5개 상품, 두 옵션 라인 합계 3개(2+1)
+        $user = User::factory()->create();
+        $product = ProductFactory::new()->onSale()->create([
+            'min_purchase_qty' => 5,
+            'max_purchase_qty' => 0,
+        ]);
+        $option1 = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+        $option2 = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+        $cart1 = CartFactory::new()->forUser($user)->forOption($option1)->create(['quantity' => 2]);
+        $cart2 = CartFactory::new()->forUser($user)->forOption($option2)->create(['quantity' => 1]);
+        $cart1->load(['product', 'productOption']);
+        $cart2->load(['product', 'productOption']);
+
+        // When / Then: 합계 3 < 5 → min_qty 차단
+        try {
+            $this->invokeValidateAvailability(new Collection([$cart1, $cart2]));
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasMinQtyIssue());
+        }
+    }
+
+    /**
+     * 상품당 총수량이 최대 구매수량을 초과하면 체크아웃 검증에서 차단됩니다 (max_qty, 옵션 합산).
+     */
+    public function test_checkout_validation_blocks_above_max_qty_aggregated(): void
+    {
+        // Given: 최대 5개 상품, 두 옵션 라인 합계 6개(3+3)
+        $user = User::factory()->create();
+        $product = ProductFactory::new()->onSale()->create([
+            'min_purchase_qty' => 1,
+            'max_purchase_qty' => 5,
+        ]);
+        $option1 = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+        $option2 = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+        $cart1 = CartFactory::new()->forUser($user)->forOption($option1)->create(['quantity' => 3]);
+        $cart2 = CartFactory::new()->forUser($user)->forOption($option2)->create(['quantity' => 3]);
+        $cart1->load(['product', 'productOption']);
+        $cart2->load(['product', 'productOption']);
+
+        // When / Then: 합계 6 > 5 → max_qty 차단
+        try {
+            $this->invokeValidateAvailability(new Collection([$cart1, $cart2]));
+            $this->fail('CartUnavailableException 이 발생해야 합니다.');
+        } catch (CartUnavailableException $e) {
+            $this->assertTrue($e->hasMaxQtyIssue());
+        }
+    }
+
+    /**
+     * 경계: 합계가 min/max 범위 내(==min, ==max)면 통과합니다.
+     */
+    public function test_checkout_validation_passes_within_qty_bounds(): void
+    {
+        // Given: min 2, max 4 상품, 합계 3 (범위 내)
+        $user = User::factory()->create();
+        $product = ProductFactory::new()->onSale()->create([
+            'min_purchase_qty' => 2,
+            'max_purchase_qty' => 4,
+        ]);
+        $option = ProductOptionFactory::new()->forProduct($product)->create(['stock_quantity' => 100]);
+        $cart = CartFactory::new()->forUser($user)->forOption($option)->create(['quantity' => 3]);
+        $cart->load(['product', 'productOption']);
+
+        // When / Then: 예외 없이 통과
+        $this->invokeValidateAvailability(new Collection([$cart]));
+        $this->assertTrue(true);
     }
 }

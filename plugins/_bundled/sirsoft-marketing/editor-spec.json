@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — 마케팅 동의 플러그인 sampleData. 회원가입/내정보 레이아웃의 marketing_settings 데이터소스 응답 shape 를 실제 API(/api/plugins/sirsoft-marketing/settings) 기준으로 작성.",
+  "pluginId": "sirsoft-marketing",
+  "version": "1.0.0",
+  "description": "마케팅 동의 플러그인 레이아웃 편집기 샘플 데이터.",
+  "sampleData": {
+    "byDataSourceId": {
+      "marketing_settings": {
+        "data": {
+          "marketing_consent_enabled": true,
+          "marketing_consent_terms_slug": "marketing-terms",
+          "marketing_consent_terms_slug_set": true,
+          "third_party_consent_enabled": true,
+          "third_party_consent_terms_slug": null,
+          "third_party_consent_terms_slug_set": false,
+          "info_disclosure_enabled": true,
+          "info_disclosure_terms_slug": null,
+          "info_disclosure_terms_slug_set": false,
+          "channels": [
+            {
+              "key": "email_subscription",
+              "label": "광고성 이메일 수신",
+              "label_i18n": {
+                "ko": "광고성 이메일 수신",
+                "en": "Email Marketing"
+              },
+              "enabled": true,
+              "terms_slug": null,
+              "terms_slug_set": false
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -12,7 +12,7 @@ use Illuminate\Database\Seeder;
  * 설치 필수 시더는 항상 실행되며, 샘플 시더는 --sample 옵션 시에만 실행됩니다.
  * 시퀀스 → 배송사 → 클레임 사유 순서로 설치 시더를 실행한 뒤,
  * (알림 정의는 module.php::getNotificationDefinitions() SSoT — Manager 가 자동 동기화)
- * 샘플 시더는 브랜드 → 카테고리 → 상품 → 주문 → 리뷰 → 문의 순서로 실행합니다 (의존 관계에 따른 순서).
+ * 샘플 시더는 브랜드 → 카테고리 → 상품 → 주문 → 마일리지 → 리뷰 → 문의 순서로 실행합니다 (의존 관계에 따른 순서).
  */
 class DatabaseSeeder extends Seeder
 {
@@ -43,6 +43,7 @@ class DatabaseSeeder extends Seeder
 
             // 참조 데이터 샘플 시더 (count 불필요)
             $this->call([
+                Sample\EcommerceUserProfileSeeder::class,
                 Sample\ProductNoticeTemplateSeeder::class,
                 Sample\ProductCommonInfoSeeder::class,
                 Sample\BrandSeeder::class,
@@ -58,6 +59,7 @@ class DatabaseSeeder extends Seeder
                 Sample\CouponSeeder::class,
                 Sample\CartSeeder::class,
                 Sample\OrderSeeder::class,
+                Sample\MileageSeeder::class,
                 Sample\ProductReviewSeeder::class,
                 Sample\ProductInquirySeeder::class,
                 Sample\NotificationLogSeeder::class,

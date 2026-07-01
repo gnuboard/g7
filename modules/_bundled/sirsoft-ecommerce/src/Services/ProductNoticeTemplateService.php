@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductNoticeTemplateNotFoundException;
 use Modules\Sirsoft\Ecommerce\Models\ProductNoticeTemplate;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductNoticeTemplateRepositoryInterface;
 
@@ -21,8 +22,8 @@ class ProductNoticeTemplateService
     /**
      * 템플릿 목록 조회
      *
-     * @param array $filters 필터 조건
-     * @return Collection
+     * @param  array  $filters  필터 조건
+     * @return Collection 템플릿 컬렉션
      */
     public function getAllTemplates(array $filters = []): Collection
     {
@@ -46,9 +47,9 @@ class ProductNoticeTemplateService
     /**
      * 템플릿 목록 페이지네이션 조회
      *
-     * @param array $filters 필터 조건
-     * @param int $perPage 페이지당 항목 수
-     * @return LengthAwarePaginator
+     * @param  array  $filters  필터 조건
+     * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator 페이지네이션된 템플릿 목록
      */
     public function getPaginatedTemplates(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
@@ -69,8 +70,8 @@ class ProductNoticeTemplateService
     /**
      * 템플릿 상세 조회
      *
-     * @param int $id 템플릿 ID
-     * @return ProductNoticeTemplate|null
+     * @param  int  $id  템플릿 ID
+     * @return ProductNoticeTemplate|null 템플릿 모델 (없으면 null)
      */
     public function getTemplate(int $id): ?ProductNoticeTemplate
     {
@@ -93,8 +94,8 @@ class ProductNoticeTemplateService
     /**
      * 템플릿 생성
      *
-     * @param array $data 템플릿 데이터
-     * @return ProductNoticeTemplate
+     * @param  array  $data  템플릿 데이터
+     * @return ProductNoticeTemplate 생성된 템플릿 모델
      */
     public function createTemplate(array $data): ProductNoticeTemplate
     {
@@ -124,18 +125,18 @@ class ProductNoticeTemplateService
     /**
      * 템플릿 수정
      *
-     * @param int $id 템플릿 ID
-     * @param array $data 수정할 데이터
-     * @return ProductNoticeTemplate
+     * @param  int  $id  템플릿 ID
+     * @param  array  $data  수정할 데이터
+     * @return ProductNoticeTemplate 수정된 템플릿 모델
      *
-     * @throws \Exception
+     * @throws ProductNoticeTemplateNotFoundException 템플릿이 존재하지 않는 경우
      */
     public function updateTemplate(int $id, array $data): ProductNoticeTemplate
     {
         $template = $this->repository->findById($id);
 
         if (! $template) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.product_notice_template_not_found'));
+            throw new ProductNoticeTemplateNotFoundException($id);
         }
 
         // Before 훅
@@ -160,21 +161,48 @@ class ProductNoticeTemplateService
     }
 
     /**
+     * 템플릿 활성 상태를 토글합니다.
+     *
+     * @param  int  $id  템플릿 ID
+     * @return ProductNoticeTemplate 토글된 템플릿
+     *
+     * @throws ProductNoticeTemplateNotFoundException 템플릿이 존재하지 않는 경우
+     */
+    public function toggleActive(int $id): ProductNoticeTemplate
+    {
+        $template = $this->repository->findById($id);
+
+        if (! $template) {
+            throw new ProductNoticeTemplateNotFoundException($id);
+        }
+
+        // is_active 반전 (updateTemplate 위임 — 일반 update 로그 동반)
+        $template = $this->updateTemplate($id, [
+            'is_active' => ! $template->is_active,
+        ]);
+
+        // toggle 의도 명시용 전용 활동로그 훅 (D-LOG)
+        HookManager::doAction('sirsoft-ecommerce.product-notice-template.after_toggle_active', $template);
+
+        return $template;
+    }
+
+    /**
      * 템플릿 삭제
      *
      * 템플릿은 UI용 도구일 뿐이므로 상품과 연관이 없어 자유롭게 삭제 가능
      *
-     * @param int $id 템플릿 ID
+     * @param  int  $id  템플릿 ID
      * @return array 삭제 결과 정보
      *
-     * @throws \Exception
+     * @throws ProductNoticeTemplateNotFoundException 템플릿이 존재하지 않는 경우
      */
     public function deleteTemplate(int $id): array
     {
         $template = $this->repository->findById($id);
 
         if (! $template) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.product_notice_template_not_found'));
+            throw new ProductNoticeTemplateNotFoundException($id);
         }
 
         // Before 훅
@@ -195,17 +223,17 @@ class ProductNoticeTemplateService
     /**
      * 템플릿 복사
      *
-     * @param int $id 원본 템플릿 ID
-     * @return ProductNoticeTemplate
+     * @param  int  $id  원본 템플릿 ID
+     * @return ProductNoticeTemplate 복사된 템플릿 모델
      *
-     * @throws \Exception
+     * @throws ProductNoticeTemplateNotFoundException 템플릿이 존재하지 않는 경우
      */
     public function copyTemplate(int $id): ProductNoticeTemplate
     {
         $original = $this->repository->findById($id);
 
         if (! $original) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.product_notice_template_not_found'));
+            throw new ProductNoticeTemplateNotFoundException($id);
         }
 
         // Before 훅

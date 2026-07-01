@@ -40,9 +40,10 @@ class OrderEnumsTest extends ModuleTestCase
         $values = OrderStatusEnum::values();
 
         $this->assertIsArray($values);
-        $this->assertCount(11, $values);
+        $this->assertCount(10, $values);
         $this->assertContains('pending_order', $values);
         $this->assertContains('cancelled', $values);
+        $this->assertNotContains('partial_cancelled', $values, '부분취소는 별도 주문 상태가 아니다');
     }
 
     public function test_order_status_to_select_options_returns_array(): void
@@ -50,7 +51,7 @@ class OrderEnumsTest extends ModuleTestCase
         $options = OrderStatusEnum::toSelectOptions();
 
         $this->assertIsArray($options);
-        $this->assertCount(11, $options);
+        $this->assertCount(10, $options);
 
         // 각 옵션에 value와 label이 있는지 확인
         foreach ($options as $option) {
@@ -113,6 +114,30 @@ class OrderEnumsTest extends ModuleTestCase
         $this->assertTrue(OrderStatusEnum::CONFIRMED->isCompleted());
         $this->assertFalse(OrderStatusEnum::SHIPPING->isCompleted());
         $this->assertFalse(OrderStatusEnum::CANCELLED->isCompleted());
+    }
+
+    public function test_order_status_sync_excluded_statuses_are_cancel_lifecycle(): void
+    {
+        $excluded = OrderStatusEnum::syncExcludedStatuses();
+
+        // 주문→옵션 동기화에서 제외할 별도 라이프사이클(취소) SSoT.
+        // 부분취소는 별도 상태가 아니므로(잔여 옵션 기준 파생) 제외 목록은 CANCELLED 뿐이다.
+        $this->assertContains(OrderStatusEnum::CANCELLED, $excluded);
+
+        // 활성 진행 상태는 동기화 대상이므로 제외 목록에 없어야 한다.
+        $this->assertNotContains(OrderStatusEnum::PENDING_ORDER, $excluded);
+        $this->assertNotContains(OrderStatusEnum::PAYMENT_COMPLETE, $excluded);
+        $this->assertNotContains(OrderStatusEnum::SHIPPING, $excluded);
+    }
+
+    public function test_order_status_sync_excluded_values_returns_string_values(): void
+    {
+        $values = OrderStatusEnum::syncExcludedValues();
+
+        $this->assertEquals(
+            ['cancelled'],
+            $values
+        );
     }
 
     // ========================================
@@ -493,5 +518,35 @@ class OrderEnumsTest extends ModuleTestCase
             );
             $this->assertNotEmpty($label, "OrderDateTypeEnum::{$case->name}의 label()이 빈 문자열입니다.");
         }
+    }
+
+    /**
+     * 통계 카운터→필터 그룹 매핑이 상품준비중을 두 상태로 확장하는지 검증합니다.
+     */
+    public function test_statistics_filter_group_expands_preparing(): void
+    {
+        $groups = OrderStatusEnum::statisticsFilterGroups();
+
+        $this->assertArrayHasKey(OrderStatusEnum::PREPARING->value, $groups);
+        $this->assertEqualsCanonicalizing(
+            [OrderStatusEnum::PREPARING->value, OrderStatusEnum::SHIPPING_READY->value],
+            $groups[OrderStatusEnum::PREPARING->value]
+        );
+    }
+
+    /**
+     * expandStatisticsFilter 는 그룹 키는 확장하고 일반 상태 값은 그대로 반환합니다(멱등).
+     */
+    public function test_expand_statistics_filter_idempotent_for_non_group(): void
+    {
+        $this->assertEqualsCanonicalizing(
+            [OrderStatusEnum::PREPARING->value, OrderStatusEnum::SHIPPING_READY->value],
+            OrderStatusEnum::expandStatisticsFilter(OrderStatusEnum::PREPARING->value)
+        );
+
+        $this->assertSame(
+            [OrderStatusEnum::SHIPPING->value],
+            OrderStatusEnum::expandStatisticsFilter(OrderStatusEnum::SHIPPING->value)
+        );
     }
 }

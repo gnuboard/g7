@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "배송지 삭제 확인 모달"
+    "description": "배송지 삭제 확인 모달",
+    "editor_label": "$t:user.modal_label.mypage_addresses.confirmDeleteAddressModal"
   },
   "type": "composite",
   "name": "Modal",

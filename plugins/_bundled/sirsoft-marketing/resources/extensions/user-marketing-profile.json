@@ -3,6 +3,7 @@
   "data_sources": [
     {
       "id": "marketing_settings",
+      "label_key": "$t:sirsoft-marketing.editor.data_source.marketing_settings",
       "type": "api",
       "endpoint": "/api/plugins/sirsoft-marketing/settings",
       "method": "GET",
@@ -34,7 +35,7 @@
               "type": "basic",
               "name": "H3",
               "props": {
-                "className": "text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                "className": "section-heading-md mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
               },
               "text": "$t:sirsoft-marketing.marketing_consent_title"
             },
@@ -57,14 +58,14 @@
                       "name": "Div",
                       "if": "{{_local.profileEditForm?.marketing_consent_enabled === true}}",
                       "props": {
-                        "className": "flex items-start gap-3"
+                        "className": "flex-start gap-3"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Label",
                           "props": {
-                            "className": "flex items-start gap-3 flex-1 cursor-pointer"
+                            "className": "flex-start gap-3 flex-1 cursor-pointer"
                           },
                           "children": [
                             {
@@ -101,7 +102,7 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "props": {
-                                    "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                    "className": "block text-heading"
                                   },
                                   "text": "$t:sirsoft-marketing.marketing_consent"
                                 },
@@ -109,7 +110,7 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "props": {
-                                    "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "block text-tertiary"
                                   },
                                   "text": "$t:sirsoft-marketing.marketing_consent_desc"
                                 }
@@ -147,7 +148,9 @@
                                   "handler": "apiCall",
                                   "target": "/api/modules/sirsoft-page/pages/{{_local.profileEditForm.marketing_consent_terms_slug}}",
                                   "auth_mode": "optional",
-                                  "params": { "method": "GET" },
+                                  "params": {
+                                    "method": "GET"
+                                  },
                                   "onSuccess": [
                                     {
                                       "handler": "setState",
@@ -190,14 +193,14 @@
                         "item_var": "channel"
                       },
                       "props": {
-                        "className": "flex items-start gap-3 ml-8"
+                        "className": "flex-start gap-3 ml-8"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Label",
                           "props": {
-                            "className": "flex items-start gap-3 flex-1 cursor-pointer"
+                            "className": "flex-start gap-3 flex-1 cursor-pointer"
                           },
                           "children": [
                             {
@@ -229,7 +232,7 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "props": {
-                                    "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                    "className": "block text-heading"
                                   },
                                   "text": "{{$get(channel.label_i18n, _global.locale, channel.label)}}"
                                 }
@@ -267,7 +270,9 @@
                                   "handler": "apiCall",
                                   "target": "/api/modules/sirsoft-page/pages/{{channel.terms_slug}}",
                                   "auth_mode": "optional",
-                                  "params": { "method": "GET" },
+                                  "params": {
+                                    "method": "GET"
+                                  },
                                   "onSuccess": [
                                     {
                                       "handler": "setState",
@@ -315,14 +320,14 @@
                       "name": "Div",
                       "if": "{{_local.profileEditForm?.third_party_consent_enabled === true}}",
                       "props": {
-                        "className": "flex items-start gap-3"
+                        "className": "flex-start gap-3"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Label",
                           "props": {
-                            "className": "flex items-start gap-3 flex-1 cursor-pointer"
+                            "className": "flex-start gap-3 flex-1 cursor-pointer"
                           },
                           "children": [
                             {
@@ -344,7 +349,7 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "props": {
-                                    "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                    "className": "block text-heading"
                                   },
                                   "text": "$t:sirsoft-marketing.third_party_consent"
                                 },
@@ -352,7 +357,7 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "props": {
-                                    "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "block text-tertiary"
                                   },
                                   "text": "$t:sirsoft-marketing.third_party_consent_desc"
                                 }
@@ -390,7 +395,9 @@
                                   "handler": "apiCall",
                                   "target": "/api/modules/sirsoft-page/pages/{{_local.profileEditForm.third_party_consent_terms_slug}}",
                                   "auth_mode": "optional",
-                                  "params": { "method": "GET" },
+                                  "params": {
+                                    "method": "GET"
+                                  },
                                   "onSuccess": [
                                     {
                                       "handler": "setState",
@@ -436,14 +443,14 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-start gap-3"
+                            "className": "flex-start gap-3"
                           },
                           "children": [
                             {
                               "type": "basic",
                               "name": "Label",
                               "props": {
-                                "className": "flex items-start gap-3 flex-1 cursor-pointer"
+                                "className": "flex-start gap-3 flex-1 cursor-pointer"
                               },
                               "children": [
                                 {
@@ -465,7 +472,7 @@
                                       "type": "basic",
                                       "name": "Span",
                                       "props": {
-                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                        "className": "block text-heading"
                                       },
                                       "text": "$t:sirsoft-marketing.info_disclosure"
                                     },
@@ -473,7 +480,7 @@
                                       "type": "basic",
                                       "name": "Span",
                                       "props": {
-                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "block text-tertiary"
                                       },
                                       "text": "$t:sirsoft-marketing.info_disclosure_desc"
                                     }
@@ -511,7 +518,9 @@
                                       "handler": "apiCall",
                                       "target": "/api/modules/sirsoft-page/pages/{{_local.profileEditForm.info_disclosure_terms_slug}}",
                                       "auth_mode": "optional",
-                                      "params": { "method": "GET" },
+                                      "params": {
+                                        "method": "GET"
+                                      },
                                       "onSuccess": [
                                         {
                                           "handler": "setState",
@@ -549,7 +558,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-400 dark:text-gray-500 ml-8"
+                            "className": "text-hint block ml-8"
                           },
                           "text": "$t:sirsoft-marketing.info_disclosure_warning"
                         }
@@ -584,18 +593,25 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex flex-col" },
+          "props": {
+            "className": "flex flex-col"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "if": "{{_global.marketingTermsLoading}}",
-              "props": { "className": "flex justify-center items-center py-12" },
+              "props": {
+                "className": "flex-center justify-center py-12"
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Icon",
-                  "props": { "name": "circle-notch", "className": "text-blue-600 animate-spin text-3xl" }
+                  "props": {
+                    "name": "circle-notch",
+                    "className": "text-blue-600 animate-spin text-3xl"
+                  }
                 }
               ]
             },
@@ -603,12 +619,16 @@
               "type": "basic",
               "name": "Div",
               "if": "{{_global.marketingTermsPageData?.published_at}}",
-              "props": { "className": "flex-shrink-0 flex items-center gap-2 mb-3" },
+              "props": {
+                "className": "flex-center flex-shrink-0 gap-2 mb-3"
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Span",
-                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
                   "text": "$t:sirsoft-marketing.terms_published_at: {{_global.marketingTermsPageData?.published_at | date}}"
                 }
               ]
@@ -617,7 +637,9 @@
               "type": "basic",
               "name": "Div",
               "if": "{{_global.marketingTermsPageData}}",
-              "props": { "className": "flex-1 overflow-y-auto min-h-0 max-h-96" },
+              "props": {
+                "className": "flex-1 overflow-y-auto min-h-0 max-h-96"
+              },
               "children": [
                 {
                   "type": "composite",
@@ -634,13 +656,17 @@
               "type": "basic",
               "name": "Div",
               "if": "{{!_global.marketingTermsLoading && !_global.marketingTermsPageData}}",
-              "props": { "className": "py-8 text-center text-gray-500 dark:text-gray-400" },
+              "props": {
+                "className": "py-8 text-center text-gray-500 dark:text-gray-400"
+              },
               "text": "$t:sirsoft-marketing.no_terms_content"
             },
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex-shrink-0 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" },
+              "props": {
+                "className": "flex-shrink-0 flex justify-end gap-3 mt-4 pt-4"
+              },
               "children": [
                 {
                   "type": "basic",

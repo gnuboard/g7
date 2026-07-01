@@ -1,0 +1,2740 @@
+{
+  "comment": "sirsoft-admin_basic 78개 draggable 전수 capability. propControls(속성 탭, controls.json propValue 참조) + styleControls(스타일 탭) + events(동작) + nodeEditor(구조 에디터 슬롯, 단계 2/3). no-editable 0. 부록1 1:1 + 소스검증 정정(EmptyState/Breadcrumb 무이벤트, StatusBadge iconName=icon-picker).",
+  "Div": {
+    "label": "$t:editor.component.div",
+    "coreProps": ["id", "dataKey"],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "height",
+      "textAlign",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "advanced": [
+      "permissions",
+      "blur_until_loaded",
+      "comment"
+    ],
+    "flexEditor": "auto"
+  },
+  "Span": {
+    "label": "$t:editor.component.span",
+    "styleControls": [
+      "fontSize",
+      "fontWeight",
+      "textColor",
+      "fontItalic",
+      "textUnderline",
+      "whitespace"
+    ]
+  },
+  "P": {
+    "label": "$t:editor.component.p",
+    "styleControls": [
+      "textAlign",
+      "fontSize",
+      "textColor",
+      "marginAll",
+      "fontBold",
+      "fontItalic",
+      "textUnderline",
+      "whitespace"
+    ]
+  },
+  "H1": {
+    "label": "$t:editor.component.h1",
+    "styleControls": [
+      "textAlign",
+      "fontSize",
+      "fontWeight",
+      "textColor",
+      "marginAll",
+      "fontItalic",
+      "textUnderline",
+      "whitespace"
+    ]
+  },
+  "H2": {
+    "label": "$t:editor.component.h2",
+    "styleControls": [
+      "textAlign",
+      "fontSize",
+      "fontWeight",
+      "textColor",
+      "marginAll",
+      "fontItalic",
+      "textUnderline",
+      "whitespace"
+    ]
+  },
+  "H3": {
+    "label": "$t:editor.component.h3",
+    "styleControls": [
+      "textAlign",
+      "fontSize",
+      "fontWeight",
+      "textColor",
+      "marginAll",
+      "fontItalic",
+      "textUnderline",
+      "whitespace"
+    ]
+  },
+  "H4": {
+    "label": "$t:editor.component.h4",
+    "styleControls": [
+      "textAlign",
+      "fontSize",
+      "fontWeight",
+      "textColor",
+      "marginAll",
+      "fontItalic",
+      "textUnderline",
+      "whitespace"
+    ]
+  },
+  "A": {
+    "label": "$t:editor.component.a",
+    "propControls": [
+      "linkHref",
+      "linkTarget"
+    ],
+    "styleControls": [
+      "fontSize",
+      "fontWeight",
+      "textColor",
+      "fontItalic",
+      "textUnderline",
+      "whitespace"
+    ],
+    "advanced": [
+      "permissions"
+    ],
+    "events": [
+      "onClick"
+    ]
+  },
+  "Button": {
+    "label": "$t:editor.component.button",
+    "propControls": [
+      "componentDisabled"
+    ],
+    "styleControls": [
+      "width",
+      "height",
+      "paddingAll",
+      "marginAll",
+      "textColor",
+      "backgroundColor",
+      "fontBold",
+      "fontItalic",
+      "textUnderline",
+      "whitespace"
+    ],
+    "advanced": [
+      "permissions",
+      "lifecycle"
+    ],
+    "events": [
+      "onClick",
+      "onHover"
+    ]
+  },
+  "Img": {
+    "label": "$t:editor.component.img",
+    "propControls": [
+      "imgSrc",
+      "imgAlt"
+    ],
+    "styleControls": [
+      "width",
+      "height",
+      "marginAll"
+    ]
+  },
+  "Icon": {
+    "label": "$t:editor.component.icon",
+    "propControls": [
+      "iconName",
+      "iconStyle",
+      "iconSize",
+      "iconColor",
+      "iconSpin",
+      "iconPulse",
+      "iconFixedWidth",
+      "iconAria"
+    ],
+    "styleControls": [
+      "fontSize",
+      "textColor",
+      "marginAll"
+    ]
+  },
+  "Hr": {
+    "label": "$t:editor.component.hr",
+    "styleControls": [
+      "marginAll",
+      "borderStyle",
+      "borderColor",
+      "opacity"
+    ]
+  },
+  "Ul": {
+    "label": "$t:editor.component.ul",
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "textColor",
+      "fontSize"
+    ],
+    "nodeEditor": {
+      "kind": "children",
+      "params": {
+        "childComponent": "Li"
+      }
+    }
+  },
+  "Ol": {
+    "label": "$t:editor.component.ol",
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "textColor",
+      "fontSize"
+    ],
+    "nodeEditor": {
+      "kind": "children",
+      "params": {
+        "childComponent": "Li"
+      }
+    }
+  },
+  "Li": {
+    "label": "$t:editor.component.li",
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "textColor",
+      "fontSize",
+      "fontWeight",
+      "fontItalic",
+      "textUnderline"
+    ],
+    "nodeEditor": {
+      "kind": "children",
+      "params": {
+        "childComponent": "Span"
+      }
+    }
+  },
+  "Nav": {
+    "label": "$t:editor.component.nav",
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "flexEditor": "auto",
+    "nodeEditor": {
+      "kind": "children",
+      "params": {
+        "childComponent": "A"
+      }
+    }
+  },
+  "Section": {
+    "label": "$t:editor.component.section",
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "advanced": [
+      "permissions"
+    ]
+  },
+  "Code": {
+    "label": "$t:editor.component.code",
+    "styleControls": [
+      "fontSize",
+      "textColor",
+      "backgroundColor",
+      "paddingAll",
+      "marginAll",
+      "borderRadius",
+      "whitespace"
+    ]
+  },
+  "Pre": {
+    "label": "$t:editor.component.pre",
+    "styleControls": [
+      "fontSize",
+      "textColor",
+      "backgroundColor",
+      "paddingAll",
+      "marginAll",
+      "borderRadius",
+      "overflow",
+      "whitespace"
+    ]
+  },
+  "Container": {
+    "label": "$t:editor.component.container",
+    "coreProps": ["id", "dataKey"],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "advanced": [
+      "permissions"
+    ],
+    "flexEditor": "auto"
+  },
+  "Grid": {
+    "label": "$t:editor.component.grid",
+    "propControls": [
+      "gridCols",
+      "gridGap",
+      "gridRowGap",
+      "gridColGap",
+      "gridAutoRows",
+      "gridAutoCols",
+      "gridFlow"
+    ],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "events": [
+      "onClick"
+    ]
+  },
+  "Flex": {
+    "label": "$t:editor.component.flex",
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "height",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "events": [
+      "onClick"
+    ],
+    "flexEditor": "container"
+  },
+  "SectionLayout": {
+    "label": "$t:editor.component.section_layout",
+    "propControls": [
+      "secTitle",
+      "secSubtitle",
+      "secPadding",
+      "secBackground",
+      "secMaxWidth",
+      "secCentered",
+      "secBorder",
+      "secShadow",
+      "secRounded"
+    ],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "advanced": [
+      "permissions"
+    ],
+    "events": [
+      "onClick"
+    ]
+  },
+  "ThreeColumnLayout": {
+    "label": "$t:editor.component.three_column_layout",
+    "propControls": [
+      "tclLeftWidth",
+      "tclRightWidth"
+    ],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "overflow"
+    ]
+  },
+  "Card": {
+    "label": "$t:editor.component.card",
+    "propControls": [
+      "cardTitle",
+      "cardContent",
+      "cardImageUrl",
+      "cardImageAlt"
+    ],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "advanced": [
+      "permissions"
+    ],
+    "events": [
+      "onClick"
+    ],
+    "flexEditor": "item"
+  },
+  "Badge": {
+    "label": "$t:editor.component.badge",
+    "propControls": [
+      "badgeColor",
+      "badgeText",
+      "badgeSize"
+    ],
+    "styleControls": [
+      "marginAll"
+    ]
+  },
+  "StatusBadge": {
+    "label": "$t:editor.component.status_badge",
+    "propControls": [
+      "sbStatus",
+      "sbLabel",
+      "sbShowIcon",
+      "sbIconName"
+    ],
+    "styleControls": [
+      "marginAll"
+    ]
+  },
+  "Alert": {
+    "label": "$t:editor.component.alert",
+    "propControls": [
+      "alertType",
+      "alertMessage",
+      "alertDismissible"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onDismiss"
+    ]
+  },
+  "EmptyState": {
+    "label": "$t:editor.component.empty_state",
+    "propControls": [
+      "esTitle",
+      "esDesc",
+      "esIconName",
+      "esIllustSrc",
+      "esIllustAlt"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width",
+      "textAlign"
+    ]
+  },
+  "LoadingSpinner": {
+    "label": "$t:editor.component.loading_spinner",
+    "propControls": [
+      "lsSize",
+      "lsColor",
+      "lsFullscreen",
+      "lsText"
+    ],
+    "styleControls": [
+      "marginAll"
+    ]
+  },
+  "PageHeader": {
+    "label": "$t:editor.component.page_header",
+    "propControls": [
+      "phTitle",
+      "phDesc"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "advanced": [
+      "permissions"
+    ],
+    "dataProps": [
+      {
+        "propKey": "tabs",
+        "shape": "array",
+        "label": "$t:editor.data_prop.tabs",
+        "itemFields": [
+          "id",
+          "label",
+          "value"
+        ]
+      },
+      {
+        "propKey": "breadcrumbItems",
+        "shape": "array",
+        "label": "$t:editor.data_prop.breadcrumb_items",
+        "itemFields": [
+          "label",
+          "href"
+        ]
+      }
+    ]
+  },
+  "Breadcrumb": {
+    "label": "$t:editor.component.breadcrumb",
+    "propControls": [
+      "bcSeparator",
+      "bcShowHome",
+      "bcHomeHref",
+      "bcMaxItems"
+    ],
+    "styleControls": [
+      "marginAll",
+      "fontSize",
+      "textColor"
+    ],
+    "nodeEditor": {
+      "kind": "array",
+      "params": {
+        "arrayProp": "items",
+        "itemLabel": "$t:editor.array_item.crumb",
+        "newItem": {
+          "label": ""
+        },
+        "fields": [
+          {
+            "key": "label",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.label",
+            "primary": true
+          },
+          {
+            "key": "href",
+            "widget": "text",
+            "label": "$t:editor.array_field.href"
+          }
+        ]
+      }
+    }
+  },
+  "TabNavigation": {
+    "label": "$t:editor.component.tab_navigation",
+    "propControls": [
+      "tnActiveTabId",
+      "tnVariant",
+      "tnMobileBreakpoint"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onTabChange"
+    ],
+    "nodeEditor": {
+      "kind": "array",
+      "params": {
+        "arrayProp": "tabs",
+        "itemLabel": "$t:editor.array_item.tab",
+        "newItem": {
+          "id": "",
+          "label": ""
+        },
+        "fields": [
+          {
+            "key": "label",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.label",
+            "primary": true
+          },
+          {
+            "key": "id",
+            "widget": "text",
+            "label": "$t:editor.array_field.id"
+          },
+          {
+            "key": "iconName",
+            "widget": "icon",
+            "label": "$t:editor.array_field.icon"
+          },
+          {
+            "key": "badge",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.badge"
+          },
+          {
+            "key": "disabled",
+            "widget": "boolean",
+            "label": "$t:editor.array_field.disabled"
+          }
+        ]
+      }
+    },
+    "canvasOverlay": {
+      "kind": "tabnav",
+      "params": {
+        "arrayProp": "tabs"
+      }
+    }
+  },
+  "TabNavigationScroll": {
+    "label": "$t:editor.component.tab_navigation_scroll",
+    "propControls": [
+      "tnsActiveTabId",
+      "tnsSectionPrefix",
+      "tnsScrollOffset",
+      "tnsScrollDelay",
+      "tnsEnableSpy",
+      "tnsSpyOffset",
+      "tnsContainerId"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onTabChange"
+    ],
+    "nodeEditor": {
+      "kind": "array",
+      "params": {
+        "arrayProp": "tabs",
+        "itemLabel": "$t:editor.array_item.tab",
+        "newItem": {
+          "id": "",
+          "label": ""
+        },
+        "fields": [
+          {
+            "key": "label",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.label",
+            "primary": true
+          },
+          {
+            "key": "id",
+            "widget": "text",
+            "label": "$t:editor.array_field.id"
+          },
+          {
+            "key": "iconName",
+            "widget": "icon",
+            "label": "$t:editor.array_field.icon"
+          },
+          {
+            "key": "badge",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.badge"
+          },
+          {
+            "key": "disabled",
+            "widget": "boolean",
+            "label": "$t:editor.array_field.disabled"
+          }
+        ]
+      }
+    },
+    "dataProps": [
+      {
+        "propKey": "tabs",
+        "shape": "array",
+        "label": "$t:editor.data_prop.tabs",
+        "itemFields": [
+          "id",
+          "label"
+        ]
+      }
+    ]
+  },
+  "Toggle": {
+    "label": "$t:editor.component.toggle",
+    "propControls": [
+      "tgLabel",
+      "tgDesc",
+      "tgSize",
+      "tgDisabled",
+      "tgName"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ]
+  },
+  "FormField": {
+    "label": "$t:editor.component.form_field",
+    "propControls": [
+      "ffLabel",
+      "ffRequired",
+      "ffError",
+      "ffHelper",
+      "ffHorizontal",
+      "ffLabelWidth"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "advanced": [
+      "permissions"
+    ]
+  },
+  "Input": {
+    "label": "$t:editor.component.input",
+    "propControls": [
+      "inputType",
+      "inputPlaceholder",
+      "inputName",
+      "inputRequired",
+      "inputDisabled"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.value"
+      }
+    ]
+  },
+  "Textarea": {
+    "label": "$t:editor.component.textarea",
+    "propControls": [
+      "textareaRows",
+      "inputPlaceholder",
+      "inputName",
+      "inputDisabled"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.value"
+      }
+    ]
+  },
+  "Label": {
+    "label": "$t:editor.component.label",
+    "propControls": [
+      "htmlFor"
+    ],
+    "styleControls": [
+      "fontSize",
+      "fontWeight",
+      "textColor",
+      "fontItalic",
+      "textUnderline",
+      "whitespace",
+      "marginAll"
+    ]
+  },
+  "Select": {
+    "label": "$t:editor.component.select",
+    "propControls": [
+      "selectPlaceholder",
+      "selectOptions",
+      "inputDisabled"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.value"
+      },
+      {
+        "propKey": "options",
+        "shape": "array",
+        "label": "$t:editor.data_prop.options",
+        "itemFields": [
+          "value",
+          "label",
+          "disabled"
+        ]
+      }
+    ]
+  },
+  "Checkbox": {
+    "label": "$t:editor.component.checkbox",
+    "propControls": [
+      "inputDisabled"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ]
+  },
+  "RadioGroup": {
+    "label": "$t:editor.component.radio_group",
+    "propControls": [
+      "inputName",
+      "rgInline",
+      "rgSize",
+      "selectOptions",
+      "fieldLabel",
+      "fieldError",
+      "inputDisabled"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.value"
+      },
+      {
+        "propKey": "options",
+        "shape": "array",
+        "label": "$t:editor.data_prop.options",
+        "itemFields": [
+          "value",
+          "label",
+          "disabled"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "FileInput": {
+    "label": "$t:editor.component.file_input",
+    "propControls": [
+      "fiAccept",
+      "fiMaxSize",
+      "fiButtonText",
+      "inputPlaceholder",
+      "inputDisabled"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ]
+  },
+  "FileUploader": {
+    "label": "$t:editor.component.file_uploader",
+    "propControls": [
+      "fuType",
+      "fuCollection",
+      "fuMaxFiles",
+      "fuMaxSize",
+      "fuAccept",
+      "fuAutoUpload",
+      "inputDisabled",
+      "fuConfirmRemove",
+      "fuPrimarySel"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onFilesChange"
+    ]
+  },
+  "DataGrid": {
+    "label": "$t:editor.component.data_grid",
+    "propControls": [
+      "dgPagination",
+      "dgPageSize"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "advanced": [
+      "permissions"
+    ],
+    "events": [
+      "onPageChange",
+      "onRowClick"
+    ],
+    "nodeEditor": {
+      "kind": "array",
+      "params": {
+        "arrayProp": "columns",
+        "itemLabel": "$t:editor.array_item.column",
+        "newItem": {
+          "field": "",
+          "header": ""
+        },
+        "fields": [
+          {
+            "key": "header",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.header",
+            "primary": true
+          },
+          {
+            "key": "field",
+            "widget": "text",
+            "label": "$t:editor.array_field.field"
+          },
+          {
+            "key": "width",
+            "widget": "text",
+            "label": "$t:editor.array_field.width"
+          },
+          {
+            "key": "sortable",
+            "widget": "boolean",
+            "label": "$t:editor.array_field.sortable"
+          }
+        ]
+      }
+    },
+    "dataProps": [
+      {
+        "propKey": "data",
+        "shape": "array",
+        "label": "$t:editor.data_prop.data",
+        "itemFields": [
+          "id",
+          "name"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "CardGrid": {
+    "label": "$t:editor.component.card_grid",
+    "propControls": [
+      "cgGridCols",
+      "cgGap",
+      "cgPagination",
+      "cgPageSize"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onPageChange"
+    ],
+    "nodeEditor": {
+      "kind": "array-cell-tree",
+      "params": {
+        "arrayProp": "cardColumns",
+        "itemLabel": "$t:editor.array_item.card_column",
+        "idField": "id",
+        "cellChildrenProp": "cellChildren",
+        "cellChildComponent": "Div",
+        "newItem": {
+          "id": "",
+          "cellChildren": []
+        }
+      }
+    },
+    "dataProps": [
+      {
+        "propKey": "data",
+        "shape": "array",
+        "label": "$t:editor.data_prop.data",
+        "itemFields": [
+          "id",
+          "name"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "Pagination": {
+    "label": "$t:editor.component.pagination",
+    "propControls": [
+      "pgMaxVisible",
+      "pgShowFirstLast",
+      "pgPrevText",
+      "pgNextText"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onPageChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "currentPage",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.current_page"
+      },
+      {
+        "propKey": "totalPages",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.total_pages"
+      }
+    ]
+  },
+  "SearchBar": {
+    "label": "$t:editor.component.search_bar",
+    "propControls": [
+      "sbPlaceholder",
+      "sbShowButton",
+      "sbShowSuggestions",
+      "inputName"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onChange",
+      "onSubmit"
+    ],
+    "dataProps": [
+      {
+        "propKey": "suggestions",
+        "shape": "array",
+        "label": "$t:editor.data_prop.suggestions",
+        "itemFields": [
+          "id",
+          "text"
+        ]
+      },
+      {
+        "propKey": "value",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.value"
+      }
+    ]
+  },
+  "StatCard": {
+    "label": "$t:editor.component.stat_card",
+    "propControls": [
+      "scValue",
+      "scLabel",
+      "scChange",
+      "scChangeLabel",
+      "scIconName",
+      "scTrend"
+    ],
+    "styleControls": [
+      "width",
+      "paddingAll",
+      "marginAll"
+    ]
+  },
+  "ProductCard": {
+    "label": "$t:editor.component.product_card",
+    "propControls": [
+      "pcImageUrl",
+      "pcImageAlt",
+      "pcTitle",
+      "pcSubtitle",
+      "pcDesc",
+      "pcPrice",
+      "pcOrigPrice",
+      "pcDiscount",
+      "pcCurrency",
+      "pcButtonText"
+    ],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "events": [
+      "onButtonClick"
+    ]
+  },
+  "TemplateCard": {
+    "label": "$t:editor.component.template_card",
+    "propControls": [
+      "tcImage",
+      "tcImageAlt",
+      "tcVendor",
+      "tcName",
+      "tcVersion",
+      "tcStatus",
+      "tcUpdateAvail",
+      "tcLatestVersion",
+      "tcShowLayoutBtn"
+    ],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "events": [
+      "onLayoutEditClick"
+    ]
+  },
+  "BarChart": {
+    "label": "$t:editor.component.bar_chart",
+    "propControls": [
+      "bcHeight",
+      "bcShowLegend",
+      "bcShowGrid",
+      "bcShowYGrid",
+      "bcShowYAxis"
+    ],
+    "styleControls": [
+      "marginAll",
+      "width"
+    ],
+    "nodeEditor": {
+      "kind": "array-group",
+      "params": {
+        "groups": [
+          {
+            "arrayProp": "labels",
+            "title": "$t:editor.array_group.chart_labels",
+            "itemLabel": "$t:editor.array_item.chart_label",
+            "newItem": "",
+            "fields": [
+              {
+                "key": "value",
+                "widget": "i18n-text",
+                "label": "$t:editor.array_field.chart_label",
+                "primary": true
+              }
+            ]
+          },
+          {
+            "arrayProp": "datasets",
+            "title": "$t:editor.array_group.chart_datasets",
+            "itemLabel": "$t:editor.array_item.chart_dataset",
+            "newItem": {
+              "label": "",
+              "data": [],
+              "backgroundColor": "#7C3AED"
+            },
+            "fields": [
+              {
+                "key": "label",
+                "widget": "i18n-text",
+                "label": "$t:editor.array_field.chart_series",
+                "primary": true
+              },
+              {
+                "key": "data",
+                "widget": "number-list",
+                "label": "$t:editor.array_field.chart_data"
+              },
+              {
+                "key": "backgroundColor",
+                "widget": "color",
+                "label": "$t:editor.array_field.chart_color"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "dataProps": [
+      {
+        "propKey": "datasets",
+        "shape": "array",
+        "label": "$t:editor.data_prop.datasets",
+        "itemFields": [
+          "label",
+          "data",
+          "backgroundColor"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "DonutChart": {
+    "label": "$t:editor.component.donut_chart",
+    "propControls": [
+      "dcCenterLabel",
+      "dcCenterValue",
+      "dcSize",
+      "dcCutout",
+      "dcShowLegend"
+    ],
+    "styleControls": [
+      "marginAll",
+      "width"
+    ],
+    "nodeEditor": {
+      "kind": "array",
+      "params": {
+        "arrayProp": "data",
+        "itemLabel": "$t:editor.array_item.chart_slice",
+        "newItem": {
+          "name": "",
+          "value": 0,
+          "color": "#7C3AED"
+        },
+        "fields": [
+          {
+            "key": "name",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.chart_name",
+            "primary": true
+          },
+          {
+            "key": "value",
+            "widget": "number",
+            "label": "$t:editor.array_field.chart_value"
+          },
+          {
+            "key": "color",
+            "widget": "color",
+            "label": "$t:editor.array_field.chart_color"
+          }
+        ]
+      }
+    },
+    "dataProps": [
+      {
+        "propKey": "data",
+        "shape": "array",
+        "label": "$t:editor.data_prop.chart_data",
+        "itemFields": [
+          "name",
+          "value",
+          "color"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "HtmlContent": {
+    "label": "$t:editor.component.html_content",
+    "propControls": [
+      "hcIsHtml"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "textColor",
+      "fontSize"
+    ]
+  },
+  "HtmlEditor": {
+    "label": "$t:editor.component.html_editor",
+    "propControls": [
+      "heMultilingual",
+      "heIsHtml",
+      "heRows",
+      "hePlaceholder",
+      "heLabel",
+      "heShowHtmlToggle",
+      "heName",
+      "heHtmlFieldName",
+      "heReadOnly"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onChange"
+    ]
+  },
+  "ImageGallery": {
+    "label": "$t:editor.component.image_gallery",
+    "propControls": [
+      "igEnableZoom",
+      "igEnableSlideshow",
+      "igEnableFullscreen",
+      "igShowCounter",
+      "igShowDownload",
+      "igShowThumbnails"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onClose"
+    ],
+    "coreProps": true,
+    "dataProps": [
+      {
+        "propKey": "images",
+        "shape": "array",
+        "label": "$t:editor.data_prop.images",
+        "itemFields": [
+          "src",
+          "title",
+          "thumbnail"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "Form": {
+    "label": "$t:editor.component.form",
+    "coreProps": ["id", "dataKey"],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "events": [
+      "onSubmit"
+    ],
+    "nodeEditor": {
+      "kind": "children",
+      "params": {
+        "childComponent": "Input",
+        "childLabel": "$t:layout_editor.palette.input.label",
+        "childTemplate": {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "placeholder": "$t:layout_editor.palette.input.default_placeholder",
+                "className": "input"
+              }
+            }
+          ]
+        },
+        "itemFields": [
+          {
+            "kind": "text",
+            "label": "$t:layout_editor.list_editor.item_label"
+          },
+          {
+            "kind": "prop",
+            "prop": "placeholder",
+            "label": "$t:layout_editor.list_editor.item_placeholder"
+          }
+        ]
+      }
+    }
+  },
+  "Table": {
+    "label": "$t:editor.component.table",
+    "styleControls": [
+      "width",
+      "height",
+      "marginAll",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "advanced": [
+      "permissions"
+    ],
+    "nodeEditor": {
+      "kind": "table",
+      "params": {
+        "rowContainer": "Tbody",
+        "row": "Tr",
+        "cell": "Td",
+        "headerCell": "Th",
+        "colSpanProp": "colSpan",
+        "rowSpanProp": "rowSpan",
+        "cellBorder": {
+          "sides": [
+            {
+              "value": "all",
+              "label": "$t:editor.cell_border.side_all",
+              "prefix": "border"
+            },
+            {
+              "value": "top",
+              "label": "$t:editor.cell_border.side_top",
+              "prefix": "border-t"
+            },
+            {
+              "value": "bottom",
+              "label": "$t:editor.cell_border.side_bottom",
+              "prefix": "border-b"
+            },
+            {
+              "value": "left",
+              "label": "$t:editor.cell_border.side_left",
+              "prefix": "border-l"
+            },
+            {
+              "value": "right",
+              "label": "$t:editor.cell_border.side_right",
+              "prefix": "border-r"
+            }
+          ],
+          "widths": [
+            {
+              "value": "none",
+              "label": "$t:editor.cell_border.width_none"
+            },
+            {
+              "value": "thin",
+              "label": "$t:editor.cell_border.width_thin",
+              "suffix": ""
+            },
+            {
+              "value": "medium",
+              "label": "$t:editor.cell_border.width_medium",
+              "suffix": "-2"
+            },
+            {
+              "value": "thick",
+              "label": "$t:editor.cell_border.width_thick",
+              "suffix": "-4"
+            }
+          ],
+          "colors": [
+            {
+              "value": "gray-300",
+              "label": "$t:editor.cell_border.color_gray",
+              "swatch": "#d1d5db",
+              "token": "border-gray-300"
+            },
+            {
+              "value": "gray-500",
+              "label": "$t:editor.cell_border.color_gray_dark",
+              "swatch": "#6b7280",
+              "token": "border-gray-500"
+            },
+            {
+              "value": "slate-800",
+              "label": "$t:editor.cell_border.color_dark",
+              "swatch": "#1e293b",
+              "token": "border-slate-800"
+            },
+            {
+              "value": "blue-500",
+              "label": "$t:editor.cell_border.color_blue",
+              "swatch": "#3b82f6",
+              "token": "border-blue-500"
+            },
+            {
+              "value": "red-500",
+              "label": "$t:editor.cell_border.color_red",
+              "swatch": "#ef4444",
+              "token": "border-red-500"
+            }
+          ]
+        },
+        "cellBackground": {
+          "colors": [
+            {
+              "value": "white",
+              "label": "$t:editor.cell_fill.color_white",
+              "swatch": "#ffffff",
+              "token": "bg-white"
+            },
+            {
+              "value": "gray-100",
+              "label": "$t:editor.cell_fill.color_gray",
+              "swatch": "#f3f4f6",
+              "token": "bg-gray-100"
+            },
+            {
+              "value": "gray-200",
+              "label": "$t:editor.cell_fill.color_gray_dark",
+              "swatch": "#e5e7eb",
+              "token": "bg-gray-200"
+            },
+            {
+              "value": "yellow-100",
+              "label": "$t:editor.cell_fill.color_yellow",
+              "swatch": "#fef9c3",
+              "token": "bg-yellow-100"
+            },
+            {
+              "value": "blue-100",
+              "label": "$t:editor.cell_fill.color_blue",
+              "swatch": "#dbeafe",
+              "token": "bg-blue-100"
+            },
+            {
+              "value": "green-100",
+              "label": "$t:editor.cell_fill.color_green",
+              "swatch": "#dcfce7",
+              "token": "bg-green-100"
+            },
+            {
+              "value": "red-100",
+              "label": "$t:editor.cell_fill.color_red",
+              "swatch": "#fee2e2",
+              "token": "bg-red-100"
+            }
+          ]
+        },
+        "cellPadding": {
+          "steps": [
+            {
+              "value": "none",
+              "label": "$t:editor.cell_padding.step_none"
+            },
+            {
+              "value": "narrow",
+              "label": "$t:editor.cell_padding.step_narrow",
+              "px": 4
+            },
+            {
+              "value": "normal",
+              "label": "$t:editor.cell_padding.step_normal",
+              "px": 8
+            },
+            {
+              "value": "wide",
+              "label": "$t:editor.cell_padding.step_wide",
+              "px": 16
+            }
+          ]
+        }
+      }
+    },
+    "canvasOverlay": {
+      "kind": "table",
+      "params": {
+        "rowContainer": "Tbody",
+        "row": "Tr",
+        "cell": "Td",
+        "headerCell": "Th",
+        "colSpanProp": "colSpan",
+        "rowSpanProp": "rowSpan",
+        "cellBorder": {
+          "sides": [
+            {
+              "value": "all",
+              "label": "$t:editor.cell_border.side_all",
+              "prefix": "border"
+            },
+            {
+              "value": "top",
+              "label": "$t:editor.cell_border.side_top",
+              "prefix": "border-t"
+            },
+            {
+              "value": "bottom",
+              "label": "$t:editor.cell_border.side_bottom",
+              "prefix": "border-b"
+            },
+            {
+              "value": "left",
+              "label": "$t:editor.cell_border.side_left",
+              "prefix": "border-l"
+            },
+            {
+              "value": "right",
+              "label": "$t:editor.cell_border.side_right",
+              "prefix": "border-r"
+            }
+          ],
+          "widths": [
+            {
+              "value": "none",
+              "label": "$t:editor.cell_border.width_none"
+            },
+            {
+              "value": "thin",
+              "label": "$t:editor.cell_border.width_thin",
+              "suffix": ""
+            },
+            {
+              "value": "medium",
+              "label": "$t:editor.cell_border.width_medium",
+              "suffix": "-2"
+            },
+            {
+              "value": "thick",
+              "label": "$t:editor.cell_border.width_thick",
+              "suffix": "-4"
+            }
+          ],
+          "colors": [
+            {
+              "value": "gray-300",
+              "label": "$t:editor.cell_border.color_gray",
+              "swatch": "#d1d5db",
+              "token": "border-gray-300"
+            },
+            {
+              "value": "gray-500",
+              "label": "$t:editor.cell_border.color_gray_dark",
+              "swatch": "#6b7280",
+              "token": "border-gray-500"
+            },
+            {
+              "value": "slate-800",
+              "label": "$t:editor.cell_border.color_dark",
+              "swatch": "#1e293b",
+              "token": "border-slate-800"
+            },
+            {
+              "value": "blue-500",
+              "label": "$t:editor.cell_border.color_blue",
+              "swatch": "#3b82f6",
+              "token": "border-blue-500"
+            },
+            {
+              "value": "red-500",
+              "label": "$t:editor.cell_border.color_red",
+              "swatch": "#ef4444",
+              "token": "border-red-500"
+            }
+          ]
+        },
+        "cellBackground": {
+          "colors": [
+            {
+              "value": "white",
+              "label": "$t:editor.cell_fill.color_white",
+              "swatch": "#ffffff",
+              "token": "bg-white"
+            },
+            {
+              "value": "gray-100",
+              "label": "$t:editor.cell_fill.color_gray",
+              "swatch": "#f3f4f6",
+              "token": "bg-gray-100"
+            },
+            {
+              "value": "gray-200",
+              "label": "$t:editor.cell_fill.color_gray_dark",
+              "swatch": "#e5e7eb",
+              "token": "bg-gray-200"
+            },
+            {
+              "value": "yellow-100",
+              "label": "$t:editor.cell_fill.color_yellow",
+              "swatch": "#fef9c3",
+              "token": "bg-yellow-100"
+            },
+            {
+              "value": "blue-100",
+              "label": "$t:editor.cell_fill.color_blue",
+              "swatch": "#dbeafe",
+              "token": "bg-blue-100"
+            },
+            {
+              "value": "green-100",
+              "label": "$t:editor.cell_fill.color_green",
+              "swatch": "#dcfce7",
+              "token": "bg-green-100"
+            },
+            {
+              "value": "red-100",
+              "label": "$t:editor.cell_fill.color_red",
+              "swatch": "#fee2e2",
+              "token": "bg-red-100"
+            }
+          ]
+        },
+        "cellPadding": {
+          "steps": [
+            {
+              "value": "none",
+              "label": "$t:editor.cell_padding.step_none"
+            },
+            {
+              "value": "narrow",
+              "label": "$t:editor.cell_padding.step_narrow",
+              "px": 4
+            },
+            {
+              "value": "normal",
+              "label": "$t:editor.cell_padding.step_normal",
+              "px": 8
+            },
+            {
+              "value": "wide",
+              "label": "$t:editor.cell_padding.step_wide",
+              "px": 16
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Accordion": {
+    "label": "$t:editor.component.accordion",
+    "propControls": [
+      "accDefaultOpen",
+      "accDisabled"
+    ],
+    "styleControls": [
+      "paddingAll",
+      "marginAll",
+      "width",
+      "backgroundColor",
+      "textColor",
+      "boxShadow",
+      "borderStyle",
+      "borderColor",
+      "borderRadius",
+      "opacity",
+      "overflow"
+    ],
+    "events": [
+      "onToggle"
+    ]
+  },
+  "IconButton": {
+    "label": "$t:editor.component.icon_button",
+    "propControls": [
+      "ibIconName",
+      "ibLabel",
+      "ibVariant",
+      "ibSize",
+      "ibDisabled"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onClick"
+    ]
+  },
+  "Dropdown": {
+    "label": "$t:editor.component.dropdown",
+    "propControls": [
+      "ddLabel",
+      "ddPosition",
+      "ddVariant"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onItemClick"
+    ],
+    "nodeEditor": {
+      "kind": "array",
+      "params": {
+        "arrayProp": "items",
+        "itemLabel": "$t:editor.array_item.menu_item",
+        "newItem": {
+          "label": "",
+          "value": ""
+        },
+        "fields": [
+          {
+            "key": "label",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.label",
+            "primary": true
+          },
+          {
+            "key": "value",
+            "widget": "text",
+            "label": "$t:editor.array_field.value"
+          },
+          {
+            "key": "disabled",
+            "widget": "boolean",
+            "label": "$t:editor.array_field.disabled"
+          }
+        ]
+      }
+    }
+  },
+  "ActionMenu": {
+    "label": "$t:editor.component.action_menu",
+    "propControls": [
+      "amTriggerLabel",
+      "amTriggerIcon",
+      "amPosition"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onItemClick"
+    ],
+    "nodeEditor": {
+      "kind": "array",
+      "params": {
+        "arrayProp": "items",
+        "itemLabel": "$t:editor.array_item.menu_item",
+        "newItem": {
+          "id": "",
+          "label": ""
+        },
+        "fields": [
+          {
+            "key": "label",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.label",
+            "primary": true
+          },
+          {
+            "key": "id",
+            "widget": "text",
+            "label": "$t:editor.array_field.id"
+          },
+          {
+            "key": "iconName",
+            "widget": "icon",
+            "label": "$t:editor.array_field.icon"
+          },
+          {
+            "key": "variant",
+            "widget": "select",
+            "label": "$t:editor.array_field.variant",
+            "options": [
+              {
+                "value": "default",
+                "label": "$t:editor.array_field.variant_default"
+              },
+              {
+                "value": "danger",
+                "label": "$t:editor.array_field.variant_danger"
+              }
+            ]
+          },
+          {
+            "key": "divider",
+            "widget": "boolean",
+            "label": "$t:editor.array_field.divider"
+          },
+          {
+            "key": "disabled",
+            "widget": "boolean",
+            "label": "$t:editor.array_field.disabled"
+          }
+        ]
+      }
+    }
+  },
+  "TagInput": {
+    "label": "$t:editor.component.tag_input",
+    "propControls": [
+      "selectOptions",
+      "tiPlaceholder",
+      "tiCreatable",
+      "tiDisabled",
+      "tiIsMulti",
+      "tiClearable",
+      "tiSearchable",
+      "tiMaxItems",
+      "inputName"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "array",
+        "label": "$t:editor.data_prop.selected_tags",
+        "itemFields": [
+          "value",
+          "label"
+        ]
+      },
+      {
+        "propKey": "options",
+        "shape": "array",
+        "label": "$t:editor.data_prop.options",
+        "itemFields": [
+          "value",
+          "label",
+          "group",
+          "count"
+        ]
+      }
+    ]
+  },
+  "SearchableDropdown": {
+    "label": "$t:editor.component.searchable_dropdown",
+    "propControls": [
+      "selectOptions",
+      "sdMultiple",
+      "sdSearchPlaceholder",
+      "sdDisabled",
+      "sdTriggerLabel",
+      "sdNoResults",
+      "sdInitial"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.value"
+      },
+      {
+        "propKey": "options",
+        "shape": "array",
+        "label": "$t:editor.data_prop.options",
+        "itemFields": [
+          "value",
+          "label",
+          "disabled",
+          "description"
+        ]
+      }
+    ]
+  },
+  "RichSelect": {
+    "label": "$t:editor.component.rich_select",
+    "propControls": [
+      "selectOptions",
+      "rsPlaceholder",
+      "rsDisabled",
+      "rsMaxHeight"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.value"
+      },
+      {
+        "propKey": "options",
+        "shape": "array",
+        "label": "$t:editor.data_prop.options",
+        "itemFields": [
+          "value",
+          "label",
+          "disabled"
+        ]
+      }
+    ]
+  },
+  "TagSelect": {
+    "label": "$t:editor.component.tag_select",
+    "propControls": [
+      "selectOptions",
+      "tsPlaceholder",
+      "tsDisabled"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "array",
+        "label": "$t:editor.data_prop.selected_tags",
+        "itemFields": [
+          "value",
+          "label"
+        ]
+      },
+      {
+        "propKey": "options",
+        "shape": "array",
+        "label": "$t:editor.data_prop.options",
+        "itemFields": [
+          "value",
+          "label"
+        ]
+      }
+    ]
+  },
+  "IconSelect": {
+    "label": "$t:editor.component.icon_select",
+    "propControls": [
+      "isPlaceholder",
+      "isSearchPlaceholder",
+      "isNoResults",
+      "isDisabled",
+      "inputName"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "nodeEditor": {
+      "kind": "array",
+      "params": {
+        "arrayProp": "options",
+        "itemLabel": "$t:editor.array_item.option",
+        "newItem": {
+          "value": "",
+          "label": "",
+          "faIcon": ""
+        },
+        "fields": [
+          {
+            "key": "label",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.label",
+            "primary": true
+          },
+          {
+            "key": "value",
+            "widget": "text",
+            "label": "$t:editor.array_field.value"
+          },
+          {
+            "key": "faIcon",
+            "widget": "icon",
+            "label": "$t:editor.array_field.icon"
+          }
+        ],
+        "defaultItems": [
+          {
+            "value": "LayoutDashboard",
+            "label": "LayoutDashboard",
+            "faIcon": "tachometer-alt"
+          },
+          {
+            "value": "Settings",
+            "label": "Settings",
+            "faIcon": "cog"
+          },
+          {
+            "value": "Menu",
+            "label": "Menu",
+            "faIcon": "bars"
+          },
+          {
+            "value": "Users",
+            "label": "Users",
+            "faIcon": "users"
+          },
+          {
+            "value": "Package",
+            "label": "Package",
+            "faIcon": "cube"
+          },
+          {
+            "value": "Puzzle",
+            "label": "Puzzle",
+            "faIcon": "puzzle-piece"
+          },
+          {
+            "value": "FileText",
+            "label": "FileText",
+            "faIcon": "file-alt"
+          },
+          {
+            "value": "ShoppingCart",
+            "label": "ShoppingCart",
+            "faIcon": "shopping-cart"
+          },
+          {
+            "value": "MessageSquare",
+            "label": "MessageSquare",
+            "faIcon": "comment"
+          },
+          {
+            "value": "Home",
+            "label": "Home",
+            "faIcon": "home"
+          },
+          {
+            "value": "User",
+            "label": "User",
+            "faIcon": "user"
+          },
+          {
+            "value": "Search",
+            "label": "Search",
+            "faIcon": "search"
+          },
+          {
+            "value": "Bell",
+            "label": "Bell",
+            "faIcon": "bell"
+          },
+          {
+            "value": "Mail",
+            "label": "Mail",
+            "faIcon": "envelope"
+          },
+          {
+            "value": "Calendar",
+            "label": "Calendar",
+            "faIcon": "calendar"
+          },
+          {
+            "value": "Chart",
+            "label": "Chart",
+            "faIcon": "chart-bar"
+          },
+          {
+            "value": "Database",
+            "label": "Database",
+            "faIcon": "database"
+          },
+          {
+            "value": "Lock",
+            "label": "Lock",
+            "faIcon": "lock"
+          },
+          {
+            "value": "Globe",
+            "label": "Globe",
+            "faIcon": "globe"
+          },
+          {
+            "value": "Image",
+            "label": "Image",
+            "faIcon": "image"
+          }
+        ]
+      }
+    }
+  },
+  "ChipCheckbox": {
+    "label": "$t:editor.component.chip_checkbox",
+    "propControls": [
+      "ccValue",
+      "ccIcon",
+      "ccLabel",
+      "ccVariant",
+      "ccCustomColor"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ]
+  },
+  "MultilingualInput": {
+    "label": "$t:editor.component.multilingual_input",
+    "propControls": [
+      "miInputType",
+      "miLayout",
+      "miPlaceholder",
+      "miRequired",
+      "miDisabled",
+      "miMaxLength",
+      "miRows",
+      "inputName",
+      "fieldError"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "availableLocales",
+        "shape": "array",
+        "label": "$t:editor.data_prop.available_locales",
+        "itemFields": [
+          "code",
+          "name",
+          "nativeName"
+        ]
+      }
+    ]
+  },
+  "MultilingualTagInput": {
+    "label": "$t:editor.component.multilingual_tag_input",
+    "propControls": [
+      "mtiPlaceholder",
+      "mtiDisabled",
+      "mtiCreatable",
+      "mtiMaxItems",
+      "mtiModalId",
+      "mtiStatePath",
+      "inputName",
+      "fieldError"
+    ],
+    "styleControls": [
+      "width",
+      "marginAll"
+    ],
+    "events": [
+      "onChange"
+    ]
+  },
+  "LanguageSelector": {
+    "label": "$t:editor.component.language_selector",
+    "propControls": [
+      "lsLanguageText",
+      "lsApiEndpoint",
+      "lsInline"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onLanguageChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "availableLocales",
+        "shape": "array",
+        "label": "$t:editor.data_prop.available_locales"
+      }
+    ]
+  },
+  "PermissionTree": {
+    "label": "$t:editor.component.permission_tree",
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width",
+      "borderStyle",
+      "borderColor",
+      "borderRadius"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "data",
+        "shape": "array",
+        "label": "$t:editor.data_prop.data",
+        "itemFields": [
+          "id",
+          "identifier",
+          "name",
+          "children"
+        ]
+      },
+      {
+        "propKey": "value",
+        "shape": "array",
+        "label": "$t:editor.data_prop.selected_permissions",
+        "itemFields": [
+          "id",
+          "scope_type"
+        ]
+      }
+    ]
+  },
+  "CategoryTree": {
+    "label": "$t:editor.component.category_tree",
+    "propControls": [
+      "ctSearchKeyword",
+      "ctShowProductCount",
+      "ctSelectable"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onToggle",
+      "onSelectionChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "data",
+        "shape": "array",
+        "label": "$t:editor.data_prop.tree_data",
+        "itemFields": [
+          "id",
+          "name",
+          "children"
+        ]
+      }
+    ]
+  },
+  "ExtensionBadge": {
+    "label": "$t:editor.component.extension_badge",
+    "propControls": [
+      "ebType",
+      "ebIdentifier",
+      "ebName"
+    ],
+    "styleControls": [
+      "marginAll"
+    ]
+  },
+  "UserProfile": {
+    "label": "$t:editor.component.user_profile",
+    "propControls": [
+      "upProfileText",
+      "upLogoutText",
+      "upLanguageText",
+      "upLogoutEndpoint",
+      "upRedirectPath",
+      "upShowChevron",
+      "upDropdownDir",
+      "upDropdownOnly"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "events": [
+      "onProfileClick",
+      "onLogoutClick"
+    ],
+    "dataProps": [
+      {
+        "propKey": "user",
+        "shape": "object",
+        "label": "$t:editor.data_prop.user",
+        "itemFields": [
+          "id",
+          "name",
+          "email",
+          "avatar"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "FilterGroup": {
+    "label": "$t:editor.component.filter_group",
+    "propControls": [
+      "fgTitle",
+      "fgShowReset"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "events": [
+      "onChange",
+      "onReset"
+    ],
+    "dataProps": [
+      {
+        "propKey": "filters",
+        "shape": "array",
+        "label": "$t:editor.data_prop.filters",
+        "itemFields": [
+          "id",
+          "label",
+          "type",
+          "options"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "SortableMenuList": {
+    "label": "$t:editor.component.sortable_menu_list",
+    "propControls": [
+      "smlSelectedId",
+      "smlTitle",
+      "smlEnableDrag",
+      "smlToggleDisabled"
+    ],
+    "styleControls": [
+      "marginAll",
+      "width"
+    ],
+    "events": [
+      "onSelect",
+      "onOrderChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "items",
+        "shape": "array",
+        "label": "$t:editor.data_prop.menu_items",
+        "itemFields": [
+          "id",
+          "name",
+          "children"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "DynamicFieldList": {
+    "label": "$t:editor.component.dynamic_field_list",
+    "propControls": [
+      "dflMaxItems"
+    ],
+    "styleControls": [
+      "marginAll",
+      "width"
+    ],
+    "events": [
+      "onItemAdd",
+      "onItemRemove"
+    ],
+    "nodeEditor": {
+      "kind": "array",
+      "params": {
+        "arrayProp": "columns",
+        "itemLabel": "$t:editor.array_item.column",
+        "newItem": {
+          "key": "",
+          "type": "input",
+          "label": "",
+          "placeholder": ""
+        },
+        "fields": [
+          {
+            "key": "label",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.label",
+            "primary": true
+          },
+          {
+            "key": "key",
+            "widget": "text",
+            "label": "$t:editor.array_field.field"
+          },
+          {
+            "key": "type",
+            "widget": "select",
+            "label": "$t:editor.array_field.col_type",
+            "options": [
+              {
+                "value": "input",
+                "label": "$t:editor.col_type.input"
+              },
+              {
+                "value": "number",
+                "label": "$t:editor.col_type.number"
+              },
+              {
+                "value": "select",
+                "label": "$t:editor.col_type.select"
+              },
+              {
+                "value": "textarea",
+                "label": "$t:editor.col_type.textarea"
+              },
+              {
+                "value": "multilingual",
+                "label": "$t:editor.col_type.multilingual"
+              }
+            ]
+          },
+          {
+            "key": "placeholder",
+            "widget": "i18n-text",
+            "label": "$t:editor.array_field.placeholder"
+          }
+        ]
+      }
+    },
+    "dataProps": [
+      {
+        "propKey": "items",
+        "shape": "array",
+        "label": "$t:editor.data_prop.items",
+        "required": true
+      }
+    ]
+  },
+  "Td": {
+    "label": "$t:editor.component.td",
+    "styleControls": [
+      "fontBold",
+      "fontItalic",
+      "textUnderline",
+      "textAlign",
+      "fontSize",
+      "textColor"
+    ]
+  },
+  "Th": {
+    "label": "$t:editor.component.th",
+    "styleControls": [
+      "fontBold",
+      "fontItalic",
+      "textUnderline",
+      "textAlign",
+      "fontSize",
+      "textColor"
+    ]
+  },
+  "AdminSidebar": {
+    "label": "$t:editor.component.admin_sidebar",
+    "propControls": [
+      "asLogo",
+      "asLogoAlt",
+      "asCollapsed",
+      "asCurrentLocale"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "width"
+    ],
+    "dataProps": [
+      {
+        "propKey": "menu",
+        "shape": "array",
+        "label": "$t:editor.data_prop.admin_sidebar_menu",
+        "itemFields": [
+          "id",
+          "name",
+          "slug",
+          "url",
+          "icon",
+          "children"
+        ],
+        "required": true
+      }
+    ]
+  },
+  "AdminFooter": {
+    "label": "$t:editor.component.admin_footer",
+    "propControls": [
+      "afCopyright",
+      "afVersion",
+      "afCopyrightModalId",
+      "afChangelogModalId"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll",
+      "backgroundColor",
+      "textColor"
+    ],
+    "dataProps": [
+      {
+        "propKey": "quickLinks",
+        "shape": "array",
+        "label": "$t:editor.data_prop.admin_footer_quick_links",
+        "itemFields": [
+          "id",
+          "label",
+          "url",
+          "iconName"
+        ]
+      }
+    ]
+  },
+  "ThemeToggle": {
+    "label": "$t:editor.component.theme_toggle",
+    "propControls": [
+      "ttAutoText",
+      "ttLightText",
+      "ttDarkText"
+    ],
+    "styleControls": [
+      "marginAll"
+    ]
+  },
+  "NotificationCenter": {
+    "label": "$t:editor.component.notification_center",
+    "propControls": [
+      "ncTitleText",
+      "ncEmptyText",
+      "ncMarkAllReadText",
+      "ncDeleteAllText",
+      "ncUnreadOnlyText",
+      "ncUnreadOnly",
+      "ncDropdownAlign"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "dataProps": [
+      {
+        "propKey": "notifications",
+        "shape": "array",
+        "label": "$t:editor.data_prop.notification_items",
+        "itemFields": [
+          "id",
+          "title",
+          "message",
+          "read",
+          "created_at"
+        ]
+      },
+      {
+        "propKey": "unreadCount",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.notification_unread_count"
+      }
+    ]
+  },
+  "ColumnSelector": {
+    "label": "$t:editor.component.column_selector",
+    "propControls": [
+      "csTriggerLabel",
+      "csRequiredText",
+      "csMenuTitle",
+      "csMenuDescription",
+      "csPosition",
+      "csTriggerIconName"
+    ],
+    "styleControls": [
+      "marginAll"
+    ],
+    "dataProps": [
+      {
+        "propKey": "columns",
+        "shape": "array",
+        "label": "$t:editor.data_prop.column_items",
+        "itemFields": [
+          "field",
+          "label",
+          "visible"
+        ]
+      }
+    ]
+  },
+  "SectionHeader": {
+    "label": "$t:editor.component.section_header",
+    "propControls": [
+      "shTitle",
+      "shDescription"
+    ],
+    "styleControls": [
+      "marginAll",
+      "paddingAll"
+    ],
+    "coreProps": [
+      "id"
+    ]
+  }
+}

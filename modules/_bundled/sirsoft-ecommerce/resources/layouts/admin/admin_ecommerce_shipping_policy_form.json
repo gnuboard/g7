@@ -15,6 +15,12 @@
         "shippingMethodOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.[_global.locale] ?? t.name?.ko ?? t.code}))}}",
         "chargePolicyOptions": "{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}",
         "currencyOptions": "{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}",
+        "defaultCurrencyCode": "{{ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'}}",
+        "defaultCurrencyLabel": "{{(() => { const code = ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'; const match = (ecommerce_settings?.data?.language_currency?.currencies ?? []).find(c => c.code === code); const name = match ? $localized(match.name) : ''; if (!name) return code; return name.includes(code) ? name : name + ' (' + code + ')'; })()}}",
+        "apiRequestFieldOptions": "{{ecommerce_settings?.data?.shipping?.api_request_fields ?? []}}",
+        "apiHttpMethodOptions": "{{ecommerce_settings?.data?.shipping?.api_http_methods ?? []}}",
+        "apiAuthTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_auth_types ?? []}}",
+        "apiResponseTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_response_types ?? []}}",
         "activeCountrySetting": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}",
         "activeCountryCode": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}",
         "isReadOnly": "{{!!route.id && policy?.data?.abilities?.can_update !== true}}"
@@ -54,6 +60,7 @@
     "data_sources": [
         {
             "id": "policy",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.policy",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{route.id}}",
             "method": "GET",
@@ -90,6 +97,7 @@
         },
         {
             "id": "copy_source",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.copy_source",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{query.copy_id}}",
             "method": "GET",
@@ -104,6 +112,7 @@
         },
         {
             "id": "ecommerce_settings",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
             "method": "GET",
@@ -113,6 +122,7 @@
         },
         {
             "id": "extra_fee_templates",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.extra_fee_templates",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/extra-fee-templates",
             "method": "GET",
@@ -165,173 +175,36 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
-                        "id": "sticky_header_container",
+                        "id": "page_header",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "sticky top-0 z-40 bg-gray-50 dark:bg-gray-900 -mx-6 -mt-6 pt-6"
+                            "className": "page-header"
                         },
                         "children": [
                             {
-                                "id": "page_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "page-header px-6"
-                                },
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Div",
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "H1",
-                                                "props": {
-                                                    "className": "page-title"
-                                                },
-                                                "text": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "P",
-                                                "props": {
-                                                    "className": "page-description"
-                                                },
-                                                "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.description"
-                                            }
-                                        ]
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}"
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Div",
+                                        "name": "P",
                                         "props": {
-                                            "className": "page-actions"
+                                            "className": "page-description"
                                         },
-                                        "children": [
-                                            {
-                                                "id": "list_button",
-                                                "type": "basic",
-                                                "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "btn btn-outline"
-                                                },
-                                                "text": "$t:sirsoft-ecommerce.common.list",
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/ecommerce/shipping-policies"
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "id": "save_button",
-                                                "type": "basic",
-                                                "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "disabled": "{{_local.isSaving || (route.id && policy?.data?.abilities?.can_update !== true)}}",
-                                                    "className": "btn btn-primary flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Icon",
-                                                        "if": "{{_local.isSaving}}",
-                                                        "props": {
-                                                            "name": "spinner",
-                                                            "className": "w-4 h-4 animate-spin"
-                                                        }
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "if": "{{!_local.isSaving}}",
-                                                        "text": "$t:sirsoft-ecommerce.common.save"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "if": "{{_local.isSaving}}",
-                                                        "text": "$t:sirsoft-ecommerce.common.saving"
-                                                    }
-                                                ],
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "_local",
-                                                                        "isSaving": true,
-                                                                        "errors": null
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "apiCall",
-                                                                    "auth_required": true,
-                                                                    "target": "{{route.id ? '/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + route.id : '/api/modules/sirsoft-ecommerce/admin/shipping-policies'}}",
-                                                                    "params": {
-                                                                        "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                        "body": "{{_local.form}}"
-                                                                    },
-                                                                    "onSuccess": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "_local",
-                                                                                "isSaving": false
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "type": "success",
-                                                                                "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "navigate",
-                                                                            "params": {
-                                                                                "path": "/admin/ecommerce/shipping-policies"
-                                                                            }
-                                                                        }
-                                                                    ],
-                                                                    "onError": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "_local",
-                                                                                "isSaving": false,
-                                                                                "errors": "{{error.errors}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "type": "error",
-                                                                                "message": "{{error.message || '$t:common.validation_error'}}"
-                                                                            }
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        ]
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.description"
                                     }
                                 ]
                             }
@@ -343,7 +216,7 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex gap-3"
+                            "className": "alert-danger"
                         },
                         "children": [
                             {
@@ -351,7 +224,8 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "triangle-exclamation",
-                                    "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                    "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5",
+                                    "size": "md"
                                 }
                             },
                             {
@@ -362,7 +236,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                            "className": "text-error-strong"
                                         },
                                         "text": "$t:sirsoft-ecommerce.common.validation_error"
                                     },
@@ -382,7 +256,7 @@
                                                 "type": "basic",
                                                 "name": "Li",
                                                 "props": {
-                                                    "className": "text-sm text-red-700 dark:text-red-300"
+                                                    "className": "text-error-soft"
                                                 },
                                                 "text": "{{message}}"
                                             }
@@ -399,7 +273,7 @@
                         "dataKey": "form",
                         "debounce": 300,
                         "props": {
-                            "className": "space-y-6"
+                            "className": "row-stack"
                         },
                         "children": [
                             {
@@ -410,7 +284,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "space-y-4"
+                                    "className": "row-stack"
                                 },
                                 "children": [
                                     {
@@ -424,6 +298,140 @@
                                     },
                                     {
                                         "partial": "partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.json"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "footer_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "sticky-footer-buttons-between"
+                                },
+                                "children": [
+                                    {
+                                        "id": "footer_list_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:common.list"
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/shipping-policies"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "footer_save_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "disabled": "{{_local.isSaving || (route.id && policy?.data?.abilities?.can_update !== true)}}",
+                                            "className": "btn btn-primary flex-center gap-1.5"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "if": "{{_local.isSaving}}",
+                                                "props": {
+                                                    "name": "spinner",
+                                                    "className": "spinner-sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!_local.isSaving}}",
+                                                "text": "$t:sirsoft-ecommerce.common.save"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.isSaving}}",
+                                                "text": "$t:sirsoft-ecommerce.common.saving"
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "params": {
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "isSaving": true,
+                                                                "errors": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "auth_required": true,
+                                                            "target": "{{route.id ? '/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + route.id : '/api/modules/sirsoft-ecommerce/admin/shipping-policies'}}",
+                                                            "params": {
+                                                                "method": "{{route.id ? 'PUT' : 'POST'}}",
+                                                                "body": "{{_local.form}}"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "isSaving": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/admin/ecommerce/shipping-policies"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "isSaving": false,
+                                                                        "errors": "{{error.errors}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message || '$t:common.validation_error'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
                                     }
                                 ]
                             }

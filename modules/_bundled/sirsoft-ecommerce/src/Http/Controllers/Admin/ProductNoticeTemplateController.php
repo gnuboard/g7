@@ -6,7 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductNoticeTemplateListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreProductNoticeTemplateRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateProductNoticeTemplateRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductNoticeTemplateCollection;
@@ -27,10 +27,10 @@ class ProductNoticeTemplateController extends AdminBaseController
     /**
      * 템플릿 목록을 조회합니다.
      *
-     * @param Request $request 요청 데이터
+     * @param  ProductNoticeTemplateListRequest  $request  요청 데이터
      * @return JsonResponse 템플릿 목록 JSON 응답
      */
-    public function index(Request $request): JsonResponse
+    public function index(ProductNoticeTemplateListRequest $request): JsonResponse
     {
         $filters = [
             'search' => $request->get('search'),
@@ -67,7 +67,7 @@ class ProductNoticeTemplateController extends AdminBaseController
     /**
      * 템플릿 상세를 조회합니다.
      *
-     * @param int $id 템플릿 ID
+     * @param  int  $id  템플릿 ID
      * @return JsonResponse 템플릿 상세 JSON 응답
      */
     public function show(int $id): JsonResponse
@@ -92,7 +92,7 @@ class ProductNoticeTemplateController extends AdminBaseController
     /**
      * 템플릿을 생성합니다.
      *
-     * @param StoreProductNoticeTemplateRequest $request 생성 요청
+     * @param  StoreProductNoticeTemplateRequest  $request  생성 요청
      * @return JsonResponse 생성된 템플릿 JSON 응답
      */
     public function store(StoreProductNoticeTemplateRequest $request): JsonResponse
@@ -118,8 +118,8 @@ class ProductNoticeTemplateController extends AdminBaseController
     /**
      * 템플릿을 수정합니다.
      *
-     * @param UpdateProductNoticeTemplateRequest $request 수정 요청
-     * @param int $id 템플릿 ID
+     * @param  UpdateProductNoticeTemplateRequest  $request  수정 요청
+     * @param  int  $id  템플릿 ID
      * @return JsonResponse 수정된 템플릿 JSON 응답
      */
     public function update(UpdateProductNoticeTemplateRequest $request, int $id): JsonResponse
@@ -144,7 +144,7 @@ class ProductNoticeTemplateController extends AdminBaseController
     /**
      * 템플릿을 삭제합니다.
      *
-     * @param int $id 템플릿 ID
+     * @param  int  $id  템플릿 ID
      * @return JsonResponse 삭제 결과 JSON 응답
      */
     public function destroy(int $id): JsonResponse
@@ -169,7 +169,7 @@ class ProductNoticeTemplateController extends AdminBaseController
     /**
      * 템플릿을 복사합니다.
      *
-     * @param int $id 원본 템플릿 ID
+     * @param  int  $id  원본 템플릿 ID
      * @return JsonResponse 복사된 템플릿 JSON 응답
      */
     public function copy(int $id): JsonResponse
@@ -182,6 +182,33 @@ class ProductNoticeTemplateController extends AdminBaseController
                 'messages.notice_templates.copied',
                 new ProductNoticeTemplateResource($template),
                 201
+            );
+        } catch (Exception $e) {
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'exceptions.operation_failed',
+                400
+            );
+        }
+    }
+
+    /**
+     * 템플릿 활성 상태를 토글합니다.
+     *
+     * @param  int  $id  템플릿 ID
+     * @return JsonResponse 토글 결과 JSON 응답
+     */
+    public function toggleActive(int $id): JsonResponse
+    {
+        try {
+            $template = $this->templateService->toggleActive($id);
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                $template->is_active
+                    ? 'messages.notice_templates.activated'
+                    : 'messages.notice_templates.deactivated',
+                new ProductNoticeTemplateResource($template)
             );
         } catch (Exception $e) {
             return ResponseHelper::moduleError(

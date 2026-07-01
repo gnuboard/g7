@@ -533,6 +533,7 @@
     "placeholder": "상품 폼이 여기에 표시됩니다"
   },
   "modal": {
+    "multilingual_tag_edit_editor_label": "다국어 태그 편집",
     "preset_manage": {
       "title": "프리셋 관리",
       "description": "검색 프리셋을 관리합니다.",
@@ -590,7 +591,8 @@
       "stock": "재고를 {{value}} 변경합니다.",
       "price_change": "판매가 일괄 변경",
       "stock_change": "재고 일괄 변경",
-      "no_changes": "변경할 항목이 없습니다."
+      "no_changes": "변경할 항목이 없습니다.",
+      "error_section": "변경에 실패했습니다"
     },
     "bulk_placeholder": {
       "sales_status": "판매 상태 선택",
@@ -677,6 +679,7 @@
   "messages": {
     "deleted_success": "상품이 삭제되었습니다.",
     "deleted_error": "상품 삭제 중 오류가 발생했습니다.",
+    "delete_check_error": "삭제 가능 여부를 확인하는 중 오류가 발생했습니다.",
     "code_generate_error": "상품코드 생성에 실패했습니다.",
     "label_period_saved": "라벨 기간이 저장되었습니다.",
     "label_period_removed": "라벨 기간이 제거되었습니다.",
@@ -696,6 +699,8 @@
     "bulk_summary_price_adjustment_inline": "조정가: {value}",
     "bulk_summary_stock": "재고: {method} {value}",
     "bulk_summary_stock_inline": "재고: {value}",
+    "bulk_summary_safe_stock": "안전재고: {value}",
+    "bulk_summary_is_active": "사용: {value}",
     "bulk_summary_option_name": "옵션명: {name}",
     "bulk_summary_sku": "SKU: {sku}",
     "bulk_summary_selected": "선택됨"
@@ -824,12 +829,20 @@
     "option_name_placeholder": "옵션명 (예: 색상)",
     "option_values_placeholder": "옵션값을 쉼표(,)로 구분하여 입력",
     "additional_title": "상품추가옵션",
-    "additional_hint": "고객이 직접 텍스트를 입력할 수 있는 추가 옵션입니다. 최대 5개까지 추가 가능합니다. (예: 각인 문구, 선물 메시지 등)",
-    "add_additional": "추가옵션 추가",
-    "additional_name_label": "옵션명",
-    "additional_name_placeholder": "각인 문구",
+    "additional_hint": "고객이 추가로 선택하는 유료/무료 옵션입니다. 그룹명과 선택지(추가금)를 등록하세요. 최대 5개 그룹, 그룹당 선택지 20개까지 가능합니다. (예: 각인 추가 +5,000원)",
+    "add_additional": "추가옵션 그룹 추가",
+    "additional_name_label": "그룹명",
+    "additional_name_placeholder": "예: 각인",
+    "add_additional_value": "선택지 추가",
+    "additional_value_name_label": "선택지명",
+    "additional_value_name_placeholder": "예: 각인 추가",
+    "additional_value_price_label": "추가금",
+    "additional_value_default": "기본",
+    "additional_value_active": "사용",
+    "additional_value_allow_custom_text": "직접입력",
     "no_additional": "등록된 추가옵션이 없습니다",
-    "auto_currency": "다중통화 가격 자동계산",
+    "additional_clear_confirm": "입력한 추가옵션이 모두 삭제됩니다. 계속하시겠습니까?",
+    "auto_currency_hint": "외화 가격은 판매가 기준 환율로 자동 표시됩니다",
     "items_count": "{{count}}개 옵션",
     "required": "필수",
     "columns": {
@@ -870,7 +883,9 @@
       "generated": "{count}개의 옵션이 생성되었습니다.",
       "name_required": "옵션 이름을 입력해주세요.",
       "add_tool_applied": "옵션추가도구가 적용되었습니다.",
-      "additional_max_5": "최대 5개까지 추가할 수 있습니다."
+      "additional_max_5": "추가옵션 그룹은 최대 5개까지 추가할 수 있습니다.",
+      "additional_value_max_20": "선택지는 그룹당 최대 20개까지 추가할 수 있습니다.",
+      "additional_value_min_1": "그룹당 선택지는 최소 1개가 필요합니다."
     }
   },
   "notice": {
@@ -976,6 +991,7 @@
     "use_default": "기본 배송정책 사용",
     "default_badge": "기본",
     "empty_message": "배송정책이 없습니다",
+    "inactive_policy_warning": "현재 적용 중인 배송정책이 비활성화되었습니다. 다른 배송정책을 선택하거나 그대로 유지할 수 있습니다.",
     "detail": {
       "shipping_method": "배송방법",
       "carrier": "운송사",
@@ -1054,7 +1070,7 @@
   },
   "images": {
     "drag_hint": "드래그하여 순서를 변경하세요",
-    "thumbnail_hint": "첫번째 이미지가 대표 이미지가 됩니다",
+    "thumbnail_hint": "★ 버튼을 눌러 대표 이미지를 지정하세요",
     "format_hint": "JPG, PNG, GIF 형식 지원",
     "upload_complete": "업로드 완료",
     "deleted": "이미지가 삭제되었습니다.",
@@ -1117,16 +1133,24 @@
   "labels": {
     "title": "라벨",
     "no_available": "등록된 라벨이 없습니다.",
+    "add": "라벨 추가",
     "edit": "수정",
     "remove": "삭제",
+    "unassign": "할당 해제",
+    "delete": "라벨 삭제",
     "no_period": "기간 미설정",
     "modal_title": "라벨 설정",
+    "modal_title_create": "라벨 등록",
+    "modal_title_edit": "라벨 수정",
+    "create_success": "라벨이 등록되었습니다.",
     "modal_description": "라벨의 이름, 색상, 적용 기간을 설정합니다.",
     "name": "라벨명",
     "color": "색상",
     "color_reset": "색상 초기화",
     "start_date": "시작일",
     "end_date": "종료일",
+    "started_at": "시작일 선택",
+    "ended_at": "종료일 선택",
     "end_date_hint": "비워두면 무기한 적용",
     "date_preset": "기간 프리셋",
     "preset_7d": "7일",
