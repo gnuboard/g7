@@ -485,7 +485,8 @@ cp .env.example .env
 
 <p>
   <a href="https://github.com/HeuJung"><img src="https://github.com/HeuJung.png" width="60" alt="HeuJung"></a>&nbsp;&nbsp;
-  <a href="https://github.com/chym1217"><img src="https://github.com/chym1217.png" width="60" alt="chym1217"></a>
+  <a href="https://github.com/chym1217"><img src="https://github.com/chym1217.png" width="60" alt="chym1217"></a>&nbsp;&nbsp;
+  <a href="https://github.com/thisgun"><img src="https://github.com/thisgun.png" width="60" alt="thisgun"></a>
 </p>
 
 ### Contributors
