@@ -7,7 +7,7 @@
         "title": "주문서 작성",
         "description": "주문서 작성 페이지 - 상품 확인, 주문자/배송지 정보, 결제 방법 선택 (PC/모바일 반응형)"
     },
-    "_comment_initLocal": "정적 기본값 설정 (데이터소스 initLocal 병합 전 기본값)",
+    "_comment_initLocal": "정적 기본값 설정 (데이터소스 initLocal 병합 전 기본값). country_code 는 init_actions 가 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가가 수렴한 값)로 시드한다 — 정적 KR 하드코딩 금지(헤더가 US 여도 KR 로 계산되는 회귀 방지).",
     "initLocal": {
         "checkout": {
             "item_coupons": {},
@@ -15,8 +15,7 @@
             "shipping_coupon_issue_id": null,
             "use_points": 0,
             "discount_code": null,
-            "zipcode": null,
-            "country_code": "KR"
+            "zipcode": null
         },
         "downloadableCoupons": null,
         "downloadableCouponsLoading": false,
@@ -37,6 +36,14 @@
         }
     },
     "init_actions": [
+        {
+            "comment": "배송국가 시드 — 주문서 진입 시 _local.checkout.country_code 를 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가 수렴값)로 채운다. 이 값이 checkoutData GET 쿼리(country_code)로 전달되어 배송비가 해당 국가로 계산된다. 유저가 주문서에서 배송국가 Select 를 바꾸면 그 시점 값이 SSoT 로 덮어쓴다(주문서 기준).",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "checkout.country_code": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+            }
+        },
         {
             "comment": "결제 콜백 에러 쿼리 파라미터 감지 — PG 결제 실패 후 리다이렉트 시 에러 코드 저장 + toast + URL 정리",
             "handler": "conditions",
@@ -84,13 +91,17 @@
     "data_sources": [
         {
             "id": "checkoutData",
+            "label_key": "$t:editor.data_source.checkoutData",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/checkout",
             "method": "GET",
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
-            "comment": "장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원",
+            "comment": "장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원. country_code 쿼리로 배송국가를 전달해 해당 국가 배송비로 미리보기 계산한다(init_actions 시드 _local.checkout.country_code 우선, 미설정 시 동일 fallback 체인). 우편번호는 도서산간/주별 세부 차등에만 관여하며 국가 결정과 무관.",
+            "params": {
+                "country_code": "{{_local.checkout?.country_code ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+            },
             "initLocal": {
                 "_merge": "deep",
                 "checkout": {
@@ -144,15 +155,22 @@
         },
         {
             "id": "userAddresses",
+            "label_key": "$t:editor.data_source.userAddresses",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
             "method": "GET",
             "auto_fetch": true,
             "auth_mode": "required",
-            "comment": "사용자 저장 배송지 목록"
+            "comment": "사용자 저장 배송지 목록 (회원 전용). 비회원/토큰만료 시 401 코어 DEFAULT 핸들러가 navigate({{auth.loginPath}}) 를 발동해 'Failed to execute action: navigate' 가 보고됨 — suppress 로 조용히 무시",
+            "fallback": { "data": { "addresses": { "data": [] } } },
+            "errorHandling": {
+                "401": { "handler": "suppress" },
+                "403": { "handler": "suppress" }
+            }
         },
         {
             "id": "paymentSettings",
+            "label_key": "$t:editor.data_source.paymentSettings",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/settings/payment",
             "method": "GET",
@@ -162,6 +180,7 @@
         },
         {
             "id": "shippingSettings",
+            "label_key": "$t:editor.data_source.shippingSettings",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/settings/shipping",
             "method": "GET",

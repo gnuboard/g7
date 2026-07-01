@@ -1,4 +1,10 @@
 {
+    "editor": {
+        "data_source": {
+            "memoData": "메모 데이터",
+            "memos": "메모 목록"
+        }
+    },
     "admin": {
         "memos": {
             "index": {

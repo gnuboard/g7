@@ -1,6 +1,9 @@
+// e2e:allow편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import Select, { components, MultiValue, SingleValue, ActionMeta, InputActionMeta } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import { Div } from '../basic/Div';
+import type { EditorAttrs } from '../../types';
 
 export interface TagOption {
   value: string | number;
@@ -65,11 +68,15 @@ export interface TagInputProps {
   splitOnPaste?: boolean;
   /** 검색 입력 변경 콜백 (비동기 검색용, 매 키 입력 시 호출) */
   onInputChange?: (event: any) => void;
+  /** 요소 ID (레이아웃 편집기 elemId / DOM id) */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (data-editor-* 등 — 편집 모드 선택용) */
+  editorAttrs?: EditorAttrs;
 }
 
 // Tailwind 스타일 클래스 상수
 const STYLES = {
-  control: 'px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500',
+  control: 'input-tag',
   valueContainer: 'gap-1 flex flex-wrap',
   multiValue: {
     blue: 'bg-blue-100 dark:bg-blue-900/20 rounded px-1.5 py-0.5 flex items-center gap-1',
@@ -192,6 +199,8 @@ export const TagInput: React.FC<TagInputProps> = ({
   delimiters = [','],
   splitOnPaste = true,
   onInputChange: onInputChangeProp,
+  id,
+  editorAttrs,
 }) => {
   // disabled prop을 boolean으로 정규화 (문자열 "true"/"false" 처리)
   const disabled = disabledProp === true || disabledProp === 'true';
@@ -505,7 +514,7 @@ export const TagInput: React.FC<TagInputProps> = ({
 
   // react-select 공통 스타일 설정
   const commonClassNames = {
-    control: () => `${STYLES.control} ${className} ${disabled ? 'opacity-60 bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}`,
+    control: () => `${STYLES.control} ${className} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`,
     valueContainer: () => STYLES.valueContainer,
     multiValue: (state: any) => {
       const variant = getTagVariant(state.data.value);
@@ -584,7 +593,7 @@ export const TagInput: React.FC<TagInputProps> = ({
 
     if (creatable) {
       return (
-        <>
+        <Div id={id} {...editorAttrs}>
           {name && <input type="hidden" name={name} value={hiddenValue} />}
           <CreatableSelect<TagOption, false>
             {...singleProps}
@@ -593,15 +602,15 @@ export const TagInput: React.FC<TagInputProps> = ({
             isValidNewOption={isValidNewOption}
             createOptionPosition="first"
           />
-        </>
+        </Div>
       );
     }
 
     return (
-      <>
+      <Div id={id} {...editorAttrs}>
         {name && <input type="hidden" name={name} value={hiddenValue} />}
         <Select<TagOption, false> {...singleProps} />
-      </>
+      </Div>
     );
   }
 
@@ -627,7 +636,7 @@ export const TagInput: React.FC<TagInputProps> = ({
 
   if (creatable) {
     return (
-      <div onPaste={handlePaste}>
+      <Div id={id} {...editorAttrs} onPaste={handlePaste}>
         {name && <input type="hidden" name={name} value={hiddenValue} />}
         <CreatableSelect<TagOption, true>
           {...multiProps}
@@ -636,14 +645,14 @@ export const TagInput: React.FC<TagInputProps> = ({
           isValidNewOption={isValidNewOption}
           createOptionPosition="first"
         />
-      </div>
+      </Div>
     );
   }
 
   return (
-    <>
+    <Div id={id} {...editorAttrs}>
       {name && <input type="hidden" name={name} value={hiddenValue} />}
       <Select<TagOption, true> {...multiProps} />
-    </>
+    </Div>
   );
 };

@@ -113,6 +113,16 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         // 저장된 데이터를 defaults 스키마에 맞게 정규화 (하위호환성)
         $settings = $this->normalizeSettingsData($settings, $defaultValues);
 
+        // language_currency.currencies 는 정수키 리스트라 array_merge 가 통째 교체 →
+        // defaults 에 있고 저장본에 없는 통화는 code 기준으로 보충(환율은 저장본 우선 보존).
+        // 관리자가 의도적으로 삭제한 게 아니라 array_merge 부작용으로 소실되던 영속성 공백 수정(U11-A).
+        if (isset($defaultValues['language_currency']['currencies'])) {
+            $settings['language_currency']['currencies'] = $this->mergeCurrenciesByCode(
+                $defaultValues['language_currency']['currencies'],
+                $settings['language_currency']['currencies'] ?? []
+            );
+        }
+
         // 결제수단 병합 (기본 + 플러그인 필터 + 사용자 저장 설정)
         if (isset($settings['order_settings'])) {
             $settings['order_settings']['payment_methods'] = $this->getMergedPaymentMethods(
@@ -120,7 +130,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             );
         }
 
-        // 통화 라벨에 활성 언어팩 키 자동 보강
+        // 통화 라벨에 활성 언어팩 키 자동 보강 + symbol/flag 표준 매핑 보강
+        // (A1, D-CUR-4: 셀렉터가 읽는 표시 메타 / 관리자가 직접 지정한 기호는 보존)
         if (isset($settings['language_currency']['currencies']) && is_array($settings['language_currency']['currencies'])) {
             foreach ($settings['language_currency']['currencies'] as $idx => $currency) {
                 if (! empty($currency['code']) && isset($currency['name']) && is_array($currency['name'])) {
@@ -128,6 +139,17 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                         $currency['name'],
                         "sirsoft-ecommerce::settings.currencies.{$currency['code']}.name",
                     );
+                }
+                // 셀렉터(_currency_selector.json)가 참조하는 symbol/flag 보강
+                // (settings 스키마에 없는 표시 메타 — 저장 시 normalize 가 떨궈 round-trip 오염 없음)
+                if (! empty($currency['code'])) {
+                    $meta = $this->currencyDisplayMeta($currency['code']);
+                    // 관리자가 직접 지정한 기호는 보존, 없을 때만 표준 매핑으로 보충
+                    if (empty($currency['symbol'] ?? null)) {
+                        $settings['language_currency']['currencies'][$idx]['symbol'] = $meta['symbol'];
+                    }
+                    // flag 는 표시 전용 메타 — 항상 표준 매핑으로 채운다
+                    $settings['language_currency']['currencies'][$idx]['flag'] = $meta['flag'];
                 }
             }
         }
@@ -406,10 +428,18 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     /**
      * 설정 저장 경로 반환
      *
+     * testing 환경에서는 운영 설정(storage/app/modules/.../settings)을 보호하기 위해
+     * 격리된 임시 경로를 사용합니다. 설정 저장 API를 호출하는 Feature 테스트가
+     * 운영 mileage.json 등을 덮어쓰는 것을 차단합니다(운영 설정 영구 보존).
+     *
      * @return string 설정 파일 저장 디렉토리 경로
      */
     private function getStoragePath(): string
     {
+        if (app()->runningUnitTests()) {
+            return storage_path('framework/testing/modules/'.self::MODULE_IDENTIFIER.'/settings');
+        }
+
         return storage_path('app/modules/'.self::MODULE_IDENTIFIER.'/settings');
     }
 
@@ -583,6 +613,8 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     'is_active' => $method['is_active'] ?? true,
                     'min_order_amount' => $method['min_order_amount'] ?? 0,
                     'stock_deduction_timing' => $method['stock_deduction_timing'] ?? 'payment_complete',
+                    'mileage_deduction_timing' => $method['mileage_deduction_timing']
+                        ?? $this->defaultMileageDeductionTiming($id),
                 ],
             ];
         }, $methods);
@@ -634,7 +666,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     /**
      * 결제수단별 재고 차감 타이밍을 조회합니다.
      *
-     * @param string $paymentMethodId 결제수단 ID
+     * @param  string  $paymentMethodId  결제수단 ID
      * @return string 재고 차감 타이밍 ('order_placed', 'payment_complete', 'none')
      */
     public function getStockDeductionTiming(string $paymentMethodId): string
@@ -642,6 +674,40 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         $config = $this->getPaymentMethodConfig($paymentMethodId);
 
         return $config['stock_deduction_timing'] ?? 'payment_complete';
+    }
+
+    /**
+     * 결제수단별 마일리지 차감 시점을 조회합니다. (마일리지/MP06)
+     *
+     * 재고(getStockDeductionTiming)와 동형으로 결제수단별 설정을 사용한다.
+     * 무통장(vbank/dbank)은 입금 전 마일리지 재사용을 막기 위해 order_placed,
+     * PG 카드는 결제 미완료/실패 시 선차감 손실을 막기 위해 payment_complete 가 기본이다.
+     *
+     * @param  string  $paymentMethodId  결제수단 ID
+     * @return string 차감 시점 ('order_placed' | 'payment_complete')
+     */
+    public function getMileageDeductionTiming(string $paymentMethodId): string
+    {
+        $config = $this->getPaymentMethodConfig($paymentMethodId);
+
+        return $config['mileage_deduction_timing']
+            ?? $this->defaultMileageDeductionTiming($paymentMethodId);
+    }
+
+    /**
+     * 결제수단별 마일리지 차감 시점 기본값을 반환합니다. (마일리지/MP06)
+     *
+     * 무통장 계열(vbank/dbank)은 입금 전 재사용 차단을 위해 order_placed,
+     * 그 외(PG 카드 등)는 결제 미완료/실패 시 선차감 손실 방지를 위해 payment_complete.
+     *
+     * @param  string  $paymentMethodId  결제수단 ID
+     * @return string order_placed | payment_complete
+     */
+    protected function defaultMileageDeductionTiming(string $paymentMethodId): string
+    {
+        return in_array($paymentMethodId, ['vbank', 'dbank'], true)
+            ? 'order_placed'
+            : 'payment_complete';
     }
 
     /**
@@ -686,6 +752,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     'is_active' => $savedItem['is_active'] ?? $definition['defaults']['is_active'] ?? true,
                     'min_order_amount' => $savedItem['min_order_amount'] ?? $definition['defaults']['min_order_amount'] ?? 0,
                     'stock_deduction_timing' => $savedItem['stock_deduction_timing'] ?? $definition['defaults']['stock_deduction_timing'] ?? 'payment_complete',
+                    'mileage_deduction_timing' => $savedItem['mileage_deduction_timing'] ?? $definition['defaults']['mileage_deduction_timing'] ?? $this->defaultMileageDeductionTiming($id),
                     '_cached_name' => $definition['name'],
                     '_cached_description' => $definition['description'] ?? ['ko' => '', 'en' => ''],
                     '_cached_icon' => $definition['icon'] ?? 'circle-question',
@@ -700,6 +767,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     'is_active' => $definition['defaults']['is_active'] ?? false,
                     'min_order_amount' => $definition['defaults']['min_order_amount'] ?? 0,
                     'stock_deduction_timing' => $definition['defaults']['stock_deduction_timing'] ?? 'payment_complete',
+                    'mileage_deduction_timing' => $definition['defaults']['mileage_deduction_timing'] ?? $this->defaultMileageDeductionTiming($id),
                     '_cached_name' => $definition['name'],
                     '_cached_description' => $definition['description'] ?? ['ko' => '', 'en' => ''],
                     '_cached_icon' => $definition['icon'] ?? 'circle-question',
@@ -772,8 +840,6 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      *
      * payment.json이 존재하고 order_settings.json이 없을 때
      * 기존 데이터를 order_settings 구조로 변환합니다.
-     *
-     * @return void
      */
     private function migratePaymentToOrderSettings(): void
     {
@@ -811,7 +877,6 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         // 숫자/불리언 설정 이전
         $migrateFields = [
             'auto_cancel_expired', 'auto_cancel_days',
-            'vbank_due_days', 'dbank_due_days',
             'cart_expiry_days', 'stock_restore_on_cancel',
         ];
 
@@ -833,6 +898,113 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     {
         $this->defaults = null;
         $this->settings = null;
+    }
+
+    /**
+     * 통화 코드의 표시 메타(기호·국기)를 반환합니다. (A1 — D-CUR-4)
+     *
+     * settings 스키마에는 code/name/exchange_rate/rounding/decimal_places/is_default 만 있고
+     * symbol/flag 가 없으므로, 셀렉터(_currency_selector.json)가 참조하는 표시 메타를 표준 매핑으로
+     * 보강합니다. 미정의 코드는 symbol=코드, flag='' 폴백.
+     *
+     * @param  string  $code  통화 코드 (예: 'KRW')
+     * @return array{symbol: string, flag: string} 기호·국기 이모지
+     */
+    private function currencyDisplayMeta(string $code): array
+    {
+        $map = [
+            'KRW' => ['symbol' => '₩', 'flag' => '🇰🇷'],
+            'USD' => ['symbol' => '$', 'flag' => '🇺🇸'],
+            'JPY' => ['symbol' => '¥', 'flag' => '🇯🇵'],
+            // CNY 는 JPY 와 동일한 ¥ 기호 충돌을 피하기 위해 元 사용 (위안화 식별성 확보)
+            'CNY' => ['symbol' => '元', 'flag' => '🇨🇳'],
+            'EUR' => ['symbol' => '€', 'flag' => '🇪🇺'],
+            'GBP' => ['symbol' => '£', 'flag' => '🇬🇧'],
+        ];
+
+        return $map[$code] ?? ['symbol' => $code, 'flag' => ''];
+    }
+
+    /**
+     * 통화 목록을 code 기준으로 병합합니다. (U11-A 영속성 공백 수정)
+     *
+     * language_currency.currencies 는 정수키 리스트라 PHP array_merge 가 병합이 아니라
+     * 통째 교체를 수행합니다. 관리자가 일부 통화를 빼고 저장하면 defaults 의 통화가 영구
+     * 소실되던 문제를, 저장본에 없는 defaults 통화를 code 기준으로 보충해 해결합니다.
+     *
+     * - 저장본에 있는 통화: 저장본(환율 포함) 채택 (관리자 편집 보존)
+     * - 저장본에 없는 defaults 통화: defaults 항목 보충 (소실 방지)
+     * - 저장본에만 있는(관리자 신규 추가) 통화: 그대로 보존
+     *
+     * @param  array  $defaults  defaults.json 의 통화 목록
+     * @param  array  $saved  저장본 통화 목록
+     * @return array code 기준으로 병합된 통화 목록
+     */
+    private function mergeCurrenciesByCode(array $defaults, array $saved): array
+    {
+        // defaults 를 code 인덱스로 매핑 (필드 보충용)
+        $defaultsByCode = [];
+        foreach ($defaults as $defaultCurrency) {
+            $code = $defaultCurrency['code'] ?? null;
+            if ($code !== null) {
+                $defaultsByCode[$code] = $defaultCurrency;
+            }
+        }
+
+        // 저장본을 code 인덱스로 매핑 (저장본 우선)
+        $savedByCode = [];
+        foreach ($saved as $currency) {
+            $code = $currency['code'] ?? null;
+            if ($code !== null) {
+                $savedByCode[$code] = $currency;
+            }
+        }
+
+        $merged = [];
+        $usedCodes = [];
+
+        // defaults 순회: 저장본에 있으면 저장본 채택, 없으면 defaults 보충
+        foreach ($defaults as $defaultCurrency) {
+            $code = $defaultCurrency['code'] ?? null;
+            if ($code === null) {
+                continue;
+            }
+            $merged[] = $this->backfillBaseUnit($savedByCode[$code] ?? $defaultCurrency, $defaultsByCode[$code] ?? []);
+            $usedCodes[$code] = true;
+        }
+
+        // 저장본에만 있는(관리자 신규 추가) 통화 보존
+        foreach ($saved as $currency) {
+            $code = $currency['code'] ?? null;
+            if ($code !== null && ! isset($usedCodes[$code])) {
+                $merged[] = $this->backfillBaseUnit($currency, $defaultsByCode[$code] ?? []);
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * 통화 항목에 base_unit 이 없으면 defaults 또는 폴백(KRW=1000, JPY=100, 그 외=1)으로 보충합니다.
+     *
+     * 기존 저장본(base_unit 미저장)이 설정 화면에서 base_unit 을 표시·편집할 수 있도록 보강합니다.
+     * 런타임 환산은 CurrencyConversionService 폴백으로도 안전하나, 영속본 일관성을 위해 보충합니다.
+     *
+     * @param  array  $currency  통화 항목
+     * @param  array  $default  같은 code 의 defaults 항목
+     * @return array base_unit 이 보충된 통화 항목
+     */
+    private function backfillBaseUnit(array $currency, array $default): array
+    {
+        if (isset($currency['base_unit'])) {
+            return $currency;
+        }
+
+        $fallback = ['KRW' => 1000, 'JPY' => 100];
+        $code = $currency['code'] ?? '';
+        $currency['base_unit'] = $default['base_unit'] ?? ($fallback[$code] ?? 1);
+
+        return $currency;
     }
 
     /**

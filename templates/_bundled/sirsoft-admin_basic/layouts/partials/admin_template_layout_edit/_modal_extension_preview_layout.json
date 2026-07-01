@@ -1,0 +1,129 @@
+{
+  "layout_name": "modal_extension_preview_layout",
+  "meta": { "editor_label": "$t:admin.modal_label.admin_template_layout_edit.extension_preview_layout_modal" },
+  "id": "extension_preview_layout_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "size": "small",
+    "title": "$t:admin.templates.layout_edit.preview_layout_select_title"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-sm text-gray-600 dark:text-gray-400 mb-4"
+      },
+      "text": "$t:admin.templates.layout_edit.preview_layout_select_description"
+    },
+    {
+      "type": "composite",
+      "name": "Select",
+      "props": {
+        "value": "{{_global.previewLayoutSelection ?? ''}}",
+        "options": "{{(layout_files?.data ?? []).map(f => ({ value: f.name, label: f.name }))}}",
+        "placeholder": "$t:admin.templates.layout_edit.preview_layout_select_placeholder"
+      },
+      "actions": [
+        {
+          "type": "change",
+          "handler": "setState",
+          "params": {
+            "target": "global",
+            "previewLayoutSelection": "{{$event.target.value}}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-6 flex items-center justify-end gap-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50",
+            "disabled": "{{!_global.previewLayoutSelection}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview",
+              "params": {
+                "method": "POST",
+                "body": {
+                  "content": "{{_global.editorContent}}",
+                  "preview_layout": "{{_global.previewLayoutSelection}}"
+                }
+              },
+              "onSuccess": [
+                {
+                  "handler": "closeModal"
+                },
+                {
+                  "handler": "openWindow",
+                  "params": {
+                    "path": "/preview/{{response.data.token}}"
+                  }
+                }
+              ],
+              "onError": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "error",
+                    "message": "$t:admin.templates.layout_edit.preview_error"
+                  }
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "fa-regular fa-eye",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:admin.templates.layout_edit.preview_layout_confirm"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

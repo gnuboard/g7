@@ -254,7 +254,7 @@ const mailSendLogListLayout = {
       id: 'mail_send_log_list_content',
       type: 'basic',
       name: 'Div',
-      props: { className: 'p-6 bg-gray-50 dark:bg-gray-900 min-h-screen' },
+      props: { className: 'admin-page-content' },
       children: [
         // page_header
         {

@@ -23,7 +23,7 @@ class Order extends Model
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
-        'order_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.order_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum::class],
+        'order_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.order_status', 'type' => 'enum', 'enum' => OrderStatusEnum::class],
         'total_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.total_amount', 'type' => 'currency'],
         'total_paid_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.total_paid_amount', 'type' => 'currency'],
         'total_discount_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.total_discount_amount', 'type' => 'currency'],
@@ -50,7 +50,7 @@ class Order extends Model
      *
      * @param  mixed  $value  라우트 파라미터 값 (ID 또는 order_number)
      * @param  string|null  $field  검색할 필드명
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @return Model|null
      */
     public function resolveRouteBinding($value, $field = null)
     {
@@ -70,6 +70,7 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'order_number',
+        'guest_lookup_password_hash',
         'order_status',
         'order_device',
         'is_first_order',
@@ -91,6 +92,7 @@ class Order extends Model
         'total_vat_amount',
         'total_tax_free_amount',
         'total_points_used_amount',
+        'is_mileage_deducted',
         'total_deposit_used_amount',
         'total_paid_amount',
         'total_due_amount',
@@ -106,6 +108,7 @@ class Order extends Model
         'paid_at',
         'payment_due_at',
         'confirmed_at',
+        'cancelled_at',
         'admin_memo',
         'promotions_applied_snapshot',
         'shipping_policy_applied_snapshot',
@@ -130,6 +133,15 @@ class Order extends Model
         'mc_total_paid_amount',
     ];
 
+    /**
+     * 직렬화 시 숨길 속성 (API 응답·배열 변환 노출 차단)
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'guest_lookup_password_hash',
+    ];
+
     protected $casts = [
         'is_first_order' => 'boolean',
         'currency_snapshot' => 'array',
@@ -148,6 +160,7 @@ class Order extends Model
         'total_vat_amount' => 'decimal:2',
         'total_tax_free_amount' => 'decimal:2',
         'total_points_used_amount' => 'decimal:2',
+        'is_mileage_deducted' => 'boolean',
         'total_deposit_used_amount' => 'decimal:2',
         'total_paid_amount' => 'decimal:2',
         'total_due_amount' => 'decimal:2',
@@ -163,6 +176,7 @@ class Order extends Model
         'paid_at' => 'datetime',
         'payment_due_at' => 'datetime',
         'confirmed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'promotions_applied_snapshot' => 'array',
         'shipping_policy_applied_snapshot' => 'array',
         'promotions_available_snapshot' => 'array',
@@ -311,6 +325,39 @@ class Order extends Model
     }
 
     /**
+     * 주문자 이메일 반환 (배송지 기준)
+     *
+     * @return string|null 주문자 이메일
+     */
+    public function getOrdererEmail(): ?string
+    {
+        return $this->shippingAddress?->orderer_email;
+    }
+
+    /**
+     * 주문자 선호 언어를 반환합니다. (배송지 기준)
+     *
+     * 주문 시점의 화면 언어 스냅샷으로, 비회원 알림 발송 언어를 결정하는 데 사용됩니다.
+     * 저장값이 없으면(구버전 주문) null 을 반환해 수신 측에서 기본 로케일로 폴백합니다.
+     *
+     * @return string|null 주문자 선호 언어 또는 null
+     */
+    public function getOrdererLocale(): ?string
+    {
+        return $this->shippingAddress?->orderer_locale;
+    }
+
+    /**
+     * 비회원 주문 여부를 반환합니다.
+     *
+     * @return bool 회원 미연결(user_id = null) 주문이면 true
+     */
+    public function isGuestOrder(): bool
+    {
+        return $this->user_id === null;
+    }
+
+    /**
      * 수령인명 반환 (배송지 기준)
      *
      * @return string|null 수령인명
@@ -375,6 +422,8 @@ class Order extends Model
             return false;
         }
 
+        // 부분취소는 별도 상태가 아니라 잔여 옵션 기준 진행 상태(payment_complete 등)로 환원되므로,
+        // 잔여 항목 재취소는 그 진행 상태가 이미 취소 가능 목록에 있어 자연히 허용된다(partial_cancelled 제거).
         $defaultStatuses = [
             OrderStatusEnum::PENDING_ORDER,
             OrderStatusEnum::PENDING_PAYMENT,
@@ -470,5 +519,31 @@ class Order extends Model
     public function isConfirmable(): bool
     {
         return $this->order_status === OrderStatusEnum::DELIVERED;
+    }
+
+    /**
+     * 부분취소 상태 여부를 반환합니다 (파생 플래그).
+     *
+     * 부분취소는 별도 주문 상태(partial_cancelled)가 아니라 "취소된 옵션이 있으면서
+     * 잔여 활성 옵션도 존재"하는 파생 상태다. 주문 상태(order_status)는 잔여 활성 옵션 기준으로
+     * 결정되고, "일부가 취소되었다"는 사실은 이 플래그로 노출한다 (PO 2026-06-22, partial_cancelled 제거).
+     *
+     * @return bool 일부 옵션만 취소된 주문이면 true
+     */
+    public function isPartiallyCancelled(): bool
+    {
+        $cancelledCount = $this->options
+            ? $this->options->where('option_status', OrderStatusEnum::CANCELLED)->count()
+            : $this->options()->where('option_status', OrderStatusEnum::CANCELLED->value)->count();
+
+        if ($cancelledCount === 0) {
+            return false;
+        }
+
+        $activeCount = $this->options
+            ? $this->options->where('option_status', '!=', OrderStatusEnum::CANCELLED)->count()
+            : $this->options()->where('option_status', '!=', OrderStatusEnum::CANCELLED->value)->count();
+
+        return $activeCount > 0;
     }
 }

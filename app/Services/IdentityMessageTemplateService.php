@@ -163,6 +163,12 @@ class IdentityMessageTemplateService
             }
         }
 
+        // 템플릿 편집 시 updateTemplate 이 definition.is_default 를 false 로 내렸으므로,
+        // 시드 정의 복원 시 definition 플래그도 함께 true 로 되돌린다 ('기본' 배지/reset 버튼 노출 조건 정상화).
+        if ($updated->definition instanceof IdentityMessageDefinition) {
+            $this->definitionService->markAsDefault($updated->definition);
+        }
+
         $this->definitionService->invalidateAllCache();
 
         HookManager::doAction('core.identity.message_template.after_reset', $updated);
@@ -191,23 +197,38 @@ class IdentityMessageTemplateService
      */
     protected function getDefaultTemplateData(IdentityMessageTemplate $template): ?array
     {
-        $definition = $template->definition;
+        $defaultDefinition = $this->getDefaultDefinitionData($template->definition);
 
+        if ($defaultDefinition === null) {
+            return null;
+        }
+
+        foreach ($defaultDefinition['templates'] ?? [] as $defaultTemplate) {
+            if (($defaultTemplate['channel'] ?? null) === $template->channel) {
+                return $defaultTemplate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 정의가 시더 기본 정의(시드 정의)에 매칭되면 해당 기본 정의 데이터를 반환합니다.
+     *
+     * 운영자가 추가한 정의(admin definition)는 어떤 기본 정의에도 매칭되지 않아 null 을 반환합니다.
+     *
+     * @param  IdentityMessageDefinition|null  $definition
+     * @return array|null
+     */
+    protected function getDefaultDefinitionData(?IdentityMessageDefinition $definition): ?array
+    {
         if (! $definition instanceof IdentityMessageDefinition) {
             return null;
         }
 
-        $allDefaults = $this->collectDefaultDefinitions();
-
-        foreach ($allDefaults as $defaultDefinition) {
-            if (! $this->matchesDefinition($defaultDefinition, $definition)) {
-                continue;
-            }
-
-            foreach ($defaultDefinition['templates'] ?? [] as $defaultTemplate) {
-                if (($defaultTemplate['channel'] ?? null) === $template->channel) {
-                    return $defaultTemplate;
-                }
+        foreach ($this->collectDefaultDefinitions() as $defaultDefinition) {
+            if ($this->matchesDefinition($defaultDefinition, $definition)) {
+                return $defaultDefinition;
             }
         }
 

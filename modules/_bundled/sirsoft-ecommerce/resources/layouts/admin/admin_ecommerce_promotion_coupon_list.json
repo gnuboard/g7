@@ -85,6 +85,7 @@
     "data_sources": [
         {
             "id": "coupons",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.coupons",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons",
             "method": "GET",
@@ -131,6 +132,7 @@
         },
         {
             "id": "couponIssues",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.couponIssues",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.issueHistoryCoupon?.id}}/issues",
             "method": "GET",
@@ -171,6 +173,7 @@
             "params": {
                 "target": "global",
                 "_local": {
+                    "showDetailFilter": "{{!!(query.discount_type || query.issue_method || query.issue_condition || query.min_benefit_amount || query.max_benefit_amount || query.min_order_amount || query.valid_start_date || query.valid_end_date || query.issue_start_date || query.issue_end_date || query.created_by)}}",
                     "filter": {
                         "searchField": "{{query.search_field || 'all'}}",
                         "searchKeyword": "{{query.search_keyword || ''}}",
@@ -252,7 +255,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -287,7 +290,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex items-center justify-between mb-6"
+                            "className": "flex-between mb-6"
                         },
                         "children": [
                             {
@@ -306,7 +309,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                            "className": "text-label-subtle mt-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.description"
                                     }
@@ -365,7 +368,13 @@
             "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_issue_history.json"
         },
         {
+            "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_direct_issue.json"
+        },
+        {
             "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_delete_confirm.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_cancel_issue_confirm.json"
         }
     ],
     "initGlobal": {
@@ -377,6 +386,13 @@
         "issueHistoryCoupon": null,
         "issueHistoryPage": 1,
         "issueHistoryPerPage": 10,
-        "issueHistoryFilterUser": null
+        "issueHistoryFilterUser": null,
+        "directIssueCoupon": null,
+        "directIssueSelectedUsers": [],
+        "directIssueSearchKeyword": "",
+        "directIssueSearchResults": [],
+        "directIssueSubmitting": false,
+        "cancelIssueTarget": null,
+        "cancelIssueSubmitting": false
     }
 }

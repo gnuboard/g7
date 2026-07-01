@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export interface SearchableDropdownOption {
     value: string | number;
     label: string;
@@ -30,6 +31,12 @@ export interface SearchableDropdownProps {
     disabled?: boolean;
     /** 추가 클래스 */
     className?: string;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * 검색 가능한 드롭다운 컴포넌트

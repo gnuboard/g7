@@ -1,0 +1,110 @@
+{
+  "editor": {
+    "data_source": {
+      "marketing_settings": "マーケティング受信設定",
+      "settings": "設定"
+    }
+  },
+  "marketing_consent_title": "マーケティング同意情報",
+  "email_subscription": "広告メール受信",
+  "email_subscription_desc": "プロモーション、イベント、割引などのマーケティングメールを受信します。",
+  "marketing_consent": "マーケティング同意",
+  "marketing_consent_desc": "マーケティング目的の個人情報の収集および利用に同意します。",
+  "third_party_consent": "第三者提供同意",
+  "third_party_consent_desc": "マーケティング目的の第三者への個人情報提供に同意します。",
+  "info_disclosure": "情報公開",
+  "info_disclosure_desc": "プロフィール情報を他のユーザーに公開します。",
+  "agree_marketing_consent": "（選択）マーケティング同意",
+  "agree_third_party_consent": "（選択）第三者提供同意",
+  "agree_info_disclosure": "（選択）情報公開同意",
+  "no_consent_history": "同意履歴がありません。",
+  "history_date": "日時",
+  "history_channel_key": "同意項目",
+  "history_action": "変更",
+  "history_source": "経路",
+  "action_granted": "同意",
+  "action_revoked": "撤回",
+  "source_register": "会員登録",
+  "source_admin": "管理者",
+  "source_profile": "マイページ",
+  "consent_date_prefix": "同意日：",
+  "not_agreed": "未同意",
+  "marketing_consent_edit_hint": "修正はプロフィール編集で可能です",
+  "view_terms": "表示",
+  "info_disclosure_warning": "未同意の場合、一部のコミュニティ機能の利用が制限される可能性があります。",
+  "no_terms_content": "約款内容が登録されていません。",
+  "terms_published_at": "公開日",
+  "terms_modal_marketing_consent": "マーケティング同意約款",
+  "terms_modal_email_subscription": "広告メール受信約款",
+  "terms_modal_third_party_consent": "第三者提供同意約款",
+  "terms_modal_info_disclosure": "情報公開約款",
+  "settings": {
+    "title": "マーケティング同意設定",
+    "description": "マーケティング同意項目および約款ページを管理します。",
+    "section": {
+      "channels": "マーケティングチャネル",
+      "legal": "法的同意項目"
+    },
+    "fields": {
+      "marketing_consent_enabled": {
+        "label": "マーケティング同意の使用",
+        "hint": "無効化すると、すべての画面でマーケティング同意項目が非表示になります。"
+      },
+      "marketing_consent_terms_slug": {
+        "label": "マーケティング同意約款ページ",
+        "hint": "ページモジュールで管理する約款ページのSLUGを入力してください。空欄の場合は約款表示ボタンが非表示になります。"
+      },
+      "terms_slug_placeholder": "例：marketing-terms",
+      "channels": {
+        "label": "チャネル"
+      },
+      "third_party_consent_enabled": {
+        "label": "第三者提供同意の使用",
+        "hint": "無効化すると第三者提供同意項目が非表示になります。"
+      },
+      "third_party_consent_terms_slug": {
+        "label": "第三者提供同意約款ページ",
+        "hint": "ページモジュールで管理する約款ページのSLUGを入力してください。"
+      },
+      "info_disclosure_enabled": {
+        "label": "情報公開同意の使用",
+        "hint": "無効化すると情報公開同意項目が非表示になります。"
+      },
+      "info_disclosure_terms_slug": {
+        "label": "情報公開同意約款ページ",
+        "hint": "ページモジュールで管理する約款ページのSLUGを入力してください。"
+      }
+    },
+    "channels": {
+      "description": "マーケティング同意チャネルを管理します。各チャネルは独立した同意項目であり、会員登録およびマイページで個別に受信の有無を選択できます。",
+      "col_label": "項目名",
+      "col_slug": "約款slug",
+      "col_enabled": "使用",
+      "add": "チャネル追加",
+      "system_badge": "システム",
+      "delete_success": "チャネルが削除されました。",
+      "save_success": "チャネルが保存されました。",
+      "save_error": "チャネル保存に失敗しました。"
+    },
+    "channel_modal": {
+      "title": "チャネル追加／編集",
+      "enabled": "使用の有無",
+      "key": "項目キー",
+      "key_hint": "英小文字、数字、アンダースコア（_）のみ使用可能です。",
+      "key_placeholder": "例：sms_subscription",
+      "label_ko": "項目名（日本語）",
+      "label_en": "項目名（English）",
+      "label_placeholder": "例：広告性SMS受信",
+      "page_slug": "約款ページslug",
+      "page_slug_hint": "空欄の場合は約款表示ボタンが非表示になります。",
+      "page_slug_placeholder": "例：sms-terms",
+      "save": "保存",
+      "cancel": "キャンセル"
+    },
+    "channel_deactivate_modal": {
+      "title": "チャネルを削除できません",
+      "message": "このチャネルに同意した会員がいるため、削除できません。代わりにチャネルを無効化しますか？",
+      "confirm": "無効化に変更"
+    }
+  }
+}

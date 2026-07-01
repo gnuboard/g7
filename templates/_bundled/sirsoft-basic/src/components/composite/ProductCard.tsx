@@ -5,7 +5,7 @@
  * 다중 통화를 지원하며, 할인율 뱃지를 표시합니다.
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
@@ -16,10 +16,39 @@ import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { H3 } from '../basic/H3';
 import { Img } from '../basic/Img';
+import type { EditorAttrs } from '../../types';
 
-// G7Core 전역 상태 훅
-const useGlobalState = (key: string) =>
-  (window as any).G7Core?.state?.get?.(key);
+/**
+ * 선호 통화를 전역 상태에서 읽고, 변경을 구독하는 훅.
+ *
+ * 회귀 배경: 종전 `G7Core.state.get('preferredCurrency')` 는 key 를 무시하고
+ * _global 전체 객체를 반환해(G7CoreGlobals: get: () => getGlobalState()) 통화 코드가
+ * 아닌 객체가 들어가 multi_currency 조회가 항상 KRW 폴백되었고, 단발 get 이라 헤더에서
+ * 통화를 바꿔도 카드가 리렌더되지 않았다(상품 리스트/검색/캐러셀 KRW 고정 결함).
+ * → 전체 객체에서 `.preferredCurrency` 키로 접근 + state.subscribe 로 리렌더한다.
+ *
+ * @returns 현재 선호 통화 코드(미설정 시 'KRW')
+ */
+const usePreferredCurrency = (): string => {
+  const read = (): string => {
+    const state = (window as any).G7Core?.state?.get?.();
+    return (state && state.preferredCurrency) || 'KRW';
+  };
+  const [currency, setCurrency] = useState<string>(read);
+
+  useEffect(() => {
+    const subscribe = (window as any).G7Core?.state?.subscribe;
+    // 구독 시점과 마운트 사이 변경분 보정
+    setCurrency(read());
+    if (typeof subscribe !== 'function') return;
+    const unsubscribe = subscribe((state: Record<string, any>) => {
+      setCurrency((state && state.preferredCurrency) || 'KRW');
+    });
+    return typeof unsubscribe === 'function' ? unsubscribe : undefined;
+  }, []);
+
+  return currency;
+};
 
 // G7Core.dispatch() navigate 헬퍼
 const navigate = (path: string) => {
@@ -78,6 +107,14 @@ interface ProductCardProps {
   shopBase?: string;
   /** 추가 CSS 클래스 */
   className?: string;
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+/**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -132,8 +169,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onClick,
   shopBase = '/shop',
   className = '',
+  id,
+  editorAttrs,
 }) => {
-  const preferredCurrency = useGlobalState('preferredCurrency') || 'KRW';
+  const preferredCurrency = usePreferredCurrency();
 
   /**
    * 다중 통화 가격을 가져옵니다.
@@ -187,6 +226,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <Button
       onClick={handleClick}
       className={`block w-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`}
+      id={id} {...editorAttrs}
     >
       {/* 이미지 영역 */}
       <Div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">

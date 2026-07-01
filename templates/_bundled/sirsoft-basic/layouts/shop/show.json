@@ -3,6 +3,9 @@
     "layout_name": "shop/show",
     "permissions": [],
     "extends": "_user_base",
+    "computed": {
+        "optionChoices": "{{(product.data?.option_groups ?? []).map((g, gi) => (g.values_localized ?? []).map(v => { const combos = (product.data?.options ?? []).filter(o => o.option_values_localized?.[g.name_localized] === v && (product.data?.option_groups ?? []).slice(0, gi).every(ug => !_local.currentSelection?.[ug.name_localized] || o.option_values_localized?.[ug.name_localized] === _local.currentSelection[ug.name_localized])); const soldOut = combos.length > 0 && combos.every(o => o.is_sold_out || (o.stock_quantity ?? 0) <= 0 || !o.is_active); return { value: v, label: soldOut ? v + ' ' + $t('shop.product.sold_out_suffix') : v, disabled: soldOut }; }))}}"
+    },
     "meta": {
         "seo": {
             "enabled": true,
@@ -13,8 +16,8 @@
             "page_type": "product",
             "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_product_detail",
             "vars": {
-                "product_name": "{{product.data.name ?? ''}}",
-                "product_description": "{{product.data.short_description ?? product.data.description ?? ''}}",
+                "product_name": "{{$localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}",
+                "product_description": "{{$localized(product.data.meta_description) ?? $localized(product.data.short_description) ?? $localized(product.data.description) ?? ''}}",
                 "site_name": "$core_settings:general.site_name",
                 "shopBase": "$module_settings:sirsoft-ecommerce:basic_info.route_path"
             },
@@ -22,8 +25,8 @@
             "changefreq": "daily",
             "og": {
                 "type": "product",
-                "title": "{{_seo.product.title ?? product.data.name ?? ''}}",
-                "description": "{{_seo.product.description ?? product.data.description ?? ''}}"
+                "title": "{{_seo.product.title ?? $localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}",
+                "description": "{{_seo.product.description ?? $localized(product.data.meta_description) ?? $localized(product.data.description) ?? ''}}"
             }
         }
     },
@@ -71,7 +74,8 @@
                 "isOrdering": false,
                 "downloadableCoupons": null,
                 "downloadableCouponsLoading": false,
-                "downloadableCouponsPage": 1,
+                "downloadingMore": false,
+                "downloadingCouponId": null,
                 "selectedCouponForDownload": null,
                 "reviewsPage": 1,
                 "reviewSortBy": "created_at_desc",
@@ -105,6 +109,7 @@
     "data_sources": [
         {
             "id": "product",
+            "label_key": "$t:editor.data_source.product",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}",
             "method": "GET",
@@ -113,10 +118,21 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": null
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": { "errorCode": 403, "target": "content" }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": { "errorCode": 404, "target": "content" }
+                }
             }
         },
         {
             "id": "reviews",
+            "label_key": "$t:editor.data_source.reviews",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}/reviews",
             "method": "GET",
@@ -152,6 +168,7 @@
         },
         {
             "id": "qna",
+            "label_key": "$t:editor.data_source.qna",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}/inquiries",
             "method": "GET",
@@ -188,6 +205,7 @@
         },
         {
             "id": "productDownloadableCoupons",
+            "label_key": "$t:editor.data_source.productDownloadableCoupons",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}/downloadable-coupons",
             "method": "GET",
@@ -200,6 +218,7 @@
         },
         {
             "id": "popularProducts",
+            "label_key": "$t:editor.data_source.popularProducts",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/products/popular?limit=8",
             "method": "GET",

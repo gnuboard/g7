@@ -1,0 +1,36 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(A27)은
+#   selection × target × source cross product 를 bulkUpdateHandlers Vitest +
+#   레이아웃 구조 회귀가 커버하며 green.
+feature: 일괄변경 전체선택 SSoT 통일 (MP12 / A27)
+
+description: |
+  판매가·재고 일괄변경에서 전체선택 시 "변경할 항목 없음"으로 표시되던 결함을 수정한다.
+  근본 원인: buildConfirmData 는 _local 단독, 실제 API(bulkUpdate)는 _global 우선 → 표시↔동작 불일치.
+  수정: buildConfirmData 도 _global.bulkSelected* 우선으로 통일(단일 SSoT). 어느 분기에서도 옳음.
+
+axes:
+  selection:
+    - product_header_all      # 상품 헤더 전체선택
+    - option_header_all       # 옵션 헤더 전체선택
+    - individual_partial      # 개별 일부선택(대조군)
+  target:
+    - price                   # 판매가
+    - stock                   # 재고
+  source:
+    - local_only              # _local 만
+    - global_only             # _global 만 (전체선택 경로)
+    - both_global_priority    # 둘 다 → global 우선
+
+effects:
+  - global_priority_in_confirm     # buildConfirmData 가 _global 우선
+  - no_changes_hidden_on_all       # 전체선택 시 no_changes 미노출
+  - confirm_matches_bulk_update    # 표시 선택 소스 == 실제 호출 소스
+  - product_select_includes_options # 상품 체크 시 옵션 포함
+  - individual_still_works          # 개별 선택 회귀 green
+  - apply_sequence_order            # setState(global)→build→openModal 순서
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/bulkUpdateHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/bulkConfirmModalBinding.test.tsx

@@ -41,11 +41,14 @@
   "currency": {
     "won": "원"
   },
+  "currency_label": "통화",
+  "shipping_country_label": "배송국가",
   "column_selector": "컬럼 선택",
   "column_selector_title": "표시할 컬럼 선택",
   "column_selector_description": "표시하거나 숨길 컬럼을 선택하세요",
   "loading": "로딩중...",
   "select_placeholder": "선택하세요",
   "selected_count": "{{count}}개 선택됨",
-  "read_only_notice": "보기 권한만 있습니다. 수정이 필요한 경우 관리자에게 문의하세요."
+  "read_only_notice": "보기 권한만 있습니다. 수정이 필요한 경우 관리자에게 문의하세요.",
+  "validation_error_notice": "입력값을 확인해주세요. 일부 항목이 올바르지 않습니다."
 }

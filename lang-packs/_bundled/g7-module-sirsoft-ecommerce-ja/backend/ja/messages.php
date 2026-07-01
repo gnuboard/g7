@@ -101,6 +101,9 @@ return [
         'valid_days_format' => '発行日から:days日',
         'issue_period_unlimited' => '常時発行',
         'unlimited' => '無制限',
+        'direct_issued' => ':issued名にクーポンを発行しました。',
+        'direct_issued_with_skip' => ':issued名に発行しました。(:skipped名は発行条件を満たしていないため除外)',
+        'issue_cancelled' => 'クーポン発行がキャンセルされました。',
     ],
     'order' => [
         'created' => '注文が完了しました。',
@@ -158,6 +161,19 @@ return [
         'cancel_failed' => '注文キャンセルに失敗しました。',
         'estimate_refund_success' => '返金予想金額を照会しました。',
         'estimate_refund_failed' => '返金予想金額照会に失敗しました。',
+        'guest_password_reset_success' => '非会員照会パスワードがリセットされました。',
+        'guest_password_reset_failed' => '非会員照会パスワードのリセットに失敗しました。',
+        'guest_password_reset_not_guest' => '非会員注文のみ照会パスワードをリセットできます。',
+        'deposit_confirmed' => '入金が確認され決済完了処理されました。',
+        'deposit_confirm_failed' => '入金確認処理に失敗しました。',
+        'deposit_amount_mismatch' => '入金額が決済予定金額と一致しません。',
+        'deposit_not_dbank' => '銀行振込注文のみ入金確認できます。',
+        'deposit_not_pending' => '未決済状態の注文のみ入金確認できます。',
+        'payment_name_summary' => ':name ほか :count件',
+        'deposit' => [
+            'amount' => '入金額',
+            'depositor_name' => '入金者名',
+        ],
     ],
     'labels' => [
         'fetch_success' => 'ラベル一覧を照会しました。',
@@ -185,7 +201,7 @@ return [
         'prefix' => [
             'KRW' => '',
             'JPY' => '¥',
-            'CNY' => '¥',
+            'CNY' => '元',
             'USD' => '$',
             'EUR' => '€',
         ],
@@ -238,6 +254,10 @@ return [
         'continue_shopping' => 'ショッピングを続ける',
         'updated' => 'カートが修正されました。',
         'removed' => 'カートから削除されました。',
+        'reorder_added' => '過去の注文の商品をカートに追加しました。',
+        'reorder_failed' => '再注文に失敗しました。',
+        'reorder_option_not_found' => '商品オプションはもう存在しません。',
+        'unknown_product' => '不明な商品',
     ],
     'checkout' => [
         'created' => '注文書が作成されました。',
@@ -275,12 +295,23 @@ return [
         'applied' => 'クーポンが適用されました。',
         'removed' => 'クーポンが解除されました。',
         'invalid' => '無効なクーポンです。',
+        'per_user_limit_exceeded' => 'このクーポンの使用可能回数を超過しました。',
     ],
     'mileage' => [
         'balance_fetched' => 'マイレージ残高を閲覧しました。',
         'balance_fetch_failed' => 'マイレージ残高の閲覧に失敗しました。',
         'max_usable_fetched' => '使用可能な最大マイレージを閲覧しました。',
         'max_usable_fetch_failed' => '使用可能なマイレージの閲覧に失敗しました。',
+        'list_retrieved' => 'マイレージの履歴を照会しました。',
+        'transaction_created' => 'マイレージ取引が処理されました。',
+        'expiry_extended' => 'マイレージの有効期限が延長されました。',
+        'linked_retrieved' => 'リンク取引を照会しました。',
+        'not_found' => 'マイレージ取引が見つかりません。',
+        'validation_failed' => 'マイレージ処理に失敗しました。',
+        'transaction_updated' => 'マイレージ取引が編集されました。',
+        'not_earning' => '積立取引のみ編集できます。',
+        'expiry_not_editable' => '既に失効したか、すべて使用された積立建は有効期限を変更できません。',
+        'expiry_before_earned' => '有効期限は積立日時より前の日付にすることはできません。',
     ],
     'temp_order' => [
         'created' => '注文書が作成されました。',
@@ -299,6 +330,8 @@ return [
         'deleted' => '商品情報提供告示が削除されました。',
         'copied' => '商品情報提供告示がコピーされました。',
         'not_found' => '商品情報提供告示が見つかりません。',
+        'activated' => '商品情報提供告示が有効化されました。',
+        'deactivated' => '商品情報提供告示が無効化されました。',
     ],
     'common_infos' => [
         'fetch_success' => '共通情報リストを取得しました。',
@@ -387,6 +420,7 @@ return [
             'range_header' => '区間別送料',
             'extra_fee' => '追加送料（島部）',
         ],
+        'api_test_done' => '計算 API テスト呼び出しを完了しました。',
     ],
     'admin' => [
         'order' => [
@@ -1069,5 +1103,18 @@ return [
         'depositor_name_required' => '振込人名を入力してください。',
         'provider_not_found' => '決済プロバイダーが見つかりません。',
         'client_config_success' => '決済クライアント設定を取得しました。',
+    ],
+    'dashboard' => [
+        'fetch_success' => 'ダッシュボードのデータを閲覧しました。',
+    ],
+    'user_currency' => [
+        'fetched' => '決済通貨を照会しました。',
+        'updated' => '決済通貨が変更されました。',
+        'update_failed' => '決済通貨の変更に失敗しました。',
+    ],
+    'user_shipping_country' => [
+        'fetched' => '配送国を照会しました。',
+        'updated' => '配送国が変更されました。',
+        'update_failed' => '配送国の変更に失敗しました。',
     ],
 ];

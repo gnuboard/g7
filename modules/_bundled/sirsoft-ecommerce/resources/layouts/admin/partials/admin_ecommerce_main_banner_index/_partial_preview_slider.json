@@ -7,7 +7,7 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "card mb-6"
+    "className": "admin-card mb-6"
   },
   "children": [
     {
@@ -15,7 +15,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center justify-between mb-4"
+        "className": "flex-between mb-4"
       },
       "children": [
         {
@@ -60,7 +60,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "aspect-[3/1] flex items-center justify-center"
+            "className": "flex-center aspect-[3/1] justify-center"
           },
           "children": [
             {
@@ -101,7 +101,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white z-20"
+                "className": "flex-center absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 justify-center text-white z-20"
               },
               "children": [
                 {
@@ -120,7 +120,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white z-20"
+                "className": "flex-center absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 justify-center text-white z-20"
               },
               "children": [
                 {
@@ -138,7 +138,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20"
+                "className": "absolute bottom-4 left-1/2 -translate-x-1/2 flex-center gap-2 z-20"
               },
               "children": [
                 {

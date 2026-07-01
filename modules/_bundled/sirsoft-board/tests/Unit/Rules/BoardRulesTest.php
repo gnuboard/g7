@@ -162,6 +162,31 @@ class BoardRulesTest extends BoardTestCase
         $this->assertEmpty($this->runRule($rule, 'not-an-array'));
     }
 
+    /**
+     * roles 누락 메시지는 권한 키 대신 다국어 라벨을 노출합니다.
+     *
+     * 회귀: posts.read-secret(사용자) 라벨 누락으로 키가 그대로 노출되던 문제 (이슈 #413-20)
+     */
+    public function test_permission_roles_required_uses_localized_label_for_read_secret(): void
+    {
+        $rule = new PermissionRolesRequiredRule();
+        $value = [
+            'posts.read-secret' => ['roles' => []],
+        ];
+
+        $failures = $this->runRule($rule, $value);
+
+        $this->assertNotEmpty($failures);
+        // 원본 키가 그대로 노출되면 안 됨
+        $this->assertStringNotContainsString('posts.read-secret', $failures[0]);
+        $this->assertStringNotContainsString('posts_read-secret', $failures[0]);
+        // 다국어 라벨이 노출되어야 함
+        $this->assertStringContainsString(
+            __('sirsoft-board::validation.permission_names.posts.read-secret'),
+            $failures[0]
+        );
+    }
+
     // ==========================================
     // SlugUniqueRule
     // ==========================================

@@ -12,6 +12,7 @@
     "data_sources": [
         {
             "id": "settings",
+            "label_key": "$t:sirsoft-ckeditor5.editor.data_source.settings",
             "type": "api",
             "endpoint": "/api/admin/plugins/{{route.identifier}}/settings",
             "method": "GET",
@@ -27,11 +28,10 @@
                 "id": "plugin_settings_content",
                 "type": "basic",
                 "name": "Div",
-                "blur_until_loaded": "{{_local.isSaving}}",
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -50,13 +50,13 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+                            "className": "alert-info"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "flex items-center gap-3" },
+                                "props": { "className": "flex-center gap-3" },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -70,7 +70,7 @@
                                     {
                                         "type": "basic",
                                         "name": "P",
-                                        "props": { "className": "text-sm text-blue-700 dark:text-blue-300" },
+                                        "props": { "className": "text-info-soft" },
                                         "text": "$t:sirsoft-ckeditor5.settings.notice"
                                     }
                                 ]
@@ -83,13 +83,13 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mt-6"
+                            "className": "alert-danger"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "flex items-center gap-3" },
+                                "props": { "className": "flex-center gap-3" },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -107,7 +107,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
-                                                "props": { "className": "text-sm font-medium text-red-800 dark:text-red-200" },
+                                                "props": { "className": "text-error-soft" },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
                                             {
@@ -123,7 +123,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Li",
-                                                        "props": { "className": "text-sm text-red-700 dark:text-red-300" },
+                                                        "props": { "className": "grid-3col-responsive" },
                                                         "text": "{{message}}"
                                                     }
                                                 ]
@@ -146,12 +146,12 @@
                                 "id": "section_toolbar_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700" },
+                                "props": { "className": "panel-header-row" },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
-                                        "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" },
+                                        "props": { "className": "text-error-strong" },
                                         "text": "$t:sirsoft-ckeditor5.settings.section_toolbar"
                                     }
                                 ]
@@ -166,7 +166,7 @@
                                         "id": "field_toolbar",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start" },
+                                        "props": { "className": "section-heading-md" },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -176,13 +176,13 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                                                        "props": { "className": "form-label" },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                                                        "props": { "className": "form-hint" },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.hint"
                                                     }
                                                 ]
@@ -197,7 +197,7 @@
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "toolbar",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            "className": "focus:border-transparent"
                                                         },
                                                         "children": [
                                                             {
@@ -228,7 +228,7 @@
                                         "id": "field_editor_height",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start" },
+                                        "props": { "className": "section-heading-md" },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -238,13 +238,13 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                                                        "props": { "className": "form-label" },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.editor_height.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                                                        "props": { "className": "form-hint" },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.editor_height.hint"
                                                     }
                                                 ]
@@ -260,7 +260,7 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "editorHeight",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            "className": "focus:border-transparent"
                                                         }
                                                     }
                                                 ]
@@ -283,12 +283,12 @@
                                 "id": "section_image_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700" },
+                                "props": { "className": "panel-header-row" },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
-                                        "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" },
+                                        "props": { "className": "text-error-strong" },
                                         "text": "$t:sirsoft-ckeditor5.settings.section_image"
                                     }
                                 ]
@@ -303,7 +303,7 @@
                                         "id": "field_image_upload",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start" },
+                                        "props": { "className": "section-heading-md" },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -313,13 +313,13 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                                                        "props": { "className": "form-label" },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.image_upload.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                                                        "props": { "className": "form-hint" },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.image_upload.hint"
                                                     }
                                                 ]
@@ -342,7 +342,7 @@
                                         "id": "field_image_max_size",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-start" },
+                                        "props": { "className": "section-heading-md" },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -352,13 +352,13 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                                                        "props": { "className": "form-label" },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.image_max_size.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                                                        "props": { "className": "form-hint" },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.image_max_size.hint"
                                                     }
                                                 ]
@@ -374,7 +374,7 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "imageMaxSizeMb",
-                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            "className": "focus:border-transparent"
                                                         }
                                                     }
                                                 ]
@@ -396,7 +396,7 @@
                             {
                                 "type": "basic",
                                 "name": "H3",
-                                "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white mb-4" },
+                                "props": { "className": "section-heading mb-4" },
                                 "text": "$t:sirsoft-ckeditor5.settings.guide.title"
                             },
                             {
@@ -407,31 +407,31 @@
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                                        "props": { "className": "text-label" },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step1"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                                        "props": { "className": "text-label" },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step2"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                                        "props": { "className": "text-label" },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step3"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                                        "props": { "className": "text-label" },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step4"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                                        "props": { "className": "text-label" },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step5"
                                     }
                                 ]
@@ -450,7 +450,7 @@
                                 "id": "section_preview_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" },
+                                "props": { "className": "px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -469,13 +469,13 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
-                                                "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" },
+                                                "props": { "className": "text-error-strong" },
                                                 "text": "$t:sirsoft-ckeditor5.settings.section_preview"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                                                "props": { "className": "form-hint" },
                                                 "text": "$t:sirsoft-ckeditor5.settings.section_preview_hint"
                                             }
                                         ]
@@ -531,7 +531,7 @@
                         "id": "footer_buttons",
                         "type": "basic",
                         "name": "Div",
-                        "props": { "className": "flex justify-end gap-3 mt-6" },
+                        "props": { "className": "sticky-footer-buttons" },
                         "children": [
                             {
                                 "id": "cancel_button",
@@ -539,7 +539,7 @@
                                 "name": "Button",
                                 "props": {
                                     "type": "button",
-                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                    "className": "btn btn-secondary"
                                 },
                                 "actions": [
                                     {
@@ -563,7 +563,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "flex items-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "btn btn-primary flex-center gap-1.5"
                                 },
                                 "actions": [
                                     {

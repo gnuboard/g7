@@ -12,6 +12,9 @@ return [
     'template_not_found' => '템플릿을 찾을 수 없습니다: :identifier',
     'template_not_active' => '템플릿이 활성화되지 않았습니다: :identifier (상태: :status)',
 
+    // 낙관적 잠금 — 동시 저장 충돌
+    'concurrent_modification' => '다른 사용자가 먼저 저장했습니다. (리소스: :resource, 현재 버전: :current, 보낸 버전: :expected)',
+
     // 레이아웃 관련 예외
     'layout' => [
         'duplicate_data_source_id' => 'data_sources ID 중복: :id',

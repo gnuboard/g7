@@ -1,7 +1,7 @@
 {
   "form": {
     "sections": {
-      "notification_settings": "通知設定"
+      "notification_settings": "掲示板通知設定"
     },
     "notifications": {
       "post_complete": "投稿完了通知",

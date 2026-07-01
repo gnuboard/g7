@@ -162,6 +162,23 @@ SEO 렌더링 시 `_global` 컨텍스트에 프론트엔드 설정 데이터를 
 | `_global.settings` | `SettingsService` | 코어 프론트엔드 설정 (사이트명, 로고 등) |
 | `_global.modules` | `SettingsService` | 활성 모듈 목록 |
 | `_global.pluginSettings` | `PluginSettingsService` | 플러그인 설정 데이터 |
+| `_global.site_name` | `general.site_name` | 사이트 이름. `resolveLocalizedValue` 통과 (다국어 array 안전) |
+| `_global.site_url` | `general.site_url` | 사이트 URL |
+
+### site_name SSoT 체인 (다국어 일관성)
+
+`general.site_name` 은 사이트 식별 기준값(SSoT)이며, 다음 경로에서 사용된다. 운영자가 다국어 JSON array 로 저장할 수 있으므로 **모든 경로가 현재 로케일 string 으로 정규화**해야 한다 (array 를 그대로 `(string)`/Blade `e()` 캐스팅하면 "Array to string conversion" TypeError 발생).
+
+| 경로 | 출처 | 정규화 |
+|------|------|--------|
+| OG `og:site_name` | `seo.og_default_site_name ?? general.site_name` (`SeoMetaResolver`) | `resolveLocalizedValue` ✅ |
+| JSON-LD `WebSite.name` / `{site_name}` 치환 | `_global.site_name` ← `general.site_name` (`SeoRenderer::buildGlobalContext`) | `resolveLocalizedValue` ✅ |
+| SPA `<title>` | `config('app.name')` ← `general.site_name` (`SettingsServiceProvider::applyAppConfig`) | `localizeSettingValue` ✅ |
+| canonical | URL 기반, site_name 미사용 (`seo.blade.php`) | N/A (무관) |
+
+> **OG 직접입력은 의도된 override**: `seo.og_default_site_name` 에 값을 입력하면 그 값이 우선하고, 비우면 `general.site_name` 을 따른다. admin SEO 탭의 OG 입력칸 라벨/안내가 이 "선택 재정의" 위상을 명시한다. 자동 동기화/칸 제거는 하지 않는다 (drift 는 명시적 override 로 허용).
+>
+> `resolveLocalizedValue` 의 SSoT 는 `app/Seo/Concerns/LocalizesSeoValues` 트레이트. `SettingsServiceProvider` 는 `register()` 단계(DI 전)라 트레이트 대신 동일 의미의 `localizeSettingValue` 를 인라인한다.
 
 ### initGlobal 매핑
 
@@ -1477,6 +1494,36 @@ public function seoVariables(): array
 - `setting`, `core_setting`, `query`, `route` 소스는 SeoRenderer가 **자동으로 해석**합니다.
 - `data` 소스는 레이아웃 JSON의 `meta.seo.vars`에서 표현식으로 매핑해야 합니다.
 
+#### source 타입과 값 공급 주체
+
+변수의 `source` 타입이 "값을 누가 채우는지"를 결정합니다. 같은 변수명을 모듈과 레이아웃이 동시에 선언해도, 값의 주인은 `source`가 정합니다.
+
+| source | 값의 주인 | 레이아웃 `vars`로 덮어쓰기 |
+|--------|----------|---------------------------|
+| `setting` | 모듈/플러그인 설정 | 불가 (출처가 강제) |
+| `core_setting` | 코어 설정 | 불가 |
+| `query` | URL 쿼리 | 불가 |
+| `route` | 라우트 파라미터 | 불가 |
+| `data` | 레이아웃 `vars` | 유일하게 레이아웃이 값 공급 |
+
+`source: data` 변수만 레이아웃 `vars`가 값을 공급하고, 나머지 타입은 각 출처(모듈 설정/코어 설정/URL/라우트)가 값을 강제하므로 레이아웃 `vars`로 덮을 수 없습니다.
+
+> 주의: `source: core_setting` 변수도 **정의 주체는 모듈/플러그인**입니다 (코어는 `seoVariables()` 같은 정의 인프라를 갖지 않음). 코어 설정은 그 변수의 "값이 저장된 창고"일 뿐, 변수를 정의하지 않습니다.
+
+#### required 플래그
+
+변수 정의에 `required: true`를 지정하면, 해석 결과가 빈 문자열일 때 경고 로그를 남깁니다.
+
+```php
+'product_name' => ['source' => 'data', 'required' => true],
+```
+
+- 값이 비면 `Log::warning('[SEO] Required variable not resolved', ...)` 기록 (SeoRenderer)
+- 렌더링을 **중단하지 않음** — 빈 값으로 계속 진행 (부분 누락 허용)
+- 기본값 주입/예외 발생 없음 — 누락을 감지하는 진단용 표시
+
+SEO 렌더링은 변수 하나가 비어도 나머지 메타태그를 정상 출력해야 하므로, `required`는 강제력 없이 경고만 수행합니다.
+
 ### meta.seo.extensions — 확장 변수 로드 선언
 
 레이아웃 JSON에서 SEO 변수를 제공하는 확장을 선언합니다.
@@ -1538,6 +1585,54 @@ _seo.{page_type}.description — 해석된 SEO 설명
 - 동일 page_type 내에서 변수명 중복 시 설치 실패
 - `_common` 변수와 page_type별 변수 간 중복도 검증 대상
 - 서로 다른 확장 간 동일 page_type의 변수명 충돌 시 경고 발생
+
+### vars의 두 출처와 소비처
+
+vars는 "정의 주체"에 따라 두 갈래로 나뉘며, 소비처도 분리됩니다. 두 소비처는 **서로 다른 변수 풀**을 봅니다.
+
+| 정의 주체 | 처리 경로 | 소비처 |
+|-----------|----------|--------|
+| 모듈/플러그인 `seoVariables()` | `resolveSeoContext` | 확장 SEO 설정 탭의 제목/설명 템플릿 `{key}` 치환 |
+| 레이아웃 `meta.seo.vars` | `resolveSeoVars` → `htmlMapper->setSeoVars` | seo-config.json의 `format`/`fields` 렌더 모드 컴포넌트 |
+
+- **확장 SEO 설정 탭** ← 모듈 `seoVariables()` 기준. 운영자가 입력한 `meta_{page_type}_title` 등의 `{key}` 빈칸을 채움 (`data` 소스 변수가 여기로)
+- **seo-config.json** ← 레이아웃 `meta.seo.vars` 기준. `format` 모드 `{key}` 치환(ComponentHtmlMapper)과 `fields` 모드 link `base_url`(`$var:xxx`)에 사용
+
+겹치는 경우는 같은 변수를 **양쪽에 모두 선언**했을 때뿐입니다. 모듈이 정의한 변수는 레이아웃 `vars`에도 적지 않는 한 seo-config.json에서 쓸 수 없고, 레이아웃 임의 변수는 확장 SEO 탭에서 쓸 수 없습니다.
+
+> 죽은 변수 주의: 레이아웃 `meta.seo.vars`에 선언만 하고 어느 소비처(확장 제목 템플릿 / seo-config.json 컴포넌트)에서도 참조하지 않으면, 해석은 되지만 출력 어디에도 반영되지 않습니다. 헤더/푸터 등 공통 컴포넌트 변수(`siteName`, `shopBase` 등)는 보통 베이스 레이아웃(`_user_base`)에서 소비되므로, 개별 페이지 레이아웃에 중복 선언된 동일 변수는 해당 페이지에서 미사용 상태로 남을 수 있습니다.
+
+### og / twitter / structured_data 캐스케이드 경합
+
+세 항목 모두 우선순위 서열은 `코어 < 모듈/플러그인 declaration < 레이아웃 override < 훅`이지만, 합쳐지는 단위가 다릅니다.
+
+| 항목 | 코어 fallback | 모듈+플러그인 동시 제공 | 레이아웃 부분 재정의 | 병합 단위 |
+|------|--------------|------------------------|---------------------|----------|
+| `og` / `twitter` | 일부 키 제공 (site_name, image_width, type / card, site) | 키 단위 병합 (공존) | 가능 (키 단위) | 키 (`fillEmptyKeys`) |
+| `structured_data` | 없음 | 마지막 확장 하나가 통째로 (extensions 배열 순서) | 불가 (통째로 전체 작성) | 문서 전체 (`=== null`일 때만 모듈) |
+
+- **og/twitter**: `resolveOgData`가 (코어 fallback + 레이아웃 og)를 먼저 합치고, 모듈 declaration은 `fillEmptyKeys`로 **비어있는 키만** 채웁니다. 따라서 코어가 이미 채운 키(site_name, image_width, type)는 모듈이 못 덮고, 코어가 비워둔 키(image, image_alt, extra)만 모듈이 채웁니다. 레이아웃에 명시한 키는 항상 우선합니다.
+- **structured_data**: 코어 fallback이 없습니다. 모듈/플러그인이 둘 다 제공하면 `meta.seo.extensions` 배열에서 **마지막에 선언된 확장**이 통째로 이깁니다(병합 아님). 레이아웃이 `meta.seo.structured_data`를 선언하면 모듈/플러그인 declaration은 전부 무시되며, 부분 재정의가 불가하므로 완성된 전체 구조를 작성해야 합니다.
+- 세 항목 모두 마지막에 `core.seo.filter_og_data` / `filter_twitter_data` / `filter_structured_data` 훅이 제약 없이 통째로 덮을 수 있습니다 (이미 채워진 키도 변경 가능).
+
+`og.type` 함정: 모듈 `seoOgDefaults`가 `type => 'product'`를 반환해도, 레이아웃에 `og.type`이 없으면 `resolveOgData`가 코어 기본값 `'website'`를 먼저 채워 모듈 값이 무시됩니다. 도메인 og:type이 필요한 레이아웃은 `og.type`을 직접 명시해야 합니다.
+
+### meta.seo 표현식에서 참조 가능한 컨텍스트
+
+SeoRenderer가 `$context`에 주입하는 데이터를 `og`/`structured_data`/`vars` 표현식에서 참조할 수 있습니다.
+
+| 참조 경로 | 내용 |
+|-----------|------|
+| data_source ID (`product`, `reviews` 등) | `meta.seo.data_sources`로 로드한 API 응답 |
+| `route` | 라우트 파라미터 + `route.path`(현재 URL 경로) |
+| `query` | URL 쿼리스트링 |
+| `_global` | 코어 설정(`settings`)·모듈(`modules`)·플러그인 설정 + `initGlobal` 매핑 데이터 |
+| `_local` | init_actions의 `setState(target: local)` 평가 결과 |
+| `_computed` / `$computed` | `computed` 섹션 평가 결과 |
+| `_seo.{page_type}` | 엔진이 해석한 SEO 제목/설명 (`extensions` + vars + 운영자 템플릿 결과물) |
+
+- `_seo`는 직접 작성하지 않고 SeoRenderer가 자동 주입합니다. 런타임에는 레이아웃이 선언한 `page_type` 하나만 채워집니다 (`_seo.product` 등). `og.title`에서 `{{_seo.{page_type}.title ?? <fallback>}}` 패턴으로 참조하는 것이 표준입니다.
+- `_seo.{page_type}`의 가능한 page_type 목록은 코어 고정값이 아니라, 각 모듈/플러그인의 `seoVariables()` 키 + 설정의 `meta_{page_type}_title` 키에서 도출됩니다 (확장마다 다름).
 
 ## 개발 체크리스트
 

@@ -1,0 +1,310 @@
+{
+  "editor": {
+    "data_source": {
+      "gdprConsentLog": "同意ログ",
+      "gdprMeConsents": "私の同意履歴",
+      "gdprMyConsent": "私の同意",
+      "gdprMyConsents": "私の同意履歴",
+      "gdprPolicyVersionCurrent": "現在のポリシーバージョン",
+      "gdprPolicyVersionHistory": "ポリシーバージョン履歴",
+      "gdprPolicyVersionSnapshot": "ポリシーバージョンスナップショット",
+      "gdprPublicSettings": "GDPR公開設定",
+      "gdprSettings": "GDPR設定"
+    }
+  },
+  "consent": {
+    "granted": "同意が保存されました。",
+    "granted_again": "同意が更新されました。",
+    "revoked": "同意が撤回されました。",
+    "renew_all_success": "アクティブな項目 {renewed} 個を新しいポリシーバージョンに更新しました。",
+    "granting": "同意中...",
+    "revoking": "撤回中...",
+    "renewing": "更新中...",
+    "already_same_state": "既に同じ状態です。",
+    "required_cannot_revoke": "必須項目は撤回できません。",
+    "invalid_key": "無効な同意項目です。",
+    "category_cookie_necessary": "必須クッキー",
+    "category_cookie_functional": "機能クッキー",
+    "category_cookie_analytics": "分析クッキー",
+    "category_cookie_marketing": "マーケティングクッキー"
+  },
+  "blocked_domains": {
+    "invalid_format": "正しいドメイン形式ではありません。(FQDN のみサポート、*.example.com ワイルドカード可)",
+    "invalid_format_functional": "機能カテゴリ — 正しいドメイン形式ではありません。(FQDN のみサポート、*.example.com ワイルドカード可)",
+    "invalid_format_analytics": "分析カテゴリ — 正しいドメイン形式ではありません。(FQDN のみサポート、*.example.com ワイルドカード可)",
+    "invalid_format_marketing": "マーケティングカテゴリ — 正しいドメイン形式ではありません。(FQDN のみサポート、*.example.com ワイルドカード可)",
+    "too_long": "ドメインは253文字を超えることはできません。",
+    "too_long_functional": "機能カテゴリ — ドメインは253文字を超えることはできません。",
+    "too_long_analytics": "分析カテゴリ — ドメインは253文字を超えることはできません。",
+    "too_long_marketing": "マーケティングカテゴリ — ドメインは253文字を超えることはできません。",
+    "must_be_array": "カテゴリ別ドメイン一覧は配列である必要があります。"
+  },
+  "settings": {
+    "saved": "設定が保存されました。",
+    "title": "GDPR設定",
+    "description": "クッキー同意バナーとマイページ同意管理カードの動作を運営者が制御します。",
+    "section": {
+      "operator": "運営者 / プライバシーポリシー",
+      "operator_desc": "クッキーバナー·ポリシーページに表示される運営者、データ保存場所、ポリシーページスラッグを登録します。",
+      "cookie_banner": "クッキー同意バナー",
+      "cookie_banner_desc": "訪問者に表示されるクッキー同意バナーの表示·位置·カテゴリ·ポリシーバージョンを一箇所で設定します。",
+      "cookie_banner_settings": "バナー表示設定",
+      "cookie_categories": "クッキーカテゴリ",
+      "cookie_policy_version": "クッキーポリシーバージョン",
+      "auto_blocking": "自動ブロックポリシー",
+      "auto_blocking_desc": "クッキーバナーが表示されると、カテゴリ別ドメイン一覧の外部追跡リソースがユーザー同意前まで自動ブロックされます。"
+    },
+    "nav": {
+      "operator": "運営情報",
+      "cookie_banner": "クッキーバナー",
+      "auto_blocking_policy": "自動ブロックポリシー"
+    },
+    "status": {
+      "enabled": "有効化",
+      "disabled": "無効化",
+      "visible": "表示",
+      "hidden": "非表示"
+    },
+    "fields": {
+      "cookie_policy_version": {
+        "label": "ポリシーバージョン",
+        "hint": "ポリシー本文、カテゴリの意味、委託者·データ保管情報が変わったら「+ 新しいバージョンを公開」をクリックしてください。公開と同時にすべての会員が次回訪問時に再同意を進めます。"
+      },
+      "privacy_policy_slug": {
+        "label": "プライバシーポリシーページスラッグ",
+        "hint": "ページプラグインに登録された処理方針ページのスラッグ。空の場合、クッキーバナーのポリシーリンクは表示されません。",
+        "placeholder": "例: privacy-policy"
+      },
+      "legal_entity_name": {
+        "label": "法人名 / 運営者",
+        "hint": "クッキーバナーとマイページに表示されるサイト運営者名です。",
+        "placeholder": "例: (株)会社名"
+      },
+      "data_storage_location": {
+        "label": "データ保存場所",
+        "hint": "ユーザーに案内するデータ保存国を入力してください。例: \"大韓民国\"、\"アメリカ (AWS)\"。IPアドレス、クラウドリージョンコード(例: ap-northeast-2)、データセンターアドレスはセキュリティ上入力しないでください。",
+        "placeholder": "例: 大韓民国 (自社データセンター) / アメリカ (AWS)"
+      },
+      "banner_enabled": {
+        "label": "クッキーバナー表示",
+        "hint": "有効にするとクッキーバナー表示、同意前外部追跡自動ブロック、マイページ同意管理カードが一緒に開始されます。"
+      },
+      "banner_position": {
+        "label": "バナーの位置",
+        "hint": "クッキーバナーが画面に表示される位置を選択します。",
+        "option_bottom_bar": "下部 (全幅)",
+        "option_bottom_left_popup": "左下ポップアップ",
+        "option_bottom_right_popup": "右下ポップアップ",
+        "option_centered_modal": "中央モーダル"
+      },
+      "blocked_domains": {
+        "warnings_title": "注意",
+        "auto_blocking_off_hint": "自動ブロックはクッキーバナー表示が ON の場合のみ機能します。「クッキーバナー」カードでクッキーバナー表示トグルをまず有効にしてください。",
+        "warning_visual_break": "外部フォント·スタイルシートは分類に注意してください。誤ってブロックするとページが静かに壊れる可能性があります。",
+        "warning_policy_bump": "ブロックドメインを変更した後、クッキーポリシーバージョンを上げてください。既存の同意者が新しいドメインにも同意したものとして処理される問題を防ぎます。",
+        "warning_domain_format": "ドメイン形式: example.com、*.example.com (ワイルドカード) 可能。localhost のようなドットがない名前や日本語ドメインはサポートされていません。",
+        "tag_input_placeholder": "ドメイン入力後 Enter (例: google-analytics.com、*.hotjar.com)",
+        "tag_no_options": "推奨ドメインがありません。直接入力してください。",
+        "category": {
+          "functional": "機能カテゴリブロックドメイン",
+          "analytics": "分析カテゴリブロックドメイン",
+          "marketing": "マーケティングカテゴリブロックドメイン"
+        }
+      },
+      "cookie_categories": {
+        "description": "クッキーカテゴリ4種の用途とブロックツール例は、各カードの[情報を表示]で確認できます。",
+        "category_required_badge": "必須",
+        "category_optional_badge": "選択",
+        "info": {
+          "expand": "情報を表示",
+          "collapse": "情報を非表示",
+          "description_label": "ユーザー案内文言",
+          "scope_label": "自動ブロック対象",
+          "tools_label": "代表的なツール例",
+          "necessary": {
+            "scope": "自動ブロックしません。セッション・ログイントークン、カート識別子、ユーザーが登録時に選択した言語設定、クッキー同意記録など、サイト動作に必須の項目は常に許可されます。",
+            "tools": "セッションID、認証トークン、CSRFトークン、カート識別子、多言語設定など(追加設定不要)"
+          },
+          "functional": {
+            "scope": "「自動ブロックポリシー」タブの機能カテゴリドメイン一覧に登録された外部リソースが同意前までブロックされます。また、ダークモード・通貨設定など、ユーザー利便性の保存も同意後のみ保管されます。",
+            "tools": "カスタマーサポートチャットボット(Crisp、Intercom、Tawk.to)、多言語自動翻訳ウィジェット、ユーザー設定同期サービスなど"
+          },
+          "analytics": {
+            "scope": "「自動ブロックポリシー」タブの分析カテゴリドメイン一覧に登録された外部分析スクリプト・埋め込み・トラッキングピクセルが同意前までブロックされます。同意すると即座に復元され動作します。",
+            "tools": "Google Analytics 4(GA4)、Hotjar、Microsoft Clarity、Mixpanel、Matomo、ネイバープレミアムログ分析など"
+          },
+          "marketing": {
+            "scope": "「自動ブロックポリシー」タブのマーケティングカテゴリドメイン一覧に登録された外部広告・埋め込み・トラッキングピクセルが同意前までブロックされます。同意すると即座に復元され動作します。",
+            "tools": "Meta Pixel(Facebook)、Google広告リマーケティング、カカオピクセル、YouTube動画埋め込みなど"
+          }
+        }
+      }
+    },
+    "save_success": "設定が保存されました。",
+    "save_error": "設定保存中にエラーが発生しました。",
+    "validation_error": "入力値を確認してください。",
+    "unsaved_changes": "保存されていない変更があります。",
+    "policy_version": {
+      "current_label": "現在のバージョン",
+      "published_at_label": "公開日時",
+      "publisher_label": "公開者",
+      "publisher_system": "システム",
+      "memo_label": "変更理由",
+      "publish_button": "新しいバージョンを公開",
+      "history_toggle_show": "履歴を表示",
+      "history_toggle_hide": "履歴を閉じる",
+      "history_empty": "公開されたポリシーバージョンがありません。",
+      "publish_success": "新しいポリシーバージョンが公開されました。すべての会員が次回訪問時に再同意を進めます。",
+      "publishing": "公開中...",
+      "guide_title": "いつ新しいバージョンを公開しますか?",
+      "guide_body": "ブロックドメイン変更、UI文言修正などの運用上の変更は新しいバージョン公開が必要ありません。",
+      "change_type": {
+        "material": "再同意トリガー",
+        "non_material": "シンプルな変更",
+        "initial": "初期公開"
+      },
+      "history": {
+        "col": {
+          "version": "バージョン",
+          "created_at": "公開日時",
+          "publisher": "公開者",
+          "change_type": "種類",
+          "memo": "理由",
+          "snapshot_action": "本文"
+        }
+      },
+      "snapshot_view_short": "表示",
+      "material_modal": {
+        "title": "新しいポリシーバージョン公開 + 再同意トリガー",
+        "body": "「新しいバージョンを公開」をクリックすると即座に公開され、すべてのユーザーが次回訪問時に再同意する必要があります。",
+        "effect_bump": "ポリシーバージョン単調増加(例:v2 → v3)",
+        "effect_reconsent": "すべての会員が次回訪問時に再同意画面を表示します",
+        "effect_history": "履歴表に新しいバージョン行が追加されます",
+        "memo_label": "変更理由(必須)",
+        "memo_placeholder": "例:約款ページ本文修正 / 委託運用者変更",
+        "confirm": "新しいバージョンを公開"
+      },
+      "snapshot_modal": {
+        "title": "ポリシーバージョン v{version} 本文",
+        "description": "公開時点の設定のカテゴリ一覧・ポリシー本文スラッグ・ブロックドメインなど全体の本文です。DPOが同意紛争時に立証資料として活用します。",
+        "section_categories": "クッキーカテゴリ",
+        "section_privacy_policy": "ポリシー本文スラッグ",
+        "section_blocked_domains": "ブロックドメインカタログ",
+        "category_required_badge": "必須",
+        "no_categories": "登録されたカテゴリがありません。",
+        "no_blocked_domains": "登録されたブロックドメインがありません。",
+        "view_button": "v{version} 本文を表示",
+        "close": "閉じる",
+        "open_policy_page": "本文ページを開く",
+        "no_policy_slug": "登録されたポリシー本文ページがありません。",
+        "editor_label": "ポリシーバージョンの本文を表示"
+      },
+      "not_found": "該当するポリシーバージョンが見つかりません。"
+    }
+  },
+  "admin": {
+    "consent_log": {
+      "title": "GDPR同意履歴",
+      "description": "会員・ゲストの同意/撤回変更履歴を照会します。IP・User-Agentなど監査情報が一緒に公開されます。",
+      "refresh": "更新",
+      "empty": "照会された同意履歴がありません。",
+      "clear_filters": "フィルターを初期化",
+      "guest_label": "ゲスト",
+      "view_member_tooltip": "会員詳細ページに移動",
+      "search_placeholder": "メールアドレスまたはセッションIDで検索",
+      "search_button": "検索",
+      "search_type": {
+        "email": "メール",
+        "session_id": "セッションID"
+      },
+      "filter": {
+        "consent_key_label": "同意項目",
+        "action_label": "アクション",
+        "source_label": "出典",
+        "option_all": "すべて"
+      },
+      "action": {
+        "granted": "同意",
+        "revoked": "撤回"
+      },
+      "source": {
+        "banner": "バナー",
+        "preference_center": "環境設定",
+        "mypage": "マイページ"
+      },
+      "col": {
+        "created_at": "時点",
+        "subject": "主体",
+        "consent_key": "同意項目",
+        "action": "アクション",
+        "source": "出典",
+        "policy_version": "ポリシーバージョン",
+        "ip": "IP"
+      },
+      "detail": {
+        "session_id_label": "セッション ID",
+        "user_agent_label": "User-Agent",
+        "categories_label": "カテゴリスナップショット",
+        "categories_hint": "同意時点で会員がカテゴリ別に表示した意思です。ポリシー本文が更新されても、この記録は不変として保存されます。",
+        "snapshot_granted": "同意",
+        "snapshot_revoked": "拒否"
+      }
+    }
+  },
+  "mypage": {
+    "privacy": {
+      "title": "クッキー同意管理",
+      "description": "サイトが使用中のクッキー項目に対する同意を変更または撤回できます。",
+      "section_consents": "私の同意状況",
+      "section_consents_hint": "同意・撤回時点に応じて即座に反映されます。必須項目は撤回できません。",
+      "col_consent_key": "同意項目",
+      "col_consented": "ステータス",
+      "col_consented_at": "同意日",
+      "col_revoked_at": "撤回日",
+      "col_policy_version": "ポリシーバージョン",
+      "col_action": "操作",
+      "consented": "同意",
+      "revoked": "撤回",
+      "revoke": "撤回",
+      "grant": "同意",
+      "grant_again": "再度同意",
+      "required_label": "必須",
+      "required_hint": "サービス提供に必須のため撤回できません。",
+      "revoke_confirm_title": "同意撤回確認",
+      "revoke_confirm_message": "この項目を撤回しますか？同意を撤回すると、該当カテゴリ関連機能が制限される可能性があります。",
+      "no_consents": "有効な同意項目がありません。",
+      "needs_renewal": "クッキーポリシーが変更されました。同意を更新してください。",
+      "needs_renewal_with_version": "クッキーポリシーがバージョン {version} に変更されました。選択項目の同意を再度確認してください。",
+      "needs_renewal_hint": "必須クッキーはサイト運用に不可欠な項目のため、ポリシー変更に関わらず常に適用されます。",
+      "btn_renew_all": "現在の同意更新",
+      "btn_renew_this_item": "ポリシー更新",
+      "renew_all_success": "有効項目 {renewed} 個を新しいポリシーバージョンに更新しました。",
+      "operator_and_storage_meta": "本サイトは {entity} が運営しており、データは {location} に保存されます",
+      "operator_only_meta": "本サイトは {entity} が運営しています",
+      "storage_only_meta": "ユーザーデータは {location} に保存されます"
+    }
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "refresh": "更新"
+  },
+  "banner": {
+    "re_appear_reason": "クッキーポリシーがバージョン {version} に変更されたため、同意を再度確認します。",
+    "consent_required_hint": "拒否した項目と関連する機能が制限される可能性があります。",
+    "btn_renew_consent": "現在の同意更新",
+    "title": "クッキー使用のご案内",
+    "description": "本サイトはユーザー体験の向上と分析のためクッキーを使用しています。項目別に同意の有無を選択できます。",
+    "accept_all": "すべて同意",
+    "reject_all": "必須のみ使用",
+    "preferences": "環境設定",
+    "save": "選択同意",
+    "policy_link": "プライバシーポリシー",
+    "preferences_title": "クッキー環境設定",
+    "preferences_description": "カテゴリ別クッキー使用を個別に同意・撤回できます。必須カテゴリはオフにできません。",
+    "category_required_badge": "必須",
+    "view_policy_label": "変更されたポリシー本文を表示",
+    "operator_and_storage_line": "本サイトは {entity} が運営しており、データは {location} に保存されます",
+    "operator_only_line": "本サイトは {entity} が運営しています",
+    "storage_only_line": "ユーザーデータは {location} に保存されます"
+  }
+}

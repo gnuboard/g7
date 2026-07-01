@@ -28,6 +28,11 @@ const logger = ((window as any).G7Core?.createLogger?.('Template:sirsoft-basic:I
  * 코어가 launcher 에 전달하는 verification payload (런타임 형태).
  * 코어 타입 import 를 피하려고 로컬에 정의 — 실제 형식은 `resources/js/core/identity/types.ts` 와 동일.
  */
+interface IdentityVerificationTarget {
+  email?: string;
+  phone?: string;
+}
+
 interface VerificationPayload {
   policy_key: string;
   purpose: string;
@@ -36,6 +41,8 @@ interface VerificationPayload {
   challenge_start_url?: string;
   redirect_url?: string;
   return_request?: { method: string; url: string; headers_echo?: string[] } | null;
+  /** 흐름이 apiCall identity_target 으로 선언한 인증 대상 — 코어 인터셉터가 병합해 전달. */
+  target?: IdentityVerificationTarget | null;
 }
 
 /**
@@ -48,29 +55,56 @@ type VerificationResult =
   | { status: 'failed'; failureCode: string; reason?: string };
 
 /**
- * 가입/비밀번호 재설정 폼 등에서 target.email 을 추출합니다.
+ * 인증 대상(이메일·전화)을 결정합니다.
  *
- * 우선순위: signup form > password_reset form > 로그인 사용자
+ * 우선순위 (필드별 보충 머지 — email/phone 각각 첫 비어있지 않은 값 채택):
+ *   1. `payload.target` — 흐름이 apiCall `identity_target` 으로 선언한 값 (범용 진입점, 비로그인 흐름의 핵심)
+ *   2. 로그인 사용자 세션 (`currentUser` / `user` / `auth.user` 의 email·phone)
+ *   3. (하위호환) signup/password_reset 폼 — `identity_target` 미선언 기존 레이아웃 대비
+ *
+ * 흐름별 폼 경로 하드코딩을 폐기하고 선언값을 1순위로 둠으로써, 주문/게시판/임의 액션 어떤 흐름이든
+ * 레이아웃이 `identity_target` 만 선언하면 launcher 변경 없이 동작한다.
  *
  * 반환값은 launcher 에서 두 곳에 사용:
  * 1) 첫 POST /api/identity/challenges body 에 동봉
  * 2) `_global.identityChallenge.target` 에 저장 — 모달 재전송 액션이 같은 target 을 재사용
+ *
+ * @param payload 코어 인터셉터가 전달한 verification payload (target 병합 포함)
+ * @returns 인증 대상 또는 null (email·phone 둘 다 없으면 — 로그인 사용자는 서버 세션 도출)
  */
-function resolveTargetEmail(payload: VerificationPayload): { email?: string } | null {
+function resolveTarget(payload: VerificationPayload): IdentityVerificationTarget | null {
   const G7Core = (window as any).G7Core;
   const local = G7Core?.state?.getLocal?.() ?? {};
   const global = G7Core?.state?.getGlobal?.() ?? G7Core?.state?.get?.() ?? {};
 
-  const candidates: Array<string | undefined> = [
+  const pick = (...candidates: Array<unknown>): string | undefined =>
+    candidates.find((v): v is string => typeof v === 'string' && v.length > 0);
+
+  const email = pick(
+    payload.target?.email,
+    global?.currentUser?.email,
+    global?.user?.email,
+    global?.auth?.user?.email,
     payload.purpose === 'signup' ? local?.registerForm?.email : undefined,
     payload.purpose === 'password_reset' ? local?.passwordResetForm?.email : undefined,
     payload.purpose === 'password_reset' ? local?.email : undefined,
-    global?.user?.email,
-    global?.auth?.user?.email,
-  ];
+  );
 
-  const email = candidates.find((v) => typeof v === 'string' && v.length > 0);
-  return email ? { email } : null;
+  const phone = pick(
+    payload.target?.phone,
+    global?.currentUser?.phone,
+    global?.user?.phone,
+    global?.auth?.user?.phone,
+  );
+
+  if (!email && !phone) {
+    return null;
+  }
+
+  const target: IdentityVerificationTarget = {};
+  if (email) target.email = email;
+  if (phone) target.phone = phone;
+  return target;
 }
 
 /**
@@ -82,19 +116,44 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/**
+ * 현재 앱 언어를 Accept-Language 헤더로 추출합니다 (있으면).
+ *
+ * challenge POST 는 ApiClient 를 우회하는 raw fetch 라, ApiClient 가 모든 요청에
+ * 부착하는 `Accept-Language: g7_locale`(ApiClient.ts) 을 여기서 동일하게 부착해야
+ * 서버 SetLocale 이 사용자 화면 언어로 IDV 메일을 렌더한다. 누락 시 challenge 요청이
+ * 브라우저 기본 언어로 전송되어 메일이 주문 화면 언어와 달라진다(비회원 결제 등).
+ */
+function getLocaleHeader(): Record<string, string> {
+  try {
+    const locale =
+      typeof window !== 'undefined' ? window.localStorage?.getItem('g7_locale') : null;
+    return locale ? { 'Accept-Language': locale } : {};
+  } catch {
+    return {};
+  }
+}
+
 interface ChallengeResponseData {
   id: string;
   expires_at: string;
   render_hint: string;
   public_payload?: Record<string, unknown>;
   redirect_url?: string;
+  /** 허용 최대 시도 횟수 — 0 은 무제한 (popup/SDK 형 provider). 코어 mail provider 는 환경설정값을 반영. */
+  max_attempts?: number;
 }
 
 /**
  * `POST /api/identity/challenges` 로 challenge 를 시작합니다.
+ *
+ * @param payload verification payload
+ * @param target launcher 본체에서 1회 계산한 인증 대상 (startChallenge 와 _global 저장이 동일 값 공유)
  */
-async function startChallenge(payload: VerificationPayload): Promise<ChallengeResponseData> {
-  const target = resolveTargetEmail(payload);
+async function startChallenge(
+  payload: VerificationPayload,
+  target: IdentityVerificationTarget | null,
+): Promise<ChallengeResponseData> {
   const body: Record<string, unknown> = { purpose: payload.purpose };
   if (payload.provider_id) body.provider_id = payload.provider_id;
   if (target) body.target = target;
@@ -106,6 +165,7 @@ async function startChallenge(payload: VerificationPayload): Promise<ChallengeRe
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...getLocaleHeader(),
       ...getAuthHeader(),
     },
     body: JSON.stringify(body),
@@ -124,13 +184,16 @@ async function startChallenge(payload: VerificationPayload): Promise<ChallengeRe
     render_hint: data.render_hint ?? payload.render_hint ?? 'text_code',
     public_payload: data.public_payload,
     redirect_url: data.redirect_url,
+    max_attempts: typeof data.max_attempts === 'number' ? data.max_attempts : undefined,
   };
 }
 
 /**
  * sirsoft-basic 의 IDV launcher 본체.
+ *
+ * 테스트에서 직접 호출할 수 있도록 export (런타임 진입점은 registerSirsoftBasicIdentityLauncher).
  */
-async function sirsoftBasicIdentityLauncher(payload: VerificationPayload): Promise<VerificationResult> {
+export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload): Promise<VerificationResult> {
   const G7Core = (window as any).G7Core;
   const identity = G7Core?.identity;
 
@@ -144,10 +207,14 @@ async function sirsoftBasicIdentityLauncher(payload: VerificationPayload): Promi
     return identity.redirectExternally(payload);
   }
 
+  // 인증 대상을 1회 계산 — startChallenge body 와 _global.identityChallenge.target 저장이 동일 값 공유
+  // (모달 재전송이 같은 target 으로 challenge 재요청). 흐름 선언값(payload.target) 우선.
+  const target = resolveTarget(payload);
+
   // (2) Challenge 시작
   let challenge: ChallengeResponseData;
   try {
-    challenge = await startChallenge(payload);
+    challenge = await startChallenge(payload, target);
   } catch (err) {
     logger.error('Challenge 시작 실패:', err);
     try {
@@ -178,10 +245,13 @@ async function sirsoftBasicIdentityLauncher(payload: VerificationPayload): Promi
   }
 
   // (3) _global.identityChallenge 네임스페이스 setup
-  // target 도 함께 저장 — 모달 재전송 액션이 같은 target 으로 challenge 재요청 가능하게
-  const target = resolveTargetEmail(payload);
+  // 위에서 1회 계산한 target 을 재사용 — 모달 재전송 액션이 같은 target 으로 challenge 재요청 가능하게
   const expiresMs = challenge.expires_at ? new Date(challenge.expires_at).getTime() : 0;
   const remainingSeconds = expiresMs > 0 ? Math.max(0, Math.floor((expiresMs - Date.now()) / 1000)) : 0;
+
+  // maxAttempts: 백엔드 응답값이 있으면 사용, 없으면 0(무제한 — popup/SDK 형 provider 의 기본).
+  // 코어 mail provider 응답에는 환경설정의 max_attempts 가 정확히 반영되므로 화면 카운트도 정합.
+  const maxAttempts = typeof challenge.max_attempts === 'number' ? challenge.max_attempts : 0;
 
   G7Core.state.set({
     identityChallenge: {
@@ -196,7 +266,7 @@ async function sirsoftBasicIdentityLauncher(payload: VerificationPayload): Promi
       code: '',
       error: null,
       attempts: 0,
-      maxAttempts: 5,
+      maxAttempts,
       remainingSeconds,
       resendCooldown: 0,
     },

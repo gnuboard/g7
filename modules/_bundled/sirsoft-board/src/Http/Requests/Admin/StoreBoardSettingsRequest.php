@@ -88,6 +88,18 @@ class StoreBoardSettingsRequest extends FormRequest
             }
         }
 
+        // default_board_permissions 는 flat 키(값 = 역할 식별자 배열) 구조만 허용한다.
+        // 레거시 오염 데이터로 nested 그룹 키(admin/posts/comments/attachments, 값 = 중첩 객체)가
+        // 섞여 들어오면 권한 설정 화면에 raw i18n 키와 [object Object] 로 노출되므로,
+        // 값이 순차 배열(역할 목록)이 아닌 항목은 저장 전에 제거해 재오염을 차단한다.
+        $permissions = $data['basic_defaults']['default_board_permissions'] ?? null;
+        if (is_array($permissions)) {
+            $data['basic_defaults']['default_board_permissions'] = array_filter(
+                $permissions,
+                fn ($roles) => is_array($roles) && array_is_list($roles)
+            );
+        }
+
         $this->replace($data);
     }
 
@@ -98,6 +110,14 @@ class StoreBoardSettingsRequest extends FormRequest
      */
     public function rules(): array
     {
+        $limits = config('sirsoft-board.limits', []);
+        $perPageMin = $limits['per_page_min'] ?? 5;
+        $perPageMax = $limits['per_page_max'] ?? 100;
+        $maxReplyDepthMin = $limits['max_reply_depth_min'] ?? 1;
+        $maxReplyDepthMax = $limits['max_reply_depth_max'] ?? 10;
+        $maxCommentDepthMin = $limits['max_comment_depth_min'] ?? 0;
+        $maxCommentDepthMax = $limits['max_comment_depth_max'] ?? 10;
+
         return [
             // 현재 탭 정보 (메타 데이터)
             '_tab' => ['sometimes', 'string', 'in:basic_defaults,report_policy,spam_security,general,seo,notifications,notification_definitions'],
@@ -116,15 +136,15 @@ class StoreBoardSettingsRequest extends FormRequest
             // ========================================
             'basic_defaults' => ['sometimes', 'array'],
             'basic_defaults.type' => ['nullable', 'string', 'max:50'],
-            'basic_defaults.per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'basic_defaults.per_page_mobile' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'basic_defaults.per_page' => ['nullable', 'integer', "min:{$perPageMin}", "max:{$perPageMax}"],
+            'basic_defaults.per_page_mobile' => ['nullable', 'integer', "min:{$perPageMin}", "max:{$perPageMax}"],
             'basic_defaults.order_by' => ['nullable', 'string', 'in:created_at,view_count,title,author'],
             'basic_defaults.order_direction' => ['nullable', 'string', 'in:ASC,DESC'],
             'basic_defaults.secret_mode' => ['nullable', 'string', 'in:disabled,enabled,always'],
             'basic_defaults.use_comment' => ['nullable', 'boolean'],
             'basic_defaults.use_reply' => ['nullable', 'boolean'],
-            'basic_defaults.max_reply_depth' => ['nullable', 'integer', 'min:1', 'max:5'],
-            'basic_defaults.max_comment_depth' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'basic_defaults.max_reply_depth' => ['nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
+            'basic_defaults.max_comment_depth' => ['nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
             'basic_defaults.comment_order' => ['nullable', 'string', 'in:ASC,DESC'],
             'basic_defaults.show_view_count' => ['nullable', 'boolean'],
             'basic_defaults.use_report' => ['nullable', 'boolean'],
@@ -139,7 +159,9 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.max_file_count' => ['nullable', 'integer', 'min:1', 'max:20'],
             'basic_defaults.blocked_keywords' => ['nullable', 'array'],
             'basic_defaults.blocked_keywords.*' => ['string', 'max:100'],
-            'basic_defaults.allowed_extensions' => ['nullable', 'array'],
+            // 허용 확장자는 최소 1개 필수 (빈 배열 차단 — 빈 값 저장 시 전 파일 거부되던 버그 방지).
+            // 부분 탭 저장을 위해 sometimes 유지, nullable 제거.
+            'basic_defaults.allowed_extensions' => ['sometimes', 'array', 'min:1'],
             'basic_defaults.allowed_extensions.*' => ['string', 'max:20'],
             'basic_defaults.notify_admin_on_post' => ['nullable', 'boolean'],
             'basic_defaults.notify_author' => ['nullable', 'boolean'],
@@ -170,10 +192,10 @@ class StoreBoardSettingsRequest extends FormRequest
             // report_permissions (신고 관리 권한) — 설정값이 아닌 DB 권한 데이터
             // validatedSettings()에서 제외됨
             // ========================================
-            'report_permissions'                => ['sometimes', 'array'],
-            'report_permissions.view_roles'     => ['nullable', 'array'],
-            'report_permissions.view_roles.*'   => ['string', Rule::exists(Role::class, 'identifier')],
-            'report_permissions.manage_roles'   => ['nullable', 'array'],
+            'report_permissions' => ['sometimes', 'array'],
+            'report_permissions.view_roles' => ['required_with:report_permissions', 'array', 'min:1'],
+            'report_permissions.view_roles.*' => ['string', Rule::exists(Role::class, 'identifier')],
+            'report_permissions.manage_roles' => ['required_with:report_permissions', 'array', 'min:1'],
             'report_permissions.manage_roles.*' => ['string', Rule::exists(Role::class, 'identifier')],
 
             // ========================================
@@ -227,8 +249,15 @@ class StoreBoardSettingsRequest extends FormRequest
     public function messages(): array
     {
         $messages = __('sirsoft-board::validation.settings');
+        $base = is_array($messages) ? $messages : [];
 
-        return is_array($messages) ? $messages : [];
+        return array_merge($base, [
+            'basic_defaults.allowed_extensions.min' => __('sirsoft-board::validation.allowed_extensions.min'),
+            'report_permissions.view_roles.required_with' => __('sirsoft-board::validation.report_permissions.view_roles.required_with'),
+            'report_permissions.view_roles.min' => __('sirsoft-board::validation.report_permissions.view_roles.min'),
+            'report_permissions.manage_roles.required_with' => __('sirsoft-board::validation.report_permissions.manage_roles.required_with'),
+            'report_permissions.manage_roles.min' => __('sirsoft-board::validation.report_permissions.manage_roles.min'),
+        ]);
     }
 
     /**

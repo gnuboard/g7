@@ -18,6 +18,7 @@
   "data_sources": [
     {
       "id": "orders",
+      "label_key": "$t:editor.data_source.orders",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-ecommerce/user/orders",
       "method": "GET",

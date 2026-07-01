@@ -36,7 +36,7 @@ class UserController extends AdminBaseController
     /**
      * 필터링된 사용자 목록을 조회합니다.
      *
-     * @param UserListRequest $request 사용자 목록 요청 데이터
+     * @param  UserListRequest  $request  사용자 목록 요청 데이터
      * @return JsonResponse 사용자 목록과 통계 정보를 포함한 JSON 응답
      */
     public function index(UserListRequest $request): JsonResponse
@@ -61,7 +61,7 @@ class UserController extends AdminBaseController
     /**
      * 새로운 사용자를 생성합니다.
      *
-     * @param CreateUserRequest $request 사용자 생성 요청 데이터
+     * @param  CreateUserRequest  $request  사용자 생성 요청 데이터
      * @return JsonResponse 생성된 사용자 정보를 포함한 JSON 응답
      */
     public function store(CreateUserRequest $request): JsonResponse
@@ -84,7 +84,7 @@ class UserController extends AdminBaseController
     /**
      * 특정 사용자의 상세 정보를 조회합니다.
      *
-     * @param User $user 조회할 사용자 모델
+     * @param  User  $user  조회할 사용자 모델
      * @return JsonResponse 사용자 상세 정보를 포함한 JSON 응답
      */
     public function show(User $user): JsonResponse
@@ -109,8 +109,8 @@ class UserController extends AdminBaseController
     /**
      * 기존 사용자 정보를 수정합니다.
      *
-     * @param UpdateUserRequest $request 사용자 수정 요청 데이터
-     * @param User $user 수정할 사용자 모델
+     * @param  UpdateUserRequest  $request  사용자 수정 요청 데이터
+     * @param  User  $user  수정할 사용자 모델
      * @return JsonResponse 수정된 사용자 정보를 포함한 JSON 응답
      */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
@@ -132,8 +132,8 @@ class UserController extends AdminBaseController
     /**
      * 사용자를 삭제합니다.
      *
-     * @param DeleteUserRequest $request 사용자 삭제 요청 데이터
-     * @param User $user 삭제할 사용자 모델
+     * @param  DeleteUserRequest  $request  사용자 삭제 요청 데이터
+     * @param  User  $user  삭제할 사용자 모델
      * @return JsonResponse 삭제 결과 JSON 응답
      */
     public function destroy(DeleteUserRequest $request, User $user): JsonResponse
@@ -149,7 +149,13 @@ class UserController extends AdminBaseController
         } catch (CannotDeleteSuperAdminException $e) {
             return $this->error('exceptions.cannot_delete_super_admin', 422);
         } catch (ValidationException $e) {
-            return $this->error('user.delete_failed', 422, $e->errors());
+            // UserService 가 던진 ValidationException 의 general[0] 에는 이미 `:error` 가
+            // 치환된 완성 메시지(예: "사용자 삭제에 실패했습니다: <상세 사유>")가 들어있다.
+            // 이를 최상위 message 로도 노출해 토스트에 `:error` 가 그대로 보이지 않게 한다
+            // (에러 상세 표시 기능 유지). errors 배열도 함께 전달.
+            $detail = $e->errors()['general'][0] ?? null;
+
+            return $this->error($detail ?? 'user.delete_failed', 422, $e->errors());
         } catch (Exception $e) {
             return $this->error('user.delete_failed', 500, $e, ['error' => $e->getMessage()]);
         }
@@ -198,7 +204,7 @@ class UserController extends AdminBaseController
     /**
      * 키워드로 사용자를 검색합니다. (이름, 닉네임, 이메일)
      *
-     * @param SearchUserRequest $request 사용자 검색 요청 데이터
+     * @param  SearchUserRequest  $request  사용자 검색 요청 데이터
      * @return JsonResponse 검색된 사용자 목록을 포함한 JSON 응답
      */
     public function search(SearchUserRequest $request): JsonResponse
@@ -228,7 +234,7 @@ class UserController extends AdminBaseController
     /**
      * 이메일 주소의 중복 여부를 확인합니다.
      *
-     * @param CheckEmailRequest $request 이메일 중복 확인 요청 데이터
+     * @param  CheckEmailRequest  $request  이메일 중복 확인 요청 데이터
      * @return JsonResponse 이메일 사용 가능 여부를 포함한 JSON 응답
      */
     public function checkEmail(CheckEmailRequest $request): JsonResponse
@@ -251,6 +257,9 @@ class UserController extends AdminBaseController
 
     /**
      * 현재 로그인된 사용자의 언어 설정을 업데이트합니다.
+     *
+     * @param  UpdateLanguageRequest  $request  언어 변경 요청 데이터
+     * @return JsonResponse 변경된 사용자 정보를 포함한 JSON 응답
      */
     public function updateMyLanguage(UpdateLanguageRequest $request): JsonResponse
     {
@@ -274,6 +283,9 @@ class UserController extends AdminBaseController
 
     /**
      * 여러 사용자의 상태를 일괄 변경합니다.
+     *
+     * @param  BulkUpdateUserStatusRequest  $request  일괄 상태 변경 요청 데이터
+     * @return JsonResponse 일괄 변경 결과를 포함한 JSON 응답
      */
     public function bulkUpdateStatus(BulkUpdateUserStatusRequest $request): JsonResponse
     {

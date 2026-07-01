@@ -36,6 +36,19 @@ interface IdentityVerificationInterface
     public function getChannels(): array;
 
     /**
+     * 채널 키 → 다국어 표시 라벨 맵.
+     *
+     * 각 프로바이더는 자신이 지원하는 모든 채널의 표시 라벨을 제공해야 합니다.
+     * 관리자 이력 화면 등에서 채널 식별자(`email`, `ipin`)를 사람이 읽는
+     * 이름(`이메일`, `아이핀`)으로 표시하는 데 사용됩니다.
+     * 라벨은 `getLabel()` 과 동일하게 `__()` 로 다국어 처리하여 언어팩 활성화 시
+     * 번역이 적용되도록 합니다.
+     *
+     * @return array<string, string> 채널 키 → 라벨 맵 (예: ['email' => '이메일'])
+     */
+    public function getChannelLabels(): array;
+
+    /**
      * 프론트가 challenge 를 렌더하는 방법 힌트.
      *
      * - text_code        : 숫자 코드 입력 UI

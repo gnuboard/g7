@@ -1,0 +1,75 @@
+# audit:allow test-scenario-coverage reason: preblocker 는 prototype intercept (HTMLScriptElement.prototype.src setter) 단일 진입점이라 axes 의 cross product 가 작아 핵심 케이스만 통과 테스트로 커버. test_files 에 명시된 17개 케이스로 핵심 회귀 가드.
+
+feature: GDPR 사전 차단 (preblocker — prototype intercept)
+
+description: |
+  GDPR 플러그인 IIFE 로드 직후 즉시 등록되는 1차 차단 라인. settings API 응답을
+  기다리지 않고 보수적 차단 (모든 비-necessary 차단) 으로 진입하여 race condition
+  (settings 응답 지연 동안 추적 스크립트가 외부 로드되는 회귀) 을 차단한다.
+
+  HTMLScriptElement.prototype.src setter 를 가로채어 차단 도메인 매칭 시 src 설정을
+  무시하고 다음 속성을 element 에 보존:
+    - data-gdpr-blocked-src: 원본 URL
+    - data-gdpr-blocked-category: 매칭된 카테고리
+
+  차단 우선순위 (decideBlock):
+    1. data-gdpr-category 속성 (운영자 명시) — origin 무관, 자체 호스팅 추적 지원
+    2. 외부 origin + 카탈로그 매칭 (categorizeUrl 위임) — 도메인 기반
+    3. 그 외 (동일 origin / 카탈로그 미매칭) — 통과
+
+  본 모듈은 <script src> 만 가로챈다. <iframe>/<img>/<link> 는 MutationObserver
+  백업 라인 (blocker.ts) 에 위임 — 이미지/스타일 영향 회피.
+
+  동의 변경 시 updatePreblockerConfig + restorePreblockedCategory 호출로 새 <script>
+  요소를 만들어 교체하여 정상 로드.
+
+axes:
+  origin: [external, same_origin]
+  attribute: [data_gdpr_category_present, absent]
+  category: [necessary, analytics, marketing]
+  consent_state: [denied, granted]
+  catalog_match: [matched, unmatched]
+  config_phase: [initial_conservative, after_update]
+
+exclusions:
+  - { origin: same_origin, attribute: absent, reason: "동일 origin + 속성 없음 — 자기 차단 방지로 항상 통과" }
+  - { category: necessary, consent_state: denied, reason: "necessary 는 동의 무관 항상 허용" }
+
+effects:
+  # 속성 기반 (우선순위 1)
+  - same_origin_script_with_attr_analytics_blocked_when_denied
+  - same_origin_script_with_attr_analytics_passes_when_granted
+  - script_with_attr_necessary_always_passes
+  - attr_priority_over_domain_match
+  # 도메인 기반 (우선순위 2)
+  - external_script_matched_by_catalog_blocked_when_denied
+  - external_script_matched_by_catalog_passes_when_granted
+  - external_script_wildcard_match_blocked
+  - external_script_unmatched_catalog_passes
+  # 동일 origin 자기 차단 방지
+  - same_origin_absolute_url_passes_without_attr
+  - same_origin_relative_url_passes_without_attr
+  - same_origin_protocol_relative_url_passes_without_attr
+  # 초기 보수적 동의 상태
+  - initial_consent_unset_blocks_all_non_necessary
+  # 설정 동기화 (settings/consent 응답 후)
+  - update_config_applies_new_catalog
+  - update_config_applies_new_consent_grants_passage
+  # 차단된 요소 복원
+  - restore_replaces_blocked_script_with_fresh_one_when_granted
+  - restore_no_op_when_consent_still_denied
+
+audit:
+  status: codified
+  test_files:
+    - resources/js/__tests__/preblocker.test.ts
+  rules:
+    - id: preblocker-prototype-intercept
+      kind: prototype_setter
+      target: HTMLScriptElement.prototype.src
+    - id: preblocker-priority-order
+      kind: control_flow
+      target: decideBlock
+    - id: preblocker-same-origin-guard
+      kind: domain_match
+      target: categorizeUrl

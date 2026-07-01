@@ -15,7 +15,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "w-full flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden"
+        "className": "flex-center w-full justify-center bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden"
       },
       "children": [
         {

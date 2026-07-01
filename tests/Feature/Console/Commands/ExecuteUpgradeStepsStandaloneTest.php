@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Console\Commands;
 
+use App\Console\Commands\Core\CoreUpdateCommand;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -10,6 +11,7 @@ use App\Services\LanguagePackService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Mockery;
+use Mockery\MockInterface;
 use Tests\TestCase;
 
 /**
@@ -272,11 +274,57 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         }
     }
 
+    public function test_steps_only_option_runs_only_upgrade_steps(): void
+    {
+        // --steps-only: 업그레이드 스텝만 실행. 권한 정상화·마이그레이션·resync·
+        // 버전 갱신·캐시 정리·번들 업데이트 등 모든 보조 단계를 생략한다.
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldNotReceive('runMigrations');
+        $service->shouldNotReceive('reloadCoreConfigAndResync');
+        $service->shouldNotReceive('ensureWritableDirectories');
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldNotReceive('updateVersionInEnv');
+        $service->shouldNotReceive('clearAllCaches');
+        $service->shouldNotReceive('collectBundledExtensionUpdates');
+        $langPack->shouldNotReceive('collectBundledLangPackUpdates');
+
+        $exitCode = $this->runCommand(['--steps-only' => true]);
+        $this->assertSame(0, $exitCode);
+    }
+
+    public function test_steps_only_skips_aux_steps_even_without_env_signal(): void
+    {
+        // env 미설정(운영자 단독 호출) + --steps-only → 단독 실행 시 자동 수행되던
+        // 5단계도 모두 생략. --steps-only 가 단독 실행 계약보다 우선한다.
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldNotReceive('runMigrations');
+        $service->shouldNotReceive('reloadCoreConfigAndResync');
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldNotReceive('updateVersionInEnv');
+        $service->shouldNotReceive('clearAllCaches');
+        $service->shouldNotReceive('collectBundledExtensionUpdates');
+        $langPack->shouldNotReceive('collectBundledLangPackUpdates');
+
+        $originalEnv = getenv('G7_UPDATE_IN_PROGRESS');
+        putenv('G7_UPDATE_IN_PROGRESS');
+
+        try {
+            $exitCode = $this->runCommand(['--steps-only' => true]);
+            $this->assertSame(0, $exitCode);
+        } finally {
+            if ($originalEnv !== false) {
+                putenv('G7_UPDATE_IN_PROGRESS='.$originalEnv);
+            }
+        }
+    }
+
     public function test_spawn_passes_all_five_skip_options_to_child(): void
     {
         // 부모 CoreUpdateCommand::spawnUpgradeStepsProcess 가 자식 command 배열에
         // 5개 `--skip-*` 옵션을 추가하는지 검증 (escapeshellarg 후 commandLine 문자열에 포함).
-        $reflection = new \ReflectionClass(\App\Console\Commands\Core\CoreUpdateCommand::class);
+        $reflection = new \ReflectionClass(CoreUpdateCommand::class);
         $source = File::get($reflection->getFileName());
 
         $this->assertStringContainsString("\$command[] = '--skip-migrations';", $source);
@@ -289,7 +337,7 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
     /**
      * CoreUpdateService + 3개 Manager + LanguagePackService 를 컨테이너에 mock 으로 swap.
      *
-     * @return array{0: \Mockery\MockInterface, 1: \Mockery\MockInterface, 2: \Mockery\MockInterface, 3: \Mockery\MockInterface, 4: \Mockery\MockInterface}
+     * @return array{0: MockInterface, 1: MockInterface, 2: MockInterface, 3: MockInterface, 4: MockInterface}
      */
     private function bindMocks(): array
     {
@@ -298,6 +346,13 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $plugin = Mockery::mock(PluginManager::class);
         $template = Mockery::mock(TemplateManager::class);
         $langPack = Mockery::mock(LanguagePackService::class);
+
+        // 콘솔 커맨드 resolve 시 Service 계층 생성자가 매니저의 스캔 메서드를
+        // 호출할 수 있다 (예: TemplateService 가 TemplateManagerInterface::loadTemplates()
+        // 를 생성자에서 호출). 스캔 메서드는 부수효과만 있으므로 무해하게 허용한다.
+        $module->shouldReceive('loadModules')->andReturnNull()->byDefault();
+        $plugin->shouldReceive('loadPlugins')->andReturnNull()->byDefault();
+        $template->shouldReceive('loadTemplates')->andReturnNull()->byDefault();
 
         $this->app->instance(CoreUpdateService::class, $service);
         $this->app->instance(ModuleManager::class, $module);

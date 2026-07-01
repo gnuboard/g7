@@ -210,6 +210,30 @@ describe('TabNavigation 컴포넌트', () => {
       expect(trigger).toBeInTheDocument();
     });
 
+    // 회귀: 모바일 분기 루트에도 id/editorAttrs 가
+    // spread 되어야 레이아웃 편집기가 모바일 디바이스 미리보기에서 이 노드를 선택/측정할 수
+    // 있다. 종전 모바일 분기는 데스크톱 분기와 달리 id/editorAttrs 누락 → 모바일 프리뷰에서
+    // data-editor-* 가 사라져 캔버스 선택 불가(모든 렌더 분기 editorAttrs 패리티 규율).
+    it('모바일 분기 루트에도 id/editorAttrs(data-editor-*)가 spread 되어야 함', () => {
+      const { container } = render(
+        <TabNavigation
+          tabs={defaultTabs}
+          activeTabId="detail"
+          id="mypageTabNavigation"
+          editorAttrs={{
+            'data-editor-path': '2.children.1',
+            'data-editor-name': 'TabNavigation',
+            'data-editor-type': 'composite',
+          } as any}
+        />
+      );
+      const root = container.firstElementChild as HTMLElement;
+      expect(root).toBeTruthy();
+      expect(root.id).toBe('mypageTabNavigation');
+      expect(root.getAttribute('data-editor-path')).toBe('2.children.1');
+      expect(root.getAttribute('data-editor-name')).toBe('TabNavigation');
+    });
+
     it('현재 활성 탭의 label을 Select trigger에 표시해야 함', () => {
       render(<TabNavigation tabs={defaultTabs} activeTabId="detail" />);
 

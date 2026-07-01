@@ -34,20 +34,20 @@
     "verify_password_failed": "パスワード確認に失敗しました。",
     "deleted_comment_content": "削除されたコメントです",
     "blinded_comment_content": "ブラインド処理されたコメントです",
-    "view_original": "元文を表示",
-    "hide_original": "元文を非表示",
+    "view_original": "原文を表示",
+    "hide_original": "原文を非表示",
     "post_blinded": "ブラインド処理された投稿にはコメントを作成できません。",
     "post_deleted": "削除された投稿にはコメントを作成できません。"
   },
   "reports": {
     "create_success": "通報が受け付けられました。",
-    "create_failed": "通報受け付けに失敗しました。",
+    "create_failed": "通報受付に失敗しました。",
     "duplicate_report": "既に通報した対象です。",
     "report_disabled": "この掲示板では通報機能が無効化されています。",
     "target_not_reportable": "通報できない対象です。"
   },
   "board_type": {
-    "list": "掲示板タイプの一覧を閲覧しました。",
+    "list": "掲示板タイプリストを閲覧しました。",
     "created": "掲示板タイプが作成されました。",
     "updated": "掲示板タイプが編集されました。",
     "deleted": "掲示板タイプが削除されました。",
@@ -58,13 +58,13 @@
   },
   "settings": {
     "fetch_success": "設定を閲覧しました。",
-    "fetch_failed": "設定の閲覧に失敗しました。",
+    "fetch_failed": "設定閲覧に失敗しました。",
     "save_success": "設定が保存されました。",
-    "save_failed": "設定の保存に失敗しました。",
-    "save_error": "設定の保存中にエラーが発生しました。",
+    "save_failed": "設定保存に失敗しました。",
+    "save_error": "設定保存中にエラーが発生しました。",
     "bulk_apply_success": ":count個の掲示板に設定が一括適用されました。",
-    "bulk_apply_failed": "設定の一括適用に失敗しました。",
+    "bulk_apply_failed": "設定一括適用に失敗しました。",
     "clear_cache_success": "設定キャッシュが初期化されました。",
-    "clear_cache_error": "設定キャッシュの初期化中にエラーが発生しました。"
+    "clear_cache_error": "設定キャッシュ初期化中にエラーが発生しました。"
   }
 }

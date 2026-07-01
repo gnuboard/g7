@@ -5,8 +5,11 @@ namespace Modules\Sirsoft\Ecommerce\Database\Seeders\Sample;
 use App\Models\User;
 use App\Traits\HasSeederCounts;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
+use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOptionValue;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 
 /**
@@ -119,8 +122,8 @@ class CartSeeder extends Seeder
     /**
      * 회원 장바구니 생성
      *
-     * @param  \Illuminate\Support\Collection  $optionsWithShipping  배송정책이 있는 상품 옵션
-     * @param  \Illuminate\Support\Collection  $optionsWithoutShipping  배송정책이 없는 상품 옵션
+     * @param  Collection  $optionsWithShipping  배송정책이 있는 상품 옵션
+     * @param  Collection  $optionsWithoutShipping  배송정책이 없는 상품 옵션
      */
     private function createMemberCarts($optionsWithShipping, $optionsWithoutShipping, int $userCount): void
     {
@@ -160,8 +163,8 @@ class CartSeeder extends Seeder
     /**
      * 비회원 장바구니 생성
      *
-     * @param  \Illuminate\Support\Collection  $optionsWithShipping  배송정책이 있는 상품 옵션
-     * @param  \Illuminate\Support\Collection  $optionsWithoutShipping  배송정책이 없는 상품 옵션
+     * @param  Collection  $optionsWithShipping  배송정책이 있는 상품 옵션
+     * @param  Collection  $optionsWithoutShipping  배송정책이 없는 상품 옵션
      */
     private function createGuestCarts($optionsWithShipping, $optionsWithoutShipping, int $guestCount): void
     {
@@ -193,10 +196,10 @@ class CartSeeder extends Seeder
     /**
      * 배송비 부여 상품 비중을 60% 이상으로 유지하며 옵션 선택
      *
-     * @param  \Illuminate\Support\Collection  $optionsWithShipping  배송정책이 있는 상품 옵션
-     * @param  \Illuminate\Support\Collection  $optionsWithoutShipping  배송정책이 없는 상품 옵션
+     * @param  Collection  $optionsWithShipping  배송정책이 있는 상품 옵션
+     * @param  Collection  $optionsWithoutShipping  배송정책이 없는 상품 옵션
      * @param  int  $totalCount  선택할 총 개수
-     * @return \Illuminate\Support\Collection 선택된 상품 옵션 컬렉션
+     * @return Collection 선택된 상품 옵션 컬렉션
      */
     private function selectOptionsWithShippingRatio($optionsWithShipping, $optionsWithoutShipping, int $totalCount)
     {
@@ -225,10 +228,10 @@ class CartSeeder extends Seeder
             : collect();
 
         // Collection이 아닌 단일 모델이 반환될 수 있음
-        if (! ($selectedWithShipping instanceof \Illuminate\Support\Collection)) {
+        if (! ($selectedWithShipping instanceof Collection)) {
             $selectedWithShipping = collect([$selectedWithShipping]);
         }
-        if (! ($selectedWithoutShipping instanceof \Illuminate\Support\Collection)) {
+        if (! ($selectedWithoutShipping instanceof Collection)) {
             $selectedWithoutShipping = collect([$selectedWithoutShipping]);
         }
 
@@ -255,6 +258,61 @@ class CartSeeder extends Seeder
             'product_id' => $option->product_id,
             'product_option_id' => $option->id,
             'quantity' => $quantity,
+            'additional_option_selections' => $this->buildAdditionalOptionSelections($option->product),
         ]);
+    }
+
+    /**
+     * 장바구니 추가옵션 선택을 생성합니다.
+     *
+     * 상품에 활성 추가옵션이 있으면 AdditionalOptionSelectionService 가 검증하는 형식
+     * ([{additional_option_id, value_id, custom_text?}]) 으로 그룹당 1개를 선택합니다.
+     * 필수 그룹은 항상, 비필수 그룹은 50% 확률로 선택합니다.
+     *
+     * @param  Product|null  $product  상품 모델
+     * @return array<int, array>|null 추가옵션 선택 배열 (없으면 null)
+     */
+    private function buildAdditionalOptionSelections($product): ?array
+    {
+        if ($product === null) {
+            return null;
+        }
+
+        $product->loadMissing('additionalOptions.activeValues');
+
+        if ($product->additionalOptions->isEmpty()) {
+            return null;
+        }
+
+        $selections = [];
+
+        foreach ($product->additionalOptions as $group) {
+            $values = $group->activeValues;
+            if ($values->isEmpty()) {
+                continue;
+            }
+
+            // 필수 그룹은 항상, 비필수 그룹은 50% 확률로 선택
+            if (! $group->is_required && rand(1, 100) > 50) {
+                continue;
+            }
+
+            /** @var ProductAdditionalOptionValue $value */
+            $value = $values->random();
+
+            $row = [
+                'additional_option_id' => (int) $group->id,
+                'value_id' => (int) $value->id,
+            ];
+
+            // 직접입력 선택지면 custom_text 더미 포함
+            if ($value->allow_custom_text) {
+                $row['custom_text'] = '장바구니 직접 입력 문구';
+            }
+
+            $selections[] = $row;
+        }
+
+        return empty($selections) ? null : $selections;
     }
 }

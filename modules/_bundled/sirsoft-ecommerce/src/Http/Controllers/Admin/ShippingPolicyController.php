@@ -9,9 +9,11 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ShippingPolicyBulkDeleteReques
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ShippingPolicyBulkToggleActiveRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ShippingPolicyListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreShippingPolicyRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\TestShippingApiRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateShippingPolicyRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ShippingPolicyCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ShippingPolicyResource;
+use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
 use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyService;
 
 /**
@@ -20,7 +22,8 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyService;
 class ShippingPolicyController extends AdminBaseController
 {
     public function __construct(
-        private ShippingPolicyService $shippingPolicyService
+        private ShippingPolicyService $shippingPolicyService,
+        private OrderCalculationService $calculationService
     ) {}
 
     /**
@@ -67,6 +70,33 @@ class ShippingPolicyController extends AdminBaseController
                 500
             );
         }
+    }
+
+    /**
+     * 계산 API 연동 테스트 호출
+     *
+     * 관리자가 폼에서 입력 중인 설정으로 외부 배송비 계산 API 를 1회 실호출하여
+     * 요청 미리보기 + 응답 + 추출 배송비를 반환합니다. 타임아웃·응답 크기 제한 적용.
+     *
+     * @param  TestShippingApiRequest  $request  테스트 호출 요청
+     * @return JsonResponse 테스트 결과
+     */
+    public function testApiCall(TestShippingApiRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $result = $this->calculationService->testApiCall(
+            endpoint: $validated['endpoint'],
+            config: $validated['config'] ?? [],
+            requestFields: $validated['request_fields'] ?? null,
+            sample: $validated['sample'] ?? [],
+        );
+
+        return ResponseHelper::moduleSuccess(
+            'sirsoft-ecommerce',
+            'messages.shipping_policy.api_test_done',
+            $result
+        );
     }
 
     /**

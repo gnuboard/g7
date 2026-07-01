@@ -1,0 +1,35 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다. 본 기능은 백엔드 전용 변경
+#   (is_combinable 전역 1회 검증)으로, PHPUnit Unit 테스트가 슬롯 교차 조합과
+#   스냅샷 모드를 커버하며 green 이다.
+feature: is_combinable 슬롯 교차 검증 전역화 (A15/MP06)
+
+description: |
+  is_combinable=false 쿠폰은 적용 전체 쿠폰 집합에서 다른 어떤 쿠폰과도 함께 적용 불가.
+  슬롯(상품별/주문레벨상품/배송비/주문)별 독립 검증을 calculate() 전역 1회 검증으로 이동.
+  총수 <= 1 허용, 총수 >= 2 & false 1개 이상 → 그 false 쿠폰 각각 not_combinable.
+
+axes:
+  combinable_mix:
+    - false_only       # false 1개 단독 → 허용
+    - false_plus_false # false + false → 둘 다 not_combinable
+    - false_plus_true  # false + true → false 만 not_combinable
+    - true_plus_true   # true + true → 허용
+  slot_combo:
+    - item_plus_order        # itemCoupons(false) + 주문쿠폰
+    - product_plus_shipping  # 주문레벨상품 + 배송비
+    - item_shipping_order    # 3슬롯 교차
+    - same_id_two_slots      # 동일 issueId 양쪽 슬롯(dedup)
+  snapshot:
+    - live             # 실시간 → 검증
+    - snapshot         # 환불 재계산 → 동일 검증(skip 안 함)
+
+effects:
+  - is_combinable_false_blocks_across_all_slots   # 슬롯 교차 false 차단
+  - is_combinable_dedup_same_id_single_error      # 동일 issueId 단일 에러
+  - is_combinable_all_true_passes                 # 전부 true → 허용
+  - snapshot_mode_applies_same_combination_check  # 스냅샷 모드 동일 검증
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCalculationServiceTest.php

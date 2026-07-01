@@ -50,6 +50,44 @@ function getDevTools(): G7DevToolsInterface | undefined {
     return undefined;
   }
 }
+
+/**
+ * 값(객체/배열/문자열) 내부의 `$t:` 토큰을 재귀적으로 해석한다.
+ *
+ * `extensionPointProps` 처럼 일반 props 와 별도로 평가되어 자식 컴포넌트의
+ * 핸들러로 전달되는 값에서 `$t:board.form.content_placeholder` 같은 평문 i18n
+ * 키를 풀어준다. 일반 props 의 `resolveTranslationsDeep` 와 동일 의미.
+ *
+ * @since engine-v1.50.0
+ */
+function resolveTranslationsInValue(
+  value: any,
+  translationEngine: TranslationEngine,
+  translationContext: TranslationContext,
+  dataContext: Record<string, any>,
+): any {
+  if (typeof value === 'string') {
+    if (/\$t:[a-zA-Z_][a-zA-Z0-9_.\-]*/.test(value)) {
+      try {
+        return translationEngine.resolveTranslations(value, translationContext, dataContext);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => resolveTranslationsInValue(item, translationEngine, translationContext, dataContext));
+  }
+  if (value && typeof value === 'object') {
+    const result: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value)) {
+      result[k] = resolveTranslationsInValue(v, translationEngine, translationContext, dataContext);
+    }
+    return result;
+  }
+  return value;
+}
 import { responsiveManager } from './ResponsiveManager';
 import { FormProvider, FormContextValue, useFormContext, getNestedValue, setNestedValue } from './FormContext';
 import { SlotProvider } from './SlotContext';
@@ -1418,6 +1456,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         text: override.text ?? baseDef.text,
         if: override.if ?? baseDef.if,
         iteration: override.iteration ?? baseDef.iteration,
+        // 편집기 path 발급용 — 자식이 **분기 children 으로 교체**된 경우에만 분기 키를
+        // 남긴다(자식 path 에 `.responsive.{key}` prefix 를 끼워 base children 과 구분).
+        // props-만 오버라이드(override.children 부재)는 base children 그대로라 base path
+        // 유지.
+        __responsiveChildrenKey: override.children !== undefined ? matchedKey : undefined,
       };
     }, [componentDef, responsiveWidth]);
 
@@ -1672,12 +1715,20 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // extension_point 컴포넌트의 props가 주입된 컴포넌트에서 {{extensionPointProps.xxx}}로 접근 가능
       // LayoutExtensionService에서 extension_point의 props를 injectedComponent.extensionPointProps에 추가
       // @since engine-v1.28.0: resolveObject()로 표현식 재귀 평가 (일반 props와 동일 수준)
+      // @since engine-v1.50.0: **편집 모드 전용** `$t:` 키 2차
+      //   해석 — `extensionPointProps.placeholder: "$t:board.form.content_placeholder"`
+      //   같은 평문 i18n 키를 핸들러(예: ckeditor5 initEditor) 가 받기 전에 풀어
+      //   편집기 캔버스에서 raw 키로 노출되지 않도록 한다. 일반 사이트 렌더는
+      //   `isEditMode === false` 라 본 분기 미진입 → 동작 100% 보존.
       if (componentDef.extensionPointProps) {
-        result.extensionPointProps = bindingEngine.resolveObject(
+        const resolved = bindingEngine.resolveObject(
           componentDef.extensionPointProps,
           result,
           isInsideIteration ? { skipCache: true } : undefined
         );
+        result.extensionPointProps = isEditMode && translationEngine
+          ? resolveTranslationsInValue(resolved, translationEngine, translationContext, result)
+          : resolved;
       }
 
       // extensionPointCallbacks가 있으면 데이터 컨텍스트에 추가 (평가 없이 그대로 전달)
@@ -1685,6 +1736,28 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // @since engine-v1.28.0
       if (componentDef.extensionPointCallbacks) {
         result.extensionPointCallbacks = componentDef.extensionPointCallbacks;
+      }
+
+      // **편집 모드 전용** $templateId / $locale 자동 주입 — `{{삼항 ? '$t:A' : '$t:B'}}`
+      // 같은 표현식의 `$t()` 함수가 templateId 폴백을 위해
+      // `window.__templateApp.getConfig()` 를 호출하지 않고 컨텍스트에서 바로 가져올
+      // 수 있도록 보장.
+      //
+      // 동기: 편집기 캔버스의 격리 `__templateApp` façade 에는 `getConfig` 가 없어
+      // 폴백이 빈 templateId 를 반환 → 사전 조회 실패 → raw key 노출. dataContext 에
+      // `$templateId` 가 미리 있으면 그 값을 우선 사용한다(DataBindingEngine 의
+      // `$t` 함수 line 1145). 일반 사이트 렌더는 `isEditMode === false` 이므로 본
+      // 분기 미진입 → 호스트 `window.__templateApp.getConfig()` fallback 그대로 사용.
+      //
+      // @since engine-v1.50.0 (라우트 10/12 글쓰기/글수정 i18n
+      //   `$t:board.write` raw 키 노출 결함 수정. 호스트 사이트 영향 0)
+      if (isEditMode) {
+        if (result.$templateId === undefined && translationContext?.templateId) {
+          result.$templateId = translationContext.templateId;
+        }
+        if (result.$locale === undefined && translationContext?.locale) {
+          result.$locale = translationContext.locale;
+        }
       }
 
       return result;
@@ -2261,9 +2334,15 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       }
 
       // 3. 액션 바인딩 (공유 유틸리티 함수 사용)
+      //
+      // 편집 모드에서는 navigate/apiCall/openModal 등 모든 액션을 발동하지
+      // 않는다 — actions 를 undefined 로 넘겨 바인딩 자체를 건너뛴다. 편집 모드의
+      // 클릭은 오직 "요소 선택" 만 의미하며, 액션 발동은 운영 화면에서만 일어난다.
+      // (편집 모드 진입 시 actions JSON 값은 보존된 채 단지 onClick 핸들러로 변환되지
+      // 않을 뿐이므로 무손실. 저장 시 그대로 직렬화됨.)
       props = bindComponentActions(
         props,
-        effectiveComponentDef.actions,
+        isEditMode ? undefined : effectiveComponentDef.actions,
         extendedDataContext,
         { componentContext, actionDispatcher }
       );
@@ -2374,6 +2453,27 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       previousResolvedPropsRef.current = resolvedProps;
       return resolvedProps;
     }, [resolvedProps]);
+
+    /**
+     * DOM id 표현식 해석 (engine-v1.52.4)
+     *
+     * 노드의 최상위 `id` 필드는 props 가 아니므로 props 바인딩 경로를 타지 않는다.
+     * iteration 내부에서 `id: "item_{{$idx}}"` 처럼 표현식을 쓰면 각 row 마다
+     * 고유 DOM id 가 되어야 하지만, 보간 없이 그대로 출력되면 같은 리터럴이
+     * row 마다 반복되어 W3C HTML id 중복을 유발한다.
+     *
+     * `{{` 가 포함된 경우에만 extendedDataContext($idx 등 iteration 변수 포함)로
+     * 문자열 보간한다. 표현식이 없는 정적 id 는 원본을 그대로 반환하여 비용을 회피한다.
+     * 이 값은 DOM 출력 전용이며, slot 등록·DevTools 등 내부 식별에는 원본 id 를 계속 사용한다.
+     */
+    const resolvedComponentId = useMemo(() => {
+      const rawId = effectiveComponentDef.id;
+      if (typeof rawId !== 'string' || !rawId.includes('{{')) {
+        return rawId;
+      }
+      const resolved = bindingEngine.resolveBindings(rawId, extendedDataContext, { skipCache: true });
+      return typeof resolved === 'string' ? resolved : rawId;
+    }, [effectiveComponentDef.id, extendedDataContext, bindingEngine]);
 
     /**
      * 자식에게 전달할 FormContext
@@ -2544,7 +2644,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // 자식 컴포넌트에도 componentContext와 formContext를 전달하여 상태 공유
         // extendedDataContext를 전달하여 _local 상태를 자식에게도 공유
         // componentPath를 누적하여 자식에게 전달 (WYSIWYG 편집기용)
-        const childPath = componentPath ? `${componentPath}.children.${index}` : `${index}`;
+        // 자식이 responsive 분기 children 으로 교체된 경우, 편집 path 에 분기 출처를
+        // 명시한다: `{부모}.responsive.{key}.children.{N}`. 그래야 편집기가 base children
+        // 의 같은 인덱스 노드가 아니라 보이는 분기 노드를 정확히 선택·패치한다.
+        // base children(분기 키 부재)은 종전 `.children.{N}` 형식 유지.
+        const branchKey = (effectiveComponentDef as any).__responsiveChildrenKey as string | undefined;
+        const childrenPathSeg = branchKey ? `responsive.${branchKey}.children` : 'children';
+        const childPath = componentPath ? `${componentPath}.${childrenPathSeg}.${index}` : `${index}`;
 
         // @since engine-v1.24.8 _fromBase children은 stable key → 보존(update)
         // non-_fromBase children은 layoutKey suffix로 페이지 전환 시 remount 보장
@@ -3569,7 +3675,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
         return (
           <div
-            id={effectiveComponentDef.id}
+            id={resolvedComponentId}
             className={containerClass || undefined}
             {...restProps}
           >
@@ -3596,7 +3702,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       const remountKeys = dataContext._global?._remountKeys;
       const finalProps: Record<string, any> = {
         ...propsWithAutoBinding,
-        id: propsWithAutoBinding.id ?? effectiveComponentDef.id,
+        id: propsWithAutoBinding.id ?? resolvedComponentId,
         // _remountKeys가 변경되면 React가 props 변경을 감지하여 컴포넌트 리렌더링
         // cellChildren 내부의 컴포넌트가 새 key를 받을 수 있도록 함
         ...(remountKeys && Object.keys(remountKeys).length > 0 && {
@@ -3619,73 +3725,123 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         }
       }
 
-      // 편집 모드일 때 data-editor-id 속성 추가
+      // 편집 모드일 때 data-editor-* 표식 + 선택/hover 핸들러 주입
+      //
+      // @since engine-v1.50.0 — 주입분을 단일 `editorAttrs` 객체로도 묶어
+      //   전달한다. composite/layout 컴포넌트는 도메인 prop 만 명시 구조분해하고 미명시
+      //   props 를 DOM 으로 흘리지 않으므로, 개별 키 주입만으로는 `data-editor-*`/핸들러가
+      //  유실되어 그 노드가 편집기의 드롭 슬롯/선택/드래그 대상에서 누락됐다.
+      //   각 nesting 컴포넌트가 `editorAttrs` 를 받아 시각적 루트에 spread 하면 유실이 해소된다.
+      //   basic 컴포넌트(`{...props}` 패스스루)는 아래 개별 키 주입으로 종전대로 동작하며,
+      //   `editorAttrs` 객체 키는 basic/layout DOM-safe 필터(아래)에서 제외해 DOM 누출을 막는다.
       if (isEditMode) {
         // id가 없는 컴포넌트에 자동 ID 생성 (컴포넌트 타입과 랜덤 문자열 기반)
         const editorId =
           effectiveComponentDef.id ||
           `auto_${effectiveComponentDef.name || effectiveComponentDef.type || 'unknown'}_${Math.random().toString(36).substring(2, 8)}`;
 
-        finalProps['data-editor-id'] = editorId;
-        finalProps['data-editor-name'] = effectiveComponentDef.name;
-        finalProps['data-editor-type'] = effectiveComponentDef.type;
-        // 인덱스 경로 추가 (ID 없는 컴포넌트 편집용)
-        if (componentPath) {
-          finalProps['data-editor-path'] = componentPath;
-        }
-
-        // 편집 모드 클릭 핸들러 (기존 onClick과 병합)
-        const originalOnClick = finalProps.onClick;
-        finalProps.onClick = (e: React.MouseEvent) => {
-          // 편집기 선택 핸들러 호출
+        // 편집 모드 클릭 핸들러 
+        // - 편집 모드에서는 그 컴포넌트의 모든 액션이 발동되지 않는다 (위에서
+        //   bindComponentActions 에 actions=undefined 전달로 가로채짐).
+        // - 추가로 `<a href>` 의 기본 브라우저 네비게이션을 막기 위해 preventDefault.
+        // - 클릭 의미는 오직 "요소 선택" — onComponentSelect 만 호출.
+        const editorOnClick = (e: React.MouseEvent) => {
+          // <a href> 기본 네비게이션 차단 — 전체 페이지 리로드 방지
+          // (편집 모드에서 전체 화면 리프레시가 일어나서는 안 된다)
+          if (typeof e.preventDefault === 'function') {
+            e.preventDefault();
+          }
           if (onComponentSelect) {
             e.stopPropagation();
             onComponentSelect(editorId, e);
           }
-          // 기존 onClick도 실행
-          if (typeof originalOnClick === 'function') {
-            originalOnClick(e);
-          }
         };
+
+        // editorAttrs 단일 객체 — composite/layout 컴포넌트가 명시 수신 후 루트에 spread.
+        const editorAttrs: Record<string, unknown> = {
+          'data-editor-id': editorId,
+          'data-editor-name': effectiveComponentDef.name,
+          'data-editor-type': effectiveComponentDef.type,
+          onClick: editorOnClick,
+        };
+        // 인덱스 경로 추가 (ID 없는 컴포넌트 편집용)
+        if (componentPath) {
+          editorAttrs['data-editor-path'] = componentPath;
+        }
+        // 슬롯 마커 — 공통(base) 레이아웃 편집 시 자식 콘텐츠가 삽입될 슬롯
+        // 위치(`slot: "content"` 등)를 편집기 오버레이/CSS 가 시각화할 수 있도록 슬롯 이름을
+        // DOM 속성으로 노출한다. base 편집 캔버스는 슬롯 노드가 SlotContext 의 원위치 미렌더
+        // (`return null`)에 걸리지 않도록 PreviewCanvas 가 `slot` 키를 표시 마커
+        // `__editorSlotName` 으로 치환해 공급하므로 마커를 우선 읽는다. 편집 모드(editorAttrs
+        // 부여 시)에만 추가 — 운영 렌더 영향 0.
+        const slotMarker =
+          (effectiveComponentDef as { __editorSlotName?: unknown }).__editorSlotName ??
+          (effectiveComponentDef as { slot?: unknown }).slot;
+        if (typeof slotMarker === 'string') {
+          editorAttrs['data-editor-slot'] = slotMarker;
+        }
 
         // 편집 모드 호버 핸들러
         // onMouseMove + stopPropagation을 사용하여 가장 안쪽(자식) 컴포넌트가 우선 하이라이트되도록 함
         if (onComponentHover) {
-          finalProps.onMouseMove = (e: React.MouseEvent) => {
+          editorAttrs.onMouseMove = (e: React.MouseEvent) => {
             e.stopPropagation(); // 부모 컴포넌트로 이벤트 전파 방지
             onComponentHover(editorId, e);
           };
-          finalProps.onMouseLeave = (e: React.MouseEvent) => {
+          editorAttrs.onMouseLeave = (e: React.MouseEvent) => {
             onComponentHover(null, e);
           };
         }
 
-        // 편집 모드 드래그 핸들러 (프리뷰 캔버스에서 드래그 앤 드롭)
-        finalProps.draggable = true;
+        // (1) basic 컴포넌트(`{...props}` 패스스루)용 — 개별 키 주입 유지.
+        Object.assign(finalProps, editorAttrs);
+        // (2) composite/layout 컴포넌트용 — 단일 객체 주입(명시 수신 → 루트 spread).
+        finalProps.editorAttrs = editorAttrs;
 
-        if (onDragStart) {
-          finalProps.onDragStart = (e: React.DragEvent) => {
-            e.stopPropagation(); // 부모 컴포넌트로 이벤트 전파 방지
-            onDragStart(editorId, e);
-          };
-        }
-
-        if (onDragEnd) {
-          finalProps.onDragEnd = (e: React.DragEvent) => {
-            onDragEnd(e);
-          };
-        }
+        // 드래그(draggable/onDragStart/onDragEnd) props 주입은 제거됨.
+        //   - 끌어 이동은 `DndCanvasLayer` 가 `[data-editor-path]` 를 DOM 쿼리해 투명 드래그
+        //  핸들 오버레이를 얹고 dnd-kit PointerSensor 로 처리한다.
+        //   - `PreviewCanvas` 는 DynamicRenderer 에 onDragStart/onDragEnd 를 전달하지 않으므로
+        //     기존 `if (onDragStart)` 블록은 이미 죽은 경로였고, native `draggable=true` 는
+        //     HTML5 drag 와 dnd-kit pointer drag 가 동시에 걸리는 충돌 표면일 뿐이었다.
+        //   호출 그래프 전수 확인 후 제거(engine-regression-code-first 규율). @since engine-v1.50.0
       }
 
       // 컴포넌트 렌더링
       // Basic/Layout 컴포넌트는 HTML 요소를 직접 렌더링하므로
       // 내부 props(__componentContext 등)를 DOM에 전달하면 [object Object]로 노출됨
       // Composite 컴포넌트(React 컴포넌트)는 내부 props를 직접 처리하므로 그대로 전달
-      const isBasicOrLayoutComponent = effectiveComponentDef.type === 'basic' || effectiveComponentDef.type === 'layout';
+      //
+      // @since engine-v1.50.0 `__` 시작 키 일괄 차단 안전망.
+      // 백엔드가 `with_source_meta=1` 옵션 응답에 `__source` 메타를 부여할 수 있으며,
+      // 일반 사이트 렌더에도 만일의 누수가 발생해도 React props 로 전달되지 않도록 차단.
+      const isBasicComponent = effectiveComponentDef.type === 'basic';
+      const isLayoutComponent = effectiveComponentDef.type === 'layout';
+      const isBasicOrLayoutComponent = isBasicComponent || isLayoutComponent;
       const propsForRendering = isBasicOrLayoutComponent
         ? (() => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { __componentContext, __componentLayoutDefs, ...domSafeProps } = finalProps;
+            const domSafeProps: Record<string, any> = {};
+            for (const [key, value] of Object.entries(finalProps)) {
+              // `__` 접두사는 G7 내부 메타 전용 약속 — DOM 노출 차단(basic/layout 공통)
+              if (key.startsWith('__')) {
+                continue;
+              }
+              // `editorAttrs` 객체 키 처리 — **타입별로 다르다**:
+              //   - **basic**: `{...props}` 패스스루라 `editorAttrs` 가 그대로 DOM 에 흘러
+              //     `<div editorAttrs={..}>` 누출 + React 경고 → **제거**. 편집 표식은
+              //     위 Object.assign 으로 주입한 개별 `data-editor-*` 키가 담당(basic 이 spread).
+              //   - **layout**: Container/Flex/Grid 등은 도메인 prop 만 명시 구조분해하고
+              //     `{...props}` 패스스루를 **안 하므로** 개별 `data-editor-*` 키가 DOM 에
+              //     도달하지 못한다. 대신 `editorAttrs` 를 **명시 수신해 루트에 spread** 하므로
+              //     이 키를 **남겨야** 한다(제거하면 layout 노드가 편집기에서 누락 — 컨테이너
+              //  바깥 드롭존 소실의 원인.). DOM 누출은 컴포넌트가 editorAttrs 만
+              //     spread 하고 객체 자체를 DOM 에 안 흘리므로 발생하지 않는다.
+              // @since engine-v1.50.0
+              if (key === 'editorAttrs' && isBasicComponent) {
+                continue;
+              }
+              domSafeProps[key] = value;
+            }
             return domSafeProps;
           })()
         : finalProps;
@@ -3867,6 +4023,60 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     }
 
     /**
+     * blur_until_loaded 래퍼에 전달할 그리드 아이템 클래스 추출
+     *
+     * CSS Grid에서 col-span, row-span 등은 그리드 컨테이너의 직접 자식에만 적용됩니다.
+     * blur_until_loaded가 래퍼 div를 생성하면 그리드 레이아웃이 깨지므로,
+     * 그리드 아이템 관련 클래스를 래퍼로 전달합니다.
+     *
+     * @since engine-v1.17.6
+     *
+     * 중요: Rules of Hooks 준수 — 아래 early return(slot 조건) 보다 먼저 호출되어야 함.
+     * 같은 컴포넌트에서 렌더 경로가 달라지더라도 hook 호출 순서/개수가 일관되어야 한다.
+     */
+    const getBlurWrapperClasses = useMemo(() => {
+      if (!effectiveComponentDef.blur_until_loaded) {
+        return { wrapperClasses: '', innerClasses: '' };
+      }
+
+      const className = resolvedProps?.className || '';
+      if (!className) {
+        return { wrapperClasses: '', innerClasses: '' };
+      }
+
+      // 그리드 아이템/플렉스 아이템 관련 클래스 패턴
+      // - col-span-*, row-span-*: 그리드 셀 확장
+      // - col-start-*, col-end-*, row-start-*, row-end-*: 그리드 위치
+      // - self-*, place-self-*: 아이템 정렬
+      // - order-*: 순서
+      // - flex-shrink-*, flex-grow-*, flex-*: 플렉스 아이템
+      // 반응형 접두사 포함: sm:, md:, lg:, xl:, 2xl:
+      const gridItemPatterns = [
+        /^(sm:|md:|lg:|xl:|2xl:)?(col-span-|row-span-|col-start-|col-end-|row-start-|row-end-)/,
+        /^(sm:|md:|lg:|xl:|2xl:)?(self-|place-self-|order-)/,
+        /^(sm:|md:|lg:|xl:|2xl:)?(flex-shrink|flex-grow|flex-\d|basis-)/,
+      ];
+
+      const classes = className.split(/\s+/).filter(Boolean);
+      const wrapperClassList: string[] = [];
+      const innerClassList: string[] = [];
+
+      for (const cls of classes) {
+        const isGridItemClass = gridItemPatterns.some(pattern => pattern.test(cls));
+        if (isGridItemClass) {
+          wrapperClassList.push(cls);
+        } else {
+          innerClassList.push(cls);
+        }
+      }
+
+      return {
+        wrapperClasses: wrapperClassList.join(' '),
+        innerClasses: innerClassList.join(' '),
+      };
+    }, [effectiveComponentDef.blur_until_loaded, resolvedProps?.className]);
+
+    /**
      * slot 속성이 있는 컴포넌트는 원래 위치에서 렌더링하지 않음
      *
      * SlotContext에 등록되어 SlotContainer에서 렌더링됩니다.
@@ -3887,7 +4097,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         componentName={componentDef.name}
       >
         {effectiveComponentDef.blur_until_loaded ? (
-          <div className={shouldApplyBlur ? "opacity-50 blur-sm transition-all duration-300 pointer-events-none" : undefined}>
+          <div className={[
+            getBlurWrapperClasses.wrapperClasses,
+            shouldApplyBlur ? "opacity-50 blur-sm transition-all duration-300 pointer-events-none" : undefined
+          ].filter(Boolean).join(' ') || undefined}>
             {renderComponent}
           </div>
         ) : (

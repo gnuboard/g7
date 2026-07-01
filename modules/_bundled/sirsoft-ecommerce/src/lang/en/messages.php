@@ -122,6 +122,9 @@ return [
         'updated' => 'Coupon has been updated.',
         'deleted' => 'Coupon has been deleted.',
         'status_changed' => 'Issue status of :count coupons has been updated.',
+        'direct_issued' => 'Coupon issued to :issued member(s).',
+        'direct_issued_with_skip' => 'Coupon issued to :issued member(s). (:skipped excluded for not meeting issue conditions)',
+        'issue_cancelled' => 'Coupon issuance has been cancelled.',
         'issues_retrieved' => 'Coupon issue history retrieved successfully.',
         'has_issues' => '(:count issues)',
 
@@ -171,6 +174,19 @@ return [
         'cancel_failed' => 'Failed to cancel order.',
         'estimate_refund_success' => 'Refund estimate retrieved successfully.',
         'estimate_refund_failed' => 'Failed to calculate refund estimate.',
+        'guest_password_reset_success' => 'Guest lookup password has been reset.',
+        'guest_password_reset_failed' => 'Failed to reset guest lookup password.',
+        'guest_password_reset_not_guest' => 'Only guest orders can have their lookup password reset.',
+        'deposit_confirmed' => 'Deposit confirmed and the order has been marked as paid.',
+        'deposit_confirm_failed' => 'Failed to confirm the deposit.',
+        'deposit_amount_mismatch' => 'The deposit amount does not match the amount due.',
+        'deposit_not_dbank' => 'Only bank transfer (manual deposit) orders can be confirmed.',
+        'deposit_not_pending' => 'Only unpaid orders can have their deposit confirmed.',
+        'payment_name_summary' => ':name and :count more',
+        'deposit' => [
+            'amount' => 'Deposit amount',
+            'depositor_name' => 'Depositor name',
+        ],
     ],
 
     // Product Label Messages
@@ -203,7 +219,7 @@ return [
         'prefix' => [
             'KRW' => '₩',
             'JPY' => '¥',
-            'CNY' => '¥',
+            'CNY' => '元',
             'USD' => '$',
             'EUR' => '€',
         ],
@@ -227,6 +243,10 @@ return [
         'fetched' => 'Cart items retrieved successfully.',
         'fetch_failed' => 'Failed to retrieve cart items.',
         'add_failed' => 'Failed to add item to cart.',
+        'reorder_added' => 'Items from your past order have been added to the cart.',
+        'reorder_failed' => 'Reorder failed.',
+        'reorder_option_not_found' => 'Product option no longer exists.',
+        'unknown_product' => 'Unknown product',
         'update_failed' => 'Failed to update cart.',
         'delete_failed' => 'Failed to delete cart item.',
         'deleted_multiple' => ':deleted_count items have been removed.',
@@ -297,6 +317,7 @@ return [
         'invalid_target' => 'This coupon is not applicable to the selected products.',
         'already_used' => 'This coupon has already been used.',
         'not_found' => 'Coupon not found.',
+        'per_user_limit_exceeded' => 'You have exceeded the usage limit for this coupon.',
     ],
 
     // User Mileage Messages (마이페이지/체크아웃용)
@@ -305,6 +326,16 @@ return [
         'balance_fetch_failed' => 'Failed to retrieve mileage balance.',
         'max_usable_fetched' => 'Maximum usable mileage retrieved successfully.',
         'max_usable_fetch_failed' => 'Failed to retrieve usable mileage.',
+        'list_retrieved' => 'Mileage history retrieved successfully.',
+        'transaction_created' => 'Mileage transaction processed successfully.',
+        'transaction_updated' => 'Mileage transaction updated successfully.',
+        'expiry_extended' => 'Mileage expiry extended successfully.',
+        'linked_retrieved' => 'Linked transactions retrieved successfully.',
+        'not_found' => 'Mileage transaction not found.',
+        'validation_failed' => 'Failed to process mileage.',
+        'not_earning' => 'Only earning transactions can be edited.',
+        'expiry_not_editable' => 'Expiry cannot be changed for already-expired or fully-used earnings.',
+        'expiry_before_earned' => 'Expiry cannot be earlier than the earned date.',
     ],
 
     // Temporary Order Messages
@@ -326,6 +357,8 @@ return [
         'updated' => 'Product notice template has been updated.',
         'deleted' => 'Product notice template has been deleted.',
         'copied' => 'Product notice template has been copied.',
+        'activated' => 'Product notice template has been activated.',
+        'deactivated' => 'Product notice template has been deactivated.',
         'not_found' => 'Product notice template not found.',
     ],
 
@@ -408,6 +441,7 @@ return [
         'bulk_deleted' => ':count shipping policies have been deleted.',
         'bulk_toggled' => ':count shipping policies status have been changed.',
         'set_default_success' => 'Default shipping policy has been set.',
+        'api_test_done' => 'Calculation API test call completed.',
         'fee_summary' => [
             'free' => 'Free Shipping',
             'fixed' => 'Shipping: :fee',
@@ -1126,26 +1160,26 @@ return [
 
     // Product 1:1 Inquiries
     'inquiries' => [
-        'fetch_success'         => 'Inquiry list retrieved successfully.',
-        'fetch_failed'          => 'Failed to retrieve inquiry list.',
-        'created'               => 'Your inquiry has been submitted.',
-        'create_failed'         => 'Failed to submit inquiry.',
-        'updated'               => 'Your inquiry has been updated.',
-        'update_failed'         => 'Failed to update inquiry.',
-        'deleted'               => 'Inquiry has been deleted.',
-        'delete_failed'         => 'Failed to delete inquiry.',
-        'not_found'             => 'Inquiry not found.',
-        'forbidden'             => 'You do not have permission for this inquiry.',
-        'board_not_configured'  => 'Inquiry board is not configured.',
-        'board_unavailable'     => 'Board module is unavailable. Please contact the administrator.',
-        'board_changed'         => 'The board configuration has changed and the post could not be found. Please contact the administrator.',
-        'reply_created'         => 'Reply has been submitted.',
-        'reply_failed'          => 'Failed to submit reply.',
-        'reply_updated'         => 'Reply has been updated.',
-        'reply_update_failed'   => 'Failed to update reply.',
-        'reply_deleted'         => 'Reply has been deleted.',
-        'reply_delete_failed'   => 'Failed to delete reply.',
-        'reply_not_found'       => 'Reply not found.',
+        'fetch_success' => 'Inquiry list retrieved successfully.',
+        'fetch_failed' => 'Failed to retrieve inquiry list.',
+        'created' => 'Your inquiry has been submitted.',
+        'create_failed' => 'Failed to submit inquiry.',
+        'updated' => 'Your inquiry has been updated.',
+        'update_failed' => 'Failed to update inquiry.',
+        'deleted' => 'Inquiry has been deleted.',
+        'delete_failed' => 'Failed to delete inquiry.',
+        'not_found' => 'Inquiry not found.',
+        'forbidden' => 'You do not have permission for this inquiry.',
+        'board_not_configured' => 'Inquiry board is not configured.',
+        'board_unavailable' => 'Board module is unavailable. Please contact the administrator.',
+        'board_changed' => 'The board configuration has changed and the post could not be found. Please contact the administrator.',
+        'reply_created' => 'Reply has been submitted.',
+        'reply_failed' => 'Failed to submit reply.',
+        'reply_updated' => 'Reply has been updated.',
+        'reply_update_failed' => 'Failed to update reply.',
+        'reply_deleted' => 'Reply has been deleted.',
+        'reply_delete_failed' => 'Failed to delete reply.',
+        'reply_not_found' => 'Reply not found.',
     ],
 
     // User addresses
@@ -1166,5 +1200,23 @@ return [
         'set_default_failed' => 'Failed to set default address.',
         'name_duplicate' => 'An address with the same name already exists. Do you want to overwrite it?',
         'auto_saved_label' => 'New Address',
+    ],
+
+    // Payment currency settings (A3)
+    'user_currency' => [
+        'fetched' => 'Payment currency retrieved.',
+        'updated' => 'Payment currency updated.',
+        'update_failed' => 'Failed to update payment currency.',
+    ],
+
+    'user_shipping_country' => [
+        'fetched' => 'Shipping country retrieved.',
+        'updated' => 'Shipping country updated.',
+        'update_failed' => 'Failed to update shipping country.',
+    ],
+
+    // Dashboard
+    'dashboard' => [
+        'fetch_success' => 'Dashboard data loaded.',
     ],
 ];

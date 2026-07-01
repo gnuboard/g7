@@ -28,15 +28,40 @@
     "description": "Gnuboard7 Admin Dashboard",
     "refresh": "Refresh",
     "stats": {
-      "total_users": "Total Users",
+      "total_users": "Total Members",
+      "new_posts": "New Posts",
+      "new_orders": "New Orders",
+      "new_reviews": "New Reviews",
       "monthly_change": "{{percent}} from last month",
-      "installed_modules": "Installed Modules",
+      "today": "Today",
+      "installed_modules": "Active Modules",
       "active_count": "Active: {{count}}",
       "active_plugins": "Active Plugins",
+      "active_templates": "Active Templates",
+      "active_language_packs": "Active Language Packs",
       "total_installed": "{{count}} total installed",
       "system_status": "System Status",
       "status_normal": "Normal",
       "all_services_running": "All services running"
+    },
+    "today_badges": {
+      "pending_payment": "Awaiting Deposit {{count}}",
+      "payment_complete": "Paid {{count}}",
+      "preparing": "Preparing Items {{count}}",
+      "shipping_ready": "Preparing Shipment {{count}}",
+      "shipping": "Shipping {{count}}",
+      "cancellations": "Cancellations {{count}}",
+      "returns": "Returns {{count}}"
+    },
+    "quick_menu": {
+      "users": "Users",
+      "products": "Products",
+      "orders": "Orders",
+      "reviews": "Reviews",
+      "coupons": "Coupons",
+      "shipping": "Shipping",
+      "settings": "Settings",
+      "modules": "Modules"
     },
     "system_resources": {
       "title": "System Status",
@@ -44,6 +69,11 @@
       "cpu_usage": "CPU Usage",
       "memory_usage": "Memory Usage",
       "disk_usage": "Disk Usage"
+    },
+    "recent_notifications": {
+      "title": "Recent Notifications",
+      "subtitle": "Recently sent notification history",
+      "empty": "No notifications sent yet"
     },
     "recent_activity": {
       "title": "Recent Activity",
@@ -92,6 +122,18 @@
     "time": {
       "minutes_ago": "{{count}} min ago",
       "hours_ago": "{{count}} hour ago"
+    },
+    "charts": {
+      "product_sales": "Product Sales Status",
+      "sales": "Orders",
+      "earning": "Revenue",
+      "total_sales": "Total Orders",
+      "total_earning": "Total Revenue",
+      "sales_by_traffic": "Sales by Traffic Source",
+      "total": "Total",
+      "unanswered_inquiries": "Unanswered Inquiries",
+      "unanswered_inquiries_with_count": "Unanswered (3)",
+      "latest_reviews": "Latest Reviews"
     }
   },
   "users": {
@@ -134,6 +176,7 @@
     "bulk_block": "Block",
     "bulk_withdraw": "Withdraw",
     "bulk_action_select": "Select Bulk Action",
+    "bulk_status_change": "Status Change",
     "pagination_info": "Showing {{from}}-{{to}} of {{total}} users",
     "total_count": "Total {{count}}",
     "per_page": "{{count}}",
@@ -1330,8 +1373,8 @@
       "generator_content_hint": "Leave empty to auto-apply \"GnuBoard7 {version}\". Enter only \"GnuBoard7\" to hide the version.",
       "og_twitter_settings": "OG / Twitter Card Defaults",
       "og_twitter_settings_desc": "Default meta values used by Facebook, Slack, Twitter, etc. for link previews. Per-page values declared in layouts override these.",
-      "og_default_site_name": "OG Site Name",
-      "og_default_site_name_hint": "If empty, the site name from General settings is used. (og:site_name)",
+      "og_default_site_name": "OG Site Name (optional override)",
+      "og_default_site_name_hint": "Defaults to the site name from General settings. Enter a value only to show a different name in share previews (og:site_name). Leave empty to follow the General settings site name.",
       "og_image_default_width": "OG Image Default Width (px)",
       "og_image_default_height": "OG Image Default Height (px)",
       "og_image_default_size_hint": "Default values when thumbnail size is unknown. Facebook recommends 1200×630, minimum 200×200.",
@@ -1856,6 +1899,7 @@
     },
     "save_success": "Settings saved successfully.",
     "save_error": "Failed to save settings.",
+    "unsaved_changes": "You have unsaved changes.",
     "validation_error": "Please check your input",
     "app_key_regenerated": "Application key has been regenerated.",
     "cache_cleared": "All cache has been cleared."
@@ -1917,7 +1961,7 @@
       "page_title": "Admin Template Management",
       "page_description": "Manage templates used in the admin interface.",
       "title": "Admin Templates",
-      "description": "Change the design of the admin interface.\nLayout editing is not supported."
+      "description": "Change the design of the admin interface.\nBoth code editing and layout editing are supported."
     },
     "status": {
       "active": "Currently Active",
@@ -1939,7 +1983,8 @@
       "view_detail": "Details",
       "refresh_layouts": "Refresh Layouts",
       "edit_layouts": "Edit Layouts",
-      "wysiwyg_edit": "WYSIWYG Edit",
+      "edit_code": "Edit Code",
+      "edit_layout_visual": "Edit Layout",
       "preview_manifest": "Preview manifest"
     },
     "modal": {
@@ -1968,6 +2013,9 @@
       "composite_components": "Composite Components",
       "composite_components_description": "Complex UI components made by combining basic components.",
       "no_components": "No components available.",
+      "external_resources": "External Resources",
+      "external_resources_description": "External styles, web fonts, and scripts used by this template.",
+      "no_external_resources": "No external resources.",
       "supported_languages": "Supported Languages",
       "no_supported_languages": "No supported language information.",
       "cascade_dependencies_title": "Dependencies to install together",
@@ -2048,6 +2096,17 @@
         "modified": "modified",
         "chars": "chars"
       },
+      "extension_version_history": {
+        "title": "Extension Version History",
+        "description": "List of saved versions for {{target_name}} ({{source_label}}). You can restore to any version.",
+        "latest": "Latest",
+        "restore": "Restore",
+        "restoring": "Restoring...",
+        "restore_success": "Extension version has been successfully restored.",
+        "restore_note": "You must click the save button after restoring for changes to take effect.",
+        "lines": "lines",
+        "chars": "chars"
+      },
       "wysiwyg_select_layout_title": "WYSIWYG Edit - Select Layout",
       "wysiwyg_select_layout_description": "Select a layout to edit. The selected layout will open in WYSIWYG edit mode in a new tab.",
       "wysiwyg_no_layouts": "No layouts registered.",
@@ -2068,7 +2127,7 @@
     },
     "info": {
       "title": "About Admin Templates:",
-      "description": "Admin templates only change the design of the admin interface and do not support layout editing. They do not affect the user website."
+      "description": "Admin templates only change the design of the admin interface and do not affect the user website. Both code editing and layout editing are supported, just like user templates."
     },
     "dependencies_warning": "Required dependencies not met",
     "errors": {
@@ -2103,7 +2162,22 @@
       "layout_updated_badge": "Layout Updated",
       "version_history_button": "Version History",
       "modified_at": "Modified: {{date}}",
-      "preview_error": "Failed to generate preview."
+      "preview_error": "Failed to generate preview.",
+      "section_layouts": "Standard Layouts",
+      "section_extensions": "Extension-Injected Layouts",
+      "extension_type_point": "Extension Point",
+      "extension_type_overlay": "Overlay",
+      "extension_modified_badge": "Modified",
+      "extension_inactive_badge": "Inactive",
+      "extension_override_badge": "Override",
+      "extension_priority": "Priority {{priority}}",
+      "no_extensions": "No layout extensions injected.",
+      "extension_save_success": "Layout extension has been saved.",
+      "select_extension_prompt": "Select a layout extension to edit",
+      "preview_layout_select_title": "Select Preview Layout",
+      "preview_layout_select_description": "This extension point is used by multiple layouts. Select a layout to preview.",
+      "preview_layout_select_placeholder": "Select a layout",
+      "preview_layout_confirm": "Preview"
     }
   },
   "activity_log": {
@@ -2386,6 +2460,7 @@
         "target": "Target",
         "purpose": "Purpose",
         "grace_minutes": "Re-prompt after (min)",
+        "priority": "Priority",
         "enabled": "Active",
         "source_type": "Source"
       },
@@ -2434,6 +2509,8 @@
         "grace_minutes_help": "If the user verified within this window, do not ask again. Set to 0 to always require verification.",
         "applies_to": "Applies to",
         "fail_mode": "On failure",
+        "priority": "Priority",
+        "priority_desc": "When multiple policies apply to the same location, a higher number is applied first. Saving is rejected if two policies share the same location and the same number, since the order of enforcement would be undefined.",
         "enabled": "Activate this policy",
         "conditions": "Extra conditions (JSON)",
         "signup_stage": "Signup stage",
@@ -2441,7 +2518,7 @@
         "signup_stage_before_submit": "Before submission — verification code must accompany the signup form",
         "signup_stage_after_create": "After signup, before activation — verification message sent right after signup, account activates after verification",
         "signup_stage_desc": "For signup policies, choose which stage requires verification.",
-        "declared_policy_notice": "This is a default policy provided by core/module/plugin. You can edit only Active, Re-prompt window, Verification method, and On-failure fields; your overrides are preserved across updates.",
+        "declared_policy_notice": "This is a default policy provided by core/module/plugin. The Policy key, Enforcement timing, and Enforcement location cannot be changed; all other fields (Purpose, Applies to, Verification method, Re-prompt window, On-failure, Active, etc.) are freely editable, and your overrides are preserved across updates.",
         "reset_to_default": "Reset to default",
         "reset_success": "Restored to default."
       }
@@ -2533,5 +2610,121 @@
         "policy_violation_logged": "Policy Violation"
       }
     }
+  },
+  "modal_label": {
+    "activity_log_list": {
+      "delete_confirm_modal": "Delete Activity Log",
+      "bulk_delete_confirm_modal": "Bulk Delete Activity Logs"
+    },
+    "admin_module_list": {
+      "extension_license_modal": "Extension License",
+      "module_force_activate_modal": "Force Activate Module",
+      "module_force_deactivate_modal": "Force Deactivate Module",
+      "module_install_modal": "Install Module",
+      "module_manual_install_modal": "Manual Module Install",
+      "module_reactivate_language_packs_modal": "Bulk Activate Language Packs",
+      "module_refresh_layouts_modal": "Refresh Module Layouts",
+      "module_uninstall_modal": "Uninstall Module",
+      "module_update_modal": "Update Module",
+      "module_deactivate_warning_modal": "Module Deactivation Warning",
+      "module_detail_modal": "Module Details",
+      "module_manifest_preview_drawer": "Module Manifest Preview"
+    },
+    "admin_plugin_list": {
+      "plugin_manual_install_modal": "Manual Plugin Install",
+      "plugin_reactivate_language_packs_modal": "Reactivate Language Packs",
+      "plugin_refresh_layouts_modal": "Refresh Plugin Layouts",
+      "plugin_uninstall_modal": "Uninstall Plugin",
+      "plugin_update_modal": "Update Plugin",
+      "plugin_detail_modal": "Plugin Details",
+      "plugin_extension_license_modal": "Plugin License",
+      "plugin_force_activate_modal": "Force Activate Plugin",
+      "plugin_force_deactivate_modal": "Force Deactivate Plugin",
+      "plugin_install_modal": "Install Plugin",
+      "plugin_manifest_preview_drawer": "Plugin Manifest Preview"
+    },
+    "admin_settings": {
+      "modal_identity_message_definition_add": "Add Identity Verification Message",
+      "modal_identity_message_definition_delete": "Delete Identity Verification Message",
+      "modal_identity_message_definition_reset": "Reset Identity Verification Message",
+      "modal_identity_message_template_form": "Edit Identity Verification Message Template",
+      "modal_identity_message_template_preview": "Preview Identity Verification Message Template",
+      "identity_policy_delete_modal": "Delete Identity Verification Policy",
+      "identity_policy_form_modal": "Edit Identity Verification Policy",
+      "modal_mail_template_form": "Edit Mail Template",
+      "modal_notification_definition_reset": "Reset Notification Definition",
+      "modal_notification_template_form": "Edit Notification Template",
+      "modal_notification_template_preview": "Preview Notification Template",
+      "settings_cache_delete_modal": "Clear Cache",
+      "settings_password_confirm_modal": "Verify Password for App Key Regeneration",
+      "core_changelog_modal": "Core Changelog",
+      "core_update_guide_modal": "Core Update Guide",
+      "core_update_result_modal": "Core Update Check Result"
+    },
+    "admin_template_list": {
+      "template_activate_modal": "Activate Template",
+      "template_deactivate_modal": "Deactivate Template",
+      "template_detail_modal": "Template Details",
+      "template_extension_license_modal": "Template License",
+      "template_force_activate_modal": "Force Activate Template",
+      "template_install_modal": "Install Template",
+      "template_manual_install_modal": "Manual Template Install",
+      "template_reactivate_language_packs_modal": "Bulk Activate Language Packs",
+      "template_refresh_layouts_modal": "Refresh Template Layouts",
+      "template_uninstall_modal": "Uninstall Template",
+      "template_update_modal": "Update Template",
+      "template_manifest_preview_drawer": "Template Manifest Preview"
+    },
+    "notification_log_list": {
+      "delete_confirm_modal": "Delete Notification Log",
+      "bulk_delete_confirm_modal": "Bulk Delete Notification Logs"
+    },
+    "user_list": {
+      "bulk_activate_confirm_modal": "Bulk Activate Members",
+      "bulk_deactivate_confirm_modal": "Bulk Deactivate Members",
+      "delete_confirm_modal": "Delete Member",
+      "error_modal": "Error",
+      "bulk_block_confirm_modal": "Bulk Block Members",
+      "bulk_withdraw_confirm_modal": "Bulk Withdraw Members"
+    },
+    "admin_identity_logs": {
+      "identity_log_detail_modal": "Identity Verification Log Details",
+      "identity_log_purge_confirm_modal": "Purge Identity Verification Logs"
+    },
+    "admin_language_pack_list": {
+      "language_pack_detail_modal": "Language Pack Details",
+      "language_pack_install_modal": "Install Language Pack",
+      "language_pack_install_bundled_modal": "Install Bundled Language Pack",
+      "language_pack_refresh_cache_modal": "Refresh Language Pack Cache",
+      "language_pack_slot_conflict_modal": "Resolve Language Pack Slot Conflict",
+      "language_pack_uninstall_modal": "Uninstall Language Pack",
+      "language_pack_update_modal": "Update Language Pack",
+      "language_pack_manifest_preview_drawer": "Language Pack Manifest Preview"
+    },
+    "admin_role_list": {
+      "delete_confirm_modal": "Delete Role"
+    },
+    "admin_schedule_list": {
+      "schedule_delete_modal": "Delete Schedule",
+      "schedule_duplicate_modal": "Duplicate Schedule",
+      "schedule_form_modal": "Add or Edit Schedule",
+      "schedule_history_modal": "Schedule Run History",
+      "schedule_run_modal": "Run Schedule Now"
+    },
+    "admin_notification_log_list": {
+      "modal_notification_log_detail": "Notification Log Details"
+    },
+    "identity_challenge_modal": "Identity Verification",
+    "admin_menu_list": {
+      "delete_confirm_modal": "Delete Menu"
+    },
+    "admin_template_layout_edit": {
+      "extension_preview_layout_modal": "Select Preview Layout",
+      "extension_version_history_modal": "Extension Version History",
+      "version_history_modal": "Layout Version History"
+    },
+    "changelog_modal": "Core Changelog",
+    "license_modal": "Core License",
+    "notification_delete_all_confirm_modal": "Delete All Notifications"
   }
 }

@@ -8,14 +8,15 @@ use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\ConsentType;
 use App\Enums\UserStatus;
+use App\Exceptions\Auth\AccountLockedException;
 use App\Extension\HookManager;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthService
 {
@@ -88,7 +89,7 @@ class AuthService
      * @return array 사용자 정보와 토큰을 포함한 배열
      *
      * @throws ValidationException 인증 정보가 올바르지 않을 때
-     * @throws \App\Exceptions\Auth\AccountLockedException 계정이 잠겨 있을 때
+     * @throws AccountLockedException 계정이 잠겨 있을 때
      */
     public function login(string $email, string $password): array
     {
@@ -99,7 +100,7 @@ class AuthService
             $candidate = $this->userRepository->findByEmail($email);
             if ($candidate !== null && $this->userRepository->isLocked($candidate)) {
                 $remaining = max(1, (int) ceil(now()->diffInSeconds($candidate->locked_until, false) / 60));
-                throw new \App\Exceptions\Auth\AccountLockedException(
+                throw new AccountLockedException(
                     lockedUntil: $candidate->locked_until,
                     remainingMinutes: $remaining,
                 );
@@ -222,6 +223,9 @@ class AuthService
             'user_agent' => request()->userAgent(),
             'signup_stage' => 'after_create',
             'verification_token' => $data['verification_token'] ?? null,
+            // 모듈이 동적 추가한 가입 필드(예: 결제 통화)를 리스너가 읽을 수 있도록 검증된 가입 데이터 전달.
+            // request() 직접 접근을 피하기 위해 Service 가 도메인 객체로 넘긴다(Listener 규율).
+            'registration_data' => $data,
         ]);
 
         return [
@@ -245,7 +249,7 @@ class AuthService
         $currentToken = $user->currentAccessToken();
 
         // Case 1: 토큰만 보낸 경우 - currentAccessToken()이 PersonalAccessToken 반환
-        if ($currentToken instanceof \Laravel\Sanctum\PersonalAccessToken) {
+        if ($currentToken instanceof PersonalAccessToken) {
             $currentToken->delete();
         }
         // Case 2: 쿠키 + 토큰을 함께 보낸 경우 또는 TransientToken
@@ -294,7 +298,7 @@ class AuthService
         $currentToken = $user->currentAccessToken();
 
         // PersonalAccessToken만 삭제 (TransientToken은 세션 기반이므로 삭제 불필요)
-        if ($currentToken instanceof \Laravel\Sanctum\PersonalAccessToken) {
+        if ($currentToken instanceof PersonalAccessToken) {
             $currentToken->delete();
         }
 
@@ -351,9 +355,9 @@ class AuthService
 
         // 리셋 URL 생성 (extract_data 필터에서 사용)
         $resetPath = $redirectPrefix
-            ? '/' . $redirectPrefix . '/reset-password'
+            ? '/'.$redirectPrefix.'/reset-password'
             : '/reset-password';
-        $resetUrl = config('app.url') . $resetPath . '?' . http_build_query([
+        $resetUrl = config('app.url').$resetPath.'?'.http_build_query([
             'token' => $token,
             'email' => $user->email,
         ]);

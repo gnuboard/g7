@@ -26,8 +26,7 @@ describe('Alert 컴포넌트', () => {
     it('info 타입은 파란색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="info" message="정보 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('bg-blue-100');
-      expect(alertElement?.className).toContain('border-blue-400');
+      expect(alertElement?.className).toContain('alert-info');
     });
 
     it('info 타입은 info-circle 아이콘이 표시된다', () => {
@@ -47,8 +46,7 @@ describe('Alert 컴포넌트', () => {
     it('success 타입은 초록색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="success" message="성공 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('bg-green-100');
-      expect(alertElement?.className).toContain('border-green-400');
+      expect(alertElement?.className).toContain('alert-success');
     });
 
     it('success 타입은 check-circle 아이콘이 표시된다', () => {
@@ -68,8 +66,7 @@ describe('Alert 컴포넌트', () => {
     it('warning 타입은 노란색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="warning" message="경고 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('bg-yellow-100');
-      expect(alertElement?.className).toContain('border-yellow-400');
+      expect(alertElement?.className).toContain('alert-warning');
     });
 
     it('warning 타입은 exclamation-triangle 아이콘이 표시된다', () => {
@@ -89,8 +86,7 @@ describe('Alert 컴포넌트', () => {
     it('error 타입은 빨간색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="error" message="에러 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('bg-red-100');
-      expect(alertElement?.className).toContain('border-red-400');
+      expect(alertElement?.className).toContain('alert-error');
     });
 
     it('error 타입은 times-circle 아이콘이 표시된다', () => {
@@ -195,8 +191,7 @@ describe('Alert 컴포넌트', () => {
       );
       const alertElement = container.querySelector('[role="alert"]');
       expect(alertElement?.className).toContain('custom-class');
-      expect(alertElement?.className).toContain('bg-blue-100');
-      expect(alertElement?.className).toContain('border-blue-400');
+      expect(alertElement?.className).toContain('alert-info');
     });
   });
 
@@ -247,11 +242,33 @@ describe('Alert 컴포넌트', () => {
   });
 
   describe('다크 모드 클래스', () => {
-    it('다크 모드 클래스가 포함된다', () => {
+    it('시맨틱 타입 클래스가 포함된다', () => {
       const { container } = render(<Alert type="info" message="메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('dark:bg-blue-900');
-      expect(alertElement?.className).toContain('dark:border-blue-600');
+      expect(alertElement?.className).toContain('alert-info');
+    });
+  });
+
+  // 편집기에서 Alert 를 추가한 직후(작성자가 type 미지정 / 잘못된
+  // defaultNode 키) typeConfig[type] 가 undefined → config.containerClass 접근 크래시로
+  // "컴포넌트 로드 실패" 폴백이 떴다. type 미지정/미지원 값에도 크래시 없이 info 로 폴백해야 한다.
+  describe('결함#4 — type 미지정/미지원 안전 폴백', () => {
+    it('type 미지정 시 크래시 없이 info 스타일로 렌더된다', () => {
+      const { container } = render(<Alert message="타입 없는 메시지" />);
+      const alertElement = container.querySelector('[role="alert"]');
+      expect(alertElement).toBeTruthy();
+      expect(alertElement?.className).toContain('alert-info');
+      expect(screen.getByText('타입 없는 메시지')).toBeTruthy();
+    });
+
+    it('미지원 type 값에도 크래시 없이 info 로 폴백한다', () => {
+      const { container } = render(
+        // 의도적으로 typeConfig 에 없는 값 주입(런타임 안전성 검증)
+        <Alert type={'banana' as never} message="잘못된 타입" />
+      );
+      const alertElement = container.querySelector('[role="alert"]');
+      expect(alertElement).toBeTruthy();
+      expect(alertElement?.className).toContain('alert-info');
     });
   });
 });

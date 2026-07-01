@@ -41,7 +41,7 @@ class BoardFactory extends Factory
             'show_view_count' => false,
             'use_report' => false,
             'use_file_upload' => false,
-            'max_file_size' => 10485760, // 10MB
+            'max_file_size' => 10, // 10MB
             'max_file_count' => 5,
             'allowed_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip'],
             'min_title_length' => 2,

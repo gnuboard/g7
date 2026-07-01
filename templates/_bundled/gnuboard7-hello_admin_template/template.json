@@ -5,7 +5,7 @@
         "ko": "Hello Admin Template",
         "en": "Hello Admin Template"
     },
-    "version": "0.1.0-beta.1",
+    "version": "0.1.0",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 학습용 최소 Admin 템플릿 스켈레톤",
@@ -20,7 +20,7 @@
         "url": "https://gnuboard.com"
     },
     "release_date": "2026-04-21",
-    "g7_version": ">=7.0.0-beta.4",
+    "g7_version": ">=7.0.0",
     "dependencies": {
         "modules": {},
         "plugins": {}
@@ -44,5 +44,13 @@
             "503": "errors/503",
             "maintenance": "errors/maintenance"
         }
-    }
+    },
+    "externals": [
+        {
+            "id": "fontawesome",
+            "type": "style",
+            "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+            "preconnect": "https://cdnjs.cloudflare.com"
+        }
+    ]
 }

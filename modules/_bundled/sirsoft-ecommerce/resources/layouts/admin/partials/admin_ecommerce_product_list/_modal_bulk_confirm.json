@@ -14,36 +14,44 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "space-y-4 max-h-96 overflow-y-auto" },
+      "props": {
+        "className": "space-y-4 max-h-96 overflow-y-auto"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "if": "{{_global.bulkConfirmData?.summary?.hasBulkChanges}}",
-          "props": { "className": "p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg" },
+          "props": {
+            "className": "p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
+          },
           "children": [
             {
               "type": "basic",
               "name": "H4",
-              "props": { "className": "font-semibold text-sm text-blue-800 dark:text-blue-200 mb-2" },
+              "props": {
+                "className": "font-semibold text-info-soft mb-2"
+              },
               "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.bulk_changes_section"
             },
             {
               "type": "basic",
               "name": "Ul",
-              "props": { "className": "space-y-1 text-sm text-blue-700 dark:text-blue-300" },
+              "props": {
+                "className": "space-y-1 text-info-soft"
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Li",
                   "if": "{{_global.bulkSalesStatus}}",
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.sales_status|value={{_global.bulkSalesStatus === 'on_sale' ? '판매중' : (_global.bulkSalesStatus === 'suspended' ? '판매중지' : '품절')}}"
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.sales_status|value={{_global.bulkSalesStatus === 'on_sale' ? '$t:sirsoft-ecommerce.enums.sales_status.on_sale' : (_global.bulkSalesStatus === 'suspended' ? '$t:sirsoft-ecommerce.enums.sales_status.suspended' : (_global.bulkSalesStatus === 'coming_soon' ? '$t:sirsoft-ecommerce.enums.sales_status.coming_soon' : '$t:sirsoft-ecommerce.enums.sales_status.sold_out'))}}"
                 },
                 {
                   "type": "basic",
                   "name": "Li",
                   "if": "{{_global.bulkDisplayStatus}}",
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.display_status|value={{_global.bulkDisplayStatus === 'visible' ? '전시' : '숨김'}}"
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.display_status|value={{_global.bulkDisplayStatus === 'visible' ? '$t:sirsoft-ecommerce.enums.display_status.visible' : '$t:sirsoft-ecommerce.enums.display_status.hidden'}}"
                 },
                 {
                   "type": "basic",
@@ -69,19 +77,28 @@
             {
               "type": "basic",
               "name": "H4",
-              "props": { "className": "font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2" },
+              "props": {
+                "className": "font-semibold text-body mb-2"
+              },
               "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.products_section|count={{_global.bulkConfirmData.products.length}}"
             },
             {
               "type": "basic",
               "name": "Ul",
-              "props": { "className": "space-y-1 text-sm text-gray-600 dark:text-gray-400" },
+              "props": {
+                "className": "space-y-1 text-label"
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Li",
-                  "iteration": { "source": "_global.bulkConfirmData.products", "item_var": "product" },
-                  "props": { "className": "flex justify-between" },
+                  "iteration": {
+                    "source": "_global.bulkConfirmData.products",
+                    "item_var": "product"
+                  },
+                  "props": {
+                    "className": "flex justify-between"
+                  },
                   "children": [
                     {
                       "type": "basic",
@@ -91,7 +108,9 @@
                     {
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-xs text-gray-500 dark:text-gray-500" },
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
+                      },
                       "text": "{{product.changes}}"
                     }
                   ]
@@ -108,19 +127,28 @@
             {
               "type": "basic",
               "name": "H4",
-              "props": { "className": "font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 mt-3" },
+              "props": {
+                "className": "font-semibold text-body mb-2 mt-3"
+              },
               "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_section|count={{_global.bulkConfirmData.options.length}}"
             },
             {
               "type": "basic",
               "name": "Ul",
-              "props": { "className": "space-y-1 text-sm text-gray-600 dark:text-gray-400 max-h-40 overflow-y-auto" },
+              "props": {
+                "className": "space-y-1 text-label max-h-40 overflow-y-auto"
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Li",
-                  "iteration": { "source": "_global.bulkConfirmData.options", "item_var": "option" },
-                  "props": { "className": "flex justify-between" },
+                  "iteration": {
+                    "source": "_global.bulkConfirmData.options",
+                    "item_var": "option"
+                  },
+                  "props": {
+                    "className": "flex justify-between"
+                  },
                   "children": [
                     {
                       "type": "basic",
@@ -130,7 +158,9 @@
                     {
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-xs text-gray-500 dark:text-gray-500" },
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
+                      },
                       "text": "{{option.changes}}"
                     }
                   ]
@@ -143,12 +173,16 @@
           "type": "basic",
           "name": "Div",
           "if": "{{(!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) && (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0)}}",
-          "props": { "className": "p-4 text-center" },
+          "props": {
+            "className": "p-4 text-center"
+          },
           "children": [
             {
               "type": "basic",
               "name": "P",
-              "props": { "className": "text-yellow-600 dark:text-yellow-400" },
+              "props": {
+                "className": "text-yellow-600 dark:text-yellow-400"
+              },
               "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.no_changes"
             }
           ]
@@ -158,7 +192,45 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex justify-end gap-2 mt-6" },
+      "if": "{{_global.bulkUpdateErrors?.length > 0}}",
+      "props": {
+        "className": "p-3 mt-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H4",
+          "props": {
+            "className": "font-semibold text-red-700 dark:text-red-300 mb-2"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.error_section"
+        },
+        {
+          "type": "basic",
+          "name": "Ul",
+          "props": {
+            "className": "space-y-1 text-sm text-red-700 dark:text-red-300 list-disc list-inside"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Li",
+              "iteration": {
+                "source": "_global.bulkUpdateErrors",
+                "item_var": "error_message"
+              },
+              "text": "{{error_message}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-2 mt-6"
+      },
       "children": [
         {
           "type": "basic",
@@ -169,7 +241,12 @@
             "disabled": "{{_global.isProcessing}}"
           },
           "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel",
-          "actions": [{ "type": "click", "handler": "closeModal" }]
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
         },
         {
           "type": "basic",
@@ -184,7 +261,10 @@
               "type": "basic",
               "name": "Icon",
               "if": "{{_global.isProcessing}}",
-              "props": { "name": "spinner", "className": "w-4 h-4 animate-spin mr-1" }
+              "props": {
+                "name": "spinner",
+                "className": "spinner-sm mr-1"
+              }
             },
             {
               "type": "basic",

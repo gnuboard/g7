@@ -43,6 +43,7 @@
     "data_sources": [
         {
             "id": "reviews",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.reviews",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/reviews",
             "method": "GET",
@@ -113,7 +114,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -161,7 +162,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-800 transition-colors",
+                                            "className": "btn-icon",
                                             "aria-label": "$t:sirsoft-ecommerce.common.refresh"
                                         },
                                         "children": [
@@ -194,7 +195,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "card mb-6"
+                            "className": "admin-card mb-6"
                         },
                         "children": [
                             {
@@ -209,7 +210,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-wrap items-center gap-3 mb-3"
+                                            "className": "flex-center flex-wrap gap-3 mb-3"
                                         },
                                         "children": [
                                             {
@@ -268,7 +269,7 @@
                                                         "props": {
                                                             "type": "text",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.product_review.search.placeholder",
-                                                            "className": "input w-full pr-10",
+                                                            "className": "input pr-10",
                                                             "value": "{{_local.filter.searchKeyword ?? ''}}"
                                                         },
                                                         "actions": [
@@ -373,7 +374,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "children": [
                                     {
@@ -592,7 +593,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "children": [
                                     {
@@ -715,7 +716,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "children": [
                                     {
@@ -838,7 +839,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3 mb-4"
+                                    "className": "flex-center flex-wrap gap-3 mb-4"
                                 },
                                 "children": [
                                     {
@@ -961,7 +962,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3"
+                                    "className": "flex-center flex-wrap gap-3"
                                 },
                                 "children": [
                                     {
@@ -976,7 +977,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-wrap items-center gap-2"
+                                            "className": "flex-center flex-wrap gap-2"
                                         },
                                         "children": [
                                             {
@@ -1222,12 +1223,12 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+                                    "className": "flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
                                 },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "flex flex-col gap-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+                                            "className": "row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
                                         }
                                     }
                                 },
@@ -1250,7 +1251,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center justify-center gap-2 flex-1"
+                                            "className": "flex-center justify-center gap-2 flex-1"
                                         },
                                         "responsive": {
                                             "portable": {
@@ -1369,14 +1370,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3"
+                            "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-between flex-wrap gap-3"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center gap-3"
+                                    "className": "flex-center flex-wrap gap-3"
                                 },
                                 "children": [
                                     {
@@ -1460,7 +1461,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex flex-wrap items-center justify-between gap-4 mb-4"
+                            "className": "flex-between flex-wrap gap-4 mb-4"
                         },
                         "children": [
                             {
@@ -1475,7 +1476,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-3"
+                                    "className": "flex-center gap-3"
                                 },
                                 "children": [
                                     {
@@ -1608,7 +1609,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center gap-2"
+                                                        "className": "flex-center gap-2"
                                                     },
                                                     "children": [
                                                         {
@@ -1856,7 +1857,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "col-span-1-lg bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+                                                                "className": "admin-card"
                                                             },
                                                             "children": [
                                                                 {
@@ -1864,7 +1865,7 @@
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+                                                                        "className": "px-4 panel-header"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -1906,7 +1907,7 @@
                                                                                     "type": "basic",
                                                                                     "name": "Div",
                                                                                     "props": {
-                                                                                        "className": "flex flex-col gap-1 min-w-0"
+                                                                                        "className": "row-stack min-w-0"
                                                                                     },
                                                                                     "children": [
                                                                                         {
@@ -2089,7 +2090,7 @@
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+                                                                        "className": "admin-card"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -2097,7 +2098,7 @@
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+                                                                                "className": "flex-between px-4 panel-header"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -2112,7 +2113,7 @@
                                                                                     "type": "basic",
                                                                                     "name": "Div",
                                                                                     "props": {
-                                                                                        "className": "flex items-center gap-2"
+                                                                                        "className": "flex-center gap-2"
                                                                                     },
                                                                                     "children": [
                                                                                         {
@@ -2157,7 +2158,7 @@
                                                                                     "name": "Div",
                                                                                     "if": "{{rowImageCount > 0}}",
                                                                                     "props": {
-                                                                                        "className": "flex items-center gap-1 mt-2 text-xs text-gray-500 dark:text-gray-400"
+                                                                                        "className": "flex items-center gap-1 mt-2 text-tertiary"
                                                                                     },
                                                                                     "children": [
                                                                                         {
@@ -2455,7 +2456,7 @@
                                                                     "name": "Div",
                                                                     "if": "{{rowHasReply}}",
                                                                     "props": {
-                                                                        "className": "bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+                                                                        "className": "admin-card"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -2463,14 +2464,14 @@
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+                                                                                "className": "flex-between px-4 panel-header"
                                                                             },
                                                                             "children": [
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Span",
                                                                                     "props": {
-                                                                                        "className": "text-gray-700 dark:text-gray-300 text-sm font-medium"
+                                                                                        "className": "text-body font-medium"
                                                                                     },
                                                                                     "text": "$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.title"
                                                                                 },
@@ -2509,7 +2510,7 @@
                                                                             "name": "Div",
                                                                             "if": "{{_local.editingReviewId !== row.id}}",
                                                                             "props": {
-                                                                                "className": "flex items-center justify-between gap-2 px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50"
+                                                                                "className": "flex-between gap-2 px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -2727,7 +2728,7 @@
                                                                     "name": "Div",
                                                                     "if": "{{!rowHasReply}}",
                                                                     "props": {
-                                                                        "className": "bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+                                                                        "className": "admin-card"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -2735,7 +2736,7 @@
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+                                                                                "className": "px-4 panel-header"
                                                                             },
                                                                             "children": [
                                                                                 {

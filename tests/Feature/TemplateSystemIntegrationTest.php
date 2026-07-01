@@ -564,9 +564,9 @@ class TemplateSystemIntegrationTest extends TestCase
             'dependencies' => $dependencies,
             'error_config' => [
                 'layouts' => [
-                    '404' => 'error_404',
-                    '403' => 'error_403',
-                    '500' => 'error_500',
+                    '404' => 'errors/error_404',
+                    '403' => 'errors/error_403',
+                    '500' => 'errors/error_500',
                 ],
             ],
         ];
@@ -631,9 +631,9 @@ class TemplateSystemIntegrationTest extends TestCase
             ],
             'error_config' => [
                 'layouts' => [
-                    '404' => 'error_404',
-                    '403' => 'error_403',
-                    '500' => 'error_500',
+                    '404' => 'errors/error_404',
+                    '403' => 'errors/error_403',
+                    '500' => 'errors/error_500',
                 ],
             ],
         ];

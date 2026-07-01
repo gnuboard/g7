@@ -5,6 +5,7 @@ namespace App\Contracts\Repositories;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 interface UserRepositoryInterface
 {
@@ -105,6 +106,29 @@ interface UserRepositoryInterface
     public function findManyByUuidsKeyed(array $uuids): Collection;
 
     /**
+     * UUID 목록으로 사용자들을 조회합니다.
+     *
+     * @param  array<int, string>  $uuids  사용자 UUID 목록
+     * @return Collection<int, User> 조회된 사용자 컬렉션
+     */
+    public function findManyByUuids(array $uuids): Collection;
+
+    /**
+     * 슈퍼관리자 1명을 조회합니다.
+     *
+     * @return User|null 슈퍼관리자 또는 없으면 null
+     */
+    public function findSuperAdmin(): ?User;
+
+    /**
+     * 특정 권한 identifier 를 가진 역할에 소속된 모든 사용자를 조회합니다.
+     *
+     * @param  string  $permissionIdentifier  권한 identifier
+     * @return Collection<int, User> 권한 보유 사용자 컬렉션
+     */
+    public function findManyByPermissionIdentifier(string $permissionIdentifier): Collection;
+
+    /**
      * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.
      *
      * `last_failed_login_at` 도 현재 시각으로 갱신하며 새 카운트를 반환합니다.
@@ -122,9 +146,9 @@ interface UserRepositoryInterface
      *
      * @param  User  $user  잠글 사용자
      * @param  int  $minutes  잠금 유지 시간(분)
-     * @return \Illuminate\Support\Carbon 잠금 해제 시각
+     * @return Carbon 잠금 해제 시각
      */
-    public function lockAccount(User $user, int $minutes): \Illuminate\Support\Carbon;
+    public function lockAccount(User $user, int $minutes): Carbon;
 
     /**
      * 사용자의 모든 로그인 시도 추적 컬럼을 초기화합니다.
@@ -133,7 +157,6 @@ interface UserRepositoryInterface
      * `locked_until=null`, `last_failed_login_at=null`).
      *
      * @param  User  $user  대상 사용자
-     * @return void
      */
     public function resetLoginAttempts(User $user): void;
 

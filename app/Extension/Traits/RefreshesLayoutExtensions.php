@@ -29,17 +29,19 @@ trait RefreshesLayoutExtensions
      * @param  ModuleInterface|PluginInterface  $extension  모듈 또는 플러그인 인스턴스
      * @param  Collection  $adminTemplates  admin 템플릿 컬렉션
      * @param  LayoutSourceType  $sourceType  소스 타입 (Module 또는 Plugin)
-     * @return array{refreshed: int, created: int, updated: int, deleted: int} 갱신 통계
+     * @param  bool  $preserveModified  관리자가 편집한 확장을 보존할지 여부 (--layout-strategy=keep)
+     * @return array{refreshed: int, created: int, updated: int, deleted: int, skipped: int} 갱신 통계
      */
     protected function refreshExtensionLayoutExtensions(
         ModuleInterface|PluginInterface $extension,
         Collection $adminTemplates,
-        LayoutSourceType $sourceType
+        LayoutSourceType $sourceType,
+        bool $preserveModified = false
     ): array {
         $extensionFiles = $extension->getLayoutExtensions();
         $identifier = $extension->getIdentifier();
         $extensionType = $sourceType === LayoutSourceType::Module ? 'module' : 'plugin';
-        $stats = ['refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0];
+        $stats = ['refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'skipped' => 0];
 
         if ($adminTemplates->isEmpty()) {
             return $stats;
@@ -79,17 +81,37 @@ trait RefreshesLayoutExtensions
             // 파일에서 읽은 확장 등록/업데이트
             foreach ($fileExtensions as $targetKey => $extensionData) {
                 try {
+                    // 대상(target_layout / extension_point)이 이 템플릿에 존재하지 않으면 등록하지 않는다.
+                    // 모든 활성 템플릿에 일괄 적용 시, admin 레이아웃 대상 확장이 user 템플릿에
+                    // (또는 그 반대로) 잘못 등록되는 것을 방지한다.
+                    if (! $this->layoutExtensionService->isExtensionApplicableToTemplate($extensionData, $template->id)) {
+                        // 과거 무차별 등록으로 잘못 생성된 행이 있으면 정리
+                        if ($this->layoutExtensionService->removeInapplicableExtension(
+                            $extensionData,
+                            $sourceType,
+                            $identifier,
+                            $template->id
+                        )) {
+                            $stats['deleted']++;
+                        }
+
+                        continue;
+                    }
+
                     $result = $this->layoutExtensionService->registerExtension(
                         $extensionData,
                         $sourceType,
                         $identifier,
-                        $template->id
+                        $template->id,
+                        $preserveModified
                     );
 
                     if ($result === 'created') {
                         $stats['created']++;
                     } elseif ($result === 'updated') {
                         $stats['updated']++;
+                    } elseif ($result === 'skipped') {
+                        $stats['skipped']++;
                     }
                     $stats['refreshed']++;
                 } catch (\Exception $e) {

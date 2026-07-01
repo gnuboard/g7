@@ -1,0 +1,339 @@
+{
+  "palette": {
+    "div": {
+      "label": "Box"
+    },
+    "container": {
+      "label": "Container",
+      "default_child_text": "Put content here"
+    },
+    "flex": {
+      "label": "Flex box"
+    },
+    "grid": {
+      "label": "Grid box"
+    },
+    "section_layout": {
+      "label": "Section layout"
+    },
+    "three_column_layout": {
+      "label": "Three-column layout"
+    },
+    "section": {
+      "label": "Section"
+    },
+    "span": {
+      "label": "Inline text",
+      "default_text": "Text"
+    },
+    "p": {
+      "label": "Paragraph",
+      "default_text": "Enter paragraph text here."
+    },
+    "h1": {
+      "label": "Heading 1",
+      "default_text": "Large heading"
+    },
+    "h2": {
+      "label": "Heading 2",
+      "default_text": "Medium heading"
+    },
+    "h3": {
+      "label": "Heading 3",
+      "default_text": "Small heading"
+    },
+    "h4": {
+      "label": "Heading 4",
+      "default_text": "Sub heading"
+    },
+    "a": {
+      "label": "Link",
+      "default_text": "Click here"
+    },
+    "button": {
+      "label": "Button",
+      "default_text": "Button"
+    },
+    "img": {
+      "label": "Image",
+      "default_alt": "Image description"
+    },
+    "icon": {
+      "label": "Icon"
+    },
+    "hr": {
+      "label": "Divider"
+    },
+    "ul": {
+      "label": "Bulleted list",
+      "default_item_text": "List item"
+    },
+    "ol": {
+      "label": "Numbered list",
+      "default_item_text": "List item"
+    },
+    "li": {
+      "label": "List item",
+      "default_text": "List item"
+    },
+    "nav": {
+      "label": "Navigation",
+      "default_item_text": "Menu"
+    },
+    "code": {
+      "label": "Inline code",
+      "default_text": "code"
+    },
+    "pre": {
+      "label": "Code block",
+      "default_text": "// code block"
+    },
+    "card": {
+      "label": "Card",
+      "default_title": "Card title",
+      "default_body": "Card body"
+    },
+    "badge": {
+      "label": "Badge",
+      "default_text": "Badge"
+    },
+    "status_badge": {
+      "label": "Status badge",
+      "default_label": "Active"
+    },
+    "alert": {
+      "label": "Alert",
+      "default_message": "Alert message"
+    },
+    "empty_state": {
+      "label": "Empty state",
+      "default_title": "Nothing to display",
+      "default_description": "Add a new item to get started."
+    },
+    "loading_spinner": {
+      "label": "Loading spinner"
+    },
+    "page_header": {
+      "label": "Page header",
+      "default_title": "Page title",
+      "default_subtitle": "Page subtitle"
+    },
+    "section_header": {
+      "label": "Section header",
+      "default_title": "Section title",
+      "default_description": "Section description"
+    },
+    "breadcrumb": {
+      "label": "Breadcrumb",
+      "default_item1_label": "Home",
+      "default_item2_label": "Current page"
+    },
+    "tab_navigation": {
+      "label": "Tabs",
+      "default_tab1_label": "Tab 1",
+      "default_tab2_label": "Tab 2"
+    },
+    "tab_navigation_scroll": {
+      "label": "Scrollable tabs",
+      "default_tab1_label": "Tab 1",
+      "default_tab2_label": "Tab 2"
+    },
+    "toggle": {
+      "label": "Toggle",
+      "default_label": "Toggle"
+    },
+    "form_field": {
+      "label": "Form field",
+      "default_label": "Field"
+    },
+    "input": {
+      "label": "Text input",
+      "default_placeholder": "Enter text here"
+    },
+    "textarea": {
+      "label": "Multi-line input",
+      "default_placeholder": "Enter multi-line text"
+    },
+    "label": {
+      "label": "Label",
+      "default_text": "Label"
+    },
+    "select": {
+      "label": "Select",
+      "default_option1_label": "Option 1",
+      "default_option2_label": "Option 2"
+    },
+    "checkbox": {
+      "label": "Checkbox",
+      "default_label": "Select"
+    },
+    "radio_group": {
+      "label": "Radio group",
+      "default_option1_label": "Option 1",
+      "default_option2_label": "Option 2"
+    },
+    "file_input": {
+      "label": "File input"
+    },
+    "file_uploader": {
+      "label": "File uploader",
+      "default_label": "Upload a file"
+    },
+    "html_content": {
+      "label": "HTML content",
+      "default_text": "HTML content area"
+    },
+    "html_editor": {
+      "label": "HTML editor",
+      "default_placeholder": "Enter content"
+    },
+    "data_grid": {
+      "label": "Data grid",
+      "default_column_id_label": "ID",
+      "default_column_name_label": "Name"
+    },
+    "card_grid": {
+      "label": "Card grid"
+    },
+    "pagination": {
+      "label": "Pagination"
+    },
+    "search_bar": {
+      "label": "Search bar",
+      "default_placeholder": "Enter search keyword"
+    },
+    "stat_card": {
+      "label": "Stat card",
+      "default_title": "Stat title"
+    },
+    "product_card": {
+      "label": "Product card",
+      "default_name": "Sample product"
+    },
+    "template_card": {
+      "label": "Template card",
+      "default_name": "Sample template",
+      "default_description": "Template description"
+    },
+    "bar_chart": {
+      "label": "Bar chart",
+      "default_label1": "A",
+      "default_label2": "B"
+    },
+    "donut_chart": {
+      "label": "Donut chart",
+      "default_label1": "A",
+      "default_label2": "B"
+    },
+    "image_gallery": {
+      "label": "Image gallery",
+      "default_alt1": "Gallery image 1",
+      "default_alt2": "Gallery image 2"
+    },
+    "group": {
+      "design": "Design",
+      "db": "Data"
+    },
+    "form": {
+      "label": "Form",
+      "default_label_text": "Label",
+      "default_submit_text": "Submit"
+    },
+    "table": {
+      "label": "Table"
+    },
+    "accordion": {
+      "label": "Accordion",
+      "default_body": "Accordion content"
+    },
+    "icon_button": {
+      "label": "Icon Button",
+      "default_label": "Action"
+    },
+    "dropdown": {
+      "label": "Dropdown",
+      "default_label": "Menu",
+      "default_item1_label": "Item 1",
+      "default_item2_label": "Item 2"
+    },
+    "action_menu": {
+      "label": "Action Menu",
+      "default_trigger_label": "Actions",
+      "default_item1_label": "Edit",
+      "default_item2_label": "Delete"
+    },
+    "tag_input": {
+      "label": "Tag Input",
+      "default_option1_label": "Option 1",
+      "default_option2_label": "Option 2",
+      "default_placeholder": "Add tags"
+    },
+    "searchable_dropdown": {
+      "label": "Searchable Dropdown",
+      "default_option1_label": "Option 1",
+      "default_option2_label": "Option 2",
+      "default_search_placeholder": "Search"
+    },
+    "rich_select": {
+      "label": "Rich Select",
+      "default_option1_label": "Option 1",
+      "default_option2_label": "Option 2",
+      "default_placeholder": "Select"
+    },
+    "tag_select": {
+      "label": "Tag Select",
+      "default_option1_label": "Option 1",
+      "default_option2_label": "Option 2",
+      "default_placeholder": "Select"
+    },
+    "icon_select": {
+      "label": "Icon Select",
+      "default_placeholder": "Select icon",
+      "default_search_placeholder": "Search icon"
+    },
+    "chip_checkbox": {
+      "label": "Chip Checkbox",
+      "default_label": "Option"
+    },
+    "multilingual_input": {
+      "label": "Multilingual Input",
+      "default_placeholder": "Enter value"
+    },
+    "multilingual_tag_input": {
+      "label": "Multilingual Tag Input",
+      "default_placeholder": "Add tags"
+    },
+    "language_selector": {
+      "label": "Language Selector"
+    },
+    "permission_tree": {
+      "label": "Permission Tree"
+    },
+    "category_tree": {
+      "label": "Category Tree",
+      "sample_node1": "Category",
+      "sample_node2": "Subcategory"
+    },
+    "extension_badge": {
+      "label": "Extension Badge",
+      "default_name": "Extension"
+    },
+    "user_profile": {
+      "label": "User Profile",
+      "default_name": "User"
+    },
+    "filter_group": {
+      "label": "Filter Group",
+      "default_title": "Filters"
+    },
+    "sortable_menu_list": {
+      "label": "Sortable Menu List",
+      "sample_item1": "Menu Item 1",
+      "sample_item2": "Menu Item 2"
+    },
+    "dynamic_field_list": {
+      "label": "Dynamic Field List",
+      "default_add_label": "Add item"
+    }
+  }
+}

@@ -18,12 +18,15 @@ return [
         'bulk_toggle_active' => '일괄 활성 상태 변경',
         'bulk_update' => '일괄 수정',
         'cancel' => '취소',
+        'change' => '변경',
         'change_option' => '옵션 변경',
         'confirm' => '구매 확정',
         'copy' => '복사',
         'create' => '생성',
         'delete' => '삭제',
         'delete_all' => '전체 삭제',
+        'direct_issue' => '직접 발급',
+        'issue_cancel' => '발급 취소',
         'download' => '다운로드',
         'earn' => '적립',
         'partial_cancel' => '부분 취소',
@@ -31,6 +34,7 @@ return [
         'payment_failed' => '결제 실패',
         'remove' => '제거',
         'reorder' => '순서 변경',
+        'reset_guest_password' => '비회원 조회 비밀번호 재설정',
         'restore' => '복원',
         'send_email' => '이메일 발송',
         'set_default' => '기본값 설정',
@@ -43,6 +47,12 @@ return [
         'update_shipping_address' => '배송지 변경',
         'upload' => '업로드',
         'use' => '사용',
+        'expire' => '소멸',
+        'earn_cancel' => '적립 회수',
+        'admin_earn' => '관리자 지급',
+        'admin_deduct' => '관리자 차감',
+        'extend_expiry' => '유효기간 연장',
+        'adjust' => '적립건 수정',
     ],
 
     'description' => [
@@ -73,6 +83,7 @@ return [
         'order_bulk_shipping_update' => '운송장 일괄 입력 (:count건)',
         'order_update_shipping_address' => '배송지 변경 (:order_number)',
         'order_send_email' => '주문 이메일 발송 (:order_number)',
+        'order_reset_guest_password' => '비회원 조회 비밀번호 재설정 (:order_number)',
         'order_option_status_change' => '주문 옵션 상태 변경 (주문: :order_number)',
         'order_option_bulk_status_change' => '주문 옵션 일괄 상태 변경 (:count건)',
 
@@ -83,6 +94,8 @@ return [
         'coupon_update' => '쿠폰 수정 (:coupon_name)',
         'coupon_delete' => '쿠폰 삭제 (:coupon_name)',
         'coupon_bulk_status' => '쿠폰 일괄 상태 변경 (:count건)',
+        'coupon_direct_issue' => '쿠폰 직접 발급 (:coupon_name → 회원 #:user_id)',
+        'coupon_issue_cancel' => '쿠폰 발급 취소 (:coupon_name → 회원 #:user_id)',
 
         // 배송정책 관리 (Admin)
         'shipping_policy_index' => '배송정책 목록 조회',
@@ -112,6 +125,8 @@ return [
         'category_toggle_status' => '카테고리 상태 전환 (:category_name)',
 
         // 브랜드 관리 (Admin)
+        'user_currency_change' => '회원 결제 통화 변경',
+        'user_shipping_country_change' => '회원 배송국가 변경',
         'brand_index' => '브랜드 목록 조회',
         'brand_show' => '브랜드 상세 조회 (:brand_name)',
         'brand_create' => '브랜드 생성 (:brand_name)',
@@ -138,6 +153,7 @@ return [
         'product_notice_template_update' => '상품 고시정보 템플릿 수정 (:template_name)',
         'product_notice_template_delete' => '상품 고시정보 템플릿 삭제 (:template_name)',
         'product_notice_template_copy' => '상품 고시정보 템플릿 복제 (:template_name)',
+        'product_notice_template_toggle_active' => '상품 고시정보 템플릿 활성 상태 변경 (:template_name)',
 
         // 추가비용 템플릿 (Admin)
         'extra_fee_template_index' => '추가비용 템플릿 목록 조회',
@@ -176,6 +192,7 @@ return [
 
         // 이커머스 설정
         'ecommerce_settings_index' => '이커머스 설정 조회',
+        'ecommerce_settings_update' => '이커머스 설정 저장 (:categories)',
 
         // 결제 (Admin)
         'payment_refund' => '결제 환불 (주문: :order_number)',
@@ -196,6 +213,12 @@ return [
         'mileage_earn' => '마일리지 적립 (:amount원)',
         'mileage_use' => '마일리지 사용 (:amount원)',
         'mileage_restore' => '마일리지 복원 (:amount원)',
+        'mileage_expire' => '마일리지 소멸 (:amount원)',
+        'mileage_earn_cancel' => '마일리지 적립 회수 (:amount원)',
+        'mileage_admin_earn' => '관리자 마일리지 지급 (:amount원)',
+        'mileage_admin_deduct' => '관리자 마일리지 차감 (:amount원)',
+        'mileage_extend_expiry' => '마일리지 유효기간 연장 (:days일)',
+        'mileage_adjust' => '마일리지 적립건 수정 (:amount원)',
     ],
 
     // ChangeDetector 필드 라벨
@@ -284,6 +307,7 @@ return [
         'address' => '주소',
         'address_detail' => '상세 주소',
         'delivery_memo' => '배송 메모',
+        'delivery_memo_label' => '배송 메모 라벨',
 
         // ProductOption
         'option_name' => '옵션명',

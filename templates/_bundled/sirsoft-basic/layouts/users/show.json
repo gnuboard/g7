@@ -20,6 +20,7 @@
   "data_sources": [
     {
       "id": "profile",
+      "label_key": "$t:editor.data_source.profile",
       "type": "api",
       "endpoint": "/api/users/{{route.userId}}/profile",
       "method": "GET",
@@ -38,6 +39,7 @@
     },
     {
       "id": "postStats",
+      "label_key": "$t:editor.data_source.postStats",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/users/{{route.userId}}/posts/stats",
       "method": "GET",
@@ -47,6 +49,7 @@
     },
     {
       "id": "recentPosts",
+      "label_key": "$t:editor.data_source.recentPosts",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/users/{{route.userId}}/posts",
       "method": "GET",

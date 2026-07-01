@@ -1,0 +1,27 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
+#   기본언어 필드 제거 axis 는 PHPUnit(StoreEcommerceSettingsRequest)·Vitest(레이아웃 필드 부재)가
+#   커버하며 green 이다.
+feature: 기본 언어 필드 제거 — 코어 일원화 (A1·D-LANG)
+
+description: |
+  "언어·통화" 화면에서 기본 언어 필드를 제거하고 사이트 언어는 코어 일반설정으로 일원화한다.
+  모듈 default_language 는 읽는 코드 0(orphan). 검증 규칙·defaults 키·레이아웃 필드 제거.
+
+axes:
+  request:
+    - default_language_sent      # default_language 전달
+    - default_language_absent    # 미전달
+  currency_save:
+    - normal                     # 통화 저장 정상
+
+effects:
+  - default_language_rule_removed              # default_language 검증 규칙 부재(validated 떨굼)
+  - default_language_ignored_when_sent         # 전달 시 무시(validated 미포함)
+  - currency_save_still_works                  # 통화 저장 정상(회귀 0)
+  - language_field_absent_in_layout            # _tab_language_currency.json 기본언어 필드 부재
+  - defaults_no_default_language_key           # defaults.json default_language 키 부재
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Requests/StoreEcommerceSettingsRequestLanguageTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/languageCurrencyTab.test.tsx

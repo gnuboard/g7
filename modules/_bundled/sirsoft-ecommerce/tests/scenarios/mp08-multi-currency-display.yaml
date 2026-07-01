@@ -1,0 +1,66 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 통화 표시 환산의 백엔드 axis 조합은 PHPUnit(HasMultiCurrencyPrices/
+#   ProductOptionResource), 셀렉터·가격 바인딩은 Vitest 레이아웃/핸들러, 드롭다운 전환은
+#   Playwright E2E 가 커버하며 모두 green 이다.
+feature: 다통화 표시 환산 + 셀렉터 노출 + JPY 포맷 (A1·U11·U4③)
+
+description: |
+  관리자가 설정한 통화 목록을 헤더 셀렉터에 노출하고, 선택 통화로 상품/장바구니/주문서/쿠폰
+  가격을 환산 표시한다. 환율 미설정 통화는 셀렉터에서 숨기고, JPY 는 소수점 0자리로 표시한다.
+
+  핵심 동작:
+    - A1: availableCurrencies/defaultCurrency 를 _global 에 주입(코어 _global.modules 재사용).
+      셀렉터가 통화 목록(code+symbol+flag) 노출, X-Currency 헤더 동반 요청, 기본화폐 프론트 반영.
+    - U11-B: is_default || exchange_rate>0 인 통화만 셀렉터 노출(미설정 환율 통화 숨김).
+    - U4③: JPY decimal_places=0 으로 소수점 없이 표시(설정값 그대로 number_format).
+
+axes:
+  base_currency:
+    - KRW
+    - USD
+  selected_currency:
+    - KRW
+    - USD
+    - JPY
+    - CNY
+    - EUR
+  exchange_rate:
+    - configured       # exchange_rate > 0
+    - unset            # exchange_rate 0/null
+  surface:
+    - product_detail
+    - cart
+    - checkout
+    - coupon
+  verify_layer:
+    - api              # Resource 응답 multi_currency_* 키
+    - layout           # Vitest 렌더 환산 표시
+    - e2e              # Playwright 드롭다운 전환 + X-Currency 헤더
+
+effects:
+  # A1 셀렉터 노출 (Vitest 레이아웃)
+  - selector_renders_available_currencies       # availableCurrencies 주입 시 통화 N개 렌더
+  - selector_empty_when_not_injected            # 미주입 시 빈 목록
+  - selector_shows_code_symbol_flag             # 각 항목 code+symbol+flag
+  - selector_change_updates_preferred_currency  # 선택 시 _global.preferredCurrency 갱신
+  # U11-B 미설정 통화 숨김 (Vitest + PHPUnit)
+  - selector_hides_unset_exchange_rate_currency # exchange_rate 0/null 통화 셀렉터 부재
+  - default_currency_always_in_selector         # is_default 통화는 항상 노출
+  # 표시 환산 (Vitest + PHPUnit)
+  - price_converts_on_currency_switch           # preferredCurrency 전환 시 multi_currency_*.[code].formatted 전환
+  - fallback_to_default_formatted_when_missing  # 키 부재 시 *_formatted 폴백(안전망)
+  # JPY 포맷 (PHPUnit)
+  - jpy_format_zero_decimal_places              # JPY decimal_places=0 → 소수점 없음
+  # X-Currency 헤더 (Playwright)
+  - x_currency_header_sent_on_module_requests   # /api/modules/sirsoft-ecommerce/* 요청에 X-Currency 동반
+  # 기본화폐 프론트 반영 (Vitest + Playwright)
+  - default_currency_used_for_new_visitor       # localStorage 빈 신규 방문자가 default_currency 수신
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsServiceCurrencyMergeTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CurrencyConversionServiceTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/currencySelector.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/listPriceDisplay.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/mp08-currency-switch.spec.ts

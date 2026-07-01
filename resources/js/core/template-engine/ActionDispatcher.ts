@@ -201,6 +201,34 @@ export interface ActionDefinition {
    * - 'optional': 토큰이 있으면 포함, 없으면 미포함
    */
   auth_mode?: 'none' | 'required' | 'optional';
+  /**
+   * 본인인증(IDV) 대상 — apiCall 핸들러 전용 선언적 메타 속성.
+   *
+   * 이 apiCall 이 HTTP 428(identity_verification_required)을 받으면, IdentityGuardInterceptor 가
+   * 인증 challenge 를 시작할 때 사용할 인증 대상(이메일·전화번호)을 흐름이 직접 선언한다.
+   * 비로그인(게스트) 흐름에서 서버는 사용자가 방금 화면에 입력한 값을 알 수 없으므로,
+   * 레이아웃이 이 속성에 표현식으로 대상을 명시하면 launcher 가 흐름 무지식으로 그 값을 받는다.
+   * 로그인 사용자는 서버가 세션에서 자동 도출하므로 빈 값이어도 무방하다.
+   *
+   * email / phone 둘 중 하나만 있어도 충분하며, 우선순위는 표현식 자체가 결정한다
+   * (예: 주문자 정보 우선 → 수취인 정보 폴백).
+   *
+   * @example
+   * ```json
+   * {
+   *   "handler": "apiCall",
+   *   "target": "/api/.../orders",
+   *   "identity_target": {
+   *     "email": "{{_local.orderer?.email || ''}}",
+   *     "phone": "{{_local.orderer?.phone || _local.shipping?.recipient_phone || ''}}"
+   *   },
+   *   "params": { "method": "POST", "body": { } }
+   * }
+   * ```
+   *
+   * @since engine-v1.50.0
+   */
+  identity_target?: { email?: string; phone?: string };
   /** 조건부 실행 - 표현식이 true일 때만 액션 실행 */
   if?: string;
   /**
@@ -1666,18 +1694,34 @@ export class ActionDispatcher {
 
         // 결과를 _local._eventResult에 저장하여 후속 액션에서 접근 가능하게 함
         if (this.globalStateUpdater) {
-          const currentState = G7Core?.state?.get() || {};
+          const currentGlobalLocal = (G7Core?.state?.get() || {})._local || {};
+          const eventResult = {
+            event: eventName,
+            success: true,
+            data: results.length === 1 ? results[0] : results,
+            listeners: results.length,
+          };
+          // 글로벌 _local 갱신 (기존 동작 유지: 글로벌 _local 기준 머지)
           this.globalStateUpdater({
-            _local: {
-              ...currentState._local,
-              _eventResult: {
-                event: eventName,
-                success: true,
-                data: results.length === 1 ? results[0] : results,
-                listeners: results.length,
-              },
-            },
+            _local: { ...currentGlobalLocal, _eventResult: eventResult },
           });
+
+          // engine-v1.50.0: sequence 내 emitEvent 결과를 후속 액션이 참조할 수 있도록
+          // __g7SequenceLocalSync 에 병합 스냅샷을 실는다.
+          // 배경: handleSequence 의 currentState 는 setState 핸들러와 setLocal() 이 설정한
+          // __g7SequenceLocalSync 로만 갱신된다(트러블슈팅 사례 24). emitEvent 는 globalStateUpdater
+          // 로만 _local 을 갱신했기에 같은 sequence 의 다음 액션(apiCall body / setState)이
+          // _eventResult 와 리스너가 갱신한 _local(예: form.images)을 보지 못했다.
+          // (FileUploader onUploadComplete 가 업로드 직후 form.images 를 갱신해도 저장 PUT body 의
+          //  _local.form 스냅샷에 미반영 → 백엔드 syncImages 가 방금 올린 이미지를 삭제하는 회귀.)
+          //
+          // base 는 시퀀스가 추적 중인 _local(context.state) 우선 — sequence 내 in-flight
+          // setState 변경(예: isSaving)을 보존한다. 시퀀스 밖(standalone emitEvent)에서는
+          // context.state 가 없거나 부분적일 수 있어 글로벌 _local 로 폴백한다.
+          const syncBase = (context.state && typeof context.state === 'object' && !Array.isArray(context.state))
+            ? context.state
+            : currentGlobalLocal;
+          (window as any).__g7SequenceLocalSync = { ...syncBase, _eventResult: eventResult };
         }
       } catch (error) {
         logger.error(`emitEvent: Event "${eventName}" failed`, error);
@@ -2122,6 +2166,19 @@ export class ActionDispatcher {
     // actionRef 해석 - named_actions 참조를 실제 액션 정의로 변환
     action = this.resolveActionRef(action);
 
+    // 동적 핸들러 이름 해석 — handler 가 `{{...}}` 바인딩이면 컨텍스트로 먼저 해석한다.
+    // 백엔드 응답이 호출할 핸들러 풀네임을 내려주는 provider-agnostic 디스패치
+    // (예: 결제 진입 `handler: "{{response.data.pg_payment_handler}}"`)를 지원한다.
+    // 빌트인 26종은 camelCase 리터럴이라 `{{` 미포함 → 해석 분기 미진입(무영향).
+    // resolveActionRef 직후·프리뷰 억제 체크·switch 보다 앞에 두어 (1) 빌트인 라우팅이
+    // 해석된 이름으로 매칭되고 (2) PREVIEW_SUPPRESSED_HANDLERS 판정도 해석된 이름으로
+    // 이뤄지게 한다(편집기 프리뷰 정합). nested(conditions/sequence)도 동일 executeAction
+    // 경유라 자동 적용. @since engine-v1.50.0
+    if (typeof action.handler === 'string' && action.handler.includes('{{')) {
+      const resolvedHandler = this.evaluateExpression(action.handler, context.data);
+      action = { ...action, handler: resolvedHandler == null ? '' : String(resolvedHandler) };
+    }
+
     // DevTools 액션 로깅 시작
     const devTools = getDevTools();
     const devToolsActionId = devTools?.isEnabled() ? `action_${Date.now()}_${Math.random().toString(36).substring(2, 11)}` : undefined;
@@ -2299,11 +2356,19 @@ export class ActionDispatcher {
 
           // auth_mode 우선, auth_required는 하위 호환
           const authMode = action.auth_mode ?? (action.auth_required ? 'required' : 'none');
+          // identity_target: IDV 428 인터셉트 시 사용할 인증 대상(이메일·전화). 표현식 평가 후 전달.
+          const resolvedIdentityTarget = action.identity_target
+            ? (this.resolveParams(action.identity_target, context.data) as {
+                email?: string;
+                phone?: string;
+              })
+            : undefined;
           result = await this.handleApiCall(
             resolvedTarget!,
             resolvedParams,
             context,
-            authMode
+            authMode,
+            resolvedIdentityTarget
           );
           break;
 
@@ -2539,6 +2604,9 @@ export class ActionDispatcher {
         errors: responseData.errors || apiResponse.errors,
         data: responseData,
         statusText: (actionError.originalError as any)?.statusText,
+        // API 응답의 error_code (예: 428 'identity_verification_required') 를 노출 —
+        // 코어 toast 핸들러가 IDV 가드 토스트를 코드로 식별해 중복 억제하는 데 사용.
+        error_code: responseData.error_code ?? apiResponse.error_code,
       };
 
       // 에러 핸들링 우선순위:
@@ -2814,11 +2882,15 @@ export class ActionDispatcher {
     finalPath: string,
     _originalParams: Record<string, any>
   ): { handler: string; params: Record<string, any> } {
-    // 기본값: openWindow
+    // 기본값: openWindow with target '_self' — 같은 탭에서 이동.
+    // 이전 기본값(`'_blank'`)은 admin↔user 교차 이동 시 새 탭이 열려 사용자 흐름이
+    // 끊기는 결함을 유발. 명시적으로 새 탭이
+    // 필요한 호출처는 `params.fallback: { handler: 'openWindow', params: { target: '_blank' } }`
+    // 로 지정.
     if (fallbackOption == null) {
       return {
         handler: 'openWindow',
-        params: { path: finalPath, target: '_blank' },
+        params: { path: finalPath, target: '_self' },
       };
     }
 
@@ -3079,10 +3151,17 @@ export class ActionDispatcher {
   /**
    * openWindow 액션을 처리합니다.
    *
-   * 새 브라우저 창(탭)으로 지정된 경로를 엽니다.
+   * 지정된 경로로 이동합니다. `params.target` 으로 창 동작을 제어:
+   * - `'_blank'`(기본): 새 탭/창 열기 (`window.open(path, '_blank')`)
+   * - `'_self'`: 같은 탭에서 이동 (`window.location.assign(path)`)
    *
-   * @param target 열 경로
-   * @param params 파라미터 (query 등)
+   * navigate fallback 으로 호출되는 경우(현재 템플릿 라우트에 없는 경로 →
+   * openWindow) 기본값이 `_blank` 라 의도치 않게 새 탭이 열리는 결함이 있다.
+   * fallback 호출 측에서 `params.target: '_self'` 를 명시하거나, 사용자 액션
+   * 정의에서 같은 탭 이동을 원하면 `target: '_self'` 명시.
+   *
+   * @param target 열 경로 (action target)
+   * @param params 파라미터 (query, target 등)
    */
   private async handleOpenWindow(
     target: string,
@@ -3104,9 +3183,14 @@ export class ActionDispatcher {
       }
     }
 
-    logger.log('handleOpenWindow:', { target, params, finalPath });
+    const windowTarget = params.target === '_self' ? '_self' : '_blank';
+    logger.log('handleOpenWindow:', { target, params, finalPath, windowTarget });
 
-    window.open(finalPath, '_blank');
+    if (windowTarget === '_self') {
+      window.location.assign(finalPath);
+    } else {
+      window.open(finalPath, '_blank');
+    }
   }
 
   /**
@@ -3297,24 +3381,34 @@ export class ActionDispatcher {
    * 현 버전은 POST /api/identity/challenges 로 즉시 challenge 를 시작하고,
    * IdentityGuardInterceptor.handle 과 동일한 launcher 플로우를 재사용합니다.
    *
-   * @param params 액션 파라미터 (purpose 필수)
+   * @param params 액션 파라미터 (purpose 필수, target 선택 — 비로그인 흐름의 인증 대상)
    * @returns 사용자가 verify 에 성공하면 true, 취소 시 false
    */
   private async handleEnsureIdentityVerified(params: Record<string, any>): Promise<boolean> {
     const purpose = typeof params.purpose === 'string' ? params.purpose : 'sensitive_action';
 
-    const verified = await IdentityGuardInterceptor.handle({
-      success: false,
-      error_code: 'identity_verification_required',
-      message: '',
-      verification: {
-        policy_key: (params.policy_key as string) ?? '',
-        purpose,
-        provider_id: (params.provider_id as string) ?? null,
-        render_hint: (params.render_hint as string) ?? null,
-        return_request: null, // pre-emptive 호출은 재실행할 원 요청 없음
+    // params.target: 선제 가드 호출에서 흐름이 직접 인증 대상을 선언 (apiCall 의 identity_target 과 동일 채널).
+    const target =
+      params.target && typeof params.target === 'object'
+        ? (params.target as { email?: string; phone?: string })
+        : undefined;
+
+    const verified = await IdentityGuardInterceptor.handle(
+      {
+        success: false,
+        error_code: 'identity_verification_required',
+        message: '',
+        verification: {
+          policy_key: (params.policy_key as string) ?? '',
+          purpose,
+          provider_id: (params.provider_id as string) ?? null,
+          render_hint: (params.render_hint as string) ?? null,
+          return_request: null, // pre-emptive 호출은 재실행할 원 요청 없음
+        },
       },
-    });
+      undefined,
+      target
+    );
 
     return verified !== null;
   }
@@ -3408,12 +3502,14 @@ export class ActionDispatcher {
    * @param params 요청 파라미터
    * @param context 액션 컨텍스트
    * @param authMode 인증 모드 ('none' | 'required' | 'optional')
+   * @param identityTarget IDV 428 인터셉트 시 challenge 에 사용할 인증 대상 (이메일·전화)
    */
   private async handleApiCall(
     target: string,
     params: Record<string, any>,
     _context: ActionContext,
-    authMode: 'none' | 'required' | 'optional' = 'none'
+    authMode: 'none' | 'required' | 'optional' = 'none',
+    identityTarget?: { email?: string; phone?: string }
   ): Promise<any> {
     const { method = 'GET', body, headers, contentType } = params;
 
@@ -3532,11 +3628,15 @@ export class ActionDispatcher {
       if (IdentityGuardInterceptor.isIdentityRequired(response.status, responseData)) {
         // retry fetch 가 원 요청의 body/headers/credentials 를 그대로 재사용해야 백엔드가
         // 빈 body 로 422 를 던지지 않음 (회원가입 등 모든 POST 흐름의 핵심 회귀 방지)
-        const replayed = await IdentityGuardInterceptor.handle(responseData, {
-          body: options.body,
-          headers: options.headers,
-          credentials: options.credentials,
-        });
+        const replayed = await IdentityGuardInterceptor.handle(
+          responseData,
+          {
+            body: options.body,
+            headers: options.headers,
+            credentials: options.credentials,
+          },
+          identityTarget
+        );
         if (replayed) {
           response = replayed;
           try {
@@ -3898,6 +3998,39 @@ export class ActionDispatcher {
         const { __mergeMode: _pmm, __setStateId: _pssid, ...pendingExpected } = fullMergedState as any;
         (window as any).__g7PendingLocalState = pendingExpected;
         logger.log('[handleSetState] __g7PendingLocalState updated:', pendingExpected);
+
+        // engine-v1.50.0: 컴포넌트 setState(target:"_local")를 canonical source(_global._local)에도 동기화.
+        //
+        // 배경: 이 COMPONENT path 는 context.setState(저장소 A: React localDynamicState)만 갱신하고
+        // _global._local(저장소 B)은 갱신하지 않았다. Form 자동바인딩은 이미 양쪽을 동기화하지만
+        // (DynamicRenderer.performStateUpdate → setLocal render:false), 명시적 setState target:"_local"
+        // (필터 라디오/체크박스 등)은 B를 갱신하지 않아 비대칭이 있었다. 그 결과:
+        //   - 사용자가 필터 선택 → A만 갱신, B 는 init_actions 기본값 잔존
+        //   - 검색(navigate replace:true) → updateQueryParams refetch → updateTemplateData 가
+        //     currentDataContext._local 을 stale B(_global._local)로 되돌림 → 선택한 필터가 풀림
+        //   - 새로고침은 handleRouteChange 가 query 기반으로 B 를 재구성하므로 정상
+        // GLOBAL STATE UPDATER path(아래 else if)는 이미 globalStateUpdater 로 B 를 갱신하므로,
+        // COMPONENT path 도 동일하게 맞춰 일관성을 확보한다.
+        //
+        // render: false 로 호출하여 추가 React 렌더를 유발하지 않는다 (값만 저장, setGlobalState 라인 ~3211).
+        // context.setState 가 이미 저장소 A 렌더 1회를 트리거하므로 클릭당 렌더 횟수는 변하지 않는다.
+        // scope: 'parent' | 'root' 및 isolated 타깃은 이 분기(scope:'current', isRealComponentContext)에
+        // 도달하기 전에 별도 처리되므로 모달 컨텍스트 오염(트러블슈팅 사례 29)에 영향이 없다.
+        //
+        // [안전성 의존 관계 — 엔진 수정 시 함께 검토할 것]
+        // pendingExpected 의 base 는 currentState = (__g7PendingLocalState ?? context.state) 다.
+        // 이 동기화는 B(_global._local)를 patch 머지가 아니라 통째 교체한다(setGlobalState 가 _local 키를 얕은 병합).
+        // setLocal(G7CoreGlobals)이 fresh globalLocal 을 baseline 으로 addMissingLeafKeys 보호를 쓰는 것과 달리,
+        // 여기서는 그 보호가 없으므로 currentState 가 정합한 _local 전체여야 손실이 없다.
+        // 이 정합성은 DynamicRenderer 의 _localInit pending 사전설정 useLayoutEffect(engine-v1.27.0/v1.49.2)에 의존한다:
+        // context.state(=extendedDataContext._local)가 stale dynamicState overlay 로 오염될 수 있는 구간
+        // (_localInit 미반영 시점)에 __g7PendingLocalState 를 fresh B baseline 으로 미리 채워두므로,
+        // currentState 가 pending(정상)을 우선 사용하여 stale context.state 를 건너뛴다.
+        // 그 사전설정 경로를 변경/제거하면 사례 13/22(stale 배열의 globalLocal 통째 교체 오염) 재발 가능성을 함께 점검해야 한다.
+        if (this.globalStateUpdater) {
+          this.globalStateUpdater({ _local: pendingExpected }, { render: false });
+          logger.log('[handleSetState] _global._local synced (render:false):', pendingExpected);
+        }
 
         // engine-v1.17.5: dataKey 자동 바인딩이 있는 컴포넌트에서 setState 핸들러 호출 시
         // dynamicState(Form 자동 바인딩)가 stale 값을 가질 수 있음
@@ -4689,6 +4822,26 @@ export class ActionDispatcher {
     context: ActionContext
   ): Promise<void> {
     const { type = 'info', message, icon, duration } = params;
+
+    // [IDV 가드 토스트 중복 억제]
+    // 본인확인은 성공했으나 부가 목적(성인인증 등)을 충족하지 못해 challenge 가 실패로 끝나면,
+    // provider 가 "성인 인증이 필요합니다" 같은 고유 사유를 이미 토스트로 표출한다. 그 직후
+    // 원 요청의 onError 가 generic IDV 가드 토스트("본인 확인이 필요합니다")를 중복 발화하는데,
+    // 이 토스트가 (1) error 타입이고 (2) 원인이 IDV 가드 응답(error_code) 이며
+    // (3) provider 가 도메인 안내 표출 신호를 남긴 경우 1회 skip 한다.
+    // 일반 본인인증 실패(본인확인 자체 실패/취소)는 신호가 없어 그대로 표출된다.
+    if (type === 'error') {
+      const errorCtx = (context.data as Record<string, any> | undefined)?.error as
+        | { error_code?: string; data?: { error_code?: string } }
+        | undefined;
+      const isIdentityGuardError =
+        errorCtx?.error_code === 'identity_verification_required' ||
+        errorCtx?.data?.error_code === 'identity_verification_required';
+      if (isIdentityGuardError && IdentityGuardInterceptor.consumeDomainNoticeShown()) {
+        logger.log('[Toast] IDV 도메인 안내 표출됨 — 중복 가드 토스트 1건 skip');
+        return;
+      }
+    }
 
     let resolvedMessage = message;
 
@@ -5775,6 +5928,20 @@ export class ActionDispatcher {
   }
 
   /**
+   * IME(한글/일본어/중국어) 조합 중인 keydown 인지 판정합니다.
+   *
+   * 조합 중 Enter 등은 액션 키 필터 매칭에서 제외해야 글자누락/이중제출이 방지됩니다.
+   * isComposing 미지원/false 환경을 위해 legacy keyCode 229 도 함께 검사합니다.
+   *
+   * @since engine-v1.50.0
+   * @param e 판정할 키보드 이벤트
+   * @returns 조합 중이면 true
+   */
+  private isImeComposing(e: { isComposing?: boolean; keyCode?: number }): boolean {
+    return e?.isComposing === true || e?.keyCode === 229;
+  }
+
+  /**
    * 임베드용 레이어(오버레이) 요소를 생성합니다.
    *
    * @param additionalClassName 추가 CSS 클래스
@@ -5855,6 +6022,8 @@ export class ActionDispatcher {
 
     // ESC 키로 닫기
     const handleKeydown = (e: KeyboardEvent) => {
+      // IME 조합 중 ESC keydown 제외 — 공개#54 일관성
+      if (this.isImeComposing(e)) return;
       if (e.key === 'Escape') {
         closeLayer();
         document.removeEventListener('keydown', handleKeydown);
@@ -6009,6 +6178,20 @@ export class ActionDispatcher {
     const handler = this.customHandlers.get(action.handler);
 
     if (!handler) {
+      // 프리뷰 모드에서는 미등록 핸들러를 throw 하지 않고 silent skip.
+      // 편집기 캔버스에는 ckeditor5 등 플러그인 핸들러가 등록되지 않은 격리
+      // ActionDispatcher 인스턴스가 사용되므로, lifecycle onMount 단계에서
+      // 미등록 핸들러가 호출되면 errorHandling.onError → setState(500) →
+      // ErrorBoundary 트리거 → 캔버스 unmount 로 이어진다. 프리뷰 모드에서는
+      // 외부 효과를 건너뛰는 것이 의도된 동작이므로 warn 후 undefined 반환.
+      // @since engine-v1.50.0
+      if (this.previewMode) {
+        logger.warn(
+          `[Preview] Unknown action handler "${action.handler}" — skipped (preview mode)`,
+        );
+        return undefined;
+      }
+
       throw new ActionError(
         `Unknown action handler: ${action.handler}`,
         action
@@ -6433,6 +6616,23 @@ export class ActionDispatcher {
     return Array.from(this.customHandlers.keys());
   }
 
+  /**
+   * 특정 이름의 커스텀 핸들러 함수를 반환합니다 (격리 dispatcher 복제용).
+   *
+   * 편집기 캔버스의 격리 dispatcher 가 호스트의 활성 플러그인 핸들러(예:
+   * `sirsoft-ckeditor5.initEditor`)를 복제 등록해 위지윅 에디터 등 플러그인
+   * 제공 UI 가 캔버스에 정상 마운트되도록 한다. 핸들러 함수 자체는 호스트와
+   * 동일하지만 격리 dispatcher 의 컨텍스트(격리 store/dispatcher)에서 실행되므로
+   * 호스트 globalState 누수가 없다.
+   *
+   * @param name 핸들러 이름
+   * @returns 등록된 핸들러 함수 또는 undefined (미등록)
+   * @since engine-v1.50.0
+   */
+  getHandler(name: string): ActionHandler | undefined {
+    return this.customHandlers.get(name);
+  }
+
   // ============================================================================
   // Debounce 유틸리티 메서드
   // ============================================================================
@@ -6845,6 +7045,11 @@ export class ActionDispatcher {
 
             // 키보드 이벤트에서 key 필터링
             if (isStandardEvent && action.key && 'key' in firstArg) {
+              // IME 조합 중 keydown 은 매칭에서 제외 (글자누락/이중제출 방지) — 공개#54
+              if (this.isImeComposing(firstArg as { isComposing?: boolean; keyCode?: number })) {
+                logger.log('Key filter skipped (IME composing):', action.key);
+                continue;
+              }
               if (firstArg.key !== action.key) {
                 logger.log('Key filter not matched:', action.key, 'actual:', firstArg.key);
                 continue; // 키가 일치하지 않으면 이 액션 건너뛰기

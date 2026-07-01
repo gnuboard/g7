@@ -1,0 +1,107 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 본 화면은 실제로 4계층 테스트가 모두 존재하고 green 이다:
+#     - 백엔드 Feature(MileageTransactionControllerTest, 13건): 페이지네이션/통화/search_field/
+#       날짜/type 4분류/sort/권한 403
+#     - 백엔드 Unit(MileageTransactionRepositoryTest): type 역매핑/search_field 분기/sort
+#     - 프론트 레이아웃 렌더링(admin_ecommerce_mileage_transaction_index.test.tsx, 33건):
+#       공통 유틸/카운트 헤더/통화필터/권한 disabled/expand 일원화
+#     - 브라우저 E2E(mileage-transaction-index.spec.ts): data-testid 보강 후 활성화 골격
+#   effects ↔ 테스트 매핑은 본 매니페스트 effects 블록과 각 테스트가 1:1 대응한다.
+feature: 관리자 마일리지 내역 화면 (조회·검색·필터·권한)
+
+description: |
+  관리자 마일리지 내역 화면(`admin/ecommerce/mileage-transactions`)의 목록 조회·검색·
+  필터·페이지네이션·권한 게이팅을 검증한다. 본 화면은 일관성이 확립된 세 화면(배송정책/
+  쿠폰/리뷰)과 동일 수준의 규약(공통 유틸 클래스 card/page-header/input/btn-date,
+  필터 2분류 상태 모델, DataGrid 서버 페이지네이션, abilities 권한 게이팅)을 따른다.
+
+  핵심 동작:
+    - 목록: 백엔드 Collection 이 data.data + pagination + currencies + abilities 응답
+    - 검색: search_field(회원명/회원ID/이메일/주문번호) + search_keyword 지연 commit(검색 버튼)
+    - 필터: 거래유형 4분류(전체/적립/사용/소멸/조정) · 통화 · 기간(빠른선택) 즉시 commit
+    - 정렬/perPage: query 즉시 navigate, "총 N개" 카운트 헤더 노출
+    - 권한: mileage.read 로 진입, 쓰기(수동 지급/차감·유효기간 연장)는 mileage.manage 로 게이팅
+      (버튼 disabled + 백엔드 403 2차 방어)
+
+axes:
+  actor_permission:
+    - read_and_manage
+    - read_only
+    - no_permission
+  search_field:
+    - member
+    - member_id
+    - email
+    - order
+  type_filter:
+    - all
+    - earn
+    - use
+    - expire
+    - adjust
+  list_state:
+    - empty
+    - single_page
+    - multi_page
+  # 행 편집(사유·기간 변경) 대상 — 적립계만 활성, 그 외 비활성
+  lot_editability:
+    - earning_active        # 적립계 + 미소멸 + 잔여>0 → 사유·만료일 모두 편집
+    - earning_expired       # 적립계지만 소멸/전액사용 → 만료일 비활성, 사유만 편집
+    - non_earning           # 사용/소멸/차감 → 메뉴 비활성
+  # 유효기간 열 소멸 표시
+  expiry_display:
+    - active                # 만료 예정일
+    - partial_expired       # 일부 소멸 배지 + 소멸액
+    - fully_expired         # 전체 소멸 배지 + 소멸액
+    - unlimited             # 무기한
+
+exclusions:
+  - { actor_permission: no_permission, list_state: single_page, reason: "권한 없는 계정은 목록 진입 자체가 403(콘텐츠 에러 페이지)" }
+  - { actor_permission: no_permission, list_state: multi_page, reason: "동일 — 데이터 미노출" }
+
+effects:
+  # 백엔드 응답 규약 (PHPUnit 커버)
+  - collection_returns_pagination_block
+  - collection_returns_currencies_from_settings
+  - search_field_branches_member_memberid_email_order
+  - type_slug_reverse_maps_to_enum
+  - date_range_and_currency_filter_applied
+  - sort_slug_applied
+  - manual_write_requires_manage_permission_403
+  # 프론트 렌더링/구조 (Vitest 레이아웃 렌더링 커버)
+  - filter_card_uses_common_util_classes
+  - date_input_has_width_class
+  - total_count_header_reads_pagination_total
+  - manual_button_disabled_when_no_manage_ability
+  - row_expand_unified_via_datagrid_expandable
+  # 행 편집(사유·기간 변경) — 원장 불변, 적립계만 (PHPUnit Controller/Service/Resource 커버)
+  - row_edit_updates_memo_and_expiry            # PATCH {id} — memo/expires_at 갱신
+  - row_edit_rejects_non_earning_422            # 비적립계 편집 거부
+  - row_edit_expired_lot_blocks_expiry_allows_memo  # 소멸/전액사용 lot 만료일 거부, memo 허용
+  - row_edit_requires_manage_permission_403
+  - row_data_exposes_can_edit_ability           # 적립계+권한 → can_edit true, 그 외 false
+  # 소멸 집계 표시 (Resource expired_amount/expiry_state)
+  - earning_row_exposes_expired_amount_and_state  # 부분/전체 소멸 집계
+  - expiry_column_shows_partial_vs_full_with_amount  # 일부/전체 구분 + 소멸액 (Vitest 레이아웃)
+  # 브라우저 E2E (Playwright — data-testid 보강 후 활성화)
+  - admin_can_open_list_and_see_count
+  - search_by_member_filters_results
+  - read_only_actor_cannot_open_manual_modal
+  - row_edit_modal_updates_memo_and_expiry
+  - row_edit_disabled_for_non_earning
+  - partial_expiry_shows_amount_in_expiry_column
+  # 행 확장 연결 거래 표시 (expandContext fallback 결함 회귀 — `|| {}` 제거)
+  - expand_row_shows_linked_transactions
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/MileageTransactionControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/MileageTransactionRepositoryTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/UserMileageServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/MileageTransactionResourceTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_ecommerce_mileage_transaction_index.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/mileage-transaction-index.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

@@ -5,7 +5,7 @@
   },
   "type": "basic",
   "name": "Div",
-  "if": "{{_global.currentUser?.uuid}}",
+  "if": "{{_global.currentUser?.uuid && checkoutData.data.mileage?.enabled && checkoutData.data.mileage?.usable !== false}}",
   "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" },
   "responsive": {
     "portable": {
@@ -50,7 +50,7 @@
           "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
           "children": [
             { "type": "basic", "name": "Span", "text": "$t:shop.checkout.mileage_available" },
-            { "type": "basic", "name": "Span", "props": { "className": "ml-1 font-semibold text-blue-600 dark:text-blue-400" }, "text": "{{checkoutData.data.mileage?.balance_formatted ?? '0'}}" }
+            { "type": "basic", "name": "Span", "props": { "className": "ml-1 font-semibold text-blue-600 dark:text-blue-400" }, "text": "{{(checkoutData.data.mileage?.available ?? 0).toLocaleString()}}" }
           ]
         }
       ]
@@ -66,7 +66,7 @@
           "name": "Div",
           "if": "{{(checkoutData.data.mileage?.max_usable ?? 0) > 0}}",
           "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-2" },
-          "text": "$t:shop.checkout.mileage_max_usable|amount={{checkoutData.data.mileage?.max_usable_formatted ?? '0'}}"
+          "text": "$t:shop.checkout.mileage_max_usable|amount={{(checkoutData.data.mileage?.max_usable ?? 0).toLocaleString()}}"
         },
         {
           "comment": "입력 필드 + 전액사용 + 적용 버튼",
@@ -85,7 +85,7 @@
                 "min": "0",
                 "max": "{{checkoutData.data.mileage?.max_usable ?? 0}}",
                 "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
-                "disabled": "{{(checkoutData.data.mileage?.balance ?? 0) === 0}}"
+                "disabled": "{{(checkoutData.data.mileage?.available ?? 0) === 0}}"
               },
               "responsive": {
                 "portable": {
@@ -148,6 +148,7 @@
                   "type": "click",
                   "handler": "apiCall",
                   "target": "/api/modules/sirsoft-ecommerce/checkout",
+                  "auth_mode": "optional",
                   "params": {
                     "method": "PUT",
                     "body": "{{_local.checkout}}"
@@ -170,7 +171,7 @@
                       "handler": "toast",
                       "params": {
                         "type": "error",
-                        "message": "{{error.message}}"
+                        "message": "{{error.errors?.message ?? error.message}}"
                       }
                     }
                   ]
@@ -194,7 +195,7 @@
           "comment": "마일리지 부족 안내",
           "type": "basic",
           "name": "Div",
-          "if": "{{(checkoutData.data.mileage?.balance ?? 0) === 0}}",
+          "if": "{{(checkoutData.data.mileage?.available ?? 0) === 0}}",
           "props": { "className": "mt-2 text-xs text-gray-500 dark:text-gray-400" },
           "text": "$t:shop.checkout.mileage_insufficient"
         }

@@ -1,0 +1,191 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 Phase E′ Extension Point 슬롯 통합 + UX 재정의 시나리오 매트릭스 SSoT.
+
+feature: KG이니시스 본인인증 — 코어 IDV 모달 Extension Point 슬롯 통합 + UX 재정의
+
+description: |
+  Phase E′ 의 setLauncher 폐기 + Extension Point 슬롯 패턴은 그대로 유지.
+  Phase E′-Redesign 에서 추가된 사항:
+    - 코어 모달 슬롯 콘텐츠를 사전 안내 카드 (3단계 절차 안내) + 진행 중 안내 (스피너 + 팝업 차단 회복) 로 재구성
+    - 인증 완료 시 모달이 자동으로 닫히도록 fix — startAuth handler 의 postMessage 콜백이
+      resolveIdentityChallenge + closeModal 을 sequence 로 dispatch (이전 결함: closeModal 누락)
+    - _global.identityChallenge.providerInProgress 플래그로 슬롯 if 분기
+    - 사용자가 인증 팝업을 직접 닫은 경우 모달은 열린 채 유지 → 시작 버튼 재클릭으로 재시도 가능
+
+axes:
+  flow_stage:
+    - modal_opens_with_intro_card    # 코어 모달 자동 표시 + 슬롯에 사전 안내 카드 + "본인인증 시작" 버튼 노출 (providerInProgress=false)
+    - user_clicks_start              # 사용자가 모달 안 Button 클릭 → startAuth handler 진입
+    - popup_opens_in_progress_card   # window.open 성공 + form POST + providerInProgress=true 로 슬롯이 진행 중 안내로 전환
+    - inicis_form_post               # 동적 form 이 mid/mtxid/authHash 포함 POST
+    - bridge_postmessage             # bridge 페이지가 부모창에 결과 통보
+    - resolve_and_close_sequence     # resolveIdentityChallenge + closeModal sequence dispatch → 모달 자동 닫힘 + return_request 재실행
+    - user_closes_popup_before_auth  # 사용자가 인증 안 끝내고 팝업창 X 직접 닫음 → providerInProgress=false 로만 set → 모달 유지
+  bridge_outcome:
+    - verified                       # verification_token 부착
+    - failed                         # identity_error (PROVIDER_ERROR / INVALID_AUTH_URL / REMOTE_CALL_FAILED / DECRYPT_FAILED / NOT_FOUND / ALREADY_CONSUMED)
+    - cancelled                      # bridge 가 token/error 둘 다 미전달 (드문 케이스)
+  popup_outcome:
+    - postmessage_verified           # bridge → postMessage(verification_token) → resolve+close
+    - postmessage_failed             # bridge → postMessage(identity_error) → resolve(failed)+close
+    - postmessage_cancelled          # bridge → postMessage(데이터 없음) → resolve(cancelled)+close
+    - user_closed_popup              # 사용자가 popup X 직접 닫음 → resolve dispatch 안 함, 모달 유지
+    - popup_blocked                  # window.open null → toast 발행, providerInProgress 미set, 모달 유지
+  provider_id_match:
+    - inicis                         # _global.identityChallenge.provider_id === 'inicis' → 슬롯 컴포넌트 노출
+    - other                          # 다른 provider → 슬롯 컴포넌트 비노출 (mail default UI 그대로)
+  provider_in_progress:
+    - false                          # 사전 안내 카드 + 시작 버튼 노출
+    - true                           # 진행 중 안내 (스피너 + 팝업 차단 회복 안내) 노출
+  user_status:
+    - guest                          # 비로그인 (가입 / 비번찾기)
+    - authenticated                  # 로그인 (마이페이지 정보 변경 등)
+
+exclusions:
+  - { provider_id_match: other, flow_stage: user_clicks_start, reason: "다른 provider 일 때 우리 Button 미노출" }
+  - { provider_id_match: other, provider_in_progress: true, reason: "다른 provider 슬롯에는 우리 진행 중 카드 미적용" }
+  - { popup_outcome: popup_blocked, flow_stage: popup_opens_in_progress_card, reason: "popup 차단 시 진행 중 카드 미진입" }
+  - { popup_outcome: user_closed_popup, flow_stage: bridge_postmessage, reason: "사용자 직접 닫음은 postMessage 미수신" }
+  - { popup_outcome: user_closed_popup, flow_stage: resolve_and_close_sequence, reason: "사용자 직접 닫음은 resolve 미dispatch (모달 유지)" }
+  - { bridge_outcome: cancelled, popup_outcome: postmessage_failed, reason: "bridge cancelled 와 failed 는 상호 배타" }
+
+effects:
+  # 모달 슬롯 표시 (provider_id 분기)
+  - core_modal_opens_when_428_response_provider_id_is_inicis_and_render_hint_text_code
+  - extension_replaces_default_text_code_slot_with_inicis_intro_card_when_provider_id_matches
+  - extension_does_not_render_when_provider_id_is_not_inicis
+
+  # KG이니시스 안내 카드 (providerInProgress=false 분기)
+  - intro_card_renders_icon_title_description_and_start_button
+  - start_button_dispatches_sirsoft_verification_kginicis_start_auth_handler_on_click
+
+  # 진행 중 안내 (providerInProgress=true 분기)
+  - in_progress_card_renders_spinner_title_and_popup_blocker_recovery_hint
+  - intro_card_and_in_progress_card_are_mutually_exclusive_via_provider_in_progress_flag
+
+  # startAuth handler 동작
+  - start_auth_handler_reads_mid_mtxid_authhash_from_global_identity_challenge_public_payload
+  - start_auth_handler_opens_popup_only_in_user_gesture_context_avoiding_chrome_popup_blocker
+  - start_auth_handler_creates_dynamic_form_with_kisa_sample_compatible_fields
+  - start_auth_handler_submits_form_to_inicis_auth_url_with_target_popup_name
+  - start_auth_handler_sets_provider_in_progress_true_immediately_after_popup_open
+  - start_auth_handler_shows_toast_and_skips_provider_in_progress_set_when_popup_blocked
+  - start_auth_handler_shows_toast_and_skips_window_open_when_public_payload_missing
+
+  # bridge → postMessage → resolve + close sequence
+  - bridge_postmessage_origin_check_against_window_location_origin_strict_equality
+  - bridge_verified_dispatches_sequence_resolve_verified_and_close_modal
+  - bridge_failed_dispatches_sequence_resolve_failed_with_failure_code_and_close_modal
+  - bridge_no_data_dispatches_sequence_resolve_cancelled_and_close_modal
+  - bridge_unhandled_postmessage_ignored_silently
+  - resolve_and_close_dispatch_sets_provider_in_progress_false_after_completion
+  - resolve_and_close_dispatch_calls_popup_close_to_clean_up_window_handle
+
+  # popup 직접 닫음 분기 (사용자 인증 미완료 후 팝업 X)
+  - popup_closed_polling_runs_at_500ms_interval_until_settled
+  - user_closed_popup_sets_provider_in_progress_false_without_dispatching_resolve
+  - user_closed_popup_keeps_modal_open_for_retry_via_start_button
+  - postmessage_arrival_after_polling_starts_marks_settled_and_stops_polling_to_prevent_double_dispatch
+
+  # listener / polling cleanup
+  - message_listener_removed_after_postmessage_settle
+  - message_listener_removed_after_user_closed_popup_settle
+  - polling_interval_cleared_after_postmessage_settle
+  - polling_interval_cleared_after_user_closed_popup_settle
+
+  # 코어 통합 (Phase E′ 그대로 유지)
+  - core_modal_cancel_action_resolves_cancelled_without_calling_inicis_handler
+  - core_modal_countdown_expiration_resolves_expired_without_calling_inicis_handler
+
+  # 코어 모달 partial 의 외부 plugin 흐름 액션 버튼 분기 (sirsoft-basic 1.0.0-beta.6)
+  - core_modal_resend_button_hidden_when_provider_id_is_inicis
+  - core_modal_verify_button_hidden_when_provider_id_is_inicis_and_render_hint_text_code
+  - core_modal_resend_and_verify_buttons_visible_when_provider_id_is_null_for_core_mail_or_sms_flow_no_regression
+
+  # KG이니시스 안내 카드 다크모드 가독성 (라이트/다크 양쪽 검증)
+  - intro_card_phone_icon_circle_uses_blue_100_light_blue_900_40_dark_for_visibility
+  - intro_card_phone_icon_uses_blue_600_light_blue_400_dark_for_contrast
+  - intro_card_title_uses_gray_900_light_white_dark_for_high_contrast
+  - intro_card_description_uses_gray_600_light_gray_400_dark_for_secondary_text
+  - intro_card_simplified_to_icon_title_description_and_start_button_only_three_step_box_removed_after_po_review
+
+  # 마이페이지 카드 (Phase E 그대로 유지)
+  - card_endpoint_returns_401_for_unauthenticated_request
+  - card_endpoint_returns_data_null_when_user_has_no_record
+  - card_endpoint_returns_masked_pii_for_authenticated_user
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/resources/js/__tests__/startAuthHandler.test.ts
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Unit/Services/InicisCallbackOutcomeTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Unit/Services/InicisCallbackResolverTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Listeners/CompleteInicisRecordAfterRegisterTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Controllers/MyInicisIdentityShowControllerTest.php
+
+rules_layer_coverage:
+  - rule: extension-point-mode-replace
+    coverage: identity_provider_inicis.json 은 mode='replace' 사용 + if=provider_id 조건으로 다른 provider 흐름 안전. providerInProgress 추가 분기로 같은 provider 안 두 상태 노출.
+  - rule: api-resource-pii-masking
+    coverage: InicisIdentityResource 마스킹 유지 (Phase E)
+  - rule: middleware-auth-route-scoped
+    coverage: 카드 라우트 auth:sanctum + check.user_status:active (Phase E)
+  - rule: controller-direct-repository-injection
+    coverage: 모든 controller 가 Service 만 주입 (Phase E)
+  - rule: i18n-key-naming
+    coverage: modal.* / settings.* / card.* / purposes.* / errors.* 모두 sirsoft-verification_kginicis::* prefix.
+             modal 하위 신규 키: title / description / procedure.step_1~3 / start_button / in_progress.title / in_progress.hint / popup_blocked / payload_not_ready
+
+design_rationale: |
+  Phase E 의 setLauncher 덮어쓰기 방식 폐기 사유 (비판적 검토):
+   1. Chrome popup blocker — fetch 응답 콜백에서 호출된 window.open 은 사용자 제스처 컨텍스트
+      소실로 차단 (자동 호출은 거의 모든 브라우저에서 차단). settings 페이지의 test 버튼은
+      직접 클릭이라 동작했지만 가입 흐름은 차단됨.
+   2. 다른 IDV plugin 차단 — setLauncher 가 단일 launcher 만 허용해 mail/SMS 등과 공존 불가.
+   3. 코어 컨벤션 위반 — 코어 가이드는 모달 안 Extension Point 슬롯에 SDK 호출 컴포넌트를
+      주입하는 방식을 명시 (KCP/PortOne 등 가이드 명시 사례와 동일).
+
+  Phase E′ Extension Point 패턴 채택 사유:
+   - 코어 모달이 표시되면 사용자가 직접 Button 클릭 → window.open 차단 회피
+   - mode='replace' 로 코어 default OTP UI 를 깔끔하게 교체 (코어 무수정)
+   - provider_id 분기로 다른 IDV plugin 공존 가능
+   - 코어 가이드 명시 표준
+
+  Phase E′-Redesign 추가 사유:
+   1. 모달 닫힘 결함 fix — startAuth 의 postMessage 콜백이 resolveIdentityChallenge 만 dispatch
+      하던 것을 sequence(resolveIdentityChallenge + closeModal) 로 변경. resolveIdentityChallenge
+      핸들러는 인터셉터의 deferred resolver 만 호출하고 모달 닫힘과 무관하므로 (코어 ActionDispatcher
+      주석 명시), 모달 닫힘은 명시적 closeModal 책임. 코어 모달 partial 의 verify 버튼이 이미
+      동일 sequence 패턴 사용 — 코어 default 와 일관성.
+   2. 사용자 안내 강화 — 기존 "본인인증 시작" 버튼만으로는 사용자가 "왜 이게 뜨지" 의문을 가질 수
+      있어 (PO 피드백), 사전 안내 카드 (아이콘 + 제목 + 설명 + 3단계 절차 안내) 로 확장. Phase E
+      폐기 사유 #1 의 "사용자 제스처 확보" 본질은 그대로 유지.
+   3. 진행 중 상태 표시 — 팝업이 열린 후 모달이 정적 상태로 남아있어 사용자가 "지금 뭘 해야 하지"
+      혼란을 느낄 수 있음. providerInProgress 플래그로 슬롯 if 분기하여 "팝업창에서 진행 중" 스피너
+      + "팝업 차단 해제" 보조 안내로 전환.
+   4. 사용자 직접 닫음 회복 — 인증 팝업 X 클릭 시 resolveIdentityChallenge 를 dispatch 하지 않고
+      providerInProgress 만 false 로 set → 모달은 열린 채 시작 버튼이 재활성화되어 사용자가 다시
+      시도 가능. 강제 cancelled 처리 시 사용자가 모달 처음부터 다시 열어야 하는 부담 회피.
+
+  옵션 비교 — Phase E′-Redesign 의사결정 (PO 와 검토):
+   - 옵션 1 (사전 안내 모달 + redirect): 페이지 전환 1회 발생, 데스크톱 UX 무거움
+   - 옵션 2 (모달 + 팝업 = 본 안): 모달 안에서 완결, 모바일 일반 브라우저 (Safari/Chrome) 도 동일 흐름
+     으로 동작 (window.open 이 새 탭으로 열려도 opener 유지 → bridge postMessage 동작)
+   - 옵션 C 하이브리드 (모바일 redirect 분기): 인앱 브라우저 대응 가능하나 비용 ↑↑.
+     인앱 브라우저 대응은 사이트 전반의 별도 정책 (안내 배너) 차원에서 다루고 본 작업은 옵션 2 채택.
+
+  옵션 2 (본 안) 가 선택된 결정적 이유:
+   - 가이드 명시 표준 패턴 그대로 (다음우편번호/CKEditor5 와 동일한 G7 표준 컨벤션)
+   - 일반 모바일 브라우저 (Safari, Android Chrome) 에서도 popup → opener postMessage 흐름 정상 동작
+   - 데스크톱 UX 가장 매끄러움 (페이지 전환 없음)
+   - 코어 무수정 + 템플릿 minimal 수정 (모달 partial 에 if 분기 1줄 + 액션 버튼 if 조건 보강)
+   - 모달 닫힘 결함만 fix 하면 작업 완결
+
+  PO 피드백 반영 (sirsoft-basic 1.0.0-beta.6):
+   1. 외부 plugin 흐름에서 코어 모달의 [코드 재전송] / [확인] 버튼 숨김 — 외부 plugin 은 자기
+      흐름 안에서 verify 까지 책임지므로 코어 액션이 불필요. 코어 mail/SMS 등 코드 발송형
+      흐름은 기존대로 노출 (회귀 없음).
+   2. 안내 카드 단순화 — 초기 디자인의 "3단계 절차 안내 박스" (1/2/3 원형 배지 + 단계 텍스트)
+      제거. 사유: (a) small 모달 폭에서 단계 텍스트 줄바꿈 + 배지 시각 침범 회귀 발생,
+      (b) "휴대폰/아이핀 인증" 표현이 KG이니시스의 다양한 인증 수단 (통신사 PASS 등) 을
+      충분히 대표하지 못해 부정확, (c) 사용자 가치 (절차 사전 안내) 대비 시각적 무게가 큼.
+      최종 안내 카드는 휴대폰 아이콘 + "KG이니시스 본인인증" 제목 + 설명 + 시작 버튼 4요소로
+      단순화. 시각 일관성은 코어 모달 partial 의 link 모드 아이콘 톤과 동일 (bg-blue-100/900
+      + text-blue-600/400).

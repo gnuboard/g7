@@ -7,7 +7,7 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "col-span-1-lg bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col"
+    "className": "admin-card col-span-1-lg flex flex-col"
   },
   "lifecycle": {
     "onMount": [
@@ -23,14 +23,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+        "className": "px-4 panel-header"
       },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-2"
+            "className": "flex-center gap-2"
           },
           "children": [
             {
@@ -38,14 +38,15 @@
               "name": "Icon",
               "props": {
                 "name": "file-alt",
-                "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
+                "className": "text-gray-700 dark:text-gray-300",
+                "size": "md"
               }
             },
             {
               "type": "basic",
               "name": "H3",
               "props": {
-                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                "className": "text-heading"
               },
               "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.title"
             },
@@ -55,7 +56,7 @@
               "props": {
                 "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               },
-              "text": "{{templates?.data?.data?.length ?? 0}}"
+              "text": "{{templates?.data?.pagination?.total ?? templates?.data?.data?.length ?? 0}}"
             }
           ]
         }
@@ -66,7 +67,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+        "className": "px-4 panel-header"
       },
       "children": [
         {
@@ -151,8 +152,8 @@
                           "handler": "appendDataSource",
                           "params": {
                             "dataSourceId": "templates",
-                            "dataPath": "data",
-                            "newData": "{{response.data}}"
+                            "dataPath": "data.data",
+                            "newData": "{{response.data.data}}"
                           }
                         },
                         {
@@ -160,7 +161,7 @@
                           "params": {
                             "target": "global",
                             "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
-                            "infiniteScroll.hasMore": "{{(response.data?.length ?? 0) >= 20}}",
+                            "infiniteScroll.hasMore": "{{response.data?.pagination?.has_more_pages ?? false}}",
                             "infiniteScroll.isLoadingMore": false
                           }
                         }
@@ -197,7 +198,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "{{_global.selectedTemplateId === template.id ? 'py-2.5 px-3 mb-2 rounded-lg border cursor-pointer bg-blue-50 dark:bg-blue-900/30 border-blue-500' : 'py-2.5 px-3 mb-2 rounded-lg border cursor-pointer bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}}"
+                "className": "{{_global.selectedTemplateId === template.id ? 'admin-card-selected' : 'admin-card-clickable'}}"
               },
               "actions": [
                 {
@@ -216,7 +217,10 @@
                     {
                       "handler": "replaceUrl",
                       "params": {
-                        "query": { "id": "{{template.id}}", "mode": "view" }
+                        "query": {
+                          "id": "{{template.id}}",
+                          "mode": "view"
+                        }
                       }
                     }
                   ]
@@ -227,24 +231,78 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center justify-between"
+                    "className": "flex-between"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-900 dark:text-white font-medium"
+                        "className": "text-primary text-sm font-medium"
                       },
                       "text": "{{$localized(template.name)}}"
                     },
                     {
                       "type": "basic",
-                      "name": "Span",
+                      "name": "Div",
                       "props": {
-                        "className": "px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                        "className": "flex-center gap-2"
                       },
-                      "text": "{{template.fields_count ?? 0}}"
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
+                          },
+                          "text": "{{template.fields_count ?? 0}}"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Toggle",
+                          "props": {
+                            "size": "sm",
+                            "checked": "{{template.is_active}}",
+                            "disabled": "{{!template.abilities?.can_update}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "apiCall",
+                              "auth_required": true,
+                              "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{template.id}}/toggle-active",
+                              "params": {
+                                "method": "PATCH"
+                              },
+                              "onSuccess": [
+                                {
+                                  "handler": "refetchDataSource",
+                                  "params": {
+                                    "dataSourceId": "templates"
+                                  }
+                                },
+                                {
+                                  "handler": "toast",
+                                  "params": {
+                                    "type": "success",
+                                    "message": "{{response.message}}"
+                                  }
+                                }
+                              ],
+                              "onError": [
+                                {
+                                  "handler": "toast",
+                                  "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                  }
+                                }
+                              ],
+                              "stopPropagation": true
+                            }
+                          ]
+                        }
+                      ]
                     }
                   ]
                 }
@@ -272,7 +330,7 @@
       "name": "Div",
       "if": "{{(templates?.data?.data?.length ?? 0) === 0}}",
       "props": {
-        "className": "flex-1 flex items-center justify-center gap-3 px-4 py-8"
+        "className": "flex-center flex-1 justify-center gap-3 px-4 py-8"
       },
       "children": [
         {
@@ -280,14 +338,15 @@
           "name": "Icon",
           "props": {
             "name": "file-alt",
-            "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
+            "className": "text-gray-400 dark:text-gray-500",
+            "size": "md"
           }
         },
         {
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400"
+            "className": "text-label-subtle"
           },
           "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.empty"
         }

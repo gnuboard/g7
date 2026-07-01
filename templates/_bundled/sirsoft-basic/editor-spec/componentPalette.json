@@ -1,0 +1,797 @@
+{
+  "comment": "entries 의 모든 사용자 가시 문자열은 다국어 키 ($t:layout_editor.palette.<component>.<key>) 사용. sirsoft-basic 템플릿은 Tailwind 디자인 시스템 사용 — defaultNode 의 props.className 에 그 템플릿 운영 레이아웃의 대표 디자인 토큰 적용. 다른 템플릿은 자기 CSS 시스템에 맞춰 className 또는 inline style 등 자기 토큰을 사용한다 (편집기 코어 CSS 비종속 원칙 은 코어 코드에만 적용, 템플릿 defaultNode 는 자기 디자인 시스템 사용이 정상).",
+  "groups": [
+    {
+      "label": "$t:layout_editor.palette.group.design",
+      "kind": "design",
+      "components": [
+        "Div",
+        "Container",
+        "Flex",
+        "Grid",
+        "SectionLayout",
+        "ThreeColumnLayout",
+        "Span",
+        "P",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "A",
+        "Button",
+        "Img",
+        "Icon",
+        "Hr",
+        "Ul",
+        "Li",
+        "Nav",
+        "HtmlContent",
+        "ExpandableContent",
+        "TabNavigation",
+        "Form",
+        "Table",
+        "Input",
+        "Textarea",
+        "Select",
+        "Checkbox",
+        "PasswordInput",
+        "Label",
+        "FileUploader",
+        "AvatarUploader",
+        "HtmlEditor",
+        "RichTextEditor",
+        "SocialLoginButtons"
+      ]
+    },
+    {
+      "label": "$t:layout_editor.palette.group.db",
+      "kind": "data",
+      "components": [
+        "ProductCard",
+        "ImageGallery",
+        "Pagination",
+        "SearchBar",
+        "Avatar",
+        "UserInfo",
+        "QuantitySelector",
+        "ProductImageViewer",
+        "PostReactions"
+      ]
+    }
+  ],
+  "entries": {
+    "Div": {
+      "label": "$t:layout_editor.palette.div.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "Container": {
+      "label": "$t:layout_editor.palette.container.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "Container",
+        "props": {
+          "className": "p-4"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "text": "$t:layout_editor.palette.container.default_child_text"
+          }
+        ]
+      }
+    },
+    "Flex": {
+      "label": "$t:layout_editor.palette.flex.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "Flex",
+        "props": {
+          "className": "flex gap-2 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "Grid": {
+      "label": "$t:layout_editor.palette.grid.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "Grid",
+        "props": {
+          "className": "grid grid-cols-2 gap-2 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "SectionLayout": {
+      "label": "$t:layout_editor.palette.section_layout.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "SectionLayout",
+        "props": {
+          "className": "min-h-[80px] p-4 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "ThreeColumnLayout": {
+      "label": "$t:layout_editor.palette.three_column_layout.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "layout",
+        "name": "ThreeColumnLayout",
+        "props": {
+          "className": "min-h-[80px] p-4 border border-dashed border-gray-300 dark:border-gray-600"
+        }
+      }
+    },
+    "Span": {
+      "label": "$t:layout_editor.palette.span.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Span",
+        "props": {
+          "className": "font-semibold text-gray-900 dark:text-white"
+        },
+        "text": "$t:layout_editor.palette.span.default_text"
+      }
+    },
+    "P": {
+      "label": "$t:layout_editor.palette.p.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "P",
+        "props": {
+          "className": "text-gray-600 dark:text-gray-400"
+        },
+        "text": "$t:layout_editor.palette.p.default_text"
+      }
+    },
+    "H1": {
+      "label": "$t:layout_editor.palette.h1.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "H1",
+        "props": {
+          "className": "text-2xl font-bold text-gray-900 dark:text-white"
+        },
+        "text": "$t:layout_editor.palette.h1.default_text"
+      }
+    },
+    "H2": {
+      "label": "$t:layout_editor.palette.h2.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "H2",
+        "props": {
+          "className": "text-lg font-semibold text-gray-900 dark:text-white"
+        },
+        "text": "$t:layout_editor.palette.h2.default_text"
+      }
+    },
+    "H3": {
+      "label": "$t:layout_editor.palette.h3.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "H3",
+        "props": {
+          "className": "text-lg font-semibold text-gray-900 dark:text-white"
+        },
+        "text": "$t:layout_editor.palette.h3.default_text"
+      }
+    },
+    "H4": {
+      "label": "$t:layout_editor.palette.h4.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "H4",
+        "props": {
+          "className": "text-base font-semibold text-gray-900 dark:text-white"
+        },
+        "text": "$t:layout_editor.palette.h4.default_text"
+      }
+    },
+    "A": {
+      "label": "$t:layout_editor.palette.a.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "A",
+        "props": {
+          "href": "#",
+          "className": "text-blue-600 dark:text-blue-400 hover:underline"
+        },
+        "text": "$t:layout_editor.palette.a.default_text"
+      }
+    },
+    "Button": {
+      "label": "$t:layout_editor.palette.button.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+        },
+        "text": "$t:layout_editor.palette.button.default_text"
+      }
+    },
+    "Img": {
+      "label": "$t:layout_editor.palette.img.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Img",
+        "props": {
+          "src": "https://via.placeholder.com/200x120",
+          "alt": "$t:layout_editor.palette.img.default_alt",
+          "className": "w-full h-auto object-cover"
+        }
+      }
+    },
+    "Icon": {
+      "label": "$t:layout_editor.palette.icon.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Icon",
+        "props": {
+          "name": "star",
+          "size": "md"
+        }
+      }
+    },
+    "Hr": {
+      "label": "$t:layout_editor.palette.hr.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Hr",
+        "props": {
+          "className": "border-gray-200 dark:border-gray-700 my-2"
+        }
+      }
+    },
+    "Ul": {
+      "label": "$t:layout_editor.palette.ul.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Ul",
+        "props": {
+          "className": "space-y-2"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Li",
+            "props": {
+              "className": "text-gray-700 dark:text-gray-300"
+            },
+            "text": "$t:layout_editor.palette.ul.default_item_text"
+          }
+        ]
+      }
+    },
+    "Li": {
+      "label": "$t:layout_editor.palette.li.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Li",
+        "props": {
+          "className": "text-gray-700 dark:text-gray-300"
+        },
+        "text": "$t:layout_editor.palette.li.default_text"
+      }
+    },
+    "Nav": {
+      "label": "$t:layout_editor.palette.nav.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Nav",
+        "props": {
+          "className": "flex items-center gap-3"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "A",
+            "props": {
+              "href": "#",
+              "className": "text-blue-600 dark:text-blue-400 hover:underline"
+            },
+            "text": "$t:layout_editor.palette.nav.default_item_text"
+          }
+        ]
+      }
+    },
+    "HtmlContent": {
+      "label": "$t:layout_editor.palette.html_content.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "HtmlContent",
+        "props": {
+          "content": "$t:layout_editor.palette.html_content.default_text",
+          "isHtml": false,
+          "className": "prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"
+        }
+      }
+    },
+    "ExpandableContent": {
+      "label": "$t:layout_editor.palette.expandable_content.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ExpandableContent",
+        "props": {
+          "title": "$t:layout_editor.palette.expandable_content.default_title"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "text": "$t:layout_editor.palette.expandable_content.default_body"
+          }
+        ]
+      }
+    },
+    "TabNavigation": {
+      "label": "$t:layout_editor.palette.tab_navigation.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "TabNavigation",
+        "props": {
+          "tabs": [
+            {
+              "key": "tab1",
+              "label": "$t:layout_editor.palette.tab_navigation.default_tab1_label"
+            },
+            {
+              "key": "tab2",
+              "label": "$t:layout_editor.palette.tab_navigation.default_tab2_label"
+            }
+          ]
+        }
+      }
+    },
+    "Input": {
+      "label": "$t:layout_editor.palette.input.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Input",
+        "props": {
+          "type": "text",
+          "placeholder": "$t:layout_editor.palette.input.default_placeholder",
+          "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+        }
+      }
+    },
+    "Textarea": {
+      "label": "$t:layout_editor.palette.textarea.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Textarea",
+        "props": {
+          "rows": 4,
+          "placeholder": "$t:layout_editor.palette.textarea.default_placeholder",
+          "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+        }
+      }
+    },
+    "Select": {
+      "label": "$t:layout_editor.palette.select.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Select",
+        "props": {
+          "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
+          "value": "{{_local.selectValue ?? ''}}",
+          "options": [
+            {
+              "value": "1",
+              "label": "$t:layout_editor.palette.select.default_option1_label"
+            },
+            {
+              "value": "2",
+              "label": "$t:layout_editor.palette.select.default_option2_label"
+            }
+          ]
+        },
+        "actions": [
+          {
+            "type": "change",
+            "handler": "setState",
+            "target": "local",
+            "params": {
+              "selectValue": "{{$event.target.value}}"
+            }
+          }
+        ]
+      }
+    },
+    "Checkbox": {
+      "label": "$t:layout_editor.palette.checkbox.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Checkbox",
+        "props": {
+          "label": "$t:layout_editor.palette.checkbox.default_label",
+          "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
+        }
+      }
+    },
+    "PasswordInput": {
+      "label": "$t:layout_editor.palette.password_input.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "PasswordInput",
+        "props": {
+          "placeholder": "$t:layout_editor.palette.password_input.default_placeholder",
+          "showToggle": true,
+          "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+        }
+      }
+    },
+    "Label": {
+      "label": "$t:layout_editor.palette.label.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Label",
+        "props": {
+          "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+        },
+        "text": "$t:layout_editor.palette.label.default_text"
+      }
+    },
+    "FileUploader": {
+      "label": "$t:layout_editor.palette.file_uploader.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "FileUploader",
+        "props": {
+          "label": "$t:layout_editor.palette.file_uploader.default_label"
+        }
+      }
+    },
+    "AvatarUploader": {
+      "label": "$t:layout_editor.palette.avatar_uploader.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "AvatarUploader",
+        "props": {
+          "label": "$t:layout_editor.palette.avatar_uploader.default_label"
+        }
+      }
+    },
+    "HtmlEditor": {
+      "label": "$t:layout_editor.palette.html_editor.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "HtmlEditor",
+        "props": {
+          "value": "",
+          "placeholder": "$t:layout_editor.palette.html_editor.default_placeholder"
+        }
+      }
+    },
+    "RichTextEditor": {
+      "label": "$t:layout_editor.palette.rich_text_editor.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "RichTextEditor",
+        "props": {
+          "value": "",
+          "placeholder": "$t:layout_editor.palette.rich_text_editor.default_placeholder"
+        }
+      }
+    },
+    "SocialLoginButtons": {
+      "label": "$t:layout_editor.palette.social_login_buttons.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "SocialLoginButtons",
+        "props": {
+          "providers": [
+            "google",
+            "kakao",
+            "naver"
+          ]
+        }
+      }
+    },
+    "ProductCard": {
+      "label": "$t:layout_editor.palette.product_card.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ProductCard",
+        "props": {
+          "product": {
+            "id": "sample",
+            "name": "$t:layout_editor.palette.product_card.default_name",
+            "price": 10000,
+            "image": "https://via.placeholder.com/240"
+          }
+        }
+      }
+    },
+    "ImageGallery": {
+      "label": "$t:layout_editor.palette.image_gallery.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ImageGallery",
+        "props": {
+          "images": [
+            {
+              "src": "https://via.placeholder.com/200",
+              "alt": "$t:layout_editor.palette.image_gallery.default_alt1"
+            },
+            {
+              "src": "https://via.placeholder.com/200",
+              "alt": "$t:layout_editor.palette.image_gallery.default_alt2"
+            }
+          ]
+        }
+      }
+    },
+    "Pagination": {
+      "label": "$t:layout_editor.palette.pagination.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Pagination",
+        "props": {
+          "total": 100,
+          "perPage": 10,
+          "currentPage": 1,
+          "className": "mt-6 flex justify-center"
+        }
+      }
+    },
+    "SearchBar": {
+      "label": "$t:layout_editor.palette.search_bar.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "SearchBar",
+        "props": {
+          "placeholder": "$t:layout_editor.palette.search_bar.default_placeholder"
+        }
+      }
+    },
+    "Avatar": {
+      "label": "$t:layout_editor.palette.avatar.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "Avatar",
+        "props": {
+          "src": "https://via.placeholder.com/64",
+          "alt": "$t:layout_editor.palette.avatar.default_alt",
+          "size": "md"
+        }
+      }
+    },
+    "UserInfo": {
+      "label": "$t:layout_editor.palette.user_info.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "UserInfo",
+        "props": {
+          "name": "$t:layout_editor.palette.user_info.default_name",
+          "userId": "sample",
+          "subText": "user@example.com"
+        }
+      }
+    },
+    "QuantitySelector": {
+      "label": "$t:layout_editor.palette.quantity_selector.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "QuantitySelector",
+        "props": {
+          "value": 1,
+          "min": 1,
+          "max": 99
+        }
+      }
+    },
+    "ProductImageViewer": {
+      "label": "$t:layout_editor.palette.product_image_viewer.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ProductImageViewer",
+        "props": {
+          "images": [
+            {
+              "src": "https://via.placeholder.com/400",
+              "alt": "$t:layout_editor.palette.product_image_viewer.default_alt"
+            }
+          ]
+        }
+      }
+    },
+    "PostReactions": {
+      "label": "$t:layout_editor.palette.post_reactions.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "PostReactions",
+        "props": {
+          "postId": "sample",
+          "reactions": [
+            { "type": "like", "count": 3 },
+            { "type": "funny", "count": 1 }
+          ]
+        }
+      }
+    },
+    "Form": {
+      "label": "$t:layout_editor.palette.form.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Form",
+        "props": {
+          "className": "space-y-6"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Label",
+            "props": {
+              "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+            },
+            "text": "$t:layout_editor.palette.form.default_label_text"
+          },
+          {
+            "type": "basic",
+            "name": "Input",
+            "props": {
+              "type": "text",
+              "placeholder": "$t:layout_editor.palette.form.default_input_placeholder",
+              "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            }
+          },
+          {
+            "type": "basic",
+            "name": "Button",
+            "props": {
+              "type": "submit",
+              "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+            },
+            "text": "$t:layout_editor.palette.form.default_submit_text"
+          }
+        ]
+      }
+    },
+    "Table": {
+      "label": "$t:layout_editor.palette.table.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "basic",
+        "name": "Table",
+        "props": {
+          "className": "w-full text-sm text-left text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 border-collapse"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Thead",
+            "props": {
+              "className": "bg-gray-50 dark:bg-gray-800"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Tr",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Th",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700 font-semibold"
+                    },
+                    "text": "$t:layout_editor.palette.table.header_1"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Th",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700 font-semibold"
+                    },
+                    "text": "$t:layout_editor.palette.table.header_2"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Tbody",
+            "children": [
+              {
+                "type": "basic",
+                "name": "Tr",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Td",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:layout_editor.palette.table.cell"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Td",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:layout_editor.palette.table.cell"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "Tr",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Td",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:layout_editor.palette.table.cell"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Td",
+                    "props": {
+                      "className": "px-4 py-2 border border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:layout_editor.palette.table.cell"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

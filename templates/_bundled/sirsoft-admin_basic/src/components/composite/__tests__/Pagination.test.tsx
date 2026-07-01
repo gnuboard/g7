@@ -22,7 +22,7 @@ describe('Pagination', () => {
     render(<Pagination {...mockProps} />);
 
     const currentPage = screen.getByText('1');
-    expect(currentPage).toHaveClass('bg-blue-500', 'text-white');
+    expect(currentPage).toHaveClass('pagination-btn-active');
   });
 
   it('페이지 번호 클릭 시 onPageChange가 호출됨', async () => {

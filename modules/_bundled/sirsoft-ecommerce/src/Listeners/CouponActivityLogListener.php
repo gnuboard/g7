@@ -6,6 +6,7 @@ use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
+use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 
 /**
@@ -37,14 +38,15 @@ class CouponActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.coupon.after_update' => ['method' => 'handleAfterUpdate', 'priority' => 20],
             'sirsoft-ecommerce.coupon.after_delete' => ['method' => 'handleAfterDelete', 'priority' => 20],
             'sirsoft-ecommerce.coupon.after_bulk_status' => ['method' => 'handleAfterBulkStatus', 'priority' => 20],
+            'sirsoft-ecommerce.coupon.after_direct_issue' => ['method' => 'handleAfterDirectIssue', 'priority' => 20],
+            'sirsoft-ecommerce.coupon.after_issue_cancel' => ['method' => 'handleAfterIssueCancel', 'priority' => 20],
         ];
     }
 
     /**
      * 훅 이벤트 처리 (기본 핸들러)
      *
-     * @param mixed ...$args 훅에서 전달된 인수들
-     * @return void
+     * @param  mixed  ...$args  훅에서 전달된 인수들
      */
     public function handle(...$args): void
     {
@@ -58,9 +60,8 @@ class CouponActivityLogListener implements HookListenerInterface
     /**
      * 쿠폰 생성 후 로그 기록
      *
-     * @param Coupon $coupon 생성된 쿠폰
-     * @param array $data 생성 데이터
-     * @return void
+     * @param  Coupon  $coupon  생성된 쿠폰
+     * @param  array  $data  생성 데이터
      */
     public function handleAfterCreate(Coupon $coupon, array $data): void
     {
@@ -76,10 +77,9 @@ class CouponActivityLogListener implements HookListenerInterface
     /**
      * 쿠폰 수정 후 로그 기록
      *
-     * @param Coupon $coupon 수정된 쿠폰
-     * @param array $data 수정 데이터
-     * @param array|null $snapshot 수정 전 스냅샷 (Service에서 전달)
-     * @return void
+     * @param  Coupon  $coupon  수정된 쿠폰
+     * @param  array  $data  수정 데이터
+     * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
      */
     public function handleAfterUpdate(Coupon $coupon, array $data, ?array $snapshot = null): void
     {
@@ -99,8 +99,7 @@ class CouponActivityLogListener implements HookListenerInterface
      *
      * after_delete 훅은 $couponId (int)만 전달합니다.
      *
-     * @param int $couponId 삭제된 쿠폰 ID
-     * @return void
+     * @param  int  $couponId  삭제된 쿠폰 ID
      */
     public function handleAfterDelete(int $couponId): void
     {
@@ -112,6 +111,49 @@ class CouponActivityLogListener implements HookListenerInterface
         ]);
     }
 
+    /**
+     * 쿠폰 직접 발급 후 per-item 로그 기록
+     *
+     * @param  Coupon  $coupon  발급 대상 쿠폰
+     * @param  CouponIssue  $couponIssue  생성된 발급 레코드
+     * @param  int  $userId  발급 대상 회원 ID
+     */
+    public function handleAfterDirectIssue(Coupon $coupon, CouponIssue $couponIssue, int $userId): void
+    {
+        $this->logActivity('coupon.direct_issue', [
+            'loggable' => $couponIssue,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.coupon_direct_issue',
+            'description_params' => ['coupon_id' => $coupon->id, 'user_id' => $userId],
+            'properties' => [
+                'coupon_id' => $coupon->id,
+                'user_id' => $userId,
+                'coupon_code' => $couponIssue->coupon_code,
+            ],
+        ]);
+    }
+
+    /**
+     * 쿠폰 발급 취소 후 로그 기록
+     *
+     * @param  CouponIssue  $couponIssue  취소된 발급 레코드
+     */
+    public function handleAfterIssueCancel(CouponIssue $couponIssue): void
+    {
+        $this->logActivity('coupon.issue_cancel', [
+            'loggable' => $couponIssue,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.coupon_issue_cancel',
+            'description_params' => [
+                'coupon_id' => $couponIssue->coupon_id,
+                'user_id' => $couponIssue->user_id,
+            ],
+            'properties' => [
+                'coupon_id' => $couponIssue->coupon_id,
+                'user_id' => $couponIssue->user_id,
+                'coupon_code' => $couponIssue->coupon_code,
+            ],
+        ]);
+    }
+
     // ═══════════════════════════════════════════
     // Bulk 로그 기록 (after 훅, priority 20)
     // ═══════════════════════════════════════════
@@ -119,11 +161,10 @@ class CouponActivityLogListener implements HookListenerInterface
     /**
      * 쿠폰 일괄 상태 변경 후 per-item 로그 기록
      *
-     * @param array $ids 대상 쿠폰 ID 목록
-     * @param mixed $issueStatus 변경된 발급 상태 (Enum)
-     * @param int $count 변경된 수
-     * @param array $snapshots 수정 전 스냅샷 맵 [couponId => array] (Service에서 전달)
-     * @return void
+     * @param  array  $ids  대상 쿠폰 ID 목록
+     * @param  mixed  $issueStatus  변경된 발급 상태 (Enum)
+     * @param  int  $count  변경된 수
+     * @param  array  $snapshots  수정 전 스냅샷 맵 [couponId => array] (Service에서 전달)
      */
     public function handleAfterBulkStatus(array $ids, mixed $issueStatus, int $count, array $snapshots = []): void
     {

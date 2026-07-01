@@ -165,7 +165,49 @@ return [
     */
 
     // 레이아웃 구조 검증 메시지
+    'custom_translation' => [
+        'layout_name' => [
+            'required' => '레이아웃 이름은 필수입니다.',
+            'string' => '레이아웃 이름은 문자열이어야 합니다.',
+            'max' => '레이아웃 이름은 :max자를 초과할 수 없습니다.',
+        ],
+        'locale' => [
+            'required' => '로케일은 필수입니다.',
+            'string' => '로케일은 문자열이어야 합니다.',
+        ],
+        'value' => [
+            'required' => '번역 값은 필수입니다.',
+            'string' => '번역 값은 문자열이어야 합니다.',
+        ],
+        'values' => [
+            'required' => '번역 값은 필수입니다.',
+            'array' => '번역 값은 로케일별 객체여야 합니다.',
+        ],
+        'status' => [
+            'in' => '상태는 active 또는 orphaned 여야 합니다.',
+        ],
+        'expected_lock_version' => [
+            'required' => '저장 요청에 expected_lock_version 이 누락되었습니다.',
+            'integer' => 'expected_lock_version 은 정수여야 합니다.',
+            'min' => 'expected_lock_version 은 0 이상이어야 합니다.',
+        ],
+        'ids' => [
+            'required' => '삭제할 다국어 키를 하나 이상 선택해야 합니다.',
+            'array' => '삭제 대상은 ID 배열이어야 합니다.',
+            'min' => '삭제할 다국어 키를 하나 이상 선택해야 합니다.',
+            'integer' => '다국어 키 ID 는 정수여야 합니다.',
+            'exists' => '존재하지 않는 다국어 키가 포함되어 있습니다.',
+        ],
+    ],
+
     'layout' => [
+        // 낙관적 잠금
+        'expected_lock_version' => [
+            'required' => '저장 요청에 expected_lock_version 이 누락되었습니다.',
+            'integer' => 'expected_lock_version 은 정수여야 합니다.',
+            'min' => 'expected_lock_version 은 0 이상이어야 합니다.',
+        ],
+
         'invalid_json' => '유효하지 않은 JSON 형식입니다.',
         'must_be_array' => '레이아웃 데이터는 배열이어야 합니다.',
         'required_field_missing' => "필수 필드 ':field'가 누락되었습니다.",
@@ -238,11 +280,60 @@ return [
             'description' => [
                 'string' => 'meta.description은 문자열이어야 합니다.',
             ],
+            'keywords' => [
+                'string' => 'meta.keywords는 문자열이어야 합니다.',
+            ],
             'auth_required' => [
                 'boolean' => 'meta.auth_required는 불린이어야 합니다.',
             ],
             'is_base' => [
                 'boolean' => 'meta.is_base는 불린이어야 합니다.',
+            ],
+            'guest_only' => [
+                'boolean' => 'meta.guest_only는 불린이어야 합니다.',
+            ],
+            'is_error_layout' => [
+                'boolean' => 'meta.is_error_layout은 불린이어야 합니다.',
+            ],
+            'error_code' => [
+                'integer' => 'meta.error_code는 정수여야 합니다.',
+            ],
+            'seo' => [
+                'array' => 'meta.seo는 배열이어야 합니다.',
+                'enabled' => [
+                    'boolean' => 'meta.seo.enabled는 불린이어야 합니다.',
+                ],
+                'data_sources' => [
+                    'array' => 'meta.seo.data_sources는 배열이어야 합니다.',
+                    'string' => 'meta.seo.data_sources의 각 항목은 문자열이어야 합니다.',
+                ],
+                'priority' => [
+                    'numeric' => 'meta.seo.priority는 숫자여야 합니다.',
+                    'min' => 'meta.seo.priority는 0 이상이어야 합니다.',
+                    'max' => 'meta.seo.priority는 1 이하여야 합니다.',
+                ],
+                'changefreq' => [
+                    'string' => 'meta.seo.changefreq는 문자열이어야 합니다.',
+                    'in' => 'meta.seo.changefreq는 always, hourly, daily, weekly, monthly, yearly, never 중 하나여야 합니다.',
+                ],
+                'og' => [
+                    'array' => 'meta.seo.og는 배열이어야 합니다.',
+                ],
+                'structured_data' => [
+                    'array' => 'meta.seo.structured_data는 배열이어야 합니다.',
+                ],
+                'page_type' => [
+                    'string' => 'meta.seo.page_type은 문자열이어야 합니다.',
+                ],
+                'toggle_setting' => [
+                    'string' => 'meta.seo.toggle_setting은 문자열이어야 합니다.',
+                ],
+                'vars' => [
+                    'array' => 'meta.seo.vars는 배열이어야 합니다.',
+                ],
+                'extensions' => [
+                    'array' => 'meta.seo.extensions는 배열이어야 합니다.',
+                ],
             ],
         ],
         'modals' => [
@@ -259,6 +350,27 @@ return [
         ],
         'init_state' => [
             'array' => 'init_state 필드는 배열이어야 합니다.',
+        ],
+        'initLocal' => [
+            'array' => 'initLocal 필드는 배열이어야 합니다.',
+        ],
+        'initGlobal' => [
+            'array' => 'initGlobal 필드는 배열이어야 합니다.',
+        ],
+        'global_state' => [
+            'array' => 'global_state 필드는 배열이어야 합니다.',
+        ],
+        'errorHandling' => [
+            'array' => 'errorHandling 필드는 배열이어야 합니다.',
+        ],
+        'actions' => [
+            'array' => 'actions 필드는 배열이어야 합니다.',
+        ],
+        'pageConfig' => [
+            'array' => 'pageConfig 필드는 배열이어야 합니다.',
+        ],
+        'schema' => [
+            'array' => 'schema 필드는 배열이어야 합니다.',
         ],
         'routes' => [
             'array' => 'routes 필드는 배열이어야 합니다.',
@@ -319,6 +431,56 @@ return [
                 'background' => 'wait_for 에는 background 데이터소스를 지정할 수 없습니다 (사용자 차단 불가): :id',
                 'websocket' => 'wait_for 에는 websocket 데이터소스를 지정할 수 없습니다 (fetch 완료 이벤트 없음): :id',
             ],
+        ],
+    ],
+
+    // 레이아웃 확장 검증 메시지
+    'layout_extension' => [
+        // 낙관적 잠금
+        'expected_lock_version' => [
+            'required' => '저장 요청에 expected_lock_version 이 누락되었습니다.',
+            'integer' => 'expected_lock_version 은 정수여야 합니다.',
+            'min' => 'expected_lock_version 은 0 이상이어야 합니다.',
+        ],
+
+        'invalid_json' => '유효하지 않은 JSON 형식입니다.',
+        'must_be_array' => '레이아웃 확장 데이터는 배열이어야 합니다.',
+        'target_required' => "확장 정의에는 'extension_point' 또는 'target_layout' 중 하나가 필요합니다.",
+        'target_exclusive' => "'extension_point'와 'target_layout'은 동시에 지정할 수 없습니다.",
+        'extension_point_invalid' => 'extension_point 필드는 비어있지 않은 문자열이어야 합니다.',
+        'target_layout_invalid' => 'target_layout 필드는 비어있지 않은 문자열이어야 합니다.',
+        'components_must_be_array' => 'components 필드는 배열이어야 합니다.',
+        'injections_required' => 'overlay 확장은 injections 필드가 필요합니다.',
+        'injections_must_be_array' => 'injections 필드는 배열이어야 합니다.',
+        'injection_must_be_array' => 'injections[:index]는 배열이어야 합니다.',
+        'injection_target_id_required' => 'injections[:index]에 target_id 필드가 필요합니다.',
+        'injection_position_invalid' => 'injections[:index].position 값이 유효하지 않습니다.',
+        'injection_components_must_be_array' => 'injections[:index].components는 배열이어야 합니다.',
+        'injection_props_must_be_array' => 'injections[:index].props는 배열이어야 합니다.',
+        'section_must_be_array' => ':section 필드는 배열이어야 합니다.',
+        'max_depth_exceeded' => '컴포넌트 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',
+        'component_must_be_array' => 'components[:index]는 배열이어야 합니다.',
+        'component_required_field_missing' => "components[:index]에 필수 필드 ':field'가 누락되었습니다.",
+        'component_name_must_be_string' => 'components[:index].name은 문자열이어야 합니다.',
+        'component_type_invalid' => 'components[:index].type은 basic, composite, layout 중 하나여야 합니다.',
+        'props_must_be_object' => 'components[:index].props는 객체(배열)여야 합니다.',
+        'children_must_be_array' => 'components[:index].children은 배열이어야 합니다.',
+        'content' => [
+            'required' => '확장 콘텐츠는 필수입니다.',
+            'array' => '확장 콘텐츠는 배열이어야 합니다.',
+        ],
+        'priority' => [
+            'integer' => 'priority는 정수여야 합니다.',
+            'min' => 'priority는 0 이상이어야 합니다.',
+            'max' => 'priority는 9999 이하여야 합니다.',
+        ],
+        'data_sources' => [
+            'array' => 'data_sources는 배열이어야 합니다.',
+        ],
+        'preview_layout' => [
+            'string' => '미리보기 레이아웃명은 문자열이어야 합니다.',
+            'max' => '미리보기 레이아웃명은 255자를 초과할 수 없습니다.',
+            'required' => '확장점 미리보기에는 대표 레이아웃 선택이 필요합니다.',
         ],
     ],
 
@@ -831,6 +993,31 @@ return [
         'websocket_server_scheme_invalid' => '올바른 웹소켓 서버 프로토콜을 선택해주세요.',
         'search_engine_driver_invalid' => '올바른 검색엔진 드라이버를 선택해주세요.',
 
+        // 로그 드라이버 설정
+        'log_driver_required' => '로그 드라이버를 선택해주세요.',
+        'log_driver_invalid' => '올바른 로그 드라이버를 선택해주세요.',
+        'log_level_required' => '로그 레벨을 선택해주세요.',
+        'log_level_invalid' => '올바른 로그 레벨을 선택해주세요.',
+        'log_days_integer' => '로그 보관 일수는 정수여야 합니다.',
+        'log_days_min' => '로그 보관 일수는 1 이상이어야 합니다.',
+        'log_days_max' => '로그 보관 일수는 365를 초과할 수 없습니다.',
+
+        // 드라이버 조건부 필수 메시지 (선택 드라이버에 따라 필수)
+        's3_bucket_required' => 'S3 버킷 이름은 필수입니다.',
+        's3_region_required' => 'S3 리전을 선택해주세요.',
+        's3_access_key_required' => 'S3 Access Key는 필수입니다.',
+        's3_secret_key_required' => 'S3 Secret Key는 필수입니다.',
+        's3_url_url' => 'S3 URL은 유효한 URL이어야 합니다.',
+        'redis_host_required' => 'Redis 호스트는 필수입니다.',
+        'redis_port_required' => 'Redis 포트는 필수입니다.',
+        'redis_database_required' => 'Redis 데이터베이스 번호는 필수입니다.',
+        'memcached_host_required' => 'Memcached 호스트는 필수입니다.',
+        'memcached_port_required' => 'Memcached 포트는 필수입니다.',
+        'session_lifetime_required' => '세션 유효시간은 필수입니다.',
+        'websocket_host_required' => '웹소켓 호스트는 필수입니다.',
+        'websocket_port_required' => '웹소켓 포트는 필수입니다.',
+        'websocket_scheme_required' => '웹소켓 프로토콜을 선택해주세요.',
+
         // 본인인증(IDV) 설정
         'identity_default_provider_string' => '기본 프로바이더는 문자열이어야 합니다.',
         'identity_default_provider_max' => '기본 프로바이더 식별자는 100자를 초과할 수 없습니다.',
@@ -867,6 +1054,7 @@ return [
         'priority_integer' => '우선순위는 정수여야 합니다.',
         'priority_min' => '우선순위는 0 이상이어야 합니다.',
         'priority_max' => '우선순위는 65535를 초과할 수 없습니다.',
+        'priority_duplicate' => '같은 적용 위치(:target)에 우선순위 :priority 인 활성 정책이 이미 있습니다. 어느 정책을 먼저 적용할지 정해지지 않으므로, 우선순위를 다르게 지정하거나 기존 정책을 비활성화해주세요.',
         'conditions_array' => '조건(conditions)은 배열이어야 합니다.',
         'applies_to_required' => '적용 대상을 선택해주세요.',
         'applies_to_invalid' => '적용 대상은 self, admin, both 중 하나여야 합니다.',
@@ -933,5 +1121,27 @@ return [
         // Changelog 필드
         'from_version' => '시작 버전',
         'to_version' => '종료 버전',
+        // 드라이버 설정 필드
+        'storage_driver' => '스토리지 드라이버',
+        's3_bucket' => 'S3 버킷',
+        's3_region' => 'S3 리전',
+        's3_access_key' => 'S3 Access Key',
+        's3_secret_key' => 'S3 Secret Key',
+        's3_url' => 'S3 URL',
+        'cache_driver' => '캐시 드라이버',
+        'redis_host' => 'Redis 호스트',
+        'redis_port' => 'Redis 포트',
+        'redis_password' => 'Redis 비밀번호',
+        'redis_database' => 'Redis 데이터베이스',
+        'memcached_host' => 'Memcached 호스트',
+        'memcached_port' => 'Memcached 포트',
+        'session_driver' => '세션 드라이버',
+        'session_lifetime' => '세션 유효시간',
+        'queue_driver' => '큐 드라이버',
+        'websocket_enabled' => '웹소켓 사용',
+        'websocket_app_key' => '웹소켓 앱 키',
+        'websocket_host' => '웹소켓 호스트',
+        'websocket_port' => '웹소켓 포트',
+        'websocket_scheme' => '웹소켓 프로토콜',
     ],
 ];

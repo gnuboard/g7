@@ -1,0 +1,625 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — GDPR 플러그인 도메인 sampleData. 관리자 레이아웃(plugin_settings / gdpr_consent_log + 정책 버전 모달)의 data_source ID 전수 스캔 기반: gdprSettings / gdprPolicyVersionCurrent / gdprPolicyVersionHistory / gdprPolicyVersionSnapshot / gdprConsentLog. 응답 shape 는 각 레이아웃의 실제 바인딩 경로(gdprSettings.data.* / gdprPolicyVersion*.data.data.* / gdprConsentLog.data.data[] + pagination) 역추론. 편집기 캔버스 프리뷰에서 generic 폴백 차단용 mock.",
+  "pluginId": "sirsoft-gdpr",
+  "version": "1.0.0",
+  "description": "GDPR 플러그인 레이아웃 편집기 샘플 데이터 (쿠키 동의 설정 / 동의 이력 / 개인정보 정책 버전).",
+  "sampleData": {
+    "byDataSourceId": {
+      "gdprSettings": {
+        "data": {
+          "is_blocking_enabled": true,
+          "auto_block": true,
+          "respect_dnt": true,
+          "banner_position": "bottom",
+          "show_settings_button": true,
+          "consent_version": 3,
+          "consent_expiry_days": 365,
+          "privacy_policy_slug": "privacy",
+          "privacy_policy_url": "/privacy",
+          "geo_targeting": false,
+          "geo_countries": [
+            "KR",
+            "JP"
+          ],
+          "test_mode": false,
+          "log_consents": true,
+          "blocked_domains": [
+            "www.google-analytics.com",
+            "connect.facebook.net"
+          ],
+          "cookie_categories": [
+            {
+              "key": "necessary",
+              "name": "필수 쿠키",
+              "description": "사이트 기본 동작에 반드시 필요한 쿠키입니다.",
+              "cookies": [
+                "session",
+                "csrf_token"
+              ],
+              "required": true,
+              "enabled": true
+            },
+            {
+              "key": "analytics",
+              "name": "분석 쿠키",
+              "description": "방문 통계를 수집해 서비스를 개선합니다.",
+              "cookies": [
+                "_ga",
+                "_gid"
+              ],
+              "required": false,
+              "enabled": true
+            },
+            {
+              "key": "marketing",
+              "name": "마케팅 쿠키",
+              "description": "관심사 기반 광고 제공에 사용됩니다.",
+              "cookies": [
+                "_fbp"
+              ],
+              "required": false,
+              "enabled": false
+            }
+          ],
+          "default_blocked_domains_preview": {
+            "analytics": [
+              "www.google-analytics.com",
+              "stats.g.doubleclick.net"
+            ],
+            "marketing": [
+              "connect.facebook.net",
+              "www.googleadservices.com"
+            ]
+          }
+        }
+      },
+      "gdprPolicyVersionCurrent": {
+        "data": {
+          "data": {
+            "version": 3,
+            "created_at": "2026-05-20 14:30:00",
+            "change_type": "material",
+            "memo": "쿠키 분류 항목 추가 및 보관 기간 변경",
+            "publisher": {
+              "name": "관리자",
+              "email": "admin@example.com"
+            }
+          }
+        }
+      },
+      "gdprPolicyVersionHistory": {
+        "data": {
+          "data": [
+            {
+              "version": 3,
+              "created_at": "2026-05-20 14:30:00",
+              "change_type": "material",
+              "memo": "쿠키 분류 항목 추가 및 보관 기간 변경",
+              "publisher": {
+                "name": "관리자",
+                "email": "admin@example.com"
+              }
+            },
+            {
+              "version": 2,
+              "created_at": "2026-03-11 09:05:00",
+              "change_type": "non_material",
+              "memo": "문구 다듬기",
+              "publisher": {
+                "name": "운영자",
+                "email": "manager@example.com"
+              }
+            },
+            {
+              "version": 1,
+              "created_at": "2026-01-02 10:00:00",
+              "change_type": "initial",
+              "memo": "최초 발행",
+              "publisher": {
+                "name": "관리자",
+                "email": "admin@example.com"
+              }
+            }
+          ]
+        }
+      },
+      "gdprPolicyVersionSnapshot": {
+        "data": {
+          "data": {
+            "version": 2,
+            "created_at": "2026-03-11 09:05:00",
+            "change_type": "non_material",
+            "memo": "문구 다듬기",
+            "publisher": {
+              "name": "운영자",
+              "email": "manager@example.com"
+            },
+            "snapshot": {
+              "privacy_policy_slug": "privacy",
+              "cookie_categories": [
+                {
+                  "key": "necessary",
+                  "name": "필수 쿠키",
+                  "required": true,
+                  "enabled": true
+                },
+                {
+                  "key": "analytics",
+                  "name": "분석 쿠키",
+                  "required": false,
+                  "enabled": true
+                }
+              ]
+            },
+            "blocked_domains_list": [
+              "www.google-analytics.com",
+              "connect.facebook.net"
+            ]
+          }
+        }
+      },
+      "gdprConsentLog": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "created_at": "2026-05-29 18:22:10",
+              "ip_address": "203.0.113.10",
+              "consent_given": true,
+              "categories": [
+                "necessary",
+                "analytics"
+              ],
+              "policy_version": 3
+            },
+            {
+              "id": 2,
+              "created_at": "2026-05-29 17:01:42",
+              "ip_address": "203.0.113.55",
+              "consent_given": false,
+              "categories": [
+                "necessary"
+              ],
+              "policy_version": 3
+            },
+            {
+              "id": 3,
+              "created_at": "2026-05-28 11:40:05",
+              "ip_address": "198.51.100.7",
+              "consent_given": true,
+              "categories": [
+                "necessary",
+                "analytics",
+                "marketing"
+              ],
+              "policy_version": 2
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 4,
+            "per_page": 20,
+            "total": 73
+          }
+        }
+      },
+      "gdprPublicSettings": {
+        "data": {
+          "cookie_policy_version": "1",
+          "privacy_policy_slug": "privacy",
+          "privacy_policy_available": true,
+          "legal_entity_name": "",
+          "data_storage_location": "",
+          "banner_enabled": true,
+          "banner_position": "bottom_bar",
+          "cookie_categories": [
+            {
+              "key": "necessary",
+              "required": true,
+              "label": {
+                "ko": "필수 쿠키",
+                "en": "Strictly Necessary"
+              },
+              "description": {
+                "ko": "세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 가입 시 선택한 언어 설정, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
+                "en": "Strictly necessary for site operation: session/CSRF/auth tokens, shopping basket identifier, user-selected language preference at registration, cookie consent record. Cannot be disabled."
+              }
+            },
+            {
+              "key": "functional",
+              "required": false,
+              "label": {
+                "ko": "기능 쿠키",
+                "en": "Functional"
+              },
+              "description": {
+                "ko": "사용자 선호도(다크모드, 표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.",
+                "en": "Cookies that remember user preferences such as dark mode and display currency. If declined, defaults are used on every visit."
+              }
+            },
+            {
+              "key": "analytics",
+              "required": false,
+              "label": {
+                "ko": "분석 쿠키",
+                "en": "Analytics"
+              },
+              "description": {
+                "ko": "방문자가 사이트를 어떻게 이용하는지 익명으로 측정해 더 나은 서비스를 만드는 데 사용됩니다. (예: Google Analytics, Hotjar)",
+                "en": "Used to anonymously measure how visitors use the site so we can improve it. (e.g. Google Analytics, Hotjar)"
+              }
+            },
+            {
+              "key": "marketing",
+              "required": false,
+              "label": {
+                "ko": "마케팅 쿠키",
+                "en": "Marketing"
+              },
+              "description": {
+                "ko": "관심사에 맞는 광고를 보여주거나, 광고가 얼마나 효과적이었는지 측정하는 데 사용됩니다. SNS 영상 임베드 등도 포함됩니다. (예: Facebook 픽셀, Google 광고, YouTube 영상)",
+                "en": "Used to show ads relevant to your interests, measure ad performance, and embed social media content. (e.g. Facebook Pixel, Google Ads, YouTube embeds)"
+              }
+            }
+          ],
+          "blocked_domains": {
+            "functional": [
+              "*.crisp.chat",
+              "client.crisp.chat",
+              "*.intercom.io",
+              "widget.intercom.io",
+              "*.tawk.to",
+              "embed.tawk.to",
+              "cdn.weglot.com",
+              "*.weglot.com",
+              "*.usercentrics.eu"
+            ],
+            "analytics": [
+              "google-analytics.com",
+              "*.google-analytics.com",
+              "googletagmanager.com",
+              "*.googletagmanager.com",
+              "ssl.google-analytics.com",
+              "*.hotjar.com",
+              "static.hotjar.com",
+              "*.mixpanel.com",
+              "cdn.mxpnl.com",
+              "*.amplitude.com",
+              "cdn.amplitude.com",
+              "*.segment.io",
+              "*.segment.com",
+              "wcs.naver.net",
+              "wcs.naver.com",
+              "*.beusable.net"
+            ],
+            "marketing": [
+              "facebook.net",
+              "connect.facebook.net",
+              "facebook.com",
+              "*.facebook.com",
+              "doubleclick.net",
+              "*.doubleclick.net",
+              "googleadservices.com",
+              "googlesyndication.com",
+              "ads.google.com",
+              "*.criteo.com",
+              "static.criteo.net",
+              "*.adnxs.com",
+              "*.taboola.com",
+              "cdn.taboola.com",
+              "*.outbrain.com",
+              "*.kakao.com",
+              "analytics.ad.daum.net",
+              "platform.twitter.com",
+              "*.twitter.com",
+              "platform.linkedin.com",
+              "*.linkedin.com"
+            ]
+          },
+          "default_blocked_domains_preview": {
+            "functional": [
+              "*.crisp.chat",
+              "client.crisp.chat",
+              "*.intercom.io",
+              "widget.intercom.io",
+              "*.tawk.to",
+              "embed.tawk.to",
+              "cdn.weglot.com",
+              "*.weglot.com",
+              "*.usercentrics.eu"
+            ],
+            "analytics": [
+              "google-analytics.com",
+              "*.google-analytics.com",
+              "googletagmanager.com",
+              "*.googletagmanager.com",
+              "ssl.google-analytics.com",
+              "*.hotjar.com",
+              "static.hotjar.com",
+              "*.mixpanel.com",
+              "cdn.mxpnl.com",
+              "*.amplitude.com",
+              "cdn.amplitude.com",
+              "*.segment.io",
+              "*.segment.com",
+              "wcs.naver.net",
+              "wcs.naver.com",
+              "*.beusable.net"
+            ],
+            "marketing": [
+              "facebook.net",
+              "connect.facebook.net",
+              "facebook.com",
+              "*.facebook.com",
+              "doubleclick.net",
+              "*.doubleclick.net",
+              "googleadservices.com",
+              "googlesyndication.com",
+              "ads.google.com",
+              "*.criteo.com",
+              "static.criteo.net",
+              "*.adnxs.com",
+              "*.taboola.com",
+              "cdn.taboola.com",
+              "*.outbrain.com",
+              "*.kakao.com",
+              "analytics.ad.daum.net",
+              "platform.twitter.com",
+              "*.twitter.com",
+              "platform.linkedin.com",
+              "*.linkedin.com"
+            ]
+          }
+        }
+      },
+      "gdprMyConsent": {
+        "data": {
+          "has_consented": true,
+          "consents": {
+            "analytics": true,
+            "functional": true,
+            "marketing": true,
+            "necessary": true
+          },
+          "needs_renewal": false,
+          "current_policy_version": "1",
+          "is_member": true
+        }
+      },
+      "gdprMeConsents": {
+        "data": {
+          "user_id": 1,
+          "needs_renewal": false,
+          "current_policy_version": "1",
+          "consents": [
+            {
+              "id": 1,
+              "consent_key": "cookie_necessary",
+              "consent_label": "필수 쿠키",
+              "consent_description": "세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 가입 시 선택한 언어 설정, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
+              "consent_category": "cookie",
+              "is_required": true,
+              "is_consented": true,
+              "can_revoke": false,
+              "can_grant": false,
+              "needs_renewal_this_item": false,
+              "consented_at": "2026-05-24 09:32:38",
+              "revoked_at": null,
+              "consent_count": 1,
+              "policy_version": "1",
+              "last_source": "banner",
+              "created_at": "2026-05-24 09:32:38",
+              "updated_at": "2026-05-24 09:32:38"
+            },
+            {
+              "id": 2,
+              "consent_key": "cookie_functional",
+              "consent_label": "기능 쿠키",
+              "consent_description": "사용자 선호도(다크모드, 표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.",
+              "consent_category": "cookie",
+              "is_required": false,
+              "is_consented": true,
+              "can_revoke": true,
+              "can_grant": false,
+              "needs_renewal_this_item": false,
+              "consented_at": "2026-05-24 09:32:38",
+              "revoked_at": null,
+              "consent_count": 1,
+              "policy_version": "1",
+              "last_source": "banner",
+              "created_at": "2026-05-24 09:32:38",
+              "updated_at": "2026-05-24 09:32:38"
+            },
+            {
+              "id": 3,
+              "consent_key": "cookie_analytics",
+              "consent_label": "분석 쿠키",
+              "consent_description": "방문자가 사이트를 어떻게 이용하는지 익명으로 측정해 더 나은 서비스를 만드는 데 사용됩니다. (예: Google Analytics, Hotjar)",
+              "consent_category": "cookie",
+              "is_required": false,
+              "is_consented": true,
+              "can_revoke": true,
+              "can_grant": false,
+              "needs_renewal_this_item": false,
+              "consented_at": "2026-05-24 09:32:38",
+              "revoked_at": null,
+              "consent_count": 1,
+              "policy_version": "1",
+              "last_source": "banner",
+              "created_at": "2026-05-24 09:32:38",
+              "updated_at": "2026-05-24 09:32:38"
+            },
+            {
+              "id": 4,
+              "consent_key": "cookie_marketing",
+              "consent_label": "마케팅 쿠키",
+              "consent_description": "관심사에 맞는 광고를 보여주거나, 광고가 얼마나 효과적이었는지 측정하는 데 사용됩니다. SNS 영상 임베드 등도 포함됩니다. (예: Facebook 픽셀, Google 광고, YouTube 영상)",
+              "consent_category": "cookie",
+              "is_required": false,
+              "is_consented": true,
+              "can_revoke": true,
+              "can_grant": false,
+              "needs_renewal_this_item": false,
+              "consented_at": "2026-05-24 09:32:38",
+              "revoked_at": null,
+              "consent_count": 1,
+              "policy_version": "1",
+              "last_source": "banner",
+              "created_at": "2026-05-24 09:32:38",
+              "updated_at": "2026-05-24 09:32:38"
+            }
+          ]
+        }
+      },
+      "gdprMyConsents": {
+        "data": [
+          {
+            "id": 1,
+            "consent_key": "cookie_necessary",
+            "consent_label": "필수 쿠키",
+            "consent_description": "세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 가입 시 선택한 언어 설정, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
+            "consent_category": "cookie",
+            "is_required": true,
+            "is_consented": true,
+            "can_revoke": false,
+            "can_grant": false,
+            "needs_renewal_this_item": false,
+            "consented_at": "2026-05-24 09:32:38",
+            "revoked_at": null,
+            "consent_count": 1,
+            "policy_version": "1",
+            "last_source": "banner",
+            "created_at": "2026-05-24 09:32:38",
+            "updated_at": "2026-05-24 09:32:38"
+          },
+          {
+            "id": 2,
+            "consent_key": "cookie_functional",
+            "consent_label": "기능 쿠키",
+            "consent_description": "사용자 선호도(다크모드, 표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.",
+            "consent_category": "cookie",
+            "is_required": false,
+            "is_consented": true,
+            "can_revoke": true,
+            "can_grant": false,
+            "needs_renewal_this_item": false,
+            "consented_at": "2026-05-24 09:32:38",
+            "revoked_at": null,
+            "consent_count": 1,
+            "policy_version": "1",
+            "last_source": "banner",
+            "created_at": "2026-05-24 09:32:38",
+            "updated_at": "2026-05-24 09:32:38"
+          },
+          {
+            "id": 3,
+            "consent_key": "cookie_analytics",
+            "consent_label": "분석 쿠키",
+            "consent_description": "방문자가 사이트를 어떻게 이용하는지 익명으로 측정해 더 나은 서비스를 만드는 데 사용됩니다. (예: Google Analytics, Hotjar)",
+            "consent_category": "cookie",
+            "is_required": false,
+            "is_consented": true,
+            "can_revoke": true,
+            "can_grant": false,
+            "needs_renewal_this_item": false,
+            "consented_at": "2026-05-24 09:32:38",
+            "revoked_at": null,
+            "consent_count": 1,
+            "policy_version": "1",
+            "last_source": "banner",
+            "created_at": "2026-05-24 09:32:38",
+            "updated_at": "2026-05-24 09:32:38"
+          },
+          {
+            "id": 4,
+            "consent_key": "cookie_marketing",
+            "consent_label": "마케팅 쿠키",
+            "consent_description": "관심사에 맞는 광고를 보여주거나, 광고가 얼마나 효과적이었는지 측정하는 데 사용됩니다. SNS 영상 임베드 등도 포함됩니다. (예: Facebook 픽셀, Google 광고, YouTube 영상)",
+            "consent_category": "cookie",
+            "is_required": false,
+            "is_consented": true,
+            "can_revoke": true,
+            "can_grant": false,
+            "needs_renewal_this_item": false,
+            "consented_at": "2026-05-24 09:32:38",
+            "revoked_at": null,
+            "consent_count": 1,
+            "policy_version": "1",
+            "last_source": "banner",
+            "created_at": "2026-05-24 09:32:38",
+            "updated_at": "2026-05-24 09:32:38"
+          }
+        ]
+      }
+    }
+  },
+  "states": {
+    "comment": "GDPR 동의 로그 목록 유무.",
+    "groups": [
+      {
+        "comment": "consent-log — gdprConsentLog 데이터소스 빈 배열 시 빈 상태.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-gdpr/consent-log"
+        },
+        "items": [
+          {
+            "id": "with_data",
+            "label": "$t:editor.state.with_data",
+            "default": true
+          },
+          {
+            "id": "empty_data",
+            "label": "$t:editor.state.empty_data",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "gdprConsentLog": {
+                  "data": {
+                    "data": [],
+                    "meta": {
+                      "total": 0,
+                      "per_page": 20,
+                      "current_page": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": " states 전수 — 쿠키 배너(user_global_overlay EP 주입 조각). 배너 루트 if 가 gdprMyConsent.has_consented !== true 를 요구하는데 기본 샘플은 has_consented=true 라 미렌더. 미동의 사용자 샘플(base 샘플과 동일 shape 통째 교체)로 배너를 노출한다. default 항목은 템플릿 _user_base 그룹이 소유(concat — 중복 default 금지).",
+        "scope": {
+          "kind": "base",
+          "match": "_user_base"
+        },
+        "items": [
+          {
+            "id": "gdpr_cookie_banner_visible",
+            "label": "$t:editor.state.gdpr_cookie_banner_visible",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "gdprMyConsent": {
+                  "data": {
+                    "has_consented": false,
+                    "consents": {
+                      "analytics": false,
+                      "functional": false,
+                      "marketing": false,
+                      "necessary": true
+                    },
+                    "needs_renewal": false,
+                    "current_policy_version": "1",
+                    "is_member": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

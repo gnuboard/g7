@@ -1,0 +1,60 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은 계산 API
+#   연동 고도화(메서드/인증/필드매핑/응답추출/테스트호출)를 PHPUnit Unit/Feature 가
+#   method × auth × response_type × field_map cross product 로 커버하며 green.
+feature: 배송정책 외부 API 연동 고도화 (MP12 — 메서드/토큰/필드매핑/응답추출/테스트호출)
+
+description: |
+  배송정책 계산 API(charge_policy=api) 호출을 실사용 가능하게 확장한다.
+  - HTTP 메서드 GET/POST 선택 (GET 은 items 배열을 bracket 표기 query string 직렬화)
+  - 인증 방식 none/bearer/custom_header + 토큰(encrypted 저장, 응답 마스킹)
+  - 요청 필드 외부 키 매핑(field_map) — 우리 키를 외부 API 키 이름으로 리네임
+  - 응답 형식 json(점표기 중첩 경로)/text(숫자/소수점 추출)
+  - 테스트 호출 엔드포인트 — 요청 미리보기 + 응답 + 추출 배송비 반환
+
+axes:
+  http_method:
+    - GET                # query string bracket 직렬화
+    - POST               # JSON body
+  auth_type:
+    - none
+    - bearer             # Authorization: Bearer
+    - custom_header      # 지정 헤더명
+  response_type:
+    - json_single        # 단일 키
+    - json_nested        # 점표기 중첩 경로
+    - text_currency      # "₩3,000" → 3000
+    - text_non_numeric   # 숫자 아님 → base_fee 폴백
+  field_map:
+    - none               # 우리 키 그대로
+    - rename             # 외부 키 리네임
+  request:
+    - store
+    - update             # 토큰 재전송 유지(빈 토큰 → 기존 유지)
+    - test_call          # 테스트 호출 엔드포인트
+
+effects:
+  - method_get_sends_query_string         # GET bracket 직렬화
+  - method_post_sends_json_body
+  - bearer_attaches_authorization_header
+  - custom_header_attaches_named_header
+  - field_map_renames_request_keys
+  - json_nested_path_extracted
+  - text_currency_stripped_to_number
+  - non_numeric_falls_back_to_base_fee
+  - auth_token_encrypted_at_rest           # DB 평문 미저장
+  - auth_token_masked_in_response          # 응답 비노출
+  - auth_token_preserved_on_update         # 빈 토큰 → 기존 유지
+  - custom_header_requires_header_name     # cross-field
+  - test_call_returns_preview_and_fee
+  - test_call_requires_update_permission
+  - options_from_backend_enum_ssot         # 프론트 하드코딩 부재
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingApiAdvancedCalculationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ShippingPolicyValidationMessageTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ShippingPolicyTestApiCallTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsMileageTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/mp12ApiConfigSettings.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/shippingPolicyFormHandlers.test.ts

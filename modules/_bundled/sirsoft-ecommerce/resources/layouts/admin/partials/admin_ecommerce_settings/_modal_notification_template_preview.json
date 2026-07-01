@@ -15,22 +15,16 @@
       "id": "ecommerce_preview_content",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "space-y-1"
-          },
           "children": [
             {
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                "className": "form-label"
               },
               "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.rendered_subject"
             },
@@ -38,7 +32,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
+                "className": "text-primary text-sm bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
               },
               "text": "{{_global.ecommerce_notification_template_form_modal?.preview?.subject ?? ''}}"
             }
@@ -47,15 +41,12 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "space-y-1"
-          },
           "children": [
             {
               "type": "basic",
               "name": "Label",
               "props": {
-                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                "className": "form-label"
               },
               "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.rendered_body"
             },
@@ -74,7 +65,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700"
+            "className": "flex justify-end border-t border-gray-200 dark:border-gray-700"
           },
           "children": [
             {
@@ -83,7 +74,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
               },
               "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.btn_close",
               "actions": [
@@ -96,7 +87,9 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     }
   ]
 }

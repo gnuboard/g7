@@ -292,13 +292,25 @@
                       },
                       "children": [
                         {
+                          "comment": "라디오 스타일 — 왼쪽에 선택/비선택 동그라미, 오른쪽에 은행명/계좌번호. 결제수단 선택 카드(상단)와 시각적 일관성을 맞추되, 무통장 계좌는 다중 선택 가능성이 있어 명시적 라디오 표시 유지",
                           "type": "basic",
                           "name": "Div",
-                          "props": { "className": "flex justify-between items-center" },
+                          "props": { "className": "flex items-center gap-3" },
                           "children": [
+                            {
+                              "comment": "라디오 아이콘 — 선택: 채워진 체크 동그라미 / 비선택: 빈 동그라미",
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'circle-check' : 'circle'}}",
+                                "iconStyle": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'solid' : 'regular'}}",
+                                "className": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'w-5 h-5 text-blue-500 flex-shrink-0' : 'w-5 h-5 text-gray-300 dark:text-gray-600 flex-shrink-0'}}"
+                              }
+                            },
                             {
                               "type": "basic",
                               "name": "Div",
+                              "props": { "className": "flex-1" },
                               "children": [
                                 {
                                   "type": "basic",
@@ -313,12 +325,6 @@
                                   "text": "{{bank.account_number}} ({{bank.account_holder}})"
                                 }
                               ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "if": "{{_local.selectedDbank?.bank_code === bank.bank_code}}",
-                              "props": { "name": "check-circle", "className": "w-5 h-5 text-blue-500" }
                             }
                           ]
                         }

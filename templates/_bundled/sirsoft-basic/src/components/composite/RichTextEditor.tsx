@@ -21,6 +21,7 @@ import { Input } from '../basic/Input';
 import { Textarea } from '../basic/Textarea';
 import { H3 } from '../basic/H3';
 import { Label } from '../basic/Label';
+import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -43,6 +44,14 @@ interface RichTextEditorProps {
   disabled?: boolean;
   /** 추가 CSS 클래스 */
   className?: string;
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+/**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 type FormatType =
@@ -96,6 +105,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   minHeight = '300px',
   disabled = false,
   className = '',
+  id,
+  editorAttrs,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState(initialValue);
@@ -185,7 +196,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   ];
 
   return (
-    <Div className={`border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden ${className}`}>
+    <Div className={`border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden ${className}`} id={id} {...editorAttrs}>
       {/* 툴바 */}
       <Div className="flex flex-wrap items-center gap-1 p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* 텍스트 포맷 */}

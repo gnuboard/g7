@@ -1,0 +1,1388 @@
+{
+    "version": "1.0.0",
+    "layout_name": "gdpr_consent_log",
+    "permissions": [
+        "sirsoft-gdpr.privacy.view"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-gdpr.admin.consent_log.title",
+        "description": "$t:sirsoft-gdpr.admin.consent_log.description"
+    },
+    "state": {
+        "filter": {
+            "searchType": "email",
+            "search": "",
+            "consentKeys": [],
+            "actions": [],
+            "sources": []
+        }
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "gdprConsentLog"
+        ]
+    },
+    "data_sources": [
+        {
+            "id": "gdprConsentLog",
+            "label_key": "$t:sirsoft-gdpr.editor.data_source.gdprConsentLog",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-gdpr/admin/consent-log",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "email": "{{query.email}}",
+                "session_id": "{{query.session_id}}",
+                "consent_keys": "{{query['consent_keys[]'] || query.consent_keys}}",
+                "actions": "{{query['actions[]'] || query.actions}}",
+                "sources": "{{query['sources[]'] || query.sources}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0,
+                        "from": null,
+                        "to": null
+                    }
+                }
+            }
+        },
+        {
+            "comment": "정책 버전 단건 snapshot — policy_version 컬럼 클릭 시 setState global.viewingPolicyVersion → refetchDataSource 시퀀스로 fetch. plugin_settings 화면과 동일한 data_source/modal 구조 (공유 partial 사용).",
+            "id": "gdprPolicyVersionSnapshot",
+            "label_key": "$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionSnapshot",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-gdpr/admin/policy-versions/{{_global.viewingPolicyVersion}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "refetchOnMount": true
+        }
+    ],
+    "modals": [
+        {
+            "partial": "partials/_shared/_policy_version_snapshot_modal.json"
+        }
+    ],
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "filter": {
+                    "searchType": "{{query.session_id ? 'session_id' : 'email'}}",
+                    "search": "{{query.email || query.session_id || ''}}",
+                    "consentKeys": "{{Array.isArray(query['consent_keys[]']) ? query['consent_keys[]'] : (query['consent_keys[]'] ? [query['consent_keys[]']] : [])}}",
+                    "actions": "{{Array.isArray(query['actions[]']) ? query['actions[]'] : (query['actions[]'] ? [query['actions[]']] : [])}}",
+                    "sources": "{{Array.isArray(query['sources[]']) ? query['sources[]'] : (query['sources[]'] ? [query['sources[]']] : [])}}"
+                }
+            }
+        }
+    ],
+    "named_actions": {
+        "searchConsentLogs": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/plugins/sirsoft-gdpr/consent-log",
+                "replace": true,
+                "mergeQuery": true,
+                "query": {
+                    "page": 1,
+                    "email": "{{_local.filter.searchType === 'email' && _local.filter.search ? _local.filter.search : ''}}",
+                    "session_id": "{{_local.filter.searchType === 'session_id' && _local.filter.search ? _local.filter.search : ''}}",
+                    "consent_keys": "{{_local.filter.consentKeys && _local.filter.consentKeys.length > 0 ? _local.filter.consentKeys : []}}",
+                    "actions": "{{_local.filter.actions && _local.filter.actions.length > 0 ? _local.filter.actions : []}}",
+                    "sources": "{{_local.filter.sources && _local.filter.sources.length > 0 ? _local.filter.sources : []}}"
+                },
+                "transition_overlay_target": "gdpr_consent_log_datagrid__body"
+            }
+        },
+        "clearFilters": {
+            "handler": "sequence",
+            "params": {
+                "actions": [
+                    {
+                        "handler": "setState",
+                        "params": {
+                            "target": "local",
+                            "filter": {
+                                "searchType": "email",
+                                "search": "",
+                                "consentKeys": [],
+                                "actions": [],
+                                "sources": []
+                            }
+                        }
+                    },
+                    {
+                        "handler": "navigate",
+                        "params": {
+                            "path": "/admin/plugins/sirsoft-gdpr/consent-log",
+                            "replace": true,
+                            "query": []
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "gdpr_consent_log_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-gdpr.admin.consent_log.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:sirsoft-gdpr.admin.consent_log.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "refresh_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "title": "$t:sirsoft-gdpr.admin.consent_log.refresh"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "gdprConsentLog"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-solid fa-arrows-rotate",
+                                                    "className": "w-5 h-5"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "filter_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "admin-card mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "search_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-center gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "searchType",
+                                                    "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                                    "value": "{{_local.filter.searchType || 'email'}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "email",
+                                                            "label": "$t:sirsoft-gdpr.admin.consent_log.search_type.email"
+                                                        },
+                                                        {
+                                                            "value": "session_id",
+                                                            "label": "$t:sirsoft-gdpr.admin.consent_log.search_type.session_id"
+                                                        }
+                                                    ]
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter.searchType": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "relative flex-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-search",
+                                                            "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "name": "search",
+                                                            "type": "text",
+                                                            "placeholder": "$t:sirsoft-gdpr.admin.consent_log.search_placeholder",
+                                                            "className": "input pl-10",
+                                                            "value": "{{_local.filter.search || ''}}"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "filter.search": "{{$event.target.value}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "keydown",
+                                                                "key": "Enter",
+                                                                "actionRef": "searchConsentLogs"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-xl"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "actionRef": "searchConsentLogs"
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-gdpr.admin.consent_log.search_button"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "filter_grid",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "filter-grid"
+                                },
+                                "children": [
+                                    {
+                                        "id": "consent_key_filter",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "filter-row"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "filter-label w-32"
+                                                },
+                                                "text": "$t:sirsoft-gdpr.admin.consent_log.filter.consent_key_label"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-center flex-wrap gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{!_local.filter.consentKeys || _local.filter.consentKeys.length === 0}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.consentKeys": "{{[]}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.admin.consent_log.filter.option_all"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.consentKeys || []).includes('cookie_necessary')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_necessary'), 'cookie_necessary'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_necessary')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.consent.category_cookie_necessary"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.consentKeys || []).includes('cookie_functional')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_functional'), 'cookie_functional'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_functional')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.consent.category_cookie_functional"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.consentKeys || []).includes('cookie_analytics')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_analytics'), 'cookie_analytics'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_analytics')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.consent.category_cookie_analytics"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.consentKeys || []).includes('cookie_marketing')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.consentKeys": "{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_marketing'), 'cookie_marketing'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_marketing')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.consent.category_cookie_marketing"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "action_filter",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "filter-row"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "filter-label w-32"
+                                                },
+                                                "text": "$t:sirsoft-gdpr.admin.consent_log.filter.action_label"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-center flex-wrap gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{!_local.filter.actions || _local.filter.actions.length === 0}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.actions": "{{[]}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.admin.consent_log.filter.option_all"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.actions || []).includes('granted')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.actions": "{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'granted'), 'granted'] : (_local.filter.actions || []).filter(a => a !== 'granted')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.admin.consent_log.action.granted"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.actions || []).includes('revoked')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.actions": "{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'revoked'), 'revoked'] : (_local.filter.actions || []).filter(a => a !== 'revoked')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.admin.consent_log.action.revoked"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "source_filter",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "filter-row"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "filter-label w-32"
+                                                },
+                                                "text": "$t:sirsoft-gdpr.admin.consent_log.filter.source_label"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-center flex-wrap gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{!_local.filter.sources || _local.filter.sources.length === 0}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.sources": "{{[]}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.admin.consent_log.filter.option_all"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.sources || []).includes('banner')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'banner'), 'banner'] : (_local.filter.sources || []).filter(s => s !== 'banner')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.admin.consent_log.source.banner"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.sources || []).includes('preference_center')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'preference_center'), 'preference_center'] : (_local.filter.sources || []).filter(s => s !== 'preference_center')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.admin.consent_log.source.preference_center"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "inline-clickable"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{(_local.filter.sources || []).includes('mypage')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "filter.sources": "{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'mypage'), 'mypage'] : (_local.filter.sources || []).filter(s => s !== 'mypage')}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "actionRef": "searchConsentLogs"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label"
+                                                                },
+                                                                "text": "$t:sirsoft-gdpr.admin.consent_log.source.mypage"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "clear_filters_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{!!(query.email || query.session_id || query['consent_keys[]'] || query['actions[]'] || query['sources[]'])}}",
+                                        "props": {
+                                            "className": "flex justify-end mt-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline"
+                                                },
+                                                "text": "$t:sirsoft-gdpr.admin.consent_log.clear_filters",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "actionRef": "clearFilters"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "gdpr_consent_log_datagrid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "props": {
+                            "data": "{{gdprConsentLog?.data?.data}}",
+                            "pagination": true,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{gdprConsentLog?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{gdprConsentLog?.data?.pagination?.last_page ?? 1}}",
+                            "pageSize": "{{+(query.per_page || 20)}}",
+                            "alwaysShowPagination": true,
+                            "idField": "id",
+                            "selectable": false,
+                            "loading": "{{gdprConsentLog?.loading}}",
+                            "expandable": true,
+                            "emptyText": "$t:sirsoft-gdpr.admin.consent_log.empty",
+                            "expandChildren": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "p-4 bg-gray-50 dark:bg-gray-900 space-y-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "grid-2col-responsive"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                                                            },
+                                                            "text": "$t:sirsoft-gdpr.admin.consent_log.detail.session_id_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-xs font-mono text-gray-700 dark:text-gray-300 break-all mt-0.5"
+                                                            },
+                                                            "text": "{{row.session_id ?? '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                                                            },
+                                                            "text": "$t:sirsoft-gdpr.admin.consent_log.detail.user_agent_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-xs text-gray-700 dark:text-gray-300 break-all mt-0.5"
+                                                            },
+                                                            "text": "{{row.user_agent ?? '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(row.categories_snapshot?.length ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "md:col-span-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"
+                                                            },
+                                                            "text": "$t:sirsoft-gdpr.admin.consent_log.detail.categories_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-tertiary mb-2"
+                                                            },
+                                                            "text": "$t:sirsoft-gdpr.admin.consent_log.detail.categories_hint"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded divide-y divide-gray-200 dark:divide-gray-700"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "iteration": {
+                                                                        "source": "row.categories_snapshot",
+                                                                        "item_var": "snapshot_item"
+                                                                    },
+                                                                    "props": {
+                                                                        "className": "flex-between gap-3 px-3 py-2 text-xs"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-gray-700 dark:text-gray-300"
+                                                                            },
+                                                                            "text": "{{$t(snapshot_item.label_key) ?? snapshot_item.key}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{snapshot_item.granted}}",
+                                                                            "props": {
+                                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                                                                            },
+                                                                            "text": "$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_granted"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{!snapshot_item.granted}}",
+                                                                            "props": {
+                                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                                                                            },
+                                                                            "text": "$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_revoked"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "columns": [
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:sirsoft-gdpr.admin.consent_log.col.created_at",
+                                    "sortable": false,
+                                    "width": "170px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label whitespace-nowrap"
+                                            },
+                                            "text": "{{row.created_at ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "subject",
+                                    "header": "$t:sirsoft-gdpr.admin.consent_log.col.subject",
+                                    "sortable": false,
+                                    "width": "260px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "comment": "회원 row 의 이름·이메일 클릭 시 회원 상세 페이지로 이동 (검토 #26). DPO 가 이상 패턴 발견 시 즉시 회원 상세 조회 가능. 게스트 row 는 user_id 가 없어 분기가 다름.",
+                                            "if": "{{!!row.user_id}}",
+                                            "props": {
+                                                "type": "button",
+                                                "title": "$t:sirsoft-gdpr.admin.consent_log.view_member_tooltip",
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/users/{{row.user.uuid}}"
+                                                    }
+                                                }
+                                            ],
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{(row.user?.name ?? '') + ' (' + (row.user?.email ?? '') + ')'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!row.user_id}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-mono"
+                                            },
+                                            "text": "{{$t('sirsoft-gdpr.admin.consent_log.guest_label') + ' ' + (row.session_id ? row.session_id.substring(0, 8) + '…' : '-')}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "consent_key",
+                                    "header": "$t:sirsoft-gdpr.admin.consent_log.col.consent_key",
+                                    "sortable": false,
+                                    "width": "120px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
+                                            },
+                                            "text": "{{$t('sirsoft-gdpr.consent.category_' + (row.consent_key ?? 'cookie_necessary'))}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "action",
+                                    "header": "$t:sirsoft-gdpr.admin.consent_log.col.action",
+                                    "sortable": false,
+                                    "width": "100px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{row.action === 'granted' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : (row.action === 'revoked' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300')}}"
+                                            },
+                                            "text": "{{$t('sirsoft-gdpr.admin.consent_log.action.' + (row.action ?? 'granted'))}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "source",
+                                    "header": "$t:sirsoft-gdpr.admin.consent_log.col.source",
+                                    "sortable": false,
+                                    "width": "130px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "{{row.source ? $t('sirsoft-gdpr.admin.consent_log.source.' + row.source) : '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "policy_version",
+                                    "header": "$t:sirsoft-gdpr.admin.consent_log.col.policy_version",
+                                    "sortable": false,
+                                    "width": "150px",
+                                    "cellChildren": [
+                                        {
+                                            "comment": "policy_version 셀 — 평문 Span + 본문 보기 버튼 분리. row.policy_version 이 null 인 옛 행은 '-' 만 표시.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-mono text-gray-600 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{row.policy_version ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{row.policy_version}}",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
+                                                        "title": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row.policy_version}}"
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "viewingPolicyVersion": "{{row.policy_version}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "gdprPolicyVersionSnapshot"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "policy_version_snapshot_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_view_short"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "ip_address",
+                                    "header": "$t:sirsoft-gdpr.admin.consent_log.col.ip",
+                                    "sortable": false,
+                                    "width": "130px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs font-mono text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "{{row.ip_address ?? '-'}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "actions": [
+                            {
+                                "event": "onPageChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-gdpr/consent-log",
+                                    "replace": true,
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    },
+                                    "transition_overlay_target": "gdpr_consent_log_datagrid__body"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

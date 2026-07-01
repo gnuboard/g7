@@ -1,4 +1,9 @@
 {
+    "editor": {
+        "data_source": {
+            "settings": "설정"
+        }
+    },
     "name": "Hello 플러그인",
     "description": "학습용 최소 샘플 플러그인 (Hello 모듈 훅 소비)",
     "settings": {

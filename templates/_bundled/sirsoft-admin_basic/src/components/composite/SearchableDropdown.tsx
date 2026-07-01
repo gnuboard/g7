@@ -3,6 +3,7 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
+import type { EditorAttrs } from '../../types';
 
 export interface SearchableDropdownOption {
   value: string | number;
@@ -36,6 +37,12 @@ export interface SearchableDropdownProps {
   disabled?: boolean;
   /** 추가 클래스 */
   className?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -57,6 +64,8 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   triggerIcon,
   disabled = false,
   className = '',
+  id,
+  editorAttrs,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -193,7 +202,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   const showOptions = filteredOptions.length > 0;
 
   return (
-    <Div ref={containerRef} className={`relative inline-block ${className}`}>
+    <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs}>
       {/* 트리거 버튼 */}
       <Button
         ref={buttonRef}

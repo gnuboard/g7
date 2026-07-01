@@ -75,6 +75,55 @@ class WhitelistedEndpointTest extends TestCase
     }
 
     /**
+     * 모듈/플러그인 API 프리픽스 허용 테스트
+     *
+     * ModuleRouteServiceProvider/PluginRouteServiceProvider 가 등록하는
+     * /api/(modules|plugins)/{vendor-id}/ 프리픽스는 코어 정식 라우트 네임스페이스다
+     *
+     */
+    public function test_allows_module_and_plugin_api_endpoints(): void
+    {
+        $validEndpoints = [
+            '/api/modules/sirsoft-board/posts',
+            '/api/modules/sirsoft-ecommerce/checkout',
+            '/api/modules/gnuboard7-hello_module/memos',
+            '/api/plugins/sirsoft-payment/methods',
+            '/api/modules/sirsoft-board/users/1/posts/stats?page=1',
+        ];
+
+        foreach ($validEndpoints as $endpoint) {
+            $failed = false;
+            $this->rule->validate('endpoint', $endpoint, function () use (&$failed) {
+                $failed = true;
+            });
+
+            $this->assertFalse($failed, "Expected endpoint '{$endpoint}' to be allowed");
+        }
+    }
+
+    /**
+     * 확장 식별자(vendor-name) 형식이 아닌 modules/plugins 세그먼트 차단 테스트
+     */
+    public function test_blocks_non_extension_module_segments(): void
+    {
+        $invalidEndpoints = [
+            '/api/modules/assets/sirsoft-board/app.js', // 에셋 서빙 경로 — data source 대상 아님
+            '/api/modules/internal/secret',              // 하이픈 없는 세그먼트
+            '/api/modules/',                             // 식별자 없음
+            '/api/plugins/system/config',
+        ];
+
+        foreach ($invalidEndpoints as $endpoint) {
+            $failed = false;
+            $this->rule->validate('endpoint', $endpoint, function () use (&$failed) {
+                $failed = true;
+            });
+
+            $this->assertTrue($failed, "Expected endpoint '{$endpoint}' to be blocked");
+        }
+    }
+
+    /**
      * 허용되지 않은 API 엔드포인트 차단 테스트
      */
     public function test_blocks_non_whitelisted_api_endpoints(): void

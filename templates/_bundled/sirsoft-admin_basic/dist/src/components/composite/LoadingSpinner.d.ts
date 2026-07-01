@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export type SpinnerSize = 'sm' | 'md' | 'lg' | 'xl';
 export interface LoadingSpinnerProps {
     id?: string;
@@ -7,6 +8,8 @@ export interface LoadingSpinnerProps {
     fullscreen?: boolean;
     text?: string;
     className?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * LoadingSpinner 집합 컴포넌트

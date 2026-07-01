@@ -28,7 +28,7 @@
                 "type": "basic",
                 "name": "H2",
                 "props": {
-                  "className": "text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                  "className": "section-heading mb-4"
                 },
                 "text": "$t:admin.sidebar.title"
               },
@@ -38,7 +38,7 @@
                 "name": "A",
                 "props": {
                   "href": "/admin",
-                  "className": "block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  "className": "block px-3 py-2 text-body rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                 },
                 "text": "$t:admin.sidebar.dashboard"
               }
@@ -57,7 +57,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center px-6"
+                  "className": "flex-center h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6"
                 },
                 "children": [
                   {
@@ -65,7 +65,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                      "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      "className": "text-primary text-sm font-medium"
                     },
                     "text": "$t:admin.header.title"
                   }

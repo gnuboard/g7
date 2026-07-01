@@ -138,4 +138,18 @@ describe('ProductCard', () => {
     const card = container.querySelector('.bg-white');
     expect(card).toHaveStyle({ marginTop: '20px' });
   });
+
+  // 편집기에서 ProductCard 를 추가한 직후 price 미지정 시
+  // price.toLocaleString() 크래시("Cannot read properties of undefined")로 "컴포넌트 로드 실패"
+  // 폴백이 떴다. price 미지정에도 크래시 없이 0 으로 폴백 렌더해야 한다.
+  describe('결함#5 — price 미지정 안전 폴백', () => {
+    it('price 미지정 시 크래시 없이 0 으로 렌더된다', () => {
+      // @ts-expect-error price 미지정 런타임 안전성 검증
+      const { container } = render(<ProductCard title="가격 없는 제품" />);
+      expect(screen.getByText('가격 없는 제품')).toBeInTheDocument();
+      // ₩0 렌더(크래시 없음)
+      expect(screen.getByText('₩0')).toBeInTheDocument();
+      expect(container.querySelector('.bg-white')).toBeTruthy();
+    });
+  });
 });

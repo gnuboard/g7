@@ -1,0 +1,68 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 를 null 로 읽어 expandCases 가 throw 한다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 본 기능은 백엔드 enforce(428)만이라 레이아웃/E2E 가 아닌
+#   PHPUnit Feature 로 전수 커버하며, 아래 effects ↔ EcommerceIdentityPolicyDeclarationTest
+#   docblock(@scenario/@effects)이 1:1 대응한다.
+feature: 본인인증(IDV) 정책 4종 실경로 연결 (A8)
+
+description: |
+  본인인증 정책 4종(결제 시 확인/무통장 입금확인/결제 승인/결제 취소)의 target 훅을
+  실제 액션 경로에서 발화하여, 정책 enabled 시 IdentityPolicyService::enforce 가
+  호출되고 미인증 시 428(IdentityVerificationRequiredException)을 던진다.
+
+  핵심 동작:
+    - 결제 취소: OrderCancellationService::executeCancellation 진입부 payment.before_cancel 발화
+    - 무통장 입금확인: confirmManualDeposit 진입부 payment.before_confirm_deposit 발화 (DBANK 전용)
+    - 결제 승인: OrderService::update/bulk 의 비-DBANK payment_complete 전이 시 payment.before_approve;
+      DBANK 직접 update 는 payment.before_confirm_deposit (결정 7)
+    - 결제 시 확인: HandlesOrderCreation 주문생성 진입부 checkout.before_payment 발화 (self)
+    - 더미 훅 제거: requestPayment/approvePayment/cancelPayment 의 before_* 발화 3건 제거
+    - 일괄(bulk)은 배치당 approve 1회만 발화 (token 우회 통과)
+    - 428 은 \Error 상속 → processOrderCreation catch(Exception) 에 걸리지 않고 전파(500 변질 없음)
+    - 정책 disabled 시 모든 경로 무영향(회귀)
+
+axes:
+  policy:
+    - cancel              # payment.before_cancel
+    - confirm_deposit     # payment.before_confirm_deposit
+    - approve             # payment.before_approve
+    - checkout            # checkout.before_payment
+  enabled:
+    - "on"
+    - "off"
+  actor:
+    - admin
+    - member
+  verified_state:
+    - unverified          # 미인증 → 428
+    - within_grace        # grace 내 verified 로그 → 통과
+
+exclusions:
+  - { policy: confirm_deposit, actor: member, reason: "입금확인은 관리자 전용 액션" }
+  - { policy: approve, actor: member, reason: "승인은 관리자 상태변경" }
+  - { policy: cancel, verified_state: within_grace, enabled: "off", reason: "off 면 verified 무관" }
+  - { policy: confirm_deposit, verified_state: within_grace, enabled: "off", reason: "off 면 verified 무관" }
+  - { policy: approve, verified_state: within_grace, enabled: "off", reason: "off 면 verified 무관" }
+  - { policy: checkout, verified_state: within_grace, enabled: "off", reason: "off 면 verified 무관" }
+
+effects:
+  - cancel_path_fires_when_enabled_and_unverified           # 428
+  - cancel_path_passes_when_disabled
+  - confirm_deposit_fires_on_dedicated_action_when_enabled  # 428
+  - admin_update_pg_fires_approve                           # non-DBANK
+  - admin_update_dbank_fires_confirm_deposit                # 결정 7
+  - dbank_update_does_not_fire_approve                      # 분기 역검증
+  - bulk_update_fires_approve_once                          # 배치당 1회
+  - checkout_fires_for_self_member                          # 428
+  - checkout_passes_for_admin                               # applies_to=self 우회
+  - checkout_428_not_500                                    # catch 비변질
+  - grace_window_skips_enforce                              # within_grace 통과
+  - dummy_payment_hooks_removed                             # 더미 3건 제거
+  - disabled_policy_keeps_existing_flow                     # 회귀
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Identity/EcommerceIdentityPolicyDeclarationTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -1,0 +1,253 @@
+{
+  "target_layout": "admin_user_detail",
+  "injections": [
+    {
+      "target_id": "user_detail_tabs",
+      "position": "inject_props",
+      "props": {
+        "tabs": {
+          "_append": [
+            {
+              "id": "ext_mileage",
+              "label": "$t:sirsoft-ecommerce.admin.user_mileage.tab_label",
+              "iconName": "coins",
+              "if": "{{!!user?.data?.ecommerce_mileage}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target_id": "extension_tab_content",
+      "position": "append_child",
+      "components": [
+        {
+          "id": "ext_mileage_content",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!user?.data?.ecommerce_mileage}}",
+          "props": {
+            "id": "ext_mileage",
+            "className": "scroll-mt-32"
+          },
+          "children": [
+            {
+              "id": "section_mileage_summary",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "coins",
+                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "H3",
+                          "props": {
+                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.user_mileage.title"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "ExtensionBadge",
+                      "props": {
+                        "type": "module",
+                        "identifier": "sirsoft-ecommerce",
+                        "installedModules": "{{_global.installedModules}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "comment": "비활성화 안내 (mileage.enabled=false)",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{!user?.data?.ecommerce_mileage?.enabled}}",
+                  "props": {
+                    "className": "flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "circle-info",
+                        "className": "w-4 h-4 flex-shrink-0"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.user_mileage.disabled_notice"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{user?.data?.ecommerce_mileage?.enabled}}",
+                  "props": {
+                    "className": "grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.user_mileage.available"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-lg font-semibold text-gray-900 dark:text-white"
+                          },
+                          "text": "{{(user?.data?.ecommerce_mileage?.available ?? 0).toLocaleString()}} P"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.user_mileage.pending"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-lg font-semibold text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "{{(user?.data?.ecommerce_mileage?.pending ?? 0).toLocaleString()}} P"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.user_mileage.total_earned"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-lg font-semibold text-gray-900 dark:text-white"
+                          },
+                          "text": "{{(user?.data?.ecommerce_mileage?.total_earned ?? 0).toLocaleString()}} P"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.user_mileage.expiring_soon"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-lg font-semibold text-amber-600 dark:text-amber-400"
+                          },
+                          "text": "{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}} P"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "view_member_mileage_history",
+                  "type": "basic",
+                  "name": "A",
+                  "if": "{{user?.data?.ecommerce_mileage?.enabled}}",
+                  "props": {
+                    "href": "{{'/admin/ecommerce/mileage-transactions?search_field=email&search_keyword=' + encodeURIComponent(user?.data?.email ?? '')}}",
+                    "target": "_blank",
+                    "className": "inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "list",
+                        "className": "w-4 h-4"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.user_mileage.view_history"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 320
+}

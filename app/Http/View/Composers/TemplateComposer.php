@@ -5,7 +5,10 @@ namespace App\Http\View\Composers;
 use App\Exceptions\TemplateNotFoundException;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
+use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
+use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
@@ -15,6 +18,9 @@ use Illuminate\View\View;
 
 class TemplateComposer
 {
+    use CollectsActiveExtensionMeta;
+    use CollectsTemplateExternals;
+
     /**
      * 서비스 주입
      *
@@ -24,6 +30,7 @@ class TemplateComposer
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
      * @param  ModuleManager  $moduleManager  모듈 매니저
      * @param  PluginManager  $pluginManager  플러그인 매니저
+     * @param  TemplateManager  $templateManager  템플릿 매니저
      */
     public function __construct(
         private TemplateService $templateService,
@@ -31,7 +38,8 @@ class TemplateComposer
         private ModuleSettingsService $moduleSettingsService,
         private PluginSettingsService $pluginSettingsService,
         private ModuleManager $moduleManager,
-        private PluginManager $pluginManager
+        private PluginManager $pluginManager,
+        private TemplateManager $templateManager
     ) {}
 
     /**
@@ -73,6 +81,11 @@ class TemplateComposer
         // 활성화된 플러그인의 프론트엔드 에셋 정보 수집
         $pluginAssets = $this->collectPluginAssets();
 
+        // 활성 확장(모듈/플러그인) 메타 — 레이아웃 편집기 SSoT
+        // 기존 modules/plugins 키는 hasSettings() 필터로 활성 전수가 아님
+        $activeModulesMeta = $this->collectActiveModulesMeta();
+        $activePluginsMeta = $this->collectActivePluginsMeta();
+
         // 프론트엔드에 노출할 앱 config 값 조회
         try {
             $appConfig = $this->settingsService->getAppConfigForFrontend();
@@ -80,13 +93,23 @@ class TemplateComposer
             $appConfig = [];
         }
 
+        // 템플릿의 외부 리소스 정보 수집
+        $templateExternals = $this->collectTemplateExternals($activeTemplate);
+
+        // 확장 기능 캐시 버전 (브라우저 캐시 무효화용)
+        $extensionCacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
+
         $view->with('activeAdminTemplate', $activeTemplate);
+        $view->with('extensionCacheVersion', $extensionCacheVersion);
         $view->with('frontendSettings', $frontendSettings);
         $view->with('pluginSettings', $pluginSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);
         $view->with('pluginAssets', $pluginAssets);
+        $view->with('activeModulesMeta', $activeModulesMeta);
+        $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
+        $view->with('templateExternals', $templateExternals);
     }
 
     /**

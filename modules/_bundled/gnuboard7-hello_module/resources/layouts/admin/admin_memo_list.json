@@ -12,6 +12,7 @@
     "data_sources": [
         {
             "id": "memos",
+            "label_key": "$t:gnuboard7-hello_module.editor.data_source.memos",
             "type": "api",
             "endpoint": "/api/modules/gnuboard7-hello_module/admin/memos",
             "method": "GET",
@@ -41,7 +42,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -49,7 +50,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex items-center justify-between mb-6"
+                            "className": "flex-between mb-6"
                         },
                         "children": [
                             {
@@ -57,7 +58,7 @@
                                 "type": "basic",
                                 "name": "H1",
                                 "props": {
-                                    "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                    "className": "text-page-heading"
                                 },
                                 "text": "$t:gnuboard7-hello_module.admin.memos.index.title"
                             },
@@ -93,7 +94,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "space-y-3"
+                            "className": "row-stack"
                         },
                         "iteration": {
                             "data": "{{memos?.data?.data ?? []}}",
@@ -113,7 +114,7 @@
                                         "type": "basic",
                                         "name": "H2",
                                         "props": {
-                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                            "className": "section-heading"
                                         },
                                         "text": "{{memo.title ?? ''}}"
                                     },

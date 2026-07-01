@@ -506,11 +506,37 @@ class NotificationHookListener implements HookListenerInterface
      */
     public function registerDynamicHooks(): void
     {
-        // notification_definitions 테이블에서 훅 목록 조회
-        // 각 훅에 대해 HookManager::addAction() 등록
+        // notification_definitions 테이블에서 훅 목록 조회 후
+        // 각 훅을 HookListenerRegistrar::registerDynamicAction() 으로 등록
+        foreach ($definitions as $definition) {
+            foreach ($definition->hooks as $hook) {
+                HookListenerRegistrar::registerDynamicAction(
+                    hookName: $hook,
+                    listenerClass: self::class,
+                    method: 'dispatchForDefinition',
+                    boundArgs: [$definition],  // 워커가 dispatchForDefinition($definition, ...$hookArgs) 로 복원 호출
+                    priority: 30,
+                );
+            }
+        }
     }
 }
 ```
+
+동적 훅도 **큐 디스패치가 기본**이다. 직접 `HookManager::addAction($hook, fn() => $this->send(...))` 로 등록하면
+콜백이 훅 발화 시점(HTTP 요청 스레드)에서 동기 실행되어, 발송 대상이 많을 때 요청이 전체 처리 완료까지 막힌다
+(정적 `getSubscribedHooks` 리스너는 `HookListenerRegistrar` 가 자동으로 큐 래핑하지만, 동적 등록은 Registrar 를
+거치지 않으므로 이 누락이 발생하기 쉽다). 동적 등록은 반드시 `HookListenerRegistrar::registerDynamicAction()` 에
+위임해 정적 등록과 동일한 큐/동기 정책을 적용한다. 직접 `dispatch(new DispatchHookListenerJob(...))` 를 리스너에
+작성하지 않는다 — 큐 래핑 로직의 소유권은 Registrar 한 곳에 둔다.
+
+| `registerDynamicAction` 인자 | 설명 |
+|------|------|
+| `hookName` | 구독할 훅 이름 |
+| `listenerClass` / `method` | 큐 워커가 복원해 호출할 리스너 FQCN·public 메서드 |
+| `boundArgs` | 훅 발화 인자 앞에 고정으로 붙일 인자 (예: DB 정의 모델). 직렬화 가능해야 함 |
+| `priority` | 실행 우선순위 (기본 10) |
+| `sync` | `true` 면 큐 래핑 없이 즉시 동기 실행 (큐 드라이버 무관). IDV 가드 등 요청 스레드 동기 실행이 필수일 때만 |
 
 | 조건 | 설명 |
 |------|------|
@@ -518,6 +544,7 @@ class NotificationHookListener implements HookListenerInterface
 | 호출 시점 | `CoreServiceProvider::boot()` 후반부 (DB 유효성 검증 후) |
 | 별도 인터페이스 | 불필요 — `method_exists()` 체크 |
 | 안전성 | 테이블 미존재 시 `Schema::hasTable()` 체크 필수 |
+| 큐 정책 | `HookListenerRegistrar::registerDynamicAction()` 위임 (기본 큐, `sync: true` opt-out) — 직접 `addAction` 으로 동기 발송 금지 |
 
 ---
 

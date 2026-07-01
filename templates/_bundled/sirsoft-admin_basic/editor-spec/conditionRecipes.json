@@ -1,0 +1,442 @@
+{
+  "comment": "admin 권한/능력(H)·폼 검증(G)·로딩/저장 상태 보강. expr 본문(중괄호 없음).",
+  "operators": [
+    {
+      "value": "isAdmin",
+      "label": "$t:editor.condition.is_admin",
+      "expr": "_global?.currentUser?.is_admin === true"
+    },
+    {
+      "value": "isLoggedIn",
+      "label": "$t:editor.condition.is_logged_in",
+      "expr": "_global?.currentUser?.uuid"
+    },
+    {
+      "value": "isSaving",
+      "label": "$t:editor.condition.is_saving",
+      "expr": "_local?.isSaving"
+    },
+    {
+      "value": "notSaving",
+      "label": "$t:editor.condition.not_saving",
+      "expr": "!_local?.isSaving"
+    },
+    {
+      "value": "hasChanges",
+      "label": "$t:editor.condition.has_changes",
+      "expr": "_local?.hasChanges"
+    },
+    {
+      "value": "hasErrors",
+      "label": "$t:editor.condition.has_errors",
+      "expr": "!!_local?.errors"
+    },
+    {
+      "value": "noErrors",
+      "label": "$t:editor.condition.no_errors",
+      "expr": "!_local?.errors"
+    },
+    {
+      "value": "dsHasData",
+      "label": "$t:editor.condition.ds_has_data",
+      "params": [
+        {
+          "key": "src",
+          "label": "$t:editor.condition.param_src",
+          "widget": "datasource-picker"
+        }
+      ],
+      "expr": "({src}?.data?.length ?? 0) > 0"
+    },
+    {
+      "value": "dsEmpty",
+      "label": "$t:editor.condition.ds_empty",
+      "params": [
+        {
+          "key": "src",
+          "label": "$t:editor.condition.param_src",
+          "widget": "datasource-picker"
+        }
+      ],
+      "expr": "({src}?.data?.length ?? 0) === 0"
+    },
+    {
+      "value": "dsLoading",
+      "label": "$t:editor.condition.ds_loading",
+      "params": [
+        {
+          "key": "src",
+          "label": "$t:editor.condition.param_src",
+          "widget": "datasource-picker"
+        }
+      ],
+      "expr": "{src}?.loading"
+    },
+    {
+      "value": "fieldEquals",
+      "label": "$t:editor.condition.field_equals",
+      "params": [
+        {
+          "key": "field",
+          "label": "$t:editor.condition.param_field",
+          "widget": "text"
+        },
+        {
+          "key": "value",
+          "label": "$t:editor.condition.param_value",
+          "widget": "text"
+        }
+      ],
+      "expr": "{field} === '{value}'",
+      "aliases": [
+        "({field} ?? '{default}') === '{value}'",
+        "({field} ?? {default}) === '{value}'"
+      ]
+    },
+    {
+      "value": "fieldNotEquals",
+      "label": "$t:editor.condition.field_not_equals",
+      "params": [
+        {
+          "key": "field",
+          "label": "$t:editor.condition.param_field",
+          "widget": "text"
+        },
+        {
+          "key": "value",
+          "label": "$t:editor.condition.param_value",
+          "widget": "text"
+        }
+      ],
+      "expr": "{field} !== '{value}'",
+      "aliases": [
+        "({field} ?? '{default}') !== '{value}'",
+        "({field} ?? {default}) !== '{value}'"
+      ]
+    },
+    {
+      "value": "stateEquals",
+      "label": "$t:editor.condition.state_equals",
+      "params": [
+        {
+          "key": "key",
+          "label": "$t:editor.condition.param_state_key",
+          "widget": "state-key-picker"
+        },
+        {
+          "key": "value",
+          "label": "$t:editor.condition.param_value",
+          "widget": "text"
+        }
+      ],
+      "expr": "{key} === '{value}'"
+    },
+    {
+      "value": "isEditMode",
+      "label": "$t:editor.condition.is_edit_mode",
+      "expr": "!!route?.id"
+    },
+    {
+      "value": "isCreateMode",
+      "label": "$t:editor.condition.is_create_mode",
+      "expr": "!route?.id"
+    },
+    {
+      "value": "fieldHasError",
+      "label": "$t:editor.condition.field_has_error",
+      "params": [
+        {
+          "key": "field",
+          "label": "$t:editor.condition.param_field",
+          "widget": "text"
+        }
+      ],
+      "expr": "!!_local?.errors?.['{field}']"
+    },
+    {
+      "value": "hasAbility",
+      "label": "$t:editor.condition.has_ability",
+      "params": [
+        {
+          "key": "scope",
+          "label": "$t:editor.condition.param_scope",
+          "widget": "text"
+        },
+        {
+          "key": "ability",
+          "label": "$t:editor.condition.param_ability",
+          "widget": "text"
+        }
+      ],
+      "expr": "{scope}?.abilities?.{ability} !== false"
+    },
+    {
+      "value": "valueTruthy",
+      "label": "$t:editor.condition.value_truthy",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{path}",
+      "aliases": ["{path} ?? false", "{path} ?? true"]
+    },
+    {
+      "value": "valueFalsy",
+      "label": "$t:editor.condition.value_falsy",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "!{path}"
+    },
+    {
+      "value": "listNonEmpty",
+      "label": "$t:editor.condition.list_non_empty",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "({path} ?? []).length > 0",
+      "aliases": [
+        "{path} && {path}.length > 0",
+        "{path}?.length > 0",
+        "({path}?.length ?? 0) > 0"
+      ]
+    },
+    {
+      "value": "listEmpty",
+      "label": "$t:editor.condition.list_empty",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "({path} ?? []).length === 0",
+      "aliases": [
+        "!{path} || {path}.length === 0",
+        "{path}?.length === 0",
+        "({path}?.length ?? 0) === 0",
+        "!({path} ?? []).length",
+        "!{path}.length",
+        "!{path}?.length"
+      ]
+    },
+    {
+      "value": "numGte",
+      "label": "$t:editor.condition.num_gte",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        },
+        {
+          "key": "n",
+          "label": "$t:editor.condition.param_number",
+          "widget": "text"
+        }
+      ],
+      "expr": "{path} >= {n}",
+      "aliases": ["({path} ?? 0) >= {n}"]
+    },
+    {
+      "value": "numLte",
+      "label": "$t:editor.condition.num_lte",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        },
+        {
+          "key": "n",
+          "label": "$t:editor.condition.param_number",
+          "widget": "text"
+        }
+      ],
+      "expr": "{path} <= {n}",
+      "aliases": ["({path} ?? 0) <= {n}"]
+    },
+    {
+      "value": "numGt",
+      "label": "$t:editor.condition.num_gt",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        },
+        {
+          "key": "n",
+          "label": "$t:editor.condition.param_number",
+          "widget": "text"
+        }
+      ],
+      "expr": "{path} > {n}",
+      "aliases": ["({path} ?? 0) > {n}", "({path} ?? []).length > {n}"]
+    },
+    {
+      "value": "numLt",
+      "label": "$t:editor.condition.num_lt",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        },
+        {
+          "key": "n",
+          "label": "$t:editor.condition.param_number",
+          "widget": "text"
+        }
+      ],
+      "expr": "{path} < {n}",
+      "aliases": ["({path} ?? 0) < {n}"]
+    },
+    {
+      "value": "valueIsTrue",
+      "label": "$t:editor.condition.value_is_true",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{path} === true"
+    },
+    {
+      "value": "valueIsFalse",
+      "label": "$t:editor.condition.value_is_false",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{path} === false"
+    },
+    {
+      "value": "valueNotFalse",
+      "label": "$t:editor.condition.value_not_false",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{path} !== false"
+    },
+    {
+      "value": "valueNotTrue",
+      "label": "$t:editor.condition.value_not_true",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{path} !== true"
+    },
+    {
+      "value": "valueDefined",
+      "label": "$t:editor.condition.value_defined",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{path} !== undefined"
+    },
+    {
+      "value": "valueUndefined",
+      "label": "$t:editor.condition.value_undefined",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{path} === undefined"
+    },
+    {
+      "value": "valueNotNull",
+      "label": "$t:editor.condition.value_not_null",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{path} !== null",
+      "aliases": ["{path} != null"]
+    },
+    {
+      "value": "valueIsNull",
+      "label": "$t:editor.condition.value_is_null",
+      "params": [
+        {
+          "key": "path",
+          "label": "$t:editor.condition.param_path",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{path} === null",
+      "aliases": ["{path} == null"]
+    },
+    {
+      "value": "fieldMatches",
+      "label": "$t:editor.condition.field_matches",
+      "params": [
+        {
+          "key": "a",
+          "label": "$t:editor.condition.param_field_a",
+          "widget": "state-key-picker"
+        },
+        {
+          "key": "b",
+          "label": "$t:editor.condition.param_field_b",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{a} === {b}",
+      "aliases": ["{a} === ({b} ?? '{default}')", "({a} ?? 0) === {b}"]
+    },
+    {
+      "value": "fieldDiffers",
+      "label": "$t:editor.condition.field_differs",
+      "params": [
+        {
+          "key": "a",
+          "label": "$t:editor.condition.param_field_a",
+          "widget": "state-key-picker"
+        },
+        {
+          "key": "b",
+          "label": "$t:editor.condition.param_field_b",
+          "widget": "state-key-picker"
+        }
+      ],
+      "expr": "{a} !== {b}",
+      "aliases": ["{a} != {b}", "{a} !== ({b} ?? '{default}')"]
+    }
+  ]
+}

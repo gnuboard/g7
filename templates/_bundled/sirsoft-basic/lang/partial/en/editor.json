@@ -14,5 +14,1163 @@
   "link_modal": {
     "title": "Insert Link",
     "insert": "Insert"
+  },
+  "control": {
+    "text_align": {
+      "label": "Text align",
+      "left": "Left",
+      "center": "Center",
+      "right": "Right",
+      "justify": "Justify"
+    },
+    "font_size": {
+      "label": "Font size"
+    },
+    "font_weight": {
+      "label": "Weight",
+      "normal": "Normal",
+      "semibold": "Semibold",
+      "bold": "Bold"
+    },
+    "letter_spacing": {
+      "label": "Letter spacing",
+      "tight": "Tight",
+      "normal": "Normal",
+      "wide": "Wide"
+    },
+    "line_height": {
+      "label": "Line height",
+      "tight": "Tight",
+      "normal": "Normal",
+      "relaxed": "Relaxed"
+    },
+    "text_color": {
+      "label": "Text color"
+    },
+    "background_color": {
+      "label": "Background color"
+    },
+    "background_image": {
+      "label": "Background image"
+    },
+    "color_preset": {
+      "gray_900": "Dark gray",
+      "gray_800": "Darker gray",
+      "gray_700": "Gray",
+      "gray_500": "Medium gray",
+      "gray_100": "Light gray",
+      "gray_50": "Lightest gray",
+      "white": "White",
+      "blue_600": "Blue",
+      "red_600": "Red",
+      "green_600": "Green",
+      "gray_300": "Light gray"
+    },
+    "padding": {
+      "label": "Padding"
+    },
+    "margin": {
+      "label": "Margin"
+    },
+    "width": {
+      "label": "Width",
+      "full": "Full",
+      "three_quarter": "3/4",
+      "half": "Half",
+      "quarter": "1/4"
+    },
+    "height": {
+      "label": "Height",
+      "auto": "Auto"
+    },
+    "self_align": {
+      "label": "Self align",
+      "start": "Start",
+      "center": "Center",
+      "end": "End"
+    },
+    "flex_direction": {
+      "label": "Direction",
+      "row": "Row",
+      "column": "Column"
+    },
+    "flex_justify": {
+      "label": "Children alignment (main)",
+      "start": "Start",
+      "center": "Center",
+      "end": "End",
+      "between": "Space between",
+      "around": "Space around"
+    },
+    "flex_align": {
+      "label": "Children alignment (cross)",
+      "start": "Start",
+      "center": "Center",
+      "end": "End",
+      "stretch": "Stretch"
+    },
+    "flex_wrap": {
+      "label": "Allow wrapping",
+      "off": "Off",
+      "on": "On"
+    },
+    "flex_gap": {
+      "label": "Child spacing"
+    },
+    "flex_enable": {
+      "label": "Make alignment box",
+      "on": "Flex box",
+      "off": "Normal block"
+    },
+    "flex_item_grow": {
+      "label": "Grow",
+      "fixed": "Fixed",
+      "fill": "Fill",
+      "ratio": "Ratio"
+    },
+    "flex_item_align": {
+      "label": "Align self",
+      "start": "Start",
+      "center": "Center",
+      "end": "End",
+      "stretch": "Stretch"
+    },
+    "flex_item_order": {
+      "label": "Order"
+    },
+    "toggle": {
+      "on": "On",
+      "off": "Off"
+    },
+    "box_shadow": {
+      "label": "Shadow",
+      "none": "None",
+      "sm": "Small",
+      "md": "Medium",
+      "lg": "Large",
+      "xl": "Extra large",
+      "xxl": "Huge"
+    },
+    "border_style": {
+      "label": "Border style",
+      "none": "None",
+      "solid": "Solid",
+      "dashed": "Dashed",
+      "dotted": "Dotted"
+    },
+    "border_color": {
+      "label": "Border color"
+    },
+    "border_radius": {
+      "label": "Corner radius",
+      "none": "Square",
+      "sm": "Slight",
+      "md": "Medium",
+      "lg": "Rounded",
+      "xl": "Large",
+      "full": "Full"
+    },
+    "opacity": {
+      "label": "Opacity"
+    },
+    "overflow": {
+      "label": "Scroll",
+      "auto": "Auto",
+      "hidden": "Hidden",
+      "x_auto": "Horizontal auto",
+      "y_auto": "Vertical auto",
+      "visible": "Visible"
+    },
+    "font_bold": {
+      "label": "Bold"
+    },
+    "font_italic": {
+      "label": "Italic"
+    },
+    "text_underline": {
+      "label": "Underline"
+    },
+    "whitespace": {
+      "label": "Wrap",
+      "normal": "Allow",
+      "nowrap": "No wrap",
+      "pre_wrap": "Preserve spaces"
+    },
+    "icon_name": {
+      "label": "Icon",
+      "search": "Search icons"
+    },
+    "img_src": {
+      "label": "Image URL"
+    },
+    "img_alt": {
+      "label": "Alt text"
+    },
+    "link_href": {
+      "label": "Link URL"
+    },
+    "link_target": {
+      "label": "Link target",
+      "self": "Same window",
+      "blank": "New window",
+      "parent": "Parent frame",
+      "top": "Top frame"
+    },
+    "input_type": {
+      "label": "Input type",
+      "text": "Text",
+      "email": "Email",
+      "password": "Password",
+      "number": "Number",
+      "tel": "Telephone",
+      "url": "URL",
+      "date": "Date",
+      "search": "Search"
+    },
+    "input_placeholder": {
+      "label": "Placeholder"
+    },
+    "input_name": {
+      "label": "Field name"
+    },
+    "input_required": {
+      "label": "Required"
+    },
+    "input_disabled": {
+      "label": "Disabled"
+    },
+    "field_label": {
+      "label": "Label"
+    },
+    "field_error": {
+      "label": "Error message"
+    },
+    "field_helper": {
+      "label": "Helper text"
+    },
+    "html_for": {
+      "label": "For (htmlFor)"
+    },
+    "textarea_rows": {
+      "label": "Rows"
+    },
+    "elem_id": {
+      "label": "Element ID"
+    },
+    "select_placeholder": {
+      "label": "Placeholder"
+    },
+    "select_options": {
+      "label": "Options"
+    },
+    "component_size": {
+      "label": "Size",
+      "sm": "Small",
+      "md": "Medium",
+      "lg": "Large"
+    },
+    "button_variant": {
+      "label": "Button style",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "danger": "Danger",
+      "success": "Success"
+    },
+    "component_disabled": {
+      "label": "Disabled"
+    },
+    "av_name": {
+      "label": "Name"
+    },
+    "av_avatar": {
+      "label": "Avatar Image"
+    },
+    "av_size": {
+      "label": "Size",
+      "xs": "XS",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG",
+      "xl": "XL",
+      "2xl": "2XL",
+      "3xl": "3XL",
+      "4xl": "4XL",
+      "5xl": "5XL"
+    },
+    "av_text": {
+      "label": "Text"
+    },
+    "av_withdrawn": {
+      "label": "Withdrawn"
+    },
+    "av_guest": {
+      "label": "Guest"
+    },
+    "ui_name": {
+      "label": "Name"
+    },
+    "ui_user_id": {
+      "label": "User ID"
+    },
+    "ui_sub_text": {
+      "label": "Sub Text"
+    },
+    "ui_sub_title": {
+      "label": "Sub Text Title"
+    },
+    "ui_guest": {
+      "label": "Guest"
+    },
+    "ui_withdrawn": {
+      "label": "Withdrawn"
+    },
+    "ui_show_dropdown": {
+      "label": "Show Dropdown"
+    },
+    "ui_clickable": {
+      "label": "Clickable"
+    },
+    "ui_profile_path": {
+      "label": "Profile Path"
+    },
+    "ui_layout": {
+      "label": "Layout",
+      "vertical": "Vertical",
+      "horizontal": "Horizontal"
+    },
+    "ui_text": {
+      "label": "Text"
+    },
+    "ui_stop_prop": {
+      "label": "Stop Propagation"
+    },
+    "hc_is_html": {
+      "label": "Render HTML"
+    },
+    "rte_name": {
+      "label": "Field Name"
+    },
+    "rte_initial_value": {
+      "label": "Initial Value"
+    },
+    "rte_placeholder": {
+      "label": "Placeholder"
+    },
+    "rte_image_upload_url": {
+      "label": "Image Upload URL"
+    },
+    "rte_min_height": {
+      "label": "Min Height"
+    },
+    "rte_disabled": {
+      "label": "Disabled"
+    },
+    "ec_max_height": {
+      "label": "Collapsed Max Height"
+    },
+    "ec_expand_text": {
+      "label": "Expand Text"
+    },
+    "ec_collapse_text": {
+      "label": "Collapse Text"
+    },
+    "qs_value": {
+      "label": "Initial Quantity"
+    },
+    "qs_min": {
+      "label": "Min"
+    },
+    "qs_max": {
+      "label": "Max"
+    },
+    "qs_size": {
+      "label": "Size",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG"
+    },
+    "qs_disabled": {
+      "label": "Disabled"
+    },
+    "au_src": {
+      "label": "Avatar URL"
+    },
+    "au_fallback": {
+      "label": "Fallback Text"
+    },
+    "au_size": {
+      "label": "Size",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG",
+      "xl": "XL",
+      "2xl": "2XL"
+    },
+    "au_upload_endpoint": {
+      "label": "Upload Endpoint"
+    },
+    "au_delete_endpoint": {
+      "label": "Delete Endpoint"
+    },
+    "au_accept": {
+      "label": "Accept"
+    },
+    "au_max_size": {
+      "label": "Max Size (MB)"
+    },
+    "au_upload_btn": {
+      "label": "Upload Button Text"
+    },
+    "au_delete_btn": {
+      "label": "Delete Button Text"
+    },
+    "au_read_only": {
+      "label": "Read Only"
+    },
+    "au_confirm_delete": {
+      "label": "Confirm Delete"
+    },
+    "au_delete_confirm_msg": {
+      "label": "Delete Confirm Message"
+    },
+    "au_confirm_upload": {
+      "label": "Confirm Upload"
+    },
+    "au_upload_confirm_msg": {
+      "label": "Upload Confirm Message"
+    },
+    "au_show_delete": {
+      "label": "Show Delete Button"
+    },
+    "slb_mode": {
+      "label": "Mode",
+      "login": "Login",
+      "register": "Register"
+    },
+    "slb_variant": {
+      "label": "Variant",
+      "full": "Full",
+      "icon": "Icon"
+    },
+    "pr_user_reaction": {
+      "label": "My Reaction",
+      "like": "Like",
+      "funny": "Funny",
+      "agree": "Agree",
+      "thanks": "Thanks",
+      "wow": "Wow"
+    },
+    "pr_post_id": {
+      "label": "Post ID"
+    },
+    "pr_size": {
+      "label": "Size",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG"
+    },
+    "pi_label": {
+      "label": "Label"
+    },
+    "pi_error": {
+      "label": "Error"
+    },
+    "pi_show_toggle": {
+      "label": "Show Toggle"
+    },
+    "pi_show_validation": {
+      "label": "Show Validation"
+    },
+    "pi_wrapper_class": {
+      "label": "Wrapper Class"
+    },
+    "pi_is_confirm": {
+      "label": "Confirm Field"
+    },
+    "pi_confirm_target": {
+      "label": "Confirm Target"
+    },
+    "pc_shop_base": {
+      "label": "Shop Base Path"
+    },
+    "grid_cols": {
+      "label": "Columns"
+    },
+    "grid_gap": {
+      "label": "Gap"
+    },
+    "tcl_left_width": {
+      "label": "Left Width"
+    },
+    "tcl_right_width": {
+      "label": "Right Width"
+    },
+    "ig_enable_zoom": {
+      "label": "Zoom"
+    },
+    "ig_enable_slideshow": {
+      "label": "Slideshow"
+    },
+    "ig_enable_fullscreen": {
+      "label": "Fullscreen"
+    },
+    "ig_show_counter": {
+      "label": "Show Counter"
+    },
+    "ig_show_download": {
+      "label": "Show Download"
+    },
+    "ig_show_thumbnails": {
+      "label": "Show Thumbnails"
+    },
+    "pg_max_visible": {
+      "label": "Max Visible Pages"
+    },
+    "pg_show_first_last": {
+      "label": "First/Last Buttons"
+    },
+    "pg_prev_text": {
+      "label": "Prev Text"
+    },
+    "pg_next_text": {
+      "label": "Next Text"
+    },
+    "sb_placeholder": {
+      "label": "Placeholder"
+    },
+    "sb_show_button": {
+      "label": "Show Button"
+    },
+    "sb_show_suggestions": {
+      "label": "Show Suggestions"
+    },
+    "he_multilingual": {
+      "label": "Multilingual"
+    },
+    "he_is_html": {
+      "label": "HTML Mode"
+    },
+    "he_rows": {
+      "label": "Rows"
+    },
+    "he_placeholder": {
+      "label": "Placeholder"
+    },
+    "he_label": {
+      "label": "Label"
+    },
+    "he_show_html_toggle": {
+      "label": "Show HTML Toggle"
+    },
+    "he_name": {
+      "label": "Field Name"
+    },
+    "he_html_field_name": {
+      "label": "HTML Field Name"
+    },
+    "he_read_only": {
+      "label": "Read Only"
+    },
+    "tn_active_tab_id": {
+      "label": "Active Tab ID"
+    },
+    "tn_variant": {
+      "label": "Variant",
+      "default": "Default",
+      "pills": "Pills",
+      "underline": "Underline"
+    },
+    "tn_mobile_breakpoint": {
+      "label": "Mobile Breakpoint"
+    },
+    "fu_type": {
+      "label": "Attachmentable Type"
+    },
+    "fu_collection": {
+      "label": "Collection"
+    },
+    "fu_max_files": {
+      "label": "Max Files"
+    },
+    "fu_max_size": {
+      "label": "Max Size"
+    },
+    "fu_accept": {
+      "label": "Accept"
+    },
+    "fu_auto_upload": {
+      "label": "Auto Upload"
+    },
+    "fu_confirm_remove": {
+      "label": "Confirm Remove"
+    },
+    "fu_primary_sel": {
+      "label": "Primary Selection"
+    },
+    "hdr_site_name": {
+      "label": "Site Name"
+    },
+    "hdr_logo": {
+      "label": "Logo Image"
+    },
+    "hdr_shop_base": {
+      "label": "Shop Base Path"
+    },
+    "hdr_max_boards": {
+      "label": "Boards Shown in Tabs"
+    },
+    "hdr_current_locale": {
+      "label": "Current Locale"
+    },
+    "hdr_notif_title": {
+      "label": "Notification Title Text"
+    },
+    "hdr_notif_empty": {
+      "label": "Empty Notifications Text"
+    },
+    "hdr_notif_mark_all_read": {
+      "label": "Mark All Read Text"
+    },
+    "hdr_notif_delete_all": {
+      "label": "Delete All Text"
+    },
+    "hdr_notif_unread_only": {
+      "label": "Unread Only Text"
+    },
+    "ft_site_name": {
+      "label": "Site Name"
+    },
+    "ft_site_description": {
+      "label": "Site Description"
+    },
+    "ft_copyright_text": {
+      "label": "Copyright Text"
+    },
+    "tt_auto_text": {
+      "label": "Auto Text"
+    },
+    "tt_light_text": {
+      "label": "Light Text"
+    },
+    "tt_dark_text": {
+      "label": "Dark Text"
+    },
+    "nc_title_text": {
+      "label": "Title Text"
+    },
+    "nc_empty_text": {
+      "label": "Empty Text"
+    },
+    "nc_mark_all_read_text": {
+      "label": "Mark All Read Text"
+    },
+    "nc_delete_all_text": {
+      "label": "Delete All Text"
+    },
+    "nc_unread_only_text": {
+      "label": "Unread Only Text"
+    },
+    "nc_unread_only": {
+      "label": "Show Unread Only"
+    },
+    "nc_dropdown_align": {
+      "label": "Dropdown Align",
+      "left": "Left",
+      "right": "Right"
+    }
+  },
+  "component": {
+    "h1": "Large heading",
+    "h2": "Heading",
+    "h3": "Subheading",
+    "h4": "Small heading",
+    "p": "Paragraph",
+    "span": "Text",
+    "a": "Link",
+    "button": "Button",
+    "img": "Image",
+    "div": "Box",
+    "container": "Container",
+    "flex": "Flex row",
+    "grid": "Grid",
+    "section_layout": "Section",
+    "card": "Card",
+    "table": "Table",
+    "hr": "Divider",
+    "ul": "List",
+    "li": "List Item",
+    "nav": "Navigation",
+    "three_column_layout": "Three Column Layout",
+    "product_card": "Product Card",
+    "image_gallery": "Image Gallery",
+    "pagination": "Pagination",
+    "search_bar": "Search Bar",
+    "avatar": "Avatar",
+    "user_info": "User Info",
+    "html_content": "HTML Content",
+    "html_editor": "HTML Editor",
+    "rich_text_editor": "Rich Text Editor",
+    "expandable_content": "Expandable Content",
+    "tab_navigation": "Tab Navigation",
+    "quantity_selector": "Quantity Selector",
+    "product_image_viewer": "Product Image Viewer",
+    "file_uploader": "File Uploader",
+    "avatar_uploader": "Avatar Uploader",
+    "social_login_buttons": "Social Login Buttons",
+    "post_reactions": "Post Reactions",
+    "input": "Input",
+    "textarea": "Textarea",
+    "select": "Select",
+    "checkbox": "Checkbox",
+    "password_input": "Password Input",
+    "label": "Label",
+    "form": "Form",
+    "icon": "Icon",
+    "td": "Table Cell",
+    "th": "Table Header Cell",
+    "header": "Site Header",
+    "footer": "Site Footer",
+    "theme_toggle": "Theme Toggle",
+    "notification_center": "Notification Center"
+  },
+  "action": {
+    "go_to_page": {
+      "label": "Go to another page",
+      "param_url": "Destination page"
+    },
+    "show_message": {
+      "label": "Show a message",
+      "param_text": "Message",
+      "param_tone": "Kind",
+      "tone_success": "Success",
+      "tone_error": "Error",
+      "tone_info": "Info"
+    },
+    "change_state": {
+      "label": "Change screen state",
+      "param_key": "State name",
+      "param_value": "Value"
+    },
+    "refresh_data": {
+      "label": "Refresh list",
+      "param_src": "Target data"
+    },
+    "call_server_then": {
+      "label": "Send to server then handle",
+      "param_endpoint": "Destination",
+      "param_on_success": "On success",
+      "param_on_error": "On error"
+    },
+    "set_theme": {
+      "label": "Change theme",
+      "param_target": "Theme",
+      "target_auto": "Auto",
+      "target_light": "Light",
+      "target_dark": "Dark"
+    },
+    "save_preferred_currency": {
+      "label": "Save preferred currency",
+      "param_currency": "Currency"
+    },
+    "set_cart_option": {
+      "label": "Change cart option",
+      "param_item_id": "Item ID",
+      "param_option_key": "Option name",
+      "param_option_value": "Option value"
+    },
+    "open_cart_delete_modal": {
+      "label": "Open cart delete confirmation",
+      "param_item_id": "Item ID"
+    },
+    "open_cart_option_modal": {
+      "label": "Open cart option selection",
+      "param_item_id": "Item ID"
+    },
+    "recalculate_cart": {
+      "label": "Recalculate cart total"
+    },
+    "get_display_price": {
+      "label": "Get display price",
+      "param_currency": "Currency"
+    },
+    "init_theme": {
+      "label": "Initialize theme",
+      "param_target": "Theme",
+      "target_auto": "Auto",
+      "target_light": "Light",
+      "target_dark": "Dark"
+    },
+    "init_cart_key": {
+      "label": "Initialize cart key"
+    },
+    "load_preferred_currency": {
+      "label": "Load preferred currency"
+    },
+    "get_cart_key": {
+      "label": "Get cart key"
+    },
+    "clear_cart_key": {
+      "label": "Clear cart key"
+    },
+    "save_to_storage": {
+      "label": "Save to browser",
+      "param_key": "Storage name",
+      "param_value": "Stored value"
+    },
+    "load_from_storage": {
+      "label": "Load from browser",
+      "param_key": "Storage name",
+      "param_default": "Default value"
+    },
+    "save_guest_order_token": {
+      "label": "Save guest order token",
+      "param_token": "Order token",
+      "param_order_number": "Order number",
+      "param_expires_at": "Expires at"
+    }
+  },
+  "computed": {
+    "filter_default": {
+      "label": "Fill default value",
+      "param_local_path": "Screen state path",
+      "param_query_key": "URL parameter name",
+      "param_fallback": "Default value"
+    },
+    "options_from_api": {
+      "label": "Build options from data",
+      "param_source": "Data",
+      "param_filter": "Filter",
+      "param_value_field": "Value field",
+      "param_label_field": "Label field"
+    },
+    "first_of": {
+      "label": "Pick first available value",
+      "param_candidates": "Candidate values",
+      "param_fallback": "Default value"
+    },
+    "group_items": {
+      "label": "Group items by key",
+      "param_source": "Data",
+      "param_key_field": "Key field",
+      "param_value_expr": "Value expression"
+    }
+  },
+  "error": {
+    "show_error_page": {
+      "label": "Show error page",
+      "param_target": "Display area"
+    },
+    "navigate": {
+      "label": "Go to another page",
+      "param_path": "Destination page"
+    },
+    "toast": {
+      "label": "Show a message",
+      "param_text": "Message"
+    },
+    "open_modal": {
+      "label": "Open modal",
+      "param_modal_id": "Modal to open"
+    },
+    "set_state": {
+      "label": "Change screen state",
+      "param_target": "Target",
+      "param_state": "State value",
+      "param_merge": "Merge",
+      "param_key": "State name",
+      "param_value": "Value"
+    },
+    "sequence": {
+      "label": "Run actions in sequence",
+      "param_actions": "Actions to run"
+    },
+    "parallel": {
+      "label": "Run actions in parallel",
+      "param_actions": "Actions to run"
+    }
+  },
+  "loading": {
+    "page_loading": "Loading spinner",
+    "page_skeleton": "Skeleton screen"
+  },
+  "condition": {
+    "is_logged_in": "When logged in",
+    "is_guest": "When a guest",
+    "is_admin": "When admin",
+    "is_saving": "When saving",
+    "not_saving": "When not saving",
+    "has_changes": "When there are changes",
+    "has_errors": "When there are errors",
+    "no_errors": "When no errors",
+    "ds_has_data": "When data exists",
+    "ds_empty": "When no data",
+    "ds_loading": "When loading data",
+    "ds_error": "When data failed to load",
+    "field_equals": "When equals a value",
+    "field_not_equals": "When differs from a value",
+    "state_equals": "When screen state equals a value",
+    "is_edit_mode": "When editing (has ID)",
+    "is_create_mode": "When creating new",
+    "query_equals": "When URL param equals a value",
+    "field_has_error": "When a field has an error",
+    "value_truthy": "When a value exists",
+    "value_falsy": "When a value is empty",
+    "list_non_empty": "When the list has items",
+    "list_empty": "When the list is empty",
+    "num_gt": "When a number is greater than",
+    "num_gte": "When a number is at least",
+    "num_lt": "When a number is less than",
+    "num_lte": "When a number is at most",
+    "value_is_true": "When a value is true",
+    "value_is_false": "When a value is false",
+    "value_not_false": "When a value is not false",
+    "value_not_true": "When a value is not true",
+    "value_defined": "When a value is defined",
+    "value_undefined": "When a value is undefined",
+    "value_not_null": "When a value is not null",
+    "value_is_null": "When a value is null",
+    "field_matches": "When two values are equal",
+    "field_differs": "When two values differ",
+    "param_src": "Data",
+    "param_field": "Field path",
+    "param_value": "Value",
+    "param_state_key": "State key",
+    "param_query": "URL param name",
+    "param_path": "State/data path",
+    "param_number": "Threshold number",
+    "param_field_a": "First value path",
+    "param_field_b": "Second value path"
+  },
+  "state": {
+    "login_default": "Default",
+    "login_failed": "Login failed",
+    "search_with_results": "Has results",
+    "search_empty": "No results",
+    "notifications_with": "Has notifications",
+    "notifications_empty": "No notifications",
+    "with_data": "Has data",
+    "empty_data": "No data",
+    "in_stock": "In stock",
+    "out_of_stock": "Out of stock",
+    "cart_with_items": "Has items",
+    "cart_empty": "Empty cart",
+    "read_normal": "Normal post",
+    "read_secret_locked": "Secret locked",
+    "published": "Published",
+    "draft_preview": "Draft preview",
+    "profile_password_entry": "Password verification",
+    "profile_actual_edit": "Edit profile",
+    "profile_validation_failed": "Validation failed",
+    "forgot_default": "Input form",
+    "forgot_success": "Email sent",
+    "reset_token_valid": "Token valid",
+    "reset_token_error": "Token error",
+    "reset_success": "Reset complete",
+    "register_default": "Input form",
+    "register_validation_failed": "Validation failed",
+    "register_valid_input": "Filled (matched)",
+    "challenge_text_code": "Code input",
+    "challenge_link": "Email link",
+    "challenge_external": "External auth",
+    "challenge_error": "Auth failed",
+    "change_password_form": "Input form",
+    "change_password_success": "Changed",
+    "wishlist_with_items": "Has wishlist",
+    "wishlist_empty": "Empty wishlist",
+    "addresses_with": "Has addresses",
+    "addresses_empty": "No addresses",
+    "user_active": "Active user",
+    "user_withdrawn": "Withdrawn user",
+    "user_posts_with": "Has posts",
+    "user_posts_empty": "No posts",
+    "boards_with": "Has boards",
+    "boards_empty": "No boards",
+    "board_create": "Create post",
+    "board_edit": "Edit post",
+    "board_reply_with_quote": "Write reply (quote parent)",
+    "shop_access_denied": "Access denied",
+    "sold_out": "Sold out",
+    "suspended": "Suspended",
+    "coming_soon": "Coming soon",
+    "product_reviews_tab": "Reviews tab",
+    "product_qna_tab": "Product Q&A tab",
+    "board_activity_my_posts": "My posts",
+    "board_activity_my_comments": "My comments",
+    "search_tab_posts": "Posts tab",
+    "search_tab_products": "Products tab",
+    "search_tab_pages": "Pages tab",
+    "cart_ordering": "Ordering",
+    "checkout_summary_details": "Summary details expanded",
+    "cart_summary_details": "Tax details expanded",
+    "checkout_normal": "Normal checkout",
+    "checkout_payment_error": "Payment error",
+    "checkout_validation_failed": "Validation failed",
+    "payment_card": "Card payment",
+    "payment_vbank": "Virtual account",
+    "payment_dbank": "Bank transfer",
+    "reorder_pending": "Reorder pending",
+    "reorder_success_partial": "Partial reorder",
+    "reorder_error": "Reorder failed",
+    "guest_order_form_guest": "Guest (lookup form)",
+    "guest_order_form_member": "Member (mypage notice)",
+    "address_modal_list": "Address list",
+    "address_modal_form": "Manual address entry",
+    "order_show_default": "Default",
+    "order_change_address_manual": "Change address (manual entry)",
+    "user_base_default": "Default",
+    "mobile_menu_open": "Mobile menu open",
+    "gdpr_cookie_banner_visible": "Cookie banner visible",
+    "identity_challenge_inicis": "Identity verification modal (Inicis)"
+  },
+  "cell_border": {
+    "side_all": "All",
+    "side_top": "Top",
+    "side_bottom": "Bottom",
+    "side_left": "Left",
+    "side_right": "Right",
+    "width_none": "None",
+    "width_thin": "Thin",
+    "width_medium": "Medium",
+    "width_thick": "Thick",
+    "color_gray": "Gray",
+    "color_gray_dark": "Dark gray",
+    "color_dark": "Black",
+    "color_blue": "Blue",
+    "color_red": "Red"
+  },
+  "cell_fill": {
+    "color_white": "White",
+    "color_gray": "Light Gray",
+    "color_gray_dark": "Gray",
+    "color_yellow": "Yellow",
+    "color_blue": "Blue",
+    "color_green": "Green",
+    "color_red": "Red"
+  },
+  "cell_padding": {
+    "step_none": "None",
+    "step_narrow": "Narrow",
+    "step_normal": "Normal",
+    "step_wide": "Wide"
+  },
+  "array_item": {
+    "tab": "tab",
+    "provider": "provider"
+  },
+  "array_field": {
+    "label": "Label",
+    "id": "ID",
+    "icon": "Icon",
+    "badge": "Badge",
+    "disabled": "Disabled",
+    "provider": "Provider"
+  },
+  "provider": {
+    "naver": "Naver",
+    "kakao": "Kakao"
+  },
+  "data_prop": {
+    "data": "Data",
+    "chart_data": "Chart data",
+    "tree_data": "Tree data",
+    "images": "Images",
+    "menu_items": "Menu items",
+    "items": "Items",
+    "filters": "Filters",
+    "suggestions": "Suggestions",
+    "datasets": "Datasets",
+    "tabs": "Tabs",
+    "breadcrumb_items": "Breadcrumb items",
+    "available_locales": "Available locales",
+    "user": "User",
+    "current_page": "Current page",
+    "total_pages": "Total pages",
+    "reactions": "Reactions",
+    "product": "Product",
+    "author": "Author",
+    "value": "Value",
+    "options": "Options",
+    "selected_tags": "Selected tags",
+    "selected_permissions": "Selected permissions",
+    "header_user": "Logged-in User",
+    "header_boards": "Board List",
+    "header_notifications": "Notification List",
+    "header_available_locales": "Available Locales",
+    "header_cart_count": "Cart Count",
+    "header_notification_count": "Notification Count",
+    "footer_social_links": "Social Links",
+    "footer_link_groups": "Link Groups",
+    "notification_items": "Notification Items",
+    "notification_unread_count": "Unread Notification Count"
+  },
+  "state_label": {
+    "current_user": "Current user",
+    "current_user_name": "Current user name",
+    "current_user_email": "Current user email",
+    "current_user_id": "Current user ID",
+    "current_user_is_admin": "Is admin",
+    "site_name": "Site name",
+    "query_q": "Search query (URL)"
+  },
+  "data_source": {
+    "addresses": "Addresses",
+    "boardList": "Board List",
+    "boards": "Boards",
+    "cart": "Cart",
+    "cartItems": "Cart Items",
+    "categories": "Categories",
+    "category": "Category",
+    "challenge": "Identity Challenge",
+    "checkoutData": "Checkout Data",
+    "current_user": "Current User",
+    "form_data": "Form Data",
+    "form_meta": "Form Meta",
+    "home_boards": "Home Boards",
+    "mileage_balance": "Mileage Balance",
+    "mileage_history": "Mileage History",
+    "myActivityStats": "My Activity Stats",
+    "myComments": "My Comments",
+    "myInquiries": "My Inquiries",
+    "myPosts": "My Posts",
+    "navigation": "Navigation",
+    "newProducts": "New Products",
+    "notification_unread_count": "Unread Notification Count",
+    "notifications": "Notifications",
+    "order": "Order",
+    "orderData": "Order Data",
+    "orders": "Orders",
+    "page": "Page",
+    "paymentSettings": "Payment Settings",
+    "popularPosts": "Popular Posts",
+    "popularProducts": "Popular Products",
+    "popular_boards": "Popular Boards",
+    "post": "Post",
+    "postStats": "Post Stats",
+    "posts": "Posts",
+    "privacyContent": "Privacy Policy Content",
+    "product": "Product",
+    "productDownloadableCoupons": "Downloadable Coupons",
+    "products": "Products",
+    "profile": "Profile",
+    "qna": "Product Q&A",
+    "recentPosts": "Recent Posts",
+    "recentProducts": "Recently Viewed Products",
+    "recent_posts": "Recent Posts",
+    "refundReasons": "Refund Reasons",
+    "reviewSettings": "Review Policy Settings",
+    "reviews": "Reviews",
+    "saveShippingAddress": "Save Shipping Address",
+    "searchResults": "Search Results",
+    "shippingSettings": "Shipping Settings",
+    "stats": "Stats",
+    "termsContent": "Terms Content",
+    "tokenValidation": "Token Validation",
+    "user": "User",
+    "userAddresses": "User Addresses",
+    "userNotifications": "User Notifications",
+    "userPosts": "User Posts",
+    "userProfile": "User Profile",
+    "user_notification_ws": "Notifications (Live)",
+    "wishlist": "Wishlist"
   }
 }

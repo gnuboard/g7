@@ -40,7 +40,7 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
     {
         parent::setUp();
 
-        $this->storagePath = storage_path('app/modules/sirsoft-ecommerce/settings');
+        $this->storagePath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
 
         // 다른 테스트에서 누적된 HookManager static filters 백업 후 초기화
         $ref = new ReflectionClass(HookManager::class);
@@ -95,16 +95,59 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
         $this->assertArrayHasKey('order_settings', $settings);
     }
 
+    /**
+     * testing 환경에서는 설정 저장 경로가 운영 경로(storage/app/modules/...)가 아닌
+     * 격리 경로(storage/framework/testing/...)여야 한다. 테스트가 운영 설정을
+     * 덮어쓰는 회귀를 차단한다.
+     */
+    public function test_storage_path_is_isolated_in_testing_environment(): void
+    {
+        $method = (new ReflectionClass(EcommerceSettingsService::class))->getMethod('getStoragePath');
+        $method->setAccessible(true);
+
+        // 경로 구분자를 forward slash 로 정규화해 OS 무관 검증 (Windows 는 혼합 구분자 반환).
+        $normalized = str_replace('\\', '/', $method->invoke($this->service));
+
+        $this->assertStringContainsString('framework/testing', $normalized);
+        $this->assertStringNotContainsString('app/modules/sirsoft-ecommerce/settings', $normalized);
+    }
+
+    /**
+     * 설정 저장이 운영 mileage.json 등을 건드리지 않는지 검증한다 (운영 설정 영구 보존).
+     */
+    public function test_saving_settings_does_not_touch_production_path(): void
+    {
+        $productionFile = storage_path('app/modules/sirsoft-ecommerce/settings/order_settings.json');
+        $existedBefore = File::exists($productionFile);
+        $contentBefore = $existedBefore ? File::get($productionFile) : null;
+
+        $this->service->saveSettings(['order_settings' => ['some_flag' => true]]);
+
+        if ($existedBefore) {
+            // 운영 파일이 이미 있었다면 내용이 변경되지 않아야 한다 (격리 경로에만 기록).
+            $this->assertSame(
+                $contentBefore,
+                File::get($productionFile),
+                '테스트가 운영 설정 파일 내용을 변경했습니다.'
+            );
+        } else {
+            // 운영 파일이 없었다면 저장 후에도 새로 생성되지 않아야 한다.
+            $this->assertFalse(File::exists($productionFile), '테스트가 운영 설정 파일을 생성했습니다.');
+        }
+    }
+
     public function test_order_settings_default_values(): void
     {
         $settings = $this->service->getSettings('order_settings');
 
         $this->assertTrue($settings['auto_cancel_expired']);
         $this->assertEquals(3, $settings['auto_cancel_days']);
-        $this->assertEquals(3, $settings['vbank_due_days']);
-        $this->assertEquals(7, $settings['dbank_due_days']);
         $this->assertEquals(30, $settings['cart_expiry_days']);
         $this->assertTrue($settings['stock_restore_on_cancel']);
+
+        // 입금기한 단일화: 구 키는 기본 설정 표면에서 제거됨 (auto_cancel_days 단일 SSoT)
+        $this->assertArrayNotHasKey('vbank_due_days', $settings);
+        $this->assertArrayNotHasKey('dbank_due_days', $settings);
     }
 
     public function test_default_banks_loaded(): void
@@ -138,8 +181,8 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
         );
 
         $this->assertEquals(
-            7,
-            $this->service->getSetting('order_settings.dbank_due_days')
+            3,
+            $this->service->getSetting('order_settings.auto_cancel_days')
         );
     }
 
@@ -332,8 +375,6 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
                 ],
                 'auto_cancel_expired' => true,
                 'auto_cancel_days' => 3,
-                'vbank_due_days' => 3,
-                'dbank_due_days' => 7,
                 'cart_expiry_days' => 30,
                 'stock_restore_on_cancel' => true,
             ],
@@ -380,8 +421,10 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
         // 마이그레이션된 값 확인
         $this->assertFalse($settings['auto_cancel_expired']);
         $this->assertEquals(5, $settings['auto_cancel_days']);
-        $this->assertEquals(5, $settings['vbank_due_days']);
-        $this->assertEquals(10, $settings['dbank_due_days']);
+
+        // 입금기한 단일화: 구 키는 더 이상 마이그레이션 대상이 아님 (auto_cancel_days 단일 SSoT)
+        $this->assertArrayNotHasKey('vbank_due_days', $settings);
+        $this->assertArrayNotHasKey('dbank_due_days', $settings);
 
         // bank_accounts 이전 확인
         $this->assertCount(1, $settings['bank_accounts']);
@@ -446,8 +489,6 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
             'order_settings' => [
                 'auto_cancel_expired' => false,
                 'auto_cancel_days' => 5,
-                'vbank_due_days' => 5,
-                'dbank_due_days' => 14,
                 'cart_expiry_days' => 60,
                 'stock_restore_on_cancel' => false,
             ],
@@ -458,8 +499,6 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
 
         $this->assertFalse($settings['auto_cancel_expired']);
         $this->assertEquals(5, $settings['auto_cancel_days']);
-        $this->assertEquals(5, $settings['vbank_due_days']);
-        $this->assertEquals(14, $settings['dbank_due_days']);
         $this->assertEquals(60, $settings['cart_expiry_days']);
         $this->assertFalse($settings['stock_restore_on_cancel']);
     }
@@ -549,10 +588,13 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
 
         // order_settings 필드가 포함되어야 함
         $this->assertArrayHasKey('auto_cancel_expired', $allSettings['order_settings']);
+        $this->assertArrayHasKey('auto_cancel_days', $allSettings['order_settings']);
         $this->assertArrayHasKey('stock_restore_on_cancel', $allSettings['order_settings']);
-        $this->assertArrayHasKey('vbank_due_days', $allSettings['order_settings']);
-        $this->assertArrayHasKey('dbank_due_days', $allSettings['order_settings']);
         $this->assertArrayHasKey('payment_methods', $allSettings['order_settings']);
+
+        // 입금기한 단일화: 구 키는 전체 설정에서 제거됨
+        $this->assertArrayNotHasKey('vbank_due_days', $allSettings['order_settings']);
+        $this->assertArrayNotHasKey('dbank_due_days', $allSettings['order_settings']);
     }
 
     public function test_all_settings_boolean_fields_are_boolean_type(): void
@@ -588,7 +630,6 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
             'order_settings' => [
                 'auto_cancel_expired' => false,
                 'auto_cancel_days' => 10,
-                'dbank_due_days' => 14,
                 'bank_accounts' => [
                     ['bank_code' => '004', 'account_number' => '123-456', 'account_holder' => '홍길동', 'is_active' => true, 'is_default' => true],
                 ],
@@ -614,7 +655,6 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
         // 다른 설정은 보존되었는지 확인
         $this->assertFalse($settings['auto_cancel_expired']);
         $this->assertEquals(10, $settings['auto_cancel_days']);
-        $this->assertEquals(14, $settings['dbank_due_days']);
         $this->assertCount(1, $settings['bank_accounts']);
         $this->assertEquals('홍길동', $settings['bank_accounts'][0]['account_holder']);
     }

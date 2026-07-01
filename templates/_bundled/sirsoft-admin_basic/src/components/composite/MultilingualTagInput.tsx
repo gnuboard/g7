@@ -4,6 +4,7 @@ import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
 import { Input } from '../basic/Input';
 import { Icon } from '../basic/Icon';
+import type { EditorAttrs } from '../../types';
 import { Modal } from './Modal';
 
 // G7Core.t() 번역 함수 참조
@@ -83,6 +84,12 @@ export interface MultilingualTagInputProps {
     state: Record<string, any>;
     setState: (updates: any) => void;
   };
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -120,6 +127,8 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
   modalId,
   statePath,
   __componentContext,
+  id,
+  editorAttrs,
 }) => {
   const supportedLocales = useMemo(() => getSupportedLocales(), []);
   const defaultLocale = useMemo(() => getCurrentLocale(), []);
@@ -325,7 +334,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
   const hasError = !!error;
 
   return (
-    <Div className={className}>
+    <Div className={className} id={id} {...editorAttrs}>
       {/* 태그 표시 영역 */}
       <Div
         className={`flex flex-wrap gap-1.5 p-2 border rounded-lg bg-white dark:bg-gray-700 min-h-[42px] ${

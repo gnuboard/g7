@@ -3,20 +3,25 @@
 namespace Modules\Sirsoft\Board\Providers;
 
 use App\Extension\BaseModuleServiceProvider;
+use App\Seo\SitemapGenerator;
+use Modules\Sirsoft\Board\Console\Commands\AggregateBoardStatsCommand;
 use Modules\Sirsoft\Board\Repositories\AttachmentRepository;
 use Modules\Sirsoft\Board\Repositories\BoardRepository;
+use Modules\Sirsoft\Board\Repositories\BoardStatRepository;
+use Modules\Sirsoft\Board\Repositories\BoardTypeRepository;
 use Modules\Sirsoft\Board\Repositories\CommentRepository;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardStatRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
-use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\UserNotificationSettingRepositoryInterface;
-use Modules\Sirsoft\Board\Repositories\BoardTypeRepository;
 use Modules\Sirsoft\Board\Repositories\PostRepository;
 use Modules\Sirsoft\Board\Repositories\ReportRepository;
 use Modules\Sirsoft\Board\Repositories\UserNotificationSettingRepository;
+use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
@@ -32,8 +37,6 @@ class BoardServiceProvider extends BaseModuleServiceProvider
 {
     /**
      * 모듈 식별자
-     *
-     * @var string
      */
     protected string $moduleIdentifier = 'sirsoft-board';
 
@@ -44,6 +47,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
      */
     protected array $storageServices = [
         AttachmentService::class,
+        BoardService::class,
     ];
 
     /**
@@ -69,6 +73,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     protected array $repositories = [
         AttachmentRepositoryInterface::class => AttachmentRepository::class,
         BoardRepositoryInterface::class => BoardRepository::class,
+        BoardStatRepositoryInterface::class => BoardStatRepository::class,
         BoardTypeRepositoryInterface::class => BoardTypeRepository::class,
         CommentRepositoryInterface::class => CommentRepository::class,
         PostRepositoryInterface::class => PostRepository::class,
@@ -77,19 +82,31 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     ];
 
     /**
-     * 서비스 부트스트랩
+     * 등록할 Artisan 커맨드 목록
      *
-     * @return void
+     * @var array<int, class-string>
+     */
+    protected array $commands = [
+        AggregateBoardStatsCommand::class,
+    ];
+
+    /**
+     * 서비스 부트스트랩
      */
     public function boot(): void
     {
         parent::boot();
 
+        // Artisan 커맨드 등록
+        if ($this->app->runningInConsole()) {
+            $this->commands($this->commands);
+        }
+
         // Sitemap 기여자 등록
         $this->app->booted(function () {
-            if ($this->app->bound(\App\Seo\SitemapGenerator::class)) {
-                $this->app->make(\App\Seo\SitemapGenerator::class)->registerContributor(
-                    new \Modules\Sirsoft\Board\Seo\BoardSitemapContributor()
+            if ($this->app->bound(SitemapGenerator::class)) {
+                $this->app->make(SitemapGenerator::class)->registerContributor(
+                    new BoardSitemapContributor
                 );
             }
         });

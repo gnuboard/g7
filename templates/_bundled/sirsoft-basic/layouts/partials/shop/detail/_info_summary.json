@@ -101,7 +101,7 @@
                     {
                       "type": "basic",
                       "name": "Span",
-                      "text": "{{dlCoupon.benefit_formatted}}"
+                      "text": "{{dlCoupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? dlCoupon.benefit_formatted}}"
                     },
                     {
                       "type": "basic",
@@ -177,13 +177,12 @@
                             "handler": "setState",
                             "params": {
                               "target": "local",
-                              "downloadableCouponsLoading": true,
-                              "downloadableCouponsPage": 1
+                              "downloadableCouponsLoading": true
                             }
                           },
                           {
                             "handler": "apiCall",
-                            "target": "/api/modules/sirsoft-ecommerce/user/coupons/downloadable?page=1&per_page=8",
+                            "target": "/api/modules/sirsoft-ecommerce/user/coupons/downloadable?per_page=8&page=1",
                             "auth_mode": "required",
                             "params": { "method": "GET" },
                             "onSuccess": [
@@ -192,7 +191,8 @@
                                 "params": {
                                   "target": "local",
                                   "downloadableCoupons": "{{response.data}}",
-                                  "downloadableCouponsLoading": false
+                                  "downloadableCouponsLoading": false,
+                                  "downloadingMore": false
                                 }
                               },
                               { "handler": "openModal", "target": "coupon_download_modal" }

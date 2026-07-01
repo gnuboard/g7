@@ -1,4 +1,10 @@
 {
+  "editor": {
+    "data_source": {
+      "marketing_settings": "Marketing Settings",
+      "settings": "Settings"
+    }
+  },
   "marketing_consent_title": "Marketing Consent",
   "email_subscription": "Email Subscription",
   "email_subscription_desc": "Receive promotional emails including events, discounts, and marketing updates.",

@@ -18,6 +18,16 @@ use Tests\TestCase;
 class StoreBanksRequestTest extends TestCase
 {
     /**
+     * 은행명 검증은 "현재 앱 로케일" 필드만 필수로 본다. 테스트 데이터가 ko/en 을 제공하므로
+     * 환경 로케일(예: ja)에 관계없이 결정적이도록 ko 로 고정한다.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        app()->setLocale('ko');
+    }
+
+    /**
      * 검증 수행
      *
      * @param array $data 검증 대상 데이터

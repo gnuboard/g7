@@ -1,0 +1,113 @@
+feature: 레이아웃 편집기 Table 빌트인 — table 노드 에디터(STRUCT-TREE 속성 패널)
+
+description: |
+  표 컴포넌트(Table)의 children 트리(section>row>cell)를 속성 모달 본체에서 시중 편집기
+  수준으로 구조 편집한다. capability 의 일반 슬롯 `nodeEditor:{kind:"table",params:{rowContainer/
+  row/cell/headerCell/colSpanProp/rowSpanProp}}`(부록4-ter)로 선언하고, 코어 빌트인 TableEditor
+  를 registerCoreEditors 가 registerNodeEditor('table', ...) 로 일반 레지스트리에 등록한다
+  (특권 분기 0 — 코어는 kind 만 알고 컴포넌트명/마크업 어휘를 가정하지 않음. 역할 매핑은 params
+  가 공급 → div-grid 표 템플릿도 동일 어댑터).
+
+  데이터 모델: tableGridModel(트리↔논리 grid 변환 어댑터 — 병합 고려 행×열 좌표, 겹침/구멍 검출)
+  + tableGridMutations(pure 변형). 별도 rows[][] 직렬화 없이 기존 노드/패치/렌더/드래그 재사용.
+
+  핵심 동작:
+    - 행 추가/삭제/이동: addRow/removeRow/moveRow. 추가 시 rowSpan 흡수칸은 origin span++ (셀 미생성),
+      삭제 시 내려오던 span 감소, 이동은 병합이 행 경계 넘으면 거부. 최소 1행 유지.
+    - 열 추가/삭제/이동: addColumn/removeColumn/moveColumn. 경계 가로지르는 colSpan 셀은 colSpan±,
+      이동은 병합 걸치면 거부. 최소 1열 유지.
+    - 셀 병합/해제: mergeCells(직사각형만 — 비직사각형/구멍/origin 삐져나옴 거부) → origin span 설정 +
+      흡수 셀 제거. unmergeCell → span 1×1 + 빈 셀 복원(round-trip).
+    - 셀 테두리: setCellClassName(셀 className 임의 토큰 — 코어는 Tailwind/특정 토큰 미가정).
+    - 셀 텍스트 다국어: 직접 text 또는 **의미 텍스트 자손**(복합 셀 Td>[Icon,Span("라벨")])까지 탐색
+      (findTextNodePath 공용 — ChildrenListControl 과 SSoT 공유, 부록7 7-a 대비). 평문 blur →
+      createCustomKey → 그 텍스트 노드 `$t:custom.*` 치환(구조 보존). 기존 키 → updateCustomKeyValue.
+      순수 구조 셀(아이콘/이미지만)은 텍스트 입력 비활성 — 구조는 캔버스/children 에서 편집.
+
+axes:
+  operation: [add_row, remove_row, move_row, add_col, remove_col, move_col, merge, unmerge, cell_border, cell_text]
+  cell_kind: [direct_text, complex_text_descendant, structural_only, bound]
+  span_context: [no_span, colspan, rowspan, blocked_by_span]
+  template: [sirsoft-basic, sirsoft-admin_basic]
+
+exclusions:
+  - { operation: cell_text, cell_kind: structural_only, reason: "순수 구조 셀은 텍스트 자손 없음 — 텍스트 편집 비대상(라벨만)" }
+  - { operation: cell_text, cell_kind: bound, reason: "바인딩식 셀은 데이터 결정 — 텍스트 편집 비대상" }
+  - { operation: move_row, span_context: rowspan, reason: "rowSpan 걸친 행 이동은 grid 깨므로 거부(no-op)" }
+  - { operation: move_col, span_context: colspan, reason: "colSpan 걸친 열 이동은 거부(no-op)" }
+  - { operation: merge, cell_kind: structural_only, reason: "병합은 셀 종류 무관(좌표 기반)" }
+  - { operation: merge, cell_kind: complex_text_descendant, reason: "동일" }
+  - { operation: merge, cell_kind: bound, reason: "동일" }
+  - { operation: unmerge, cell_kind: complex_text_descendant, reason: "해제는 셀 종류 무관(span 좌표)" }
+  - { operation: unmerge, cell_kind: structural_only, reason: "동일" }
+  - { operation: unmerge, cell_kind: bound, reason: "동일" }
+  - { operation: cell_border, cell_kind: complex_text_descendant, reason: "테두리는 셀 className(종류 무관)" }
+  - { operation: cell_border, cell_kind: structural_only, reason: "동일" }
+  - { operation: cell_border, cell_kind: bound, reason: "동일" }
+  - { operation: add_row, cell_kind: complex_text_descendant, reason: "행/열 구조 연산은 셀 콘텐츠 종류 무관" }
+  - { operation: add_row, cell_kind: structural_only, reason: "동일" }
+  - { operation: add_row, cell_kind: bound, reason: "동일" }
+  - { operation: remove_row, cell_kind: complex_text_descendant, reason: "동일" }
+  - { operation: remove_row, cell_kind: structural_only, reason: "동일" }
+  - { operation: remove_row, cell_kind: bound, reason: "동일" }
+  - { operation: add_col, cell_kind: complex_text_descendant, reason: "동일" }
+  - { operation: add_col, cell_kind: structural_only, reason: "동일" }
+  - { operation: add_col, cell_kind: bound, reason: "동일" }
+  - { operation: remove_col, cell_kind: complex_text_descendant, reason: "동일" }
+  - { operation: remove_col, cell_kind: structural_only, reason: "동일" }
+  - { operation: remove_col, cell_kind: bound, reason: "동일" }
+  - { operation: move_row, cell_kind: complex_text_descendant, reason: "동일" }
+  - { operation: move_row, cell_kind: structural_only, reason: "동일" }
+  - { operation: move_row, cell_kind: bound, reason: "동일" }
+  - { operation: move_col, cell_kind: complex_text_descendant, reason: "동일" }
+  - { operation: move_col, cell_kind: structural_only, reason: "동일" }
+  - { operation: move_col, cell_kind: bound, reason: "동일" }
+
+effects:
+  # capability/등록
+  - table_capability_declares_node_editor_kind_table_both_templates
+  - table_editor_registered_via_registercoreeditors_kind_agnostic
+  - property_modal_dispatches_table_node_editor_in_props_tab_by_kind
+  # grid 변환
+  - tree_to_grid_expands_thead_tbody_with_merge_coordinates
+  - tree_to_grid_detects_overlap_and_hole_marks_invalid
+  - params_role_mapping_neutral_div_grid_works_same_adapter
+  # 행/열 구조
+  - add_row_inserts_blank_row_keeps_col_count
+  - add_row_bumps_rowspan_origin_for_absorbed_cells
+  - remove_row_keeps_min_one_row
+  - remove_row_decrements_crossing_rowspan
+  - move_row_band_moves_merge_block_as_unit
+  - move_row_section_boundary_disabled_with_reason
+  - add_column_inserts_blank_col
+  - add_column_bumps_colspan_for_crossing_cell
+  - remove_column_keeps_min_one_col
+  - remove_column_decrements_crossing_colspan
+  - move_column_band_moves_merge_block_as_unit
+  - move_column_table_edge_band_disabled_boundary
+  # 병합/해제
+  - shift_select_range_then_merge_sets_origin_span_removes_absorbed
+  - merge_rejects_non_rectangular_and_hole
+  - unmerge_clears_span_restores_blank_cells
+  # 셀 콘텐츠
+  - cell_border_className_input_patches_cell_props
+  - complex_cell_edits_text_descendant_preserves_structure
+  - structural_only_cell_shows_label_not_input
+  - plain_cell_blur_creates_custom_key_replaces_text_token
+  # 라이브(E2E)
+  - live_add_row_col_merge_save_persists_to_user_page
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/tableGridModel.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/TableEditor.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/editorRegistries.test.ts
+  - tests/Playwright/specs/layout-editor/table-editor.spec.ts
+
+validation:
+  note: |
+    Vitest 단위가 axes cross product 회귀(행/열 추가·삭제·이동, 병합/해제 round-trip, 겹침/구멍
+    거부, span 보정, 복합 셀 텍스트 자손 보존, cellBorder, params 중립성)와 capability 부착·등록을
+    잠근다. Playwright E2E 가 라이브 편집기에서 Table 선택 → table 에디터 마운트 → 행/열 추가 →
+    셀 영역 선택 → 병합 → 저장(PUT 200)을 브라우저로 검증한다. 캔버스 인플레이스(셀 단위 오버레이)는
+ 단계 3-b 산출물 — 본 단계는 속성 패널 경로.
+  e2e_spec: tests/Playwright/specs/layout-editor/table-editor.spec.ts

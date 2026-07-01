@@ -1,0 +1,175 @@
+{
+  "extension_point": "identity_provider_ui:provider",
+  "mode": "append",
+  "priority": 100,
+  "components": [
+    {
+      "comment": "초기 상태 — provider_id=inicis && !providerInProgress",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.identityChallenge?.provider_id === 'inicis' && !(_global.identityChallenge?.providerInProgress)}}",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "comment": "헤더 — 아이콘 + 제목",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-center flex-col text-center space-y-2 pt-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "fas fa-mobile-screen",
+                    "className": "text-2xl text-blue-600 dark:text-blue-400"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "성인인증 purpose 전용 제목",
+              "type": "basic",
+              "name": "H3",
+              "if": "{{_global.identityChallenge?.purpose === 'inicis.adult_verification'}}",
+              "props": {
+                "className": "section-heading-md"
+              },
+              "text": "$t:sirsoft-verification_kginicis.modal.adult_title"
+            },
+            {
+              "comment": "기본 본인인증 제목 (signup/password_reset/self_update/sensitive_action 등)",
+              "type": "basic",
+              "name": "H3",
+              "if": "{{_global.identityChallenge?.purpose !== 'inicis.adult_verification'}}",
+              "props": {
+                "className": "section-heading-md"
+              },
+              "text": "$t:sirsoft-verification_kginicis.modal.title"
+            },
+            {
+              "comment": "성인인증 purpose 전용 설명",
+              "type": "basic",
+              "name": "P",
+              "if": "{{_global.identityChallenge?.purpose === 'inicis.adult_verification'}}",
+              "props": {
+                "className": "text-label"
+              },
+              "text": "$t:sirsoft-verification_kginicis.modal.adult_description"
+            },
+            {
+              "comment": "기본 본인인증 설명",
+              "type": "basic",
+              "name": "P",
+              "if": "{{_global.identityChallenge?.purpose !== 'inicis.adult_verification'}}",
+              "props": {
+                "className": "text-label"
+              },
+              "text": "$t:sirsoft-verification_kginicis.modal.description"
+            }
+          ]
+        },
+        {
+          "comment": "본인인증 시작 버튼 — 사용자 제스처 컨텍스트에서 window.open 호출 (popup blocker 회피)",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-semibold transition-colors"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sirsoft-verification_kginicis.startAuth"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-verification_kginicis.modal.start_button"
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "fas fa-arrow-right",
+                "className": "text-sm"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "진행 중 상태 — provider_id=inicis && providerInProgress. 팝업 열린 후 결과 대기 중",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.identityChallenge?.provider_id === 'inicis' && (_global.identityChallenge?.providerInProgress)}}",
+      "props": {
+        "className": "flex-center flex-col text-center space-y-4 py-6",
+        "role": "status",
+        "aria-live": "polite"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "fas fa-spinner fa-spin",
+            "className": "text-3xl text-blue-600 dark:text-blue-400"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-heading"
+          },
+          "text": "$t:sirsoft-verification_kginicis.modal.in_progress.title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-yellow-700 dark:text-yellow-300"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "inline-flex items-start gap-1.5"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "fas fa-circle-info",
+                    "className": "mt-0.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-verification_kginicis.modal.in_progress.hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

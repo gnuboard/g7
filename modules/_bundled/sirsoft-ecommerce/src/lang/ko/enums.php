@@ -6,6 +6,24 @@
  * Enum 값의 다국어 라벨
  */
 return [
+    // 마일리지 거래 유형 (MileageTransactionTypeEnum 값과 일치)
+    'mileage_transaction_type' => [
+        'purchase_earn' => '구매 적립',
+        'admin_earn' => '관리자 지급',
+        'order_use' => '주문 사용',
+        'admin_deduct' => '관리자 차감',
+        'expired' => '유효기간 소멸',
+        'refund_restore' => '환불 복원',
+        'order_cancel_restore' => '주문취소 복원',
+        'earn_cancel' => '적립 회수',
+    ],
+
+    // 마일리지 적립 시점 (MileageEarnTriggerEnum 값과 일치)
+    'mileage_earn_trigger' => [
+        'delivered' => '배송완료',
+        'confirmed' => '구매확정',
+    ],
+
     'sales_status' => [
         'on_sale' => '판매중',
         'suspended' => '판매중지',
@@ -52,7 +70,6 @@ return [
         'delivered' => '배송완료',
         'confirmed' => '구매확정',
         'cancelled' => '주문취소',
-        'partial_cancelled' => '부분취소',
     ],
 
     // 결제상태 (PaymentStatusEnum 값과 일치)
@@ -302,5 +319,41 @@ return [
     'has_reply' => [
         'replied' => '답변완료',
         'not_replied' => '미답변',
+    ],
+
+    // 배송 계산 API 요청 참고 필드 (ShippingApiRequestField 값과 일치)
+    'shipping_api_request_field' => [
+        'policy_id' => '배송정책 ID',
+        'country_code' => '국가 코드',
+        'items' => '주문 항목',
+        'group_total' => '그룹 합계 금액',
+        'total_quantity' => '총 수량',
+    ],
+
+    // 배송 계산 API HTTP 메서드 (ShippingApiHttpMethod 값과 일치)
+    'shipping_api_http_method' => [
+        'GET' => 'GET',
+        'POST' => 'POST',
+    ],
+
+    // 배송 계산 API 인증 방식 (ShippingApiAuthType 값과 일치)
+    'shipping_api_auth_type' => [
+        'none' => '인증 없음',
+        'bearer' => 'Bearer 토큰',
+        'custom_header' => '커스텀 헤더',
+    ],
+
+    // 배송 계산 API 응답 형식 (ShippingApiResponseType 값과 일치)
+    'shipping_api_response_type' => [
+        'json' => 'JSON',
+        'text' => '텍스트',
+    ],
+
+    // 배송 메모 프리셋 (DeliveryMemoPresetEnum 값과 일치)
+    'delivery_memo_preset' => [
+        'door' => '문 앞에 놓아주세요',
+        'security' => '경비실에 맡겨주세요',
+        'parcel_box' => '택배함에 넣어주세요',
+        'call' => '배송 전 연락 부탁드립니다',
     ],
 ];

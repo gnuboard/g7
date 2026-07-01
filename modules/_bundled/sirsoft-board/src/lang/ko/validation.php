@@ -56,7 +56,9 @@ return [
     // 분류 검증 메시지
     'categories' => [
         'array' => '분류는 배열 형식이어야 합니다.',
+        'max' => '분류는 최대 :max개까지 추가할 수 있습니다.',
         'item_max' => '분류명은 :max자를 초과할 수 없습니다.',
+        'item_required' => '빈 분류명은 사용할 수 없습니다.',
     ],
 
     // 기능 설정 검증 메시지
@@ -85,6 +87,7 @@ return [
     'max_title_length' => [
         'min' => '최대 제목 글자 수는 :min자 이상이어야 합니다.',
         'max' => '최대 제목 글자 수는 :max자를 초과할 수 없습니다.',
+        'gte_min' => '최대 제목 글자 수는 최소 제목 글자 수보다 작을 수 없습니다.',
     ],
 
     // 내용 길이 제한 검증 메시지
@@ -95,6 +98,7 @@ return [
     'max_content_length' => [
         'min' => '최대 게시글 글자 수는 :min자 이상이어야 합니다.',
         'max' => '최대 게시글 글자 수는 :max자를 초과할 수 없습니다.',
+        'gte_min' => '최대 게시글 글자 수는 최소 게시글 글자 수보다 작을 수 없습니다.',
     ],
 
     // 댓글 길이 제한 검증 메시지
@@ -105,6 +109,7 @@ return [
     'max_comment_length' => [
         'min' => '최대 댓글 글자 수는 :min자 이상이어야 합니다.',
         'max' => '최대 댓글 글자 수는 :max자를 초과할 수 없습니다.',
+        'gte_min' => '최대 댓글 글자 수는 최소 댓글 글자 수보다 작을 수 없습니다.',
     ],
 
     // 파일 업로드 검증 메시지
@@ -118,6 +123,9 @@ return [
     'max_file_count' => [
         'min' => '최대 파일 개수는 최소 :min개 이상이어야 합니다.',
         'max' => '최대 파일 개수는 :max개를 초과할 수 없습니다.',
+    ],
+    'allowed_extensions' => [
+        'min' => '허용 파일 확장자를 최소 1개 이상 입력해야 합니다.',
     ],
 
     // 권한 설정 검증 메시지
@@ -305,8 +313,11 @@ return [
             'report_policy.daily_report_limit' => '일일 신고 한도',
             'report_policy.rejection_limit_count' => '신고 기각 한도',
             'report_policy.rejection_limit_days' => '신고 기각 기간',
+            // report_permissions
+            'report_permissions.view_roles' => '신고 조회 권한 역할',
+            'report_permissions.manage_roles' => '신고 처리 권한 역할',
             // spam_security
-            'spam_security.blocked_keywords' => '금지 키워드',
+            'spam_security.blocked_keywords' => '금지어',
             'spam_security.post_cooldown_seconds' => '게시글 작성 쿨다운(초)',
             'spam_security.comment_cooldown_seconds' => '댓글 작성 쿨다운(초)',
             'spam_security.report_cooldown_seconds' => '신고 쿨다운(초)',
@@ -349,6 +360,9 @@ return [
         ],
         'restore' => [
             'reason' => '복원 사유',
+        ],
+        'board' => [
+            'add_to_menu' => '관리자 메뉴에 표시',
         ],
     ],
 
@@ -499,6 +513,7 @@ return [
         'posts' => [
             'read' => '게시글 조회',
             'write' => '게시글 작성',
+            'read-secret' => '비밀글 조회',
         ],
         'comments' => [
             'read' => '댓글 조회',
@@ -513,6 +528,18 @@ return [
 
     // 권한 필드 속성 접미사
     'role_field_suffix' => '역할',
+
+    // 신고 관리 권한 설정 검증 메시지
+    'report_permissions' => [
+        'view_roles' => [
+            'required_with' => '신고 조회 권한 역할을 최소 1개 이상 선택해주세요.',
+            'min' => '신고 조회 권한 역할을 최소 :min개 이상 선택해주세요.',
+        ],
+        'manage_roles' => [
+            'required_with' => '신고 처리 권한 역할을 최소 1개 이상 선택해주세요.',
+            'min' => '신고 처리 권한 역할을 최소 :min개 이상 선택해주세요.',
+        ],
+    ],
 
     // 신고 검증 메시지
     'report' => [

@@ -73,6 +73,74 @@ describe('게시판 신고현황 named_actions 검증', () => {
     });
 });
 
+describe('검색어 상태 스코프 정합 검증 (#413-72 회귀)', () => {
+    /**
+     * 검색 입력(Select/Input)의 setState 쓰기 스코프가, 검색 실행 액션 및
+     * value 바인딩의 읽기 스코프(_local)와 일치해야 한다.
+     *
+     * 결함: 입력 setState가 target:"global"로 _global 에 저장하는데,
+     * searchBoardReports 액션과 value 바인딩은 _local 을 읽어 검색어가 전달되지 않음.
+     */
+
+    it('searchBoardReports가 _local.searchField / _local.searchQuery 를 읽어야 함', () => {
+        const action = (boardReports as any).named_actions.searchBoardReports;
+        expect(action.params.query['filters[0][field]']).toContain('_local.searchField');
+        expect(action.params.query['filters[0][value]']).toContain('_local.searchQuery');
+    });
+
+    it('검색 Select/Input의 value 바인딩이 _local 을 읽어야 함', () => {
+        for (const id of ['search_field_select', 'mobile_search_field_select']) {
+            const cmp = findComponentById(boardReports, id);
+            expect(cmp, `${id} 컴포넌트 존재`).toBeDefined();
+            expect(cmp.props.value).toContain('_local.searchField');
+        }
+        for (const id of ['search_input', 'mobile_search_input']) {
+            const cmp = findComponentById(boardReports, id);
+            expect(cmp, `${id} 컴포넌트 존재`).toBeDefined();
+            expect(cmp.props.value).toContain('_local.searchQuery');
+        }
+    });
+
+    it('검색 Select/Input의 change setState가 _local 에 저장해야 함 (target:"global" 금지)', () => {
+        const ids = [
+            'search_field_select',
+            'search_input',
+            'mobile_search_field_select',
+            'mobile_search_input',
+        ];
+        for (const id of ids) {
+            const cmp = findComponentById(boardReports, id);
+            const changeAction = (cmp.actions || []).find(
+                (a: any) => a.type === 'change' && a.handler === 'setState',
+            );
+            expect(changeAction, `${id} 의 change setState 존재`).toBeDefined();
+            expect(
+                changeAction.params.target,
+                `${id}: 검색어 setState 는 _local 에 저장해야 함 (target:"global" 금지)`,
+            ).not.toBe('global');
+        }
+    });
+
+    it('reset 버튼이 검색어를 _local 스코프로 초기화해야 함', () => {
+        const reset = findComponentById(boardReports, 'reset_button');
+        expect(reset).toBeDefined();
+        const setStates = (reset.actions || []).filter(
+            (a: any) => a.handler === 'setState',
+        );
+        // 검색어(searchField/searchQuery)를 초기화하는 setState 는 _local 대상이어야 함
+        const searchReset = setStates.find(
+            (a: any) =>
+                Object.prototype.hasOwnProperty.call(a.params, 'searchField') ||
+                Object.prototype.hasOwnProperty.call(a.params, 'searchQuery'),
+        );
+        expect(searchReset, '검색어 초기화 setState 존재').toBeDefined();
+        expect(
+            searchReset.params.target,
+            'reset: 검색어 초기화는 _local 대상이어야 함 (target:"global" 금지)',
+        ).not.toBe('global');
+    });
+});
+
 describe('모바일 Dropdown 일괄 처리 검증', () => {
     it('mobile_bulk_action_dropdown의 items가 value 필드를 가져야 함 (key 금지)', () => {
         const dropdown = findComponentById(boardReports, 'mobile_bulk_action_dropdown');

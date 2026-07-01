@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export interface ToggleProps {
     /** 체크 상태 */
     checked?: boolean;
@@ -18,6 +19,12 @@ export interface ToggleProps {
     name?: string;
     /** 값 (checked의 대체) */
     value?: boolean;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * Toggle 스위치 컴포넌트

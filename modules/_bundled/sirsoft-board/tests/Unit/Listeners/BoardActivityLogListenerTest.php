@@ -8,6 +8,7 @@ use App\Models\Menu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Board\Listeners\BoardActivityLogListener;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
@@ -15,9 +16,10 @@ use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
+use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use Modules\Sirsoft\Board\Tests\ModuleTestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * 게시판 활동 로그 리스너 단위 테스트
@@ -46,7 +48,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->app->instance('request', Request::create('/api/admin/test'));
 
         $this->listener = app(BoardActivityLogListener::class);
-        $this->logChannel = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $this->logChannel = Mockery::mock(LoggerInterface::class);
         Log::shouldReceive('channel')
             ->with('activity')
             ->andReturn($this->logChannel);
@@ -59,15 +61,17 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function getSubscribedHooks는_27개_훅을_반환한다(): void
+    public function get_subscribed_hooks는_30개_훅을_반환한다(): void
     {
         $hooks = BoardActivityLogListener::getSubscribedHooks();
 
-        $this->assertCount(27, $hooks);
+        // #413-58: attachment.after_download 추가 (이전 stale 기대값 27 → 실제 28 이었고, 본 추가로 29)
+        // #413-26: settings.after_bulk_apply_aborted 추가 → 30
+        $this->assertCount(30, $hooks);
     }
 
     #[Test]
-    public function getSubscribedHooks는_올바른_메서드_매핑을_포함한다(): void
+    public function get_subscribed_hooks는_올바른_메서드_매핑을_포함한다(): void
     {
         $hooks = BoardActivityLogListener::getSubscribedHooks();
 
@@ -77,6 +81,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->assertEquals('handleBoardAfterDelete', $hooks['sirsoft-board.board.after_delete']['method']);
         $this->assertEquals('handleBoardAfterAddToMenu', $hooks['sirsoft-board.board.after_add_to_menu']['method']);
         $this->assertEquals('handleSettingsAfterBulkApply', $hooks['sirsoft-board.settings.after_bulk_apply']['method']);
+        $this->assertEquals('handleSettingsAfterBulkApplyAborted', $hooks['sirsoft-board.settings.after_bulk_apply_aborted']['method']);
 
         // BoardType 훅
         $this->assertEquals('handleBoardTypeAfterCreate', $hooks['sirsoft-board.board_type.after_create']['method']);
@@ -100,6 +105,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         // Attachment 훅
         $this->assertEquals('handleAttachmentAfterUpload', $hooks['sirsoft-board.attachment.after_upload']['method']);
         $this->assertEquals('handleAttachmentAfterDelete', $hooks['sirsoft-board.attachment.after_delete']['method']);
+        $this->assertEquals('handleAttachmentAfterDownload', $hooks['sirsoft-board.attachment.after_download']['method']);
 
         // Report 훅
         $this->assertEquals('handleReportAfterCreate', $hooks['sirsoft-board.report.after_create']['method']);
@@ -130,7 +136,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function handleBoardAfterCreate는_board_create_로그를_기록한다(): void
+    public function handle_board_after_create는_board_create_로그를_기록한다(): void
     {
         $board = $this->createMockBoard(1, '공지사항', 'notice');
 
@@ -148,7 +154,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleBoardAfterUpdate는_변경사항과_함께_board_update_로그를_기록한다(): void
+    public function handle_board_after_update는_변경사항과_함께_board_update_로그를_기록한다(): void
     {
         $board = $this->createMockBoard(1, '공지사항', 'notice');
         $snapshot = $board->toArray();
@@ -169,7 +175,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleBoardAfterDelete는_board_delete_로그를_기록한다(): void
+    public function handle_board_after_delete는_board_delete_로그를_기록한다(): void
     {
         $board = $this->createMockBoard(1, '공지사항', 'notice');
 
@@ -187,7 +193,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleBoardAfterAddToMenu는_board_add_to_menu_로그를_기록한다(): void
+    public function handle_board_after_add_to_menu는_board_add_to_menu_로그를_기록한다(): void
     {
         $menu = Mockery::mock(Menu::class)->makePartial();
         $menu->shouldReceive('getAttribute')->with('id')->andReturn(99);
@@ -210,7 +216,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleSettingsAfterBulkApply는_settings_bulk_apply_로그를_기록한다(): void
+    public function handle_settings_after_bulk_apply는_settings_bulk_apply_로그를_기록한다(): void
     {
         $fields = ['comments_per_page', 'posts_per_page'];
         $updatedCount = 5;
@@ -228,12 +234,65 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleSettingsAfterBulkApply($fields, $updatedCount);
     }
 
+    #[Test]
+    public function handle_settings_after_bulk_apply_aborted는_권한_실패_시_게시판명을_담아_기록한다(): void
+    {
+        $fields = ['manager', 'per_page'];
+        $context = [
+            'failed_board' => ['id' => 7, 'name' => '자유게시판'],
+            'failed_at' => 3,
+            'total' => 5,
+            'failure_reason' => 'SQLSTATE[23000]: permission write failed',
+        ];
+
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->with('board_settings.bulk_apply_aborted', Mockery::on(function (array $log) use ($fields, $context) {
+                return $log['log_type'] === ActivityLogType::Admin
+                    && $log['description_key'] === 'sirsoft-board::activity_log.description.board_settings_bulk_apply_aborted'
+                    // 화면/이력 문구에 실패 게시판명이 채워진다
+                    && $log['description_params']['failed_board_name'] === '자유게시판'
+                    && $log['description_params']['failed_at'] === 3
+                    && $log['description_params']['total'] === 5
+                    && $log['properties']['fields'] === $fields
+                    && $log['properties']['failed_board'] === $context['failed_board']
+                    // 상세 사유는 properties 에만 추적용으로 기록
+                    && $log['properties']['failure_reason'] === $context['failure_reason'];
+            }));
+
+        $this->listener->handleSettingsAfterBulkApplyAborted($fields, $context);
+    }
+
+    #[Test]
+    public function handle_settings_after_bulk_apply_aborted는_컬럼_실패_시_게시판명없이_기록한다(): void
+    {
+        // 컬럼 일괄 업데이트 실패는 특정 게시판을 짚을 수 없어 failed_board=null
+        $fields = ['per_page', 'order_by'];
+        $context = [
+            'failed_board' => null,
+            'failed_at' => null,
+            'total' => 5,
+            'failure_reason' => 'SQLSTATE[42S22]: column update failed',
+        ];
+
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->with('board_settings.bulk_apply_aborted', Mockery::on(function (array $log) {
+                return $log['description_params']['failed_board_name'] === '-'
+                    && $log['description_params']['failed_at'] === 0
+                    && $log['properties']['failed_board'] === null
+                    && $log['properties']['failed_at'] === null;
+            }));
+
+        $this->listener->handleSettingsAfterBulkApplyAborted($fields, $context);
+    }
+
     // ═══════════════════════════════════════════
     // BoardType 핸들러 검증
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function handleBoardTypeAfterCreate는_board_type_create_로그를_기록한다(): void
+    public function handle_board_type_after_create는_board_type_create_로그를_기록한다(): void
     {
         $boardType = $this->createMockBoardType(1, '일반형');
 
@@ -250,7 +309,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleBoardTypeAfterUpdate는_변경사항과_함께_board_type_update_로그를_기록한다(): void
+    public function handle_board_type_after_update는_변경사항과_함께_board_type_update_로그를_기록한다(): void
     {
         $boardType = $this->createMockBoardType(5, '일반형');
         $snapshot = $boardType->toArray();
@@ -270,7 +329,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleBoardTypeAfterDelete는_board_type_delete_로그를_기록한다(): void
+    public function handle_board_type_after_delete는_board_type_delete_로그를_기록한다(): void
     {
         $boardType = $this->createMockBoardType(1, '일반형');
 
@@ -291,7 +350,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function handlePostAfterCreate는_post_create_로그를_기록한다(): void
+    public function handle_post_after_create는_post_create_로그를_기록한다(): void
     {
         $board = $this->createMockBoard(1, '공지사항', 'notice');
         $post = $this->createMockPostWithBoard(10, '테스트 게시글', $board);
@@ -311,7 +370,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handlePostAfterUpdate는_변경사항과_함께_post_update_로그를_기록한다(): void
+    public function handle_post_after_update는_변경사항과_함께_post_update_로그를_기록한다(): void
     {
         $post = $this->createMockPost(10, '원래 제목');
         $snapshot = $post->toArray();
@@ -375,7 +434,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function handleCommentAfterCreate는_comment_create_로그를_기록한다(): void
+    public function handle_comment_after_create는_comment_create_로그를_기록한다(): void
     {
         $board = $this->createMockBoard(1, '공지사항', 'notice');
         $comment = $this->createMockComment(20, 10, $board);
@@ -395,7 +454,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleCommentAfterUpdate는_변경사항과_함께_comment_update_로그를_기록한다(): void
+    public function handle_comment_after_update는_변경사항과_함께_comment_update_로그를_기록한다(): void
     {
         $comment = $this->createMockComment(20, 10);
         $snapshot = $comment->toArray();
@@ -455,17 +514,18 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function handleAttachmentAfterUpload은_attachment_upload_로그를_기록한다(): void
+    public function handle_attachment_after_upload은_attachment_upload_로그를_기록한다(): void
     {
         $attachment = $this->createMockAttachment('document.pdf', 1024, 10);
 
         $this->logChannel->shouldReceive('info')
             ->once()
             ->with('attachment.upload', Mockery::on(function (array $context) {
+                // #413-58: original_filename 으로 정정 (이전 original_name 은 모델 필드 부재로 항상 빈값)
                 return $context['log_type'] === ActivityLogType::Admin
                     && $context['description_key'] === 'sirsoft-board::activity_log.description.board_attachment_upload'
                     && $context['description_params']['post_id'] === 10
-                    && $context['properties']['original_name'] === 'document.pdf'
+                    && $context['properties']['original_filename'] === 'document.pdf'
                     && $context['properties']['size'] === 1024;
             }));
 
@@ -473,20 +533,51 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleAttachmentAfterDelete는_attachment_delete_로그를_기록한다(): void
+    public function handle_attachment_after_delete는_attachment_delete_로그를_기록한다(): void
     {
         $attachment = $this->createMockAttachment('document.pdf', 1024, 10);
 
         $this->logChannel->shouldReceive('info')
             ->once()
             ->with('attachment.delete', Mockery::on(function (array $context) {
+                // #413-58: original_filename 으로 정정
                 return $context['log_type'] === ActivityLogType::Admin
                     && $context['description_key'] === 'sirsoft-board::activity_log.description.board_attachment_delete'
                     && $context['description_params']['post_id'] === 10
-                    && $context['properties']['original_name'] === 'document.pdf';
+                    && $context['properties']['original_filename'] === 'document.pdf';
             }));
 
         $this->listener->handleAttachmentAfterDelete($attachment);
+    }
+
+    #[Test]
+    public function handle_attachment_after_download은_attachment_download_로그를_기록한다(): void
+    {
+        // #413-58: 첨부 다운로드 시 활동이력 기록
+        $attachment = $this->createMockAttachment('document.pdf', 1024, 10);
+
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->with('attachment.download', Mockery::on(function (array $context) {
+                return $context['log_type'] === ActivityLogType::Admin
+                    && $context['description_key'] === 'sirsoft-board::activity_log.description.board_attachment_download'
+                    && $context['description_params']['post_id'] === 10
+                    && $context['properties']['original_filename'] === 'document.pdf'
+                    && $context['properties']['context'] === 'user';
+            }));
+
+        $this->listener->handleAttachmentAfterDownload($attachment, 'user');
+    }
+
+    #[Test]
+    public function handle_attachment_after_download은_null_첨부에_안전하다(): void
+    {
+        // #413-58: 큐 워커 시점 모델 소멸 등 — null 이면 로그 미기록
+        $this->logChannel->shouldNotReceive('info');
+
+        $this->listener->handleAttachmentAfterDownload(null, 'user');
+
+        $this->assertTrue(true);
     }
 
     // ═══════════════════════════════════════════
@@ -494,7 +585,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function handleReportAfterCreate는_report_create_로그를_기록한다(): void
+    public function handle_report_after_create는_report_create_로그를_기록한다(): void
     {
         $report = $this->createMockReport(1, '스팸', 'post');
 
@@ -512,7 +603,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleReportAfterUpdateStatus는_report_update_status_로그를_기록한다(): void
+    public function handle_report_after_update_status는_report_update_status_로그를_기록한다(): void
     {
         $report = $this->createMockReport(1, '스팸', 'post');
         // status 오버라이드 (resolved 상태)
@@ -531,7 +622,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleReportAfterBulkUpdateStatus는_per_item_로그를_기록한다(): void
+    public function handle_report_after_bulk_update_status는_per_item_로그를_기록한다(): void
     {
         $data = ['status' => 'resolved'];
         $reports = collect([
@@ -561,7 +652,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleReportAfterDelete는_report_delete_로그를_기록한다(): void
+    public function handle_report_after_delete는_report_delete_로그를_기록한다(): void
     {
         $report = $this->createMockReport(1, '스팸', 'post');
 
@@ -627,7 +718,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function logActivity_예외_발생_시_Log_error로_기록한다(): void
+    public function log_activity_예외_발생_시_log_error로_기록한다(): void
     {
         $board = $this->createMockBoard(1, '공지사항', 'notice');
 
@@ -663,7 +754,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function handleSettingsAfterBulkApply는_loggable_없이_로그를_기록한다(): void
+    public function handle_settings_after_bulk_apply는_loggable_없이_로그를_기록한다(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -676,7 +767,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleReportAfterBulkUpdateStatus는_존재하지_않는_id는_건너뛴다(): void
+    public function handle_report_after_bulk_update_status는_존재하지_않는_id는_건너뛴다(): void
     {
         $report = Report::create(['target_type' => 'post', 'target_id' => 1, 'status' => 'pending']);
 
@@ -695,7 +786,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     #[Test]
-    public function handleBoardAfterUpdate_스냅샷_없이_호출해도_정상_동작한다(): void
+    public function handle_board_after_update_스냅샷_없이_호출해도_정상_동작한다(): void
     {
         $board = $this->createMockBoard(99, '테스트', 'test');
 
@@ -710,7 +801,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleBoardTypeAfterUpdate_스냅샷_없이_호출해도_정상_동작한다(): void
+    public function handle_board_type_after_update_스냅샷_없이_호출해도_정상_동작한다(): void
     {
         $boardType = $this->createMockBoardType(99, '테스트유형');
 
@@ -724,7 +815,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handlePostAfterUpdate_스냅샷_없이_호출해도_정상_동작한다(): void
+    public function handle_post_after_update_스냅샷_없이_호출해도_정상_동작한다(): void
     {
         $board = $this->createMockBoard(1, '공지사항', 'notice');
         $post = $this->createMockPostWithBoard(99, '테스트', $board);
@@ -739,7 +830,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     #[Test]
-    public function handleCommentAfterUpdate_스냅샷_없이_호출해도_정상_동작한다(): void
+    public function handle_comment_after_update_스냅샷_없이_호출해도_정상_동작한다(): void
     {
         $comment = $this->createMockComment(99, 10);
 
@@ -761,10 +852,10 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      *
      * makePartial()로 Eloquent __get → getAttribute 체인이 정상 동작하도록 합니다.
      *
-     * @param int $id 게시판 ID
-     * @param string $name 게시판 이름
-     * @param string $slug 게시판 슬러그
-     * @return Board&\Mockery\MockInterface
+     * @param  int  $id  게시판 ID
+     * @param  string  $name  게시판 이름
+     * @param  string  $slug  게시판 슬러그
+     * @return Board&MockInterface
      */
     private function createMockBoard(int $id, string $name, string $slug): Board
     {
@@ -784,9 +875,9 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * BoardType 모의 객체를 생성합니다.
      *
-     * @param int $id 유형 ID
-     * @param string $name 유형 이름
-     * @return BoardType&\Mockery\MockInterface
+     * @param  int  $id  유형 ID
+     * @param  string  $name  유형 이름
+     * @return BoardType&MockInterface
      */
     private function createMockBoardType(int $id, string $name): BoardType
     {
@@ -804,9 +895,9 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * Post 모의 객체를 생성합니다 (board 관계 없음).
      *
-     * @param int $id 게시글 ID
-     * @param string $title 게시글 제목
-     * @return Post&\Mockery\MockInterface
+     * @param  int  $id  게시글 ID
+     * @param  string  $title  게시글 제목
+     * @return Post&MockInterface
      */
     private function createMockPost(int $id, string $title): Post
     {
@@ -824,10 +915,10 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * Post 모의 객체를 생성합니다 (board 관계 포함, loadMissing 호출 처리).
      *
-     * @param int $id 게시글 ID
-     * @param string $title 게시글 제목
-     * @param Board&\Mockery\MockInterface $board 관련 게시판
-     * @return Post&\Mockery\MockInterface
+     * @param  int  $id  게시글 ID
+     * @param  string  $title  게시글 제목
+     * @param  Board&MockInterface  $board  관련 게시판
+     * @return Post&MockInterface
      */
     private function createMockPostWithBoard(int $id, string $title, $board): Post
     {
@@ -847,9 +938,9 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * Comment 모의 객체를 생성합니다.
      *
-     * @param int $id 댓글 ID
-     * @param int $postId 게시글 ID
-     * @return Comment&\Mockery\MockInterface
+     * @param  int  $id  댓글 ID
+     * @param  int  $postId  게시글 ID
+     * @return Comment&MockInterface
      */
     private function createMockComment(int $id, int $postId, $board = null): Comment
     {
@@ -874,14 +965,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * Attachment 모의 객체를 생성합니다.
      *
-     * @param string $originalName 원본 파일명
-     * @param int $size 파일 크기
-     * @return Attachment&\Mockery\MockInterface
+     * @param  string  $originalName  원본 파일명
+     * @param  int  $size  파일 크기
+     * @return Attachment&MockInterface
      */
     private function createMockAttachment(string $originalName, int $size, ?int $postId = null): Attachment
     {
+        // #413-58: 실제 컬럼은 original_filename (모델에 original_name 필드/accessor 없음).
         $attachment = Mockery::mock(Attachment::class)->makePartial();
-        $attachment->shouldReceive('getAttribute')->with('original_name')->andReturn($originalName);
+        $attachment->shouldReceive('getAttribute')->with('original_filename')->andReturn($originalName);
         $attachment->shouldReceive('getAttribute')->with('size')->andReturn($size);
         $attachment->shouldReceive('getAttribute')->with('post_id')->andReturn($postId);
 
@@ -891,10 +983,10 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     /**
      * Report 모의 객체를 생성합니다.
      *
-     * @param int $id 신고 ID
-     * @param string $reason 신고 사유
-     * @param string $reportableType 신고 대상 타입
-     * @return Report&\Mockery\MockInterface
+     * @param  int  $id  신고 ID
+     * @param  string  $reason  신고 사유
+     * @param  string  $reportableType  신고 대상 타입
+     * @return Report&MockInterface
      */
     private function createMockReport(int $id, string $reason, string $reportableType): Report
     {
@@ -906,5 +998,4 @@ class BoardActivityLogListenerTest extends ModuleTestCase
 
         return $report;
     }
-
 }

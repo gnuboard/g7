@@ -9,7 +9,7 @@
     "code": "",
     "resendCooldown": 0,
     "attempts": 0,
-    "maxAttempts": 5,
+    "maxAttempts": 0,
     "expiresAt": null,
     "remainingSeconds": 0,
     "error": null
@@ -17,6 +17,7 @@
   "data_sources": [
     {
       "id": "challenge",
+      "label_key": "$t:editor.data_source.challenge",
       "type": "api",
       "endpoint": "/api/identity/challenges/{{query.challenge_id}}",
       "method": "GET",
@@ -24,6 +25,7 @@
       "fallback": {
         "data": {
           "id": "{{query.challenge_id ?? ''}}",
+          "label_key": "$t:editor.data_source.{{query.challenge_id ?? ''}}",
           "render_hint": "{{query.render_hint ?? 'text_code'}}",
           "purpose": "{{query.purpose ?? ''}}",
           "redirect_url": "{{query.redirect_url ?? ''}}",
@@ -45,8 +47,45 @@
         "expiresAt": "{{query.expires_at ?? ''}}",
         "remainingSeconds": "{{query.expires_at ? Math.max(0, Math.floor((new Date(query.expires_at).getTime() - Date.now()) / 1000)) : 0}}",
         "attempts": "{{Number(query.attempts ?? 0)}}",
-        "maxAttempts": "{{Number(query.max_attempts ?? 5)}}",
+        "maxAttempts": "{{Number(query.max_attempts ?? 0)}}",
         "resendCooldown": 0
+      }
+    },
+    {
+      "comment": "challenge_id 가 있으면 서버에서 정확한 attempts/max_attempts/expires_at/render_hint 를 받아 query fallback 을 덮어쓴다 — 외부 redirect 콜백 후 진입 시 UI 정합 보장.",
+      "handler": "apiCall",
+      "target": "/api/identity/challenges/{{query.challenge_id}}",
+      "if": "{{!!query.challenge_id}}",
+      "params": { "method": "GET" },
+      "onSuccess": [
+        {
+          "handler": "setState",
+          "params": {
+            "target": "local",
+            "render_hint": "{{response.data.render_hint ?? _local.render_hint}}",
+            "purpose": "{{response.data.purpose ?? _local.purpose}}",
+            "expiresAt": "{{response.data.expires_at ?? _local.expiresAt}}",
+            "remainingSeconds": "{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}",
+            "attempts": "{{Number(response.data.attempts ?? _local.attempts ?? 0)}}",
+            "maxAttempts": "{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"
+          }
+        },
+        {
+          "handler": "redirect",
+          "if": "{{(response.data.render_hint ?? _local.render_hint) === 'external_redirect' && _local.redirect_url}}",
+          "params": {
+            "url": "{{_local.redirect_url}}"
+          }
+        }
+      ],
+      "onError": [{ "handler": "suppress" }]
+    },
+    {
+      "comment": "외부 redirect 콜백 후 challenge_id 없이 진입한 경우 (render_hint=external_redirect 가 query 에서 직접 들어옴) — apiCall 우회 경로 보강.",
+      "handler": "redirect",
+      "if": "{{!query.challenge_id && _local.render_hint === 'external_redirect' && _local.redirect_url}}",
+      "params": {
+        "url": "{{_local.redirect_url}}"
       }
     },
     {
@@ -192,7 +231,7 @@
                             "props": {
                               "className": "text-gray-500 dark:text-gray-400"
                             },
-                            "text": "$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_local.maxAttempts ?? 5) - (_local.attempts ?? 0))}}"
+                            "text": "$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_local.maxAttempts ?? 0) - (_local.attempts ?? 0))}}"
                           }
                         ]
                       },
@@ -202,7 +241,7 @@
                         "props": {
                           "type": "button",
                           "className": "w-full px-4 py-3 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors",
-                          "disabled": "{{!_local.code || _local.code.length < 4 || (_local.remainingSeconds ?? 0) <= 0 || (_local.attempts ?? 0) >= (_local.maxAttempts ?? 5)}}"
+                          "disabled": "{{!_local.code || _local.code.length < 4 || (_local.remainingSeconds ?? 0) <= 0 || ((_local.maxAttempts ?? 0) > 0 && (_local.attempts ?? 0) >= (_local.maxAttempts ?? 0))}}"
                         },
                         "actions": [
                           {
@@ -453,19 +492,10 @@
                 ]
               },
               {
-                "comment": "S6 — render_hint = external_redirect (외부 리다이렉트 로딩)",
+                "comment": "S6 — render_hint = external_redirect (외부 리다이렉트 로딩). redirect 발화는 root init_actions 의 apiCall onSuccess + apiCall 우회 경로 보강에서 처리 (init_actions 는 레이아웃 root 전용).",
                 "type": "basic",
                 "name": "Div",
                 "if": "{{(_local.render_hint ?? '') === 'external_redirect'}}",
-                "init_actions": [
-                  {
-                    "handler": "redirect",
-                    "params": {
-                      "url": "{{_local.redirect_url ?? ''}}"
-                    },
-                    "if": "{{_local.redirect_url}}"
-                  }
-                ],
                 "children": [
                   {
                     "type": "basic",

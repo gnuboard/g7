@@ -279,6 +279,102 @@ class AdminIdentityPolicyCrudTest extends TestCase
         $this->assertContains('conditions', $fresh->user_overrides ?? []);
     }
 
+    /**
+     * 모듈 선언 정책의 purpose(인증 목적) 운영자 편집.
+     *
+     * 인증 목적은 어떤 정책이든 운영자가 자유로이 부여할 수 있어야 한다.
+     * 변경 시 user_overrides 에 'purpose' 가 추가되어 모듈 재sync 시 운영자 값이 보존된다.
+     */
+    public function test_http_update_module_policy_persists_purpose_change(): void
+    {
+        $policy = IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.module.purpose',
+            'source_type' => 'module',
+            'source_identifier' => 'sirsoft-board',
+            'purpose' => 'sensitive_action',
+            'scope' => 'hook',
+            'target' => 'sirsoft-board.post.before_create',
+        ]));
+
+        $response = $this->authRequest()->putJson("/api/admin/identity/policies/{$policy->id}", [
+            'purpose' => 'inicis.adult_verification',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.purpose', 'inicis.adult_verification');
+
+        $fresh = $policy->fresh();
+        $this->assertSame('inicis.adult_verification', $fresh->purpose);
+        $this->assertContains('purpose', $fresh->user_overrides ?? []);
+    }
+
+    /**
+     * 모듈 선언 정책의 applies_to(적용 대상) / priority 운영자 편집.
+     *
+     * 키/시점(scope)/위치(target) 외의 필드는 운영자가 자유로이 수정 가능.
+     */
+    public function test_http_update_module_policy_persists_applies_to_and_priority(): void
+    {
+        $policy = IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.module.applies',
+            'source_type' => 'module',
+            'source_identifier' => 'sirsoft-board',
+            'applies_to' => 'both',
+            'priority' => 100,
+        ]));
+
+        $response = $this->authRequest()->putJson("/api/admin/identity/policies/{$policy->id}", [
+            'applies_to' => 'self',
+            'priority' => 50,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.applies_to', 'self')
+            ->assertJsonPath('data.priority', 50);
+
+        $fresh = $policy->fresh();
+        $this->assertSame('self', $fresh->applies_to->value);
+        $this->assertSame(50, $fresh->priority);
+        $this->assertContains('applies_to', $fresh->user_overrides ?? []);
+        $this->assertContains('priority', $fresh->user_overrides ?? []);
+    }
+
+    /**
+     * 모듈 선언 정책의 key/scope/target 은 readonly — 훅 지점 식별자라 운영자 변경 불가.
+     *
+     * 이 3개 필드는 update 요청에 실려와도 Controller 화이트리스트에서 드롭되어 원래 값을 유지한다.
+     */
+    public function test_http_update_module_policy_drops_key_scope_target(): void
+    {
+        $policy = IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.module.readonly',
+            'source_type' => 'module',
+            'source_identifier' => 'sirsoft-board',
+            'scope' => 'hook',
+            'target' => 'sirsoft-board.post.before_create',
+        ]));
+
+        $response = $this->authRequest()->putJson("/api/admin/identity/policies/{$policy->id}", [
+            'key' => 'tampered.key',
+            'scope' => 'route',
+            'target' => 'tampered.target',
+            'grace_minutes' => 7,
+        ]);
+
+        $response->assertStatus(200);
+
+        $fresh = $policy->fresh();
+        $this->assertSame('http.module.readonly', $fresh->key);
+        $this->assertSame('hook', $fresh->scope->value);
+        $this->assertSame('sirsoft-board.post.before_create', $fresh->target);
+        // 화이트리스트 필드는 정상 반영
+        $this->assertSame(7, $fresh->grace_minutes);
+        // readonly 필드는 user_overrides 에 기록되지 않음
+        $this->assertNotContains('key', $fresh->user_overrides ?? []);
+        $this->assertNotContains('scope', $fresh->user_overrides ?? []);
+        $this->assertNotContains('target', $fresh->user_overrides ?? []);
+    }
+
     public function test_http_update_admin_policy_persists_conditions_change(): void
     {
         $policy = IdentityPolicy::create($this->makePolicyData([
@@ -387,6 +483,176 @@ class AdminIdentityPolicyCrudTest extends TestCase
             ->getJson('/api/admin/identity/policies');
 
         $response->assertStatus(401);
+    }
+
+    // ====================================================================
+    // priority 동률 차단 — 같은 scope+target 에 동일 priority 활성 정책 거부
+    // ====================================================================
+
+    /**
+     * 같은 scope+target 에 동일 priority 활성 정책이 이미 있으면 신규 저장은 422.
+     */
+    public function test_http_store_rejects_duplicate_priority_on_same_target(): void
+    {
+        IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.tie.existing',
+            'scope' => 'route',
+            'target' => 'api.tie.target',
+            'priority' => 100,
+            'enabled' => true,
+        ]));
+
+        $response = $this->authRequest()->postJson('/api/admin/identity/policies', [
+            'key' => 'http.tie.new',
+            'scope' => 'route',
+            'target' => 'api.tie.target',
+            'purpose' => 'sensitive_action',
+            'grace_minutes' => 0,
+            'applies_to' => 'both',
+            'fail_mode' => 'block',
+            'enabled' => true,
+            'priority' => 100,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['priority']);
+    }
+
+    /**
+     * 같은 scope+target 이라도 priority 가 다르면 저장 허용.
+     */
+    public function test_http_store_allows_different_priority_on_same_target(): void
+    {
+        IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.tie.existing2',
+            'scope' => 'route',
+            'target' => 'api.tie.target2',
+            'priority' => 100,
+            'enabled' => true,
+        ]));
+
+        $response = $this->authRequest()->postJson('/api/admin/identity/policies', [
+            'key' => 'http.tie.new2',
+            'scope' => 'route',
+            'target' => 'api.tie.target2',
+            'purpose' => 'sensitive_action',
+            'grace_minutes' => 0,
+            'applies_to' => 'both',
+            'fail_mode' => 'block',
+            'enabled' => true,
+            'priority' => 90,
+        ]);
+
+        $response->assertStatus(201);
+    }
+
+    /**
+     * 기존 정책이 비활성이면 동일 priority 라도 저장 허용 (비활성은 enforce 안 되어 무해).
+     */
+    public function test_http_store_allows_duplicate_priority_when_existing_disabled(): void
+    {
+        IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.tie.disabled',
+            'scope' => 'route',
+            'target' => 'api.tie.target3',
+            'priority' => 100,
+            'enabled' => false,
+        ]));
+
+        $response = $this->authRequest()->postJson('/api/admin/identity/policies', [
+            'key' => 'http.tie.new3',
+            'scope' => 'route',
+            'target' => 'api.tie.target3',
+            'purpose' => 'sensitive_action',
+            'grace_minutes' => 0,
+            'applies_to' => 'both',
+            'fail_mode' => 'block',
+            'enabled' => true,
+            'priority' => 100,
+        ]);
+
+        $response->assertStatus(201);
+    }
+
+    /**
+     * 신규 정책이 비활성이면 동률이어도 저장 허용 (비활성은 enforce 안 됨).
+     */
+    public function test_http_store_allows_duplicate_priority_when_new_disabled(): void
+    {
+        IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.tie.active',
+            'scope' => 'route',
+            'target' => 'api.tie.target4',
+            'priority' => 100,
+            'enabled' => true,
+        ]));
+
+        $response = $this->authRequest()->postJson('/api/admin/identity/policies', [
+            'key' => 'http.tie.new4',
+            'scope' => 'route',
+            'target' => 'api.tie.target4',
+            'purpose' => 'sensitive_action',
+            'grace_minutes' => 0,
+            'applies_to' => 'both',
+            'fail_mode' => 'block',
+            'enabled' => false,
+            'priority' => 100,
+        ]);
+
+        $response->assertStatus(201);
+    }
+
+    /**
+     * 수정 시 동일 priority 활성 정책이 다른 행에 있으면 422 (자기 자신은 제외).
+     */
+    public function test_http_update_rejects_duplicate_priority_against_other_policy(): void
+    {
+        IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.tie.update.a',
+            'scope' => 'route',
+            'target' => 'api.tie.update',
+            'priority' => 100,
+            'enabled' => true,
+        ]));
+        $editing = IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.tie.update.b',
+            'scope' => 'route',
+            'target' => 'api.tie.update',
+            'priority' => 50,
+            'enabled' => true,
+        ]));
+
+        // editing 정책을 100 으로 바꾸면 a 와 동률 → 거부
+        $response = $this->authRequest()->putJson("/api/admin/identity/policies/{$editing->id}", [
+            'priority' => 100,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['priority']);
+    }
+
+    /**
+     * 수정 시 자기 자신의 기존 priority 를 그대로 두는 변경(다른 필드만 수정)은 통과 — self 제외 확인.
+     */
+    public function test_http_update_allows_keeping_own_priority(): void
+    {
+        $editing = IdentityPolicy::create($this->makePolicyData([
+            'key' => 'http.tie.update.self',
+            'scope' => 'route',
+            'target' => 'api.tie.update.self',
+            'priority' => 100,
+            'enabled' => true,
+        ]));
+
+        // 자기 자신만 그 target+priority 를 점유 — priority 100 유지하며 grace 변경
+        $response = $this->authRequest()->putJson("/api/admin/identity/policies/{$editing->id}", [
+            'priority' => 100,
+            'grace_minutes' => 33,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.priority', 100);
+        $this->assertSame(33, $editing->fresh()->grace_minutes);
     }
 
     /**

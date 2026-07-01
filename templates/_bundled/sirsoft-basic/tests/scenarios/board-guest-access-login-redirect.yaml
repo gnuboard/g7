@@ -1,0 +1,39 @@
+feature: 비로그인 게시판 진입 후 로그인 복귀(redirect) 보존
+
+description: |
+  비로그인 사용자가 회원전용 게시판/비밀글에 진입하면 /login 으로 보내되 현재 경로(+query)를
+  redirect 로 보존해 로그인 후 원래 위치로 복귀한다 (이슈 #413 item 28).
+
+  수정 이력:
+    - 목록/상세 데이터소스 401(auth_mode optional + 비로그인)이 /login 으로만 보내고 redirect 누락.
+      errorHandling context 에 route/query 가 없어 레이아웃 표현식 불가 → 커스텀 핸들러
+      redirectToLoginWithReturn 이 window.location(pathname+search) 직접 캡처 후 /login?redirect= 로 navigate.
+    - 비밀글 로그인 버튼이 미설정 {{_global.currentPath}} 를 redirect 로 써 항상 빈 값 → 동일 핸들러로 교체.
+    - 로그인 폼은 기존 규약 {{query.redirect ?? '/'}} 로 복귀(변경 없음).
+
+axes:
+  entry_point: [board_list_401, board_show_401, secret_post_login_button]   # 진입 지점 3종
+  has_query: [with_query, without_query]                                    # 원경로 query 유무
+
+effects:
+  - redirect_preserves_pathname            # /login?redirect=<pathname>
+  - redirect_preserves_query_string        # query 포함 경로에서 search 까지 보존
+  - login_returns_to_original_path         # 로그인 후 query.redirect 로 복귀(_login_form 기존 규약)
+  - secret_button_redirect_not_empty       # 비밀글 버튼 redirect 빈 값 회귀 차단
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/redirectToLoginWithReturn.test.ts
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-401-error-handling.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-secret-post-login-redirect.test.tsx
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Chrome MCP   # Playwright 인프라 미구축 — Chrome MCP 정밀 점검으로 브라우저 검증 대체
+  note: |
+    test-scenario-coverage 는 axes cross-product 와 effects 가 테스트 docblock @scenario/@effects 로
+    커버되길 요구한다. Playwright spec 부재이므로 위 단위/레이아웃 테스트 docblock 에 @scenario(axis 키)
+    /@effects 를 마킹해 cross-product·effects 를 커버한다.
+    - 핸들러 단위테스트: has_query(with/without) + redirect_preserves_pathname/query_string
+    - 401 레이아웃 테스트: entry_point(board_list_401,board_show_401) + redirect_preserves_pathname/login_returns_to_original_path
+    - 비밀글 레이아웃 테스트: entry_point(secret_post_login_button) + secret_button_redirect_not_empty/login_returns_to_original_path
+    sirsoft-basic 템플릿 Playwright E2E 인프라 구축은 별도 후속 과제(구축 후 정식 spec 으로 이관).

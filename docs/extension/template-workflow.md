@@ -47,6 +47,7 @@
 ```
 Phase 1: 필수 메타데이터
 □ template.json 생성 (error_config 포함)
+□ template.json externals 점검 (icon 컴포넌트 사용 시 Font Awesome 항목 필수)
 □ routes.json 생성 (layout_name 필수)
 
 Phase 2: 레이아웃 파일
@@ -126,7 +127,15 @@ Phase 6: 빌드 및 설치
       "403": "403",
       "500": "500"
     }
-  }
+  },
+  "externals": [
+    {
+      "id": "fontawesome",
+      "type": "style",
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+      "preconnect": "https://cdnjs.cloudflare.com"
+    }
+  ]
 }
 ```
 
@@ -135,6 +144,15 @@ Phase 6: 빌드 및 설치
 - `type`: "admin" 또는 "user"
 - `locales`: 지원 언어 배열
 - `error_config.layouts`: 404, 403, 500 매핑
+
+**`externals` (선택, 단 icon 사용 시 사실상 필수)**:
+
+- 최초 HTML 문서에 정적으로 필요한 외부 스타일·웹폰트·스크립트를 선언한다.
+- `components.basic` 에 `icon` 을 등록하면 Icon 컴포넌트가 생성하는
+  `<i class="fas fa-...">` 를 렌더링할 Font Awesome CSS 가 반드시 필요하므로
+  위 `fontawesome` 항목을 함께 둔다. 누락 시 활성 템플릿에서 아이콘이 표시되지
+  않는다. icon 을 쓰지 않으면 `"externals": []` 로 두거나 필드를 생략한다.
+- 속성/타입 상세: [template-basics.md "외부 리소스 (externals)"](template-basics.md)
 
 ### 1.1.1 hidden 필드 (선택)
 
@@ -470,6 +488,30 @@ export type HandlerName = keyof typeof handlerMap;
 @tailwind components;
 @tailwind utilities;
 ```
+
+### 4.4 레이아웃 편집기 확장점 등록 (선택)
+
+템플릿이 자기 컴포넌트의 커스텀 속성 위젯(예 아이콘 피커)·노드 에디터·캔버스 인플레이스 오버레이를 레이아웃 편집기에 추가하려면 `G7Core.layoutEditor` 확장점에 등록한다. 등록은 `src/index.ts` **최상위(module-load)에서 호출**한다 — `initTemplate`/`window.load` 게이트 안에 두면 편집기 직접 진입 시 위젯이 누락되는 회귀가 발생한다(코어 stub 예약 접수함이 큐로 보존하므로 module-load 시점 등록이 안전).
+
+```typescript
+import { registerMyTemplateEditorWidgets } from './layout-editor/registerEditorWidgets';
+
+// index.ts 최상위 — initTemplate/window.load 밖
+registerMyTemplateEditorWidgets();
+```
+
+```typescript
+// layout-editor/registerEditorWidgets.ts
+export function registerMyTemplateEditorWidgets(): void {
+  if (typeof window === 'undefined') return;
+  const le = (window as any).G7Core?.layoutEditor;
+  if (!le?.registerWidget) return; // stub 부재 → 큐가 보존
+  le.registerWidget('icon-picker', IconPickerWidget);
+  le.registerCanvasOverlay?.('tabnav', TabNavInplaceOverlay);
+}
+```
+
+확장점 API·등록 시점·작성 규약 상세: [editor-spec.md "편집기 확장점"](editor-spec.md). identity launcher 등록(`G7Core.identity.setLauncher`)과 동일한 옵셔널 체이닝 가드 패턴이다.
 
 ---
 

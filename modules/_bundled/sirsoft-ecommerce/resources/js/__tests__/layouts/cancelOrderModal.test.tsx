@@ -335,7 +335,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
             n.comment === '취소 사유 필드 에러' && n.if?.includes('cancelValidationErrors?.reason'),
         );
         expect(reasonError).toBeDefined();
-        expect(reasonError.props.className).toContain('text-red-500');
+        // text-red-500 + dark:text-red-400 + text-xs 토큰을 .form-error-xs 자산이 흡수
+        expect(reasonError.props.className).toContain('form-error-xs');
     });
 
     it('Textarea에 cancelValidationErrors?.reason_detail 기반 적색 테두리가 적용되어야 함', () => {
@@ -349,7 +350,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
             n.comment === '상세 사유 필드 에러' && n.if?.includes('cancelValidationErrors?.reason_detail'),
         );
         expect(detailError).toBeDefined();
-        expect(detailError.props.className).toContain('text-red-500');
+        // .form-error-xs 자산 흡수
+        expect(detailError.props.className).toContain('form-error-xs');
     });
 
     it('Select change 시 cancelValidationErrors가 null로 초기화되어야 함', () => {
@@ -412,5 +414,37 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
         expect(spinner).toBeDefined();
         expect(spinner.if).toContain('isCancelling');
         expect(spinner.props.className).toContain('animate-spin');
+    });
+});
+
+describe('관리자 취소 모달 — 다통화 표기(기본통화 고정 + 결제통화 병기)', () => {
+    // 모든 텍스트 바인딩을 평탄화
+    const allTexts: string[] = [];
+    findAllNodes(modalCancelOrder, () => true).forEach((n) => {
+        if (typeof n.text === 'string') allTexts.push(n.text);
+        const src = n.iteration?.source;
+        if (typeof src === 'string') allTexts.push(src);
+    });
+    const joined = allTexts.join('\n');
+
+    it('주문금액 비교 primary 금액은 하드코딩 "원"이 아니라 base 통화 포맷(formatted)을 사용한다', () => {
+        // 회귀: "{{...total_paid_amount ?? 0).toLocaleString()}}원" 같은 하드코딩 원 금지
+        expect(joined).not.toMatch(/refundEstimate\?\.original_snapshot\?\.total_paid_amount \?\? 0\)\.toLocaleString\(\)\}\}원/);
+        // base 포맷 동반 키(formatted) 바인딩 존재
+        expect(joined).toContain('original_snapshot?.formatted?.total_paid_amount');
+        expect(joined).toContain('recalculated_snapshot?.formatted?.subtotal_amount');
+    });
+
+    it('보조 통화 iteration은 preferredCurrency 가 아닌 주문 base_currency 를 제외한다', () => {
+        // 회귀: 표시통화(preferredCurrency)만 제외하면 base 통화가 보조로 섞여 중복 표기됨
+        expect(joined).toContain('base_currency ?? _global.preferredCurrency');
+        // base_currency 참조가 모든 mc 필터에 들어갔는지(최소 1회 이상)
+        const filterCount = (joined.match(/original_snapshot\?\.base_currency \?\? _global\.preferredCurrency/g) || []).length;
+        expect(filterCount).toBeGreaterThanOrEqual(1);
+    });
+
+    it('환불 예정액은 base 포맷 primary + 결제통화 환산(refund_formatted.mc) 병기를 가진다', () => {
+        expect(joined).toContain('refund_formatted?.base?.refund_total');
+        expect(joined).toContain('refund_formatted?.mc?.refund_total');
     });
 });

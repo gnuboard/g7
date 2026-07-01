@@ -1,4 +1,9 @@
 {
+  "editor": {
+    "data_source": {
+      "settings": "주소 검색 설정"
+    }
+  },
   "search_address": "주소 검색",
   "postcode": {
     "search": "주소 검색",

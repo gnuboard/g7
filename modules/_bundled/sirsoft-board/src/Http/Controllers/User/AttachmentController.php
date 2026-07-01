@@ -116,6 +116,9 @@ class AttachmentController extends PublicBaseController
                 $fileInfo['mime_type'],
                 (int) g7_core_settings('cache.layout_ttl', 86400)
             );
+        } catch (\Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e) {
+            // 삭제글 첨부 등 권한 차단은 403 으로 응답
+            return $this->error('auth.scope_denied', 403);
         } catch (BoardNotFoundException $e) {
             return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
         } catch (\Exception $e) {

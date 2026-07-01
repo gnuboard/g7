@@ -286,4 +286,39 @@ class CoreBackupHelperTest extends TestCase
         $this->assertArrayHasKey('name', $fixtureBackups[0]);
         $this->assertArrayHasKey('created_at', $fixtureBackups[0]);
     }
+
+    /**
+     * 코어 백업 디렉토리가 부모(php-fpm) 소유권을 상속한다 (POSIX best-effort).
+     *
+     * 회귀 가드 (버그 ③): sudo 업데이트가 백업 루트(core_backups)/디렉토리를 root 소유로
+     * 잔존시키면 이후 www-data 의 mkdir 이 실패한다. createBackup 은 백업 루트와 타임스탬프
+     * 디렉토리 양쪽에 부모 소유권을 상속해야 한다. sudo 없는 환경에서 상속은 no-op 이므로
+     * "백업 owner == 부모 owner" 가 항상 성립해야 한다 — 상속이 owner 를 잘못 바꾸면 깨짐.
+     */
+    public function test_create_backup_inherits_parent_ownership(): void
+    {
+        if (DIRECTORY_SEPARATOR !== '/' || ! function_exists('fileowner')) {
+            $this->markTestSkipped('소유권 검증은 POSIX 환경 전용 (Windows 로컬 자동 스킵)');
+        }
+
+        // 가벼운 단일 파일 target 으로 백업 생성
+        File::put($this->testBasePath.'/sample.txt', 'core backup ownership test');
+        $backupPath = CoreBackupHelper::createBackup(['app/test_core_backup/sample.txt']);
+
+        // 백업 루트(core_backups) 가 부모(storage/app) 소유권을 상속
+        $this->assertSame(
+            fileowner(dirname($this->backupsBasePath)),
+            fileowner($this->backupsBasePath),
+            '백업 루트(core_backups)는 부모 소유권을 상속해야 함',
+        );
+
+        // 타임스탬프 디렉토리(core_{ts})도 부모(core_backups) owner 와 일치
+        $this->assertSame(
+            fileowner($this->backupsBasePath),
+            fileowner($backupPath),
+            '백업 타임스탬프 디렉토리는 부모 소유권을 상속해야 함',
+        );
+
+        CoreBackupHelper::deleteBackup($backupPath);
+    }
 }

@@ -16,6 +16,9 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *
  * manager 권한 보유 + del=1 파라미터가 있을 때만
  * 삭제된 게시글/댓글이 목록에 노출되는지 검증합니다.
+ *
+ * @scenario viewer=manager
+ * @effects manager_sees_deleted_post_original_title_and_content, manager_sees_deleted_comment_original_content
  */
 class PostDeletedToggleTest extends BoardTestCase
 {
@@ -241,5 +244,53 @@ class PostDeletedToggleTest extends BoardTestCase
 
         $commentIds = collect($response->json('data.comments'))->pluck('id')->toArray();
         $this->assertNotContains($deletedCommentId, $commentIds, '일반 사용자에게는 삭제된 댓글이 노출되지 않아야 합니다');
+    }
+
+    // ==========================================
+    // 삭제 게시글/댓글 원본 노출 권한 (#413-50-2)
+    // manager 권한자는 삭제글 상세에서 제목/본문 원본을 볼 수 있어야 한다.
+    // 기존: getFilteredTitle/Content 가 admin.manage 만 검사 → manager 진입자에게도
+    //       "삭제된 게시글" 문구로 필터링되는 권한 불일치.
+    // ==========================================
+
+    /**
+     * manager 권한자는 삭제된 게시글 상세에서 제목/본문 원본을 본다.
+     */
+    public function test_manager_sees_deleted_post_original_title_and_content(): void
+    {
+        $deletedPostId = $this->createTestPost([
+            'title' => '삭제글 원본 제목 ORIG',
+            'content' => '삭제글 원본 본문 ORIG',
+            'status' => 'deleted',
+            'deleted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->managerUser, 'sanctum')
+            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$deletedPostId}");
+
+        $response->assertStatus(200);
+        $this->assertSame('삭제글 원본 제목 ORIG', $response->json('data.title'));
+        $this->assertSame('삭제글 원본 본문 ORIG', $response->json('data.content'));
+    }
+
+    /**
+     * manager 권한자는 삭제된 댓글의 원본 본문을 본다.
+     */
+    public function test_manager_sees_deleted_comment_original_content(): void
+    {
+        $postId = $this->createTestPost(['title' => '댓글 원본 테스트 게시글']);
+        $deletedCommentId = $this->createTestComment($postId, [
+            'content' => '삭제 댓글 원본 ORIG',
+            'deleted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->managerUser, 'sanctum')
+            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}?del_cmt=1");
+
+        $response->assertStatus(200);
+        $deletedComment = collect($response->json('data.comments'))
+            ->firstWhere('id', $deletedCommentId);
+        $this->assertNotNull($deletedComment, '삭제 댓글이 응답에 포함되어야 합니다');
+        $this->assertSame('삭제 댓글 원본 ORIG', $deletedComment['content']);
     }
 }

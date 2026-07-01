@@ -1,0 +1,41 @@
+feature: 레이아웃 편집기 라우트↔모달/확장 연결 목록 (화면별 모달·확장 정적 표시 / 기본 접힘 토글 / 호스트 강조 유지 / 별도 편집 모드에서 라우트 클릭 복원)
+phase: post
+session: route-connected-extensions
+issue: 383
+axes:
+  ext_type: [overlay, extension_point]
+  host_match: [match, no_match]
+  modal_host_match: [match, no_match]
+  conn_count: [zero, one, many]
+  conn_group_state: [collapsed_default, expanded_after_click]
+  enter_mode_from_child: [modal_child, extension_child]
+  select_route_from_mode: [from_extension, from_modal, from_base, from_route]
+  host_highlight: [modal_child_host, extension_child_host]
+exclusions:
+  - { conn_count: zero, conn_group_state: expanded_after_click,
+      reason: "연결 0건이면 그룹 헤더 자체가 미부착되어 펼칠 대상이 없음" }
+effects:
+  - connected_extensions_attached_statically_by_host_layouts_without_canvas_load
+  - connected_extension_point_attached_when_host_layout_in_host_layouts
+  - connected_overlay_attached_when_target_layout_equals_route_layout
+  - connected_modals_attached_when_host_layout_equals_route_layout
+  - connected_group_omitted_when_zero_matches
+  - connected_group_collapsed_by_default
+  - connected_group_toggles_on_header_click
+  - connected_count_stable_when_entering_extension_edit_mode
+  - modal_child_click_enters_modal_edit_keeping_host_route_highlight
+  - extension_child_click_enters_extension_edit_keeping_host_route_highlight
+  - select_route_from_separate_edit_mode_restores_route_mode_and_renders_canvas
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useRouteTree.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/RouteTreePanel.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/LayoutEditorReducer.selectRouteExitsEditMode.test.ts
+  - tests/Feature/Api/Admin/LayoutExtensionControllerTest.php
+  - tests/Playwright/specs/layout-editor/route-connected-extensions.spec.ts
+notes:
+  - 설계 핵심 — 동적 캔버스 수집(__source.extensionId)을 폐기하고, 백엔드 layout-extensions 응답이 각 확장의 host_layouts(getExtensionHostLayouts — overlay=target_layout, extension_point=확장점 포함 레이아웃 전체)를 제공한다. 프론트(useRouteTree)는 라우트 layoutName 이 host_layouts 에 포함되면 정적 부착하므로 캔버스 로드(클릭) 없이도 모든 연결 확장이 한 번에 표시된다("클릭 전에도 5개").
+  - LayoutExtensionControllerTest.test_index_attaches_host_layouts_to_each_extension 이 백엔드 host_layouts 부착(overlay 1개 + extension_point 슬롯 포함 레이아웃 전체)을 검증.
+  - useRouteTree.test.ts 가 정적 매칭 cross product(modal/overlay/extension_point host 매칭, conn_count 0/1/N, 연결 그룹 children 앞쪽 배치, connectedHostRoutePath 부여)를 단위로 커버.
+  - RouteTreePanel.test.tsx 가 연결 그룹 기본 접힘(aria-expanded=false)/헤더 클릭 토글/모달·확장 자식 클릭 진입(editMode 전환)/호스트 라우트 강조 유지를 jsdom 렌더로 커버.
+  - LayoutEditorReducer.selectRouteExitsEditMode.test.ts 가 별도 편집 모드(extension/modal/base)에서 SELECT_ROUTE 시 editMode=route 복원(회귀: "표시할 컴포넌트 없음")을 단위로 커버.
+  - route-connected-extensions.spec.ts 가 브라우저로 (1) 클릭 전 host_layouts 정적 5개 표시 (2) 연결 그룹 기본 접힘→토글 (3) 확장 편집 진입 후 count 유지 (4) 호스트 라우트 강조 유지 (5) 확장 편집 중 라우트 클릭 시 캔버스 정상 렌더를 가드.

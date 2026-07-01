@@ -155,7 +155,7 @@ const notificationLogListLayout = {
       id: 'notification_log_content',
       type: 'basic',
       name: 'Div',
-      props: { className: 'p-6 bg-gray-50 dark:bg-gray-900 min-h-screen' },
+      props: { className: 'admin-page-content' },
       children: [
         {
           id: 'page_header',

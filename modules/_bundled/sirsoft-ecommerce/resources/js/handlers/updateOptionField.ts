@@ -90,6 +90,10 @@ export function updateOptionFieldHandler(
     const currentErrors: OptionFieldError[] = globalState._local?.optionFieldErrors || [];
     let newErrors = [...currentErrors];
 
+    // 기본 옵션 판매가 → 상품 판매가 역동기화가 발생했는지 추적
+    // (발생 시 상품의 selling_price 도 modifiedProductFields 에 기록해야 일괄 저장에 포함됨)
+    let productSellingPriceSynced = false;
+
     // 상품 목록에서 해당 상품과 옵션 찾아서 업데이트
     const updatedProducts = productsArray.map((product: any) => {
         if (String(product.id) === String(productId)) {
@@ -175,12 +179,24 @@ export function updateOptionFieldHandler(
                 _modified: true,
             };
 
-            // selling_price 변경 시 price_adjustment 재계산 (정가 - 판매가)
+            // 상품 판매가 역동기화 여부 (기본 옵션 판매가 변경 시)
+            // 백엔드 모델 정의(ProductOption::getSellingPrice): option.selling_price = product.selling_price + price_adjustment
+            // → price_adjustment 는 "상품 판매가 대비 가산액". 기본 옵션은 정의상 가산액 0.
+            let productSellingPriceSync: number | null = null;
+
+            // selling_price 변경 시 price_adjustment 재계산 (상품 판매가 대비)
             if (field === 'selling_price') {
-                const listPrice = parseFloat(currentOption.list_price) || 0;
                 const newSellingPrice = parseFloat(finalValue) || 0;
-                // price_adjustment = 판매가 - 정가 (할인 시 음수)
-                updatedOption.price_adjustment = newSellingPrice - listPrice;
+
+                if (currentOption.is_default === true) {
+                    // 역방향 동기화: 기본 옵션 판매가 = 상품 판매가 → price_adjustment 0
+                    productSellingPriceSync = newSellingPrice;
+                    updatedOption.price_adjustment = 0;
+                } else {
+                    // 비기본 옵션: price_adjustment = 옵션 판매가 - 상품 판매가 (상품 판매가 불변)
+                    const productSellingPrice = parseFloat(product.selling_price) || 0;
+                    updatedOption.price_adjustment = newSellingPrice - productSellingPrice;
+                }
                 updatedOption.price_adjustment_formatted =
                     (updatedOption.price_adjustment >= 0 ? '+' : '') +
                     updatedOption.price_adjustment.toLocaleString() + '원';
@@ -197,6 +213,25 @@ export function updateOptionFieldHandler(
 
             updatedOptions[optionIndex] = updatedOption;
 
+            // 기본 옵션 판매가 변경 → 상품 판매가 동기화 + 비기본 옵션 판매가 재계산
+            // (상품등록/수정 폼의 역방향 동기화와 동일 시맨틱: 상품 폼 productOptionHandlers.recalcOptionsFromProductPrice)
+            if (productSellingPriceSync !== null) {
+                for (let i = 0; i < updatedOptions.length; i++) {
+                    if (i === optionIndex) continue;
+                    const sibling = updatedOptions[i];
+                    const adj = parseFloat(sibling.price_adjustment) || 0;
+                    const siblingSellingPrice = productSellingPriceSync + adj;
+                    const updatedSibling: any = { ...sibling, selling_price: siblingSellingPrice };
+                    if (currencies && Array.isArray(currencies)) {
+                        updatedSibling.multi_currency_selling_price = calculateCurrencyPricesHandler(
+                            { basePrice: siblingSellingPrice, currencies },
+                            context
+                        );
+                    }
+                    updatedOptions[i] = updatedSibling;
+                }
+            }
+
             // stock_quantity 변경 시 상품의 총 재고를 옵션 재고 합계로 업데이트
             let updatedStockQuantity = product.stock_quantity;
             let updatedOptionStockSum = product.option_stock_sum;
@@ -210,13 +245,28 @@ export function updateOptionFieldHandler(
                 logger.log(`[updateOptionField] Updated product stock to option sum: ${updatedStockQuantity}`);
             }
 
-            return {
+            const updatedProduct: any = {
                 ...product,
                 options: updatedOptions,
                 stock_quantity: updatedStockQuantity,
                 option_stock_sum: updatedOptionStockSum,
                 _modified: true,
             };
+
+            // 기본 옵션 판매가 → 상품 판매가 동기화 (+ 상품 다중통화 재계산)
+            if (productSellingPriceSync !== null) {
+                updatedProduct.selling_price = productSellingPriceSync;
+                if (currencies && Array.isArray(currencies)) {
+                    updatedProduct.multi_currency_selling_price = calculateCurrencyPricesHandler(
+                        { basePrice: productSellingPriceSync, currencies },
+                        context
+                    );
+                }
+                productSellingPriceSynced = true;
+                logger.log(`[updateOptionField] Reverse-synced product ${productId} selling_price to ${productSellingPriceSync} from default option`);
+            }
+
+            return updatedProduct;
         }
         return product;
     });
@@ -244,11 +294,27 @@ export function updateOptionFieldHandler(
     existingFields.add(field);
     modifiedOptionFields[optionKey] = Array.from(existingFields);
 
-    G7Core.state.setLocal({
+    const setLocalPayload: Record<string, any> = {
         modifiedOptionIds: Array.from(modifiedOptionIds),
         modifiedOptionFields,
         optionFieldErrors: newErrors,
-    });
+    };
+
+    // 기본 옵션 판매가 → 상품 판매가 역동기화가 발생했으면 상품도 수정 대상으로 기록
+    // (일괄 저장이 modifiedProductFields 의 selling_price 를 보고 상품 판매가를 전송하므로 필수)
+    if (productSellingPriceSynced) {
+        const modifiedProductIds = new Set(currentLocal.modifiedProductIds || []);
+        modifiedProductIds.add(productId);
+        const modifiedProductFields: Record<string, string[]> = { ...(currentLocal.modifiedProductFields || {}) };
+        const productKey = String(productId);
+        const productFields = new Set(modifiedProductFields[productKey] || []);
+        productFields.add('selling_price');
+        modifiedProductFields[productKey] = Array.from(productFields);
+        setLocalPayload.modifiedProductIds = Array.from(modifiedProductIds);
+        setLocalPayload.modifiedProductFields = modifiedProductFields;
+    }
+
+    G7Core.state.setLocal(setLocalPayload);
 
     logger.log(`[updateOptionField] Updated option ${productId}/${optionId}.${field} =`, value);
 }

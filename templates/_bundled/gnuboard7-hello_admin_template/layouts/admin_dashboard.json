@@ -30,7 +30,7 @@
                 "type": "basic",
                 "name": "H1",
                 "props": {
-                  "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2",
+                  "className": "text-page-heading mb-2",
                   "data-testid": "welcome-title"
                 },
                 "text": "$t:admin.dashboard.welcome_title"
@@ -40,7 +40,7 @@
                 "type": "basic",
                 "name": "Span",
                 "props": {
-                  "className": "text-sm text-gray-600 dark:text-gray-400",
+                  "className": "text-secondary text-sm",
                   "data-testid": "welcome-message"
                 },
                 "text": "$t:admin.dashboard.welcome_message"

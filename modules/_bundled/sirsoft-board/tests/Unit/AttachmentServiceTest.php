@@ -692,6 +692,119 @@ class AttachmentServiceTest extends ModuleTestCase
     }
 
     #[Test]
+    public function test_download_fires_after_download_hook(): void
+    {
+        // Arrange (#413-58: 다운로드 시 활동이력 기록을 위한 after_download 훅 발화)
+        $afterDownloadFired = false;
+        $firedAttachment = null;
+        $firedContext = null;
+
+        HookManager::addAction(
+            'sirsoft-board.attachment.after_download',
+            function ($attachment, $context = null) use (&$afterDownloadFired, &$firedAttachment, &$firedContext) {
+                $afterDownloadFired = true;
+                $firedAttachment = $attachment;
+                $firedContext = $context;
+            }
+        );
+
+        $attachment = new Attachment([
+            'id' => 1,
+            'path' => 'notice/2025/01/21/test.pdf',
+            'original_filename' => 'document.pdf',
+            'mime_type' => 'application/pdf',
+        ]);
+
+        $this->repository->shouldReceive('findById')
+            ->once()
+            ->with('notice', 1)
+            ->andReturn($attachment);
+
+        $this->storage->shouldReceive('response')
+            ->once()
+            ->andReturn(new \Symfony\Component\HttpFoundation\StreamedResponse);
+
+        // Act (user 컨텍스트)
+        $this->service->download('notice', 1, context: 'user');
+
+        // Assert
+        $this->assertTrue($afterDownloadFired, 'after_download hook should be fired');
+        $this->assertSame($attachment, $firedAttachment, 'fired attachment should be the downloaded one');
+        $this->assertSame('user', $firedContext, 'context should be passed to the hook');
+
+        // Cleanup hooks
+        HookManager::clearAction('sirsoft-board.attachment.after_download');
+    }
+
+    #[Test]
+    public function test_download_passes_admin_context_to_hook(): void
+    {
+        // Arrange (#413-58: admin 진입점은 context 기본값 'admin' 으로 호출)
+        $firedContext = null;
+
+        HookManager::addAction(
+            'sirsoft-board.attachment.after_download',
+            function ($attachment, $context = null) use (&$firedContext) {
+                $firedContext = $context;
+            }
+        );
+
+        $attachment = new Attachment([
+            'id' => 1,
+            'path' => 'notice/2025/01/21/test.pdf',
+            'original_filename' => 'document.pdf',
+            'mime_type' => 'application/pdf',
+        ]);
+
+        $this->repository->shouldReceive('findById')
+            ->once()
+            ->with('notice', 1)
+            ->andReturn($attachment);
+
+        $this->storage->shouldReceive('response')
+            ->once()
+            ->andReturn(new \Symfony\Component\HttpFoundation\StreamedResponse);
+
+        // Act (admin 컨텍스트 기본값)
+        $this->service->download('notice', 1);
+
+        // Assert
+        $this->assertSame('admin', $firedContext, 'admin download should pass admin context');
+
+        // Cleanup hooks
+        HookManager::clearAction('sirsoft-board.attachment.after_download');
+    }
+
+    #[Test]
+    public function test_download_does_not_fire_hook_when_not_found(): void
+    {
+        // Arrange (#413-58: 첨부 미존재 시 훅 미발화 — 다운로드 실패는 이력 미기록)
+        $afterDownloadFired = false;
+
+        HookManager::addAction(
+            'sirsoft-board.attachment.after_download',
+            function () use (&$afterDownloadFired) {
+                $afterDownloadFired = true;
+            }
+        );
+
+        $this->repository->shouldReceive('findById')
+            ->once()
+            ->with('notice', 999)
+            ->andReturn(null);
+
+        // Act
+        $result = $this->service->download('notice', 999, context: 'user');
+
+        // Assert
+        $this->assertNull($result);
+        $this->assertFalse($afterDownloadFired, 'hook should not fire when attachment not found');
+
+        // Cleanup hooks
+        HookManager::clearAction('sirsoft-board.attachment.after_download');
+    }
+
+    #[Test]
     public function test_get_url_returns_url(): void
     {
         // Arrange

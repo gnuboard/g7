@@ -2,9 +2,14 @@
   "version": "1.0.0",
   "layout_name": "auth/register",
   "extends": "_user_base",
+  "meta": {
+    "title": "$t:auth.register.title",
+    "guest_only": true
+  },
   "data_sources": [
     {
       "id": "termsContent",
+      "label_key": "$t:editor.data_source.termsContent",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-page/pages/terms",
       "method": "GET",
@@ -13,6 +18,7 @@
     },
     {
       "id": "privacyContent",
+      "label_key": "$t:editor.data_source.privacyContent",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-page/pages/privacy",
       "method": "GET",
@@ -22,6 +28,7 @@
   ],
   "init_actions": [
     {
+      "comment": "registerForm 초기 상태 시드 — language 기본값은 _register_form.json 의 Select value 표현식이 렌더 시점에 $locale 로 채움 (init_actions 컨텍스트에는 $locale 미주입이라 여기서 시드하면 항상 'ko' fallback 으로 잘못 박힘)",
       "handler": "setState",
       "params": {
         "target": "local",

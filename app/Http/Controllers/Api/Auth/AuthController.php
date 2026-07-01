@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Exceptions\Auth\AccountLockedException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\ValidateResetTokenRequest;
-use App\Exceptions\Auth\AccountLockedException;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
@@ -36,7 +36,7 @@ class AuthController extends AuthBaseController
     /**
      * 사용자를 로그인시킵니다.
      *
-     * @param LoginRequest $request 로그인 요청 데이터
+     * @param  LoginRequest  $request  로그인 요청 데이터
      * @return JsonResponse 로그인 결과와 사용자 정보, 토큰을 포함한 JSON 응답
      */
     public function login(LoginRequest $request): JsonResponse
@@ -64,7 +64,7 @@ class AuthController extends AuthBaseController
     /**
      * 새로운 사용자를 등록시킵니다.
      *
-     * @param RegisterRequest $request 등록 요청 데이터
+     * @param  RegisterRequest  $request  등록 요청 데이터
      * @return JsonResponse 등록 결과와 사용자 정보, 토큰을 포함한 JSON 응답
      */
     public function register(RegisterRequest $request): JsonResponse
@@ -84,7 +84,7 @@ class AuthController extends AuthBaseController
     /**
      * 사용자를 로그아웃시킵니다. (현재 디바이스만)
      *
-     * @param Request $request HTTP 요청
+     * @param  Request  $request  HTTP 요청
      * @return JsonResponse 로그아웃 성공 메시지
      */
     public function logout(Request $request): JsonResponse
@@ -97,7 +97,7 @@ class AuthController extends AuthBaseController
     /**
      * 모든 디바이스에서 사용자를 로그아웃시킵니다.
      *
-     * @param Request $request HTTP 요청
+     * @param  Request  $request  HTTP 요청
      * @return JsonResponse 로그아웃 성공 메시지
      */
     public function logoutFromAllDevices(Request $request): JsonResponse
@@ -110,7 +110,7 @@ class AuthController extends AuthBaseController
     /**
      * 현재 로그인된 사용자의 정보를 반환합니다.
      *
-     * @param Request $request HTTP 요청
+     * @param  Request  $request  HTTP 요청
      * @return JsonResponse 사용자 정보를 포함한 JSON 응답
      */
     public function user(Request $request): JsonResponse
@@ -120,16 +120,18 @@ class AuthController extends AuthBaseController
         // 역할 관계 로드 (권한은 역할을 통해 간접 연결)
         $user->load(['roles.permissions']);
 
-        return $this->successWithResource(
+        // toAuthArray(): core.user.filter_resource_data 필터를 적용해 모듈 필드(결제 통화 등)를 병합.
+        // 프론트 currentUser 출처라, 로그인 시 계정 영속 통화 덮어씀(D-LOGIN-CUR)을 충족한다.
+        return $this->success(
             'common.success',
-            new UserResource($user)
+            (new UserResource($user))->toAuthArray($request)
         );
     }
 
     /**
      * 사용자의 인증 토큰을 갱신합니다.
      *
-     * @param Request $request HTTP 요청
+     * @param  Request  $request  HTTP 요청
      * @return JsonResponse 새로운 토큰과 사용자 정보를 포함한 JSON 응답
      */
     public function refresh(Request $request): JsonResponse
@@ -147,7 +149,7 @@ class AuthController extends AuthBaseController
     /**
      * 비밀번호 재설정 토큰을 검증합니다.
      *
-     * @param ValidateResetTokenRequest $request 토큰 검증 요청 데이터
+     * @param  ValidateResetTokenRequest  $request  토큰 검증 요청 데이터
      * @return JsonResponse 토큰 유효성 검증 결과 JSON 응답
      */
     public function validateResetToken(ValidateResetTokenRequest $request): JsonResponse
@@ -171,7 +173,7 @@ class AuthController extends AuthBaseController
     /**
      * 비밀번호 찾기 요청을 처리하고 인증 이메일을 발송합니다.
      *
-     * @param ForgotPasswordRequest $request 비밀번호 찾기 요청 데이터
+     * @param  ForgotPasswordRequest  $request  비밀번호 찾기 요청 데이터
      * @return JsonResponse 이메일 발송 결과 JSON 응답
      */
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
@@ -192,7 +194,7 @@ class AuthController extends AuthBaseController
     /**
      * 비밀번호를 재설정합니다.
      *
-     * @param ResetPasswordRequest $request 비밀번호 재설정 요청 데이터
+     * @param  ResetPasswordRequest  $request  비밀번호 재설정 요청 데이터
      * @return JsonResponse 비밀번호 재설정 결과 JSON 응답
      */
     public function resetPassword(ResetPasswordRequest $request): JsonResponse

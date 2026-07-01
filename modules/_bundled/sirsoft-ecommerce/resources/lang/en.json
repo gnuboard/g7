@@ -1,4 +1,53 @@
 {
+  "editor": {
+    "action": {
+      "request_pg_payment": {
+        "label": "Enter payment",
+        "param_handler": "Payment handler",
+        "param_data": "Payment data"
+      }
+    },
+    "action_chip": {
+      "response_pg_handler": "Payment handler (response)",
+      "response_pg_data": "Payment data (response)"
+    },
+    "data_source": {
+      "active_carriers": "Active Carriers",
+      "activity_logs": "Activity Logs",
+      "availableChannels": "Available Channels",
+      "brands": "Brands",
+      "carriers": "Carriers",
+      "categories": "Categories",
+      "commonInfos": "Common Infos",
+      "common_infos": "Common Infos",
+      "copy_source": "Copy Source",
+      "coupon": "Coupon",
+      "couponIssues": "Coupon Issues",
+      "coupons": "Coupons",
+      "ecommerceIdentityPolicies": "Ecommerce Identity Policies",
+      "ecommerceIdentityPurposes": "Ecommerce Identity Purposes",
+      "ecommerceNotificationDefinitions": "Ecommerce Notification Definitions",
+      "ecommerce_settings": "Ecommerce Settings",
+      "extra_fee_templates": "Extra Fee Templates",
+      "identityProviders": "Identity Providers",
+      "notice_templates": "Notice Templates",
+      "order": "Order",
+      "order_logs": "Order Logs",
+      "orders": "Orders",
+      "policy": "Shipping Policy",
+      "presets": "Presets",
+      "product": "Product",
+      "product_labels": "Product Labels",
+      "products": "Products",
+      "refundReasons": "Refund Reasons",
+      "reviews": "Reviews",
+      "roles": "Roles",
+      "seoStats": "SEO Stats",
+      "settings": "Settings",
+      "shipping_policies": "Shipping Policies",
+      "templates": "Templates"
+    }
+  },
   "common": {
     "$partial": "partial/en/common.json"
   },
@@ -6,6 +55,9 @@
     "$partial": "partial/en/currency.json"
   },
   "admin": {
+    "dashboard": {
+      "$partial": "partial/en/admin/dashboard.json"
+    },
     "locale": {
       "$partial": "partial/en/admin/locale.json"
     },
@@ -51,8 +103,35 @@
     "personal_payment_detail": {
       "$partial": "partial/en/admin/personal_payment_detail.json"
     },
-    "mileage_deposit_settings": {
-      "$partial": "partial/en/admin/mileage_deposit_settings.json"
+    "mileage_settings": {
+      "$partial": "partial/en/admin/mileage_settings.json"
+    },
+    "mileage_transactions": {
+      "$partial": "partial/en/admin/mileage_transactions.json"
+    },
+    "user_mileage": {
+      "tab_label": "Mileage",
+      "title": "Mileage",
+      "available": "Available",
+      "pending": "Pending",
+      "total_earned": "Total Earned",
+      "expiring_soon": "Expiring Soon",
+      "view_history": "View this member's history",
+      "disabled_notice": "Mileage is disabled. You can enable it in settings."
+    },
+    "user_currency": {
+      "title": "Payment Currency",
+      "description": "Set the currency used for this member's orders and payments.",
+      "save_button": "Save",
+      "saved": "Member payment currency updated.",
+      "save_failed": "Failed to update member payment currency."
+    },
+    "user_shipping_country": {
+      "title": "Shipping Country",
+      "description": "Set this member's default shipping country.",
+      "save_button": "Save",
+      "saved": "Member shipping country updated.",
+      "save_failed": "Failed to update member shipping country."
     },
     "product_notice_template": {
       "$partial": "partial/en/admin/product_notice_template.json"
@@ -72,6 +151,23 @@
   },
   "user": {
     "$partial": "partial/en/user.json"
+  },
+  "auth": {
+    "register_currency": {
+      "label": "Payment currency",
+      "hint": "Currency used for orders and payments. You can change it later in your profile."
+    },
+    "register_shipping_country": {
+      "label": "Shipping country",
+      "hint": "Your default shipping country. You can change it later in your profile."
+    }
+  },
+  "user_mileage": {
+    "title": "My Mileage",
+    "available": "Available",
+    "expiring_soon": "Expiring {{amount}} P",
+    "view_history": "Mileage History",
+    "disabled_notice": "Mileage is disabled."
   },
   "product": {
     "$partial": "partial/en/product.json"

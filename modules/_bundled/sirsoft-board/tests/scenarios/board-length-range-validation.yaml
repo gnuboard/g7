@@ -1,0 +1,42 @@
+feature: 게시판 길이 제한 최소값 > 최대값 조합 저장 차단
+
+description: |
+  이슈 #413 item 22-3 — 제목/본문/댓글 길이의 min_*_length 가 max_*_length 보다 큰
+  논리적으로 모순된 조합이 저장되던 문제를 교차 검증으로 차단한다.
+
+  근본 원인: Store/UpdateBoardRequest 가 각 필드의 절대 범위(min:N, max:M)만 검증하고
+  min_* ↔ max_* 간 상호 관계(min ≤ max) 검증이 전무.
+
+  조치: ValidatesLengthRange 트레이트로 title/content/comment 3쌍의 min ≤ max 검증을
+  withValidator 에 추가. 두 값 동시 제출 시만 비교(부분 수정 통과), 오류는 max_* 필드에
+  부착하여 기존 레이아웃 인라인 오류 표시 요소를 재사용(레이아웃 미수정).
+
+  크롬 MCP 실측 (2026-06-18): 게시판 수정 폼에서 min(2)>max(1) 저장 → PUT 422 + 상단
+  알림 + max_title_length 필드 인라인 오류 표시, 서버 저장값 미변경. 생성 POST 도 422 차단.
+
+# axis 의미:
+#   case 는 (min↔max 관계 + 진입 경로) 의 의미 있는 조합을 한 축으로 열거한다.
+#   - store 경로는 gt(거부)/eq·lt(통과) 를 전수 단언
+#   - update 경로는 both(동시 제출 → gt 거부) / partial(부분 제출 → 미적용) 을 단언
+#   length_pair(title/content/comment) 3쌍은 store 거부 테스트가 동시에 단언한다.
+axes:
+  case: [store_min_gt_max, store_min_eq_max, store_min_lt_max, update_both_min_gt_max, update_partial_skip]
+
+effects:
+  - min_gt_max_rejected_on_store
+  - min_gt_max_rejected_on_update_when_both_present
+  - cross_validation_skipped_on_partial_update
+  - min_le_max_passes
+  - error_attached_to_max_field
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/BoardRequestTest.php
+
+validation:
+  note: |
+    relation × request_path 조합은 BoardRequestTest 의 교차검증 docblock 마킹 테스트군이
+    커버한다 (store min>max 422 · min==max/min<max 통과 · update 동시제출 422 ·
+    update 부분제출 스킵 · 오류 max_* 필드 부착). title/content/comment 3쌍은 store 거부
+    테스트가 동시에 단언한다.
+    실제 UI 422 차단 + 인라인 오류 표시 + 저장값 미변경은 크롬 MCP 수동 실측으로 확인
+    (계획서 413-22 §2.5).

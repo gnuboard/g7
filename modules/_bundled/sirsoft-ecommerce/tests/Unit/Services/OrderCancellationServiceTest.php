@@ -2,16 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
+use App\Extension\HookManager;
 use App\Models\User;
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
-use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
-use Modules\Sirsoft\Ecommerce\Enums\CancelOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
@@ -20,10 +15,12 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -36,8 +33,6 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\Sequence;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
-use Modules\Sirsoft\Ecommerce\Enums\SequenceAlgorithm;
-use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -71,7 +66,7 @@ class OrderCancellationServiceTest extends ModuleTestCase
      */
     protected function setupTestCurrencySettings(): void
     {
-        $settingsPath = storage_path('app/modules/sirsoft-ecommerce/settings');
+        $settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         if (! is_dir($settingsPath)) {
             mkdir($settingsPath, 0755, true);
         }
@@ -122,9 +117,12 @@ class OrderCancellationServiceTest extends ModuleTestCase
 
     protected function tearDown(): void
     {
-        $settingsFile = storage_path('app/modules/sirsoft-ecommerce/settings/language_currency.json');
-        if (file_exists($settingsFile)) {
-            unlink($settingsFile);
+        $settingsDir = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
+        foreach (['language_currency.json', 'order_settings.json'] as $file) {
+            $path = $settingsDir.'/'.$file;
+            if (file_exists($path)) {
+                unlink($path);
+            }
         }
 
         parent::tearDown();
@@ -514,9 +512,12 @@ class OrderCancellationServiceTest extends ModuleTestCase
     }
 
     /**
-     * B-2-2: 부분취소 후 주문 상태가 PARTIAL_CANCELLED로 변경되는지 검증
+     * B-2-2: 부분취소 후 주문 상태가 잔여 옵션 기준으로 유지되고, 부분취소 파생 플래그가 켜지는지 검증.
+     *
+     * 부분취소는 별도 order_status 가 아니다(partial_cancelled 제거). 잔여 활성 옵션이
+     * PAYMENT_COMPLETE 이므로 주문 상태도 PAYMENT_COMPLETE 로 유지되고, isPartiallyCancelled()=true.
      */
-    public function test_partial_cancel_updates_order_status(): void
+    public function test_partial_cancel_keeps_status_and_sets_partial_flag(): void
     {
         $this->createShippingPolicy();
         [$pA, $oA] = $this->createProductWithOption(price: 20000);
@@ -537,7 +538,8 @@ class OrderCancellationServiceTest extends ModuleTestCase
             cancelPg: false,
         );
 
-        $this->assertEquals(OrderStatusEnum::PARTIAL_CANCELLED, $result->order->order_status);
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order->order_status);
+        $this->assertTrue($result->order->fresh()->isPartiallyCancelled());
     }
 
     /**
@@ -742,7 +744,7 @@ class OrderCancellationServiceTest extends ModuleTestCase
     public function test_cancel_fires_payment_refund_hook(): void
     {
         $hookCalled = false;
-        \App\Extension\HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) use (&$hookCalled) {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) use (&$hookCalled) {
             $hookCalled = true;
 
             return [
@@ -775,7 +777,7 @@ class OrderCancellationServiceTest extends ModuleTestCase
      */
     public function test_cancel_pg_failure_rolls_back(): void
     {
-        \App\Extension\HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) {
             return [
                 'success' => false,
                 'error_code' => 'PG_ERROR',
@@ -812,7 +814,7 @@ class OrderCancellationServiceTest extends ModuleTestCase
     public function test_cancel_without_pg_skips_refund_hook(): void
     {
         $hookCalled = false;
-        \App\Extension\HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) use (&$hookCalled) {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) use (&$hookCalled) {
             $hookCalled = true;
 
             return ['success' => true, 'transaction_id' => 'TXN'];
@@ -983,7 +985,7 @@ class OrderCancellationServiceTest extends ModuleTestCase
         $this->assertNotNull($couponIssue->fresh()->used_at);
 
         // 훅 리스너 등록: 쿠폰 복원 시 실제 DB 업데이트 수행
-        \App\Extension\HookManager::addAction('sirsoft-ecommerce.coupon.restore', function ($order, $couponIssueIds) {
+        HookManager::addAction('sirsoft-ecommerce.coupon.restore', function ($order, $couponIssueIds) {
             CouponIssue::whereIn('id', $couponIssueIds)->update([
                 'status' => CouponIssueRecordStatus::AVAILABLE,
                 'used_at' => null,
@@ -1455,8 +1457,9 @@ class OrderCancellationServiceTest extends ModuleTestCase
         $input = new CalculationInput(
             items: [new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1)],
         );
-        // currency_snapshot 미설정
-        $order = $this->createOrderFromCalculation($input);
+        // currency_snapshot 미설정 — 팩토리 기본 스냅샷을 명시적으로 null 로 덮어야 "스냅샷 없음" 경로를 검증한다.
+        // (Order::factory 가 기본 currency_snapshot 을 제공하므로 override 없이는 mc_* 가 채워진다.)
+        $order = $this->createOrderFromCalculation($input, ['currency_snapshot' => null]);
 
         $result = $this->cancellationService->cancelOrder(
             order: $order,
@@ -1621,5 +1624,455 @@ class OrderCancellationServiceTest extends ModuleTestCase
         // 최종 주문 잔여 금액: 20,000 (1개 남음)
         $finalOrder = $result2->order;
         $this->assertEquals(20000, (int) $finalOrder->total_paid_amount);
+    }
+
+    // ================================================================
+    // D. 재고 복원 (A4/P0-C — 이중복구 제거 / ON·OFF / 플래그 정리)
+    // ================================================================
+
+    /**
+     * order_settings.stock_restore_on_cancel 설정 값을 테스트 경로에 기록합니다.
+     */
+    protected function setStockRestoreSetting(bool $enabled): void
+    {
+        $settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
+        if (! is_dir($settingsPath)) {
+            mkdir($settingsPath, 0755, true);
+        }
+
+        file_put_contents(
+            $settingsPath.'/order_settings.json',
+            json_encode(['stock_restore_on_cancel' => $enabled], JSON_PRETTY_PRINT)
+        );
+    }
+
+    /**
+     * 주문 옵션들을 재고 차감 상태(is_stock_deducted=true)로 표시합니다.
+     */
+    protected function markOptionsDeducted(Order $order): void
+    {
+        $order->options()->update(['is_stock_deducted' => true]);
+        $order->load('options');
+    }
+
+    /**
+     * D-1: 전체취소 + 복원 ON → 재고가 정확히 +quantity 1회만 복원 (이중복구 회귀 가드)
+     */
+    public function test_full_cancel_with_restore_on_restores_quantity_once(): void
+    {
+        $this->setStockRestoreSetting(true);
+        $this->createShippingPolicy();
+        [$pA, $oA] = $this->createProductWithOption(price: 20000, stock: 10);
+
+        $input = new CalculationInput(
+            items: [new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 3)],
+        );
+        $order = $this->createOrderFromCalculation($input);
+        $this->markOptionsDeducted($order);
+
+        $stockBefore = ProductOption::find($oA->id)->stock_quantity;
+
+        $this->cancellationService->cancelOrder(order: $order, cancelPg: false);
+
+        // 정확히 +3 (이중복구 시 +6 이 되어 실패)
+        $this->assertEquals($stockBefore + 3, ProductOption::find($oA->id)->stock_quantity);
+    }
+
+    /**
+     * D-2: 전체취소 + 복원 OFF → 재고 불변 (설정 무시 경로 회귀 가드)
+     */
+    public function test_full_cancel_with_restore_off_keeps_stock(): void
+    {
+        $this->setStockRestoreSetting(false);
+        $this->createShippingPolicy();
+        [$pA, $oA] = $this->createProductWithOption(price: 20000, stock: 10);
+
+        $input = new CalculationInput(
+            items: [new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 3)],
+        );
+        $order = $this->createOrderFromCalculation($input);
+        $this->markOptionsDeducted($order);
+
+        $stockBefore = ProductOption::find($oA->id)->stock_quantity;
+
+        $this->cancellationService->cancelOrder(order: $order, cancelPg: false);
+
+        // 복원 0건 (리스너 경로 제거로 OFF 가 정상 적용)
+        $this->assertEquals($stockBefore, ProductOption::find($oA->id)->stock_quantity);
+    }
+
+    /**
+     * D-3: 부분취소 + 복원 ON → +cancel_quantity 만 복원, CANCELLED 옵션 플래그만 false
+     */
+    public function test_partial_cancel_restores_cancel_quantity_and_resets_cancelled_flag(): void
+    {
+        $this->setStockRestoreSetting(true);
+        $this->createShippingPolicy();
+        [$pA, $oA] = $this->createProductWithOption(price: 20000, stock: 10);
+
+        $input = new CalculationInput(
+            items: [new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 5)],
+        );
+        $order = $this->createOrderFromCalculation($input);
+        $this->markOptionsDeducted($order);
+
+        $optionA = $order->options->where('product_option_id', $oA->id)->first();
+        $stockBefore = ProductOption::find($oA->id)->stock_quantity;
+
+        // 5개 중 3개 취소
+        $result = $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: [['order_option_id' => $optionA->id, 'cancel_quantity' => 3]],
+            cancelPg: false,
+        );
+
+        // +3 만 복원
+        $this->assertEquals($stockBefore + 3, ProductOption::find($oA->id)->stock_quantity);
+
+        // CANCELLED 행은 플래그 false, 잔여 active 행은 true 유지
+        $options = $result->order->options()->where('product_option_id', $oA->id)->get();
+        $cancelled = $options->where('option_status', OrderStatusEnum::CANCELLED);
+        $active = $options->where('option_status', '!=', OrderStatusEnum::CANCELLED);
+
+        $this->assertEquals(3, $cancelled->sum('quantity'));
+        $this->assertEquals(2, $active->sum('quantity'));
+        $this->assertTrue($cancelled->every(fn ($o) => $o->is_stock_deducted === false));
+        $this->assertTrue($active->every(fn ($o) => $o->is_stock_deducted === true));
+    }
+
+    // ================================================================
+    // MP02-U1: 무통장(dbank) 취소 PG 환불 스킵 + 환불상태 정상화
+    // ================================================================
+
+    /**
+     * 두 옵션짜리 카드 결제완료 주문을 생성하고, payment 를 지정 결제수단으로 보정합니다.
+     *
+     * @param  string  $paymentMethodValue  PaymentMethodEnum 값(dbank/card/vbank/point)
+     * @param  PaymentStatusEnum  $paymentStatus  결제 상태
+     * @param  array  $orderOverrides  주문 오버라이드
+     * @return Order 보정된 주문
+     */
+    private function createOrderWithPaymentMethod(
+        string $paymentMethodValue,
+        PaymentStatusEnum $paymentStatus = PaymentStatusEnum::PAID,
+        array $orderOverrides = [],
+    ): Order {
+        $this->createShippingPolicy();
+        [$pA, $oA] = $this->createProductWithOption(price: 20000);
+        [$pB, $oB] = $this->createProductWithOption(price: 10000);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+        );
+        $order = $this->createOrderFromCalculation($input, $orderOverrides);
+
+        $order->payment->update([
+            'payment_method' => $paymentMethodValue,
+            'payment_status' => $paymentStatus,
+            'pg_provider' => in_array($paymentMethodValue, ['dbank', 'point'], true) ? '' : 'tosspayments',
+        ]);
+        $order->load('payment');
+
+        return $order;
+    }
+
+    /**
+     * 무통장(dbank) paid 주문 전체취소 시 PG 환불을 건너뛰고 성공한다 (RED→GREEN).
+     */
+    public function test_dbank_paid_order_cancel_skips_pg_and_succeeds(): void
+    {
+        // PG 훅은 기본 success:false — 무통장이 PG 분기를 타면 pg_refund_failed 로 롤백된다.
+        $hookCalled = false;
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) use (&$hookCalled) {
+            $hookCalled = true;
+
+            return ['success' => false, 'error_code' => 'PG_ERROR', 'error_message' => 'PG 미지원', 'transaction_id' => null];
+        });
+
+        $order = $this->createOrderWithPaymentMethod('dbank');
+
+        $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+
+        $this->assertFalse($hookCalled, '무통장 취소는 PG 환불 훅을 발화하면 안 됩니다');
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $result->order->order_status);
+        $this->assertNotNull($result->orderRefund);
+    }
+
+    /**
+     * 무통장 취소 환불 수단은 BANK 다.
+     */
+    public function test_dbank_cancel_refund_method_is_bank(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => false]);
+        $order = $this->createOrderWithPaymentMethod('dbank');
+
+        $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+
+        $this->assertEquals(RefundMethodEnum::BANK, $result->orderRefund->refund_method);
+    }
+
+    /**
+     * 무통장 취소 환불 상태는 APPROVED(수동 송금 대기)이고 refunded_at 은 null 이다.
+     */
+    public function test_dbank_cancel_refund_status_is_approved(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => false]);
+        $order = $this->createOrderWithPaymentMethod('dbank');
+
+        $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+
+        $this->assertEquals(RefundStatusEnum::APPROVED, $result->orderRefund->refund_status);
+        $this->assertNull($result->orderRefund->refunded_at, '수동 송금 전이므로 refunded_at 은 기록되면 안 됩니다');
+    }
+
+    /**
+     * 무통장 취소 시 주문/결제 상태가 갱신된다.
+     */
+    public function test_dbank_cancel_updates_order_and_payment(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => false]);
+        $order = $this->createOrderWithPaymentMethod('dbank');
+
+        $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $result->order->order_status);
+        $this->assertEquals(PaymentStatusEnum::CANCELLED, $result->order->payment->payment_status);
+        $this->assertGreaterThan(0, (float) $result->order->payment->cancelled_amount);
+    }
+
+    /**
+     * 카드(PG 대상) 취소는 기존대로 PG 훅을 발화하고 COMPLETED 로 확정한다(비회귀).
+     */
+    public function test_card_cancel_still_fires_pg_hook_and_completes(): void
+    {
+        $hookCalled = false;
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) use (&$hookCalled) {
+            $hookCalled = true;
+
+            return ['success' => true, 'transaction_id' => 'TXN_'.uniqid(), 'error_code' => null, 'error_message' => null];
+        });
+        $order = $this->createOrderWithPaymentMethod('card');
+
+        $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+
+        $this->assertTrue($hookCalled, '카드 취소는 PG 환불 훅을 발화해야 합니다');
+        $this->assertEquals(RefundMethodEnum::PG, $result->orderRefund->refund_method);
+        $this->assertEquals(RefundStatusEnum::COMPLETED, $result->orderRefund->refund_status);
+    }
+
+    /**
+     * 가상계좌(vbank, PG 대상) 취소도 PG 가드를 통과해 PG 훅을 발화한다(비회귀).
+     */
+    public function test_vbank_cancel_still_fires_pg_hook(): void
+    {
+        $hookCalled = false;
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) use (&$hookCalled) {
+            $hookCalled = true;
+
+            return ['success' => true, 'transaction_id' => 'TXN', 'error_code' => null, 'error_message' => null];
+        });
+        $order = $this->createOrderWithPaymentMethod('vbank');
+
+        $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+
+        $this->assertTrue($hookCalled, '가상계좌 취소는 PG 환불 훅을 발화해야 합니다');
+    }
+
+    // ================================================================
+    // MP02-U2/U20②: 0원·미입금 부분취소 허용
+    // ================================================================
+
+    /**
+     * 미입금(dbank, payment_status≠PAID, paid=0) 주문의 부분취소가 허용된다 (RED→GREEN).
+     */
+    public function test_partial_cancel_allowed_for_unpaid_order(): void
+    {
+        $order = $this->createOrderWithPaymentMethod(
+            'dbank',
+            PaymentStatusEnum::WAITING_DEPOSIT,
+            ['order_status' => OrderStatusEnum::PAYMENT_COMPLETE, 'total_paid_amount' => 0],
+        );
+        $optionA = $order->options->first();
+
+        $result = $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: [['order_option_id' => $optionA->id, 'cancel_quantity' => 1]],
+            cancelPg: false,
+        );
+
+        // 핵심: cancel_refund_negative 예외 없이 부분취소가 허용되어야 한다.
+        // 부분취소는 잔여 옵션 기준 진행 상태 유지(PAYMENT_COMPLETE) + 파생 플래그로 표시.
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order->order_status);
+        $this->assertTrue($result->order->fresh()->isPartiallyCancelled());
+        // 실결제 0원 → 환불할 금액이 없으므로 PG 환불액은 0이다(미입금 주문).
+        if ($result->orderRefund !== null) {
+            $this->assertEquals(0.0, (float) $result->orderRefund->refund_amount, '미입금 주문의 PG 환불액은 0이어야 합니다');
+        }
+    }
+
+    /**
+     * 운영자 0원 결제완료(payment_status≠PAID, paid=0) 주문도 부분취소가 허용된다 (무조건 허용).
+     */
+    public function test_partial_cancel_allowed_for_operator_zero_paid_order(): void
+    {
+        $order = $this->createOrderWithPaymentMethod(
+            'card',
+            PaymentStatusEnum::READY,
+            ['order_status' => OrderStatusEnum::PAYMENT_COMPLETE, 'total_paid_amount' => 0],
+        );
+        $optionA = $order->options->first();
+
+        $result = $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: [['order_option_id' => $optionA->id, 'cancel_quantity' => 1]],
+            cancelPg: false,
+        );
+
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order->order_status);
+        $this->assertTrue($result->order->fresh()->isPartiallyCancelled());
+    }
+
+    /**
+     * 정상 결제(PAID, paid>0) 무할인 주문의 부분취소는 통과하고 환불이 생성된다.
+     */
+    public function test_partial_cancel_passes_for_normal_paid_order(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => true, 'transaction_id' => 'TXN']);
+        $order = $this->createOrderWithPaymentMethod('card');
+        $optionA = $order->options->first();
+
+        $result = $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: [['order_option_id' => $optionA->id, 'cancel_quantity' => 1]],
+            cancelPg: true,
+        );
+
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order->order_status);
+        $this->assertTrue($result->order->fresh()->isPartiallyCancelled());
+        $this->assertNotNull($result->orderRefund);
+        $this->assertGreaterThan(0, (float) $result->orderRefund->refund_amount);
+    }
+
+    // ================================================================
+    // MP02-U20④: 취소일시 native 컬럼 기록 (전체+부분)
+    // ================================================================
+
+    /**
+     * 전체취소 시 cancelled_at 이 기록된다.
+     */
+    public function test_full_cancel_records_cancelled_at(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => true, 'transaction_id' => 'TXN']);
+        $order = $this->createOrderWithPaymentMethod('card');
+
+        $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+
+        $this->assertNotNull($result->order->cancelled_at, '전체취소 시 cancelled_at 이 기록되어야 합니다');
+    }
+
+    /**
+     * 부분취소 시에도 cancelled_at 이 기록된다 (종전 전체취소만 기록되던 결함 수정).
+     */
+    public function test_partial_cancel_records_cancelled_at(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => true, 'transaction_id' => 'TXN']);
+        $order = $this->createOrderWithPaymentMethod('card');
+        $optionA = $order->options->first();
+
+        $result = $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: [['order_option_id' => $optionA->id, 'cancel_quantity' => 1]],
+            cancelPg: true,
+        );
+
+        $this->assertNotNull($result->order->cancelled_at, '부분취소 시에도 cancelled_at 이 기록되어야 합니다');
+    }
+
+    // ================================================================
+    // MP02-U20①: 다중항목 일부 부분취소가 전체취소로 오처리되지 않는다
+    // ================================================================
+
+    /**
+     * 2항목 중 1항목 전량 부분취소 시 주문 상태는 잔여 옵션 기준(PAYMENT_COMPLETE)으로 유지되고,
+     * 부분취소 파생 플래그가 켜지며 나머지 항목은 활성 유지된다 (partial_cancelled 제거).
+     */
+    public function test_partial_subset_cancel_keeps_remaining_active(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => true, 'transaction_id' => 'TXN']);
+        $order = $this->createOrderWithPaymentMethod('card');
+        $options = $order->options;
+        $first = $options->first();
+
+        $result = $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: [['order_option_id' => $first->id, 'cancel_quantity' => $first->quantity]],
+            cancelPg: true,
+        );
+
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order->order_status);
+        $this->assertTrue($result->order->fresh()->isPartiallyCancelled());
+        $active = $result->order->options->where('option_status', '!=', OrderStatusEnum::CANCELLED);
+        $this->assertGreaterThan(0, $active->count(), '취소하지 않은 항목은 활성 상태로 남아야 합니다');
+    }
+
+    /**
+     * 모든 활성 항목 전량 취소 요청은 백엔드에서 FULL 로 승격된다.
+     */
+    public function test_all_items_full_quantity_promotes_to_full_cancel(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => true, 'transaction_id' => 'TXN']);
+        $order = $this->createOrderWithPaymentMethod('card');
+
+        $cancelItems = $order->options
+            ->map(fn ($o) => ['order_option_id' => $o->id, 'cancel_quantity' => $o->quantity])
+            ->values()
+            ->all();
+
+        $result = $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: $cancelItems,
+            cancelPg: true,
+        );
+
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $result->order->order_status, '전량 취소는 FULL 로 승격되어야 합니다');
+    }
+
+    // ================================================================
+    // MP02-U18②: partial_cancelled 잔여 항목 재취소 허용
+    // ================================================================
+
+    /**
+     * 부분취소된 주문(PARTIAL_CANCELLED)의 잔여 항목을 다시 취소할 수 있다.
+     */
+    public function test_partial_cancelled_order_can_cancel_remaining(): void
+    {
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn ($d) => ['success' => true, 'transaction_id' => 'TXN']);
+        $order = $this->createOrderWithPaymentMethod('card');
+        $options = $order->options->values();
+
+        // 1차: 첫 항목 취소 → 잔여 옵션 기준 진행 상태 유지(PAYMENT_COMPLETE), 부분취소 파생 플래그 ON.
+        // 별도 partial_cancelled 상태가 없으므로, 잔여 항목은 취소 가능 상태(PAYMENT_COMPLETE)에 그대로 있어 재취소 가능.
+        $first = $this->cancellationService->cancelOrderOptions(
+            order: $order,
+            cancelItems: [['order_option_id' => $options[0]->id, 'cancel_quantity' => $options[0]->quantity]],
+            cancelPg: true,
+        );
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $first->order->order_status);
+        $this->assertTrue($first->order->fresh()->isPartiallyCancelled());
+
+        // 2차: 잔여 항목 재취소 → 예외 없이 처리, 전량 소진으로 CANCELLED 전이
+        $reloaded = Order::find($order->id)->load(['options', 'payment', 'shippings']);
+        $remaining = $reloaded->options->where('option_status', '!=', OrderStatusEnum::CANCELLED)->first();
+
+        $second = $this->cancellationService->cancelOrderOptions(
+            order: $reloaded,
+            cancelItems: [['order_option_id' => $remaining->id, 'cancel_quantity' => $remaining->quantity]],
+            cancelPg: true,
+        );
+
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $second->order->order_status, '잔여 전량 취소 시 CANCELLED 로 전이되어야 합니다');
     }
 }

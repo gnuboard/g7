@@ -118,6 +118,8 @@ export const DynamicFieldList: React.FC<DynamicFieldListProps> = ({
   childrenKey: _childrenKey,
   itemIdKey = '_id',
   errors,
+  id,
+  editorAttrs,
 }) => {
   const formContextRef = useRef<any>(null);
 
@@ -281,7 +283,7 @@ export const DynamicFieldList: React.FC<DynamicFieldListProps> = ({
   const canAdd = !maxItems || normalizedItems.length < maxItems;
 
   return (
-    <Div className={`dynamic-field-list ${className}`}>
+    <Div className={`dynamic-field-list ${className}`} id={id} {...editorAttrs}>
       {/* 헤더 */}
       <Div
         className={`flex items-center gap-2 py-2 px-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-t-lg ${headerClassName}`}

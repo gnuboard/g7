@@ -37,8 +37,7 @@ class CouponDiscountRateValidationTest extends ModuleTestCase
     /**
      * 쿠폰 생성 시 필요한 기본 데이터
      *
-     * @param array $overrides 오버라이드할 속성
-     * @return array
+     * @param  array  $overrides  오버라이드할 속성
      */
     private function validCouponData(array $overrides = []): array
     {
@@ -66,9 +65,9 @@ class CouponDiscountRateValidationTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────
 
     /**
-     * 정액 할인: discount_value=0 허용
+     * 정액 할인: discount_value=0 거부 (min:1 — A14 D-A14-1)
      */
-    public function test_store_fixed_discount_value_zero_is_valid(): void
+    public function test_store_fixed_discount_value_zero_is_invalid(): void
     {
         $data = $this->validCouponData([
             'discount_type' => CouponDiscountType::FIXED->value,
@@ -78,11 +77,28 @@ class CouponDiscountRateValidationTest extends ModuleTestCase
         $response = $this->actingAs($this->adminUser)
             ->postJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons', $data);
 
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('discount_value');
+    }
+
+    /**
+     * 정액 할인: discount_value=1 허용 (최솟값 경계 — A14 D-A14-1)
+     */
+    public function test_store_fixed_discount_value_one_is_valid(): void
+    {
+        $data = $this->validCouponData([
+            'discount_type' => CouponDiscountType::FIXED->value,
+            'discount_value' => 1,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons', $data);
+
         $response->assertStatus(201);
     }
 
     /**
-     * 정액 할인: 음수 금액 거부
+     * 정액 할인: 음수 금액 거부 + 정액 전용 메시지 노출 (A14 — 정률 메시지 회피)
      */
     public function test_store_fixed_discount_negative_is_invalid(): void
     {
@@ -96,6 +112,40 @@ class CouponDiscountRateValidationTest extends ModuleTestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors('discount_value');
+
+        // 정액 음수는 정액 전용 메시지("할인값은 1원 이상…")여야 하며 정률 메시지가 아니다.
+        $message = $response->json('errors.discount_value.0');
+        $this->assertSame(
+            __('sirsoft-ecommerce::validation.coupon.discount_value_fixed_min'),
+            $message
+        );
+        $this->assertNotSame(
+            __('sirsoft-ecommerce::validation.coupon.discount_value_rate_min'),
+            $message
+        );
+    }
+
+    /**
+     * 정률 할인: 0 거부 + 정률 전용 메시지 유지 (A14 회귀)
+     */
+    public function test_store_rate_discount_zero_shows_rate_message(): void
+    {
+        $data = $this->validCouponData([
+            'discount_type' => CouponDiscountType::RATE->value,
+            'discount_value' => 0,
+            'discount_max_amount' => 5000,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons', $data);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('discount_value');
+
+        $this->assertSame(
+            __('sirsoft-ecommerce::validation.coupon.discount_value_rate_min'),
+            $response->json('errors.discount_value.0')
+        );
     }
 
     /**
@@ -248,7 +298,7 @@ class CouponDiscountRateValidationTest extends ModuleTestCase
     /**
      * API를 통해 쿠폰을 생성하고 ID를 반환합니다.
      *
-     * @param array $overrides 오버라이드할 속성
+     * @param  array  $overrides  오버라이드할 속성
      * @return int 생성된 쿠폰 ID
      */
     private function createCouponViaApi(array $overrides = []): int

@@ -1,0 +1,45 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(A31)은
+#   mode × chip × unassign × permission × locale cross product 를 labelHandlers Vitest +
+#   레이아웃 구조 회귀 + ProductLabelController PHPUnit(기존 store 불변) 가 커버하며 green.
+feature: 기타정보 라벨 CRUD — 추가 진입점 + 패널 전환 (MP12 / A31)
+
+description: |
+  ① 신규 라벨 추가 진입점 부재: labels_header 에 "+ 라벨 추가" 버튼 + modal_label_form 생성/수정 겸용(POST 분기).
+  ② 기간 패널 단일 슬롯 결합: 할당된 칩 클릭 = 기간 패널 전환만(할당 해제 안 함).
+     할당 해제는 미리보기의 분리된 "할당 해제" 어포던스로만. "라벨 삭제"(DB 원본)와 용어 구분.
+
+axes:
+  mode:
+    - create                  # editingLabelId 없음 → POST
+    - edit                    # editingLabelId 있음 → PUT
+  chip:
+    - unassigned_click        # 미할당 클릭 → 추가
+    - assigned_no_period_click # 할당+기간없음 클릭 → 패널 전환만
+    - assigned_with_period_click # 할당+기간있음 클릭 → 패널 전환만
+    - sequential_switch       # 연속 전환 (둘 다 유지)
+  unassign:
+    - unassign_affordance     # "할당 해제" → uncheck 모달
+    - delete_original         # "라벨 삭제" → DB 원본 삭제
+  permission:
+    - can_update_true
+    - can_update_false        # 버튼 disabled/숨김
+  locale:
+    - ko
+    - en
+
+effects:
+  - add_button_opens_create_modal     # editingLabelId=null + 빈 labelFormData
+  - create_posts_and_assigns          # POST → 새 id label_assignments 추가
+  - assigned_chip_panel_switch_only   # 할당 칩 클릭 = 패널 전환만
+  - chip_checked_preserved            # 둘 다 checked 유지
+  - last_clicked_label_id_moves       # lastClickedLabelId 만 이동
+  - unassign_affordance_separated     # 할당 해제 분리(uncheck 모달)
+  - delete_label_db_original          # 라벨 삭제는 DB 원본
+  - modal_title_branches              # 생성/수정 제목 분기
+  - permission_guards_buttons         # 권한 false 버튼 가드
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/labelHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productLabelOtherInfo.test.tsx

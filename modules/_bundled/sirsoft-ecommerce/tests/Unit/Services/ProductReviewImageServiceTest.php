@@ -7,11 +7,13 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
+use Modules\Sirsoft\Ecommerce\Repositories\ProductReviewImageRepository;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -27,10 +29,10 @@ class ProductReviewImageServiceTest extends ModuleTestCase
 {
     private ProductReviewImageService $service;
 
-    /** @var \Mockery\MockInterface&StorageInterface */
+    /** @var MockInterface&StorageInterface */
     private $storage;
 
-    /** @var \Mockery\MockInterface&EcommerceSettingsService */
+    /** @var MockInterface&EcommerceSettingsService */
     private $settingsService;
 
     private ProductReview $review;
@@ -46,7 +48,8 @@ class ProductReviewImageServiceTest extends ModuleTestCase
 
         $this->service = new ProductReviewImageService(
             $this->storage,
-            $this->settingsService
+            $this->settingsService,
+            new ProductReviewImageRepository(new ProductReviewImage)
         );
 
         $this->user = $this->createUser();
@@ -80,7 +83,7 @@ class ProductReviewImageServiceTest extends ModuleTestCase
 
         $this->settingsService
             ->shouldReceive('getSetting')
-            ->with('review.max_images', Mockery::any())
+            ->with('review_settings.max_images', Mockery::any())
             ->andReturn(5);
 
         $this->storage
@@ -113,10 +116,26 @@ class ProductReviewImageServiceTest extends ModuleTestCase
 
         $this->settingsService
             ->shouldReceive('getSetting')
-            ->with('review.max_images', Mockery::any())
+            ->with('review_settings.max_images', Mockery::any())
             ->andReturn(5);
 
         $file = UploadedFile::fake()->image('extra.jpg');
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->service->upload($file, $this->review);
+    }
+
+    #[Test]
+    public function test_upload_blocks_first_image_when_max_images_zero(): void
+    {
+        // max_images=0 → 첫 업로드부터 차단 (이미지 첨부 완전 불가 정책)
+        $this->settingsService
+            ->shouldReceive('getSetting')
+            ->with('review_settings.max_images', Mockery::any())
+            ->andReturn(0);
+
+        $file = UploadedFile::fake()->image('blocked.jpg');
 
         $this->expectException(\RuntimeException::class);
 

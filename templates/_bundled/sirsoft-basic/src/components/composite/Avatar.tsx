@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Div } from '../basic/Div';
 import { Img } from '../basic/Img';
 import { Icon } from '../basic/Icon';
+import type { EditorAttrs } from '../../types';
 
 /**
  * 아바타 크기 타입
@@ -80,6 +81,14 @@ export interface AvatarProps {
   isWithdrawn?: boolean;
   /** 비회원 여부 (author.is_guest보다 우선) @default false */
   isGuest?: boolean;
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+/**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -131,6 +140,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   text,
   isWithdrawn = false,
   isGuest = false,
+  id,
+  editorAttrs,
 }) => {
   // 명시적 props > author 추출값 순서로 결정
   const actualAvatar = avatar ?? author?.avatar;
@@ -179,7 +190,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   };
 
   return (
-    <Div className={containerClasses}>
+    <Div className={containerClasses} id={id} {...editorAttrs}>
       {actualAvatar && !actualIsGuest && !actualIsWithdrawn ? (
         <Img
           src={actualAvatar}

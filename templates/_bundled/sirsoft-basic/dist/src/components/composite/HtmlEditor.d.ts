@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export interface HtmlEditorProps {
     /**
      * 콘텐츠 값
@@ -73,6 +74,14 @@ export interface HtmlEditorProps {
      * 읽기 전용 모드
      */
     readOnly?: boolean;
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+    id?: string;
+    /**
+       * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+       */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * HtmlEditor 컴포넌트

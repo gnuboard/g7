@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use InvalidArgumentException;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 
 /**
  * 통화 변환 서비스
@@ -10,10 +11,24 @@ use InvalidArgumentException;
  * 기본 통화 금액을 다른 통화로 변환하는 기능을 제공합니다.
  * OrderCalculationService, ProductResource 등에서 공통으로 사용됩니다.
  *
- * 환율 계산식: 변환금액 = (기본통화금액 / 1000) × exchange_rate
+ * 환율 계산식: 변환금액 = (기본통화금액 / 기본통화.base_unit) × exchange_rate
+ *
+ * base_unit 은 "그 통화가 기본 통화일 때 환율 입력의 분모가 되는 1단위 금액"이다.
+ * 소액 통화만 묶음 단위를 쓴다: KRW=1000, JPY=100, 그 외(USD/CNY/EUR 등)=1.
+ * 환율(exchange_rate)은 "1 base_unit 당 N 해당통화"로 입력한다.
+ *   예) 기본=USD(base_unit 1): USD→JPY=157 (1달러=157엔)
+ *       기본=KRW(base_unit 1000): KRW→USD=0.71 (1000원=0.71달러)
  */
 class CurrencyConversionService
 {
+    /**
+     * base_unit 미설정 통화의 폴백 기본값 (소액 통화만 묶음 단위).
+     */
+    private const BASE_UNIT_FALLBACK = [
+        'KRW' => 1000,
+        'JPY' => 100,
+    ];
+
     /**
      * 통화 설정 캐시 (동일 요청 내 중복 조회 방지)
      */
@@ -85,6 +100,61 @@ class CurrencyConversionService
     }
 
     /**
+     * 통화의 base_unit(기본 통화일 때 환율 분모가 되는 1단위 금액)을 반환합니다.
+     *
+     * 설정에 base_unit 이 있으면 그 값을, 없으면 폴백(KRW=1000, JPY=100, 그 외=1)을 사용합니다.
+     *
+     * @param  string  $code  통화 코드
+     * @return int base_unit (최소 1)
+     */
+    public function getBaseUnit(string $code): int
+    {
+        foreach ($this->getCurrencySettings() as $currency) {
+            if (($currency['code'] ?? null) === $code) {
+                $unit = (int) ($currency['base_unit'] ?? self::BASE_UNIT_FALLBACK[$code] ?? 1);
+
+                return max(1, $unit);
+            }
+        }
+
+        return self::BASE_UNIT_FALLBACK[$code] ?? 1;
+    }
+
+    /**
+     * 현재 설정의 기본 통화 base_unit(실시간 변환의 분모)을 반환합니다.
+     *
+     * @return int 기본 통화 base_unit (최소 1)
+     */
+    public function getDefaultBaseUnit(): int
+    {
+        return $this->getBaseUnit($this->getDefaultCurrency());
+    }
+
+    /**
+     * 스냅샷에 박제된 base_unit(스냅샷 변환의 분모)을 반환합니다.
+     *
+     * 스냅샷 최상위 base_unit → exchange_rates[base_currency].base_unit 순으로 찾고,
+     * 둘 다 없으면 1000 폴백(옛 KRW-base ÷1000 공식 주문 호환 — 환차손 0 유지).
+     *
+     * @param  array  $currencySnapshot  주문 시점 통화 스냅샷
+     * @return int base_unit (최소 1)
+     */
+    public function getSnapshotBaseUnit(array $currencySnapshot): int
+    {
+        $baseCurrency = $currencySnapshot['base_currency'] ?? $this->getDefaultCurrency();
+
+        $unit = $currencySnapshot['base_unit']
+            ?? ($currencySnapshot['exchange_rates'][$baseCurrency]['base_unit'] ?? null);
+
+        if ($unit === null) {
+            // 옛 스냅샷(base_unit 미박제): ÷1000 공식과 짝 → 1000 폴백
+            return 1000;
+        }
+
+        return max(1, (int) $unit);
+    }
+
+    /**
      * 단일 금액을 다중 통화로 변환합니다.
      *
      * @param  int  $basePrice  기본 통화 금액
@@ -93,6 +163,7 @@ class CurrencyConversionService
     public function convertToMultiCurrency(int $basePrice): array
     {
         $currencies = $this->getCurrencySettings();
+        $baseUnit = $this->getDefaultBaseUnit();
         $result = [];
 
         foreach ($currencies as $currency) {
@@ -111,7 +182,7 @@ class CurrencyConversionService
                 $exchangeRate = $currency['exchange_rate'] ?? 0;
 
                 if ($exchangeRate > 0) {
-                    $convertedPrice = ($basePrice / 1000) * $exchangeRate;
+                    $convertedPrice = ($basePrice / $baseUnit) * $exchangeRate;
                     $convertedPrice = $this->applyRounding(
                         $convertedPrice,
                         $currency['rounding_unit'] ?? '0.01',
@@ -140,6 +211,7 @@ class CurrencyConversionService
     public function convertMultipleAmounts(array $amounts): array
     {
         $currencies = $this->getCurrencySettings();
+        $baseUnit = $this->getDefaultBaseUnit();
         $result = [];
 
         foreach ($currencies as $currency) {
@@ -159,7 +231,7 @@ class CurrencyConversionService
                 } else {
                     // 외화: 환율 적용
                     if ($exchangeRate > 0) {
-                        $convertedPrice = ($baseAmount / 1000) * $exchangeRate;
+                        $convertedPrice = ($baseAmount / $baseUnit) * $exchangeRate;
                         $convertedAmount = $this->applyRounding(
                             $convertedPrice,
                             $roundingUnit,
@@ -225,7 +297,7 @@ class CurrencyConversionService
             throw new InvalidArgumentException(__('sirsoft-ecommerce::exceptions.invalid_exchange_rate', ['currency' => $targetCurrency]));
         }
 
-        $convertedPrice = ($basePrice / 1000) * $exchangeRate;
+        $convertedPrice = ($basePrice / $this->getDefaultBaseUnit()) * $exchangeRate;
         $convertedPrice = $this->applyRounding(
             $convertedPrice,
             $currencyConfig['rounding_unit'] ?? '0.01',
@@ -238,6 +310,98 @@ class CurrencyConversionService
             'currency' => $targetCurrency,
             'exchange_rate' => $exchangeRate,
         ];
+    }
+
+    /**
+     * 주문 스냅샷 기준으로 PG 청구 금액을 산정합니다 (결제 청구 SSoT).
+     *
+     * 주문 시점에 동결된 currency_snapshot 의 환율로 base 금액을 결제 통화(order_currency)
+     * 금액으로 환산하고, PG 가 요구하는 최소 화폐단위 정수(minor unit)까지 산출합니다.
+     * 현재 환율을 재조회하지 않으므로 환차손이 0 입니다(D-BASE-3).
+     *
+     * - base 통화와 결제 통화가 같으면 환산 없이 base 금액을 그대로 사용합니다.
+     * - 비-base 결제 통화는 (base / 스냅샷 base_unit) × 스냅샷 환율 + 스냅샷 절사규칙으로 환산합니다.
+     * - minor_unit_amount = 환산금액 × 10^decimal_places (KRW 0자리→×1, USD 2자리→×100).
+     *
+     * @param  float|int  $baseAmount  결제예정 base 통화 금액(total_due_amount)
+     * @param  array  $currencySnapshot  주문 시점 통화 스냅샷(buildCurrencySnapshot 형식)
+     * @return array{currency: string, amount: float|int, minor_unit_amount: int, decimal_places: int, exchange_rate: float} 청구 통화/금액
+     *
+     * @throws InvalidArgumentException 결제 통화의 환율이 없거나 0 이하인 경우(미지원 통화)
+     */
+    public function resolveSnapshotPaymentCharge(float|int $baseAmount, array $currencySnapshot): array
+    {
+        $baseCurrency = $currencySnapshot['base_currency'] ?? $this->getDefaultCurrency();
+        $orderCurrency = $currencySnapshot['order_currency'] ?? $baseCurrency;
+        $exchangeRates = $currencySnapshot['exchange_rates'] ?? [];
+
+        $rateData = $exchangeRates[$orderCurrency] ?? null;
+
+        // 스냅샷 환율/절사규칙 추출 (하위 호환: 단순 float 형태 허용)
+        if (is_numeric($rateData)) {
+            $snapshotRate = (float) $rateData;
+            $roundingUnit = '0.01';
+            $roundingMethod = 'round';
+            $decimalPlaces = $this->getDecimalPlaces($orderCurrency);
+        } else {
+            $snapshotRate = (float) ($rateData['rate'] ?? 0);
+            $roundingUnit = $rateData['rounding_unit'] ?? '0.01';
+            $roundingMethod = $rateData['rounding_method'] ?? 'round';
+            $decimalPlaces = (int) ($rateData['decimal_places'] ?? $this->getDecimalPlaces($orderCurrency));
+        }
+
+        $isBase = ($orderCurrency === $baseCurrency);
+
+        if ($isBase) {
+            // base 통화 결제: 환산 없이 그대로. base 의 decimal_places 로 정수화.
+            $convertedAmount = (float) $baseAmount;
+            $decimalPlaces = (int) ($rateData['decimal_places'] ?? $this->getDecimalPlaces($orderCurrency));
+            $snapshotRate = 1.0;
+        } else {
+            if ($snapshotRate <= 0) {
+                throw new InvalidArgumentException(
+                    __('sirsoft-ecommerce::exceptions.invalid_exchange_rate', ['currency' => $orderCurrency])
+                );
+            }
+
+            $convertedPrice = ((float) $baseAmount / $this->getSnapshotBaseUnit($currencySnapshot)) * $snapshotRate;
+            $convertedAmount = $this->applyRounding($convertedPrice, $roundingUnit, $roundingMethod);
+        }
+
+        // PG 최소 화폐단위 정수 (KRW: ×1, USD/소수통화: ×10^2). 부동소수 오차 방어로 round.
+        $minorUnitAmount = (int) round($convertedAmount * (10 ** $decimalPlaces));
+
+        return [
+            'currency' => $orderCurrency,
+            'amount' => $convertedAmount,
+            'minor_unit_amount' => $minorUnitAmount,
+            'decimal_places' => $decimalPlaces,
+            'exchange_rate' => $snapshotRate,
+        ];
+    }
+
+    /**
+     * 주문의 PG 청구/승인 검증 기준 금액(결제 통화 minor unit 정수)을 산정합니다.
+     *
+     * PG 결제창에 청구하는 금액(buildPgPaymentData → resolveSnapshotPaymentCharge['minor_unit_amount'])과
+     * 동일 SSoT 로, 결제 통화(order_currency)가 base 통화와 다를 때도 정합한 비교 기준을 제공합니다.
+     * 코어 최종 승인 검증(validatePaymentAmount 2단계)과 각 PG 플러그인 콜백/사전가드가 이 메서드를
+     * 공유해, base≠결제 통화 조합에서 "결제금액 불일치" 회귀를 차단합니다.
+     *
+     * total_due_amount(base) 를 직접 정수화해 비교하면 base≠order_currency 일 때(예: base JPY,
+     * 결제 KRW) PG 청구액(환산 KRW)과 단위가 어긋난다. 반드시 본 메서드를 거쳐야 한다.
+     *
+     * @param  Order  $order  주문(total_due_amount + currency_snapshot 보유)
+     * @return int 결제 통화 기준 청구 금액(최소 화폐단위 정수)
+     *
+     * @throws InvalidArgumentException 결제 통화의 환율이 없거나 0 이하인 경우(미지원 통화)
+     */
+    public function resolveOrderPaymentChargeAmount(Order $order): int
+    {
+        return $this->resolveSnapshotPaymentCharge(
+            (float) $order->total_due_amount,
+            $order->currency_snapshot ?? []
+        )['minor_unit_amount'];
     }
 
     /**
@@ -322,6 +486,7 @@ class CurrencyConversionService
     {
         $exchangeRates = $currencySnapshot['exchange_rates'] ?? [];
         $baseCurrency = $currencySnapshot['base_currency'] ?? $this->getDefaultCurrency();
+        $baseUnit = $this->getSnapshotBaseUnit($currencySnapshot);
         $result = [];
 
         foreach ($exchangeRates as $code => $rateData) {
@@ -345,7 +510,7 @@ class CurrencyConversionService
                     $currencyAmounts[$field.'_formatted'] = $this->formatPrice($baseAmount, $code);
                 } else {
                     if ($snapshotRate > 0) {
-                        $convertedPrice = ($baseAmount / 1000) * $snapshotRate;
+                        $convertedPrice = ($baseAmount / $baseUnit) * $snapshotRate;
                         $convertedAmount = $this->applyRounding(
                             $convertedPrice,
                             $roundingUnit,
@@ -386,6 +551,7 @@ class CurrencyConversionService
     {
         $exchangeRates = $currencySnapshot['exchange_rates'] ?? [];
         $baseCurrency = $currencySnapshot['base_currency'] ?? $this->getDefaultCurrency();
+        $baseUnit = $this->getSnapshotBaseUnit($currencySnapshot);
         $result = [];
 
         foreach ($exchangeRates as $code => $rateData) {
@@ -409,7 +575,7 @@ class CurrencyConversionService
             }
 
             if ($snapshotRate > 0) {
-                $convertedPrice = ($basePrice / 1000) * $snapshotRate;
+                $convertedPrice = ($basePrice / $baseUnit) * $snapshotRate;
                 $result[$code] = $this->applyRounding($convertedPrice, $roundingUnit, $roundingMethod);
             }
         }

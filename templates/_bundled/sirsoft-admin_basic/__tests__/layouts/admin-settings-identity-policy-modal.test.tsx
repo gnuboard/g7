@@ -133,6 +133,94 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
     });
   });
 
+  describe('출처별 편집 제한 — 선언형(코어/모듈/플러그인) 잠금 필드', () => {
+    /**
+     * 선언형 정책(source_type != admin) 편집 시 키(key)/시점(scope)/위치(target) 만 잠기고
+     * 그 외 필드는 운영자가 자유로이 편집할 수 있어야 한다.
+     *
+     * 백엔드 화이트리스트: AdminIdentityPolicyController::LIMITED_EDITABLE_FIELDS
+     *   = [enabled, grace_minutes, provider_id, fail_mode, conditions, purpose, applies_to, priority]
+     * → key/scope/target 만 모달에서 disabled. 인증 목적(purpose)·적용 대상(applies_to) 포함 나머지는
+     *   disabled 미부여(편집 가능). 안내 문구도 "키·시점·위치만 변경 불가" 로 정합.
+     *
+     * 배경: 과거 purpose/applies_to 까지 잠겼던 것은 "선언형 readonly" 원칙의 과확장이었으며,
+     * 인증 목적은 어떤 정책이든 운영자가 자유 부여 가능해야 한다(PO).
+     */
+    const LOCK_PREDICATE = "!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'";
+
+    // 컴포넌트 노드를 라벨 i18n 키로 찾는다.
+    const findFieldControl = (node: AnyJson, labelKey: string): AnyJson | null => {
+      if (!node || typeof node !== 'object') return null;
+      if (Array.isArray(node)) {
+        for (const item of node) { const r = findFieldControl(item, labelKey); if (r) return r; }
+        return null;
+      }
+      // Div(그룹) 안에 Label(text === labelKey) + Input|Select 형제 구조
+      if (Array.isArray(node.children)) {
+        const hasLabel = node.children.some((c: AnyJson) => c?.name === 'Label' && c?.text === labelKey);
+        if (hasLabel) {
+          const control = node.children.find((c: AnyJson) => c?.name === 'Input' || c?.name === 'Select');
+          if (control) return control;
+        }
+      }
+      for (const k of Object.keys(node)) { const r = findFieldControl(node[k], labelKey); if (r) return r; }
+      return null;
+    };
+
+    const lockedFields = [
+      ['정책 키', '$t:admin.identity.policies.form.key'],
+      ['강제 시점', '$t:admin.identity.policies.form.scope'],
+      ['강제 위치', '$t:admin.identity.policies.form.target'],
+    ] as const;
+
+    it.each(lockedFields)('선언형 잠금 필드 "%s" 는 disabled 바인딩 보유', (_label, labelKey) => {
+      const control = findFieldControl(modalPartial, labelKey);
+      expect(control).not.toBeNull();
+      expect(control!.props?.disabled).toBe(`{{${LOCK_PREDICATE}}}`);
+    });
+
+    const editableFields = [
+      ['인증 목적', '$t:admin.identity.policies.form.purpose'],
+      ['적용 대상', '$t:admin.identity.policies.form.applies_to'],
+      ['인증 수단', '$t:admin.identity.policies.form.provider_id'],
+      ['재요구 주기', '$t:admin.identity.policies.form.grace_minutes'],
+      ['실패 시 처리', '$t:admin.identity.policies.form.fail_mode'],
+    ] as const;
+
+    it.each(editableFields)('편집 가능 필드 "%s" 는 disabled 미부여 (선언형도 편집 가능)', (_label, labelKey) => {
+      const control = findFieldControl(modalPartial, labelKey);
+      expect(control).not.toBeNull();
+      expect(control!.props?.disabled).toBeUndefined();
+    });
+
+    it('인증 목적(purpose) 은 disabled className variant 도 제거 (편집 가능 회귀)', () => {
+      const purpose = findFieldControl(modalPartial, '$t:admin.identity.policies.form.purpose');
+      expect(purpose!.props?.className ?? '').not.toContain('disabled:bg-gray-100');
+    });
+
+    it('우선순위(priority) 입력칸 존재 + 편집 가능 + form.priority 바인딩', () => {
+      const priority = findFieldControl(modalPartial, '$t:admin.identity.policies.form.priority');
+      expect(priority).not.toBeNull();
+      expect(priority!.name).toBe('Input');
+      expect(priority!.props?.type).toBe('number');
+      expect(priority!.props?.value).toContain('identity_policy_form_modal?.form?.priority');
+      expect(priority!.props?.disabled).toBeUndefined();
+    });
+  });
+
+  describe('우선순위 동률 결함 수정', () => {
+    it('모달에 우선순위 입력 change setState 가 form.priority 경로로 변경', () => {
+      const modalStr = JSON.stringify(modalPartial);
+      expect(modalStr).toContain('"identity_policy_form_modal.form.priority"');
+    });
+
+    it('정책 목록(DataGrid) 에 우선순위 컬럼 헤더 + 값 바인딩 노출', () => {
+      const partialStr = JSON.stringify(policiesPartial);
+      expect(partialStr).toContain('$t:admin.identity.policies.col.priority');
+      expect(partialStr).toContain('policy.priority ?? 100');
+    });
+  });
+
   describe('conditions 운영자 편집 (B안 리팩토링)', () => {
     /**
      * 회원가입 단계 등 정책 조건은 폼에서 편집 가능해야 한다.

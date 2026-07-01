@@ -7,6 +7,7 @@ use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
+use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use App\Repositories\TemplateRepository;
@@ -60,7 +61,8 @@ class TemplateServiceRoutesFilterTest extends TestCase
             $templateRepository,
             $this->templateManager,
             $this->moduleManager,
-            $this->pluginManager
+            $this->pluginManager,
+            app(LayoutVersionRepositoryInterface::class)
         );
     }
 
@@ -496,5 +498,97 @@ class TemplateServiceRoutesFilterTest extends TestCase
         // user 라우트(이용약관)는 포함되지 않아야 함
         $termsRoutes = array_filter($routes, fn ($r) => $r['path'] === '*/shop/terms');
         $this->assertEmpty($termsRoutes, 'User 라우트(쇼핑몰 이용약관)는 admin 템플릿에 포함되지 않아야 함');
+    }
+
+    // ========================================================================
+    // 편집기 모달 수집 — 모듈/플러그인 레이아웃 디렉토리(admin/ vs user/) 타입 필터링
+    //
+    // 라우트는 routes/{admin|user}.json 으로 분기되지만, 편집기 트리의 모달은
+    // collectEditorBaseAndModals 가 모듈 layouts/ 를 순회해 수집한다. 이 수집도
+    // 템플릿 타입에 맞는 layouts/{admin|user}/ 서브디렉토리만 대상으로 해야
+    // user 템플릿 편집 모드에 admin 모달이, admin 편집 모드에 user 모달이 새지 않는다.
+    // ========================================================================
+
+    /**
+     * 테스트용 모듈에 admin/user 레이아웃(모달 포함)을 생성합니다.
+     *
+     * - layouts/admin/admin_screen.json : 모달 `admin_only_modal` 보유
+     * - layouts/user/user_screen.json   : 모달 `user_only_modal` 보유
+     *
+     * @return string 테스트용 모듈 식별자
+     */
+    private function setupModuleWithTypedModalLayouts(): string
+    {
+        $identifier = 'test-routes-module';
+        $layoutsBase = base_path("modules/{$identifier}/resources/layouts");
+
+        File::ensureDirectoryExists($layoutsBase.'/admin');
+        File::ensureDirectoryExists($layoutsBase.'/user');
+
+        File::put($layoutsBase.'/admin/admin_screen.json', json_encode([
+            'modals' => [
+                ['id' => 'admin_only_modal', 'title' => '관리자 전용 모달'],
+            ],
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
+        File::put($layoutsBase.'/user/user_screen.json', json_encode([
+            'modals' => [
+                ['id' => 'user_only_modal', 'title' => '사용자 전용 모달'],
+            ],
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
+        return $identifier;
+    }
+
+    #[Test]
+    public function user_template_editor_excludes_admin_module_modals(): void
+    {
+        // Given: admin/user 레이아웃에 각각 모달을 가진 모듈
+        $identifier = $this->setupModuleWithTypedModalLayouts();
+
+        $this->setupUserTemplate();
+
+        $mockModule = $this->createMockModule($identifier);
+        $this->moduleManager->method('getActiveModules')->willReturn([$identifier => $mockModule]);
+        $this->pluginManager->method('getActivePlugins')->willReturn([]);
+
+        // When: user 템플릿 편집기 라우트/모달 조회
+        $result = $this->templateService->getEditorRoutesDataWithModules('test-user_template');
+
+        // Then: user 레이아웃 모달은 포함, admin 레이아웃 모달은 제외
+        $this->assertTrue($result['success']);
+        $modals = $result['data']['modals'];
+
+        $adminModals = array_filter($modals, fn ($m) => $m['modal_id'] === 'admin_only_modal');
+        $userModals = array_filter($modals, fn ($m) => $m['modal_id'] === 'user_only_modal');
+
+        $this->assertEmpty($adminModals, 'Admin 레이아웃 모달은 user 템플릿 편집기에 노출되지 않아야 함');
+        $this->assertNotEmpty($userModals, 'User 레이아웃 모달은 user 템플릿 편집기에 노출되어야 함');
+    }
+
+    #[Test]
+    public function admin_template_editor_excludes_user_module_modals(): void
+    {
+        // Given: admin/user 레이아웃에 각각 모달을 가진 모듈
+        $identifier = $this->setupModuleWithTypedModalLayouts();
+
+        $this->setupAdminTemplate();
+
+        $mockModule = $this->createMockModule($identifier);
+        $this->moduleManager->method('getActiveModules')->willReturn([$identifier => $mockModule]);
+        $this->pluginManager->method('getActivePlugins')->willReturn([]);
+
+        // When: admin 템플릿 편집기 라우트/모달 조회
+        $result = $this->templateService->getEditorRoutesDataWithModules('sirsoft-admin_basic');
+
+        // Then: admin 레이아웃 모달은 포함, user 레이아웃 모달은 제외
+        $this->assertTrue($result['success']);
+        $modals = $result['data']['modals'];
+
+        $adminModals = array_filter($modals, fn ($m) => $m['modal_id'] === 'admin_only_modal');
+        $userModals = array_filter($modals, fn ($m) => $m['modal_id'] === 'user_only_modal');
+
+        $this->assertNotEmpty($adminModals, 'Admin 레이아웃 모달은 admin 템플릿 편집기에 노출되어야 함');
+        $this->assertEmpty($userModals, 'User 레이아웃 모달은 admin 템플릿 편집기에 노출되지 않아야 함');
     }
 }

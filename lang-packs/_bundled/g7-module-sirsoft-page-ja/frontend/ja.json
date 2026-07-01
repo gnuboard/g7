@@ -1,5 +1,13 @@
 {
   "admin": {
     "$partial": "partial/admin.json"
+  },
+  "editor": {
+    "data_source": {
+      "page": "ページ",
+      "pageData": "ページデータ",
+      "pages": "ページ一覧",
+      "versions": "バージョン履歴"
+    }
   }
 }

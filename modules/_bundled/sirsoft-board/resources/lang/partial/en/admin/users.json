@@ -1,7 +1,7 @@
 {
   "form": {
     "sections": {
-      "notification_settings": "Notification Settings"
+      "notification_settings": "Board Notification Settings"
     },
     "notifications": {
       "post_complete": "Post Complete Notification",

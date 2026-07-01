@@ -1,0 +1,104 @@
+# audit:allow test-scenario-coverage reason: 시각 회귀 없는 토큰 동치 시맨틱 자산 치환 — Playwright cross-product 가드 불필요. 자산 정의는 admin_basic main.css SSoT, 호출처는 자산명만 사용. board admin_board_settings.json 은 옵션 B (responsive padding 유지) 결정에 따라 자식 padding 토큰을 root .admin-page-content-responsive 로 흡수 + sticky-section-header → sticky-tab-nav-responsive 변경 — 시각 동일.
+
+feature: 게시판/이커머스 어드민 페이지 root wrapper 시맨틱 자산 매핑 (#408 보강)
+
+description: |
+  이슈 #408 §2-1 PO 매핑 결정 적용 — board/ec admin 레이아웃의 페이지 root wrapper
+  raw className 잔존분을 admin_basic 시맨틱 자산으로 정합.
+
+  결정 요약:
+    - board admin_board_settings: 자식 padding 토큰을 root 로 흡수 후
+      .admin-page-content-responsive 매핑 + sticky-section-header 를
+      .sticky-tab-nav-responsive (신설, -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8)
+      로 변경 — responsive padding 정책 화면의 sticky 풀-bleed 복원
+    - ec admin_ecommerce_product_common_info_index / product_notice_index:
+      .admin-page-content-viewport (신설, p-6 + h-[calc(100vh-64px)] + overflow-hidden)
+      + responsive.portable 분기는 .admin-page-content-viewport-compact (신설, p-4 변형)
+    - ec admin_ecommerce_mileage_deposit_settings: .admin-page-content 매핑
+      (배경 토큰 누락 회귀 정리 — ec 21건 동질)
+
+axes:
+  layout_file:
+    - modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_settings.json
+    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_mileage_deposit_settings.json
+    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_common_info_index.json
+    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_notice_index.json
+  asset_class:
+    - admin-page-content
+    - admin-page-content-responsive
+    - admin-page-content-viewport
+    - admin-page-content-viewport-compact
+    - sticky-tab-nav-responsive
+    - admin-card
+    - section-card
+    - grid-2col-responsive
+    - page-header-padded
+    - page-header-fullbleed
+    - footer-buttons-between
+    - stack
+    - text-body
+    - flex-between
+    - admin-card-clickable
+    - admin-card-selected
+    - card-title
+    - card-description
+  viewport: [desktop, portable]
+  theme: [light, dark]
+
+effects:
+  - board_settings_root_uses_admin_page_content_responsive_asset
+  - board_settings_sticky_header_uses_sticky_tab_nav_responsive_asset
+  - board_settings_child_padding_tokens_absorbed_into_root_asset
+  - ec_product_common_info_root_uses_admin_page_content_viewport_asset
+  - ec_product_common_info_portable_uses_admin_page_content_viewport_compact_asset
+  - ec_product_notice_root_uses_admin_page_content_viewport_asset
+  - ec_product_notice_portable_uses_admin_page_content_viewport_compact_asset
+  - ec_mileage_deposit_settings_root_uses_admin_page_content_asset
+  - admin_basic_main_css_defines_admin_page_content_viewport_with_p6_bg_h_calc_overflow
+  - admin_basic_main_css_defines_admin_page_content_viewport_compact_with_p4_variant
+  - admin_basic_main_css_defines_sticky_tab_nav_responsive_with_responsive_mx_px
+  - new_assets_documented_in_admin_basic_changelog
+  - board_admin_card_equivalent_raw_panels_substituted_to_admin_card_asset
+  - board_section_card_equivalent_raw_panels_substituted_to_section_card_asset
+  - ec_admin_card_equivalent_raw_panels_substituted_to_admin_card_asset
+  - page_admin_card_equivalent_raw_panels_substituted_to_admin_card_asset
+  - admin_card_substitution_preserves_padding_margin_shadow_hover_tokens
+  - section_card_substitution_absorbs_scroll_mt_32_mt_6_p_6_tokens_into_asset_definition
+  - admin_card_asset_definition_absorbs_default_p4_padding
+  - admin_card_call_sites_strip_all_p_n_tokens_for_uniform_appearance
+  - grid_2col_responsive_asset_defined_with_grid_grid_cols_1_md_grid_cols_2_gap_4
+  - grid_2col_responsive_call_sites_strip_gap_n_tokens
+  - page_header_padded_asset_adds_px_6_to_base_page_header
+  - page_header_fullbleed_asset_adds_negative_mx_and_gray_50_background_to_base_page_header
+  - footer_buttons_between_asset_provides_non_sticky_left_right_split_action_bar
+  - stack_asset_definition_includes_default_gap_4
+  - stack_call_sites_strip_gap_n_tokens_for_uniform_spacing
+  - stack_substitution_excludes_alignment_tokens_items_justify_to_preserve_semantic_intent
+  - admin_card_call_sites_are_isolated_to_asset_only_no_extra_tokens
+  - admin_card_extra_token_removal_includes_margin_alignment_hover_overflow_text_variants
+  - text_body_asset_definition_text_sm_text_gray_700_dark_text_gray_300
+  - text_body_call_sites_strip_three_required_tokens_and_replace_with_asset
+  - flex_between_asset_definition_flex_items_center_justify_between
+  - flex_between_call_sites_strip_three_required_tokens_and_replace_with_asset
+  - dynamic_classname_expressions_with_admin_card_are_reported_for_manual_review
+  - admin_card_asset_absorbs_default_mb_6_bottom_margin_for_card_grouping
+  - admin_card_parent_containers_strip_mt_n_and_space_y_n_grouping_tokens
+  - board_ec_admin_partial_root_stack_classname_removed_when_children_are_admin_cards
+  - residual_rounded_xl_card_variants_mapped_to_admin_card_asset
+  - modal_inner_stack_tokens_removed_to_align_with_admin_card_scoped_stack_policy
+  - all_admin_card_outside_stack_occurrences_eliminated_in_board_ec_admin_layouts
+  - admin_basic_layouts_also_processed_for_mt6_spacey6_partial_root_stack_and_modal_stack_removal
+  - admin_card_clickable_asset_absorbs_cursor_hover_border_tokens_for_clickable_card_variant
+  - admin_card_selected_asset_absorbs_blue_background_border_for_selected_card_variant
+  - dynamic_classname_expressions_in_master_detail_panels_now_use_asset_pair
+  - section_layout_component_padding_default_none_no_p0_prepend
+  - admin_card_direct_heading_h2_h3_h4_unified_to_section_title_single_class
+  - admin_card_direct_field_group_div_with_space_y_n_unified_to_stack_single_class
+  - admin_card_inner_form_section_follows_standard_structure_card_title_description_stack_field
+  - card_title_card_description_assets_provide_uniform_bottom_margin_via_has_sibling_selector
+  - admin_card_direct_section_title_section_description_renamed_to_card_title_card_description
+
+test_files: []
+
+validation:
+  audit_rule: frontend-change-requires-e2e

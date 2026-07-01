@@ -1,0 +1,429 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마일리지 적립건 사유·만료일 변경 모달. 회원·금액·유형·적립일은 읽기전용(비활성), 사유(memo)·만료일만 편집. 소멸/전액사용 lot 은 만료일 비활성. PATCH /admin/mileage-transactions/{id}."
+  },
+  "id": "modal_edit_transaction",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.title",
+    "size": "md",
+    "closeOnOverlayClick": false
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "id": "edit_error_banner",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.mileageEdit?.errors}}",
+          "props": {
+            "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "triangle-exclamation",
+                    "size": "md",
+                    "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                      },
+                      "text": "{{_global.mileageEdit?.errors?.message ?? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.validation_error')}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Ul",
+                      "if": "{{_global.mileageEdit?.errors?.errors && Object.keys(_global.mileageEdit.errors.errors).length > 0}}",
+                      "props": {
+                        "className": "mt-1 list-disc list-inside space-y-0.5"
+                      },
+                      "iteration": {
+                        "source": "Object.entries(_global.mileageEdit?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])",
+                        "item_var": "msg"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Li",
+                          "props": {
+                            "className": "text-xs text-red-700 dark:text-red-300"
+                          },
+                          "text": "{{msg}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "edit_readonly_info",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-xs text-gray-400 dark:text-gray-500"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_member"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "{{_global.mileageEdit?.memberName ?? '-'}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-xs text-gray-400 dark:text-gray-500"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_amount"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "{{(_global.mileageEdit?.amountFormatted ?? '-') + ' ' + (_global.mileageEdit?.currency ?? '')}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-xs text-gray-400 dark:text-gray-500"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_type"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "{{_global.mileageEdit?.typeLabel ?? '-'}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-xs text-gray-400 dark:text-gray-500"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_earned_at"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "{{_global.mileageEdit?.createdAtFormatted ?? '-'}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-xs text-gray-400 dark:text-gray-500"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.readonly_hint"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.reason"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "value": "{{_global.mileageEdit?.memo ?? ''}}",
+                "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.reason_placeholder",
+                "className": "{{_global.mileageEdit?.errors?.errors?.memo ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "mileageEdit.memo": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_global.mileageEdit?.errors?.errors?.memo}}",
+              "props": {
+                "className": "form-error"
+              },
+              "text": "{{_global.mileageEdit?.errors?.errors?.memo?.[0] ?? ''}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.expiry_date"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "if": "{{_global.mileageEdit?.canEditExpiry === true}}",
+              "props": {
+                "type": "date",
+                "value": "{{_global.mileageEdit?.expiresAt ?? ''}}",
+                "min": "{{_global.mileageEdit?.earnedAtDate ?? ''}}",
+                "className": "{{_global.mileageEdit?.errors?.errors?.expires_at ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "mileageEdit.expiresAt": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.mileageEdit?.canEditExpiry !== true}}",
+              "props": {
+                "className": "flex items-center gap-2 px-3 py-2 text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "lock",
+                    "className": "text-gray-400 dark:text-gray-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.expiry_locked"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_global.mileageEdit?.errors?.errors?.expires_at}}",
+              "props": {
+                "className": "form-error"
+              },
+              "text": "{{_global.mileageEdit?.errors?.errors?.expires_at?.[0] ?? ''}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-2 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "disabled": "{{_global.mileageEdit?.isSaving ?? false}}",
+            "className": "btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.cancel"
+            }
+          ]
+        },
+        {
+          "id": "edit_submit_button",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "disabled": "{{_global.mileageEdit?.isSaving ?? false}}",
+            "className": "flex items-center gap-2 btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "mileageEdit.isSaving": true,
+                      "mileageEdit.errors": null
+                    }
+                  },
+                  {
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions/{{_global.mileageEdit?.id}}",
+                    "params": {
+                      "method": "PATCH",
+                      "body": "{{(_global.mileageEdit?.canEditExpiry === true ? { memo: _global.mileageEdit?.memo ?? '', expires_at: (_global.mileageEdit?.expiresAt || null) } : { memo: _global.mileageEdit?.memo ?? '' })}}"
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "closeModal"
+                      },
+                      {
+                        "handler": "refetchDataSource",
+                        "params": {
+                          "dataSourceId": "transactions"
+                        }
+                      },
+                      {
+                        "handler": "toast",
+                        "params": {
+                          "type": "success",
+                          "message": "$t:sirsoft-ecommerce.admin.mileage_transactions.message.edit_success"
+                        }
+                      },
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "mileageEdit": null
+                        }
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "mileageEdit.isSaving": false,
+                          "mileageEdit.errors": "{{error}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.mileageEdit?.isSaving}}",
+              "props": {
+                "name": "spinner",
+                "size": "sm",
+                "className": "animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.mileageEdit?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submitting') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submit')}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

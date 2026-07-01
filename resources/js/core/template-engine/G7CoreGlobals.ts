@@ -157,7 +157,11 @@ export interface G7DevToolsInterface {
   }): void;
 
   /** 네트워크 요청 시작 추적 */
-  trackRequest(url: string, method: string): string;
+  trackRequest(
+    url: string,
+    method: string,
+    options?: { requestBody?: any; dataSourceId?: string },
+  ): string;
 
   /** 네트워크 요청 완료 추적 */
   completeRequest(requestId: string, statusCode: number, response?: any): void;
@@ -170,6 +174,10 @@ export interface G7DevToolsInterface {
     id: string;
     type: 'api' | 'static' | 'route_params' | 'query_params' | 'websocket';
     endpoint?: string;
+    method?: string;
+    autoFetch?: boolean;
+    initLocal?: any;
+    initGlobal?: any;
   }): void;
 
   /** 데이터소스 로딩 시작 추적 */
@@ -735,6 +743,49 @@ function initComponentEventSystem(G7Core: any): void {
   };
 
   logger.log('전역 객체 window.G7Core.componentEvent에 노출됨');
+}
+
+/**
+ * `G7Core.layoutEditor` 예약 접수함(ready 큐) 초기화 —.
+ *
+ * 레이아웃 편집기 확장점(`registerWidget`/`registerNodeEditor`/`registerCanvasOverlay`)은
+ * 편집기 셸(lazy 번들)이 로드될 때 `exposeLayoutEditorGlobals` 가 **실제 레지스트리 함수**로
+ * 노출한다. 그러나 템플릿 `initTemplate` 은 편집기 로드 **이전**에 실행되므로, 그 시점에
+ * `G7Core.layoutEditor` 가 없으면 등록이 허공으로 사라진다.
+ *
+ * 이를 막기 위해 메인 번들에서 **경량 stub** 을 항상 먼저 노출한다. stub 의 register* 는
+ * 등록 요청을 `__queue` 에 적재만 하고, `onReady(cb)` 는 `__readyCallbacks` 에 예약한다.
+ * 편집기 셸 로드 시 `exposeLayoutEditorGlobals` 가 실제 함수로 교체하면서 `__queue` 를
+ * 일괄 flush + `__readyCallbacks` 호출한다(그 후의 호출은 즉시 등록). 이미 실제 API 가
+ * 노출돼 있으면(편집기 먼저 로드) stub 으로 덮지 않는다.
+ *
+ * 메인 번들 추가분은 함수 3개 + 배열 2개뿐(번들 비대화 ~0). 큐/콜백 공유 상태는 코드
+ * 분할(메인 vs 편집기 번들) 경계를 넘어야 하므로 모듈 변수가 아니라 `G7Core.layoutEditor`
+ * **객체 자체**(`__queue`/`__readyCallbacks`)에 둔다.
+ */
+function initLayoutEditorStub(G7Core: any): void {
+  // 편집기 셸이 먼저 로드돼 실제 API 가 이미 있으면 stub 으로 덮지 않는다.
+  if (G7Core.layoutEditor && G7Core.layoutEditor.__isStub !== true) return;
+  if (G7Core.layoutEditor && G7Core.layoutEditor.__isStub === true) return; // 중복 init 멱등
+
+  const queue: Array<[string, ...unknown[]]> = [];
+  const readyCallbacks: Array<() => void> = [];
+
+  G7Core.layoutEditor = {
+    __isStub: true,
+    __queue: queue,
+    __readyCallbacks: readyCallbacks,
+    registerWidget: (name: string, comp: unknown) => queue.push(['widget', name, comp]),
+    registerNodeEditor: (kind: string, comp: unknown) => queue.push(['nodeEditor', kind, comp]),
+    registerCanvasOverlay: (kind: string, overlay: unknown) =>
+      queue.push(['canvasOverlay', kind, overlay]),
+    /** 편집기 ready 시 호출될 콜백 예약. 이미 ready 면(=stub 아님) 즉시 호출은 실제 API 책임 */
+    onReady: (cb: () => void) => {
+      if (typeof cb === 'function') readyCallbacks.push(cb);
+    },
+  };
+
+  logger.log('전역 객체 window.G7Core.layoutEditor 예약 접수함(stub) 노출됨');
 }
 
 /**
@@ -1776,7 +1827,7 @@ function initStateAPI(G7Core: any): void {
       // handlerContext.state(버튼 클릭 시점의 componentContext.state)를 사용해야 함.
       //
       // ──────────────────────────────────────────────────────────────────
-      // [모달 scope 제한사항] (Issue #29 분석, 2026-03-25)
+      // [모달 scope 제한사항] ( 분석, 2026-03-25)
       //
       // 현재 getLocal()은 항상 페이지의 globalLocal을 반환한다.
       // modals 섹션의 isolated scope 모달 내부 커스텀 핸들러에서 호출해도
@@ -2898,164 +2949,6 @@ function initSlotAPI(G7Core: any, deps: G7CoreDependencies): void {
 }
 
 /**
- * 위지윅 편집기 API 초기화
- *
- * 위지윅 레이아웃 편집기 관련 전역 API를 window.G7Core에 노출합니다.
- *
- * @since engine-v1.11.0
- *
- * @example
- * ```ts
- * // 편집 모드 확인
- * if (G7Core.wysiwyg.isEditMode()) {
- *   // 편집 모드 전용 로직
- * }
- *
- * // 편집 모드로 진입
- * G7Core.wysiwyg.enterEditMode('home', 'sirsoft-basic');
- *
- * // 편집 모드 종료
- * G7Core.wysiwyg.exitEditMode();
- * ```
- */
-function initWysiwygEditorAPI(G7Core: any): void {
-  // 편집 모드 상태 (전역)
-  let editModeEnabled = false;
-  let currentLayoutName: string | null = null;
-  let currentTemplateId: string | null = null;
-
-  G7Core.wysiwyg = {
-    /**
-     * 현재 편집 모드 여부를 반환합니다.
-     *
-     * @returns boolean 편집 모드 여부
-     */
-    isEditMode: (): boolean => {
-      return editModeEnabled;
-    },
-
-    /**
-     * 편집 모드를 활성화합니다.
-     *
-     * @param layoutName 편집할 레이아웃명
-     * @param templateId 템플릿 ID
-     */
-    setEditMode: (layoutName: string, templateId: string): void => {
-      editModeEnabled = true;
-      currentLayoutName = layoutName;
-      currentTemplateId = templateId;
-      logger.log(`위지윅 편집 모드 활성화: ${layoutName} (${templateId})`);
-    },
-
-    /**
-     * 편집 모드를 비활성화합니다.
-     */
-    clearEditMode: (): void => {
-      editModeEnabled = false;
-      currentLayoutName = null;
-      currentTemplateId = null;
-      logger.log('위지윅 편집 모드 비활성화');
-    },
-
-    /**
-     * 현재 편집 중인 레이아웃명을 반환합니다.
-     *
-     * @returns string | null 레이아웃명 또는 null
-     */
-    getCurrentLayoutName: (): string | null => {
-      return currentLayoutName;
-    },
-
-    /**
-     * 현재 편집 중인 템플릿 ID를 반환합니다.
-     *
-     * @returns string | null 템플릿 ID 또는 null
-     */
-    getCurrentTemplateId: (): string | null => {
-      return currentTemplateId;
-    },
-
-    /**
-     * URL 쿼리 파라미터에서 편집 모드 여부를 확인합니다.
-     *
-     * @returns boolean 편집 모드 여부
-     */
-    isEditModeFromUrl: (): boolean => {
-      if (typeof window === 'undefined') {
-        return false;
-      }
-      const params = new URLSearchParams(window.location.search);
-      return params.get('mode') === 'edit';
-    },
-
-    /**
-     * 편집 모드 URL을 생성합니다.
-     * 라우트 기반 URL 형식: /{route}?mode=edit&template={templateId}
-     *
-     * @param route 라우트 경로 (예: '/', '/shop', '/board/posts')
-     * @param templateId 템플릿 ID (예: 'sirsoft-basic')
-     * @returns string 편집 모드 URL
-     */
-    getEditModeUrl: (route: string, templateId: string): string => {
-      const baseUrl = window.location.origin;
-      // 라우트가 '/'로 시작하지 않으면 추가
-      const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
-      return `${baseUrl}${normalizedRoute}?mode=edit&template=${encodeURIComponent(templateId)}`;
-    },
-
-    /**
-     * 편집 모드로 진입합니다. (페이지 이동)
-     * 라우트 기반으로 편집 모드에 진입합니다.
-     *
-     * @param route 라우트 경로 (예: '/', '/shop', '/board/posts')
-     * @param templateId 템플릿 ID (예: 'sirsoft-basic')
-     */
-    enterEditMode: (route: string, templateId: string): void => {
-      if (typeof window === 'undefined') {
-        return;
-      }
-      const url = G7Core.wysiwyg.getEditModeUrl(route, templateId);
-      window.location.href = url;
-    },
-
-    /**
-     * 편집 모드를 종료하고 일반 페이지로 이동합니다.
-     * mode, template 파라미터를 제거하고 현재 라우트에 머무릅니다.
-     */
-    exitEditMode: (): void => {
-      if (typeof window === 'undefined') {
-        return;
-      }
-      const params = new URLSearchParams(window.location.search);
-      params.delete('mode');
-      params.delete('template');
-      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
-      window.location.href = newUrl;
-    },
-
-    /**
-     * 위지윅 편집기 모듈 버전을 반환합니다.
-     *
-     * @returns string 버전 문자열
-     */
-    getVersion: (): string => {
-      return '1.0.0';
-    },
-
-    /**
-     * 현재 구현된 Phase를 반환합니다.
-     *
-     * @returns number Phase 번호
-     */
-    getPhase: (): number => {
-      return 1;
-    },
-  };
-
-  logger.log('전역 객체 window.G7Core 위지윅 편집기 API에 노출됨 (wysiwyg)');
-}
-
-/**
  * G7Core.identity 인터페이스 초기화 (engine-v1.46.0+)
  *
  * 본인인증(IDV) 인터셉터를 템플릿/플러그인이 동일 인스턴스로 공유하기 위한 글로벌 진입점입니다.
@@ -3076,8 +2969,27 @@ function initIdentityAPI(G7Core: any): void {
     /** 모달 launcher 등록 (템플릿 부트스트랩에서 호출) */
     setLauncher: IdentityGuardInterceptor.setLauncher.bind(IdentityGuardInterceptor),
 
+    /**
+     * 428 응답을 처리합니다 (challenge 모달 launcher 호출 후 성공 시 원 요청 재실행).
+     *
+     * ActionDispatcher.handleApiCall 의 자동 인터셉트와 동일한 launcher 플로우를,
+     * 직접 fetch/G7Core.api 로 요청하는 모듈 JS 핸들러(예: 입금확인)가 재사용하기 위한 진입점.
+     * verify 성공 시 재실행 Response 를, 취소/실패/return_request 부재 시 null 을 반환한다.
+     */
+    handle: IdentityGuardInterceptor.handle.bind(IdentityGuardInterceptor),
+
+    /** 응답이 428 IDV 요구 응답인지 판별 */
+    isIdentityRequired: IdentityGuardInterceptor.isIdentityRequired.bind(IdentityGuardInterceptor),
+
     /** 등록된 launcher 가 있는지 여부 */
     hasLauncher: IdentityGuardInterceptor.hasLauncher.bind(IdentityGuardInterceptor),
+
+    /**
+     * challenge 가 자기 고유의 도메인 안내(성인인증 실패 등)를 사용자에게 표출했음을 표시.
+     * 호출 시 코어 toast 핸들러가 동일 사이클의 generic IDV 가드 토스트("본인 확인이 필요합니다") 1건을 skip.
+     * provider 플러그인이 "본인확인 성공 + 부가목적 미달" 실패를 안내한 직후 호출한다.
+     */
+    markDomainNoticeShown: IdentityGuardInterceptor.markDomainNoticeShown.bind(IdentityGuardInterceptor),
 
     /** external_redirect 흐름 — sessionStorage stash + window.location 이동 */
     redirectExternally: IdentityGuardInterceptor.redirectExternally.bind(IdentityGuardInterceptor),
@@ -3122,6 +3034,8 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
 
   // 각 API 그룹 초기화
   initComponentEventSystem(G7Core);
+  // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
+  initLayoutEditorStub(G7Core);
   initCoreAPIs(G7Core, deps);
   initTranslationAPI(G7Core, deps);
   initHelperAPIs(G7Core, deps);
@@ -3137,7 +3051,6 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   initPluginAPI(G7Core);
   initModuleAPI(G7Core);
   initSlotAPI(G7Core, deps);
-  initWysiwygEditorAPI(G7Core);
   initIdentityAPI(G7Core);
 
   logger.log('G7Core 전역 객체 초기화 완료');

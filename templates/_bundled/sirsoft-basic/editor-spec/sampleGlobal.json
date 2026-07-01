@@ -1,0 +1,43 @@
+{
+  "comment": "_user_base.json 헤더/푸터/Welcome 이 의존하는 _global.* baseline. 코어 임시 시드(coreSampleGlobalSeed) 를 본 템플릿 스펙으로 이관(S6-2 (C)). `$`-prefixed 키($locale/$locales)는 PreviewCanvas 가 렌더 컨텍스트 최상위로 끌어올리는 엔진 전역 샘플 — 로케일 선택 드롭다운(`{{$locales}}`) 미리보기용.",
+  "$locale": "ko",
+  "$locales": ["ko", "en"],
+  "currentUser": {
+    "uuid": "sample-uuid-current-user",
+    "id": 1,
+    "name": "샘플 사용자",
+    "nickname": "샘플 사용자",
+    "email": "me@example.com",
+    "phone": "010-1234-5678",
+    "avatar": null,
+    "avatar_url": null,
+    "is_admin": false
+  },
+  "settings": {
+    "general": {
+      "site_name": "샘플 사이트",
+      "site_description": "편집 모드 미리보기 — 실제 사이트 설정은 운영 환경에서 적용됩니다.",
+      "site_logo_url": null
+    },
+    "site_name": "샘플 사이트",
+    "site_description": "편집 모드 미리보기 — 실제 사이트 설정은 운영 환경에서 적용됩니다."
+  },
+  "site": {
+    "name": "샘플 사이트"
+  },
+  "_local": {
+    "comment": "편집 모드 캔버스의 _local baseline (applyInitialPatch localBaseline). 모든 페이지 상태에 공통 적용되므로 상태별 중복 시드가 필요 없다. isEditMode 게이트 안에서만 흐르며 운영 사이트 렌더에는 영향 없다. shop/checkout 의 받는분/주소/배송메모 입력칸(_local.shipping.*·shippingMemo)이 편집 캔버스에서 기본 배송지 값으로 채워져 보이도록 시드한다.",
+    "selectedAddressId": 1,
+    "shipping": {
+      "recipient_name": "샘플 수령인",
+      "recipient_phone": "010-1234-5678",
+      "zipcode": "06236",
+      "address": "서울특별시 강남구 테헤란로 123",
+      "address_detail": "4층 401호",
+      "region": "서울특별시",
+      "city": "강남구",
+      "country_code": "KR"
+    },
+    "shippingMemo": "door"
+  }
+}

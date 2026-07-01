@@ -1,5 +1,6 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
+import { EditorAttrs } from '../../types';
 /**
  * 빠른 링크 인터페이스
  */
@@ -19,6 +20,12 @@ export interface AdminFooterProps {
     className?: string;
     copyrightModalId?: string;
     changelogModalId?: string;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * AdminFooter 컴포넌트

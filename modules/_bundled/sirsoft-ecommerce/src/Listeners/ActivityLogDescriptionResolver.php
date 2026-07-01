@@ -44,7 +44,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     /**
      * 훅 이벤트 처리 (기본 핸들러)
      *
-     * @param mixed ...$args 훅에서 전달된 인수들
+     * @param  mixed  ...$args  훅에서 전달된 인수들
      * @return mixed
      */
     public function handle(...$args): void
@@ -55,9 +55,9 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     /**
      * description_params에 엔티티 이름을 해석하여 추가합니다.
      *
-     * @param array $params 현재 description_params
-     * @param string $descriptionKey 번역 키
-     * @param array $properties 활동 로그 properties
+     * @param  array  $params  현재 description_params
+     * @param  string  $descriptionKey  번역 키
+     * @param  array  $properties  활동 로그 properties
      * @return array 해석된 description_params
      */
     public function resolveDescriptionParams(array $params, string $descriptionKey, array $properties): array
@@ -81,6 +81,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
             $keySuffix === 'product_review_create' => $this->resolveProductNameFromReview($params, $properties),
             $keySuffix === 'coupon_use' => $this->resolveCouponNames($params, $properties),
             $keySuffix === 'coupon_restore' => $this->resolveCouponNamesFromIssues($params, $properties),
+            in_array($keySuffix, ['coupon_create', 'coupon_update', 'coupon_delete', 'coupon_show', 'coupon_direct_issue', 'coupon_issue_cancel']) => $this->resolveEntityName($params, $properties, 'coupon_name', Coupon::class, 'coupon_id'),
             default => $params,
         };
     }
@@ -88,11 +89,11 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     /**
      * properties.name 스냅샷 또는 DB 조회로 엔티티 이름을 해석합니다.
      *
-     * @param array $params description_params
-     * @param array $properties 활동 로그 properties
-     * @param string $paramKey 추가할 파라미터 키 (예: 'brand_name')
-     * @param string $modelClass 모델 클래스
-     * @param string $idKey params에서 ID를 찾을 키 (예: 'brand_id')
+     * @param  array  $params  description_params
+     * @param  array  $properties  활동 로그 properties
+     * @param  string  $paramKey  추가할 파라미터 키 (예: 'brand_name')
+     * @param  string  $modelClass  모델 클래스
+     * @param  string  $idKey  params에서 ID를 찾을 키 (예: 'brand_id')
      * @return array 해석된 params
      */
     private function resolveEntityName(array $params, array $properties, string $paramKey, string $modelClass, string $idKey): array
@@ -128,8 +129,8 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     /**
      * 상품 이미지 로그에서 상품명을 해석합니다.
      *
-     * @param array $params description_params
-     * @param array $properties 활동 로그 properties
+     * @param  array  $params  description_params
+     * @param  array  $properties  활동 로그 properties
      * @return array 해석된 params
      */
     private function resolveProductNameFromImage(array $params, array $properties): array
@@ -162,8 +163,8 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     /**
      * 리뷰 로그에서 상품명을 해석합니다.
      *
-     * @param array $params description_params
-     * @param array $properties 활동 로그 properties
+     * @param  array  $params  description_params
+     * @param  array  $properties  활동 로그 properties
      * @return array 해석된 params
      */
     private function resolveProductNameFromReview(array $params, array $properties): array
@@ -192,8 +193,8 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     /**
      * 쿠폰 사용 로그에서 쿠폰명을 해석합니다.
      *
-     * @param array $params description_params
-     * @param array $properties 활동 로그 properties
+     * @param  array  $params  description_params
+     * @param  array  $properties  활동 로그 properties
      * @return array 해석된 params
      */
     private function resolveCouponNames(array $params, array $properties): array
@@ -222,8 +223,8 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     /**
      * 쿠폰 복원 로그에서 쿠폰명을 해석합니다.
      *
-     * @param array $params description_params
-     * @param array $properties 활동 로그 properties
+     * @param  array  $params  description_params
+     * @param  array  $properties  활동 로그 properties
      * @return array 해석된 params
      */
     private function resolveCouponNamesFromIssues(array $params, array $properties): array
@@ -253,7 +254,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     /**
      * 다국어 이름(배열 또는 문자열)을 현재 로케일에 맞게 해석합니다.
      *
-     * @param mixed $name 이름 (문자열 또는 다국어 배열)
+     * @param  mixed  $name  이름 (문자열 또는 다국어 배열)
      * @return string 해석된 이름
      */
     private function resolveI18nName(mixed $name): string

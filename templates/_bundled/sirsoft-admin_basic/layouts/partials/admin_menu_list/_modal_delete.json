@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "메뉴 삭제 확인 모달"
+    "description": "메뉴 삭제 확인 모달",
+    "editor_label": "$t:admin.modal_label.admin_menu_list.delete_confirm_modal"
   },
   "id": "delete_confirm_modal",
   "type": "composite",
@@ -14,15 +15,12 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "text-sm text-gray-600 dark:text-gray-400"
+            "className": "text-label"
           },
           "text": "$t:admin.menus.modals.delete_confirm"
         },
@@ -30,7 +28,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3 justify-end"
+            "className": "flex-center gap-3 justify-end"
           },
           "children": [
             {
@@ -113,7 +111,9 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     }
   ]
 }

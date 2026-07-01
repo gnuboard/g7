@@ -25,6 +25,7 @@
     "data_sources": [
         {
             "id": "notificationChannels",
+            "label_key": "$t:editor.data_source.notificationChannels",
             "type": "api",
             "endpoint": "/api/admin/notification-channels",
             "method": "GET",
@@ -39,6 +40,7 @@
         },
         {
             "id": "notificationLogs",
+            "label_key": "$t:editor.data_source.notificationLogs",
             "type": "api",
             "endpoint": "/api/admin/notification-logs",
             "method": "GET",
@@ -114,7 +116,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -122,7 +124,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex items-center justify-between mb-6"
+                            "className": "flex-between mb-6"
                         },
                         "children": [
                             {
@@ -141,7 +143,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                            "className": "text-label-subtle mt-1"
                                         },
                                         "text": "$t:admin.notification_log.page_description"
                                     }
@@ -153,7 +155,7 @@
                                 "name": "Button",
                                 "props": {
                                     "type": "button",
-                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    "className": "btn-icon"
                                 },
                                 "actions": [
                                     {
@@ -180,114 +182,25 @@
                     },
                     {
                         "id": "channel_tabs",
-                        "type": "basic",
-                        "name": "Div",
+                        "type": "composite",
+                        "name": "TabNavigation",
                         "props": {
-                            "className": "border-b border-gray-200 dark:border-gray-700 mb-6"
+                            "tabs": "{{[{id: '', label: '$t:admin.notification_log.tab_all'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source && ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon})))}}",
+                            "activeTabId": "{{query.channel ?? ''}}",
+                            "variant": "default",
+                            "className": "sticky-tab-nav mb-6"
                         },
-                        "children": [
+                        "actions": [
                             {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": "flex gap-1 -mb-px overflow-x-auto"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "{{!query.channel ? 'px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 whitespace-nowrap' : 'px-4 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap'}}"
-                                        },
-                                        "text": "$t:admin.notification_log.tab_all",
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/notification-logs",
-                                                    "replace": true,
-                                                    "query": []
-                                                }
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "iteration": {
-                                            "source": "{{notificationChannels?.data?.channels ?? []}}",
-                                            "item_var": "ch"
-                                        },
-                                        "props": {
-                                            "type": "button",
-                                            "className": "{{query.channel === ch.id ? 'px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 whitespace-nowrap' : 'px-4 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap'}}"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "props": {
-                                                    "name": "{{ch.icon ?? 'fas fa-bell'}}",
-                                                    "className": "mr-2"
-                                                }
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex flex-col items-start"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "text": "{{ch.name ?? ch.id}}"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "if": "{{ch.source !== 'core'}}",
-                                                        "props": {
-                                                            "className": "flex items-center gap-0.5 text-[10px] text-indigo-500 dark:text-indigo-400"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Icon",
-                                                                "props": {
-                                                                    "name": "fas fa-puzzle-piece",
-                                                                    "className": "text-[8px]"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "text": "{{ch.source_label ?? ch.source ?? ''}}"
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/notification-logs",
-                                                    "replace": true,
-                                                    "query": {
-                                                        "channel": "{{ch.id}}",
-                                                        "page": 1
-                                                    },
-                                                    "transition_overlay_target": "notification_log_datagrid__body"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
+                                "event": "onTabChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/notification-logs",
+                                    "replace": true,
+                                    "query": "{{$args[0] ? {channel: $args[0], page: 1} : []}}",
+                                    "transition_overlay_target": "notification_log_datagrid__body"
+                                }
                             }
                         ]
                     },
@@ -307,21 +220,21 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center justify-between gap-3 mb-4"
+                                    "className": "flex-between flex-wrap gap-3 mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-3"
+                                            "className": "flex-center gap-3"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                                                    "className": "text-label"
                                                 },
                                                 "text": "$t:admin.notification_log.total_count|count={{notificationLogs?.data?.pagination?.total || 0}}"
                                             }
@@ -331,7 +244,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-3"
+                                            "className": "flex-center gap-3"
                                         },
                                         "children": [
                                             {
@@ -430,14 +343,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-3"
+                                    "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                            "className": "text-body font-medium whitespace-nowrap"
                                         },
                                         "text": "$t:admin.notification_log.delete.selected_count|count={{(_global.selectedIds_admin_notification_logs ?? []).length}}"
                                     },
@@ -454,7 +367,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                                            "className": "alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                                             "disabled": "{{(_global.selectedIds_admin_notification_logs ?? []).length === 0 || notificationLogs?.data?.abilities?.can_delete !== true}}"
                                         },
                                         "text": "$t:admin.notification_log.delete.bulk_button",
@@ -479,6 +392,9 @@
     },
     "modals": [
         {
+            "meta": {
+                "editor_label": "$t:admin.modal_label.notification_log_list.delete_confirm_modal"
+            },
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -508,7 +424,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3 mt-6"
+                        "className": "modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -516,7 +432,7 @@
                             "name": "Button",
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "btn btn-secondary",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "actions": [
@@ -538,7 +454,7 @@
                             "name": "Button",
                             "props": {
                                 "type": "button",
-                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "actions": [
@@ -643,6 +559,9 @@
             ]
         },
         {
+            "meta": {
+                "editor_label": "$t:admin.modal_label.notification_log_list.bulk_delete_confirm_modal"
+            },
             "id": "bulk_delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -672,7 +591,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3 mt-6"
+                        "className": "modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -680,7 +599,7 @@
                             "name": "Button",
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "btn btn-secondary",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "actions": [
@@ -702,7 +621,7 @@
                             "name": "Button",
                             "props": {
                                 "type": "button",
-                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "actions": [

@@ -49,6 +49,26 @@
       "if": "{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}",
       "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
       "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}"
+    },
+    {
+      "comment": "배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가, 모바일 가격 영역)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{product.data?.is_shippable_to_selected_country === false}}",
+      "props": { "className": "flex items-center gap-1.5 mt-1.5" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "triangle-exclamation", "size": "sm", "className": "text-red-500 dark:text-red-400 shrink-0" }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-sm font-medium text-red-600 dark:text-red-400" },
+          "text": "$t:shop.shippability.not_shippable"
+        }
+      ]
     }
   ]
 }

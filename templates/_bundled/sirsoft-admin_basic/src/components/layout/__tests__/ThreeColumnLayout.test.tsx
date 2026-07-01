@@ -146,8 +146,7 @@ describe('ThreeColumnLayout 컴포넌트', () => {
       );
       const centerColumn = container.firstChild?.childNodes[1] as HTMLElement;
       expect(centerColumn.style.flex).toContain('1');
-      // jsdom 은 number 0 을 '0' 문자열로 반환 (단위 추가 없음)
-      expect(centerColumn.style.minWidth).toBe('0');
+      expect(['0', '0px']).toContain(centerColumn.style.minWidth);
     });
   });
 

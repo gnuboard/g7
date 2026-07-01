@@ -1,0 +1,626 @@
+{
+  "comment": "라우트별 변종 화면. 로그인 실패 / 검색 결과 유무 / 알림 유무 등. 사용자 board/shop/page 라우트는 코어 그룹 concat 으로 중복되지 않도록 각 모듈 editor-spec.json 에 일원화한다(A-4/A-5).",
+  "groups": [
+    {
+      "scope": {
+        "kind": "route",
+        "match": "/login"
+      },
+      "items": [
+        {
+          "id": "default",
+          "label": "$t:editor.state.login_default",
+          "default": true,
+          "initialState": {
+            "local": {}
+          },
+          "formErrors": {}
+        },
+        {
+          "id": "login_failed",
+          "label": "$t:editor.state.login_failed",
+          "initialState": {
+            "global": {
+              "loginError": "이메일 또는 비밀번호가 올바르지 않습니다"
+            }
+          },
+          "comment": "검증 오류 경로는 로그인 폼이 실제로 읽는 상태 경로를 키로 직접 지정한다. 로그인 폼은 _global.loginErrors.{field} 를 읽으므로 그 경로로 주입.",
+          "formErrors": {
+            "_global.loginErrors.email": "이메일 또는 비밀번호가 올바르지 않습니다",
+            "_global.loginErrors.password": "이메일 또는 비밀번호가 올바르지 않습니다"
+          }
+        }
+      ]
+    },
+    {
+      "scope": {
+        "kind": "route",
+        "match": "/search"
+      },
+      "comment": "검색 결과 영역은 searchResults 데이터소스가 condition `{{query?.q}}` 로 게이트된다(본문 line 62). 검색어가 없으면 결과 영역 자체가 렌더되지 않아 두 상태가 동일해 보이므로, 두 변종 모두 query.q 를 주입해 결과 영역을 띄운 뒤 데이터 유무로 변종을 구분한다. — searchActiveTab(기본 'all') 게이트로 게시글/상품/페이지 서브탭 본체가 분기된다(_search_results.json). 각 서브탭 상태를 추가해 탭별 프레젠테이션을 캔버스에 노출(클릭 불가, 상태 패치로 시뮬레이션). all 탭 posts/pages 섹션 본체는 searchResults.data.{posts,pages}.items 바인딩이라 base 샘플에 해당 배열을 채워 렌더 보장.",
+      "items": [
+        {
+          "id": "with_results",
+          "label": "$t:editor.state.search_with_results",
+          "default": true,
+          "initialState": {
+            "query": {
+              "q": "티셔츠"
+            }
+          }
+        },
+        {
+          "id": "empty_results",
+          "label": "$t:editor.state.search_empty",
+          "initialState": {
+            "query": {
+              "q": "없는검색어"
+            }
+          },
+          "sampleDataOverrides": {
+            "byDataSourceId": {
+              "searchResults": {
+                "data": {
+                  "data": [],
+                  "meta": {
+                    "total": 0,
+                    "per_page": 20,
+                    "current_page": 1,
+                    "query": "없는검색어"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "tab_posts",
+          "label": "$t:editor.state.search_tab_posts",
+          "initialState": {
+            "query": {
+              "q": "티셔츠"
+            },
+            "global": {
+              "searchActiveTab": "posts"
+            }
+          }
+        },
+        {
+          "id": "tab_products",
+          "label": "$t:editor.state.search_tab_products",
+          "initialState": {
+            "query": {
+              "q": "티셔츠"
+            },
+            "global": {
+              "searchActiveTab": "products"
+            }
+          }
+        },
+        {
+          "id": "tab_pages",
+          "label": "$t:editor.state.search_tab_pages",
+          "initialState": {
+            "query": {
+              "q": "티셔츠"
+            },
+            "global": {
+              "searchActiveTab": "pages"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scope": {
+        "kind": "route",
+        "match": "/mypage/notifications"
+      },
+      "items": [
+        {
+          "id": "with_notifications",
+          "label": "$t:editor.state.notifications_with",
+          "default": true
+        },
+        {
+          "id": "empty_notifications",
+          "label": "$t:editor.state.notifications_empty",
+          "comment": "override 는 base 를 통째 교체하므로 base 와 동일 shape(data.data 배열만 비움). unread_count/페이지네이션 메타도 빈 상태 정합값으로 채워 헤더가 깨지지 않게 한다.",
+          "sampleDataOverrides": {
+            "byDataSourceId": {
+              "userNotifications": {
+                "data": {
+                  "unread_count": 0,
+                  "current_page": 1,
+                  "last_page": 1,
+                  "per_page": 10,
+                  "total": 0,
+                  "data": []
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "내 정보 수정 화면: 로그인 사용자가 비밀번호를 재확인하는 단계와 실제 정보 수정 단계로 구분된다. profile-edit 레이아웃은 _local.isPasswordVerified 로 두 partial(_password_verify_section / _edit)을 if 분기하므로, 그 상태 키를 initialState.local 로 주입해 각 단계를 미리 본다. 검증 오류는 폼이 읽는 실제 경로(_local.verifyPasswordError / _local.profileErrors.{field})로 주입한다.",
+      "scope": {
+        "kind": "route",
+        "match": "/mypage/profile/edit"
+      },
+      "items": [
+        {
+          "id": "password_entry",
+          "label": "$t:editor.state.profile_password_entry",
+          "default": true,
+          "initialState": {
+            "local": {
+              "isPasswordVerified": false
+            }
+          }
+        },
+        {
+          "id": "actual_edit",
+          "label": "$t:editor.state.profile_actual_edit",
+          "initialState": {
+            "local": {
+              "isPasswordVerified": true
+            }
+          }
+        },
+        {
+          "id": "validation_failed",
+          "label": "$t:editor.state.profile_validation_failed",
+          "initialState": {
+            "local": {
+              "isPasswordVerified": true
+            }
+          },
+          "formErrors": {
+            "_local.profileErrors.name": [
+              "이름을 입력해 주세요"
+            ],
+            "_local.profileErrors.nickname": [
+              "이미 사용 중인 닉네임입니다"
+            ],
+            "_local.profileErrors.mobile": [
+              "올바른 휴대폰 번호 형식이 아닙니다"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "comment": "비밀번호 찾기. forgot_password 레이아웃은 {{_local.success}} 로 입력 폼/발송 완료 안내를 if 분기한다(본문 line 77/96).",
+      "scope": {
+        "kind": "route",
+        "match": "/forgot-password"
+      },
+      "items": [
+        {
+          "id": "default",
+          "label": "$t:editor.state.forgot_default",
+          "default": true,
+          "initialState": {
+            "local": {
+              "success": false
+            }
+          }
+        },
+        {
+          "id": "success",
+          "label": "$t:editor.state.forgot_success",
+          "initialState": {
+            "local": {
+              "success": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "비밀번호 재설정. reset_password 레이아웃은 _local.tokenError / _local.success 로 토큰오류·재설정폼·완료 화면을 if 분기한다(본문 line 307/390/446). 검증 오류는 폼이 읽는 _local.resetErrors.{field}?.[0] 경로로 주입.",
+      "scope": {
+        "kind": "route",
+        "match": "/reset-password"
+      },
+      "items": [
+        {
+          "id": "token_valid",
+          "label": "$t:editor.state.reset_token_valid",
+          "default": true,
+          "initialState": {
+            "local": {
+              "tokenError": false,
+              "success": false
+            }
+          }
+        },
+        {
+          "id": "token_error",
+          "label": "$t:editor.state.reset_token_error",
+          "initialState": {
+            "local": {
+              "tokenError": true
+            }
+          }
+        },
+        {
+          "id": "success",
+          "label": "$t:editor.state.reset_success",
+          "initialState": {
+            "local": {
+              "tokenError": false,
+              "success": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "본인인증 챌린지. identity_challenge 레이아웃은 _local.render_hint 값(text_code/link/external_redirect)으로 세 화면을 if 분기한다(본문 line 134/391/496).",
+      "scope": {
+        "kind": "route",
+        "match": "/identity/challenge"
+      },
+      "items": [
+        {
+          "id": "text_code",
+          "label": "$t:editor.state.challenge_text_code",
+          "default": true,
+          "initialState": {
+            "local": {
+              "render_hint": "text_code"
+            }
+          }
+        },
+        {
+          "id": "link",
+          "label": "$t:editor.state.challenge_link",
+          "initialState": {
+            "local": {
+              "render_hint": "link"
+            }
+          }
+        },
+        {
+          "id": "external_redirect",
+          "label": "$t:editor.state.challenge_external",
+          "initialState": {
+            "local": {
+              "render_hint": "external_redirect"
+            }
+          }
+        },
+        {
+          "id": "code_error",
+          "label": "$t:editor.state.challenge_error",
+          "comment": "코드 입력 화면에서 인증 실패 시 _local.error 배너가 표시된다(본문 line 164/175).",
+          "initialState": {
+            "local": {
+              "render_hint": "text_code",
+              "error": "인증번호가 올바르지 않습니다. 다시 시도해 주세요."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "비밀번호 변경. change-password 레이아웃은 {{_local.success}} 로 입력 폼/완료 안내를 if 분기한다(본문 line 98/154).",
+      "scope": {
+        "kind": "route",
+        "match": "/mypage/change-password"
+      },
+      "items": [
+        {
+          "id": "form_default",
+          "label": "$t:editor.state.change_password_form",
+          "default": true,
+          "initialState": {
+            "local": {
+              "success": false
+            }
+          }
+        },
+        {
+          "id": "success",
+          "label": "$t:editor.state.change_password_success",
+          "initialState": {
+            "local": {
+              "success": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "찜 목록. _list partial 이 wishlist.data.data 길이로 그리드/빈 상태를 if 분기한다(line 60/110).",
+      "scope": {
+        "kind": "route",
+        "match": "/mypage/wishlist"
+      },
+      "items": [
+        {
+          "id": "with_items",
+          "label": "$t:editor.state.wishlist_with_items",
+          "default": true
+        },
+        {
+          "id": "empty_wishlist",
+          "label": "$t:editor.state.wishlist_empty",
+          "sampleDataOverrides": {
+            "byDataSourceId": {
+              "wishlist": {
+                "data": {
+                  "data": [],
+                  "pagination": {
+                    "total": 0,
+                    "per_page": 20,
+                    "current_page": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "배송지 관리. _list partial 이 addresses.data.addresses.data 길이로 목록/빈 상태를 if 분기한다(line 55/179).",
+      "scope": {
+        "kind": "route",
+        "match": "/mypage/addresses"
+      },
+      "items": [
+        {
+          "id": "with_addresses",
+          "label": "$t:editor.state.addresses_with",
+          "default": true
+        },
+        {
+          "id": "empty_addresses",
+          "label": "$t:editor.state.addresses_empty",
+          "sampleDataOverrides": {
+            "byDataSourceId": {
+              "addresses": {
+                "data": {
+                  "addresses": {
+                    "data": []
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "회원 공개 프로필. users/show 레이아웃은 profile.data.status 가 'withdrawn' 인지로 일반/탈퇴 회원 정보를 if 분기한다(본문 line 187/269).",
+      "scope": {
+        "kind": "route",
+        "match": "/users/:userId"
+      },
+      "items": [
+        {
+          "id": "active_user",
+          "label": "$t:editor.state.user_active",
+          "default": true,
+          "comment": "override 는 base profile 샘플을 통째 교체하므로 base 와 동일 충실 shape 를 유지해야 한다(name/bio/created_at 누락 시 캔버스 헤더가 '-' 로 붕괴). status 만 active 로 고정.",
+          "sampleDataOverrides": {
+            "byDataSourceId": {
+              "profile": {
+                "data": {
+                  "uuid": "00000000-0000-4000-8000-000000000018",
+                  "name": "김민준",
+                  "nickname": "민준이",
+                  "avatar": "/images/placeholder.png",
+                  "bio": "프론트엔드 개발과 사진을 좋아하는 평범한 회원입니다.",
+                  "status": "active",
+                  "status_label": "활성",
+                  "created_at": "2025-09-14",
+                  "is_owner": false
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "withdrawn_user",
+          "label": "$t:editor.state.user_withdrawn",
+          "comment": "탈퇴 회원. base shape 통째 복제 후 status=withdrawn + name 을 탈퇴 표기로 변형(users/show line 269 탈퇴 분기 본체 미리보기). bio/created_at 도 유지해 헤더 붕괴 방지.",
+          "sampleDataOverrides": {
+            "byDataSourceId": {
+              "profile": {
+                "data": {
+                  "uuid": "00000000-0000-0000-0000-000000000099",
+                  "name": "탈퇴한 회원",
+                  "nickname": "탈퇴한 회원",
+                  "avatar": null,
+                  "bio": null,
+                  "status": "withdrawn",
+                  "status_label": "탈퇴",
+                  "created_at": "2024-03-02",
+                  "is_owner": false
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "회원 작성글. users/posts 레이아웃은 userPosts.data.data 길이로 목록/빈 상태를 if 분기한다(본문 line 198/226).",
+      "scope": {
+        "kind": "route",
+        "match": "/users/:userId/posts"
+      },
+      "items": [
+        {
+          "id": "with_posts",
+          "label": "$t:editor.state.user_posts_with",
+          "default": true
+        },
+        {
+          "id": "no_posts",
+          "label": "$t:editor.state.user_posts_empty",
+          "sampleDataOverrides": {
+            "byDataSourceId": {
+              "userPosts": {
+                "data": {
+                  "data": [],
+                  "total": 0,
+                  "current_page": 1,
+                  "per_page": 20
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "회원가입. register 레이아웃은 _local.registerError 배너 + _local.errors.{field}?.[0] 인라인 필드 에러(이메일·비밀번호·이름·닉네임)로 검증 실패를 표시한다(본문 line 54/134/183/274). 메시지 값은 캔버스 translationEngine 이 해석하는 실제 콘텐츠 키($t:auth.register.error.*)를 사용한다(editor.* 파셜은 미리보기 사전에 없어 raw 키 노출).",
+      "scope": {
+        "kind": "route",
+        "match": "/register"
+      },
+      "items": [
+        {
+          "id": "default",
+          "label": "$t:editor.state.register_default",
+          "default": true
+        },
+        {
+          "id": "valid_input",
+          "label": "$t:editor.state.register_valid_input",
+          "comment": "PasswordInput 의 비밀번호 일치 성공 표시(녹색 '비밀번호가 일치합니다')와 길이 통과(showValidation minLength:8)는 폼 상태 값 기반이다. 확인 필드는 confirmTarget `{{_local.registerForm?.password}}` 와 자기 값(registerForm.password_confirmation)이 같을 때 일치로 표시되므로, 두 값을 8자 이상 동일하게 시드해 성공 표시를 미리본다.",
+          "initialState": {
+            "local": {
+              "registerForm": {
+                "email": "user@example.com",
+                "password": "password123",
+                "password_confirmation": "password123",
+                "name": "홍길동",
+                "nickname": "gildong"
+              }
+            }
+          }
+        },
+        {
+          "id": "validation_failed",
+          "label": "$t:editor.state.register_validation_failed",
+          "formErrors": {
+            "_local.registerError": "$t:auth.register.error.email_exists",
+            "_local.errors.email": [
+              "$t:auth.register.error.email_exists"
+            ],
+            "_local.errors.password": [
+              "$t:auth.register.error.password_min|count=8"
+            ],
+            "_local.errors.nickname": [
+              "$t:auth.register.error.nickname_required"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "comment": "마이페이지 게시판 활동: _my_posts / _my_comments 두 서브탭이 _global.boardActivitySubTab(기본 'my-posts') 게이트로 분기된다(_list.json line 291/306). 내댓글 본체(myComments, auto_fetch:false 지연소스)는 기본 상태로는 캔버스에 미렌더되므로 boardActivitySubTab 패치로 노출(탭 게이트). 편집기는 정적 시뮬레이션이라 샘플은 auto_fetch 무관하게 주입됨.",
+      "scope": {
+        "kind": "route",
+        "match": "/mypage/board"
+      },
+      "items": [
+        {
+          "id": "my_posts",
+          "label": "$t:editor.state.board_activity_my_posts",
+          "default": true,
+          "initialState": {
+            "global": {
+              "boardActivitySubTab": "my-posts"
+            }
+          }
+        },
+        {
+          "id": "my_comments",
+          "label": "$t:editor.state.board_activity_my_comments",
+          "initialState": {
+            "global": {
+              "boardActivitySubTab": "my-comments"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": " states 전수 — 주문/결제 배송지 관리 모달(_modal_address_manage, id=addressManageModal). 주소 검색 확장점(checkout_modal_address_search_slot)은 _local.addressModalMode === 'form' 게이트 뒤라 모달 편집 모드에서 이 상태로 연다. route scope 가 아니라 modal scope 인 이유: 확장 편집 모드의 shop/checkout 은 본문 확장점이 기본 노출되어 모달이 렌더되지 않고, 모달 내부 게이트는 모달 편집 모드(scope.kind=modal)에서 열어야 한다. /shop/checkout route 그룹(normal 등)은 ecommerce 모듈 스펙 소유 — 중복 정의 금지.",
+      "scope": {
+        "kind": "modal",
+        "match": "addressManageModal"
+      },
+      "items": [
+        {
+          "id": "address_list",
+          "label": "$t:editor.state.address_modal_list",
+          "default": true
+        },
+        {
+          "id": "address_manual_form",
+          "label": "$t:editor.state.address_modal_form",
+          "initialState": {
+            "local": {
+              "addressModalMode": "form"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": " states 전수 — 주문 상세. 배송지 변경 모달(_modal_change_address)의 주소 검색 확장점(modal_change_address_search_slot)은 (_local.changeAddressMode ?? 'saved') === 'manual' 게이트 뒤. 확장 편집 모드의 모달 표시용 append 와 조합해 노출한다.",
+      "scope": {
+        "kind": "route",
+        "match": "/mypage/orders/:order_number"
+      },
+      "items": [
+        {
+          "id": "default",
+          "label": "$t:editor.state.order_show_default",
+          "default": true
+        },
+        {
+          "id": "change_address_manual",
+          "label": "$t:editor.state.order_change_address_manual",
+          "initialState": {
+            "local": {
+              "changeAddressMode": "manual"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": " states 전수 — 공통 레이아웃. 모바일 메뉴 드로어(mobile_nav_drawer)는 _global.mobileMenuOpen 게이트(닫힘=translate-x-full 화면 밖)라 편집기 정적 시뮬레이션에서 편집 불가. 이 상태로 펼침을 시뮬레이션해 모바일 디바이스 탭과 조합 편집한다.",
+      "scope": {
+        "kind": "base",
+        "match": "_user_base"
+      },
+      "items": [
+        {
+          "id": "default",
+          "label": "$t:editor.state.user_base_default",
+          "default": true
+        },
+        {
+          "id": "mobile_menu_open",
+          "label": "$t:editor.state.mobile_menu_open",
+          "initialState": {
+            "global": {
+              "mobileMenuOpen": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

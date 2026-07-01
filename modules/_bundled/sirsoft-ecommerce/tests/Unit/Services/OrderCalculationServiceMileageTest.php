@@ -7,10 +7,13 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
+use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -38,7 +41,10 @@ class OrderCalculationServiceMileageTest extends ModuleTestCase
             $currencyService,
             app(ProductOptionRepositoryInterface::class),
             app(CouponIssueRepositoryInterface::class),
-            app(ShippingPolicyRepositoryInterface::class)
+            app(ShippingPolicyRepositoryInterface::class),
+            app(EcommerceSettingsService::class),
+            app(ProductAdditionalOptionValueRepositoryInterface::class),
+            app(ShippingPolicyResolver::class)
         );
     }
 
@@ -47,7 +53,7 @@ class OrderCalculationServiceMileageTest extends ModuleTestCase
      */
     protected function setupTestCurrencySettings(): void
     {
-        $settingsPath = storage_path('app/modules/sirsoft-ecommerce/settings');
+        $settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         if (! is_dir($settingsPath)) {
             mkdir($settingsPath, 0755, true);
         }
@@ -71,14 +77,34 @@ class OrderCalculationServiceMileageTest extends ModuleTestCase
             $settingsPath.'/language_currency.json',
             json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
+
+        // 마일리지 적립 검증을 위해 기능 활성화 (기본 적립률 1% — 기존 테스트 기대값 유지)
+        file_put_contents(
+            $settingsPath.'/mileage.json',
+            json_encode([
+                'enabled' => true,
+                'default_earn_rate' => 1,
+                'earn_trigger' => 'confirmed',
+                'earn_delay_days' => 0,
+                'currency_rules' => [
+                    ['currency_code' => 'KRW', 'point_value' => 1, 'min_use_amount' => 0, 'use_unit' => 1, 'max_use_type' => 'percent', 'max_use_percent' => 100, 'max_use_value' => 0],
+                ],
+                'expiry_enabled' => true,
+                'expiry_days' => 365,
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
     }
 
     protected function tearDown(): void
     {
         // 테스트 설정 파일 정리
-        $settingsFile = storage_path('app/modules/sirsoft-ecommerce/settings/language_currency.json');
+        $settingsFile = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/language_currency.json');
         if (file_exists($settingsFile)) {
             unlink($settingsFile);
+        }
+        $mileageFile = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/mileage.json');
+        if (file_exists($mileageFile)) {
+            unlink($mileageFile);
         }
 
         parent::tearDown();
@@ -530,7 +556,7 @@ class OrderCalculationServiceMileageTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 테스트 #55: 마일리지 사용 안분
+     * 테스트 55: 마일리지 사용 안분
      *
      * 입력: 사용 마일리지 1,000원, 옵션2개 (7:3 비율)
      * 기대: 옵션1: 700원, 옵션2: 300원
@@ -567,7 +593,7 @@ class OrderCalculationServiceMileageTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #56: 마일리지 사용 한도 초과
+     * 테스트 56: 마일리지 사용 한도 초과
      *
      * 입력: 사용 마일리지 > 결제금액
      * 기대: 결제금액까지만 사용
@@ -596,7 +622,7 @@ class OrderCalculationServiceMileageTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #57: 마일리지 전액 사용
+     * 테스트 57: 마일리지 전액 사용
      *
      * 입력: 결제금액 50,000원, 마일리지 50,000원 사용
      * 기대: finalAmount = 0
@@ -625,7 +651,7 @@ class OrderCalculationServiceMileageTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #58: 마일리지 균등 안분
+     * 테스트 58: 마일리지 균등 안분
      *
      * 입력: 옵션3개 각 10,000원, 마일리지 3,000원
      * 기대: 각 1,000원 안분

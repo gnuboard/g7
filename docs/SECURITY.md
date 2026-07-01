@@ -187,8 +187,12 @@ G7은 레이아웃 JSON 보안을 위해 **10개의 Custom Validation Rule**을 
 **허용 패턴**:
 
 ```regex
-^/api/(admin|auth|public)/
+^/api/((admin|auth|public)/|(modules|plugins)/{vendor-id}/)
 ```
+
+`/api/modules/{vendor-module}/`, `/api/plugins/{vendor-plugin}/` 은 코어 라우트 프로바이더가
+등록하는 확장 API 네임스페이스로, 확장 식별자(vendor-name — 하이픈 포함) 세그먼트가 뒤따를
+때만 허용된다.
 
 **검증 대상**:
 - `data_sources[].endpoint` — 데이터소스 엔드포인트
@@ -197,6 +201,7 @@ G7은 레이아웃 JSON 보안을 위해 **10개의 Custom Validation Rule**을 
 **차단**:
 - 외부 URL (`http://`, `https://`)
 - 비공개 API (`/api/internal/*`)
+- 확장 식별자 형식이 아닌 modules/plugins 세그먼트 (`/api/modules/assets/*` 등)
 - 직접 경로 (`/admin/*`)
 - **경로 트래버설**: `../`, `..\` 패턴 차단
 

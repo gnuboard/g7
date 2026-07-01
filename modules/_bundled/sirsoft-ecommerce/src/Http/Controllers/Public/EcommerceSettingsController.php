@@ -87,6 +87,39 @@ class EcommerceSettingsController extends PublicBaseController
     }
 
     /**
+     * 리뷰 정책 설정을 조회합니다.
+     *
+     * 리뷰 작성 화면에서 필요한 정책을 반환합니다.
+     * - 리뷰 이미지 최대 개수(max_images)
+     * - 리뷰 이미지 최대 용량(max_image_size_mb)
+     * - 리뷰 작성 기한(write_deadline_days)
+     *
+     * @return JsonResponse 리뷰 설정을 포함한 JSON 응답
+     */
+    public function review(): JsonResponse
+    {
+        try {
+            $this->logApiUsage('settings.review');
+
+            $reviewSettings = $this->settingsService->getSettings('review_settings');
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.settings.fetch_success',
+                [
+                    'review_settings' => $reviewSettings,
+                ]
+            );
+        } catch (Exception $e) {
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.settings.fetch_failed',
+                500
+            );
+        }
+    }
+
+    /**
      * 체크아웃에 필요한 설정을 조회합니다.
      *
      * 배송 및 결제 설정을 한 번에 반환합니다.

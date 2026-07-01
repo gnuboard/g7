@@ -13,6 +13,7 @@
   "action": {
     "edit": "Edit",
     "delete": "Delete",
+    "direct_issue": "Direct Issue",
     "edit_search": "Edit Search",
     "search": "Search",
     "reset": "Reset",
@@ -177,15 +178,37 @@
         "status": "Status",
         "member_info": "Member Info",
         "usage_status": "Usage Status",
-        "used_at": "Used At"
+        "used_at": "Used At",
+        "used_order": "Used Order",
+        "actions": "Actions"
       },
       "action": {
-        "filter_by_user": "Filter by this user"
+        "filter_by_user": "Filter by this user",
+        "cancel_issue": "Cancel"
       },
       "status": {
         "used": "Used",
         "unused": "Unused"
       }
+    },
+    "cancel_issue": {
+      "title": "Cancel this issuance?",
+      "message": "Cancel the coupon issued to {{name}}.",
+      "warning": "Cancelled issuances cannot be restored, and only unused issuances can be cancelled.",
+      "confirm_btn": "Cancel Issuance",
+      "failed": "Failed to cancel the issuance."
+    },
+    "direct_issue": {
+      "title": "Direct Coupon Issue",
+      "subtitle": "Issue the ‘{{name}}’ coupon directly to selected members.",
+      "search_placeholder": "Search by member name or email",
+      "search_btn": "Search",
+      "search_failed": "Member search failed.",
+      "add": "Add",
+      "added": "Added",
+      "selected": "{{count}} member(s) selected",
+      "issue_btn": "Issue",
+      "issue_failed": "Failed to issue the coupon."
     }
   },
   "messages": {
@@ -327,7 +350,8 @@
       "unit_days": "days valid",
       "unit_quantity": "coupons",
       "per_user": "Per user",
-      "unit_times": "times"
+      "unit_times": "times",
+      "direct_issue_guide": "After saving, you can issue this direct-issue coupon to specific members using the [Direct Issue] button in the coupon list."
     },
     "search": {
       "products": "Product Search",

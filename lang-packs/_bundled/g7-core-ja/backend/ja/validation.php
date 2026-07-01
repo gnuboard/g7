@@ -226,6 +226,55 @@ return [
             'is_base' => [
                 'boolean' => 'meta.is_base は論理値である必要があります。',
             ],
+            'keywords' => [
+                'string' => 'meta.keywordsは文字列である必要があります。',
+            ],
+            'guest_only' => [
+                'boolean' => 'meta.guest_onlyはブール値である必要があります。',
+            ],
+            'is_error_layout' => [
+                'boolean' => 'meta.is_error_layoutはブール値である必要があります。',
+            ],
+            'error_code' => [
+                'integer' => 'meta.error_codeは整数である必要があります。',
+            ],
+            'seo' => [
+                'array' => 'meta.seoは配列である必要があります。',
+                'enabled' => [
+                    'boolean' => 'meta.seo.enabledはブール値である必要があります。',
+                ],
+                'data_sources' => [
+                    'array' => 'meta.seo.data_sourcesは配列である必要があります。',
+                    'string' => 'meta.seo.data_sourcesの各項目は文字列である必要があります。',
+                ],
+                'priority' => [
+                    'numeric' => 'meta.seo.priorityは数値である必要があります。',
+                    'min' => 'meta.seo.priorityは0以上である必要があります。',
+                    'max' => 'meta.seo.priorityは1以下である必要があります。',
+                ],
+                'changefreq' => [
+                    'string' => 'meta.seo.changefreqは文字列である必要があります。',
+                    'in' => 'meta.seo.changefreqはalways、hourly、daily、weekly、monthly、yearly、neverのいずれかである必要があります。',
+                ],
+                'og' => [
+                    'array' => 'meta.seo.ogは配列である必要があります。',
+                ],
+                'structured_data' => [
+                    'array' => 'meta.seo.structured_dataは配列である必要があります。',
+                ],
+                'page_type' => [
+                    'string' => 'meta.seo.page_typeは文字列である必要があります。',
+                ],
+                'toggle_setting' => [
+                    'string' => 'meta.seo.toggle_settingは文字列である必要があります。',
+                ],
+                'vars' => [
+                    'array' => 'meta.seo.varsは配列である必要があります。',
+                ],
+                'extensions' => [
+                    'array' => 'meta.seo.extensionsは配列である必要があります。',
+                ],
+            ],
         ],
         'modals' => [
             'array' => 'modals フィールドは配列である必要があります。',
@@ -301,6 +350,32 @@ return [
                 'background' => 'wait_for には background データソースを指定することはできません (ユーザーをブロックできません): :id',
                 'websocket' => 'wait_for には websocket データソースを指定することはできません (フェッチ完了イベントがありません): :id',
             ],
+        ],
+        'expected_lock_version' => [
+            'required' => '保存リクエストに expected_lock_version が不足しています。',
+            'integer' => 'expected_lock_version は整数である必要があります。',
+            'min' => 'expected_lock_version は0以上である必要があります。',
+        ],
+        'initLocal' => [
+            'array' => 'initLocalフィールドは配列である必要があります。',
+        ],
+        'initGlobal' => [
+            'array' => 'initGlobalフィールドは配列である必要があります。',
+        ],
+        'global_state' => [
+            'array' => 'global_stateフィールドは配列である必要があります。',
+        ],
+        'errorHandling' => [
+            'array' => 'errorHandlingフィールドは配列である必要があります。',
+        ],
+        'actions' => [
+            'array' => 'actionsフィールドは配列である必要があります。',
+        ],
+        'pageConfig' => [
+            'array' => 'pageConfigフィールドは配列である必要があります。',
+        ],
+        'schema' => [
+            'array' => 'schemaフィールドは配列である必要があります。',
         ],
     ],
     'endpoint' => [
@@ -740,6 +815,27 @@ return [
         'generator_enabled_boolean' => 'Generator タグ表示設定は true または false 値である必要があります。',
         'generator_content_string' => 'Generator コンテンツは文字列である必要があります。',
         'generator_content_max' => 'Generator コンテンツは200文字を超えることはできません。',
+        'log_driver_required' => 'ログドライバーを選択してください。',
+        'log_driver_invalid' => '正しいログドライバーを選択してください。',
+        'log_level_required' => 'ログレベルを選択してください。',
+        'log_level_invalid' => '正しいログレベルを選択してください。',
+        'log_days_integer' => 'ログ保管日数は整数である必要があります。',
+        'log_days_min' => 'ログ保管日数は1以上である必要があります。',
+        'log_days_max' => 'ログ保管日数は365を超えることはできません。',
+        's3_bucket_required' => 'S3バケット名は必須です。',
+        's3_region_required' => 'S3リージョンを選択してください。',
+        's3_access_key_required' => 'S3 Access Keyは必須です。',
+        's3_secret_key_required' => 'S3 Secret Keyは必須です。',
+        's3_url_url' => 'S3 URLは有効なURLである必要があります。',
+        'redis_host_required' => 'Redisホストは必須です。',
+        'redis_port_required' => 'Redisポートは必須です。',
+        'redis_database_required' => 'Redisデータベース番号は必須です。',
+        'memcached_host_required' => 'Memcachedホストは必須です。',
+        'memcached_port_required' => 'Memcachedポートは必須です。',
+        'session_lifetime_required' => 'セッション有効時間は必須です。',
+        'websocket_host_required' => 'WebSocketホストは必須です。',
+        'websocket_port_required' => 'WebSocketポートは必須です。',
+        'websocket_scheme_required' => 'WebSocketプロトコルを選択してください。',
     ],
     'identity_policy' => [
         'key_required' => 'ポリシーキーを入力してください。',
@@ -765,6 +861,7 @@ return [
         'applies_to_invalid' => '適用対象はself、admin、bothのいずれかである必要があります。',
         'fail_mode_required' => '失敗モードを選択してください。',
         'fail_mode_invalid' => '失敗モードはblockまたはlog_onlyである必要があります。',
+        'priority_duplicate' => '同じ適用位置(:target)に優先度 :priority のアクティブなポリシーが既に存在します。どのポリシーを先に適用するか決まらないため、優先度を異なるように指定するか、既存のポリシーを無効化してください。',
     ],
     'identity_message' => [
         'provider_not_registered' => '登録されていないIDVプロバイダーです。',
@@ -815,5 +912,106 @@ return [
         'naver_site_verification' => 'Naver サイト確認',
         'from_version' => '開始バージョン',
         'to_version' => '終了バージョン',
+        'storage_driver' => 'ストレージドライバー',
+        's3_bucket' => 'S3バケット',
+        's3_region' => 'S3リージョン',
+        's3_access_key' => 'S3 Access Key',
+        's3_secret_key' => 'S3 Secret Key',
+        's3_url' => 'S3 URL',
+        'cache_driver' => 'キャッシュドライバー',
+        'redis_host' => 'Redisホスト',
+        'redis_port' => 'Redisポート',
+        'redis_password' => 'Redisパスワード',
+        'redis_database' => 'Redisデータベース',
+        'memcached_host' => 'Memcachedホスト',
+        'memcached_port' => 'Memcachedポート',
+        'session_driver' => 'セッションドライバー',
+        'session_lifetime' => 'セッション有効時間',
+        'queue_driver' => 'キュードライバー',
+        'websocket_enabled' => 'WebSocket使用',
+        'websocket_app_key' => 'WebSocketアプリキー',
+        'websocket_host' => 'WebSocketホスト',
+        'websocket_port' => 'WebSocketポート',
+        'websocket_scheme' => 'WebSocketプロトコル',
+    ],
+    'layout_extension' => [
+        'invalid_json' => '無効なJSON形式です。',
+        'must_be_array' => 'レイアウト拡張データは配列である必要があります。',
+        'target_required' => '拡張定義には「extension_point」または「target_layout」のいずれかが必要です。',
+        'target_exclusive' => '「extension_point」と「target_layout」は同時に指定できません。',
+        'extension_point_invalid' => 'extension_pointフィールドは空でない文字列である必要があります。',
+        'target_layout_invalid' => 'target_layoutフィールドは空でない文字列である必要があります。',
+        'components_must_be_array' => 'componentsフィールドは配列である必要があります。',
+        'injections_required' => 'overlay拡張にはinjectionsフィールドが必要です。',
+        'injections_must_be_array' => 'injectionsフィールドは配列である必要があります。',
+        'injection_must_be_array' => 'injections[:index]は配列である必要があります。',
+        'injection_target_id_required' => 'injections[:index]にtarget_idフィールドが必要です。',
+        'injection_position_invalid' => 'injections[:index].positionの値が無効です。',
+        'injection_components_must_be_array' => 'injections[:index].componentsは配列である必要があります。',
+        'injection_props_must_be_array' => 'injections[:index].propsは配列である必要があります。',
+        'section_must_be_array' => ':sectionフィールドは配列である必要があります。',
+        'max_depth_exceeded' => 'コンポーネントのネスト深度が最大許可深度(:max)を超えています。',
+        'component_must_be_array' => 'components[:index]は配列である必要があります。',
+        'component_required_field_missing' => 'components[:index]に必須フィールド「:field」が不足しています。',
+        'component_name_must_be_string' => 'components[:index].nameは文字列である必要があります。',
+        'component_type_invalid' => 'components[:index].typeはbasic、composite、layoutのいずれかである必要があります。',
+        'props_must_be_object' => 'components[:index].propsはオブジェクト(配列)である必要があります。',
+        'children_must_be_array' => 'components[:index].childrenは配列である必要があります。',
+        'content' => [
+            'required' => '拡張コンテンツは必須です。',
+            'array' => '拡張コンテンツは配列である必要があります。',
+        ],
+        'priority' => [
+            'integer' => 'priorityは整数である必要があります。',
+            'min' => 'priorityは0以上である必要があります。',
+            'max' => 'priorityは9999以下である必要があります。',
+        ],
+        'data_sources' => [
+            'array' => 'data_sourcesは配列である必要があります。',
+        ],
+        'preview_layout' => [
+            'string' => 'プレビューレイアウト名は文字列である必要があります。',
+            'max' => 'プレビューレイアウト名は255文字を超えることはできません。',
+            'required' => '拡張ポイントプレビューには代表レイアウトの選択が必要です。',
+        ],
+        'expected_lock_version' => [
+            'required' => '保存リクエストに expected_lock_version が不足しています。',
+            'integer' => 'expected_lock_version は整数である必要があります。',
+            'min' => 'expected_lock_version は0以上である必要があります。',
+        ],
+    ],
+    'custom_translation' => [
+        'layout_name' => [
+            'required' => 'レイアウト名は必須です。',
+            'string' => 'レイアウト名は文字列である必要があります。',
+            'max' => 'レイアウト名は:max文字を超えることはできません。',
+        ],
+        'locale' => [
+            'required' => 'ロケールは必須です。',
+            'string' => 'ロケールは文字列である必要があります。',
+        ],
+        'value' => [
+            'required' => '翻訳値は必須です。',
+            'string' => '翻訳値は文字列である必要があります。',
+        ],
+        'values' => [
+            'required' => '翻訳値は必須です。',
+            'array' => '翻訳値はロケール別のオブジェクトである必要があります。',
+        ],
+        'status' => [
+            'in' => 'ステータスはactiveまたはorphanedである必要があります。',
+        ],
+        'expected_lock_version' => [
+            'required' => '保存リクエストにexpected_lock_versionが不足しています。',
+            'integer' => 'expected_lock_versionは整数である必要があります。',
+            'min' => 'expected_lock_versionは0以上である必要があります。',
+        ],
+        'ids' => [
+            'required' => '削除する多言語キーを1つ以上選択する必要があります。',
+            'array' => '削除対象はID配列である必要があります。',
+            'min' => '削除する多言語キーを1つ以上選択する必要があります。',
+            'integer' => '多言語キーIDは整数である必要があります。',
+            'exists' => '存在しない多言語キーが含まれています。',
+        ],
     ],
 ];

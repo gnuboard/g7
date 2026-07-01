@@ -104,6 +104,9 @@ return [
         'updated' => '쿠폰이 수정되었습니다.',
         'deleted' => '쿠폰이 삭제되었습니다.',
         'status_changed' => ':count개 쿠폰의 발급상태가 변경되었습니다.',
+        'direct_issued' => ':issued명에게 쿠폰을 발급했습니다.',
+        'direct_issued_with_skip' => ':issued명에게 발급했습니다. (:skipped명은 발급 조건 미충족으로 제외)',
+        'issue_cancelled' => '쿠폰 발급이 취소되었습니다.',
         'issues_retrieved' => '쿠폰 발급 내역을 조회했습니다.',
         'has_issues' => '(발급된 쿠폰 :count건)',
 
@@ -175,6 +178,19 @@ return [
         'cancel_failed' => '주문 취소에 실패했습니다.',
         'estimate_refund_success' => '환불 예상금액을 조회했습니다.',
         'estimate_refund_failed' => '환불 예상금액 조회에 실패했습니다.',
+        'guest_password_reset_success' => '비회원 조회 비밀번호가 재설정되었습니다.',
+        'guest_password_reset_failed' => '비회원 조회 비밀번호 재설정에 실패했습니다.',
+        'guest_password_reset_not_guest' => '비회원 주문만 조회 비밀번호를 재설정할 수 있습니다.',
+        'deposit_confirmed' => '입금이 확인되어 결제완료 처리되었습니다.',
+        'deposit_confirm_failed' => '입금확인 처리에 실패했습니다.',
+        'deposit_amount_mismatch' => '입금액이 결제예정금액과 일치하지 않습니다.',
+        'deposit_not_dbank' => '무통장입금 주문만 입금확인할 수 있습니다.',
+        'deposit_not_pending' => '미결제 상태의 주문만 입금확인할 수 있습니다.',
+        'payment_name_summary' => ':name 외 :count건',
+        'deposit' => [
+            'amount' => '입금액',
+            'depositor_name' => '입금자명',
+        ],
     ],
 
     // 상품 라벨 메시지
@@ -207,7 +223,7 @@ return [
         'prefix' => [
             'KRW' => '',
             'JPY' => '¥',
-            'CNY' => '¥',
+            'CNY' => '元',
             'USD' => '$',
             'EUR' => '€',
         ],
@@ -231,6 +247,10 @@ return [
         'fetched' => '장바구니 목록을 조회했습니다.',
         'fetch_failed' => '장바구니 조회에 실패했습니다.',
         'add_failed' => '장바구니에 상품을 담는데 실패했습니다.',
+        'reorder_added' => '과거 주문의 상품을 장바구니에 추가했습니다.',
+        'reorder_failed' => '재주문에 실패했습니다.',
+        'reorder_option_not_found' => '상품 옵션이 더 이상 존재하지 않습니다.',
+        'unknown_product' => '알 수 없는 상품',
         'update_failed' => '장바구니 수정에 실패했습니다.',
         'delete_failed' => '장바구니 삭제에 실패했습니다.',
         'deleted_multiple' => ':deleted_count개 상품이 삭제되었습니다.',
@@ -301,6 +321,7 @@ return [
         'invalid_target' => '해당 상품에 적용할 수 없는 쿠폰입니다.',
         'already_used' => '이미 사용된 쿠폰입니다.',
         'not_found' => '쿠폰을 찾을 수 없습니다.',
+        'per_user_limit_exceeded' => '이 쿠폰의 사용 가능 횟수를 초과했습니다.',
     ],
 
     // 마일리지 메시지
@@ -309,6 +330,16 @@ return [
         'balance_fetch_failed' => '마일리지 잔액 조회에 실패했습니다.',
         'max_usable_fetched' => '사용 가능한 최대 마일리지를 조회했습니다.',
         'max_usable_fetch_failed' => '사용 가능한 마일리지 조회에 실패했습니다.',
+        'list_retrieved' => '마일리지 내역을 조회했습니다.',
+        'transaction_created' => '마일리지 거래가 처리되었습니다.',
+        'transaction_updated' => '마일리지 거래가 수정되었습니다.',
+        'expiry_extended' => '마일리지 유효기간이 연장되었습니다.',
+        'linked_retrieved' => '연결 거래를 조회했습니다.',
+        'not_found' => '마일리지 거래를 찾을 수 없습니다.',
+        'validation_failed' => '마일리지 처리에 실패했습니다.',
+        'not_earning' => '적립 거래만 수정할 수 있습니다.',
+        'expiry_not_editable' => '이미 소멸되었거나 모두 사용된 적립건은 유효기간을 변경할 수 없습니다.',
+        'expiry_before_earned' => '유효기간은 적립일시보다 이전일 수 없습니다.',
     ],
 
     // 임시주문 메시지
@@ -330,6 +361,8 @@ return [
         'updated' => '상품정보제공고시가 수정되었습니다.',
         'deleted' => '상품정보제공고시가 삭제되었습니다.',
         'copied' => '상품정보제공고시가 복사되었습니다.',
+        'activated' => '상품정보제공고시가 활성화되었습니다.',
+        'deactivated' => '상품정보제공고시가 비활성화되었습니다.',
         'not_found' => '상품정보제공고시를 찾을 수 없습니다.',
     ],
 
@@ -412,6 +445,7 @@ return [
         'bulk_deleted' => ':count개 배송정책이 삭제되었습니다.',
         'bulk_toggled' => ':count개 배송정책의 사용여부가 변경되었습니다.',
         'set_default_success' => '기본 배송정책이 설정되었습니다.',
+        'api_test_done' => '계산 API 테스트 호출을 완료했습니다.',
         'fee_summary' => [
             'free' => '무료배송',
             'fixed' => '배송비: :fee',
@@ -1115,26 +1149,26 @@ return [
 
     // 상품 1:1 문의
     'inquiries' => [
-        'fetch_success'         => '문의 목록을 조회했습니다.',
-        'fetch_failed'          => '문의 목록 조회에 실패했습니다.',
-        'created'               => '문의가 등록되었습니다.',
-        'create_failed'         => '문의 등록에 실패했습니다.',
-        'updated'               => '문의가 수정되었습니다.',
-        'update_failed'         => '문의 수정에 실패했습니다.',
-        'deleted'               => '문의가 삭제되었습니다.',
-        'delete_failed'         => '문의 삭제에 실패했습니다.',
-        'not_found'             => '문의를 찾을 수 없습니다.',
-        'forbidden'             => '해당 문의에 대한 권한이 없습니다.',
-        'board_not_configured'  => '문의 게시판이 설정되지 않았습니다.',
-        'board_unavailable'     => '게시판 모듈을 사용할 수 없습니다. 관리자에게 문의하세요.',
-        'board_changed'         => '게시판 설정이 변경되어 해당 게시글을 찾을 수 없습니다. 관리자에게 문의하세요.',
-        'reply_created'         => '답변이 등록되었습니다.',
-        'reply_failed'          => '답변 등록에 실패했습니다.',
-        'reply_updated'         => '답변이 수정되었습니다.',
-        'reply_update_failed'   => '답변 수정에 실패했습니다.',
-        'reply_deleted'         => '답변이 삭제되었습니다.',
-        'reply_delete_failed'   => '답변 삭제에 실패했습니다.',
-        'reply_not_found'       => '답변을 찾을 수 없습니다.',
+        'fetch_success' => '문의 목록을 조회했습니다.',
+        'fetch_failed' => '문의 목록 조회에 실패했습니다.',
+        'created' => '문의가 등록되었습니다.',
+        'create_failed' => '문의 등록에 실패했습니다.',
+        'updated' => '문의가 수정되었습니다.',
+        'update_failed' => '문의 수정에 실패했습니다.',
+        'deleted' => '문의가 삭제되었습니다.',
+        'delete_failed' => '문의 삭제에 실패했습니다.',
+        'not_found' => '문의를 찾을 수 없습니다.',
+        'forbidden' => '해당 문의에 대한 권한이 없습니다.',
+        'board_not_configured' => '문의 게시판이 설정되지 않았습니다.',
+        'board_unavailable' => '게시판 모듈을 사용할 수 없습니다. 관리자에게 문의하세요.',
+        'board_changed' => '게시판 설정이 변경되어 해당 게시글을 찾을 수 없습니다. 관리자에게 문의하세요.',
+        'reply_created' => '답변이 등록되었습니다.',
+        'reply_failed' => '답변 등록에 실패했습니다.',
+        'reply_updated' => '답변이 수정되었습니다.',
+        'reply_update_failed' => '답변 수정에 실패했습니다.',
+        'reply_deleted' => '답변이 삭제되었습니다.',
+        'reply_delete_failed' => '답변 삭제에 실패했습니다.',
+        'reply_not_found' => '답변을 찾을 수 없습니다.',
     ],
 
     // 사용자 배송지
@@ -1155,5 +1189,23 @@ return [
         'set_default_failed' => '기본 배송지 설정에 실패했습니다.',
         'name_duplicate' => '동일한 이름의 배송지가 이미 존재합니다. 덮어쓰시겠습니까?',
         'auto_saved_label' => '새 배송지',
+    ],
+
+    // 결제 통화 설정 (A3)
+    'user_currency' => [
+        'fetched' => '결제 통화를 조회했습니다.',
+        'updated' => '결제 통화가 변경되었습니다.',
+        'update_failed' => '결제 통화 변경에 실패했습니다.',
+    ],
+
+    'user_shipping_country' => [
+        'fetched' => '배송국가를 조회했습니다.',
+        'updated' => '배송국가가 변경되었습니다.',
+        'update_failed' => '배송국가 변경에 실패했습니다.',
+    ],
+
+    // 대시보드
+    'dashboard' => [
+        'fetch_success' => '대시보드 데이터를 조회했습니다.',
     ],
 ];

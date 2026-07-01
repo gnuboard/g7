@@ -20,6 +20,7 @@
     "data_sources": [
         {
             "id": "post",
+            "label_key": "$t:sirsoft-board.editor.data_source.post",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{route.id}}",
             "method": "GET",
@@ -28,12 +29,6 @@
             "refetchOnMount": true,
             "loading_strategy": "progressive",
             "errorHandling": {
-                "404": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
-                },
                 "403": {
                     "handler": "sequence",
                     "actions": [
@@ -48,6 +43,12 @@
                             "handler": "navigateBack"
                         }
                     ]
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         }
@@ -60,12 +61,12 @@
                 "name": "Div",
                 "blur_until_loaded": true,
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                    "className": "admin-page-content-fluid"
                 },
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                            "className": "admin-page-content-fluid-compact"
                         }
                     }
                 },
@@ -84,7 +85,7 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
-                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    "className": "btn-icon"
                                 },
                                 "actions": [
                                     {
@@ -112,7 +113,7 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
-                                    "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                    "className": "flex-center gap-2 btn btn-secondary"
                                 },
                                 "actions": [
                                     {
@@ -150,11 +151,20 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm mb-8"
+                                    "className": "admin-card"
                                 },
                                 "children": [
                                     {
-                                        "partial": "partials/admin_board_post_detail/_post_card_content.json"
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "row-stack"
+                                        },
+                                        "children": [
+                                            {
+                                                "partial": "partials/admin_board_post_detail/_post_card_content.json"
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -171,7 +181,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-2 mb-4"
+                                    "className": "flex-center gap-2 mb-4"
                                 },
                                 "children": [
                                     {
@@ -186,7 +196,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                            "className": "section-heading"
                                         },
                                         "text": "$t:sirsoft-board.admin.posts.detail.replies_title|count={{post?.data?.reply_count ?? 0}}"
                                     }
@@ -205,11 +215,20 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm mb-4"
+                                            "className": "admin-card"
                                         },
                                         "children": [
                                             {
-                                                "partial": "partials/admin_board_post_detail/_reply_card_content.json"
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "partial": "partials/admin_board_post_detail/_reply_card_content.json"
+                                                    }
+                                                ]
                                             }
                                         ]
                                     }
@@ -224,14 +243,15 @@
     "modals": [
         {
             "meta": {
-                "description": "Universal Delete Modal (Post/Reply/Comment)"
+                "description": "Universal Delete Modal (Post/Reply/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.delete_editor_label"
             },
             "id": "delete_modal",
             "type": "composite",
             "name": "Modal",
             "props": {
                 "title": "{{_global.modal_data?.type === 'comment' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_comment') : _global.modal_data?.type === 'reply' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_reply') : $t('sirsoft-board.admin.posts.detail.delete_modal.title_post')}}",
-                "size": "small"
+                "size": "sm"
             },
             "children": [
                 {
@@ -253,7 +273,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "text-label-subtle"
                             },
                             "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}",
                             "if": "{{_global.modal_data?.type !== 'post'}}"
@@ -264,7 +284,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3 mt-6"
+                        "className": "modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -382,7 +402,8 @@
         },
         {
             "meta": {
-                "description": "Universal Report Modal (Post/Comment)"
+                "description": "Universal Report Modal (Post/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.report_editor_label"
             },
             "id": "report_modal",
             "type": "composite",
@@ -403,14 +424,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4"
+                                "className": "alert-warning"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-yellow-800 dark:text-yellow-200"
+                                        "className": "text-warning-soft"
                                     },
                                     "text": "$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice"
                                 }
@@ -428,7 +449,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "text-body"
                                     },
                                     "children": [
                                         {
@@ -459,7 +480,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                        "className": "form-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label"
                                 },
@@ -467,7 +488,7 @@
                                     "type": "basic",
                                     "name": "Select",
                                     "props": {
-                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
                                     },
                                     "actions": [
                                         {
@@ -516,7 +537,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                        "className": "form-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_detail_label"
                                 },
@@ -524,7 +545,7 @@
                                     "type": "basic",
                                     "name": "Textarea",
                                     "props": {
-                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
                                         "rows": 4,
                                         "placeholder": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder"
                                     },
@@ -547,7 +568,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3 mt-6"
+                        "className": "modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -678,7 +699,7 @@
                                     "if": "{{_global.reportSubmitting}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "w-4 h-4 animate-spin"
+                                        "className": "spinner-sm"
                                     }
                                 },
                                 {
@@ -694,7 +715,8 @@
         },
         {
             "meta": {
-                "description": "Blind Modal (Post/Comment)"
+                "description": "Blind Modal (Post/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.blind_editor_label"
             },
             "id": "blind_modal",
             "type": "composite",
@@ -723,7 +745,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                "className": "form-label"
                             },
                             "children": [
                                 {
@@ -748,7 +770,7 @@
                                 "id": "blind_reason",
                                 "rows": 3,
                                 "placeholder": "$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder",
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                             },
                             "actions": [
                                 {
@@ -767,7 +789,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3 mt-6"
+                        "className": "modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -879,14 +901,15 @@
         },
         {
             "meta": {
-                "description": "Restore Modal (Post/Comment)"
+                "description": "Restore Modal (Post/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.restore_editor_label"
             },
             "id": "restore_modal",
             "type": "composite",
             "name": "Modal",
             "props": {
                 "title": "{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_title' : '$t:sirsoft-board.admin.posts.modals.restore_title'}}",
-                "size": "small"
+                "size": "sm"
             },
             "children": [
                 {
@@ -910,7 +933,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3 mt-6"
+                        "className": "modal-footer-buttons"
                     },
                     "children": [
                         {

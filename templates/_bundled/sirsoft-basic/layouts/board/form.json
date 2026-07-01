@@ -10,6 +10,7 @@
     "data_sources": [
         {
             "id": "form_data",
+            "label_key": "$t:editor.data_source.form_data",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/form-data",
             "method": "GET",
@@ -50,6 +51,7 @@
         },
         {
             "id": "form_meta",
+            "label_key": "$t:editor.data_source.form_meta",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/form-meta",
             "method": "GET",

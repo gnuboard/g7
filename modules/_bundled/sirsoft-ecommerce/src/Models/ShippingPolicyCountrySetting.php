@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Sirsoft\Ecommerce\Casts\ShippingApiConfigCast;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 
 /**
@@ -28,6 +29,7 @@ class ShippingPolicyCountrySetting extends Model
         'api_endpoint',
         'api_request_fields',
         'api_response_fee_field',
+        'api_config',
         'extra_fee_enabled',
         'extra_fee_settings',
         'extra_fee_multiply',
@@ -37,6 +39,7 @@ class ShippingPolicyCountrySetting extends Model
     protected $casts = [
         'ranges' => 'array',
         'api_request_fields' => 'array',
+        'api_config' => ShippingApiConfigCast::class,
         'extra_fee_settings' => 'array',
         'base_fee' => 'decimal:2',
         'free_threshold' => 'decimal:2',
@@ -168,9 +171,9 @@ class ShippingPolicyCountrySetting extends Model
     {
         return [
             'type' => $this->charge_policy->value,
-            'base_fee' => number_format($this->base_fee).'원',
+            'base_fee' => ecommerce_format_price($this->base_fee ?? 0),
             'free_threshold' => $this->free_threshold
-                ? number_format($this->free_threshold).'원'
+                ? ecommerce_format_price($this->free_threshold)
                 : null,
             'tiers' => $this->formatTiersArray(),
         ];
@@ -206,7 +209,7 @@ class ShippingPolicyCountrySetting extends Model
 
             $result[] = [
                 'range' => $range,
-                'fee' => number_format($fee).'원',
+                'fee' => ecommerce_format_price($fee),
             ];
         }
 

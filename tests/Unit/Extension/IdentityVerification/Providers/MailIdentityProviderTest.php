@@ -123,6 +123,65 @@ class MailIdentityProviderTest extends TestCase
         $this->assertSame(1, $log->attempts);
     }
 
+    public function test_verify_returns_max_attempts_on_final_wrong_attempt(): void
+    {
+        /** @var IdentityVerificationLogRepositoryInterface $repo */
+        $repo = $this->app->make(IdentityVerificationLogRepositoryInterface::class);
+
+        $challenge = $this->provider->requestChallenge(
+            ['email' => 'user@example.com'],
+            ['purpose' => 'sensitive_action'],
+        );
+
+        // max_attempts 를 2 로 낮춰 빠르게 소진. 1회차는 INVALID_CODE, 2회차(소진)는 MAX_ATTEMPTS 안내.
+        $repo->updateById($challenge->id, [
+            'metadata' => ['code_hash' => password_hash('123456', PASSWORD_BCRYPT)],
+            'status' => IdentityVerificationStatus::Sent->value,
+            'max_attempts' => 2,
+        ]);
+
+        // 1회차 오답 — 아직 소진 전이므로 일반 오답 안내.
+        $first = $this->provider->verify($challenge->id, ['code' => '999999']);
+        $this->assertFalse($first->success);
+        $this->assertSame('INVALID_CODE', $first->failureCode);
+        $this->assertSame('identity.errors.invalid_code', $first->failureReason);
+
+        // 2회차 오답 — 이번 시도로 max_attempts 도달(소진). 사용자에게 "최대 시도 초과 + 재요청" 안내가 도달해야 함.
+        $second = $this->provider->verify($challenge->id, ['code' => '999999']);
+        $this->assertFalse($second->success);
+        $this->assertSame('MAX_ATTEMPTS', $second->failureCode);
+        $this->assertSame('identity.errors.max_attempts', $second->failureReason);
+
+        $log = IdentityVerificationLog::find($challenge->id);
+        $this->assertSame(2, $log->attempts);
+        $this->assertSame(IdentityVerificationStatus::Failed, $log->status);
+    }
+
+    public function test_verify_returns_max_attempts_when_already_exhausted(): void
+    {
+        /** @var IdentityVerificationLogRepositoryInterface $repo */
+        $repo = $this->app->make(IdentityVerificationLogRepositoryInterface::class);
+
+        $challenge = $this->provider->requestChallenge(
+            ['email' => 'user@example.com'],
+            ['purpose' => 'sensitive_action'],
+        );
+
+        // 이미 소진된 상태(attempts == max_attempts)에서 또 시도 — 코드 대조 전에 차단.
+        $repo->updateById($challenge->id, [
+            'metadata' => ['code_hash' => password_hash('123456', PASSWORD_BCRYPT)],
+            'status' => IdentityVerificationStatus::Sent->value,
+            'attempts' => 5,
+            'max_attempts' => 5,
+        ]);
+
+        $result = $this->provider->verify($challenge->id, ['code' => '123456']);
+
+        $this->assertFalse($result->success);
+        $this->assertSame('MAX_ATTEMPTS', $result->failureCode);
+        $this->assertSame('identity.errors.max_attempts', $result->failureReason);
+    }
+
     public function test_cancel_marks_status_as_cancelled(): void
     {
         $challenge = $this->provider->requestChallenge(

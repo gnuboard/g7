@@ -313,6 +313,26 @@ class ProductServiceDeleteTest extends ModuleTestCase
         $this->assertDatabaseMissing('ecommerce_products', ['id' => $productId]);
     }
 
+    /**
+     * 주문 이력이 있는 상품은 도메인 가드로 삭제 차단 (A37 결함① — 컨트롤러 우회 방어)
+     */
+    public function test_delete_throws_when_product_has_order_history(): void
+    {
+        // Given: 주문 이력이 있는 상품
+        $product = Product::factory()->create();
+        $productId = $product->id;
+        OrderOption::factory()->create(['product_id' => $product->id]);
+
+        // Then: 도메인 예외 throw + 상품 보존
+        $this->expectException(\Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException::class);
+
+        try {
+            $this->service->delete($product);
+        } finally {
+            $this->assertDatabaseHas('ecommerce_products', ['id' => $productId]);
+        }
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();

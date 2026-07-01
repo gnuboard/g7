@@ -79,26 +79,66 @@ describe('상품 목록 레이아웃 검색 필드 검증', () => {
 });
 
 describe('상품 목록 레이아웃 검색 키워드 Enter 키 검색 검증', () => {
-    it('검색 키워드 Input에 keypress Enter 액션이 있어야 함', () => {
-        const inputNodes = findNodes(filterSection, (n: any) =>
-            n.name === 'Input' && n.props?.name === 'searchKeyword'
-        );
+    // 검색 키워드 Input 식별: change 액션이 filter.searchKeyword 를 쓰는 Input
+    // (주문 목록과 동일 패턴 — name auto-binding 대신 value 명시 바인딩 + change 핸들러)
+    const getSearchInput = () =>
+        findNodes(
+            filterSection,
+            (n: any) =>
+                n.name === 'Input' &&
+                Array.isArray(n.actions) &&
+                n.actions.some(
+                    (a: any) =>
+                        a.type === 'change' && a.params?.['filter.searchKeyword'],
+                ),
+        )[0];
 
-        expect(inputNodes.length).toBeGreaterThanOrEqual(1);
-
-        const searchInput = inputNodes[0];
-
-        // actions 배열이 존재해야 함
-        expect(searchInput.actions).toBeDefined();
+    it('검색 키워드 Input의 Enter 는 sequence[setState 선행 → searchProducts] 여야 함', () => {
+        const searchInput = getSearchInput();
+        expect(searchInput).toBeDefined();
         expect(searchInput.actions.length).toBeGreaterThanOrEqual(1);
 
-        // keypress Enter 액션이 존재해야 함
+        // keypress Enter 액션
         const enterAction = searchInput.actions.find(
             (a: any) => a.type === 'keypress' && a.key === 'Enter'
         );
         expect(enterAction).toBeDefined();
-        // actionRef로 named_actions 참조
-        expect(enterAction.actionRef).toBe('searchProducts');
+
+        // race 회피: setState(검색어 명시 선행) → navigate(searchProducts) 순서의 sequence
+        // (handleSequence 가 currentState/_computed 동기화 → navigate 가 최신값 읽음)
+        expect(enterAction.handler).toBe('sequence');
+        expect(Array.isArray(enterAction.actions)).toBe(true);
+
+        const firstSetState = enterAction.actions[0];
+        expect(firstSetState.handler).toBe('setState');
+        expect(firstSetState.params?.['filter.searchKeyword']).toContain('$event.target.value');
+        // setState 선행은 즉시 반영되어야 하므로 debounce 없음
+        expect(firstSetState.debounce).toBeUndefined();
+
+        const navStep = enterAction.actions.find((a: any) => a.actionRef === 'searchProducts');
+        expect(navStep).toBeDefined();
+    });
+
+    it('검색 키워드 Input 의 change 액션에 debounce 가 설정되어야 함', () => {
+        const searchInput = getSearchInput();
+        expect(searchInput).toBeDefined();
+
+        const changeAction = searchInput.actions.find(
+            (a: any) =>
+                a.type === 'change' &&
+                a.handler === 'setState' &&
+                a.params?.['filter.searchKeyword'],
+        );
+        expect(changeAction).toBeDefined();
+        // 타이핑마다 무거운 리렌더가 발생하지 않도록 디바운스 필수
+        expect(changeAction.debounce).toBeGreaterThan(0);
+    });
+
+    it('검색 키워드 Input 은 value 를 _local.filter.searchKeyword 에 바인딩해야 함 (URL 직접 진입 유지)', () => {
+        const searchInput = getSearchInput();
+        expect(searchInput).toBeDefined();
+        // name auto-binding 제거 후에도 표시값/URL 유지를 위해 value 명시 바인딩 필수
+        expect(searchInput.props?.value).toContain('_local.filter.searchKeyword');
     });
 });
 

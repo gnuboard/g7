@@ -1,4 +1,9 @@
 {
+    "editor": {
+        "data_source": {
+            "settings": "Settings"
+        }
+    },
     "name": "Hello Plugin",
     "description": "Learning minimal sample plugin (consumes Hello module hooks)",
     "settings": {

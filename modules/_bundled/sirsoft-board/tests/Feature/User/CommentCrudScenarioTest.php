@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
@@ -53,7 +54,7 @@ class CommentCrudScenarioTest extends BoardTestCase
         $this->memberUser = User::factory()->create(['email' => 'comment-member@test.com']);
         $this->otherUser = User::factory()->create(['email' => 'comment-other@test.com']);
 
-        $userRole = \App\Models\Role::where('identifier', 'user')->first();
+        $userRole = Role::where('identifier', 'user')->first();
         if ($userRole) {
             $this->memberUser->roles()->attach($userRole->id);
             $this->otherUser->roles()->attach($userRole->id);
@@ -333,6 +334,50 @@ class CommentCrudScenarioTest extends BoardTestCase
     }
 
     /**
+     * 게시판 관리(manager) 권한자는 타인 댓글을 수정할 수 있다
+     *
+     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 댓글 수정 200 (이슈 #413-20)
+     */
+    public function test_manager_can_update_other_users_comment(): void
+    {
+        $this->grantUserRolePermissions(['manager']);
+        $manager = User::factory()->create(['email' => 'comment-manager@test.com']);
+        $manager->roles()->attach(Role::where('identifier', 'user')->first()->id);
+
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId, ['user_id' => $this->memberUser->id]);
+
+        $response = $this->actingAs($manager)
+            ->putJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/comments/{$commentId}", [
+                'content' => '관리 권한으로 수정한 댓글',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.content', '관리 권한으로 수정한 댓글');
+    }
+
+    /**
+     * 게시판 관리(manager) 권한자는 타인 댓글을 삭제할 수 있다
+     *
+     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 댓글 삭제 200 (이슈 #413-20)
+     */
+    public function test_manager_can_delete_other_users_comment(): void
+    {
+        $this->grantUserRolePermissions(['manager']);
+        $manager = User::factory()->create(['email' => 'comment-manager-del@test.com']);
+        $manager->roles()->attach(Role::where('identifier', 'user')->first()->id);
+
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId, ['user_id' => $this->memberUser->id]);
+
+        $response = $this->actingAs($manager)
+            ->deleteJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/comments/{$commentId}");
+
+        $response->assertStatus(200);
+        $this->assertSoftDeleted('board_comments', ['id' => $commentId]);
+    }
+
+    /**
      * 비회원은 올바른 비밀번호로 자신의 댓글을 삭제할 수 있다
      */
     public function test_guest_can_delete_comment_with_correct_password(): void
@@ -422,5 +467,79 @@ class CommentCrudScenarioTest extends BoardTestCase
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data');
+    }
+
+    // ==========================================
+    // 제한 키워드 차단 시나리오 (이슈 #413-24)
+    // ==========================================
+
+    /**
+     * 제한 키워드가 포함된 댓글은 생성할 수 없다
+     *
+     * 회귀: 게시글은 차단되나 댓글 content 에 BlockedKeywordsRule 누락으로 통과하던 결함 (#413-24)
+     *
+     * @effects store_comment_blocks_matching_keyword
+     */
+    public function test_cannot_create_comment_with_blocked_keyword(): void
+    {
+        $this->updateBoardSettings(['blocked_keywords' => ['금지어']]);
+
+        $postId = $this->createTestPost();
+
+        $response = $this->actingAs($this->memberUser)
+            ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/comments", [
+                'content' => '여기에 금지어가 포함되어 있습니다.',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['content']);
+
+        $this->assertDatabaseMissing('board_comments', [
+            'post_id' => $postId,
+            'content' => '여기에 금지어가 포함되어 있습니다.',
+        ]);
+    }
+
+    /**
+     * 제한 키워드가 없는 댓글은 정상 생성된다 (회귀 방지)
+     *
+     * @effects store_comment_allows_clean_content
+     */
+    public function test_can_create_comment_without_blocked_keyword(): void
+    {
+        $this->updateBoardSettings(['blocked_keywords' => ['금지어']]);
+
+        $postId = $this->createTestPost();
+
+        $response = $this->actingAs($this->memberUser)
+            ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/comments", [
+                'content' => '정상적인 댓글 내용입니다.',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.content', '정상적인 댓글 내용입니다.');
+    }
+
+    /**
+     * 제한 키워드가 포함되도록 댓글을 수정할 수 없다
+     *
+     * 회귀: 댓글 수정 경로(UpdateCommentRequest)에도 키워드 검증 적용 (#413-24)
+     *
+     * @effects update_comment_blocks_matching_keyword
+     */
+    public function test_cannot_update_comment_to_contain_blocked_keyword(): void
+    {
+        $this->updateBoardSettings(['blocked_keywords' => ['금지어']]);
+
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId, ['user_id' => $this->memberUser->id]);
+
+        $response = $this->actingAs($this->memberUser)
+            ->putJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/comments/{$commentId}", [
+                'content' => '수정하면서 금지어를 넣습니다.',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['content']);
     }
 }

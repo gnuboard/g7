@@ -1,0 +1,44 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(A26)은
+#   sync_flag × input × operation × field cross product 를 ProductService PHPUnit 매트릭스 +
+#   레이아웃 구조 회귀 Vitest 가 커버하며 green.
+feature: SEO 동기화 플래그 영속화 (MP12 / A26)
+
+description: |
+  SEO 제목/설명 동기화 의도를 서버에 영속화하여, 직접 입력한 meta_title/meta_description 이
+  저장 시 상품명/설명으로 덮어써지던 회귀를 차단한다.
+  - products 에 seo_sync_title / seo_sync_description boolean 컬럼 추가 (default true)
+  - 서버 Service(applySeoSync) 가 SSoT — ON 이면 name/description 으로 meta_* 채움(160자 truncate)
+  - 프론트 역추론식(ui.seoSync* == null ? !meta_title : ...) → form.seo_sync_* 단일 참조
+  - 저장 시점 프론트 덮어쓰기 setState 제거, 동기화 의도는 재조회 시 복원
+
+axes:
+  sync_flag:
+    - "true"                  # 동기화 ON
+    - "false"                 # 동기화 OFF
+    - "null"                  # 미전송 → 기존/default true 폴백
+  input:
+    - custom                  # 커스텀 meta_* 입력
+    - empty                   # 빈 값
+  operation:
+    - create
+    - update
+  field:
+    - title
+    - description             # 160자 truncate
+
+effects:
+  - on_fills_from_name             # ON: name 기준 채움
+  - off_preserves_custom           # OFF: 커스텀 보존
+  - off_empty_keeps_empty          # OFF + 빈값 → 빈값
+  - null_defaults_to_on            # null → default true
+  - description_truncated_160      # 설명 160자 절단
+  - reload_restores_flag           # 재조회 시 의도 복원(getDetailForForm)
+  - copy_seo_off_resets_flag_on    # copy_seo 미복사 시 플래그 ON 리셋
+  - front_no_inference_expression  # 역추론식 0회
+  - save_no_overwrite_setstate     # 저장 덮어쓰기 제거
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceSeoSyncTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productSeoSyncFlags.test.tsx

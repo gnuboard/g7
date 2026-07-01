@@ -209,7 +209,7 @@
   "edit_post": "게시글 수정",
   "edit_post_description": "게시글을 수정합니다",
   "no_write_permission": "글쓰기 권한이 없습니다",
-  "login_required": "로그인이 필요합니다",
+  "login_required": "로그인이 필요한 페이지입니다",
   "login_required_to_write": "글을 작성하려면 로그인이 필요합니다",
   "no_comments_yet": "아직 댓글이 없습니다. 첫 번째 댓글을 작성해보세요!",
   "blinded_comment_disabled": "블라인드 처리된 게시글에는 댓글을 작성할 수 없습니다",

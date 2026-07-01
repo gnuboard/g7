@@ -210,6 +210,18 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function getUserUsedCountForCoupon(int $userId, int $couponId): int
+    {
+        return $this->model
+            ->where('user_id', $userId)
+            ->where('coupon_id', $couponId)
+            ->whereNotNull('used_at')
+            ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function update(int $id, array $data): bool
     {
         return $this->model

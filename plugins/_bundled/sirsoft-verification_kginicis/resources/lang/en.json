@@ -1,0 +1,97 @@
+{
+    "editor": {
+        "data_source": {
+            "inicisRecord": "Verification Record",
+            "settings": "Verification Settings"
+        }
+    },
+    "title": "KG Inicis Identity Verification",
+    "description": "Connects KG Inicis identity verification service to the G7 core IDV infrastructure.",
+    "settings": {
+        "title": "KG Inicis Identity Verification Settings",
+        "description": "Configure operation mode, live credentials, and duplicate-check basis.",
+        "info": {
+            "activation": "IDV activation is configured under [Settings > Identity Verification].",
+            "logs": "Inicis verification history can be viewed in [Admin > Identity Logs] by filtering with 'KG Inicis Identity Verification'."
+        },
+        "test_mode": "Test Mode",
+        "test_mode_hint": "In test mode, the plugin operates with the public Inicis test account and no real verification occurs.",
+        "live_mode_warning_title": "Live Mode Notice",
+        "live_mode_warning_body": "Live mode performs verification with your real merchant MID. Enter your Live MID and API key before going live.",
+        "section_live_keys": "Live Credentials",
+        "live_mid": "Live MID",
+        "live_mid_hint": "Inicis live merchant MIDs start with SRA (e.g., SRA1234567). Required before switching to Live mode.",
+        "live_api_key": "Live API Key",
+        "section": {
+            "duplicate_field": "Duplicate Check Basis"
+        },
+        "fields": {
+            "duplicate_field": {
+                "label": "Duplicate Check Basis",
+                "hint": "DI identifies duplicates only within this merchant; CI works across all institutions. (default: DI)",
+                "warning": "Changing this in production may temporarily make existing-user duplicate checks incomplete."
+            },
+            "duplicate_block_enabled": {
+                "label": "Block Duplicate Registration",
+                "hint": "When enabled, blocks registration if the verified person has previously registered with a different email. Disable for scenarios such as shared family phones or B2B sites where one person legitimately operates multiple accounts. (default: Enabled)",
+                "note": "Regardless of this setting, re-registration with the same email is always blocked (core default).",
+                "on": "Enabled",
+                "off": "Disabled"
+            }
+        },
+        "duplicate_field": {
+            "di": "DI (merchant-scoped duplicate identifier)",
+            "ci": "CI (cross-institution shared duplicate identifier)",
+            "hint": "DI identifies duplicates only within this merchant; CI works across all institutions.",
+            "warning": "Changing this in production may temporarily make existing-user duplicate checks incomplete."
+        }
+    },
+    "modal": {
+        "title": "KG Inicis Identity Verification",
+        "description": "Uses KG Inicis integrated authentication for secure identity verification.",
+        "adult_title": "Adult Verification",
+        "adult_description": "Verifies that you are 19 or older via KG Inicis integrated authentication. You will be returned to the previous screen after verification.",
+        "start_button": "Start Verification",
+        "in_progress": {
+            "title": "Please complete verification in the popup window",
+            "hint": "If you don't see the popup, please disable your browser's popup blocker."
+        },
+        "popup_blocked": "Popup was blocked. Please allow popups in your browser and try again.",
+        "payload_not_ready": "Verification payload is not ready. Please try again in a moment."
+    },
+    "card": {
+        "title": "Identity Verification Info",
+        "method": "Method",
+        "verified_at": "Verified At",
+        "name": "Name",
+        "birthday": "Date of Birth",
+        "phone": "Phone",
+        "is_adult": {
+            "label": "Adult",
+            "true": "Adult",
+            "false": "Minor"
+        },
+        "pending": {
+            "title": "No identity verification record.",
+            "hint": "You will be guided to verify when identity verification is required (password reset, profile change, etc.)."
+        }
+    },
+    "errors": {
+        "invalid_auth_url": "Forged verification response. Not a valid Inicis domain.",
+        "decrypt_failed": "Failed to decrypt verification data. Please try again.",
+        "remote_call_failed": "Failed to communicate with the Inicis verification server. Please try again later.",
+        "not_found": "Verification record not found. Please re-verify.",
+        "already_consumed": "This verification has already been consumed.",
+        "binding_mismatch": "The verified identity does not match the target account.",
+        "not_adult": "This service requires adult verification. Only users aged 19 or older can use it.",
+        "incomplete_identity": "The identity verification data is incomplete. Please try again with a different verification method.",
+        "storage_failed": "Failed to save the identity verification data. Please try again later.",
+        "verify_failed": "Identity verification failed. Please try again."
+    },
+    "purposes": {
+        "adult_verification": {
+            "label": "Adult Verification (KG Inicis identity verification only)",
+            "description": "Map this purpose only to the KG Inicis provider. Mail/SMS providers do not return date of birth and cannot determine adult status. Incorrect mapping may expose adult content to minors."
+        }
+    }
+}

@@ -153,7 +153,9 @@ describe('Toggle', () => {
   it('다크 모드 스타일이 포함됨', () => {
     const { container } = render(<Toggle />);
 
-    const track = container.querySelector('.dark\\:bg-gray-700');
+    // #399 Phase 1.15: 인라인 'dark:bg-gray-700' 검사 → .toggle-switch-track
+    // 시맨틱 클래스 검증으로 정합 (jsdom 은 @apply 펼침 없으므로 자산 자체 검증).
+    const track = container.querySelector('.toggle-switch-track');
     expect(track).toBeInTheDocument();
   });
 });

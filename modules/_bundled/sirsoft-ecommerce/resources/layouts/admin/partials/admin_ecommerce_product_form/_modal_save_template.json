@@ -8,16 +8,12 @@
   "name": "Modal",
   "props": {
     "title": "$t:sirsoft-ecommerce.admin.product.modal.save_template.title",
-    "show": "{{_local.ui.showSaveTemplateModal}}",
     "size": "md"
   },
   "children": [
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "id": "save_template_description",
@@ -31,7 +27,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center"
+                "className": "flex-center w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 dark:bg-blue-900/30 justify-center"
               },
               "children": [
                 {
@@ -48,7 +44,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.description"
             }
@@ -58,55 +54,60 @@
           "id": "save_template_form",
           "type": "basic",
           "name": "Div",
-          "props": {
-            "className": "space-y-4"
-          },
           "children": [
             {
               "id": "template_name_field",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-2"
-              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
+                  "name": "Div",
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.template_name"
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.template_name"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-required"
+                          },
+                          "text": "*"
+                        }
+                      ]
                     },
                     {
-                      "type": "basic",
-                      "name": "Span",
+                      "type": "composite",
+                      "name": "Input",
                       "props": {
-                        "className": "text-red-500 dark:text-red-400 ml-1"
+                        "name": "template_name",
+                        "value": "{{_global.ui.saveTemplateData?.name ?? ''}}",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product.modal.save_template.template_name_placeholder"
                       },
-                      "text": "*"
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "ui.saveTemplateData.name": "{{$event.target.value}}"
+                          }
+                        }
+                      ]
                     }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Input",
+                  ],
                   "props": {
-                    "name": "template_name",
-                    "value": "{{_local.ui.saveTemplateData?.name ?? ''}}",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.product.modal.save_template.template_name_placeholder"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": { "target": "global", "ui.saveTemplateData.name": "{{$event}}" }
-                    }
-                  ]
+                  }
                 }
               ]
             },
@@ -114,35 +115,43 @@
               "id": "template_category_field",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-2"
-              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.category"
-                },
-                {
-                  "type": "composite",
-                  "name": "Select",
-                  "props": {
-                    "name": "template_category",
-                    "value": "{{_local.ui.saveTemplateData?.category_id}}",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.product.modal.save_template.category_placeholder",
-                    "options": "{{(notice_template_categories?.data?.data ?? []).map(c => ({ value: c.id, label: $localized(c.name) }))}}",
-                    "clearable": true
-                  },
-                  "actions": [
+                  "name": "Div",
+                  "children": [
                     {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": { "target": "global", "ui.saveTemplateData.category_id": "{{$event}}" }
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.category"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "template_category",
+                        "value": "{{_global.ui.saveTemplateData?.category_id}}",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product.modal.save_template.category_placeholder",
+                        "options": "{{(notice_template_categories?.data?.data ?? []).map(c => ({ value: c.id, label: $localized(c.name) }))}}",
+                        "clearable": true
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "ui.saveTemplateData.category_id": "{{$event.target.value}}"
+                          }
+                        }
+                      ]
                     }
-                  ]
+                  ],
+                  "props": {
+                  }
                 }
               ]
             },
@@ -151,7 +160,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-3"
+                "className": "flex-center gap-3"
               },
               "children": [
                 {
@@ -159,13 +168,16 @@
                   "name": "Checkbox",
                   "props": {
                     "name": "is_default",
-                    "checked": "{{_local.ui.saveTemplateData?.is_default ?? false}}"
+                    "checked": "{{_global.ui.saveTemplateData?.is_default ?? false}}"
                   },
                   "actions": [
                     {
                       "type": "change",
                       "handler": "setState",
-                      "params": { "target": "global", "ui.saveTemplateData.is_default": "{{$event}}" }
+                      "params": {
+                        "target": "global",
+                        "ui.saveTemplateData.is_default": "{{$event.target.checked}}"
+                      }
                     }
                   ]
                 },
@@ -173,20 +185,22 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer"
+                    "className": "text-label cursor-pointer"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.set_as_default"
                 }
               ]
             }
-          ]
+          ],
+          "props": {
+          }
         },
         {
           "id": "save_template_preview",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+            "className": "toggle-group"
           },
           "children": [
             {
@@ -200,7 +214,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                    "className": "text-body font-medium"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.preview"
                 }
@@ -217,7 +231,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                    "className": "text-label"
                   },
                   "children": [
                     {
@@ -287,14 +301,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
+            "className": "alert-info"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-start gap-2"
+                "className": "flex-start gap-2"
               },
               "children": [
                 {
@@ -309,51 +323,57 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm text-blue-700 dark:text-blue-300"
+                    "className": "text-info-soft"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.info"
                 }
               ]
             }
           ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-3 mt-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-outline"
+              },
+              "text": "$t:sirsoft-ecommerce.common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-primary",
+                "disabled": "{{!_global.ui.saveTemplateData?.name}}"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.save_button",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sirsoft-ecommerce.confirmSaveNoticeTemplate"
+                }
+              ]
+            }
+          ]
         }
-      ]
-    }
-  ],
-  "slots": {
-    "footer": [
-      {
-        "type": "basic",
-        "name": "Button",
-        "props": {
-          "type": "button",
-          "className": "btn btn-outline"
-        },
-        "text": "$t:sirsoft-ecommerce.common.cancel",
-        "actions": [
-          {
-            "type": "click",
-            "handler": "setState",
-            "params": { "target": "global", "ui.showSaveTemplateModal": false }
-          }
-        ]
-      },
-      {
-        "type": "basic",
-        "name": "Button",
-        "props": {
-          "type": "button",
-          "className": "btn btn-primary",
-          "disabled": "{{!_local.ui.saveTemplateData?.name}}"
-        },
-        "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.save_button",
-        "actions": [
-          {
-            "type": "click",
-            "handler": "sirsoft-ecommerce.confirmSaveNoticeTemplate"
-          }
-        ]
+      ],
+      "props": {
       }
-    ]
-  }
+    }
+  ]
 }

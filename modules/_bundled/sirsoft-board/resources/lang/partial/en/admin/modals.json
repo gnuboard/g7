@@ -2,7 +2,9 @@
   "copy": {
     "title": "Copy Board",
     "message": "Would you like to copy '{{name}}' board?",
-    "info": "※ Only board settings will be copied, posts will not be copied.",
+    "info_copied": "Settings, permissions, and the manager list are copied together.",
+    "info_excluded": "Posts and comments are not copied.",
+    "info_slug": "Check the new slug in the form before saving.",
     "new_slug_label": "New Slug",
     "new_slug_placeholder": "e.g., notice-copy",
     "confirm": "Copy"
@@ -10,7 +12,7 @@
   "delete": {
     "title": "Delete Board",
     "confirm": "Are you sure you want to delete '{{name}}' board?",
-    "with_posts_info": "This board has {{posts_count}} post(s) and comments.",
+    "with_posts_info": "This board has {{posts_count}} post(s). Deleting it also permanently removes the comments and attachments (including the uploaded original files).",
     "no_posts_info": "This board has no posts.",
     "force_delete_label_with_posts": "Permanent Delete (Delete all posts, comments, and attachments)",
     "force_delete_label_no_posts": "Permanent Delete (Delete database tables)",

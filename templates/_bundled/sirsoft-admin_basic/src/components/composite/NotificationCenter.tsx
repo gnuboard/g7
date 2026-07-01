@@ -5,6 +5,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Input } from '../basic/Input';
+import type { EditorAttrs } from '../../types';
 
 /**
  * 알림 아이템 인터페이스
@@ -61,6 +62,12 @@ export interface NotificationCenterProps {
   /** 드롭다운 정렬 방향 — "right"(기본): 우측 정렬되어 좌측으로 확장 / "left": 좌측 정렬되어 우측으로 확장 */
   dropdownAlign?: 'left' | 'right';
   className?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 
@@ -102,6 +109,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   onUnreadOnlyToggle,
   dropdownAlign = 'right',
   className = '',
+  id,
+  editorAttrs,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -277,13 +286,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   }, [showNotifications, dropdownAlign, notifications.length]);
 
   return (
-    <Div ref={notificationRef} className={`relative ${className}`}>
+    <Div ref={notificationRef} className={`relative ${className}`} id={id} {...editorAttrs}>
       <Button
         onClick={handleToggle}
-        className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer"
+        className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer"
         aria-label={titleText}
       >
-        <Icon name={IconName.Bell} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        <Icon name={IconName.Bell} className="text-sm text-slate-500 dark:text-slate-400" />
         {displayCount > 0 && (
           <Span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 dark:bg-red-600 rounded-full">
             {displayCount > 99 ? '99+' : displayCount}

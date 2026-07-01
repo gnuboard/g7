@@ -145,10 +145,35 @@ class IdentityPolicyService
         throw new IdentityVerificationRequiredException(
             policyKey: $policy->key,
             purpose: $policy->purpose,
-            providerId: $policy->provider_id,
+            providerId: $this->resolveProviderId($policy),
             renderHint: $this->resolveRenderHint($policy),
             returnRequest: $context['return_request'] ?? null,
         );
+    }
+
+    /**
+     * 정책의 provider_id 를 해석합니다.
+     *
+     * 정책에 명시된 provider 가 있으면 우선 사용, 미명시 시 Manager 의 purpose 기반
+     * fallback 체인(환경설정 default_provider → purpose_providers → 등록된 첫 provider)을 따른다.
+     * `resolveRenderHint` 와 동일한 우선순위 체인을 적용하여, 정책에 provider 를 지정하지 않아도
+     * 환경설정의 기본값이 launcher payload 의 provider_id 로 전달되도록 한다.
+     *
+     * @param  IdentityPolicy  $policy  대상 정책
+     * @return string|null 해석된 provider id (해석 실패 시 정책의 원본 값)
+     */
+    protected function resolveProviderId(IdentityPolicy $policy): ?string
+    {
+        try {
+            $providerId = $policy->provider_id;
+            if ($providerId && $this->manager->has($providerId)) {
+                return $providerId;
+            }
+
+            return $this->manager->resolveForPurpose($policy->purpose, $providerId)->getId();
+        } catch (\Throwable) {
+            return $policy->provider_id;
+        }
     }
 
     /**
@@ -243,12 +268,12 @@ class IdentityPolicyService
      * S1d 관리자 UI 의 "↺ 기본값으로 되돌리기" 버튼이 이 메서드를 호출합니다.
      *
      * @param  IdentityPolicy  $policy  대상 정책
-     * @param  string  $field  복원할 필드명 (enabled|grace_minutes|provider_id|fail_mode|conditions 중 하나)
+     * @param  string  $field  복원할 필드명 (enabled|grace_minutes|provider_id|fail_mode|conditions|purpose|applies_to|priority 중 하나)
      * @return bool 성공 여부 (field 미지원 또는 선언 기본값 부재 시 false)
      */
     public function resetFieldOverride(IdentityPolicy $policy, string $field): bool
     {
-        $allowed = ['enabled', 'grace_minutes', 'provider_id', 'fail_mode', 'conditions'];
+        $allowed = ['enabled', 'grace_minutes', 'provider_id', 'fail_mode', 'conditions', 'purpose', 'applies_to', 'priority'];
         if (! in_array($field, $allowed, true)) {
             return false;
         }

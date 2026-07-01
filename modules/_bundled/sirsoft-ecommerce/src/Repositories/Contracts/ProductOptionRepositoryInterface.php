@@ -13,45 +13,55 @@ interface ProductOptionRepositoryInterface
     /**
      * ID로 옵션 조회
      *
-     * @param int $id 옵션 ID
-     * @return ProductOption|null
+     * @param  int  $id  옵션 ID
+     * @return ProductOption|null 조회된 옵션 (없으면 null)
      */
     public function findById(int $id): ?ProductOption;
 
     /**
      * ID로 옵션 조회 (관계 포함)
      *
-     * @param int $id 옵션 ID
-     * @param array $with Eager loading 관계
-     * @return ProductOption|null
+     * @param  int  $id  옵션 ID
+     * @param  array  $with  Eager loading 관계
+     * @return ProductOption|null 조회된 옵션 (없으면 null)
      */
     public function findWithRelations(int $id, array $with = []): ?ProductOption;
 
     /**
+     * ID로 옵션 조회 (상품 관계 포함)
+     *
+     * 담기 시점 판매상태 검증을 위해 product 관계를 함께 로드합니다.
+     *
+     * @param  int  $id  옵션 ID
+     * @return ProductOption|null 상품 관계를 포함한 옵션 (없으면 null)
+     */
+    public function findByIdWithProduct(int $id): ?ProductOption;
+
+    /**
      * 상품 ID로 옵션 목록 조회
      *
-     * @param int $productId 상품 ID
-     * @return Collection
+     * @param  int  $productId  상품 ID
+     * @return Collection 옵션 컬렉션
      */
     public function getByProductId(int $productId): Collection;
 
     /**
      * 옵션 판매가 일괄 변경
      *
-     * @param array $optionIds 옵션 ID 배열
-     * @param string $method 변경 방식 (increase, decrease, fixed)
-     * @param int $value 변경 값
-     * @param string $unit 단위 (won, percent)
+     * @param  array  $optionIds  옵션 ID 배열
+     * @param  string  $method  변경 방식 (increase, decrease, fixed)
+     * @param  float  $value  변경 값 (소수 통화 대응)
+     * @param  string  $unit  단위 (won, percent)
      * @return int 업데이트된 레코드 수
      */
-    public function bulkUpdatePrice(array $optionIds, string $method, int $value, string $unit): int;
+    public function bulkUpdatePrice(array $optionIds, string $method, float $value, string $unit): int;
 
     /**
      * 옵션 재고 일괄 변경
      *
-     * @param array $optionIds 옵션 ID 배열
-     * @param string $method 변경 방식 (increase, decrease, set)
-     * @param int $value 변경 값
+     * @param  array  $optionIds  옵션 ID 배열
+     * @param  string  $method  변경 방식 (increase, decrease, set)
+     * @param  int  $value  변경 값
      * @return int 업데이트된 레코드 수
      */
     public function bulkUpdateStock(array $optionIds, string $method, int $value): int;
@@ -59,17 +69,17 @@ interface ProductOptionRepositoryInterface
     /**
      * 옵션 수정
      *
-     * @param int $id 옵션 ID
-     * @param array $data 수정 데이터
-     * @return ProductOption|null
+     * @param  int  $id  옵션 ID
+     * @param  array  $data  수정 데이터
+     * @return ProductOption|null 수정된 옵션 (없으면 null)
      */
     public function update(int $id, array $data): ?ProductOption;
 
     /**
      * 옵션 다중 필드 일괄 업데이트
      *
-     * @param array $ids 옵션 ID 배열
-     * @param array $fields 업데이트할 필드와 값
+     * @param  array  $ids  옵션 ID 배열
+     * @param  array  $fields  업데이트할 필드와 값
      * @return int 업데이트된 개수
      */
     public function bulkUpdateFields(array $ids, array $fields): int;
@@ -79,16 +89,16 @@ interface ProductOptionRepositoryInterface
      *
      * 재고 차감/복원 시 동시성 문제 방지를 위한 비관적 락
      *
-     * @param int $id 옵션 ID
-     * @return ProductOption|null
+     * @param  int  $id  옵션 ID
+     * @return ProductOption|null 락이 걸린 옵션 (없으면 null)
      */
     public function findWithLock(int $id): ?ProductOption;
 
     /**
      * 재고 원자적 차감
      *
-     * @param int $id 옵션 ID
-     * @param int $quantity 차감할 수량
+     * @param  int  $id  옵션 ID
+     * @param  int  $quantity  차감할 수량
      * @return bool 성공 여부
      */
     public function decrementStock(int $id, int $quantity): bool;
@@ -96,8 +106,8 @@ interface ProductOptionRepositoryInterface
     /**
      * 재고 원자적 증가
      *
-     * @param int $id 옵션 ID
-     * @param int $quantity 증가할 수량
+     * @param  int  $id  옵션 ID
+     * @param  int  $quantity  증가할 수량
      * @return bool 성공 여부
      */
     public function incrementStock(int $id, int $quantity): bool;
@@ -105,7 +115,7 @@ interface ProductOptionRepositoryInterface
     /**
      * 옵션 ID 배열로 조회
      *
-     * @param array $optionIds 옵션 ID 배열
+     * @param  array  $optionIds  옵션 ID 배열
      * @return Collection 옵션 컬렉션
      */
     public function findByIds(array $optionIds): Collection;
@@ -113,7 +123,7 @@ interface ProductOptionRepositoryInterface
     /**
      * 복수 상품 ID로 옵션 ID 배열 조회
      *
-     * @param array $productIds 상품 ID 배열
+     * @param  array  $productIds  상품 ID 배열
      * @return array 옵션 ID 배열
      */
     public function getIdsByProductIds(array $productIds): array;
@@ -123,7 +133,7 @@ interface ProductOptionRepositoryInterface
      *
      * 재고/판매상태 검증을 위해 상품과 이미지 관계를 함께 로드합니다.
      *
-     * @param array $optionIds 옵션 ID 배열
+     * @param  array  $optionIds  옵션 ID 배열
      * @return Collection 옵션 컬렉션 (product, product.images 관계 포함)
      */
     public function findByIdsWithProduct(array $optionIds): Collection;
@@ -152,9 +162,19 @@ interface ProductOptionRepositoryInterface
      * ID 목록으로 옵션을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  옵션 ID 목록
-     * @return \Illuminate\Database\Eloquent\Collection<int, ProductOption>
+     * @return Collection<int, ProductOption>
      */
-    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
+    public function findByIdsKeyed(array $ids): Collection;
+
+    /**
+     * ID 목록으로 옵션의 변경 전 스냅샷(ID 키 배열)을 반환합니다.
+     *
+     * 일괄 변경 전 활동 로그/after 훅 전달용 스냅샷 캡처에 사용합니다.
+     *
+     * @param  array<int, int>  $optionIds  옵션 ID 목록
+     * @return array<int, array> ID 를 키로 한 옵션 배열 맵
+     */
+    public function getSnapshotsByIds(array $optionIds): array;
 
     /**
      * 특정 상품의 옵션 stock 합계를 반환하되, 지정한 옵션 ID 들은 제외합니다.

@@ -1,3 +1,4 @@
+// e2e:allow 단위 테스트 보강 (디폴트 시맨틱 머지 회귀) — 동작 무변, 컴포넌트 소스의 e2e:allow 와 동일 사이클에서 E2E spec 일괄 작성 예정.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
@@ -239,6 +240,41 @@ describe('Select 컴포넌트', () => {
       );
       const select = container.querySelector('select');
       expect(select?.getAttribute('data-testid')).toBe('test-select');
+    });
+  });
+
+  // 디폴트 시맨틱 머지 회귀 테스트 (#369)
+  // 호출처가 이미 'select' 토큰을 명시한 경우 중복 prepend ("select select ...") 를 방지한다.
+  describe('디폴트 시맨틱 클래스 머지 (children 모드)', () => {
+    it('className 미지정 시 디폴트 시맨틱 "select" 가 자동 적용된다', () => {
+      const { container } = render(
+        <Select>
+          <option value="1">옵션 1</option>
+        </Select>
+      );
+      const select = container.querySelector('select');
+      expect(select?.className).toBe('select');
+    });
+
+    it('className 에 시맨틱 토큰이 없으면 "select" 를 prepend 한다', () => {
+      const { container } = render(
+        <Select className="w-full">
+          <option value="1">옵션 1</option>
+        </Select>
+      );
+      const select = container.querySelector('select');
+      expect(select?.className).toBe('select w-full');
+    });
+
+    it('className 에 이미 "select" 토큰이 있으면 중복 prepend 하지 않는다', () => {
+      const { container } = render(
+        <Select className="select w-full">
+          <option value="1">옵션 1</option>
+        </Select>
+      );
+      const select = container.querySelector('select');
+      expect(select?.className).toBe('select w-full');
+      expect(select?.className.split(/\s+/).filter((t) => t === 'select')).toHaveLength(1);
     });
   });
 
@@ -732,6 +768,131 @@ describe('Select 컴포넌트', () => {
       expect(screen.getAllByRole('option').length).toBe(timezoneOptions.length);
       const input = screen.getByRole('searchbox') as HTMLInputElement;
       expect(input.value).toBe('');
+    });
+  });
+
+  // ========================================
+  // 레이아웃 편집기 editorAttrs/props passthrough
+  // ========================================
+  // DynamicRenderer 는 편집 모드에서 basic 컴포넌트에 개별 data-editor-* 키를
+  // props 로 주입한다. Select 의 두 렌더 경로(children 폴백 <select>, options 커스텀 <Div>)
+  // 루트 모두 그 키가 DOM 에 도달해야 캔버스에서 선택/식별/편집이 가능하다.
+  describe('편집기 passthrough (editorAttrs/props → 루트 DOM)', () => {
+    it('options 커스텀 드롭다운 루트에 data-editor-* 가 도달한다', () => {
+      const options = [
+        { value: '1', label: '옵션 1' },
+        { value: '2', label: '옵션 2' },
+      ];
+      const { container } = render(
+        <Select
+          options={options}
+          value="1"
+          onChange={() => {}}
+          data-editor-name="Select"
+          data-editor-path="1.children.0"
+          id="root-id"
+        />
+      );
+
+      // 커스텀 드롭다운 루트는 button 의 부모 Div (relative)
+      const root = container.querySelector('[data-editor-name="Select"]') as HTMLElement;
+      expect(root).toBeTruthy();
+      expect(root.getAttribute('data-editor-path')).toBe('1.children.0');
+      expect(root.getAttribute('id')).toBe('root-id');
+      // 루트는 button(드롭다운 트리거)을 자식으로 가진다 = 커스텀 모드 루트 확인
+      expect(root.querySelector('button[aria-haspopup="listbox"]')).toBeTruthy();
+    });
+
+    it('children 폴백 <select> 루트에 data-editor-* 가 도달한다', () => {
+      const { container } = render(
+        <Select data-editor-name="Select" data-editor-path="1.children.1" id="sel-id">
+          <option value="1">옵션 1</option>
+        </Select>
+      );
+
+      const select = container.querySelector('select') as HTMLElement;
+      expect(select).toBeTruthy();
+      expect(select.getAttribute('data-editor-name')).toBe('Select');
+      expect(select.getAttribute('data-editor-path')).toBe('1.children.1');
+      expect(select.getAttribute('id')).toBe('sel-id');
+    });
+
+    it('editorAttrs 객체로 전달된 키도 루트에 도달한다', () => {
+      const options = [{ value: '1', label: '옵션 1' }];
+      const { container } = render(
+        <Select
+          options={options}
+          value="1"
+          onChange={() => {}}
+          editorAttrs={{ 'data-editor-name': 'Select', 'data-editor-path': '2.children.3' }}
+        />
+      );
+
+      const root = container.querySelector('[data-editor-name="Select"]') as HTMLElement;
+      expect(root).toBeTruthy();
+      expect(root.getAttribute('data-editor-path')).toBe('2.children.3');
+    });
+  });
+
+  describe('variant 접두사 className 과 베이스 크기 유지 (비활성 정책 Select 회귀)', () => {
+    /**
+     * 회귀 배경: 정책 편집 모달의 잠금 Select 는 className 에 `disabled:bg-gray-100` 만 추가한다.
+     * hasCustomStyle 판정이 `bg-` 단순 포함으로 동작하면 variant 접두사 유틸(disabled:bg-)을
+     * 커스텀 베이스 외형으로 오인 → 기본 크기 클래스(w-full px-4 py-2.5)를 통째로 버려
+     * 비활성 Select 만 작아지고 활성 Select 와 크기/모양이 달라진다.
+     */
+    const getTriggerBtn = (container: HTMLElement) =>
+      container.querySelector('button[aria-haspopup="listbox"]') as HTMLElement;
+
+    it('disabled:bg- 만 추가된 비활성 Select 도 베이스 크기 클래스(w-full px-4 py-2.5) 유지', () => {
+      const options = [{ value: 'sensitive_action', label: '민감 작업' }];
+      const { container } = render(
+        <Select
+          options={options}
+          value="sensitive_action"
+          onChange={() => {}}
+          disabled
+          className=" disabled:bg-gray-100 dark:disabled:bg-gray-900"
+        />
+      );
+      const btn = getTriggerBtn(container);
+      expect(btn).toBeTruthy();
+      expect(btn.className).toContain('w-full');
+      expect(btn.className).toContain('px-4');
+      expect(btn.className).toContain('py-2.5');
+    });
+
+    it('활성 Select(동일 컬럼)와 비활성 Select 의 베이스 크기 클래스가 동일', () => {
+      const options = [{ value: '', label: '(기본 인증 수단 사용)' }];
+      const active = render(
+        <Select options={options} value="" onChange={() => {}} className="" />
+      );
+      const disabled = render(
+        <Select
+          options={options}
+          value=""
+          onChange={() => {}}
+          disabled
+          className=" disabled:bg-gray-100 dark:disabled:bg-gray-900"
+        />
+      );
+      const pick = (cls: string) =>
+        ['w-full', 'px-4', 'py-2.5'].filter((t) => cls.split(/\s+/).includes(t)).sort().join(' ');
+      const activeBase = pick(getTriggerBtn(active.container).className);
+      const disabledBase = pick(getTriggerBtn(disabled.container).className);
+      expect(disabledBase).toBe(activeBase);
+      expect(disabledBase).toBe('px-4 py-2.5 w-full');
+    });
+
+    it('실제 커스텀 베이스 bg-(접두사 없음)는 기존대로 기본 크기 미적용', () => {
+      const options = [{ value: '1', label: '옵션 1' }];
+      const { container } = render(
+        <Select options={options} value="1" onChange={() => {}} className="bg-indigo-600 px-2" />
+      );
+      const btn = getTriggerBtn(container);
+      // 베이스 bg- 가 있으면 호출처 className 을 그대로 존중(w-full 자동 주입 안 함)
+      expect(btn.className).toContain('bg-indigo-600');
+      expect(btn.className).not.toContain('w-full');
     });
   });
 });

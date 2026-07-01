@@ -4,19 +4,19 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
 
 /**
  * 사용자 배송지 리소스
  */
 class UserAddressResource extends BaseApiResource
 {
+    use LocalizesCountryName;
+
     /**
      * 비즈니스 로직 기반 abilities를 반환합니다.
      * user-addresses 권한 식별자가 모듈 매니페스트에 없으므로, abilityMap()은 빈 배열.
      * 인증된 사용자는 자신의 주소를 수정 가능하며, 기본 배송지는 삭제/변경 불가.
-     *
-     * @param Request $request
-     * @return array
      */
     protected function resolveAbilities(Request $request): array
     {
@@ -31,8 +31,8 @@ class UserAddressResource extends BaseApiResource
     /**
      * 리소스를 배열로 변환
      *
-     * @param Request $request 요청
-     * @return array
+     * @param  Request  $request  요청
+     * @return array 회원 주소록 리소스 배열 (국가명·국내/해외 필드 포함)
      */
     public function toArray(Request $request): array
     {
@@ -43,6 +43,7 @@ class UserAddressResource extends BaseApiResource
             'recipient_name' => $this->recipient_name,
             'recipient_phone' => $this->recipient_phone,
             'country_code' => $this->country_code,
+            'country_name' => $this->getCountryLocalizedName($this->country_code),
 
             // 국내 배송 주소
             'zipcode' => $this->zipcode,

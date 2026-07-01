@@ -640,13 +640,7 @@
                   "actions": [
                     {
                       "type": "click",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/login",
-                        "query": {
-                          "redirect": "{{_global.currentPath}}"
-                        }
-                      }
+                      "handler": "redirectToLoginWithReturn"
                     }
                   ]
                 }
@@ -877,7 +871,7 @@
               "comment": "답변 버튼 (답변 기능 활성화 + depth 제한 + 블라인드 아닌 게시글 + 비밀글은 검증 후)",
               "type": "basic",
               "name": "Button",
-              "if": "{{post?.data?.board?.use_reply && !post?.data?.is_notice && (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) && post?.data?.abilities?.can_write && post?.data?.status !== 'blinded' && (!post?.data?.is_secret || post?.data?.content !== null)}}",
+              "if": "{{post?.data?.board?.use_reply && !post?.data?.is_notice && (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) && post?.data?.abilities?.can_write && post?.data?.status !== 'blinded' && !post?.data?.deleted_at && (!post?.data?.is_secret || post?.data?.content !== null)}}",
               "props": {
                 "className": "px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1 cursor-pointer"
               },

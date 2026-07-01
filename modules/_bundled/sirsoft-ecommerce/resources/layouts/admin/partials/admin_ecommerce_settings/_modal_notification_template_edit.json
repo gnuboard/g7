@@ -34,7 +34,7 @@
               "name": "Div",
               "if": "{{_global.ecommerce_notification_template_form_modal?.errors}}",
               "props": {
-                "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+                "className": "alert-danger"
               },
               "children": [
                 {
@@ -61,7 +61,7 @@
                           "type": "basic",
                           "name": "H3",
                           "props": {
-                            "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                            "className": "text-error-strong"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.validation_error"
                         },
@@ -81,7 +81,7 @@
                               "type": "basic",
                               "name": "Li",
                               "props": {
-                                "className": "text-sm text-red-700 dark:text-red-300"
+                                "className": "text-error-soft"
                               },
                               "text": "{{errMsg}}"
                             }
@@ -98,14 +98,14 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex flex-wrap items-center gap-2"
+                "className": "flex-center flex-wrap gap-2"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm font-medium text-gray-500 dark:text-gray-400"
+                    "className": "text-label-subtle font-medium"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.type_label"
                 },
@@ -113,7 +113,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                    "className": "text-primary text-sm font-semibold"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{_global.ecommerce_notification_template_form_modal?.definition?.type ?? ''}}"
                 },
@@ -121,7 +121,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-xs font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded"
+                    "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                   },
                   "text": "{{_global.ecommerce_notification_template_form_modal?.definition?.type ?? ''}}"
                 },
@@ -137,7 +137,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                    "className": "text-label-subtle"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.channel_label"
                 },
@@ -170,9 +170,6 @@
                 {
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                    "className": "space-y-3"
-                  },
                   "children": [
                     {
                       "type": "basic",
@@ -190,7 +187,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center justify-between"
+                            "className": "flex-between"
                           },
                           "children": [
                             {
@@ -212,7 +209,10 @@
                                 {
                                   "type": "basic",
                                   "name": "Icon",
-                                  "props": { "name": "fa-solid fa-xmark", "size": "sm" }
+                                  "props": {
+                                    "name": "fa-solid fa-xmark",
+                                    "size": "sm"
+                                  }
                                 }
                               ],
                               "actions": [
@@ -231,19 +231,17 @@
                         {
                           "type": "basic",
                           "name": "Div",
-                          "props": {
-                            "className": "space-y-2"
-                          },
                           "children": [
                             {
                               "type": "basic",
                               "name": "Div",
-                              "props": { "className": "space-y-1" },
                               "children": [
                                 {
                                   "type": "basic",
                                   "name": "Label",
-                                  "props": { "className": "block text-xs font-medium text-gray-600 dark:text-gray-400" },
+                                  "props": {
+                                    "className": "text-secondary block text-xs font-medium"
+                                  },
                                   "text": "$t:admin.settings.notification_definitions.recipients.type_label"
                                 },
                                 {
@@ -253,10 +251,22 @@
                                     "value": "{{rcpt.type ?? ''}}",
                                     "className": "w-full text-sm",
                                     "options": [
-                                      { "value": "trigger_user", "label": "$t:admin.settings.notification_definitions.recipients.types.trigger_user" },
-                                      { "value": "related_user", "label": "$t:admin.settings.notification_definitions.recipients.types.related_user" },
-                                      { "value": "role", "label": "$t:admin.settings.notification_definitions.recipients.types.role" },
-                                      { "value": "specific_users", "label": "$t:admin.settings.notification_definitions.recipients.types.specific_users" }
+                                      {
+                                        "value": "trigger_user",
+                                        "label": "$t:admin.settings.notification_definitions.recipients.types.trigger_user"
+                                      },
+                                      {
+                                        "value": "related_user",
+                                        "label": "$t:admin.settings.notification_definitions.recipients.types.related_user"
+                                      },
+                                      {
+                                        "value": "role",
+                                        "label": "$t:admin.settings.notification_definitions.recipients.types.role"
+                                      },
+                                      {
+                                        "value": "specific_users",
+                                        "label": "$t:admin.settings.notification_definitions.recipients.types.specific_users"
+                                      }
                                     ]
                                   },
                                   "actions": [
@@ -276,21 +286,28 @@
                               "type": "basic",
                               "name": "Div",
                               "if": "{{rcpt.type === 'related_user'}}",
-                              "props": { "className": "space-y-1" },
                               "children": [
                                 {
                                   "type": "basic",
-                                  "name": "Label",
-                                  "props": { "className": "block text-xs font-medium text-gray-600 dark:text-gray-400" },
-                                  "text": "$t:admin.settings.notification_definitions.recipients.relation_label"
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "block w-full px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-md"
-                                  },
-                                  "text": "{{rcpt.relation ?? ''}}"
+                                  "name": "Div",
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "text-secondary block text-xs font-medium"
+                                      },
+                                      "text": "$t:admin.settings.notification_definitions.recipients.relation_label"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-label-subtle block w-full px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md"
+                                      },
+                                      "text": "{{rcpt.relation ?? ''}}"
+                                    }
+                                  ]
                                 }
                               ]
                             },
@@ -298,66 +315,73 @@
                               "type": "basic",
                               "name": "Div",
                               "if": "{{rcpt.type === 'role'}}",
-                              "props": { "className": "space-y-1" },
                               "children": [
                                 {
                                   "type": "basic",
-                                  "name": "Label",
-                                  "props": { "className": "block text-xs font-medium text-gray-600 dark:text-gray-400" },
-                                  "text": "$t:admin.settings.notification_definitions.recipients.role_label"
-                                },
-                                {
-                                  "type": "composite",
-                                  "name": "SearchableDropdown",
-                                  "props": {
-                                    "value": "{{rcpt.value ?? ''}}",
-                                    "options": "{{_global.ecommerce_notification_template_form_modal?.roleSearchResults ?? []}}",
-                                    "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
-                                    "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
-                                    "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
-                                    "triggerLabel": "$t:admin.settings.notification_definitions.recipients.role_label",
-                                    "className": "w-full"
-                                  },
-                                  "actions": [
+                                  "name": "Div",
+                                  "children": [
                                     {
-                                      "event": "onSearch",
-                                      "handler": "apiCall",
-                                      "debounce": 300,
-                                      "auth_required": true,
-                                      "target": "/api/admin/roles",
-                                      "params": {
-                                        "method": "GET",
-                                        "query": {
-                                          "search": "{{$args[0]}}",
-                                          "per_page": 50
-                                        }
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "text-secondary block text-xs font-medium"
                                       },
-                                      "onSuccess": [
+                                      "text": "$t:admin.settings.notification_definitions.recipients.role_label"
+                                    },
+                                    {
+                                      "type": "composite",
+                                      "name": "SearchableDropdown",
+                                      "props": {
+                                        "value": "{{rcpt.value ?? ''}}",
+                                        "options": "{{[...(_global.ecommerce_notification_template_form_modal?.roleSearchResults ?? []).filter(o => String(o.value) !== String(rcpt.value)), ...(rcpt.value ? [{ value: rcpt.value, label: rcpt.display_name ?? rcpt.value, description: rcpt.value }] : [])]}}",
+                                        "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
+                                        "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
+                                        "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
+                                        "triggerLabel": "$t:admin.settings.notification_definitions.recipients.role_label",
+                                        "className": "w-full"
+                                      },
+                                      "actions": [
                                         {
+                                          "event": "onSearch",
+                                          "handler": "apiCall",
+                                          "debounce": 300,
+                                          "auth_required": true,
+                                          "target": "/api/admin/roles",
+                                          "params": {
+                                            "method": "GET",
+                                            "query": {
+                                              "search": "{{$args[0]}}",
+                                              "per_page": 50
+                                            }
+                                          },
+                                          "onSuccess": [
+                                            {
+                                              "handler": "setState",
+                                              "params": {
+                                                "target": "global",
+                                                "ecommerce_notification_template_form_modal.roleSearchResults": "{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"
+                                              }
+                                            }
+                                          ],
+                                          "onError": [
+                                            {
+                                              "handler": "setState",
+                                              "params": {
+                                                "target": "global",
+                                                "ecommerce_notification_template_form_modal.roleSearchResults": []
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "event": "onChange",
                                           "handler": "setState",
                                           "params": {
                                             "target": "global",
-                                            "ecommerce_notification_template_form_modal.roleSearchResults": "{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"
-                                          }
-                                        }
-                                      ],
-                                      "onError": [
-                                        {
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "global",
-                                            "ecommerce_notification_template_form_modal.roleSearchResults": []
+                                            "ecommerce_notification_template_form_modal.recipients": "{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
                                           }
                                         }
                                       ]
-                                    },
-                                    {
-                                      "event": "onChange",
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "global",
-                                        "ecommerce_notification_template_form_modal.recipients": "{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
-                                      }
                                     }
                                   ]
                                 }
@@ -367,67 +391,74 @@
                               "type": "basic",
                               "name": "Div",
                               "if": "{{rcpt.type === 'specific_users'}}",
-                              "props": { "className": "space-y-1" },
                               "children": [
                                 {
                                   "type": "basic",
-                                  "name": "Label",
-                                  "props": { "className": "block text-xs font-medium text-gray-600 dark:text-gray-400" },
-                                  "text": "$t:admin.settings.notification_definitions.recipients.users_label"
-                                },
-                                {
-                                  "id": "ecommerce_rcpt_users_{{rcptIdx}}",
-                                  "type": "composite",
-                                  "name": "SearchableDropdown",
-                                  "props": {
-                                    "multiple": true,
-                                    "value": "{{rcpt.value ?? []}}",
-                                    "options": "{{_global.ecommerce_notification_template_form_modal?.userSearchResults ?? []}}",
-                                    "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
-                                    "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
-                                    "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
-                                    "triggerLabel": "$t:admin.settings.notification_definitions.recipients.users_label",
-                                    "className": "w-full"
-                                  },
-                                  "actions": [
+                                  "name": "Div",
+                                  "children": [
                                     {
-                                      "event": "onSearch",
-                                      "handler": "apiCall",
-                                      "debounce": 300,
-                                      "auth_required": true,
-                                      "target": "/api/admin/users/search",
-                                      "params": {
-                                        "method": "GET",
-                                        "query": {
-                                          "keyword": "{{$args[0]}}"
-                                        }
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "text-secondary block text-xs font-medium"
                                       },
-                                      "onSuccess": [
+                                      "text": "$t:admin.settings.notification_definitions.recipients.users_label"
+                                    },
+                                    {
+                                      "id": "ecommerce_rcpt_users_{{rcptIdx}}",
+                                      "type": "composite",
+                                      "name": "SearchableDropdown",
+                                      "props": {
+                                        "multiple": true,
+                                        "value": "{{rcpt.value ?? []}}",
+                                        "options": "{{[...(rcpt.value ?? []).map((uid, i) => ({ value: uid, label: (rcpt.display_names ?? [])[i] ?? uid })), ...(_global.ecommerce_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
+                                        "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
+                                        "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
+                                        "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
+                                        "triggerLabel": "$t:admin.settings.notification_definitions.recipients.users_label",
+                                        "className": "w-full"
+                                      },
+                                      "actions": [
                                         {
+                                          "event": "onSearch",
+                                          "handler": "apiCall",
+                                          "debounce": 300,
+                                          "auth_required": true,
+                                          "target": "/api/admin/users/search",
+                                          "params": {
+                                            "method": "GET",
+                                            "query": {
+                                              "keyword": "{{$args[0]}}"
+                                            }
+                                          },
+                                          "onSuccess": [
+                                            {
+                                              "handler": "setState",
+                                              "params": {
+                                                "target": "global",
+                                                "ecommerce_notification_template_form_modal.userSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                                              }
+                                            }
+                                          ],
+                                          "onError": [
+                                            {
+                                              "handler": "setState",
+                                              "params": {
+                                                "target": "global",
+                                                "ecommerce_notification_template_form_modal.userSearchResults": []
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "event": "onChange",
                                           "handler": "setState",
                                           "params": {
                                             "target": "global",
-                                            "ecommerce_notification_template_form_modal.userSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
-                                          }
-                                        }
-                                      ],
-                                      "onError": [
-                                        {
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "global",
-                                            "ecommerce_notification_template_form_modal.userSearchResults": []
+                                            "ecommerce_notification_template_form_modal.recipients": "{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
                                           }
                                         }
                                       ]
-                                    },
-                                    {
-                                      "event": "onChange",
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "global",
-                                        "ecommerce_notification_template_form_modal.recipients": "{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
-                                      }
                                     }
                                   ]
                                 }
@@ -437,7 +468,9 @@
                               "type": "basic",
                               "name": "Div",
                               "if": "{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}",
-                              "props": { "className": "flex items-center gap-2" },
+                              "props": {
+                                "className": "flex-center gap-2"
+                              },
                               "children": [
                                 {
                                   "type": "composite",
@@ -459,12 +492,16 @@
                                 {
                                   "type": "basic",
                                   "name": "Span",
-                                  "props": { "className": "text-xs text-gray-600 dark:text-gray-400" },
+                                  "props": {
+                                    "className": "text-secondary text-xs"
+                                  },
                                   "text": "$t:admin.settings.notification_definitions.recipients.exclude_trigger_user"
                                 }
                               ]
                             }
-                          ]
+                          ],
+                          "props": {
+                          }
                         }
                       ]
                     }
@@ -528,46 +565,51 @@
               "id": "ecommerce_template_subject_input",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-1"
-              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  },
+                  "name": "Div",
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.subject"
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.subject"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-required"
+                          },
+                          "text": "*"
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-red-500 dark:text-red-400 ml-1" },
-                      "text": "*"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "value": "{{_global.ecommerce_notification_template_form_modal?.template?.subject?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "ecommerce_notification_template_form_modal.template.subject": "{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.subject, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
-                      }
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "value": "{{_global.ecommerce_notification_template_form_modal?.template?.subject?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                        "className": ""
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "ecommerce_notification_template_form_modal.template.subject": "{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.subject, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -577,47 +619,52 @@
               "id": "ecommerce_template_body_input",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-1"
-              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  },
+                  "name": "Div",
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.body"
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.body"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-required"
+                          },
+                          "text": "*"
+                        }
+                      ]
                     },
                     {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": { "className": "text-red-500 dark:text-red-400 ml-1" },
-                      "text": "*"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "HtmlEditor",
-                  "props": {
-                    "content": "{{_global.ecommerce_notification_template_form_modal?.template?.body?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                    "isHtml": true,
-                    "showHtmlModeToggle": false,
-                    "className": "min-h-[200px]"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "ecommerce_notification_template_form_modal.template.body": "{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.body, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
-                      }
+                      "type": "composite",
+                      "name": "HtmlEditor",
+                      "props": {
+                        "content": "{{_global.ecommerce_notification_template_form_modal?.template?.body?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                        "isHtml": true,
+                        "showHtmlModeToggle": false,
+                        "className": "min-h-[200px]"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "ecommerce_notification_template_form_modal.template.body": "{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.body, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -628,45 +675,48 @@
               "type": "basic",
               "name": "Div",
               "if": "{{_global.ecommerce_notification_template_form_modal?.template?.channel === 'database'}}",
-              "props": {
-                "className": "space-y-1"
-              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.edit_modal.click_url"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "value": "{{_global.ecommerce_notification_template_form_modal?.template?.click_url ?? ''}}",
-                    "placeholder": "/mypage/orders/{order_number}",
-                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400"
-                  },
-                  "actions": [
+                  "name": "Div",
+                  "children": [
                     {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "ecommerce_notification_template_form_modal.template.click_url": "{{$event.target.value || null}}"
-                      }
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:admin.settings.notification_definitions.edit_modal.click_url"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "value": "{{_global.ecommerce_notification_template_form_modal?.template?.click_url ?? ''}}",
+                        "placeholder": "/mypage/orders/{order_number}",
+                        "className": "font-mono"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "ecommerce_notification_template_form_modal.template.click_url": "{{$event.target.value || null}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "form-hint"
+                      },
+                      "text": "$t:admin.settings.notification_definitions.edit_modal.click_url_hint"
                     }
                   ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.edit_modal.click_url_hint"
                 }
               ]
             },
@@ -683,7 +733,7 @@
                   "type": "basic",
                   "name": "H4",
                   "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    "className": "text-body font-medium mb-2"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.variables_title"
                 },
@@ -708,19 +758,25 @@
                         {
                           "type": "basic",
                           "name": "Span",
-                          "props": { "className": "font-mono" },
+                          "props": {
+                            "className": "font-mono"
+                          },
                           "text": "{"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
-                          "props": { "className": "font-mono" },
+                          "props": {
+                            "className": "font-mono"
+                          },
                           "text": "{{v.key}}"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
-                          "props": { "className": "font-mono" },
+                          "props": {
+                            "className": "font-mono"
+                          },
                           "text": "}"
                         },
                         {
@@ -741,7 +797,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex justify-between items-center pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
+            "className": "flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
           },
           "children": [
             {
@@ -753,7 +809,7 @@
                   "name": "Button",
                   "props": {
                     "type": "button",
-                    "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                    "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
                     "disabled": "{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.btn_preview",
@@ -802,7 +858,7 @@
                   "name": "Button",
                   "props": {
                     "type": "button",
-                    "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     "disabled": "{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}"
                   },
                   "text": "$t:common.cancel",
@@ -819,7 +875,7 @@
                   "name": "Button",
                   "props": {
                     "type": "button",
-                    "className": "flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     "disabled": "{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}"
                   },
                   "children": [
@@ -827,7 +883,11 @@
                       "type": "basic",
                       "name": "Icon",
                       "if": "{{_global.ecommerce_notification_template_form_modal?.isSaving}}",
-                      "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
+                      "props": {
+                        "name": "spinner",
+                        "className": "animate-spin",
+                        "size": "sm"
+                      }
                     },
                     {
                       "type": "basic",

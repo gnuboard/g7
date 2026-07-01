@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
-use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 
@@ -74,5 +73,37 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
         return $this->model
             ->where('shipping_type', $shippingType)
             ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateTrackingByOrderOptionId(int $orderOptionId, array $tracking): ?OrderShipping
+    {
+        $payload = array_filter(
+            [
+                'carrier_id' => $tracking['carrier_id'] ?? null,
+                'tracking_number' => $tracking['tracking_number'] ?? null,
+            ],
+            static fn ($value) => $value !== null && $value !== ''
+        );
+
+        if ($payload === []) {
+            return null;
+        }
+
+        $shipping = $this->model
+            ->where('order_option_id', $orderOptionId)
+            ->first();
+
+        // 배송 레코드는 주문 생성 시점에 만들어진다. 없으면 정책 파생 컬럼을 채울 수 없으므로
+        // 생성하지 않고 갱신을 건너뛴다(상태 전이 자체는 막지 않음).
+        if ($shipping === null) {
+            return null;
+        }
+
+        $shipping->fill($payload)->save();
+
+        return $shipping;
     }
 }

@@ -202,6 +202,7 @@
               },
               "children": [
                 {
+                  "comment": "행 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀)",
                   "type": "basic",
                   "name": "Button",
                   "props": {
@@ -211,7 +212,7 @@
                     {
                       "type": "click",
                       "handler": "navigate",
-                      "params": { "path": "/board/{{route?.slug}}/{{post?.id}}" }
+                      "params": { "path": "/board/{{route?.slug}}/{{post?.id}}", "mergeQuery": true, "query": {} }
                     }
                   ],
                   "children": [

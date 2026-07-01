@@ -13,7 +13,7 @@
   },
   "sirsoft-board.boards.create": {
     "name": "掲示板作成",
-    "description": "新規掲示板作成"
+    "description": "新しい掲示板作成"
   },
   "sirsoft-board.boards.update": {
     "name": "掲示板編集",

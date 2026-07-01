@@ -1,0 +1,32 @@
+{
+    "identifier": "sirsoft-verification_kginicis",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "KG이니시스 본인인증",
+        "en": "KG Inicis Identity Verification"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": {
+        "ko": "KG이니시스 통합인증의 본인확인(reqSvcCd=03)을 G7 코어 IDV 인프라에 Provider 로 등록하는 플러그인",
+        "en": "KG Inicis Identity Verification (reqSvcCd=03) provider for G7 core IDV infrastructure"
+    },
+    "g7_version": ">=7.0.0",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-verification_kginicis",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-verification_kginicis/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

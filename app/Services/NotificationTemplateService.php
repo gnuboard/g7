@@ -13,8 +13,6 @@ class NotificationTemplateService
 {
     /**
      * 캐시 키 접두사 (드라이버 접두사 `g7:core:` 다음에 붙음).
-     *
-     * @var string
      */
     protected string $cachePrefix = 'notification.template.';
 
@@ -27,9 +25,9 @@ class NotificationTemplateService
     }
 
     /**
-     * @param NotificationTemplateRepositoryInterface $templateRepository
-     * @param NotificationDefinitionRepositoryInterface $definitionRepository
-     * @param CacheInterface $cache
+     * @param  NotificationTemplateRepositoryInterface  $templateRepository
+     * @param  NotificationDefinitionRepositoryInterface  $definitionRepository
+     * @param  CacheInterface  $cache
      */
     public function __construct(
         private readonly NotificationTemplateRepositoryInterface $templateRepository,
@@ -40,8 +38,8 @@ class NotificationTemplateService
     /**
      * 알림 타입 + 채널로 활성 템플릿 조회 (캐싱).
      *
-     * @param string $type
-     * @param string $channel
+     * @param  string  $type
+     * @param  string  $channel
      * @return NotificationTemplate|null
      */
     public function resolve(string $type, string $channel): ?NotificationTemplate
@@ -57,7 +55,7 @@ class NotificationTemplateService
     /**
      * 특정 알림 정의의 모든 템플릿 조회.
      *
-     * @param int $definitionId
+     * @param  int  $definitionId
      * @return Collection
      */
     public function getByDefinitionId(int $definitionId): Collection
@@ -68,9 +66,9 @@ class NotificationTemplateService
     /**
      * 템플릿 수정.
      *
-     * @param NotificationTemplate $template
-     * @param array $data
-     * @param int|null $userId
+     * @param  NotificationTemplate  $template
+     * @param  array  $data
+     * @param  int|null  $userId
      * @return NotificationTemplate
      */
     public function updateTemplate(NotificationTemplate $template, array $data, ?int $userId = null): NotificationTemplate
@@ -112,7 +110,7 @@ class NotificationTemplateService
     /**
      * 활성/비활성 토글.
      *
-     * @param NotificationTemplate $template
+     * @param  NotificationTemplate  $template
      * @return NotificationTemplate
      */
     public function toggleActive(NotificationTemplate $template): NotificationTemplate
@@ -136,16 +134,25 @@ class NotificationTemplateService
     /**
      * 기본값으로 복원.
      *
-     * @param NotificationTemplate $template
-     * @param array $defaultData
+     * @param  NotificationTemplate  $template
+     * @param  array  $defaultData
      * @return NotificationTemplate
      */
     public function resetToDefault(NotificationTemplate $template, array $defaultData): NotificationTemplate
     {
-        $updated = $this->templateRepository->update($template, array_merge($defaultData, [
-            'is_default' => true,
-            'user_overrides' => null,
-        ]));
+        // 복원은 사용자 수정이 아니므로 seeding 컨텍스트로 감싸 HasUserOverrides 의
+        // updating 자동 기록을 비활성화한다. 이 가드가 없으면 복원되는 trackable 필드
+        // (subject/body/click_url/recipients)가 dirty 로 감지되어 user_overrides 가
+        // 즉시 재기록되고, 복원이 무효화된다.
+        app()->instance('user_overrides.seeding', true);
+        try {
+            $updated = $this->templateRepository->update($template, array_merge($defaultData, [
+                'is_default' => true,
+                'user_overrides' => null,
+            ]));
+        } finally {
+            app()->forgetInstance('user_overrides.seeding');
+        }
 
         $definition = $updated->definition;
         if ($definition) {
@@ -158,8 +165,8 @@ class NotificationTemplateService
     /**
      * 시더에서 기본 템플릿 데이터를 조회합니다.
      *
-     * @param string $type 알림 정의 타입
-     * @param string $channel 채널명
+     * @param  string  $type  알림 정의 타입
+     * @param  string  $channel  채널명
      * @return array 기본 템플릿 데이터 (subject, body)
      */
     public function getDefaultTemplateData(string $type, string $channel): array
@@ -189,6 +196,8 @@ class NotificationTemplateService
                         return [
                             'subject' => $tpl['subject'] ?? null,
                             'body' => $tpl['body'],
+                            'click_url' => $tpl['click_url'] ?? null,
+                            'recipients' => $tpl['recipients'] ?? null,
                         ];
                     }
                 }
@@ -204,7 +213,7 @@ class NotificationTemplateService
      * definition_id가 제공되면 해당 정의의 변수 메타데이터를 조회하여
      * 샘플 값으로 치환합니다.
      *
-     * @param array $data
+     * @param  array  $data
      * @return array
      */
     public function getPreview(array $data): array
@@ -223,7 +232,7 @@ class NotificationTemplateService
                     $key = $var['key'] ?? '';
                     if ($key !== '') {
                         $description = $var['description'] ?? $key;
-                        $replacements['{' . $key . '}'] = '[' . $description . ']';
+                        $replacements['{'.$key.'}'] = '['.$description.']';
                     }
                 }
             }
@@ -231,7 +240,7 @@ class NotificationTemplateService
 
         // 명시적으로 전달된 variables가 있으면 덮어쓰기
         foreach ($data['variables'] ?? [] as $key => $value) {
-            $replacements['{' . $key . '}'] = (string) $value;
+            $replacements['{'.$key.'}'] = (string) $value;
         }
 
         return [
@@ -243,8 +252,8 @@ class NotificationTemplateService
     /**
      * 특정 타입+채널의 캐시 무효화.
      *
-     * @param string $type
-     * @param string $channel
+     * @param  string  $type
+     * @param  string  $channel
      * @return void
      */
     public function invalidateCache(string $type, string $channel): void
@@ -255,12 +264,12 @@ class NotificationTemplateService
     /**
      * 캐시 키 생성.
      *
-     * @param string $type
-     * @param string $channel
+     * @param  string  $type
+     * @param  string  $channel
      * @return string
      */
     private function getCacheKey(string $type, string $channel): string
     {
-        return $this->cachePrefix . $type . '.' . $channel;
+        return $this->cachePrefix.$type.'.'.$channel;
     }
 }

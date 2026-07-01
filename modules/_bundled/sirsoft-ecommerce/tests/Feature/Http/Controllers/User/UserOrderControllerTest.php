@@ -6,15 +6,15 @@ use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
+use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
-use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -27,7 +27,9 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class UserOrderControllerTest extends ModuleTestCase
 {
     protected string $cartKey;
+
     protected Product $product;
+
     protected ProductOption $productOption;
 
     protected function setUp(): void
@@ -39,8 +41,8 @@ class UserOrderControllerTest extends ModuleTestCase
         // 테스트 상품 생성
         $this->product = Product::create([
             'name' => ['ko' => '테스트 상품', 'en' => 'Test Product'],
-            'product_code' => 'TEST-' . Str::random(8),
-            'sku' => 'SKU-' . Str::random(8),
+            'product_code' => 'TEST-'.Str::random(8),
+            'sku' => 'SKU-'.Str::random(8),
             'list_price' => 20000,
             'selling_price' => 15000,
             'currency_code' => 'KRW',
@@ -53,10 +55,10 @@ class UserOrderControllerTest extends ModuleTestCase
         // 테스트 상품 옵션 생성
         $this->productOption = ProductOption::create([
             'product_id' => $this->product->id,
-            'option_code' => 'OPT-' . Str::random(8),
+            'option_code' => 'OPT-'.Str::random(8),
             'option_values' => ['색상' => '검정', '사이즈' => 'M'],
             'option_name' => null,
-            'sku' => 'SKU-' . Str::random(8),
+            'sku' => 'SKU-'.Str::random(8),
             'price_adjustment' => 0,
             'stock_quantity' => 50,
             'safe_stock_quantity' => 5,
@@ -273,9 +275,14 @@ class UserOrderControllerTest extends ModuleTestCase
     }
 
     /**
-     * 비로그인 사용자 주문 생성 실패 테스트
+     * 비로그인 사용자도 주문 생성 endpoint 진입 가능 (인증으로 막지 않음)
+     *
+     * POST user/orders 가 회원/비회원 공유 단일 endpoint(optional.sanctum)로 통합됨.
+     * 따라서 비로그인 요청은 401 로 차단되지 않고 검증 단계까지 진입한다. 본 테스트는
+     * 잘못된 body(루트 레벨 키, 비회원 필수값 누락)로 401 이 아닌 422(검증 실패)가 나는지 확인해
+     * 인증 차단이 아닌 검증 차단임을 보장한다.
      */
-    public function test_비로그인_사용자_주문_생성_실패(): void
+    public function test_비로그인_주문_생성은_인증이_아니라_검증으로_처리된다(): void
     {
         $response = $this->postJson(
             '/api/modules/sirsoft-ecommerce/user/orders',
@@ -295,7 +302,8 @@ class UserOrderControllerTest extends ModuleTestCase
             ['X-Cart-Key' => $this->cartKey]
         );
 
-        $response->assertStatus(401);
+        // 401(인증 차단) 이 아니라 422(검증 실패) — 비회원도 endpoint 에 진입함
+        $response->assertStatus(422);
     }
 
     // ========================================================================
@@ -339,6 +347,39 @@ class UserOrderControllerTest extends ModuleTestCase
             ])
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.pagination.total', 3);
+    }
+
+    /**
+     * 현재 로케일 키가 없는 다국어(array) product_option_name 옵션이 포함된 주문도
+     * 500 없이 직렬화된다 (UserOrderListResource 의 reset(매직속성) 회귀).
+     */
+    public function test_주문_목록_array_옵션명_직렬화_오류없음(): void
+    {
+        app()->setLocale('en');
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        $order = Order::factory()->forUser($user)->pendingPayment()->create();
+        OrderOption::factory()->forOrder($order)->create([
+            'product_option_name' => ['ko' => '레드 / L'],
+        ]);
+
+        // 운영처럼 E_NOTICE("Indirect modification of overloaded property") 를 ErrorException 으로 승격
+        $previous = set_error_handler(function (int $severity, string $message, string $file, int $line): bool {
+            if (! (error_reporting() & $severity)) {
+                return false;
+            }
+            throw new \ErrorException($message, 0, $severity, $file, $line);
+        });
+
+        try {
+            $response = $this->getJson('/api/modules/sirsoft-ecommerce/user/orders');
+        } finally {
+            set_error_handler($previous);
+        }
+
+        $response->assertStatus(200);
+        $this->assertSame('레드 / L', $response->json('data.data.0.items.0.product_option_name'));
     }
 
     /**
@@ -716,7 +757,7 @@ class UserOrderControllerTest extends ModuleTestCase
         ], $overrides);
     }
 
-    public function test_비PG_체크ON_배송지_생성(): void
+    public function test_비_p_g_체크_o_n_배송지_생성(): void
     {
         $user = $this->createUser();
         $this->actingAs($user);
@@ -738,7 +779,7 @@ class UserOrderControllerTest extends ModuleTestCase
         ]);
     }
 
-    public function test_비PG_체크OFF_배송지_미생성(): void
+    public function test_비_p_g_체크_of_f_배송지_미생성(): void
     {
         $user = $this->createUser();
         $this->actingAs($user);
@@ -757,7 +798,7 @@ class UserOrderControllerTest extends ModuleTestCase
         ]);
     }
 
-    public function test_비PG_체크_미전달_배송지_미생성(): void
+    public function test_비_p_g_체크_미전달_배송지_미생성(): void
     {
         $user = $this->createUser();
         $this->actingAs($user);
@@ -776,7 +817,7 @@ class UserOrderControllerTest extends ModuleTestCase
         ]);
     }
 
-    public function test_PG_체크ON_order_meta에_플래그_저장(): void
+    public function test_p_g_체크_o_n_order_meta에_플래그_저장(): void
     {
         // PG 결제가 실제로 동작하도록 기본 PG 제공자 설정
         app(EcommerceSettingsService::class)->setSetting('order_settings.default_pg_provider', 'tosspayments');
@@ -804,7 +845,7 @@ class UserOrderControllerTest extends ModuleTestCase
         $this->assertArrayHasKey('shipping_info_for_save', $order->order_meta);
     }
 
-    public function test_PG_체크ON_UserAddress_미생성(): void
+    public function test_p_g_체크_o_n_user_address_미생성(): void
     {
         app(EcommerceSettingsService::class)->setSetting('order_settings.default_pg_provider', 'tosspayments');
 
@@ -830,7 +871,7 @@ class UserOrderControllerTest extends ModuleTestCase
         ]);
     }
 
-    public function test_PG_체크OFF_order_meta_미저장(): void
+    public function test_p_g_체크_of_f_order_meta_미저장(): void
     {
         app(EcommerceSettingsService::class)->setSetting('order_settings.default_pg_provider', 'tosspayments');
 
@@ -912,9 +953,8 @@ class UserOrderControllerTest extends ModuleTestCase
     /**
      * cart_id를 포함한 임시 주문 생성 헬퍼
      *
-     * @param int $userId 사용자 ID
-     * @param array $cartItems [['cart_id' => int, 'quantity' => int, 'product_id' => int, 'product_option_id' => int], ...]
-     * @return TempOrder
+     * @param  int  $userId  사용자 ID
+     * @param  array  $cartItems  [['cart_id' => int, 'quantity' => int, 'product_id' => int, 'product_option_id' => int], ...]
      */
     protected function createTempOrderWithCartIds(int $userId, array $cartItems): TempOrder
     {
@@ -1027,8 +1067,8 @@ class UserOrderControllerTest extends ModuleTestCase
         // 두 번째 상품/옵션 생성
         $product2 = Product::create([
             'name' => ['ko' => '테스트 상품2', 'en' => 'Test Product2'],
-            'product_code' => 'TEST-' . Str::random(8),
-            'sku' => 'SKU-' . Str::random(8),
+            'product_code' => 'TEST-'.Str::random(8),
+            'sku' => 'SKU-'.Str::random(8),
             'list_price' => 20000,
             'selling_price' => 15000,
             'currency_code' => 'KRW',
@@ -1039,9 +1079,9 @@ class UserOrderControllerTest extends ModuleTestCase
         ]);
         $option2 = ProductOption::create([
             'product_id' => $product2->id,
-            'option_code' => 'OPT-' . Str::random(8),
+            'option_code' => 'OPT-'.Str::random(8),
             'option_values' => ['색상' => '흰색'],
-            'sku' => 'SKU-' . Str::random(8),
+            'sku' => 'SKU-'.Str::random(8),
             'price_adjustment' => 0,
             'stock_quantity' => 50,
             'safe_stock_quantity' => 5,

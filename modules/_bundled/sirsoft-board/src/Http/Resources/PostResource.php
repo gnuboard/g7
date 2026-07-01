@@ -3,10 +3,13 @@
 namespace Modules\Sirsoft\Board\Http\Resources;
 
 use App\Enums\PermissionType;
+use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
+use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
@@ -35,7 +38,7 @@ class PostResource extends BaseApiResource
             ...$this->getCommonFields($request, $slug),
 
             // 상세 전용: 필터링된 제목/내용 (삭제글·비밀글 권한 체크)
-            'title' => $this->getFilteredTitle($slug),
+            'title' => $this->getFilteredTitle($request, $slug),
             'content' => $this->getFilteredContent($request, $slug),
 
             // 상세 전용: 작성자 UUID
@@ -50,6 +53,9 @@ class PostResource extends BaseApiResource
 
             // 상세 전용: IP 주소 (admin.manage 권한 보유자만)
             'ip_address' => $this->getIpAddressForResponse($slug),
+
+            // 상세 전용: 블라인드/복원 등 처리 이력 (admin.manage 권한 보유자만, 민감 필드 제외)
+            'action_logs' => $this->getActionLogsForResponse($slug),
 
             // 상세 전용: 관계 데이터 (조건부 로딩)
             'board' => $this->relationLoaded('board') ? $this->getBoardInfo() : null,
@@ -97,7 +103,9 @@ class PostResource extends BaseApiResource
             'deleted_at' => $this->deleted_at ? $this->formatDateTimeStringForUser($this->deleted_at) : null,
 
             // 목록 전용: 본문 요약 (DB SUBSTRING 우선, 없으면 content에서 추출)
-            'content_preview' => $this->getContentPreviewForList(150),
+            // 블라인드·비밀글은 목록/검색 미리보기에 원문이 새지 않도록
+            // 권한과 무관하게 빈 문자열 반환 (본문 자체는 상세에서 권한자에게만 노출)
+            'content_preview' => $this->getMaskedContentPreviewForList(150),
         ];
     }
 
@@ -129,7 +137,7 @@ class PostResource extends BaseApiResource
             'author' => $this->getAuthorInfo(includeIsGuest: true),
 
             // 타임스탬프
-            'created_at'           => $this->formatCreatedAt($this->created_at),
+            'created_at' => $this->formatCreatedAt($this->created_at),
             'created_at_formatted' => $this->formatCreatedAtFormat(
                 $this->created_at,
                 g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')
@@ -189,7 +197,7 @@ class PostResource extends BaseApiResource
             'is_reply' => $this->parent_id !== null,
 
             // 타임스탬프
-            'created_at'           => $this->formatCreatedAt($this->created_at),
+            'created_at' => $this->formatCreatedAt($this->created_at),
             'created_at_formatted' => $this->formatCreatedAtFormat(
                 $this->created_at,
                 g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')
@@ -235,8 +243,8 @@ class PostResource extends BaseApiResource
         $isGuest = $this->user_id === null;
 
         if ($this->user_id && $this->user) {
-            $userStatus = \App\Enums\UserStatus::tryFrom($this->user->status);
-            $isWithdrawn = $userStatus === \App\Enums\UserStatus::Withdrawn;
+            $userStatus = UserStatus::tryFrom($this->user->status);
+            $isWithdrawn = $userStatus === UserStatus::Withdrawn;
 
             $author = [
                 'uuid' => $this->user->uuid,
@@ -295,7 +303,7 @@ class PostResource extends BaseApiResource
             $slug = request()->route('slug') ?? ($this->relationLoaded('board') ? $this->board?->slug : null);
 
             if ($slug && $attachment->hash) {
-                return '/api/modules/sirsoft-board/boards/' . $slug . '/attachment/' . $attachment->hash . '/preview';
+                return '/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$attachment->hash.'/preview';
             }
 
             return null;
@@ -393,7 +401,7 @@ class PostResource extends BaseApiResource
 
         $preview = mb_substr($plain, 0, $length);
 
-        return $preview . (mb_strlen($plain) > $length ? '...' : '');
+        return $preview.(mb_strlen($plain) > $length ? '...' : '');
     }
 
     /**
@@ -417,11 +425,30 @@ class PostResource extends BaseApiResource
 
             $preview = mb_substr($plain, 0, $length);
 
-            return $preview . (mb_strlen($plain) > $length ? '...' : '');
+            return $preview.(mb_strlen($plain) > $length ? '...' : '');
         }
 
         // fallback: content 전체가 로딩된 경우 (상세 페이지 등)
         return $this->getContentPreview($length);
+    }
+
+    /**
+     * 목록/검색용 본문 요약을 권한 정책에 따라 마스킹하여 반환합니다.
+     *
+     * 블라인드·비밀글은 목록 미리보기에 원문이 새지 않도록
+     * 권한과 무관하게 빈 문자열을 반환합니다. 본문 자체는 상세 조회(getFilteredContent)
+     * 에서 권한자(작성자 본인·관리자)에게만 노출됩니다.
+     *
+     * @param  int  $length  최대 길이
+     * @return string 마스킹 적용된 본문 요약 (차단 시 빈 문자열)
+     */
+    private function getMaskedContentPreviewForList(int $length = 150): string
+    {
+        if ($this->status === PostStatus::Blinded || $this->is_secret) {
+            return '';
+        }
+
+        return $this->getContentPreviewForList($length);
     }
 
     /**
@@ -463,6 +490,31 @@ class PostResource extends BaseApiResource
     }
 
     /**
+     * 처리 이력(action_logs)을 권한에 따라 반환합니다. (admin.manage 권한 보유자만)
+     *
+     * 블라인드/복원/삭제 사유·처리자명·처리일을 노출하되, 민감 필드(admin_id, ip_address)는
+     * 제외합니다. 비권한자에게는 null 을 반환하여 사유가 누출되지 않도록 합니다.
+     *
+     * @param  string|null  $slug  게시판 슬러그
+     * @return array<int, array<string, mixed>>|null 표시용 처리 이력 목록
+     */
+    private function getActionLogsForResponse(?string $slug): ?array
+    {
+        if (! $slug || ! $this->checkBoardPermission($slug, 'admin.manage')) {
+            return null;
+        }
+
+        $logs = $this->action_logs ?? [];
+
+        return array_map(static fn (array $log): array => [
+            'action' => $log['action'] ?? null,
+            'reason' => $log['reason'] ?? null,
+            'admin_name' => $log['admin_name'] ?? null,
+            'created_at' => $log['created_at'] ?? null,
+        ], $logs);
+    }
+
+    /**
      * 첨부파일을 권한에 따라 반환합니다. (비밀글 열람 권한 체크)
      *
      * @param  Request  $request  HTTP 요청
@@ -473,6 +525,18 @@ class PostResource extends BaseApiResource
     {
         if (! $this->relationLoaded('attachments')) {
             return null;
+        }
+
+        // 삭제된 게시글: 관리 권한자가 아니면 첨부 목록 미노출.
+        // 단, 게시글 삭제로 함께 숨겨진(cascade) 첨부는 사용자가 직접 지운 것이 아니므로
+        // 글을 볼 수 있는 사람에게는 노출한다 (cascade 댓글 노출과 일관).
+        if ($this->deleted_at && ! $this->canViewDeletedContent($request, $slug)) {
+            $cascadeAttachments = $this->attachments->filter(
+                fn ($attachment) => $attachment->deleted_at !== null
+                    && $attachment->trigger_type === TriggerType::Cascade->value
+            )->values();
+
+            return AttachmentResource::collection($cascadeAttachments);
         }
 
         if ($this->is_secret && ! $this->canViewSecretContent($request, $slug)) {
@@ -612,13 +676,11 @@ class PostResource extends BaseApiResource
      * @param  string|null  $slug  게시판 슬러그
      * @return string 필터링된 제목
      */
-    private function getFilteredTitle(?string $slug): string
+    private function getFilteredTitle(Request $request, ?string $slug): string
     {
-        // 삭제된 게시글: admin.manage 권한이 없으면 제목 숨김
-        if ($this->deleted_at) {
-            if (! $slug || ! $this->checkBoardPermission($slug, 'admin.manage')) {
-                return __('sirsoft-board::messages.post.deleted_post_title');
-            }
+        // 삭제된 게시글: 관리 권한(manager/admin.manage)이 없으면 제목 숨김
+        if ($this->deleted_at && ! $this->canViewDeletedContent($request, $slug)) {
+            return __('sirsoft-board::messages.post.deleted_post_title');
         }
 
         return $this->title;
@@ -633,11 +695,16 @@ class PostResource extends BaseApiResource
      */
     private function getFilteredContent(Request $request, ?string $slug): ?string
     {
-        // 삭제된 게시글: admin.manage 권한이 없으면 내용 숨김
-        if ($this->deleted_at) {
-            if (! $slug || ! $this->checkBoardPermission($slug, 'admin.manage')) {
-                return __('sirsoft-board::messages.post.deleted_post_content');
-            }
+        // 삭제된 게시글: 관리 권한(manager/admin.manage)이 없으면 내용 숨김
+        if ($this->deleted_at && ! $this->canViewDeletedContent($request, $slug)) {
+            return __('sirsoft-board::messages.post.deleted_post_content');
+        }
+
+        // 블라인드 게시글: 원문 열람 권한(관리자 또는 작성자 본인)이 없으면 content를 null로 반환
+        // - 목록 제목·블라인드 안내·사유 문구는 그대로 노출하되, 원문만 권한자 한정
+        // - null 반환 시 프론트의 '원글 보기' 버튼이 자동으로 미노출됨
+        if ($this->status === PostStatus::Blinded && ! $this->canViewBlindedContent($request, $slug)) {
+            return null;
         }
 
         // 비밀글: 권한 없으면 content를 null로 반환
@@ -648,5 +715,65 @@ class PostResource extends BaseApiResource
         }
 
         return $this->content;
+    }
+
+    /**
+     * 블라인드 게시글 원문 열람 가능 여부를 확인합니다.
+     *
+     * 열람 가능 조건 (OR):
+     * 1. 작성자 본인 (회원 게시글 — 비회원 글은 본인 판정 불가)
+     * 2. 게시판 관리자 (Admin: admin.manage / User: manager)
+     *
+     * 비밀글(canViewSecretContent)과 달리 비밀번호 검증·posts.read-secret 은 인정하지 않습니다.
+     * (블라인드는 운영 제재이므로 비밀번호로 해제되지 않음)
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  string|null  $slug  게시판 슬러그
+     * @return bool 원문 열람 가능 여부
+     */
+    private function canViewBlindedContent(Request $request, ?string $slug): bool
+    {
+        // 1. 작성자 본인 (회원 게시글)
+        $user = Auth::user();
+        if ($user && $this->user_id && $this->user_id === $user->id) {
+            return true;
+        }
+
+        // 2. 게시판 관리자 권한
+        if (! $slug) {
+            return false;
+        }
+
+        if ($this->isAdminRequest($request)) {
+            return $this->checkBoardPermission($slug, 'admin.manage');
+        }
+
+        return $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+    }
+
+    /**
+     * 삭제된 게시글 원문(제목/본문) 열람 가능 여부를 확인합니다.
+     *
+     * 열람 가능 조건: 게시판 관리자 (Admin: admin.manage / User: manager).
+     * 블라인드(canViewBlindedContent)와 달리 작성자 본인은 인정하지 않습니다.
+     * 삭제된 게시글은 상세 진입 가드(PostController::show)에서 이미 manager 만
+     * 허용하므로(작성자 본인은 404), 필터 권한도 동일하게 권한자 한정으로 맞춥니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  string|null  $slug  게시판 슬러그
+     * @return bool 원문 열람 가능 여부
+     */
+    private function canViewDeletedContent(Request $request, ?string $slug): bool
+    {
+        if (! $slug) {
+            return false;
+        }
+
+        if ($this->isAdminRequest($request)) {
+            return $this->checkBoardPermission($slug, 'admin.manage');
+        }
+
+        return $this->checkBoardPermission($slug, 'manager', PermissionType::User)
+            || $this->checkBoardPermission($slug, 'admin.manage');
     }
 }

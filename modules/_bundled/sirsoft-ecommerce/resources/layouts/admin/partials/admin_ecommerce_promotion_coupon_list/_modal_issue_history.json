@@ -8,34 +8,28 @@
   "name": "Modal",
   "props": {
     "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title",
-    "size": "lg"
+    "width": "920px"
   },
   "children": [
     {
       "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-sm text-gray-600 dark:text-gray-400 mb-4"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.subtitle|count={{couponIssues?.data?.pagination?.total || 0}}"
-    },
-    {
-      "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center justify-between mb-4"
+        "className": "flex-between mb-4"
       },
       "children": [
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex items-center gap-2" },
+          "props": {
+            "className": "flex-center gap-2"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400"
+                "className": "text-label"
               },
               "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.total|count={{couponIssues?.data?.pagination?.total || 0}}"
             },
@@ -46,7 +40,7 @@
               "props": {
                 "color": "blue",
                 "size": "sm",
-                "className": "flex items-center gap-1"
+                "className": "flex-center gap-1"
               },
               "children": [
                 {
@@ -75,7 +69,9 @@
                         },
                         {
                           "handler": "refetchDataSource",
-                          "params": { "id": "couponIssues" }
+                          "params": {
+                            "dataSourceId": "couponIssues"
+                          }
                         }
                       ]
                     }
@@ -84,7 +80,10 @@
                     {
                       "type": "basic",
                       "name": "Icon",
-                      "props": { "name": "x", "className": "w-3 h-3" }
+                      "props": {
+                        "name": "x",
+                        "className": "w-3 h-3"
+                      }
                     }
                   ]
                 }
@@ -100,9 +99,18 @@
             "className": "w-20",
             "value": "{{String(_global.issueHistoryPerPage || 10)}}",
             "options": [
-              { "value": "10", "label": "10" },
-              { "value": "20", "label": "20" },
-              { "value": "50", "label": "50" }
+              {
+                "value": "10",
+                "label": "10"
+              },
+              {
+                "value": "20",
+                "label": "20"
+              },
+              {
+                "value": "50",
+                "label": "50"
+              }
             ]
           },
           "actions": [
@@ -120,7 +128,9 @@
                 },
                 {
                   "handler": "refetchDataSource",
-                  "params": { "id": "couponIssues" }
+                  "params": {
+                    "dataSourceId": "couponIssues"
+                  }
                 }
               ]
             }
@@ -132,7 +142,7 @@
       "type": "composite",
       "name": "DataGrid",
       "props": {
-        "data": "{{couponIssues?.data || []}}",
+        "data": "{{couponIssues?.data?.data || []}}",
         "loading": "{{couponIssues?.$loading}}",
         "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty",
         "columns": [
@@ -149,27 +159,38 @@
               {
                 "type": "basic",
                 "name": "Div",
-                "props": { "className": "group flex items-center justify-between" },
+                "props": {
+                  "className": "group flex-between"
+                },
                 "children": [
                   {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "flex flex-col" },
+                    "props": {
+                      "className": "flex flex-col"
+                    },
                     "children": [
                       {
                         "type": "basic",
                         "name": "Div",
-                        "props": { "className": "flex items-center gap-1" },
+                        "props": {
+                          "className": "flex items-center gap-1"
+                        },
                         "children": [
                           {
                             "type": "basic",
                             "name": "Icon",
-                            "props": { "name": "user", "className": "w-4 h-4 text-gray-400 dark:text-gray-500" }
+                            "props": {
+                              "name": "user",
+                              "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                            }
                           },
                           {
                             "type": "basic",
                             "name": "Span",
-                            "props": { "className": "font-medium text-gray-900 dark:text-white" },
+                            "props": {
+                              "className": "font-medium text-gray-900 dark:text-white"
+                            },
                             "text": "{{row.user_name}}"
                           }
                         ]
@@ -185,8 +206,16 @@
                       "position": "right",
                       "className": "opacity-0 group-hover:opacity-100",
                       "items": [
-                        { "id": "view_member", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member", "iconName": "user" },
-                        { "id": "filter_by_user", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.filter_by_user", "iconName": "filter" }
+                        {
+                          "id": "view_member",
+                          "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
+                          "iconName": "user"
+                        },
+                        {
+                          "id": "filter_by_user",
+                          "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.filter_by_user",
+                          "iconName": "filter"
+                        }
                       ]
                     },
                     "actions": [
@@ -197,7 +226,9 @@
                         "cases": {
                           "view_member": {
                             "handler": "navigate",
-                            "params": { "path": "/admin/users/{{row.user_id}}" }
+                            "params": {
+                              "path": "/admin/users/{{row.user_id}}"
+                            }
                           },
                           "filter_by_user": {
                             "handler": "sequence",
@@ -215,7 +246,9 @@
                               },
                               {
                                 "handler": "refetchDataSource",
-                                "params": { "id": "couponIssues" }
+                                "params": {
+                                  "dataSourceId": "couponIssues"
+                                }
                               }
                             ]
                           }
@@ -230,12 +263,15 @@
           {
             "field": "status",
             "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.status",
-            "width": "180px",
+            "width": "140px",
             "cellChildren": [
               {
+                "comment": "배지가 셀 전체 너비를 차지하지 않도록 items-start 로 콘텐츠 너비만 차지",
                 "type": "basic",
                 "name": "Div",
-                "props": { "className": "flex flex-col" },
+                "props": {
+                  "className": "flex flex-col items-start gap-1"
+                },
                 "children": [
                   {
                     "type": "composite",
@@ -249,10 +285,88 @@
                     "type": "basic",
                     "name": "Span",
                     "if": "{{row.used_at}}",
-                    "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-1" },
+                    "props": {
+                      "className": "form-hint"
+                    },
                     "text": "{{row.used_at}}"
                   }
                 ]
+              }
+            ]
+          },
+          {
+            "comment": "사용처: 사용된 건은 주문번호 링크, 아니면 - 표시",
+            "field": "order_number",
+            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.used_order",
+            "width": "160px",
+            "cellChildren": [
+              {
+                "type": "basic",
+                "name": "A",
+                "if": "{{!!row.order_number}}",
+                "props": {
+                  "href": "/admin/ecommerce/orders/{{row.order_id}}",
+                  "className": "text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                },
+                "text": "{{row.order_number}}"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{!row.order_number}}",
+                "props": {
+                  "className": "text-gray-400 dark:text-gray-500 text-sm"
+                },
+                "text": "-"
+              }
+            ]
+          },
+          {
+            "comment": "작업: 미사용(취소 가능) 건만 발급취소 버튼 노출",
+            "field": "actions",
+            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.actions",
+            "width": "120px",
+            "cellChildren": [
+              {
+                "type": "basic",
+                "name": "Button",
+                "if": "{{row.is_cancellable}}",
+                "props": {
+                  "type": "button",
+                  "className": "px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.cancel_issue",
+                "actions": [
+                  {
+                    "type": "click",
+                    "handler": "sequence",
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "cancelIssueTarget": {
+                            "id": "{{row.id}}",
+                            "user_name": "{{row.user_name}}"
+                          }
+                        }
+                      },
+                      {
+                        "handler": "openModal",
+                        "target": "modal_cancel_issue_confirm"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{!row.is_cancellable}}",
+                "props": {
+                  "className": "text-gray-300 dark:text-gray-600 text-sm"
+                },
+                "text": "-"
               }
             ]
           }
@@ -262,7 +376,9 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "mt-4 flex justify-center" },
+      "props": {
+        "className": "mt-4 flex justify-center"
+      },
       "children": [
         {
           "type": "composite",
@@ -287,7 +403,9 @@
                 },
                 {
                   "handler": "refetchDataSource",
-                  "params": { "id": "couponIssues" }
+                  "params": {
+                    "dataSourceId": "couponIssues"
+                  }
                 }
               ]
             }
@@ -298,7 +416,9 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex justify-end mt-6" },
+      "props": {
+        "className": "flex justify-end mt-6"
+      },
       "children": [
         {
           "type": "basic",
@@ -307,9 +427,18 @@
             "type": "button",
             "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
           },
-          "actions": [{ "type": "click", "handler": "closeModal" }],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
           "children": [
-            { "type": "basic", "name": "Span", "text": "$t:common.close" }
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.close"
+            }
           ]
         }
       ]

@@ -20,7 +20,7 @@ class BulkUpdateProductsRequest extends FormRequest
     /**
      * 권한 확인
      *
-     * @return bool
+     * @return bool 인가 여부 (권한 체크는 미들웨어에 위임)
      */
     public function authorize(): bool
     {
@@ -84,7 +84,7 @@ class BulkUpdateProductsRequest extends FormRequest
             'option_items.*.product_id' => ['required', 'integer', Rule::exists(Product::class, 'id')],
             'option_items.*.option_id' => ['required', 'integer', Rule::exists(ProductOption::class, 'id')],
             'option_items.*.option_name' => ['nullable', 'array'],
-            'option_items.*.option_name.*' => ['string', 'max:255'],
+            'option_items.*.option_name.*' => ['nullable', 'string', 'max:255'],
             'option_items.*.sku' => ['nullable', 'string', 'max:100'],
             'option_items.*.list_price' => ['nullable', 'numeric', 'min:0'],
             'option_items.*.price_adjustment' => ['nullable', 'numeric'],

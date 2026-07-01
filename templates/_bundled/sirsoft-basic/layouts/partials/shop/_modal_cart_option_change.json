@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "장바구니 상품 옵션 변경 모달"
+    "description": "장바구니 상품 옵션 변경 모달",
+    "editor_label": "$t:user.modal_label.shop.cart_option_change_modal"
   },
   "id": "cart_option_change_modal",
   "type": "composite",
@@ -229,6 +230,110 @@
           ]
         },
         {
+          "comment": "=== 추가옵션 재선택 섹션 ===",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{$parent._local.optionProduct?.additional_options?.length > 0}}",
+          "props": { "className": "space-y-3 mb-4" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+              "text": "$t:shop.additional_options"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "iteration": {
+                "source": "{{$parent._local.optionProduct?.additional_options ?? []}}",
+                "item_var": "addGroup"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "mb-2" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": { "className": "block text-sm text-gray-600 dark:text-gray-400 mb-1" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "text": "{{addGroup.name}}" },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{addGroup.is_required}}",
+                          "props": { "className": "text-red-500 dark:text-red-400 ml-0.5" },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "className": "w-full",
+                        "value": "{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}",
+                        "placeholder": "$t:shop.additional_option_placeholder",
+                        "options": "{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "$parent._local",
+                            "additionalSelections": "{{$event.target.value === '' ? Object.fromEntries(Object.entries($parent._local.additionalSelections ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id))) : Object.assign({}, $parent._local.additionalSelections ?? {}, { [addGroup.id]: Number($event.target.value) })}}",
+                            "additionalCustomTexts": "{{Object.fromEntries(Object.entries($parent._local.additionalCustomTexts ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id)))}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "직접입력 칸 — 선택된 선택지가 allow_custom_text 일 때만 노출. 입력란임이 명확하도록 라벨 + 테두리/배경 스타일 적용",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(addGroup.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[addGroup.id]))?.allow_custom_text === true}}",
+                      "props": { "className": "mt-2" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": { "className": "block text-xs text-gray-600 dark:text-gray-400 mb-1" },
+                          "text": "$t:shop.additional_option_custom_text_label"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                            "value": "{{$parent._local.additionalCustomTexts?.[addGroup.id] ?? ''}}",
+                            "placeholder": "$t:shop.additional_option_custom_text_placeholder",
+                            "maxLength": 255
+                          },
+                          "actions": [
+                            {
+                              "type": "input",
+                              "handler": "setState",
+                              "params": {
+                                "target": "$parent._local",
+                                "additionalCustomTexts": "{{$event.target.value.trim() === '' ? Object.fromEntries(Object.entries($parent._local.additionalCustomTexts ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id))) : Object.assign({}, $parent._local.additionalCustomTexts ?? {}, { [addGroup.id]: $event.target.value })}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
           "comment": "선택된 옵션 정보",
           "type": "basic",
           "name": "Div",
@@ -272,6 +377,17 @@
                     }
                   ]
                 }
+              ]
+            },
+            {
+              "comment": "추가옵션 추가금 합계 (선택된 추가금이 있을 때)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => sum + (((g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id]))?.price_adjustment) ?? 0), 0) > 0}}",
+              "props": { "className": "flex justify-between items-center mt-2 pt-2 border-t border-blue-100 dark:border-blue-800 text-xs text-gray-600 dark:text-gray-300" },
+              "children": [
+                { "type": "basic", "name": "Span", "text": "$t:shop.additional_options_amount" },
+                { "type": "basic", "name": "Span", "text": "{{(() => { const total = ($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => sum + (((g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id]))?.price_adjustment) ?? 0), 0); const c = (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = c?.decimal_places ?? 0; const n = total.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = c?.symbol ?? '₩'; return '+' + ((c?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}" }
               ]
             },
             {
@@ -414,7 +530,8 @@
                     "method": "PUT",
                     "body": {
                       "product_option_id": "{{$parent._local.matchedOption?.id ?? $parent._local.optionModal.targetItem?.product_option_id}}",
-                      "quantity": "{{$parent._local.selectedQuantity ?? $parent._local.optionModal.targetItem?.quantity}}"
+                      "quantity": "{{$parent._local.selectedQuantity ?? $parent._local.optionModal.targetItem?.quantity}}",
+                      "additional_option_selections": "{{Object.entries($parent._local.additionalSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: $parent._local.additionalCustomTexts?.[Number(gid)] }))}}"
                     },
                     "headers": { "X-Cart-Key": "{{_global.cartKey}}" }
                   },

@@ -1,0 +1,19 @@
+{
+  "editor": {
+    "data_source": {
+      "settings": "設定"
+    }
+  },
+  "name": "Hello プラグイン",
+  "description": "学習用最小サンプルプラグイン (Hello モジュール フック消費)",
+  "settings": {
+    "title": "Hello プラグイン設定",
+    "description": "Hello モジュールのメモ作成フックを購読してログを記録する学習用サンプルです。",
+    "fields": {
+      "log_enabled": {
+        "label": "ログ記録を使用",
+        "hint": "有効化するとメモ作成時に hello-plugin.log ファイルに記録します。"
+      }
+    }
+  }
+}

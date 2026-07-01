@@ -1,0 +1,244 @@
+{
+  "target_layout": "_user_base",
+  "injections": [
+    {
+      "target_id": "header_currency_inject_anchor",
+      "position": "append_child",
+      "components": [
+        {
+          "id": "ext_header_currency_selector",
+          "comment": "헤더 통화+배송국가 공용 셀렉터 (이커머스 주입, D4). slot='header_currency' 로 SlotContext 에 등록 → 템플릿 헤더(PC·모바일 SlotContainer)가 떙겨 렌더. 헤더는 이 조각을 모름(모듈 무지). 두 섹션: ① 통화(availableCurrencies) ② 배송국가(availableShippingCountries, 해외배송 활성+2개↑ 시). 선택 시 로그인 회원=영속 PUT+localStorage, 비회원=localStorage. 배송국가 변경 시 장바구니/체크아웃 데이터소스 refetch. 표시 제어: 기본 hidden(display:none) → init_actions 가 채운 파생 상태(availableCurrencies/availableShippingCountries)가 표시 조건을 만족할 때만 hidden 해제. if(마운트 게이트) 대신 className 토글이라 첫 페인트부터 무조건 숨김 → 깜빡임(떴다 사라짐) 원천 차단.",
+          "type": "basic",
+          "name": "Div",
+          "slot": "header_currency",
+          "props": { "className": "relative {{(_global.availableCurrencies ?? []).length > 0 || ((_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true) ? '' : 'hidden'}}" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors",
+                "aria-haspopup": "listbox",
+                "aria-expanded": "{{_local.showCurrencyDropdown ?? false}}",
+                "aria-label": "$t:sirsoft-ecommerce.common.currency_label"
+              },
+              "children": [
+                {
+                  "comment": "트리거 라벨: 해외배송 활성이면 선택 배송국가 코드 병기 (관리자 헤더와 동일하게 코드 텍스트로 표기 — flag-icons 의존 제거).",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
+                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                  "text": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+                },
+                { "type": "basic", "name": "Icon", "props": { "name": "coins", "className": "w-4 h-4" } },
+                { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}" },
+                { "type": "basic", "name": "Icon", "props": { "name": "chevron-down", "className": "w-3 h-3" } }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": { "target": "local", "showCurrencyDropdown": "{{!_local.showCurrencyDropdown}}" }
+                }
+              ]
+            },
+            {
+              "comment": "드롭다운 메뉴 (통화 + 배송국가 2섹션)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.showCurrencyDropdown}}",
+              "props": {
+                "className": "absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 overflow-hidden",
+                "role": "listbox"
+              },
+              "children": [
+                {
+                  "comment": "── 통화 섹션 ──",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(_global.availableCurrencies ?? []).length > 0}}",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide" },
+                      "text": "$t:sirsoft-ecommerce.common.currency_label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "iteration": { "source": "{{_global.availableCurrencies ?? []}}", "item_var": "currency" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
+                            "role": "option",
+                            "aria-selected": "{{_global.preferredCurrency === currency.code}}"
+                          },
+                          "children": [
+                            { "type": "basic", "name": "Span", "props": { "className": "text-base" }, "text": "{{currency.flag}}" },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "flex-1" },
+                              "children": [
+                                { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{currency.code}}" },
+                                { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400 ml-1" }, "text": "({{currency.symbol}})" }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "if": "{{_global.preferredCurrency === currency.code}}",
+                              "props": { "name": "check", "className": "w-4 h-4" }
+                            }
+                          ],
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                { "handler": "setState", "params": { "target": "global", "preferredCurrency": "{{currency.code}}" } },
+                                { "handler": "saveToLocalStorage", "params": { "key": "g7_preferred_currency", "value": "{{currency.code}}" } },
+                                { "handler": "setState", "params": { "target": "local", "showCurrencyDropdown": false } },
+                                {
+                                  "comment": "로그인 회원이면 계정에 영속 저장(비회원은 localStorage 만). PUT 은 auth:sanctum 필요.",
+                                  "handler": "conditions",
+                                  "conditions": [
+                                    {
+                                      "if": "{{_global.currentUser?.uuid}}",
+                                      "then": {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-ecommerce/user/currency",
+                                        "auth_mode": "required",
+                                        "params": {
+                                          "method": "PUT",
+                                          "body": { "currency": "{{currency.code}}" }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "── 구분선 (두 섹션 모두 표시될 때) ──",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(_global.availableCurrencies ?? []).length > 0 && (_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
+                  "props": { "className": "my-1 border-t border-gray-200 dark:border-gray-700" }
+                },
+                {
+                  "comment": "── 배송국가 섹션 ── (해외배송 활성 + 활성 국가 2개 이상)",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(_global.availableShippingCountries ?? []).length > 1 && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide" },
+                      "text": "$t:sirsoft-ecommerce.common.shipping_country_label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "iteration": { "source": "{{_global.availableShippingCountries ?? []}}", "item_var": "shipCountry" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
+                            "role": "option",
+                            "aria-selected": "{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"
+                          },
+                          "children": [
+                            { "type": "basic", "name": "Span", "props": { "className": "flex-1 font-medium" }, "text": "{{shipCountry.name}}" },
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "if": "{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}",
+                              "props": { "name": "check", "className": "w-4 h-4" }
+                            }
+                          ],
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                { "handler": "setState", "params": { "target": "global", "preferredShippingCountry": "{{shipCountry.code}}" } },
+                                { "handler": "saveToLocalStorage", "params": { "key": "g7_preferred_shipping_country", "value": "{{shipCountry.code}}" } },
+                                { "handler": "setState", "params": { "target": "local", "showCurrencyDropdown": false } },
+                                {
+                                  "comment": "로그인 회원이면 계정에 영속 저장(비회원은 localStorage+X-Shipping-Country 헤더로 반영).",
+                                  "handler": "conditions",
+                                  "conditions": [
+                                    {
+                                      "if": "{{_global.currentUser?.uuid}}",
+                                      "then": {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-ecommerce/user/shipping-country",
+                                        "auth_mode": "required",
+                                        "params": {
+                                          "method": "PUT",
+                                          "body": { "shipping_country": "{{shipCountry.code}}" }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "comment": "현재 장바구니/체크아웃/상품상세이면 해당 데이터소스 refetch (국가 변경 → 배송가능/배송비 재계산). 없는 페이지에선 no-op.",
+                                  "handler": "refetchDataSource",
+                                  "params": { "dataSourceId": "cartItems" }
+                                },
+                                {
+                                  "handler": "refetchDataSource",
+                                  "params": { "dataSourceId": "checkoutData" }
+                                },
+                                {
+                                  "comment": "상품 상세 페이지 — 국가 변경 시 배송가능 경고/구매버튼 disable 즉시 재계산 (B8). 상품 목록은 productList no-op.",
+                                  "handler": "refetchDataSource",
+                                  "params": { "dataSourceId": "product" }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "배경 클릭 시 닫기",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.showCurrencyDropdown}}",
+              "props": { "className": "fixed inset-0 z-40" },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": { "target": "local", "showCurrencyDropdown": false }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 320
+}

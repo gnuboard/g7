@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Contracts\Notifications\GuestRecipientInterface;
 use App\Extension\HookManager;
 use App\Services\NotificationTemplateService;
 use Illuminate\Notifications\NotificationSender;
@@ -22,10 +23,10 @@ class NotificationDispatcher extends NotificationSender
     /**
      * 개별 채널로 알림을 발송합니다.
      *
-     * @param mixed $notifiable
-     * @param string $id
-     * @param mixed $notification
-     * @param string $channel
+     * @param  mixed  $notifiable
+     * @param  string  $id
+     * @param  mixed  $notification
+     * @param  string  $channel
      * @return mixed
      */
     protected function sendToNotifiable($notifiable, $id, $notification, $channel)
@@ -61,13 +62,15 @@ class NotificationDispatcher extends NotificationSender
     /**
      * 훅에 전달할 공통 컨텍스트를 구성합니다.
      *
-     * @param mixed $notifiable
-     * @param mixed $notification
-     * @param string $channel
-     * @return array
+     * @param  mixed  $notifiable
+     * @param  mixed  $notification
      */
     private function buildContext($notifiable, $notification, string $channel): array
     {
+        // 비회원(게스트)은 users FK 가 없으므로 recipient_user_id 는 null, 식별은 email 로 한다.
+        // (게스트의 getKey() 는 "guest:{hash}" 문자열이라 정수 FK 컬럼에 넣으면 로그 기록이 실패한다)
+        $isGuest = $notifiable instanceof GuestRecipientInterface && $notifiable->isGuest();
+
         $context = [
             'notifiable' => $notifiable,
             'notifiable_id' => $notifiable->getKey(),
@@ -76,7 +79,7 @@ class NotificationDispatcher extends NotificationSender
             'notification_class' => get_class($notification),
             'recipient_identifier' => $notifiable->email ?? (string) ($notifiable->getKey() ?? ''),
             'recipient_name' => $notifiable->name ?? null,
-            'recipient_user_id' => $notifiable->getKey() ?? null,
+            'recipient_user_id' => $isGuest ? null : ($notifiable->getKey() ?? null),
         ];
 
         // GenericNotification인 경우 추가 메타데이터
@@ -100,9 +103,7 @@ class NotificationDispatcher extends NotificationSender
     /**
      * 채널별 렌더링된 제목/본문을 조회합니다.
      *
-     * @param GenericNotification $notification
-     * @param mixed $notifiable
-     * @param string $channel
+     * @param  mixed  $notifiable
      * @return array{subject: string|null, body: string|null}|null
      */
     private function resolveRenderedContent(GenericNotification $notification, $notifiable, string $channel): ?array
@@ -115,7 +116,7 @@ class NotificationDispatcher extends NotificationSender
                 return null;
             }
 
-            $locale = $notifiable->locale ?? app()->getLocale();
+            $locale = BaseNotification::resolveNotifiableLocale($notifiable);
 
             return $template->replaceVariables($notification->getData(), $locale);
         } catch (\Throwable $e) {

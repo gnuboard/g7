@@ -1,0 +1,10 @@
+{
+  "template_not_found": "有効化されたテンプレートがありません",
+  "layout_load_failed": "レイアウトの読み込みに失敗しました",
+  "layout_load_failed_with_id": "レイアウト({layoutId})の読み込みに失敗しました",
+  "component_load_failed": "コンポーネントの読み込みに失敗しました",
+  "component_load_failed_with_name": "コンポーネント({componentName})の読み込みに失敗しました",
+  "translation_load_failed": "多言語ファイルの読み込みに失敗しました",
+  "translation_load_failed_with_locale": "{locale}多言語ファイルの読み込みに失敗しました",
+  "template_init_error": "テンプレートエンジンの初期化中にエラーが発生しました"
+}

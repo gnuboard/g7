@@ -20,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
 /**
  * 쿠폰 모델
@@ -32,14 +33,14 @@ class Coupon extends Model implements FulltextSearchable
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
-        'target_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.target_type', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponTargetType::class],
-        'discount_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.discount_type', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType::class],
+        'target_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.target_type', 'type' => 'enum', 'enum' => CouponTargetType::class],
+        'discount_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.discount_type', 'type' => 'enum', 'enum' => CouponDiscountType::class],
         'discount_value' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.discount_value', 'type' => 'currency'],
         'discount_max_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.discount_max_amount', 'type' => 'currency'],
         'min_order_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.min_order_amount', 'type' => 'currency'],
-        'issue_method' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_method', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod::class],
-        'issue_condition' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_condition', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition::class],
-        'issue_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus::class],
+        'issue_method' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_method', 'type' => 'enum', 'enum' => CouponIssueMethod::class],
+        'issue_condition' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_condition', 'type' => 'enum', 'enum' => CouponIssueCondition::class],
+        'issue_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_status', 'type' => 'enum', 'enum' => CouponIssueStatus::class],
         'total_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.total_quantity', 'type' => 'number'],
         'per_user_limit' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.per_user_limit', 'type' => 'number'],
         'valid_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.valid_type', 'type' => 'text'],
@@ -256,6 +257,51 @@ class Coupon extends Model implements FulltextSearchable
     }
 
     /**
+     * 통화별 혜택 금액 포맷 맵을 반환합니다.
+     *
+     * benefit_formatted 와 동일한 i18n 템플릿을 쓰되, 정액 할인액·정률 최대금액을
+     * 통화별 환산값으로 렌더한다(정률 % 자체는 통화 무관). 상품상세 쿠폰 칩·모달이
+     * 선택 통화로 베네핏을 표시할 때 사용한다(KRW 고정 결함 D4 해소).
+     *
+     * @param  CurrencyConversionService  $converter  통화 환산 서비스
+     * @return array<string, string> 통화코드 => 포맷 문자열 (예: {'KRW': '1,000원 할인', 'USD': '$0.85 할인'})
+     */
+    public function buildMultiCurrencyBenefitFormatted(CurrencyConversionService $converter): array
+    {
+        $result = [];
+
+        if ($this->discount_type === CouponDiscountType::FIXED) {
+            // 정액: 할인액을 통화별 환산(환율 미설정 통화는 convertToMultiCurrency 가 자동 제외)
+            foreach ($converter->convertToMultiCurrency((int) ($this->discount_value ?? 0)) as $code => $amount) {
+                $result[$code] = __('sirsoft-ecommerce::messages.coupons.benefit_fixed_format', [
+                    'amount' => $amount['formatted'],
+                ]);
+            }
+
+            return $result;
+        }
+
+        // 정률: % 는 통화 무관. 최대 할인 금액만 통화별 환산.
+        if ($this->discount_max_amount) {
+            foreach ($converter->convertToMultiCurrency((int) $this->discount_max_amount) as $code => $max) {
+                $result[$code] = __('sirsoft-ecommerce::messages.coupons.benefit_rate_with_max_format', [
+                    'rate' => $this->discount_value,
+                    'max' => $max['formatted'],
+                ]);
+            }
+
+            return $result;
+        }
+
+        // 정률(최대금액 없음): 전 통화 동일 문자열. 기본 통화 코드 1건만 채워 폴백 기준 제공.
+        $result[$converter->getDefaultCurrency()] = __('sirsoft-ecommerce::messages.coupons.benefit_rate_format', [
+            'rate' => $this->discount_value,
+        ]);
+
+        return $result;
+    }
+
+    /**
      * 유효기간 포맷팅 반환
      *
      * @return string 포맷팅된 유효기간
@@ -435,8 +481,6 @@ class Coupon extends Model implements FulltextSearchable
 
     /**
      * MySQL FULLTEXT 엔진에서는 인덱스 업데이트가 불필요합니다.
-     *
-     * @return bool
      */
     public function searchIndexShouldBeUpdated(): bool
     {

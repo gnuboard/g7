@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
+import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -17,6 +18,14 @@ export interface PaginationProps {
   style?: React.CSSProperties;
   prevText?: string;
   nextText?: string;
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+/**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -47,6 +56,8 @@ export const Pagination: React.FC<PaginationProps> = ({
   style,
   prevText,
   nextText,
+  id,
+  editorAttrs,
 }) => {
 
   // 페이지 번호 생성 알고리즘
@@ -122,6 +133,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       style={style}
       role="navigation"
       aria-label={t('common.pagination')}
+      id={id} {...editorAttrs}
     >
       {/* First Button */}
       {showFirstLast && (

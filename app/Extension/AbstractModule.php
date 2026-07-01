@@ -2,6 +2,7 @@
 
 namespace App\Extension;
 
+use App\Contracts\Extension\CacheableExtensionInterface;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\StorageInterface;
@@ -18,7 +19,7 @@ use ReflectionClass;
  * getIdentifier(), getVendor()는 디렉토리명에서 자동 추론됩니다.
  * getName(), getVersion(), getDescription()은 module.json에서 자동 파싱됩니다.
  */
-abstract class AbstractModule implements ModuleInterface
+abstract class AbstractModule implements CacheableExtensionInterface, ModuleInterface
 {
     /**
      * 모듈 디렉토리 경로 (캐시)
@@ -997,6 +998,69 @@ abstract class AbstractModule implements ModuleInterface
      * @return array Schema.org 형식 (@type 필수). 빈 배열 반환 시 미적용.
      */
     public function seoStructuredData(string $pageType, array $context, array $routeParams = []): array
+    {
+        return [];
+    }
+
+    /**
+     * OG 기본값 키별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
+     *
+     * `seoOgDefaults()` 가 반환하는 평문값은 운영 렌더링에 그대로 쓰이지만, 어느 데이터에서
+     * 왔는지(`{{product.data.name}}`)는 평문으로 resolve 되며 정보가 소실됩니다. 편집기
+     * [검색엔진] 탭은 자동값을 "상품 이름" 같은 **연결 칩**으로 보여주고 사용자가 다른
+     * 데이터로 교체할 수 있어야 하므로, 본 메서드가 키별 데이터 경로(표현식)와
+     * 사용자용 라벨을 함께 제공합니다.
+     *
+     * 운영 렌더링(`SeoRenderer`)은 본 메서드를 호출하지 않습니다 — 편집기 미리보기
+     * (`SeoOgPreviewService`)만 소비합니다. 미오버라이드(빈 배열)면 편집기는 종전대로
+     * resolve 된 평문을 보여줍니다(하위호환·평문 폴백).
+     *
+     * `label` 은 **번역 키 문자열**(`'sirsoft-ecommerce::seo.auto_value.product_name'`)로 선언하는 것을
+     * 권장합니다 — 편집기가 `__()` 로 해석하므로 모듈 lang 파일(+번들 언어팩)이 그 키를 번역하면
+     * 추가 언어(ja 등)에 자동 대응합니다. 인라인 다국어 맵(`['ko' => ..., 'en' => ...]`)도 허용하나
+     * 그 외 로케일은 en 폴백이라 언어팩에 대응하지 못합니다(하위호환용).
+     *
+     * @param  string  $pageType  레이아웃 meta.seo.page_type
+     * @return array<string, array{expr: string, label: string|array<string, string>}>
+     *               키별 데이터 경로 메타 — 예:
+     *               [
+     *               'image' => ['expr' => '{{product.data.thumbnail_url}}', 'label' => 'vendor-module::seo.auto_value.product_image'],
+     *               'image_alt' => ['expr' => '{{product.data.name}}', 'label' => 'vendor-module::seo.auto_value.product_name'],
+     *               ]
+     */
+    public function seoOgDefaultMeta(string $pageType): array
+    {
+        return [];
+    }
+
+    /**
+     * Twitter 카드 기본값 키별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
+     *
+     * @param  string  $pageType  페이지 타입
+     * @return array<string, array{expr: string, label: string|array<string, string>}> 키별 데이터 경로 메타
+     *               (label = 번역 키 권장 — seoOgDefaultMeta 참조)
+     */
+    public function seoTwitterDefaultMeta(string $pageType): array
+    {
+        return [];
+    }
+
+    /**
+     * 구조화 데이터 속성별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
+     *
+     * `seoStructuredData()` 의 중첩 객체를 점 경로 키로 평탄화한 기준으로 선언합니다
+     * (예: `offers.price`). 편집기가 자동 블록을 평탄 행으로 보여줄 때 각 값을 연결 칩으로
+     * 표시하는 근거입니다.
+     *
+     * @param  string  $pageType  페이지 타입
+     * @return array<string, array{expr: string, label: string|array<string, string>}>
+     *               점 경로 키별 데이터 경로 메타 (label = 번역 키 권장 — seoOgDefaultMeta 참조) — 예:
+     *               [
+     *               'name' => ['expr' => '{{product.data.name}}', 'label' => 'vendor-module::seo.auto_value.product_name'],
+     *               'offers.price' => ['expr' => '{{product.data.selling_price}}', 'label' => 'vendor-module::seo.auto_value.product_price'],
+     *               ]
+     */
+    public function seoStructuredDataMeta(string $pageType): array
     {
         return [];
     }

@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export interface GalleryImage {
     /** 이미지 표시용 URL (라이트박스에서 보여줄 이미지) */
     src: string;
@@ -38,6 +39,17 @@ export interface ImageGalleryProps {
     showThumbnails?: boolean;
     /** 커스텀 다운로드 핸들러 (제공 시 기본 다운로드 로직 대신 실행) */
     onDownload?: (image: GalleryImage, index: number) => void;
+    /**
+     * 레이아웃 편집기 주입 속성 (편집 모드 전용).
+     * 본 컴포넌트는 서드파티 Lightbox 모달(`createPortal` 로 body 렌더)이라 런타임에는
+     * 인라인 DOM 이 없다. 편집 모드(editorAttrs 존재)에서는 캔버스 선택·속성 편집이
+     * 가능하도록 인라인 placeholder(이미지 썸네일 그리드)를 대신 렌더하고 거기에
+     * editorAttrs·id 를 부착한다. 런타임(editorAttrs 미주입)은 종전 Lightbox 동작 그대로.
+     *
+     */
+    editorAttrs?: EditorAttrs;
+    /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID — 편집 placeholder 루트에 부착) */
+    id?: string;
 }
 /**
  * 이미지 다운로드 실행

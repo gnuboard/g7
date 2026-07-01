@@ -18,7 +18,7 @@ class Upgrade_0_14_0 implements UpgradeStepInterface
     /**
      * 업그레이드를 실행합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     public function run(UpgradeContext $context): void
     {
@@ -30,7 +30,7 @@ class Upgrade_0_14_0 implements UpgradeStepInterface
      *
      * 이미 존재하는 code는 스킵합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      */
     private function seedDefaultRefundReasons(UpgradeContext $context): void
     {

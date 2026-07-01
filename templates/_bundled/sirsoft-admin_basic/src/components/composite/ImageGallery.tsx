@@ -1,3 +1,7 @@
+// e2e:allow모달 by-design 편집 placeholder 보강(basic 1-b-verify-3 동기).
+// 라이브 E2E(편집기 추가→선택→속성 편집→저장→실사용자화면)는 1-c-verify 세션의
+// Playwright spec(property-edit-propcontrols.spec.ts)이 cover. 데이터/컴포넌트 회귀는
+// ImageGallery.test.tsx(4) + adminPropControlCoverage.test.ts 가 가드.
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Lightbox, { Slide } from 'yet-another-react-lightbox';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
@@ -11,6 +15,9 @@ import 'yet-another-react-lightbox/plugins/thumbnails.css';
 
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
+import { Div } from '../basic/Div';
+import { Img } from '../basic/Img';
+import type { EditorAttrs } from '../../types';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:ImageGallery')) ?? {
@@ -68,6 +75,19 @@ export interface ImageGalleryProps {
   showThumbnails?: boolean;
   /** 커스텀 다운로드 핸들러 (제공 시 기본 다운로드 로직 대신 실행) */
   onDownload?: (image: GalleryImage, index: number) => void;
+
+  /**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용).
+   * 본 컴포넌트는 서드파티 Lightbox 모달(`createPortal` 로 body 렌더)이라 런타임에는
+   * 인라인 DOM 이 없다. 편집 모드(editorAttrs 존재)에서는 캔버스 선택·속성 편집이
+   * 가능하도록 인라인 placeholder(이미지 썸네일 그리드)를 대신 렌더하고 거기에
+   * editorAttrs·id 를 부착한다. 런타임(editorAttrs 미주입)은 종전 Lightbox 동작 그대로.
+   *
+   */
+  editorAttrs?: EditorAttrs;
+
+  /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID — 편집 placeholder 루트에 부착) */
+  id?: string;
 }
 
 // ========== Helper Functions ==========
@@ -183,6 +203,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   showDownload = true,
   showThumbnails = true,
   onDownload,
+  editorAttrs,
+  id,
 }) => {
   // 현재 슬라이드 인덱스 (다운로드 버튼용)
   const [currentIndex, setCurrentIndex] = useState(startIndex);
@@ -211,6 +233,37 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
+
+  // 편집 모드(편집기 캔버스) — Lightbox 모달은 인라인 DOM 이 없어 선택·편집 불가.
+  // editorAttrs 가 주입되면 인라인 placeholder(썸네일 그리드)를 대신 렌더해
+  // 캔버스에서 선택·속성 편집이 가능하게 한다. 런타임(editorAttrs 미주입)은 미진입.
+  // (Hooks 규칙 — 모든 hook 호출 이후에 분기 return)
+  if (editorAttrs) {
+    const previewImages = (images ?? []).slice(0, 4);
+    return (
+      <Div
+        id={id}
+        className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800"
+        {...editorAttrs}
+      >
+        {previewImages.length > 0 ? (
+          previewImages.map((image, index) => (
+            <Img
+              key={index}
+              src={image.thumbnail || image.src}
+              alt={image.title || ''}
+              className="w-full aspect-square object-cover rounded bg-gray-200 dark:bg-gray-700"
+            />
+          ))
+        ) : (
+          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-400 dark:text-gray-500">
+            <I className="fa-regular fa-images mr-2" />
+            {t('editor.component.image_gallery')}
+          </Div>
+        )}
+      </Div>
+    );
+  }
 
   return (
     <Lightbox

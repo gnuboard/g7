@@ -5,6 +5,169 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.50.0] - 2026-06-29
+
+### Added
+
+#### 위지윅 레이아웃 편집기 — 인프라 / 진입
+
+- `/admin/layout-editor/{identifier}` URL 분기 신설 — `template-engine.ts` `renderTemplate()` 가 코어 컨텍스트 래퍼(Translation/Transition/Responsive/Slot) 안에 `LayoutEditorChrome` 셸을 렌더한다. `LayoutEditorContext`(useReducer 도메인 상태) + `EditorToolbar` + `RouteTreePanel`(5그룹: 공통 레이아웃/템플릿/모듈/플러그인/모달, `source` 메타 기반) + `EditEntryFab`(운영 화면 좌측 하단 편집 진입) 구성.
+- 진입 경로 — 템플릿 관리 화면에 `[코드 편집]`+`[레이아웃 편집]` 2버튼, 운영 화면 FAB(편집 권한자 한정, `?route={path}` 로 보던 화면 선택 진입), `window.G7Config.activeModules`/`activePlugins` 메타 키 신설.
+- 비활성 템플릿 admin 자산 서빙 — `AdminTemplateAssetController`(getEditorAssets/serveComponents/serveRoutes/serveEditorSpec/serveLanguage) + `core.templates.layouts.edit` 가드 + 활성→`_bundled` 폴백. 비활성 템플릿도 편집/저장 가능.
+- 편집기 셸 다국어 — `$t:layout_editor.*`(chrome/palette/insertion/overlay/save/preview/device/zoom/access_error 등) ko/en partial + g7-core-ja 번들 동기.
+- URL ↔ selectedRoute 양방향 동기화(`buildEditorUrl`/`useEditorUrlSync`, popstate 복원), 좌측 패널 접힘 영속화(`localStorage`), 라우트 트리 검색 + 키워드 `<mark>` 강조(다국어 표시 라벨·path 양쪽 매칭).
+
+#### 프리뷰 캔버스 / 샘플 데이터 / 격리 store
+
+- `PreviewCanvas` — 백엔드 병합 응답(`with_source_meta=1`)을 `DynamicRenderer` 로 실제 렌더하고, 데이터소스는 네트워크 fetch 없이 `sampleDataProvider`(5단계 우선순위: spec_byId→spec_byEndpoint→core_preset→fallback→inferred, 6종 코어 프리셋)로 채운다. `__source` 출처 네임스페이스로 같은 data_source id 의 확장별 shape 충돌을 해소.
+- 캔버스↔호스트 격리 store façade(`installPreviewCanvasStore`) — 마운트 동안 `window.__templateApp`/`G7Core.dispatch`/`modal`/`toast` 를 in-memory 격리 인스턴스로 swap, 언마운트 시 복원. `ComponentRegistry.createIsolatedInstance()` + `ActionDispatcher.getHandler()` public 노출로 호스트 싱글톤과 충돌 회피. 라우트 `:param` 토큰은 `deriveSampleRouteParams` 휴리스틱으로 자동 주입.
+- 출처 메타 옵션 — `LayoutService::getLayout/loadAndMergeLayout` `withSourceMeta` 로 각 노드에 `__source:{kind:base|route|extension,...}` 부여, 편집 응답에만 자식 `lock_version` + `__editor.original`(저장 SSoT) 동봉. 일반 렌더는 응답 100% 동일. `DynamicRenderer` 가 `__` 접두 메타 키를 DOM 전달 직전 일괄 차단.
+- 반응형 디바이스 미리보기 — 데스크톱/태블릿/모바일 토글 + 줌 슬라이더 + `custom` 폭 입력(320~1920px 클램프). 디바이스 폭이 캔버스보다 넓으면 `transform:scale()` 시각 축소.
+
+#### 요소 추가 / 드래그앤드롭 / undo·redo
+
+- 요소 추가 팔레트(`ComponentPalette`) — 카테고리 사이드바 + 검색(영문명·태그·다국어 표시 라벨 매칭) + 그리드 카드. `editorSpec.componentPalette.groups`(템플릿 소유) 정의대로 카테고리 렌더, 미제공 시 components.json type 폴백. `nesting.accepts` 로 부모가 받을 수 있는 컴포넌트만 노출. 신규 노드 골격은 `entries[name].defaultNode`(템플릿 SSoT, 두 번들 템플릿 전수 작성) 우선·`props.default` 폴백, 미정의 시 클릭 비활성 + 배지. audit `editor-spec-i18n-strings`(평문 차단) coverage 등록.
+- 삽입 어포던스(`InsertionAffordances`/`useInsertionPoints`) — 선택 요소 외곽 4방향 + 버튼, 부모 computed display/flex/grid 로 활성 방향 결정. 잠긴 영역(확장 조각/공통 레이아웃/partial/데이터 반복)에서도 형제 삽입 anchor 기준으로 + 버튼을 노출(잠긴 노드 자체는 무변형).
+- 드래그앤드롭 재배치(dnd-kit `PointerSensor`, `pointerWithin`) — 명시적 드롭 슬롯 방식(`buildDropSlots`, slot id 에 컨테이너 path+인덱스 인코딩 → 기하 추론 0). gap/nest 슬롯, 조상 체인 + 형제 컨테이너로 레벨 한정, `display:contents` 래퍼 시각 흐름 투명화, `DragOverlay` 고스트는 `cloneNode`+portal(scale 좌표 왜곡 회피). 컨테이너 밖으로 빼낸 요소를 다른/원래/깊은 컨테이너로 재이동, 선택 기준 드래그(자식 영역에서 시작해도 선택 부모 이동), `nestingRules`(canDrop/isDraggableNode/isContainerComponent, 폴백 없음).
+- undo/redo(`useEditorHistory`) — 추가/삭제/이동/속성/인라인 텍스트 5종 push, Ctrl+Z / Ctrl+Shift+Z·Ctrl+Y(⌘ 동등), input 포커스 중 미가로채기, 툴바 ↶/↷ 동기. 다른 레이아웃으로 붙여넣기(`editorClipboard`, sessionStorage 직렬화).
+- 단축키 보강 + 단축키 맵 모달 — 중앙 키맵 SSoT(`editorShortcuts.ts`) + 전역 디스패처(`useEditorShortcuts`, 입력칸/모달 포커스 가드), 복사·잘라내기·붙여넣기·속성·삭제·부모 선택·선택 해제·요소 추가·코드 편집·미리보기·다국어·저장·나가기·초기화 등 전수 결선. `ShortcutHelpModal` 플랫폼별 표기.
+
+#### 선택 / 잠금 / 속성 편집
+
+- hover/선택 오버레이(`ElementOverlay`/`useElementSelection`) — `data-editor-path` DOM↔노드 매핑, hover 점선·선택 실선, 컨텍스트 메뉴(속성/복사/삭제), 8방향 리사이즈 핸들, base/extension 잠금 어포던스, navigate 기반 "이 화면 편집" 네비. 선택 요소 컴포넌트 타입 식별 라벨(작은 요소는 박스 바깥), 잠금 영역 출처 식별 칩 3종(확장명·공통 레이아웃 파일명·데이터소스 id), 겹친 부모 선택(타입 칩 ↑ 버튼 + 키보드 ↑/Esc).
+- 속성 편집 모달(`PropertyEditorModal`) — `[설정]`/`[속성]`/`[스타일]`/`[고급]`/`[동작]`/`[표시조건]`/`[번역]` 탭. 레시피 엔진(`recipeEngine`, apply 4종: classToken/styleProp/cssVar/propValue, CSS 프레임워크 비가정)이 컨트롤↔노드 패치를 양방향 변환, 위젯 레지스트리(segmented/slider/select/toggle/color/image/tag-input/dimension/icon-picker/options-list 등) + `reverseResolve` 역해석·고급 값 무손실 보존. 편집 중 캔버스 잠금/딤(선택 외 요소 클릭 차단, 모달 스택 파생 자동 해제), 모달 드래그 이동 + 선택 요소 자동 회피.
+- 코어 제공 "요소 ID" 속성 일괄 부여(`coreProps.ts`/`CoreIdControl`) — 모든 draggable 컴포넌트의 [속성] 탭 최상단에 표준 `node.props.id` 편집(바인딩식 읽기전용, HTML 안전 문자 sanitize, `coreProps:false` opt-out). 컴포넌트 id passthrough 전수 적용.
+- 캔버스 모서리/변 드래그 리사이즈(`useResizeHandles`, 경량 포인터, scale 보정) + 가로/세로 자유 입력 `dimension` 위젯(`320px`/`50%`/`auto`, editor-spec options=프리셋 칩) — 속성 모달과 양방향 동기.
+- 공유 propControl 21종 + icon-picker/options-list 위젯, 신규 스타일 컨트롤 묶음(글자색·boxShadow·borderStyle/Color/Radius·opacity·overflow·fontItalic·textUnderline·whitespace·justify, editor-spec classToken SSoT), 여백 측별 독립 편집(일괄/개별, pt/pr/pb/pl 공존, `recipeEngine.groupPrefixes` + 다중 토큰 tokenTemplate), 정렬 박스(flex) 노드 파생 판정 + 해제 토글.
+
+#### 색 모드 / 디바이스 분기 / 다크 프리뷰
+
+- 스타일 탭 색 모드(라이트/다크) × 디바이스 직교 2축 편집 — 하나의 `StyleScope` 로 묶어 `recipeEngine` 이 base `props` 또는 `responsive.{preset|커스텀범위}.props`(다크는 `dark:` classToken)에 무손실 기록·역해석. 다크는 classToken만 편집(인라인 색은 읽기전용 보존), 디바이스 미오버라이드는 base 상속 placeholder, scope별 표시점(●) + "기본값으로 초기화", 디바이스 단일 토큰 편집 시 기본 className 시드로 기본 스타일 유실 방지. 묶음 상단 공용 색모드 탭(`ColorSchemeTabs`, per-control 복제 금지). 툴바 라이트/다크 프리뷰 토글.
+- 색 컨트롤 템플릿 스타일 라이브러리 대응 — 프리셋 색은 고정 토큰(`apply.tokens`+swatch, 라이트/다크 모두), 자유 HEX는 `tokenTemplate`(`text-[{value}]`) 라이트 전용(다크 탭 자유입력 비활성 안내).
+- 다크 프리뷰 색 모드 격리 — 템플릿 `darkMode` 스펙(strategy/ancestorSelector/previewIsolation)으로 코어 CSS 서빙 API 가 다크 조상 셀렉터를 프리뷰 마커(`.g7le-preview-dark`)로 치환(일반 페이지 CSS 무영향), `flattenLayers` 로 cascade-layer 평탄화, `usePreviewDarkIsolation`(MutationObserver)로 어드민 `html.dark` 침범 차단, 권한 가드 CSS 는 Bearer fetch→`<style>` 주입.
+
+#### 디바이스별 별도 구성(반응형 자식 교체)
+
+- `responsive.{키}.children` 자식 완전 교체형 편집 정합 — 모바일/태블릿 보기에서 보이는 구성 요소가 정확히 선택·수정되고(같은 자리 PC 구성 오선택 차단), 분기 출처 배지(모바일 구성), 구성 경계 이동 차단, ComponentPath 가 디바이스 분기를 1급 표현(`responsive.{키}.children.{N}`). 디바이스 전용 구성 분리/해제(기본 구성 복제 시작, 포함 관계 안내), 디바이스 목록 동적 수집(기본 4종 + portable + 사용자 폭 구간 다수), 다른 디바이스 구성 이동 버튼·전용 구성 안내 배지, portable 구간 스타일 표시, 더 좁은 디바이스 전용 분리.
+
+#### 다국어 인라인 편집 / 데이터 칩 / 커스텀 키 관리
+
+- 콘텐츠 로케일 전환(`LocaleSwitcher`, 캔버스 프리뷰만) + 더블클릭 인라인 편집(`useInlineEdit`/`InlineTextEditor`, 평문·기존 `$t:` 키 모두 `$t:custom.*` 자동 생성) + 인라인 서식 툴바(`InlineTextToolbar`, styleControls 선언분만) + 속성 모달 [번역] 탭(`TranslationField`, 전체 로케일 일괄 PUT). 낙관적 즉시 반영(키 생성 왕복 깜빡임 제거) + "모든 언어 편집" 바로가기.
+- 텍스트(보간) 데이터 연결 — 평문+다국어+데이터 공존: 평문 부분 다국어 키화(param 정규화, 언어별 어순 보존), 데이터는 드래그 가능한 원자 칩(글자 사이 어디로든 이동, 언어별 독립 위치, 캐럿 미리보기), 인라인 `+데이터`(커서 위치 삽입), 삽입=즉시 키화([번역] 탭 활성), 칩 X 로 전 로케일 해제. 대상 컴포넌트 12종 자동 인식 + capability `textBinding` opt-in/out, [번역] 탭 자리표시 보호 가드.
+- 데이터 칩 전면 확대 — 속성 창 텍스트 칸·선택지 라벨·목록 항목·표 셀·"다국어 키 관리" 화면·컴포넌트 속성 전반·페이지 설정 전 탭의 값 입력칸에서 데이터 칩/표현식을 동일하게 다룬다(값 전용 칸은 번역키 미생성). 칩 파서가 논리식(`||`)·파이프 서식(`| date`/`| 숫자`)·중괄호 객체 처리·다중 데이터를 정확 분리, 칩 이름은 핵심 데이터명만 표시. 설정참조(`$core_settings:`/`$module_settings:`/`$plugin_settings:`)도 친화 칩으로 시각화(공용 `inlineBindingUtils` SSoT).
+- 커스텀 다국어 키 관리 모달(`CustomTranslationManager`) — 목록·필터(전체/사용중/미사용)·로케일별 일괄 편집(낙관락 PUT, 409 안내)·삭제. 좀비(고아) 키 자동 표시 — 저장 시점 백엔드 리스너(`MarkOrphanedCustomTranslations` + `CustomTranslationUsageScanner`)가 미참조 키를 `orphaned` 전이(런타임 병합 자동 제외), 캔버스 실시간 사용 여부 라이브 배지 병행.
+- 텍스트 propControl 동적 다국어 인프라 — `widget:"i18n-text"`+`apply:propValue` 컨트롤을 `I18nTextField`(미리보기 + ko/en/ja 펼침 + 바인딩 읽기전용)로 전수 자동 승격. 공통 SSoT(`useCustomTranslation` `commitText`/`classifyCustomText`)로 인라인·목록·propControl·label_key 통일. children 항목 텍스트도 동일 위젯 승격(공용 `nodeTextPath`).
+
+#### 데이터 바인딩 / 데이터 소스 편집기
+
+- 데이터형 prop ↔ 데이터소스/상태 바인딩 — capability `dataProps`(shape scalar/array/object) 선언분만 [속성] 탭 "데이터 연결" 영역 노출(구조/수치/enum prop 비대상). 🔍 검색형 데이터 피커(친화 명칭·소스·경로·미리보기값 매칭, shape 일치 후보만) + 순수 후보 빌더(`bindingCandidates`, 편집기 샘플 데이터·`_global`·per-state local/query/route·`_computed` 평탄화) + 상태값 명칭 카탈로그(`stateLabels`, `$t:` 키, 로케일 동적 대응). `parseBindingExpression` 이 안전 바인딩(`?.`/`?? []`)을 정규화 인식, `buildBindingExpression` 이 shape별 안전 형태로 재기입. 양 템플릿 전 컴포넌트 dataProps 전수 선언, 입력/선택 계열 19종 보강, audit `editor-datapropspec-shape-valid`.
+- 반복(iteration) 데이터 연결 공용 영역(`IterationBindingSection`) — `node.iteration.source` 를 가진 모든 노드의 [속성] 탭 최상단에 "반복 데이터 연결"(array shape 후보, item_var/index_var 읽기전용 힌트).
+- 데이터 소스 편집기(`DataSourcesPanel`, 페이지 설정 [데이터] 탭) — 현재 레이아웃 data_sources CRUD(id/label_key/type/endpoint/method/auth/loading/params/fallback, JSON 검증). 자체/상속 분리 저장(`patchDocumentRaw`, `__editor.original` SSoT), 신규 소스 즉시 검색 후보 반영. 양 번들 템플릿 134 data_source + 확장 주입 118 data_source 전수 `label_key` 부여 + 확장 출처 배지(모듈/플러그인), audit `data-source-label-key-coverage`.
+
+#### 노드 에디터(목록 / 표 / 배열)
+
+- 범용 노드 에디터 슬롯(kind-agnostic) — capability `nodeEditor:{kind,params}`/`canvasOverlay:{kind,params}` + 레지스트리(`nodeEditorRegistry`/`canvasOverlayRegistry`) + `registerCoreEditors`. 코어는 kind 만 알고 디스패치(분기 0, 템플릿 재등록 가능), 미등록 안전 디그레이드. 템플릿 확장점 `G7Core.layoutEditor`(registerWidget/registerNodeEditor/registerCanvasOverlay) + ready 큐(`initLayoutEditorStub`, initTemplate 선등록 유실 방지).
+- 목록 children 노드 에디터(`ChildrenListControl`) — Ul/Ol/Nav/Form/Li 자식 트리 추가/삭제/정렬, 항목 텍스트 다국어(직접 text + 중첩 텍스트 자손 탐색, 장식 노드 보존), [속성] 탭 배치(스타일 탭=CSS 전용). 폼 항목 라벨+입력칸 묶음 추가·`itemFields`/`childTemplate`/`childLabel` 스펙 선언.
+- 표 노드 에디터(`TableEditor`) + 캔버스 인플레이스 오버레이(`TableInplaceOverlay`) — 트리↔논리 grid 어댑터(`tableGridModel`, 병합 고려), 행/열 추가·삭제·이동(밴드=병합 블록 단위, 섹션 경계 가드, 이동 불가 시 비활성+사유), 셀 병합/해제, 2단계 선택(표→셀)+Shift 영역 선택, 셀 테두리/배경색/내부 여백 시각 피커(프리셋 토큰+자유 HEX 인라인 SSoT, 라이트/다크 공용 탭, border-collapse 공유 변 보정), 셀 텍스트 다국어(복합 셀 구조 보존)+인라인 서식 툴바, 전용 거터 레일+빈 셀 최소 크기(편집기 전용 CSS), 속성 패널 미니 미리보기 실테두리 반영.
+- 배열 노드 에디터 — `ArrayItemsEditor`(정적 배열 prop 항목 추가/삭제/정렬/필드편집, 위젯 text/i18n-text/select/boolean/icon/number/color/number-list, 원시 `string[]` 지원, 정적-바인딩 가드, `defaultItems` 시드)·`array-group`(다중 배열 prop, BarChart labels+datasets)·`array-cell-tree`(중첩 cellChildren, CardGrid cardColumns). 템플릿 인플레이스 레퍼런스(`registerCanvasOverlay`, `data-editor-item-path` 마커). TagInput 계열 5종 options 편집기 보완.
+
+#### 표시조건 / 동작 / 페이지 상태
+
+- 표시조건 편집(`ConditionBuilder`/`conditionRecipeEngine`) — 친화 조건 카테고리(로그인/권한/데이터 유무·로딩·실패/필드 값/화면 상태/수정·생성/입력 오류) 택1 + "그리고/또는" 결합(단일 표현식 합성). 변종 방어 인프라 4계층(recipe-local alias·specificity 우선 매칭·path-shape 가드+backreference·전역 정규화 위임), audit `condition-recipe-duplicate`.
+- 동작(액션) 편집(`ActionRecipeEditor`/`actionRecipeEngine`) — 이벤트별 친화 명칭(이동/메시지/상태 바꾸기/새로고침/서버 호출), apiCall onSuccess/onError 중첩 재귀 조립, 올바른 핸들러 규칙(navigate/apiCall/setState/toast/refetchDataSource, top-level target) 생성. 동작 이벤트 친화 명칭 15종 보강(audit `editor-event-label-coverage`).
+- 동적 핸들러 이름 디스패치 — 액션 `handler` 가 `{{...}}` 바인딩이면 `ActionDispatcher.executeAction` 이 컨텍스트로 먼저 해석한 뒤 라우팅한다(`resolveActionRef` 직후, 프리뷰 억제·switch 앞). 백엔드 응답이 호출할 핸들러 풀네임을 내려주는 provider-agnostic 디스패치(결제 진입 `handler: "{{response.data.pg_payment_handler}}"`)를 지원. 빌트인 26종은 리터럴이라 미진입(무영향), nested(conditions/sequence)도 동일 경유로 자동 적용, 프리뷰 억제 판정·미등록 graceful skip 도 해석 이름 기준. 편집기 "결제 진입" recipe(`requestPgPayment`)로 친화 입력(핸들러·결제 데이터 칩, `chipContext='response'`), `actionRecipeEngine.matchAction` 핸들러 비교를 placeholder-aware 로 보강(리터럴은 정확 일치, `{{key}}` 는 `extractValues` 위임).
+- 중첩 액션 친화 편집 확대 — apiCall `onSuccess`/`onError` 와 `sequence`/`parallel` 의 actions 를 `advanced` 잠금에서 풀어 친화 중첩 액션 빌더(action-list)로 편집한다(응답 후속·다단 동작을 코드 없이 추가/순서/속성·데이터 칩 편집). 재귀 `ActionListBuilder` 가 동일 recipes·candidatePools 로 펼쳐지며 `summarizeAction` 은 action-list 트리 param 을 카드 요약에서 제외(`[N]` 토큰 누출 방지). `switch.cases` 는 객체맵 구조라 잠금 유지.
+- `conditions` 핸들러 친화 recipe + `branch-list` 위젯 신설 — 조건 분기(`[{if, then}]`)를 분기별 실행조건(조건식 데이터 칩)·동작(중첩 액션 빌더, 단일/배열 both) + 분기 추가/삭제/순서로 친화 편집. recipe build 는 `conditions` 를 액션 최상위 키(`{handler:'conditions', conditions:'{{branches}}'}`)로 두어 `handleConditions` 와 정합, sole-binding 통째 캡처로 `then` 구조 무손실 왕복. 이 셋이 합쳐져 `sequence → apiCall.onSuccess → conditions → then` 깊이의 결제 진입까지 코드 없이 편집 가능(특정 템플릿/모듈 비의존, 코어 전역).
+- 동작 입력칸 객체값·경로형 setState 표시 정합 — (1) apiCall `body` 위젯을 `data-chip`(스칼라/표현식)에서 `key-value` 로 바꿔 필드 맵(`{temp_order_id, orderer, ...}`)을 키별 데이터 칩 행으로 편집한다(객체를 단일 칩으로 받아 `[object Object]`·JSON 분해 깨짐이 생기던 문제 제거). (2) setState 의 경로형(`{target:'_local.X', value:V}`)을 인식해 `value` 를 상태 키 이름이 아니라 그 경로에 넣을 단일 값으로 표시(타입 보존 `InitialStateValueEditor`). (3) 컴포넌트 [동작] 탭이 `bindingCandidates` 를 동작 입력칸까지 전달하지 못해 데이터 칩 추가(🔍) 가 안 뜨던 회귀를 수정(`PropertyEditorModal`→`ActionRecipeEditor`).
+- 페이지 상태 토글 + 시뮬레이션(`PageStateSwitcher`/`pageStateSimulator`) — `editor-spec.states` 의 sampleData 오버라이드·초기 `_local`/`_global`/`query`/`route` 패치·폼 검증 실패를 캔버스에 재시뮬레이션(`_localInit` 권위 주입으로 init_actions 이김). scope 매칭(route glob/base/modal, 실제 path 일치), 번들 템플릿 states.json 전수 작성(profile/edit·settings·users 등). 반복 항목 편집 모드 진입 골격.
+
+#### 버전 히스토리 / 실데이터 미리보기 / 확장·모달 조각 편집
+
+- 버전 히스토리 모달(`VersionHistoryModal`/`useLayoutVersions`) — 저장 버전 목록(번호·시각·저장자·변경량 +N/-N/char_diff·최신 배지) 조회·복원(`reload` 캐시 버스트+activeDocument 재로드, 낙관적 잠금 정합) + 버전 비교 diff(`VersionDiffView`/`lineDiff`, 자체 LCS·Unified diff·외부 라이브러리 0). 실데이터 미리보기(`useLayoutPreview`) — 미저장 문서를 저장 마스킹 후 `storePreview`(30분 TTL)→`/preview/{token}` 새 창, `mod+p` 결선.
+- 확장(주입 조각) 시각 편집 — 호스트 레이아웃 전체를 백엔드 평가 상태 그대로 렌더 + 편집 조각만 역스포트라이트, 모달 안 주입 조각(약관/주소 검색/본인인증)도 모달 열어 편집, 화면 상태 전수 정의(배송지 직접 입력·모바일 드로어·쿠키 배너·이니시스 등), 시각 편집 불가 시 코드 편집 안내 디그레이드. 라우트↔모달/확장 연결 목록(정적 매칭 `host_layouts`, 트리 인라인). 확장 버전 기록·복원·트리 버전 배지(`useExtensionDocument`/`VersionTarget` 일반화 + 백엔드 LayoutExtensionVersion*).
+- 공통 레이아웃 슬롯 가시화+잠금(점선 "콘텐츠 영역" 라벨, 선택/드롭 전체 잠금), 헤더/푸터 선택 가능(시각적 루트 editorAttrs 전달 + 핸들 클릭 최심 노드 위임).
+
+#### 저장 / 동시성 / 접근 오류 / devtools
+
+- 문서 저장·dirty·동시성(`useLayoutDocument`) — `patchLayout`/`save`(`expected_lock_version` PUT, 활성 확장 재검증, 200/409/422/network 분기), 저장 마스킹(`stripInheritedFromLayoutContent`, base/extension/partial+메타 제거), 라우트 전환 세션 캐시 복원 + 트리 dirty 배지(●) + beforeunload 가드, 레이아웃 초기화(`reload`). `SaveFeedbackBanner`(6종 SaveResult, concurrent 모달). 낙관적 잠금 인프라(`lock_version` 컬럼 + `ConcurrentModificationException` + 409 + 백엔드 `UpdateLayoutContentRequest::prepareForValidation` 마스킹 가드).
+- 접근 오류 패널(`AccessErrorPanel`) — kind별(unauthorized/forbidden/not_found/server_error/network/unknown) 아이콘·톤·필요 권한 칩·액션, 401 자동 로그인 redirect(`AuthManager.getLoginRedirectUrl`), 자산/라우트 실패 통합. `access_error.*` 키 17건.
+- devtools 트래커 다수 — editor-state/selection/dnd/document/history/sample-data/spec-merge/property-patch/i18n/page-state(메타 키만 적재, 노드 내용물·평문 미적재, 언마운트 clear).
+- 공용 모달 인프라(`EditorModalContext`/`EditorModalRoot`/`useEditorModal`) — 코어 `_global.modal` 과 분리(격리 store 충돌 회피), 백드롭/ESC 닫기, depth 무제한 스택. 부유 드롭다운 공용화(`FloatingDropdown`, `position:fixed`+anchor rect 로 flip/clamp 자동 보정, 외부 pointerdown/ESC 닫기) — 데이터 검색 피커·검색 드롭다운 전반 적용.
+
+#### 페이지 설정 모달(8탭)
+
+- 페이지 설정 모달 — 기본 정보·검색엔진·화면 동작·로딩 화면·자동 계산·초기 상태·에러 처리·데이터 8탭, 탭별 고급 항목 배지, 즉시 반영(영속은 툴바 저장). 켬/끔 하위 설정은 숨기지 않고 비활성(회색) 표시, 공용 토글 스위치, 모달 최대 높이 화면 적응 + 내부 스크롤, ESC 닫힘 차단([닫기]/[✕]만).
+- 기본 정보 — 페이지 이름·설명·편집기 트리 라벨(다국어+데이터 칩), 메뉴 아이콘 고르개, 접근 권한 태그.
+- 검색엔진(SEO) — 노출 켬/끔·페이지 종류·연동 확장/데이터·sitemap 우선순위/주기·검색 제목/설명, 소셜 공유(OG/Twitter, 비운 칸 기본값 출처 배지+잠금, 고급 이미지 옵션), 구조화 데이터(직접 지정 토글, 확장 자동값→연결 칩 출발, JSON-LD 미리보기), 검색 변수(자동/값채움/직접 추가 3그룹), 봇 미리보기(서버 권위 계산). 확장 제공 SEO 자동값을 출처 연결 칩 + [다른 데이터로 바꾸기]로 표시(언어팩 키 기반 명칭).
+- 화면 동작 — 핸들러 카탈로그(코어+확장)에서 골라 순서 배치(드래그 손잡이), 친화 요약+코드 보기+출처 배지+실행 조건, 부모 상속 동작 잠금(읽기 전용). 모든 동작 입력칸 데이터 칩·표현식 친화 입력(저장소 키·상태 값·setState 키–값·navigate query 등), 모달 선택 `modal-picker` 위젯(친화 명칭).
+- 로딩 화면 — 켬/끔·덮을 범위(전체/특정 영역, 영역 고르개)·표시 방식 5종+옵션·기다릴 데이터, 상속 표시 + [이 화면만 바꾸기], 안내 문구 다국어, 별도 컴포넌트 선택 창.
+- 자동 계산 — 친화 보기 + "직접 만들기" 3단계 + 샘플 데이터 결과/타입 미리보기, 부모 계산값 덮어쓰기/되돌리기, 모든 값·경로 칸 데이터 칩·표현식, firstOf 후보·배열 인덱스 평문 유지.
+- 초기 상태 — 로컬/전역/격리 시작값(문자/숫자/예아니오/없음/목록/묶음+중첩 블럭 편집), 종류 선택 추가, [코드로]/[블럭으로] JSON 전환(문법 오류 저장 차단), 값 이름 검증(영문 시작), 부모 상속 표시·덮어쓰기.
+- 에러 처리 — 상태 코드별 동작 행(표준 401~503 기본 표시, 출처: 이 페이지/상속/템플릿), 7종 동작+오류 정보 데이터 칩, 코드 미리보기, 상속 덮어쓰기 안내.
+- 데이터 탭 — 데이터 소스 편집을 종류별 섹션(본문 타입·성공/실패 후속·코드별 오류·조건부 로딩·재진입 재요청·실시간 수신)으로 확장 + 전역 헤더·외부 스크립트 읽기전용.
+
+#### 표현식 분해 트리
+
+- 조건에 따라 달라지는 제목·설명·값을 조각별 분해 편집 — 조건 분기(`A ? B : C`)·기본값 폴백(`A ?? B`/`A || B`)·이어붙이기(`A + B`)를 트리로 풀어 각 분기를 다국어 입력칸(번역 탭·데이터 칩)으로 편집, 중첩 재귀 표현. 한 줄 미리보기+[수정]/[접기], [원본 식 보기] 토글, 친화 빌더 가능한 단순 조건만(복잡 조건 읽기전용으로 원본 무손상). 조각 손잡이 드래그 순서 변경·추가([+조각]/[+값이 없을 때 대신])·삭제, 일반 이름↔표현식 양방향([표현식으로 바꾸기]/[일반 이름으로], 되돌림 미리보기·경고, 첫 결과 데이터 칩 복구). 페이지 이름·설명에서 검색엔진 값 칸·컴포넌트 속성 전반으로 확대.
+
+#### 본인인증(IDV) 인증 대상 선언
+
+- `apiCall` 액션에 **`identity_target`** 선언 속성 신설 — IDV 428 인터셉트 시 인증 코드/링크를 보낼 대상(이메일·전화)을 흐름이 직접 선언한다. `auth_mode`/`errorHandling` 과 동일하게 apiCall 액션 최상위에 두며, `{ email?, phone? }` 형태로 표현식 바인딩을 지원한다. `ActionDispatcher` 가 428 인터셉트 지점에서 이 값을 평가해 `IdentityGuardInterceptor.handle(response, originalRequest, target)` 로 전달하고, launcher 가 `verification.target` 한 곳에서 읽는다. 비로그인(게스트) 흐름의 핵심 — 서버 428 payload 에는 target 이 없고(서버는 화면 입력값을 모름) 흐름이 선언한다. 로그인 사용자는 빈 값이어도 서버 세션이 도출하므로 무방하다. (배경: 비회원 주문 결제 시 본인인증 정책이 켜지면, 주문자·수취인에 이메일·전화를 모두 기재해도 launcher 가 주문자 입력값을 읽지 못해 "인증 대상이 필요합니다" 422 로 막히던 결함. 기존 launcher 는 회원가입/비밀번호 재설정 폼 경로만 하드코딩으로 알았다.)
+- `G7Core.api`(axios) 호출 경로도 `config.identity_target` 로 동일하게 IDV 대상을 선언할 수 있다 — `apiCall`(fetch) 경로와 axios 경로 양쪽 모두에서 인증 대상 전달을 지원한다.
+- `ensureIdentityVerified` 액션이 `params.target` 으로 선제 가드 시점의 인증 대상을 선언할 수 있다 (apiCall `identity_target` 과 동일 채널).
+- 레이아웃 편집기 apiCall 레시피에 `identity_target` email/phone 입력칸 추가([고급] 영역) — 코드 편집 없이 인증 대상 선언을 편집할 수 있다.
+
+#### 레이아웃 편집기 SEO 다국어 데이터 칩
+
+- 레이아웃 편집기 검색엔진 탭(페이지 설정)의 데이터 칩 파서가 **SEO 다국어 추출 함수 `$localized(<경로>)`** 를 단일 바인딩으로 인식하도록 확장. 종전엔 `$localized(product.data.meta_title)` 같은 함수 호출이 `bindingCandidates.parseBindingExpression`·`expressionValueTree` 양쪽에서 복합식(raw)으로 떨어져, SEO 메타값을 입력해도 편집기가 친화 데이터 칩 대신 원시 식 문자열을 노출했다. 이제 `parseBindingExpression` 이 `$localized(<단순경로>)` 래핑(인자 1개·단순 경로)을 흡수해 인자 경로를 단일 바인딩으로 인지하고 `localeFn` 으로 함수명을 보존하며(`bindingChipLabel` 이 인자 경로를 친화 라벨로 표시), `expressionValueTree` 파서가 같은 형태를 단일 바인딩 리프(`{{$localized(path)}}`)로 환원해 `meta 우선 ?? name 폴백` 체인도 fallback 트리로 분해한다. `buildBindingExpression(sourceId, path, shape, localeFn)` 에 옵션 인자를 더해 데이터 교체 시에도 `$localized(<src>.<path>)`(옵셔널 체이닝/폴백 없음) 래핑을 보존한다(래핑이 빠지면 다국어 객체가 현재 로케일 문자열로 추출되지 않아 SEO 메타가 깨짐). 다인자·연산·리터럴 인자, 미등록 함수(`Math.max` 등)는 종전대로 복합식(raw) 폴백이라 손상 0. (배경: 상품·카테고리 SEO 제목/설명 다국어화 후, 사용자가 검색엔진 탭에서 설정한 SEO 메타 항목이 편집기 데이터 칩으로 표시되지 않던 결함.)
+
+### Changed
+
+- 동작 순서 변경 방식을 표현식 편집기와 통일 — 컴포넌트 [동작] 탭·페이지 설정 [화면 동작] 탭·데이터/에러 처리 동작 목록에서 손잡이 드래그 + 파란 삽입선으로 재배치(▲▼ 버튼 제거, 공통 레이아웃 상속 동작은 잠금).
+- 코어 JSON 텍스트 편집 입력기를 공용 부품(`JsonBlockField`)으로 통일(데이터 소스 요청 파라미터·확장 주입 속성·초기 상태 [코드로] 동일 동작/오류 안내), 데이터 소스 [기본값]을 중첩 블럭 편집으로 일원화(raw JSON 모드 제거), [요청 파라미터]·[기본값] JSON 미리보기를 [미리보기 ▾] 토글로 전환.
+- 데이터 검색 선택기를 모든 진입점에서 부유(`FloatingDropdown`) 상태로 통일(자동 위치 보정), 로딩 화면 기다릴 데이터·검색엔진 연동 데이터 목록을 [데이터] 탭과 동일 표기(표시 명칭+id+확장 출처 배지)로 직관화.
+- 페이지 설정 항목 이름을 편집 중인 화면 단어장 우선 해석(관리자 단어장 폴백)으로 정정, `errors/{code}` layout_name 식별자 통일(`TemplateManager` 자동 부착 제거), `ActionDispatcher.handleOpenWindow`/navigate fallback 기본 `_self`(교차 이동 의도치 않은 새 탭 차단), `recipeEngine.applyRecipe`/`reverseResolve` optional scope 인자(기본 BASE_SCOPE 동일 동작), 편집 모드 nesting 컴포넌트 `editorAttrs` 패스스루(layout/composite 시각적 루트 spread, 사용자 페이지 no-op).
+- `editorSpecLoader` 가 편집 대상 + 활성 모듈/플러그인 editor-spec 을 단일 병합본으로 합침(record key 병합·palette/states concat·nesting union·sampleData key 병합), `sampleGlobal` 코어 우선 deep merge 체인(충돌 시 코어 값+dev 경고), 라우트 트리 노드에 레이아웃 파일 경로 표시·툴바 템플릿 이름/버전+전환 드롭다운.
+- `IdentityGuardInterceptor.handle()` 시그니처에 3번째 인자 `target?: { email?, phone? }` 추가(옵셔널, 하위호환). `VerificationPayload` 에 런타임 필드 `target` 추가, `IdentityVerificationTarget` 타입 export.
+
+### Fixed
+
+- 페이지 설정 [화면 동작] 탭이 기존 동작을 못 읽어 추가·저장 시 기존 동작이 통째로 사라지던 데이터 손실, "설정 저장하기" 저장할 값이 번역 문구용 읽기전용으로 잘못 배정, "화면 상태 바꾸기" 깊은 중첩 묶음이 `[object Object]` 로만 표시·편집 불가, 실행 조건(if) 칸이 평문이라 데이터·표현식 미연결, ≡/🔍/ƒx/?? 버튼 겹침·행 어긋남 등 동작 입력 결함.
+- 평문+데이터 칩 혼합 값을 [표현식으로 바꾸기] 승격 시 중괄호 중첩(`{{...'{{route.id}}'...}}`)으로 식이 깨지던 문제 — 데이터 칩을 이어붙이기 식 데이터 항(`'...' + route.id`)으로 보존. [일반 이름으로] 되돌리기 시 첫 결과 데이터 연결이 빈 칸으로 사라지던 문제, 단일 데이터에 불필요한 표현식 편집기 펼침, 검색엔진 데이터 칸 [✓ 완료] 버튼 부재, [✎ 수정] 모드에서 데이터·설정 참조 raw 노출(칩 편집기 유지로 정정).
+- 자동 계산 "먼저 있는 값 고르기" 후보 소실·깨진 식 저장·데이터 선택 칸 부재, 검색엔진 SEO 동적 변수 그룹 미분류(확장 정보 미전송), 미리보기 샘플 데이터 미반영·출처 표시 미갱신·상속 값 오표기, 로딩 화면 상속 표시·영역 고르개·구조화 데이터 자동 채움, 에러 처리 표준 상태 코드 행 누락·두 번째 입력칸 입력 불가·타이핑 소실(번들 errorRecipes.json setState 스프레드/openModal target/showErrorPage target 정정 포함), 모달 화면 높이 초과·탭 색 줄 잔존 등 페이지 설정 다수.
+- 데이터가 든 다국어 문구 인라인 편집 시 계산식 일부(`|| []).length}}` 등)가 평문 노출·칩 이름 깨짐(관리자 사용자 관리·대시보드·본인인증·언어팩 등 개수/페이지 정보 화면 전반), 객체 형태 계산식·`{{error.errors ?? {}}}` 빈 객체 fallback 미평가, 모달 화면명 키 노출.
+- 표 셀·목록 항목에 데이터 칩 끼운 직후 "데이터 영역" 잠금으로 인라인 편집 차단·표 미리보기 격자 키 문자열 노출, 데이터 칩 글자 사이 드래그 시 trailing click 으로 해제·`{p0}` 자리표시 잔존.
+- 요소 이동 후 undo 시 복제(중복) 발생, 디바이스별 구성 안 요소 추가·이동·undo 미반영, portable 구간 라벨 "모바일" 오표기·스타일 미표시·전용 분리 불가·분리 해제 시 스타일 동반 삭제.
+- 인라인 편집 중 글자색 classToken 실시간 미반영(폴백 인라인 color 가 토큰 색 가림 — 색 출처 없을 때만 적용), apiCall onSuccess 중첩 동작 추가 불가, 동작 카드 드래그 핸들 무동작, 영역 선택(🎯) 모드에서 편집 표식 미숨김·임시 ID 요소 선택 가능·딤 막 클릭 가로채기·고른 요소 잔류 선택.
+- flex 노드 파생 판정 stale(DOM computed 고정), 캔버스 잠금 딤이 닫은 뒤 잔존(모달 스택 파생으로 자동 해제), 표시 권한 TagInput 후보 미주입(+추가 영구 비활성), 데이터 바인딩 요소 선택·이동 불가·네비 어포던스 오해 안내, 화살표 함수 `arguments` 부재로 인한 data_source 3번째 인자 판정 결함(단위 테스트 검출).
+- 서버 응답 캐시 키와 무효화 경로 정규화 불일치로 저장 후 사용자 간 stale 노출(serve `?v` 정수화, 일반/편집기 `.meta` 키 동시 무효화), 편집기 후보 데이터를 admin 전역 broadcast 가 아닌 가드 엔드포인트 fetch 로 한정.
+- `replace:true` navigate(탭 전환·필터 변경 등 같은 화면 내 URL 교체) 경로에서 데이터소스 `if` 조건이 재평가되지 않던 버그 수정. `updateQueryParams` 가 직전 진입 시점에 `if` 로 필터링된 `currentDataSources` 스냅샷을 그대로 refetch 하여, 탭을 클릭으로 전환하면 변경된 `query` 컨텍스트가 반영되지 않고 직전 탭의 데이터소스가 계속 선택되었다. 이제 원본(`if` 필터링 전) 데이터소스를 보존(`currentRawDataSources`)하고, `updateQueryParams` 에서 변경된 `query` + 최신 `_global` 로 `filterByCondition` 을 재평가하여 현재 탭에 맞는 데이터소스만 fetch 한다. (새로고침/URL 직접 진입 경로는 기존에도 정상 — 본 수정은 SPA 탭 클릭 전환 경로 전용.)
+- iteration source / if 조건 / 반복 텍스트 바인딩에서 **배열·객체 리터럴**(`{{['a','b']}}`, `{{[{...}]}}`)이 렌더되지 않던 버그 수정. `isComplexExpression`(RenderHelpers.ts) 정규식이 `[`/`]`/`{`/`}` 를 인식하지 못해 리터럴이 "단순 경로"로 오판되어 `resolve()` 경로탐색 → `undefined` 가 되었다. 정규식에 `[]{}` 를 추가하여 리터럴이 `evaluateExpression`(원본 타입 유지) 경로로 라우팅된다. 순수 숫자 대괄호 인덱싱(`items[0]`, `entry[1]`)은 `resolve()`/`evaluateExpression()` 양 경로 결과가 동일함을 회귀 테스트로 입증 — 경로 이동에 따른 동작 변화 없음. (배경: 본인인증 이력 화면의 상태/발생위치 필터 체크박스가 배열 리터럴 source 로 정의되어 전혀 렌더되지 않던 결함.)
+- `evaluateExpression`(DataBindingEngine.ts) 에서 `new Set(...)` / `new Map(...)` 가 `Set is not a constructor` 로 실패하던 버그 수정. `extractVariablesFromExpression` 의 `reserved` 화이트리스트에 `Set`/`Map`(및 `WeakSet`/`WeakMap`/`Symbol`/`Promise`/`BigInt`/`Error`)이 없어 이들이 컨텍스트 변수로 오인되어 `undefined` 로 가려졌고, `new Function` 본문에서 `new undefined()` 가 되었다. `Math`/`Date`/`Array` 등과 동일하게 표준 내장 객체로 화이트리스트에 추가한다. `eval`/`Function`/`globalThis`/`window` 등 위험 전역은 의도적으로 제외. (배경: 본인인증 이력 화면의 채널 필터가 `Array.from(new Set(...))` 로 후보를 도출하던 결함.)
+- `ApiClient`(`G7Core.api`) response 인터셉터에 **HTTP 428 본인인증(IDV) 중앙 처리** 추가. 기존에는 `apiCall` 핸들러(`ActionDispatcher.handleApiCall`, native fetch) 경로만 `IdentityGuardInterceptor` 로 428 을 자동 인터셉트했고, `G7Core.api`(axios) 직접 호출 경로(모듈 JS 핸들러: 무통장 입금확인·주문 취소 등)는 401 만 처리해 428 이 와도 본인인증 모달이 뜨지 않았다. 그래서 각 모듈 핸들러가 `G7Core.identity.handle` 분기를 수동으로 복제해야 했고, 누락 시 본인인증 가드가 무력화됐다(주문 취소 핸들러 미노출 회귀). 이제 axios 인터셉터가 `428` + `identity_verification_required` 응답을 감지해 본인인증 모달 → verify → 원 요청(헤더/body 재사용) 자동 재실행을 중앙에서 수행한다. `apiCall`(fetch) 경로와는 별개 HTTP 클라이언트라 이중 처리되지 않는다.
+- `createChangeEvent`(EventHelpers.ts) 가 checkbox/radio 이벤트의 `target.value` 를 `String(checked)`("true"/"false") 로 문자열화하던 버그 수정. Toggle/Checkbox 가 명시적 `value` 없이 `createChangeEvent({checked})` 로 만든 이벤트가 Form 자동바인딩의 **value 바인딩 경로**(currentValue 가 boolean 이 아닐 때 — 예: 폼 초기값이 아직 채워지지 않은 시점)로 처리되면, boolean 필드에 문자열 `"true"` 가 저장되어 백엔드 boolean 검증이 422 로 거부되었다(예: 이커머스 환경설정 "취소 시 재고 복구" 토글 ON 저장 실패). 이제 checkbox/radio 의 기본 `value` 를 boolean(`checked`) 으로 두어, checked 바인딩 경로(`target.checked`)는 기존과 동일하게 동작하고 value 바인딩 경로도 boolean 을 저장한다. 명시적 `value` 를 받는 호출(PermissionTree, HtmlEditor 의 textarea/multilingual)과 checked 만 읽는 호출(HtmlEditor isHtmlMode)은 영향 없음. (배경: troubleshooting-components-form.md 사례 5 — "엔진이 boolean 을 올바르게 처리, 문자열 변환 우회 불필요" 설계 의도와 정합.)
+- 컴포넌트 `setState`(`target: "_local"`)가 canonical source(`_global._local`)에 동기화되지 않아, 검색(`navigate replace:true`) 직후 사용자가 선택한 필터가 풀리던 버그 수정. 목록 화면에서 필터(라디오/체크박스 등)를 선택하면 `ActionDispatcher.handleSetState` 의 COMPONENT path 가 컴포넌트 React 상태(저장소 A: `localDynamicState`)만 갱신하고 `_global._local`(저장소 B)은 갱신하지 않았다. 이후 검색 → `updateQueryParams` refetch → `updateTemplateData` 가 `currentDataContext._local` 을 stale 한 `_global._local`(init 기본값)로 되돌려, 선택한 필터 일부가 검색 직후 초기값으로 풀렸다(새로고침은 `handleRouteChange` 가 `query` 기반으로 `_global._local` 을 재구성하므로 정상). Form 자동바인딩은 이미 `setLocal(render:false)` 로 양쪽 저장소를 동기화하지만 명시적 `setState target:"_local"` 은 그렇지 않던 비대칭이 원인. 이제 COMPONENT path 도 GLOBAL STATE UPDATER path 와 동일하게 `globalStateUpdater({ _local }, { render: false })` 로 `_global._local` 을 동기화한다. `render: false` 이므로 추가 React 렌더는 발생하지 않으며(클릭당 렌더 횟수 불변), `scope: 'parent'|'root'` 및 isolated 타깃은 이 분기에 도달하기 전에 분리 처리되어 모달 상태 오염에 영향이 없다. (배경: 쿠폰·주문·배송정책 등 목록 화면 공통 결함.)
+- `emitEvent` 액션의 결과(`_local._eventResult`)가 **같은 sequence 의 후속 액션에 전파되지 않던** 버그 수정. `handleSequence` 는 비-setState 핸들러 실행 후 `currentState` 를 `__g7SequenceLocalSync`(setLocal 이 설정)에서만 갱신하는데, `emitEvent` 는 `globalStateUpdater` 로만 `_local` 을 갱신해 `__g7SequenceLocalSync` 를 비워둔 채였다. 그 결과 emit 직후의 `setState`/`apiCall` 이 `_eventResult` 와 리스너가 갱신한 `_local`(예: 업로드된 `form.images`)을 보지 못하고 emit 이전 stale 스냅샷을 사용했다. 이제 `emitEvent` 가 `globalStateUpdater` 갱신과 동일한 시점에 `__g7SequenceLocalSync` 에 `_eventResult` 를 병합한 `_local` 스냅샷을 실어, `handleSequence` 가 이를 픽업한다. base 는 sequence 가 추적 중인 `context.state` 우선이라 in-flight `setState` 변경(예: `isSaving`)을 보존하며, sequence 밖(standalone emitEvent)에서는 글로벌 `_local` 로 폴백한다. 글로벌 `_local` 갱신 동작 자체는 종전과 동일하게 유지된다. (배경: 상품 수정 화면에서 이미지를 추가하고 저장하면 — 저장 sequence 가 `emitEvent(업로드)` → `apiCall(PUT)` 순서인데 — 업로드는 성공해도 PUT body 의 `form.images` 가 업로드 전 스냅샷이라 백엔드 `syncImages` 가 방금 올린 이미지를 삭제하던 회귀.)
+- IME(한글·일본어·중국어) 조합 중 Enter 가 액션 키 필터에 매칭되어 **글자누락·이중제출** 이 발생하던 버그 수정. `ActionDispatcher` 의 key 필터(`action.key` 지정 keydown 액션)는 비교 전에 IME 조합 상태를 전혀 검사하지 않아, 한글 입력 후 Enter 로 조합을 확정하는 순간 그 Enter keydown 이 `key:"Enter"` 액션(검색·제출 등)을 조합 확정 *전* 값으로 발화시켰다. 결과적으로 (1) 조합 중 마지막 글자가 input 에 커밋되기 전 액션이 실행되어 글자가 누락되고, (2) 액션 실행 후 글자가 커밋되며 두 번째 keydown 으로 재실행되어 이중 제출이 일어났다. 이제 `isImeComposing` 헬퍼(`event.isComposing === true` 또는 legacy `event.keyCode === 229` 검사 — 브라우저별 조합 종료 keydown 차이 흡수)로 조합 중 keydown 은 key 필터 매칭에서 제외한다. 가드는 `action.key` 가 지정된 keydown 액션에만 적용되어, key 필터 없는 매 입력 setState 류 액션은 조합 중에도 종전대로 동작한다(회귀 0). 모달 오버레이 ESC 닫기 리스너에도 동일 가드를 적용해 조합 중 ESC 가 모달을 닫지 않도록 일관화했다. (배경: 상품·게시판 검색창에서 한글 검색어 입력 후 Enter 시 마지막 글자가 빠지거나 검색이 두 번 실행되던 결함 — gnuboard/g7 #54.)
+- 본인인증(IDV) challenge 가 **부가 목적(성인인증 등) 미달**로 실패할 때 토스트가 **2개 중복 표출**되던 버그 수정. 본인확인 자체는 성공했으나 부가 조건(만 19세 이상)을 충족하지 못해 challenge 가 실패하면, provider 가 "성인 인증이 필요합니다" 같은 고유 사유를 토스트로 표출한다. 그 직후 코어가 원 428 응답을 onError 로 흘려보내, 원 요청(글쓰기 등)의 generic 가드 토스트("본인 확인이 필요합니다")가 한 번 더 떴다. 이제 `IdentityGuardInterceptor` 에 1회성 도메인 안내 신호(`markDomainNoticeShown()` / `consumeDomainNoticeShown()`)를 신설하고, provider 가 "본인확인 성공 + 부가목적 미달" 실패를 안내한 직후 이 신호를 남기면, 코어 `handleToast` 가 동일 사이클의 generic IDV 가드 토스트(error 타입 + `error_code='identity_verification_required'`) 1건을 skip 한다. 일반 본인인증 실패/취소(본인확인 자체 실패)는 신호가 없어 가드 토스트가 그대로 유지된다 — provider 무지식의 범용 신호이므로 부가 목적이 추가되어도 코어 수정 없이 동작한다. onError 정리 액션(`setState{isSaving:false}` 등)은 그대로 실행되어 버튼 잠금 해제 등 후속 처리는 보존된다. `handle()` 진입 시 이전 사이클의 미소비 신호를 정리해 stale skip 을 방지한다. `ErrorContext` 에 `error_code` 필드를 추가하고 onError 컨텍스트에 응답의 `error_code` 를 노출한다. (배경: 성인인증이 필요한 게시판 글쓰기에서 미성년자가 인증 시 "성인 인증이 필요한 서비스입니다"와 "본인 확인이 필요합니다"가 동시에 뜨던 결함.)
+- 레이아웃 편집기 **공통(base) 레이아웃 편집 모드**에서 모듈이 슬롯에 주입한 UI(예: 헤더 통화·배송국가 셀렉터)가 **소비처(SlotContainer) 위치가 아니라 주입 앵커 원위치에 표시**되던 결함 수정. `slot` 노드는 SlotContext 활성 시 원위치에서 렌더되지 않고 SlotContainer 가 떙겨 렌더하는데, base 단독 편집 캔버스는 슬롯이 통째로 사라지는 것을 막으려 모든 `slot` 노드를 표시 마커(`__editorSlotName`)로 치환해 원위치에 렌더했다. 주입 앵커는 보통 헤더 밖 최상단 등 SlotContainer 와 다른 자리라, 통화 셀렉터가 헤더 위 별도 박스로 떠 운영 화면과 어긋났다. 이제 변환 로직(`buildBaseEditorComponents`)이 **같은 base 레이아웃 안에 소비처(`SlotContainer` props.slotId) 가 있는 슬롯은 치환하지 않고 `slot` 키를 보존**해 슬롯 메커니즘에 위임한다 → SlotContainer 가 실제 위치(헤더 안)에서 렌더한다. 소비처가 없는 슬롯(자식 라우트 레이아웃이 채우는 `content` 등)만 종전대로 원위치 마커로 치환해 점선 박스로 표시한다. 동일 슬롯을 쓰는 SlotContainer JSON 노드가 하나라도 있으면(데스크톱/모바일 페어 등) 통짜 TSX 컴포넌트 내부 SlotContainer 도 정상 수신하므로, 어떤 템플릿/모듈이 어떤 슬롯에 주입하든 코어 차원에서 동일하게 동작한다. route 편집 모드는 조기 반환이라 영향 0. (배경: 관리자/사용자 템플릿 공통 레이아웃 편집에서 통화·배송국가 선택기가 헤더 위 별도 박스로 분리 표시되던 결함.)
+- iteration(반복 렌더링) 안의 노드 `id` 에 쓴 표현식(`id: "item_{{$idx}}"` 등)이 **보간되지 않고 리터럴 그대로 DOM 에 출력**되어, 반복 행마다 같은 HTML id 가 중복되던 결함 수정. 노드의 최상위 `id` 필드는 `props` 가 아니라 props 바인딩 경로를 타지 않아, `DynamicRenderer` 의 두 DOM 출력 지점(Fragment 컨테이너 div / 일반 컴포넌트 props)이 `effectiveComponentDef.id` 를 보간 없이 그대로 내보냈다. 이제 `id` 에 `{{` 가 포함될 때만 iteration 컨텍스트(`$idx`/`item_var` 포함)로 문자열 보간한 `resolvedComponentId` 를 두 DOM 출력 지점이 사용한다(정적 id 는 원본 그대로 — 무영향). slot 등록 키·React remount 키·DevTools 식별자 등 내부 식별에는 원본 `effectiveComponentDef.id` 를 계속 사용해 격리한다. 코드베이스 전역 68개 레이아웃이 id 표현식을 이미 쓰고 있었으나 보간 부재로 깨져 있었고, 본 수정으로 일괄 정상화된다. (배경: 관리자 대시보드의 활동 로그·모듈/플러그인/템플릿 카드 등 반복 목록에서 같은 HTML id 가 행마다 중복 마운트되던 결함.)
+- 레이아웃 편집기 "요소 ID" 컨트롤(`CoreIdControl`)이 id 값에 데이터바인딩(`{{...}}`)이 있으면 **읽기전용으로 잠가** 편집할 수 없던 동작을, **데이터 칩 편집 허용**으로 변경. iteration 안에서 `id: "item_{{$idx}}"` 처럼 반복 인덱스/행 키를 붙여 항목별 고유 id 를 만들려는 정당한 용도를 막던 제약이었다. 이제 칩 포함 시 평문+칩 혼합 편집기(`BindingChipTextInput`)를 열고, 정적 id 면 후보가 있을 때 `[🔗 데이터]` 진입점을 노출한다. HTML id 안전 문자 제약은 평문 세그먼트에만 적용하고 `{{...}}` 칩 토큰은 보존한다. 데이터 칩 후보 풀(`buildBindingCandidates`)에 **iteration 변수**(`$idx` 등 반복 인덱스·행 데이터 필드)를 추가해, 반복 목록 안의 노드를 편집할 때 `{{$idx}}`/`{{row.id}}` 를 후보로 골라 고유 식별자를 만들 수 있다.
+- 같은 슬롯 컴포넌트가 **여러 SlotContainer**(헤더 데스크톱/모바일 페어)에서 렌더될 때, 슬롯에 주입된 컴포넌트의 정적 root id 가 컨테이너마다 같은 값으로 중복 출력되어 HTML id 유일성을 위반하던 결함 수정. `SlotContainer` 가 주입 컴포넌트 root id 를 컨테이너 고유 id 로 스코프(`{id}__{containerId}`)해 고유화한다(컨테이너 id 또는 컴포넌트 id 가 없으면 무영향). 이로써 이커머스 헤더 통화·배송국가 셀렉터가 관리자/사용자 헤더의 데스크톱·모바일 SlotContainer 양쪽에 마운트되며 같은 id 로 중복되던 문제가 해소된다.
+- **placeholder 핸들러 친화 동작(핸들러명을 데이터 칩으로 받는 동작)이 "+동작 추가"·핸들러 변경 시 "알 수 없는 동작"(고급)으로 강등**되던 결함 수정. 핸들러명 자체를 데이터(응답값 등)로 연결하는 동작 레시피(`build.handler` 가 `{{paramKey}}` placeholder)는 빈 값으로 추가하면 `buildAction` 이 그 토큰을 미입력으로 떨궈 `handler` 키 자체가 사라졌고, 핸들러 필드를 다른 데이터 칩으로 바꾸면 구조 식별용 필수 토큰(`params`)까지 함께 사라져 친화 카드 매칭(`matchAction`)이 깨졌다. 그 결과 추가 직후 또는 핸들러를 데이터로 연결한 직후 카드가 [고급]으로 떨어져 코드 편집으로만 수정 가능했다. 이제 `buildAction` 이 ① placeholder 핸들러가 미입력으로 사라지면 build 의 placeholder 토큰을 복원하고 ② placeholder 핸들러 레시피의 **필수(required) 입력 토큰**도 미입력 시 보존하며, `matchAction` 의 placeholder 구조 가드는 **핸들러가 build 의 placeholder 토큰과 글자 그대로 같은 빈 카드**도 인정한다 — 핸들러를 어떤 데이터 칩으로 바꿔도 친화 카드가 유지되고, 저장·새로고침 후에도 친화 카드로 복원된다. 임의의 동적 핸들러 동작(필수 토큰 부재)이 이 레시피로 잘못 흡수되는 것은 그대로 차단된다(greedy 방지 유지). 일반 레시피(리터럴 핸들러)는 무영향(미입력 키 그대로 정리). 데이터/오류/수신 동작 입력의 응답 데이터 칩 후보를 확장 editor-spec(`actionChipCandidates`)이 도메인 응답 필드까지 더할 수 있게 일반화해, apiCall 후속 동작 등에서 확장이 선언한 응답 필드를 데이터 칩으로 연결할 수 있다(코어는 도메인 무지·확장이 선언). (배경: 결제(PG) 진입 동작을 응답이 지정한 핸들러로 dispatch 하도록 만들면서, 핸들러명을 데이터로 연결하는 동작 일반이 편집기에서 친화 편집되지 않던 결함.)
+
+### Removed
+
+- MVP 위지윅 잔재 정리 — 캔버스 상단 페이지 제목 배너(더블클릭 인라인 편집·표현식 고급 배지 폐기, 페이지 설정 모달로 진입점 통합), 동작 카드 ▲▼ 순서 버튼(드래그 손잡이로 대체), 데이터 소스 [기본값] raw JSON 직접 입력 모드(블럭 편집으로 통일).
+- 코어 빌트인 icon-picker 위젯·`IconPickerControl`(라이브러리 종속 → 템플릿 소유로 이양), 코어 색/아이콘 토큰 어휘(전부 템플릿 editor-spec 카탈로그 공급).
+
+## [engine-v1.49.3] - 2026-05-22
+
+### Removed
+
+- (engine-v1.49.3) MVP 위지윅 편집기 제거 — `?mode=edit` 쿼리 기반 편집 모드 분기, `renderWithWysiwygEditor`·`checkEditMode`·`getTemplateIdFromUrl` 헬퍼, `G7Core.wysiwyg` 전역 API(`initWysiwygEditorAPI`) 삭제. 신규 레이아웃 편집기로 대체 예정 (template-engine.ts, G7CoreGlobals.ts)
+  - `?mode=edit` URL 진입 시 일반 렌더로 폴백. `DynamicRenderer` 의 `componentPath`/`data-editor-path` 범용 편집 인프라는 보존
+
 ## [engine-v1.49.2] - 2026-05-07
 
 ### Fixed
@@ -46,8 +209,8 @@
 
 ### Fixed
 
-- `TemplateApp.showRouteError` 의 401 가드가 토큰 보유 여부 판정에서 `apiClient.getToken()` 만 사용해 토큰 만료 사용자에게 안내 토스트가 노출되지 않던 문제 수정 — `LayoutLoader` 가 401 시 토큰을 자동 제거하고 재시도하므로 가드 진입 시점에는 항상 토큰이 null. `LayoutLoader` 가 첫 401 시 토큰 보유 상태였음을 `LayoutLoaderError.details.hadToken=true` 로 마킹해 가드로 전달. 가드는 (현재 토큰 보유 OR `details.hadToken === true`) 일 때 `reason='session_expired'` 부여. 익명 방문자 진입은 마킹이 없어 reason 미부여 (정책 유지: 한 번도 로그인하지 않은 사용자에게 "세션 만료" 안내 차단) (Issue #301 후속, LayoutLoader · TemplateApp)
-- `apiClient.setOnUnauthorized` 콜백이 데이터소스 401 시 로그인 페이지로 redirect 할 때 `reason` 인자를 전달하지 않아 안내 토스트 트리거가 누락되던 문제 수정 — 콜백 발동은 토큰이 서버에서 거부되었음을 의미하므로 항상 `reason='session_expired'` 부여. layout fetch 401 가드와 데이터소스 401 콜백 두 경로 모두 동일한 안내 흐름으로 통일 (Issue #301 후속, TemplateApp)
+- `TemplateApp.showRouteError` 의 401 가드가 토큰 보유 여부 판정에서 `apiClient.getToken()` 만 사용해 토큰 만료 사용자에게 안내 토스트가 노출되지 않던 문제 수정 — `LayoutLoader` 가 401 시 토큰을 자동 제거하고 재시도하므로 가드 진입 시점에는 항상 토큰이 null. `LayoutLoader` 가 첫 401 시 토큰 보유 상태였음을 `LayoutLoaderError.details.hadToken=true` 로 마킹해 가드로 전달. 가드는 (현재 토큰 보유 OR `details.hadToken === true`) 일 때 `reason='session_expired'` 부여. 익명 방문자 진입은 마킹이 없어 reason 미부여 (정책 유지: 한 번도 로그인하지 않은 사용자에게 "세션 만료" 안내 차단) ( 후속, LayoutLoader · TemplateApp)
+- `apiClient.setOnUnauthorized` 콜백이 데이터소스 401 시 로그인 페이지로 redirect 할 때 `reason` 인자를 전달하지 않아 안내 토스트 트리거가 누락되던 문제 수정 — 콜백 발동은 토큰이 서버에서 거부되었음을 의미하므로 항상 `reason='session_expired'` 부여. layout fetch 401 가드와 데이터소스 401 콜백 두 경로 모두 동일한 안내 흐름으로 통일 ( 후속, TemplateApp)
 
 ### Notes
 
@@ -61,7 +224,7 @@
 
 ### Added
 
-- 레이아웃 fetch 401 재시도 실패 시 코어가 로그인 페이지로 자동 리다이렉트 (Issue #301) — 토큰 만료/권한 부족으로 레이아웃을 받지 못한 사용자가 "페이지 로딩 실패" 에러 화면 대신 로그인 화면으로 이동하고 `?reason=session_expired` 쿼리로 안내 토스트가 트리거됨. 인증 타입은 `templateId` 또는 pathname 의 `/admin` prefix 로 결정 (TemplateApp.showRouteError)
+- 레이아웃 fetch 401 재시도 실패 시 코어가 로그인 페이지로 자동 리다이렉트 () — 토큰 만료/권한 부족으로 레이아웃을 받지 못한 사용자가 "페이지 로딩 실패" 에러 화면 대신 로그인 화면으로 이동하고 `?reason=session_expired` 쿼리로 안내 토스트가 트리거됨. 인증 타입은 `templateId` 또는 pathname 의 `/admin` prefix 로 결정 (TemplateApp.showRouteError)
 - `AuthManager.getLoginRedirectUrl(type, returnUrl, reason?)` 세 번째 옵셔널 인자 — `reason='session_expired'` 등 사유를 쿼리 파라미터로 결합. 기존 호출처는 인자 미지정으로 하위호환 (AuthManager)
 - `AuthManager.updateConfig(type, partial)` public setter — 템플릿 부트스트랩에서 `loginPath` 등 인증 설정을 사이트 단위로 커스터마이즈 가능. 보안: `loginPath` 는 동일 origin path-only(`/`로 시작, `//` 금지)만 허용 (open redirect 차단 — 외부 origin/protocol-relative URL 은 throw). 모듈/플러그인 호출은 다른 템플릿 침범 위험으로 가이드 문서에서 금지 (AuthManager)
 
@@ -97,8 +260,6 @@
 ### Added
 
 - IdentityGuardInterceptor — HTTP 428 `identity_verification_required` 응답을 감지해 모달 launcher 호출 후 return_request 자동 재실행. launcher 는 S8 공통 모달 레이아웃이 제공. ActionDispatcher.handleApiCall 응답 후처리 한 곳에 정적 메서드로 직접 위임 — 별도 디스패처 인프라 없이 모든 apiCall 의 choke point 효과 (IdentityGuardInterceptor)
-
-<!-- ⚠️ 버전 재번호 부여 검토 필요 (정책 결정 대기): 아래 v1.43.1 은 시간상 v1.45.0/v1.44.0 보다 늦지만(2026-04-25), develop 브랜치에서 별도 발행되어 버전 번호 모순 발생. v1.45.1 또는 v1.46.0 으로 재번호 검토 필요. -->
 
 ## [engine-v1.43.1] - 2026-04-25
 
@@ -411,6 +572,15 @@
 - 시스템 레이아웃 분기 지원: `__preview__` 예약 레이아웃 이름을 감지하여 별도 API 엔드포인트(`/api/layouts/preview/{token}.json`)로 라우팅 (LayoutLoader, TemplateApp)
   - LayoutLoader: `fetchLayout()`에서 `__preview__/` 접두사 감지 시 프리뷰 전용 API URL 구성
   - TemplateApp: `__preview__` 레이아웃 감지 시 route params에서 token을 추출하여 layoutPath에 포함
+
+## [engine-v1.25.1]
+
+### Fixed
+
+- blur_until_loaded 래퍼가 CSS Grid 레이아웃을 깨뜨리는 버그 수정 (DynamicRenderer)
+  - blur_until_loaded가 그리드 아이템을 래퍼 div로 감싸면서 col-span-*, row-span-* 등 그리드 클래스가 그리드 컨테이너의 직접 자식이 아니게 되어 적용되지 않음
+  - 그리드 아이템 관련 클래스(col-span-*, row-span-*, self-*, order-* 등)를 blur 래퍼로 자동 전달
+  - 반응형 접두사(sm:, md:, lg:, xl:, 2xl:) 포함 패턴 지원
 
 ## [engine-v1.25.0]
 

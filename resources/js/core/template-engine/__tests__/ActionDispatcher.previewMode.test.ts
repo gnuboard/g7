@@ -287,4 +287,103 @@ describe('ActionDispatcher - previewMode', () => {
       expect(contextNavigate).toHaveBeenCalledWith('/admin/dashboard', { replace: false });
     });
   });
+
+  // ============================================================================
+  // S4'' 보완 — handleCustomAction silent skip
+  //
+  // PreviewCanvas 의 격리 ActionDispatcher 인스턴스는 호스트의 customHandlers
+  // (예: sirsoft-ckeditor5.initEditor) 를 공유하지 않으므로, lifecycle onMount
+  // 단계에서 외부 플러그인 핸들러가 호출되면 throw → errorHandling.onError →
+  // setState(500) → ErrorBoundary 발화 → 캔버스 unmount 회귀.
+  //
+  // 본 보완: previewMode 일 때 미등록 핸들러는 throw 대신 warn 후 undefined 반환.
+  // ============================================================================
+  describe("S4'' — 미등록 커스텀 핸들러 silent skip (previewMode)", () => {
+    const mockContext = {
+      data: {},
+      state: {},
+      setState: vi.fn(),
+    };
+
+    it('previewMode=true 일 때 미등록 커스텀 핸들러 호출 시 throw 하지 않음', async () => {
+      dispatcher.setPreviewMode(true);
+
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'sirsoft-ckeditor5.initEditor',
+      };
+
+      // 본 보완 전: ActionError("Unknown action handler: sirsoft-ckeditor5.initEditor") throw
+      // 본 보완 후: silent skip — promise 가 reject 되지 않음
+      await expect(dispatcher.executeAction(action, mockContext)).resolves.toBeDefined();
+    });
+
+    it('previewMode=true 일 때 미등록 핸들러 호출 시 success=true 반환 (errorHandling 미발화)', async () => {
+      dispatcher.setPreviewMode(true);
+
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'someUnknownHandler',
+      };
+
+      const result = await dispatcher.executeAction(action, mockContext);
+      // executeAction 의 반환 형식 — { success: boolean, data?: any, error?: any }
+      // silent skip 시 result.success 는 truthy 여야 한다 (errorHandling 분기 미발화)
+      expect(result?.success).toBeTruthy();
+    });
+
+    it('previewMode=true silent skip 시 콘솔 warn 1회 호출 (로그 디그레이드)', async () => {
+      dispatcher.setPreviewMode(true);
+      // Logger 의 warn 을 spy — 본 보완 코드의 logger.warn 호출 검증
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'sirsoft-ckeditor5.initEditor',
+      };
+
+      // debug 모드 활성화 — Logger.warn 이 console.warn 으로 흐르도록
+      Logger.getInstance().setDebug(true);
+      await dispatcher.executeAction(action, mockContext);
+      Logger.getInstance().setDebug(false);
+
+      // warn 호출 메시지에 "Unknown action handler" 또는 "Preview" 포함 확인
+      const warnCalls = warnSpy.mock.calls.flat().map(String).join(' ');
+      expect(warnCalls).toMatch(/sirsoft-ckeditor5\.initEditor|Preview|Unknown/i);
+
+      warnSpy.mockRestore();
+    });
+
+    it('previewMode=false (일반 라우트) 일 때 미등록 핸들러는 여전히 throw 발생 — 일반 동작 보존', async () => {
+      // previewMode 미설정 (기본값 false)
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'sirsoft-ckeditor5.initEditor',
+      };
+
+      // 본 보완은 previewMode=true 분기에만 영향 — false 일 때 기존 throw 동작 그대로
+      // executeAction 가 try/catch 로 감싸 result.error 로 반환할 수 있으므로 양쪽 케이스 허용
+      const result = await dispatcher.executeAction(action, mockContext).catch((e) => ({
+        success: false,
+        error: e,
+      }));
+      expect(result?.success).toBeFalsy();
+    });
+
+    it('previewMode=true 일 때 등록된 커스텀 핸들러는 정상 실행 — silent skip 분기가 등록 핸들러를 가리지 않음', async () => {
+      dispatcher.setPreviewMode(true);
+
+      const handlerSpy = vi.fn().mockResolvedValue({ ok: true });
+      dispatcher.registerHandler('myCustom', handlerSpy);
+
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'myCustom',
+        params: { x: 1 },
+      };
+
+      await dispatcher.executeAction(action, mockContext);
+      expect(handlerSpy).toHaveBeenCalled();
+    });
+  });
 });

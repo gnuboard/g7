@@ -68,6 +68,45 @@ class ProductCommonInfoControllerTest extends ModuleTestCase
     }
 
     /**
+     * 목록 응답이 무한스크롤용 pagination 메타(total/has_more_pages)를 노출하는지 검증
+     *
+     * 헤더 총개수 표시와 무한스크롤 hasMore 판정이 전체 개수(total)에 의존하므로
+     * 메타가 누락되면 헤더가 로드된 개수만 표시하고 빈 페이지를 추가 호출하게 된다.
+     */
+    #[Test]
+    public function test_index_exposes_pagination_meta(): void
+    {
+        // Given: per_page(20)보다 많은 공통정보 25건
+        for ($i = 1; $i <= 25; $i++) {
+            ProductCommonInfo::create([
+                'name' => ['ko' => "안내 {$i}", 'en' => "Info {$i}"],
+                'content' => ['ko' => '내용', 'en' => 'content'],
+                'content_mode' => 'text',
+                'is_default' => false,
+                'is_active' => true,
+                'sort_order' => $i,
+            ]);
+        }
+
+        // When: 1페이지 조회
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/product-common-infos?per_page=20&page=1');
+
+        // Then: pagination 메타가 전체 개수(25)와 다음 페이지 존재를 정확히 보고
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data' => ['data', 'abilities', 'pagination' => [
+                'current_page', 'last_page', 'per_page', 'total', 'has_more_pages',
+            ]],
+        ]);
+        $response->assertJsonPath('data.pagination.total', 25);
+        $response->assertJsonPath('data.pagination.per_page', 20);
+        $response->assertJsonPath('data.pagination.current_page', 1);
+        $response->assertJsonPath('data.pagination.has_more_pages', true);
+        $response->assertJsonCount(20, 'data.data');
+    }
+
+    /**
      * 공통정보 목록 검색 테스트
      */
     #[Test]

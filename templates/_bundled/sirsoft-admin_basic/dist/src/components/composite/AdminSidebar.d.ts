@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 /**
  * 메뉴 아이템 인터페이스 (API 응답 구조)
  */
@@ -27,6 +28,12 @@ export interface AdminSidebarProps {
     className?: string;
     /** 현재 로케일 (다국어 메뉴 이름 표시용). 미지정 시 G7Core.locale.current() 자동 사용 */
     currentLocale?: string;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * AdminSidebar 컴포넌트

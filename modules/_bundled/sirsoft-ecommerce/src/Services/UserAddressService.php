@@ -2,7 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Extension\HookManager;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Modules\Sirsoft\Ecommerce\Exceptions\DuplicateAddressException;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
@@ -19,7 +21,7 @@ class UserAddressService
     /**
      * 사용자의 배송지 목록 조회
      *
-     * @param int $userId 사용자 ID
+     * @param  int  $userId  사용자 ID
      * @return Collection 배송지 목록
      */
     public function getUserAddresses(int $userId): Collection
@@ -30,7 +32,7 @@ class UserAddressService
     /**
      * 사용자의 기본 배송지 조회
      *
-     * @param int $userId 사용자 ID
+     * @param  int  $userId  사용자 ID
      * @return UserAddress|null 기본 배송지
      */
     public function getDefaultAddress(int $userId): ?UserAddress
@@ -41,8 +43,8 @@ class UserAddressService
     /**
      * 사용자의 특정 배송지 조회 (소유권 확인)
      *
-     * @param int $userId 사용자 ID
-     * @param int $addressId 배송지 ID
+     * @param  int  $userId  사용자 ID
+     * @param  int  $addressId  배송지 ID
      * @return UserAddress|null 배송지
      */
     public function getAddress(int $userId, int $addressId): ?UserAddress
@@ -53,14 +55,66 @@ class UserAddressService
     /**
      * 배송지 생성
      *
-     * @param array $data 배송지 데이터 (user_id 포함)
+     * @param  array  $data  배송지 데이터 (user_id 포함)
      * @return UserAddress 생성된 배송지
      *
-     * @throws \Illuminate\Http\Exceptions\HttpResponseException 배송지명 중복 시 (force_overwrite 없으면 409)
+     * @throws HttpResponseException 배송지명 중복 시 (force_overwrite 없으면 409)
+     */
+    /**
+     * 체크아웃/주문 제출 배송지 정보를 UserAddress 컬럼 구조로 국가별 명시 매핑합니다. (B4)
+     *
+     * 폴백 혼재(zipcode ← intl_postal_code 등)로 인한 해외 필드 누락/오저장을 방지한다.
+     * 국내(KR)는 zipcode/address/address_detail 만, 해외는 address_line_1/2·city·state·postal_code 만 채운다.
+     * 체크아웃 제출 키(intl_city/intl_state/intl_postal_code) ↔ UserAddress 컬럼(city/state/postal_code) 변환.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  string  $name  배송지명
+     * @param  array<string, mixed>  $shippingInfo  체크아웃 제출 배송지 정보
+     * @return array<string, mixed> UserAddress 생성용 데이터
+     */
+    public function mapShippingInfoToAddressData(int $userId, string $name, array $shippingInfo): array
+    {
+        $countryCode = strtoupper((string) ($shippingInfo['country_code'] ?? 'KR'));
+        if ($countryCode === '') {
+            $countryCode = 'KR';
+        }
+        $isDomestic = $countryCode === 'KR';
+
+        $base = [
+            'user_id' => $userId,
+            'name' => $name,
+            'recipient_name' => $shippingInfo['recipient_name'] ?? '',
+            'recipient_phone' => $shippingInfo['recipient_phone'] ?? '',
+            'country_code' => $countryCode,
+        ];
+
+        if ($isDomestic) {
+            return array_merge($base, [
+                'zipcode' => $shippingInfo['zipcode'] ?? '',
+                'address' => $shippingInfo['address'] ?? '',
+                'address_detail' => $shippingInfo['address_detail'] ?? '',
+            ]);
+        }
+
+        // 해외: 체크아웃 intl_* 키 → UserAddress city/state/postal_code 컬럼 변환
+        return array_merge($base, [
+            'address_line_1' => $shippingInfo['address_line_1'] ?? '',
+            'address_line_2' => $shippingInfo['address_line_2'] ?? '',
+            'city' => $shippingInfo['intl_city'] ?? '',
+            'state' => $shippingInfo['intl_state'] ?? '',
+            'postal_code' => $shippingInfo['intl_postal_code'] ?? '',
+        ]);
+    }
+
+    /**
+     * 회원 주소록 항목을 생성합니다.
+     *
+     * @param  array  $data  주소 생성 데이터 (user_id, name, 국내/해외 필드)
+     * @return UserAddress 생성된 주소록 모델
      */
     public function createAddress(array $data): UserAddress
     {
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.before_create', $data);
+        HookManager::doAction('sirsoft-ecommerce.user_address.before_create', $data);
 
         $userId = $data['user_id'];
 
@@ -92,7 +146,7 @@ class UserAddressService
 
         $address = $this->addressRepository->create($data);
 
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.after_create', $address);
+        HookManager::doAction('sirsoft-ecommerce.user_address.after_create', $address);
 
         return $address;
     }
@@ -100,9 +154,9 @@ class UserAddressService
     /**
      * 배송지 수정
      *
-     * @param int $userId 사용자 ID
-     * @param int $addressId 배송지 ID
-     * @param array $data 수정 데이터
+     * @param  int  $userId  사용자 ID
+     * @param  int  $addressId  배송지 ID
+     * @param  array  $data  수정 데이터
      * @return UserAddress|null 수정된 배송지 (없으면 null)
      */
     public function updateAddress(int $userId, int $addressId, array $data): ?UserAddress
@@ -113,7 +167,7 @@ class UserAddressService
             return null;
         }
 
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.before_update', $address, $data);
+        HookManager::doAction('sirsoft-ecommerce.user_address.before_update', $address, $data);
 
         // 기본 배송지로 설정 요청 시 기존 기본 배송지 해제
         if (! empty($data['is_default']) && $data['is_default']) {
@@ -123,7 +177,7 @@ class UserAddressService
 
         $updated = $this->addressRepository->update($address, $data);
 
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.after_update', $updated);
+        HookManager::doAction('sirsoft-ecommerce.user_address.after_update', $updated);
 
         return $updated;
     }
@@ -131,8 +185,8 @@ class UserAddressService
     /**
      * 배송지 삭제
      *
-     * @param int $userId 사용자 ID
-     * @param int $addressId 배송지 ID
+     * @param  int  $userId  사용자 ID
+     * @param  int  $addressId  배송지 ID
      * @return bool 삭제 성공 여부
      */
     public function deleteAddress(int $userId, int $addressId): bool
@@ -143,7 +197,7 @@ class UserAddressService
             return false;
         }
 
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.before_delete', $address);
+        HookManager::doAction('sirsoft-ecommerce.user_address.before_delete', $address);
 
         $wasDefault = $address->is_default;
 
@@ -157,7 +211,7 @@ class UserAddressService
             }
         }
 
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.after_delete', $address->id);
+        HookManager::doAction('sirsoft-ecommerce.user_address.after_delete', $address->id);
 
         return $result;
     }
@@ -165,8 +219,8 @@ class UserAddressService
     /**
      * 기본 배송지 설정
      *
-     * @param int $userId 사용자 ID
-     * @param int $addressId 배송지 ID
+     * @param  int  $userId  사용자 ID
+     * @param  int  $addressId  배송지 ID
      * @return UserAddress|null 설정된 기본 배송지
      */
     public function setDefaultAddress(int $userId, int $addressId): ?UserAddress
@@ -177,13 +231,13 @@ class UserAddressService
             return null;
         }
 
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.before_set_default', $address);
+        HookManager::doAction('sirsoft-ecommerce.user_address.before_set_default', $address);
 
         $this->addressRepository->setDefault($userId, $addressId);
 
         $fresh = $address->fresh();
 
-        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.after_set_default', $fresh);
+        HookManager::doAction('sirsoft-ecommerce.user_address.after_set_default', $fresh);
 
         return $fresh;
     }
@@ -191,8 +245,8 @@ class UserAddressService
     /**
      * 고유한 배송지명 생성 (자동 순번 부여)
      *
-     * @param int $userId 사용자 ID
-     * @param string $baseName 기본 이름 (예: '새 배송지')
+     * @param  int  $userId  사용자 ID
+     * @param  string  $baseName  기본 이름 (예: '새 배송지')
      * @return string 고유한 배송지명 (예: '새 배송지', '새 배송지 (2)', '새 배송지 (3)')
      */
     public function generateUniqueName(int $userId, string $baseName): string
@@ -211,5 +265,4 @@ class UserAddressService
 
         return $candidateName;
     }
-
 }

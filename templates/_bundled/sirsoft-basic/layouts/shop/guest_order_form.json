@@ -1,0 +1,337 @@
+{
+  "version": "1.0.0",
+  "layout_name": "shop/guest_order_form",
+  "extends": "_user_base",
+  "meta": {
+    "title": "$t:shop.guest_order_form.page_title",
+    "description": "$t:shop.guest_order_form.page_description"
+  },
+  "_comment": "비회원 주문 조회 폼 — 주문번호 + 휴대폰 + 비밀번호로 매번 본인 확인 후 30분 유효 토큰을 받아 sessionStorage 에 저장한다 (탭 종료 시 자동 소실 → 공유 PC 안전). 토큰은 결제 직후 자동 verify / 주문 완료 / 상세 페이지에서만 사용되며, 본 조회 폼은 진입 시 토큰을 초기화해 매번 폼이 노출되도록 한다 (eBay/Best Buy/카페24/11번가/G마켓 표준 패턴). 인증 실패 사유는 노출하지 않고 단일 '주문을 찾을 수 없습니다' 응답으로 처리한다 (백엔드 GuestOrderAuthService 정책 일치). 회원이 URL 직접 입력 등 비정상 경로로 진입한 경우(_redirect_if_member 블록)는 안전망으로 마이페이지 주문 내역으로 안내한다 — 회원 주문은 본 폼으로 조회 불가.",
+  "init_actions": [
+    {
+      "comment": "헤더 '비회원 주문 조회' 클릭 등 조회 폼 진입 시 sessionStorage 토큰을 초기화해 매번 새로 인증하도록 한다. 결제 직후 흐름(완료/상세)에서 발급된 토큰은 유지되지만 본 페이지 진입 시점에 폐기. 회원 로그인 상태 redirect 는 children 의 lifecycle.onMount 가 _global.currentUser 가 채워진 시점에 판정.",
+      "handler": "clearGuestTokenOnEntry"
+    }
+  ],
+  "initLocal": {
+    "form": {
+      "order_number": "",
+      "orderer_phone": "",
+      "guest_lookup_password": ""
+    },
+    "isSubmitting": false,
+    "errors": null,
+    "lookupError": false
+  },
+  "slots": {
+    "content": [
+      {
+        "comment": "회원 로그인 사용자가 본 페이지에 실수로 진입한 경우 — 마이페이지 주문 내역으로 안내. _global.currentUser 가 채워지는 시점(컴포넌트 마운트)에 lifecycle.onMount 가 실행되어 toast + navigate. _redirect_if_logged_in.json 과 동일 패턴.",
+        "type": "basic",
+        "name": "Div",
+        "if": "{{_global?.currentUser?.uuid}}",
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "lifecycle": {
+              "onMount": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "info",
+                    "message": "$t:shop.guest_order_form.member_redirect_toast"
+                  }
+                },
+                {
+                  "handler": "navigate",
+                  "params": { "path": "/mypage/orders" }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "layout",
+        "name": "Container",
+        "if": "{{!_global?.currentUser?.uuid}}",
+        "props": { "className": "py-12" },
+        "responsive": {
+          "portable": { "props": { "className": "py-6" } }
+        },
+        "children": [
+          {
+            "type": "layout",
+            "name": "Flex",
+            "props": { "justify": "center", "align": "start" },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": { "className": "w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700" },
+                "responsive": {
+                  "portable": { "props": { "className": "w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700" } }
+                },
+                "children": [
+                  {
+                    "comment": "제목",
+                    "type": "basic",
+                    "name": "H1",
+                    "props": { "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2" },
+                    "text": "$t:shop.guest_order_form.title"
+                  },
+                  {
+                    "comment": "안내 문구",
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-sm text-gray-600 dark:text-gray-400 mb-6" },
+                    "text": "$t:shop.guest_order_form.subtitle"
+                  },
+                  {
+                    "comment": "조회 폼",
+                    "type": "basic",
+                    "name": "Form",
+                    "props": { "className": "space-y-4" },
+                    "children": [
+                      {
+                        "comment": "인라인 에러 박스 — 인증 실패 시 toast 대신 폼 상단에 통일 메시지 노출 (PO UX 결정). 실패 사유는 구분하지 않고 단일 boolean 플래그로 표시 (보안 정책).",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.lookupError}}",
+                        "props": { "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 flex items-start gap-3" },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": { "name": "exclamation-circle", "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" }
+                          },
+                          {
+                            "type": "basic",
+                            "name": "P",
+                            "props": { "className": "text-sm text-red-700 dark:text-red-300" },
+                            "text": "$t:shop.guest_order_form.not_found"
+                          }
+                        ]
+                      },
+                      {
+                        "comment": "주문번호",
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                            "children": [
+                              { "type": "basic", "name": "Span", "text": "$t:shop.guest_order_form.order_number" },
+                              { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400 ml-1" }, "text": "*" }
+                            ]
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                              "type": "text",
+                              "name": "order_number",
+                              "value": "{{_local.form?.order_number ?? ''}}",
+                              "placeholder": "$t:shop.guest_order_form.order_number_placeholder",
+                              "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                              "required": true,
+                              "disabled": "{{_local.isSubmitting}}"
+                            },
+                            "actions": [
+                              {
+                                "type": "change",
+                                "handler": "setState",
+                                "params": { "target": "local", "form.order_number": "{{$event.target.value}}" }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "basic",
+                            "name": "P",
+                            "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                            "text": "$t:shop.guest_order_form.order_number_hint"
+                          }
+                        ]
+                      },
+                      {
+                        "comment": "휴대폰",
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                            "children": [
+                              { "type": "basic", "name": "Span", "text": "$t:shop.guest_order_form.orderer_phone" },
+                              { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400 ml-1" }, "text": "*" }
+                            ]
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                              "type": "tel",
+                              "name": "orderer_phone",
+                              "value": "{{_local.form?.orderer_phone ?? ''}}",
+                              "placeholder": "$t:shop.guest_order_form.orderer_phone_placeholder",
+                              "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                              "required": true,
+                              "disabled": "{{_local.isSubmitting}}"
+                            },
+                            "actions": [
+                              {
+                                "type": "change",
+                                "handler": "setState",
+                                "params": { "target": "local", "form.orderer_phone": "{{$event.target.value}}" }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "basic",
+                            "name": "P",
+                            "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                            "text": "$t:shop.guest_order_form.orderer_phone_hint"
+                          }
+                        ]
+                      },
+                      {
+                        "comment": "조회 비밀번호",
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                            "children": [
+                              { "type": "basic", "name": "Span", "text": "$t:shop.guest_order_form.password" },
+                              { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400 ml-1" }, "text": "*" }
+                            ]
+                          },
+                          {
+                            "type": "basic",
+                            "name": "PasswordInput",
+                            "props": {
+                              "name": "guest_lookup_password",
+                              "value": "{{_local.form?.guest_lookup_password ?? ''}}",
+                              "placeholder": "$t:shop.guest_order_form.password_placeholder",
+                              "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                              "required": true,
+                              "disabled": "{{_local.isSubmitting}}",
+                              "showToggle": true
+                            },
+                            "actions": [
+                              {
+                                "type": "change",
+                                "handler": "setState",
+                                "params": { "target": "local", "form.guest_lookup_password": "{{$event.target.value}}" }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "basic",
+                            "name": "P",
+                            "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+                            "text": "$t:shop.guest_order_form.password_hint"
+                          }
+                        ]
+                      },
+                      {
+                        "comment": "조회 버튼",
+                        "type": "basic",
+                        "name": "Button",
+                        "props": {
+                          "type": "submit",
+                          "className": "w-full py-3 mt-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                          "disabled": "{{_local.isSubmitting || !_local.form?.order_number || !_local.form?.orderer_phone || !_local.form?.guest_lookup_password}}"
+                        },
+                        "text": "{{_local.isSubmitting ? '$t:shop.guest_order_form.submitting' : '$t:shop.guest_order_form.submit'}}"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "type": "submit",
+                        "handler": "sequence",
+                        "actions": [
+                          {
+                            "handler": "setState",
+                            "params": { "target": "local", "isSubmitting": true, "errors": null, "lookupError": false }
+                          },
+                          {
+                            "comment": "비회원 본인 확인 — 실패 사유는 노출하지 않고 통일된 404 메시지로 처리 (보안 정책)",
+                            "handler": "apiCall",
+                            "target": "/api/modules/sirsoft-ecommerce/guest/orders/verify",
+                            "auth_mode": "optional",
+                            "params": {
+                              "method": "POST",
+                              "body": {
+                                "order_number": "{{_local.form?.order_number ?? ''}}",
+                                "orderer_phone": "{{_local.form?.orderer_phone ?? ''}}",
+                                "guest_lookup_password": "{{_local.form?.guest_lookup_password ?? ''}}"
+                              }
+                            },
+                            "onSuccess": [
+                              {
+                                "comment": "토큰 + 주문번호 + 만료시각 sessionStorage 저장 + _global.guestOrderToken 동기 set (모듈 커스텀 핸들러). globalHeaders 가 다음 호출부터 X-Guest-Order-Token 자동 주입.",
+                                "handler": "saveGuestOrderToken",
+                                "params": {
+                                  "token": "{{response.data.guest_order_token}}",
+                                  "orderNumber": "{{response.data.order.order_number}}",
+                                  "expiresAt": "{{response.data.expires_at}}"
+                                }
+                              },
+                              {
+                                "handler": "setState",
+                                "params": { "target": "local", "isSubmitting": false }
+                              },
+                              {
+                                "comment": "비회원 주문 상세 페이지로 이동 — 결제 완료 화면이 아니라 상세 화면. 토큰이 globalHeaders 에 자동 주입되므로 페이지 진입과 동시에 guest/orders/{n} 호출 성공.",
+                                "handler": "navigate",
+                                "params": { "path": "{{_global.shopBase}}/guest/orders/{{response.data.order.order_number}}" }
+                              }
+                            ],
+                            "onError": [
+                              {
+                                "comment": "보안 정책 — 실패 사유(주문 없음/비밀번호 오류/잠금)를 구분하지 않고 단일 boolean 플래그로 통일. 폼 상단 인라인 에러 박스가 lookupError 가 true 일 때 노출된다 (toast 대신 페이지 내 메시지 박스 — PO UX 결정).",
+                                "handler": "setState",
+                                "params": { "target": "local", "isSubmitting": false, "errors": "{{error.errors ?? null}}", "lookupError": true }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "comment": "안내 — 조회 후 가능한 일(취소/배송지 변경) + 보안(주문마다 별도 인증, 30분 자동 표시)",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "mt-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 space-y-2" },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "P",
+                        "props": { "className": "text-xs text-gray-600 dark:text-gray-400" },
+                        "text": "$t:shop.guest_order_form.actions_notice"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "P",
+                        "props": { "className": "text-xs text-gray-500 dark:text-gray-500" },
+                        "text": "$t:shop.guest_order_form.notice"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

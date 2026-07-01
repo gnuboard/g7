@@ -14,5 +14,1163 @@
   "link_modal": {
     "title": "링크 삽입",
     "insert": "삽입"
+  },
+  "control": {
+    "text_align": {
+      "label": "텍스트 정렬",
+      "left": "왼쪽",
+      "center": "가운데",
+      "right": "오른쪽",
+      "justify": "양쪽"
+    },
+    "font_size": {
+      "label": "글자 크기"
+    },
+    "font_weight": {
+      "label": "굵기",
+      "normal": "보통",
+      "semibold": "약간 굵게",
+      "bold": "굵게"
+    },
+    "letter_spacing": {
+      "label": "자간",
+      "tight": "좁게",
+      "normal": "보통",
+      "wide": "넓게"
+    },
+    "line_height": {
+      "label": "줄 간격",
+      "tight": "좁게",
+      "normal": "보통",
+      "relaxed": "넓게"
+    },
+    "text_color": {
+      "label": "글자 색상"
+    },
+    "background_color": {
+      "label": "배경색"
+    },
+    "background_image": {
+      "label": "배경 이미지"
+    },
+    "color_preset": {
+      "gray_900": "진한 회색",
+      "gray_800": "어두운 회색",
+      "gray_700": "회색",
+      "gray_500": "중간 회색",
+      "gray_100": "연한 회색",
+      "gray_50": "아주 연한 회색",
+      "white": "흰색",
+      "blue_600": "파랑",
+      "red_600": "빨강",
+      "green_600": "초록",
+      "gray_300": "밝은 회색"
+    },
+    "padding": {
+      "label": "안쪽 여백"
+    },
+    "margin": {
+      "label": "바깥 여백"
+    },
+    "width": {
+      "label": "가로 크기",
+      "full": "전체",
+      "three_quarter": "3/4",
+      "half": "절반",
+      "quarter": "1/4"
+    },
+    "height": {
+      "label": "세로 크기",
+      "auto": "자동"
+    },
+    "self_align": {
+      "label": "정렬",
+      "start": "시작",
+      "center": "가운데",
+      "end": "끝"
+    },
+    "flex_direction": {
+      "label": "방향",
+      "row": "가로",
+      "column": "세로"
+    },
+    "flex_justify": {
+      "label": "자식 정렬(주축)",
+      "start": "시작",
+      "center": "가운데",
+      "end": "끝",
+      "between": "양끝",
+      "around": "균등"
+    },
+    "flex_align": {
+      "label": "자식 정렬(교차축)",
+      "start": "시작",
+      "center": "가운데",
+      "end": "끝",
+      "stretch": "늘이기"
+    },
+    "flex_wrap": {
+      "label": "줄바꿈 허용",
+      "off": "끔",
+      "on": "켬"
+    },
+    "flex_gap": {
+      "label": "자식 간격"
+    },
+    "flex_enable": {
+      "label": "정렬 박스로 만들기",
+      "on": "정렬 박스",
+      "off": "일반 블록"
+    },
+    "flex_item_grow": {
+      "label": "늘어남",
+      "fixed": "고정",
+      "fill": "채우기",
+      "ratio": "비율"
+    },
+    "flex_item_align": {
+      "label": "혼자 정렬",
+      "start": "시작",
+      "center": "가운데",
+      "end": "끝",
+      "stretch": "늘이기"
+    },
+    "flex_item_order": {
+      "label": "순서"
+    },
+    "toggle": {
+      "on": "켜기",
+      "off": "끄기"
+    },
+    "box_shadow": {
+      "label": "그림자",
+      "none": "없음",
+      "sm": "약하게",
+      "md": "보통",
+      "lg": "강하게",
+      "xl": "더 강하게",
+      "xxl": "아주 강하게"
+    },
+    "border_style": {
+      "label": "테두리 모양",
+      "none": "없음",
+      "solid": "실선",
+      "dashed": "파선",
+      "dotted": "점선"
+    },
+    "border_color": {
+      "label": "테두리 색"
+    },
+    "border_radius": {
+      "label": "모서리 둥글기",
+      "none": "각짐",
+      "sm": "약간",
+      "md": "보통",
+      "lg": "둥글게",
+      "xl": "많이",
+      "full": "완전히"
+    },
+    "opacity": {
+      "label": "투명도"
+    },
+    "overflow": {
+      "label": "스크롤",
+      "auto": "자동",
+      "hidden": "숨김",
+      "x_auto": "가로 자동",
+      "y_auto": "세로 자동",
+      "visible": "표시"
+    },
+    "font_bold": {
+      "label": "굵게"
+    },
+    "font_italic": {
+      "label": "기울임"
+    },
+    "text_underline": {
+      "label": "밑줄"
+    },
+    "whitespace": {
+      "label": "줄바꿈",
+      "normal": "허용",
+      "nowrap": "안 함",
+      "pre_wrap": "공백 유지"
+    },
+    "icon_name": {
+      "label": "아이콘",
+      "search": "아이콘 검색"
+    },
+    "img_src": {
+      "label": "이미지 주소"
+    },
+    "img_alt": {
+      "label": "대체 텍스트"
+    },
+    "link_href": {
+      "label": "링크 주소"
+    },
+    "link_target": {
+      "label": "링크 대상",
+      "self": "현재 창",
+      "blank": "새 창",
+      "parent": "부모 프레임",
+      "top": "최상위 프레임"
+    },
+    "input_type": {
+      "label": "입력 유형",
+      "text": "텍스트",
+      "email": "이메일",
+      "password": "비밀번호",
+      "number": "숫자",
+      "tel": "전화번호",
+      "url": "URL",
+      "date": "날짜",
+      "search": "검색"
+    },
+    "input_placeholder": {
+      "label": "안내 문구"
+    },
+    "input_name": {
+      "label": "필드 이름"
+    },
+    "input_required": {
+      "label": "필수 입력"
+    },
+    "input_disabled": {
+      "label": "비활성화"
+    },
+    "field_label": {
+      "label": "라벨"
+    },
+    "field_error": {
+      "label": "오류 메시지"
+    },
+    "field_helper": {
+      "label": "도움말"
+    },
+    "html_for": {
+      "label": "연결 대상"
+    },
+    "textarea_rows": {
+      "label": "줄 수"
+    },
+    "elem_id": {
+      "label": "요소 ID"
+    },
+    "select_placeholder": {
+      "label": "안내 문구"
+    },
+    "select_options": {
+      "label": "선택지"
+    },
+    "component_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게"
+    },
+    "button_variant": {
+      "label": "버튼 스타일",
+      "primary": "기본",
+      "secondary": "보조",
+      "danger": "위험",
+      "success": "성공"
+    },
+    "component_disabled": {
+      "label": "비활성화"
+    },
+    "av_name": {
+      "label": "이름"
+    },
+    "av_avatar": {
+      "label": "아바타 이미지"
+    },
+    "av_size": {
+      "label": "크기",
+      "xs": "아주 작게",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게",
+      "xl": "아주 크게",
+      "2xl": "2XL",
+      "3xl": "3XL",
+      "4xl": "4XL",
+      "5xl": "5XL"
+    },
+    "av_text": {
+      "label": "텍스트"
+    },
+    "av_withdrawn": {
+      "label": "탈퇴 회원"
+    },
+    "av_guest": {
+      "label": "비회원"
+    },
+    "ui_name": {
+      "label": "이름"
+    },
+    "ui_user_id": {
+      "label": "사용자 ID"
+    },
+    "ui_sub_text": {
+      "label": "보조 텍스트"
+    },
+    "ui_sub_title": {
+      "label": "보조 텍스트 제목"
+    },
+    "ui_guest": {
+      "label": "비회원"
+    },
+    "ui_withdrawn": {
+      "label": "탈퇴 회원"
+    },
+    "ui_show_dropdown": {
+      "label": "드롭다운 표시"
+    },
+    "ui_clickable": {
+      "label": "클릭 가능"
+    },
+    "ui_profile_path": {
+      "label": "프로필 경로"
+    },
+    "ui_layout": {
+      "label": "배치",
+      "vertical": "세로",
+      "horizontal": "가로"
+    },
+    "ui_text": {
+      "label": "텍스트"
+    },
+    "ui_stop_prop": {
+      "label": "이벤트 전파 차단"
+    },
+    "hc_is_html": {
+      "label": "HTML 렌더링"
+    },
+    "rte_name": {
+      "label": "필드 이름"
+    },
+    "rte_initial_value": {
+      "label": "초기 내용"
+    },
+    "rte_placeholder": {
+      "label": "안내 문구"
+    },
+    "rte_image_upload_url": {
+      "label": "이미지 업로드 URL"
+    },
+    "rte_min_height": {
+      "label": "최소 높이"
+    },
+    "rte_disabled": {
+      "label": "비활성화"
+    },
+    "ec_max_height": {
+      "label": "접힘 최대 높이"
+    },
+    "ec_expand_text": {
+      "label": "펼치기 텍스트"
+    },
+    "ec_collapse_text": {
+      "label": "접기 텍스트"
+    },
+    "qs_value": {
+      "label": "초기 수량"
+    },
+    "qs_min": {
+      "label": "최소 수량"
+    },
+    "qs_max": {
+      "label": "최대 수량"
+    },
+    "qs_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게"
+    },
+    "qs_disabled": {
+      "label": "비활성화"
+    },
+    "au_src": {
+      "label": "아바타 URL"
+    },
+    "au_fallback": {
+      "label": "대체 텍스트"
+    },
+    "au_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게",
+      "xl": "아주 크게",
+      "2xl": "2XL"
+    },
+    "au_upload_endpoint": {
+      "label": "업로드 엔드포인트"
+    },
+    "au_delete_endpoint": {
+      "label": "삭제 엔드포인트"
+    },
+    "au_accept": {
+      "label": "허용 파일 형식"
+    },
+    "au_max_size": {
+      "label": "최대 파일 크기(MB)"
+    },
+    "au_upload_btn": {
+      "label": "업로드 버튼 텍스트"
+    },
+    "au_delete_btn": {
+      "label": "삭제 버튼 텍스트"
+    },
+    "au_read_only": {
+      "label": "읽기 전용"
+    },
+    "au_confirm_delete": {
+      "label": "삭제 확인"
+    },
+    "au_delete_confirm_msg": {
+      "label": "삭제 확인 메시지"
+    },
+    "au_confirm_upload": {
+      "label": "업로드 확인"
+    },
+    "au_upload_confirm_msg": {
+      "label": "업로드 확인 메시지"
+    },
+    "au_show_delete": {
+      "label": "삭제 버튼 표시"
+    },
+    "slb_mode": {
+      "label": "모드",
+      "login": "로그인",
+      "register": "회원가입"
+    },
+    "slb_variant": {
+      "label": "버튼 스타일",
+      "full": "전체",
+      "icon": "아이콘"
+    },
+    "pr_user_reaction": {
+      "label": "내 반응",
+      "like": "좋아요",
+      "funny": "웃겨요",
+      "agree": "공감해요",
+      "thanks": "고마워요",
+      "wow": "놀라워요"
+    },
+    "pr_post_id": {
+      "label": "게시글 ID"
+    },
+    "pr_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게"
+    },
+    "pi_label": {
+      "label": "라벨"
+    },
+    "pi_error": {
+      "label": "오류 메시지"
+    },
+    "pi_show_toggle": {
+      "label": "표시 토글 버튼"
+    },
+    "pi_show_validation": {
+      "label": "검증 표시"
+    },
+    "pi_wrapper_class": {
+      "label": "래퍼 클래스"
+    },
+    "pi_is_confirm": {
+      "label": "확인 필드"
+    },
+    "pi_confirm_target": {
+      "label": "확인 대상"
+    },
+    "pc_shop_base": {
+      "label": "상점 기본 경로"
+    },
+    "grid_cols": {
+      "label": "열 수"
+    },
+    "grid_gap": {
+      "label": "간격"
+    },
+    "tcl_left_width": {
+      "label": "좌측 폭"
+    },
+    "tcl_right_width": {
+      "label": "우측 폭"
+    },
+    "ig_enable_zoom": {
+      "label": "확대"
+    },
+    "ig_enable_slideshow": {
+      "label": "슬라이드쇼"
+    },
+    "ig_enable_fullscreen": {
+      "label": "전체화면"
+    },
+    "ig_show_counter": {
+      "label": "카운터 표시"
+    },
+    "ig_show_download": {
+      "label": "다운로드 표시"
+    },
+    "ig_show_thumbnails": {
+      "label": "썸네일 표시"
+    },
+    "pg_max_visible": {
+      "label": "최대 표시 페이지"
+    },
+    "pg_show_first_last": {
+      "label": "처음/끝 버튼"
+    },
+    "pg_prev_text": {
+      "label": "이전 텍스트"
+    },
+    "pg_next_text": {
+      "label": "다음 텍스트"
+    },
+    "sb_placeholder": {
+      "label": "안내 문구"
+    },
+    "sb_show_button": {
+      "label": "버튼 표시"
+    },
+    "sb_show_suggestions": {
+      "label": "추천 표시"
+    },
+    "he_multilingual": {
+      "label": "다국어"
+    },
+    "he_is_html": {
+      "label": "HTML 모드"
+    },
+    "he_rows": {
+      "label": "줄 수"
+    },
+    "he_placeholder": {
+      "label": "안내 문구"
+    },
+    "he_label": {
+      "label": "라벨"
+    },
+    "he_show_html_toggle": {
+      "label": "HTML 토글 표시"
+    },
+    "he_name": {
+      "label": "필드 이름"
+    },
+    "he_html_field_name": {
+      "label": "HTML 필드 이름"
+    },
+    "he_read_only": {
+      "label": "읽기 전용"
+    },
+    "tn_active_tab_id": {
+      "label": "활성 탭 ID"
+    },
+    "tn_variant": {
+      "label": "스타일",
+      "default": "기본",
+      "pills": "알약형",
+      "underline": "밑줄형"
+    },
+    "tn_mobile_breakpoint": {
+      "label": "모바일 분기점"
+    },
+    "fu_type": {
+      "label": "첨부 대상 타입"
+    },
+    "fu_collection": {
+      "label": "컬렉션"
+    },
+    "fu_max_files": {
+      "label": "최대 파일 수"
+    },
+    "fu_max_size": {
+      "label": "최대 파일 크기"
+    },
+    "fu_accept": {
+      "label": "허용 형식"
+    },
+    "fu_auto_upload": {
+      "label": "자동 업로드"
+    },
+    "fu_confirm_remove": {
+      "label": "삭제 확인"
+    },
+    "fu_primary_sel": {
+      "label": "대표 선택"
+    },
+    "hdr_site_name": {
+      "label": "사이트 이름"
+    },
+    "hdr_logo": {
+      "label": "로고 이미지"
+    },
+    "hdr_shop_base": {
+      "label": "쇼핑몰 기본 경로"
+    },
+    "hdr_max_boards": {
+      "label": "탭 표시 게시판 수"
+    },
+    "hdr_current_locale": {
+      "label": "현재 언어"
+    },
+    "hdr_notif_title": {
+      "label": "알림 제목 텍스트"
+    },
+    "hdr_notif_empty": {
+      "label": "알림 없음 텍스트"
+    },
+    "hdr_notif_mark_all_read": {
+      "label": "모두 읽음 텍스트"
+    },
+    "hdr_notif_delete_all": {
+      "label": "모두 삭제 텍스트"
+    },
+    "hdr_notif_unread_only": {
+      "label": "안 읽은 알림만 텍스트"
+    },
+    "ft_site_name": {
+      "label": "사이트 이름"
+    },
+    "ft_site_description": {
+      "label": "사이트 설명"
+    },
+    "ft_copyright_text": {
+      "label": "저작권 문구"
+    },
+    "tt_auto_text": {
+      "label": "자동 텍스트"
+    },
+    "tt_light_text": {
+      "label": "밝게 텍스트"
+    },
+    "tt_dark_text": {
+      "label": "어둡게 텍스트"
+    },
+    "nc_title_text": {
+      "label": "제목 텍스트"
+    },
+    "nc_empty_text": {
+      "label": "알림 없음 텍스트"
+    },
+    "nc_mark_all_read_text": {
+      "label": "모두 읽음 텍스트"
+    },
+    "nc_delete_all_text": {
+      "label": "모두 삭제 텍스트"
+    },
+    "nc_unread_only_text": {
+      "label": "안 읽은 알림만 텍스트"
+    },
+    "nc_unread_only": {
+      "label": "안 읽은 알림만 표시"
+    },
+    "nc_dropdown_align": {
+      "label": "드롭다운 정렬",
+      "left": "왼쪽",
+      "right": "오른쪽"
+    }
+  },
+  "component": {
+    "h1": "큰 제목",
+    "h2": "제목",
+    "h3": "소제목",
+    "h4": "작은 제목",
+    "p": "문단",
+    "span": "텍스트",
+    "a": "링크",
+    "button": "버튼",
+    "img": "이미지",
+    "div": "영역",
+    "container": "컨테이너",
+    "flex": "가로 배치",
+    "grid": "격자 배치",
+    "section_layout": "섹션",
+    "card": "카드",
+    "table": "표",
+    "hr": "구분선",
+    "ul": "목록",
+    "li": "목록 항목",
+    "nav": "내비게이션",
+    "three_column_layout": "3단 레이아웃",
+    "product_card": "상품 카드",
+    "image_gallery": "이미지 갤러리",
+    "pagination": "페이지네이션",
+    "search_bar": "검색 바",
+    "avatar": "아바타",
+    "user_info": "사용자 정보",
+    "html_content": "HTML 콘텐츠",
+    "html_editor": "HTML 편집기",
+    "rich_text_editor": "리치 텍스트 편집기",
+    "expandable_content": "펼침 콘텐츠",
+    "tab_navigation": "탭 내비게이션",
+    "quantity_selector": "수량 선택기",
+    "product_image_viewer": "상품 이미지 뷰어",
+    "file_uploader": "파일 업로더",
+    "avatar_uploader": "아바타 업로더",
+    "social_login_buttons": "소셜 로그인 버튼",
+    "post_reactions": "게시글 반응",
+    "input": "입력 필드",
+    "textarea": "여러 줄 입력",
+    "select": "선택 상자",
+    "checkbox": "체크박스",
+    "password_input": "비밀번호 입력",
+    "label": "라벨",
+    "form": "폼",
+    "icon": "아이콘",
+    "td": "표 셀",
+    "th": "표 머리글 셀",
+    "header": "사이트 헤더",
+    "footer": "사이트 푸터",
+    "theme_toggle": "테마 전환",
+    "notification_center": "알림 센터"
+  },
+  "action": {
+    "go_to_page": {
+      "label": "다른 페이지로 이동",
+      "param_url": "이동할 페이지"
+    },
+    "show_message": {
+      "label": "안내 메시지 보여주기",
+      "param_text": "메시지",
+      "param_tone": "종류",
+      "tone_success": "성공",
+      "tone_error": "오류",
+      "tone_info": "안내"
+    },
+    "change_state": {
+      "label": "화면 상태 바꾸기",
+      "param_key": "상태 이름",
+      "param_value": "값"
+    },
+    "refresh_data": {
+      "label": "목록 새로고침",
+      "param_src": "대상 데이터"
+    },
+    "call_server_then": {
+      "label": "서버에 보내고 결과 처리",
+      "param_endpoint": "보낼 곳",
+      "param_on_success": "성공하면",
+      "param_on_error": "실패하면"
+    },
+    "set_theme": {
+      "label": "테마 바꾸기",
+      "param_target": "테마",
+      "target_auto": "자동",
+      "target_light": "밝게",
+      "target_dark": "어둡게"
+    },
+    "save_preferred_currency": {
+      "label": "선호 통화 저장",
+      "param_currency": "통화"
+    },
+    "set_cart_option": {
+      "label": "장바구니 옵션 변경",
+      "param_item_id": "상품 ID",
+      "param_option_key": "옵션 이름",
+      "param_option_value": "옵션 값"
+    },
+    "open_cart_delete_modal": {
+      "label": "장바구니 삭제 확인 열기",
+      "param_item_id": "상품 ID"
+    },
+    "open_cart_option_modal": {
+      "label": "장바구니 옵션 선택 열기",
+      "param_item_id": "상품 ID"
+    },
+    "recalculate_cart": {
+      "label": "장바구니 금액 다시 계산"
+    },
+    "get_display_price": {
+      "label": "표시 가격 가져오기",
+      "param_currency": "통화"
+    },
+    "init_theme": {
+      "label": "테마 초기화",
+      "param_target": "테마",
+      "target_auto": "자동",
+      "target_light": "밝게",
+      "target_dark": "어둡게"
+    },
+    "init_cart_key": {
+      "label": "장바구니 키 초기화"
+    },
+    "load_preferred_currency": {
+      "label": "선호 통화 불러오기"
+    },
+    "get_cart_key": {
+      "label": "장바구니 키 가져오기"
+    },
+    "clear_cart_key": {
+      "label": "장바구니 키 비우기"
+    },
+    "save_to_storage": {
+      "label": "브라우저에 저장",
+      "param_key": "저장 이름",
+      "param_value": "저장 값"
+    },
+    "load_from_storage": {
+      "label": "브라우저에서 불러오기",
+      "param_key": "저장 이름",
+      "param_default": "기본값"
+    },
+    "save_guest_order_token": {
+      "label": "비회원 주문 토큰 저장",
+      "param_token": "주문 토큰",
+      "param_order_number": "주문 번호",
+      "param_expires_at": "만료 시각"
+    }
+  },
+  "computed": {
+    "filter_default": {
+      "label": "기본값 채우기",
+      "param_local_path": "화면 상태 경로",
+      "param_query_key": "URL 파라미터명",
+      "param_fallback": "기본값"
+    },
+    "options_from_api": {
+      "label": "데이터로 선택지 만들기",
+      "param_source": "데이터",
+      "param_filter": "조건",
+      "param_value_field": "값 필드",
+      "param_label_field": "라벨 필드"
+    },
+    "first_of": {
+      "label": "먼저 있는 값 고르기",
+      "param_candidates": "후보 값들",
+      "param_fallback": "기본값"
+    },
+    "group_items": {
+      "label": "항목을 기준별로 묶기",
+      "param_source": "데이터",
+      "param_key_field": "기준 필드",
+      "param_value_expr": "값 식"
+    }
+  },
+  "error": {
+    "show_error_page": {
+      "label": "오류 안내 페이지 표시",
+      "param_target": "표시 위치"
+    },
+    "navigate": {
+      "label": "다른 페이지로 이동",
+      "param_path": "이동할 페이지"
+    },
+    "toast": {
+      "label": "안내 메시지 보여주기",
+      "param_text": "메시지"
+    },
+    "open_modal": {
+      "label": "모달 열기",
+      "param_modal_id": "열 모달"
+    },
+    "set_state": {
+      "label": "화면 상태 바꾸기",
+      "param_target": "대상",
+      "param_state": "상태 값",
+      "param_merge": "병합",
+      "param_key": "상태 이름",
+      "param_value": "값"
+    },
+    "sequence": {
+      "label": "여러 동작 차례로 실행",
+      "param_actions": "실행할 동작들"
+    },
+    "parallel": {
+      "label": "여러 동작 동시에 실행",
+      "param_actions": "실행할 동작들"
+    }
+  },
+  "loading": {
+    "page_loading": "로딩 스피너",
+    "page_skeleton": "스켈레톤 화면"
+  },
+  "condition": {
+    "is_logged_in": "로그인한 회원일 때",
+    "is_guest": "비회원일 때",
+    "is_admin": "관리자일 때",
+    "is_saving": "저장 중일 때",
+    "not_saving": "저장 중이 아닐 때",
+    "has_changes": "변경사항이 있을 때",
+    "has_errors": "오류가 있을 때",
+    "no_errors": "오류가 없을 때",
+    "ds_has_data": "데이터가 있을 때",
+    "ds_empty": "데이터가 없을 때",
+    "ds_loading": "데이터를 불러오는 중일 때",
+    "ds_error": "데이터 로딩에 실패했을 때",
+    "field_equals": "특정 값과 같을 때",
+    "field_not_equals": "특정 값과 다를 때",
+    "state_equals": "화면 상태가 특정 값일 때",
+    "is_edit_mode": "수정 화면일 때",
+    "is_create_mode": "새로 만들기 화면일 때",
+    "query_equals": "URL 파라미터가 특정 값일 때",
+    "field_has_error": "특정 입력란에 오류가 있을 때",
+    "value_truthy": "값이 있을 때",
+    "value_falsy": "값이 없을 때",
+    "list_non_empty": "목록에 항목이 있을 때",
+    "list_empty": "목록이 비었을 때",
+    "num_gt": "숫자가 ~보다 클 때",
+    "num_gte": "숫자가 ~ 이상일 때",
+    "num_lt": "숫자가 ~보다 작을 때",
+    "num_lte": "숫자가 ~ 이하일 때",
+    "value_is_true": "값이 참(true)일 때",
+    "value_is_false": "값이 거짓(false)일 때",
+    "value_not_false": "값이 거짓(false)이 아닐 때",
+    "value_not_true": "값이 참(true)이 아닐 때",
+    "value_defined": "값이 정의되어 있을 때",
+    "value_undefined": "값이 정의되지 않았을 때",
+    "value_not_null": "값이 null 이 아닐 때",
+    "value_is_null": "값이 null 일 때",
+    "field_matches": "두 값이 같을 때",
+    "field_differs": "두 값이 다를 때",
+    "param_src": "데이터",
+    "param_field": "필드 경로",
+    "param_value": "값",
+    "param_state_key": "상태 키",
+    "param_query": "URL 파라미터명",
+    "param_path": "상태/데이터 경로",
+    "param_number": "기준 숫자",
+    "param_field_a": "첫 번째 값 경로",
+    "param_field_b": "두 번째 값 경로"
+  },
+  "state": {
+    "login_default": "기본",
+    "login_failed": "로그인 실패",
+    "search_with_results": "검색 결과 있음",
+    "search_empty": "검색 결과 없음",
+    "notifications_with": "알림 있음",
+    "notifications_empty": "알림 없음",
+    "with_data": "데이터 있음",
+    "empty_data": "데이터 없음",
+    "in_stock": "재고 있음",
+    "out_of_stock": "품절",
+    "cart_with_items": "상품 담김",
+    "cart_empty": "장바구니 비었음",
+    "read_normal": "일반 게시글",
+    "read_secret_locked": "비밀글 잠김",
+    "published": "게시됨",
+    "draft_preview": "초안 미리보기",
+    "profile_password_entry": "비밀번호 확인",
+    "profile_actual_edit": "정보 수정",
+    "profile_validation_failed": "검증 실패",
+    "forgot_default": "입력 화면",
+    "forgot_success": "메일 발송됨",
+    "reset_token_valid": "토큰 정상",
+    "reset_token_error": "토큰 오류",
+    "reset_success": "재설정 완료",
+    "register_default": "입력 화면",
+    "register_validation_failed": "검증 실패",
+    "register_valid_input": "입력 완료(일치)",
+    "challenge_text_code": "코드 입력",
+    "challenge_link": "메일 링크",
+    "challenge_external": "외부 인증",
+    "challenge_error": "인증 실패",
+    "change_password_form": "입력 화면",
+    "change_password_success": "변경 완료",
+    "wishlist_with_items": "찜 상품 있음",
+    "wishlist_empty": "찜 상품 없음",
+    "addresses_with": "배송지 있음",
+    "addresses_empty": "배송지 없음",
+    "user_active": "정상 회원",
+    "user_withdrawn": "탈퇴 회원",
+    "user_posts_with": "작성글 있음",
+    "user_posts_empty": "작성글 없음",
+    "boards_with": "게시판 있음",
+    "boards_empty": "게시판 없음",
+    "board_create": "새 글 작성",
+    "board_edit": "글 수정",
+    "board_reply_with_quote": "답글 작성 (부모글 인용)",
+    "shop_access_denied": "접근 제한",
+    "sold_out": "품절",
+    "suspended": "판매 중지",
+    "coming_soon": "판매 예정",
+    "product_reviews_tab": "리뷰 탭",
+    "product_qna_tab": "상품 문의 탭",
+    "board_activity_my_posts": "내가 쓴 글",
+    "board_activity_my_comments": "내가 쓴 댓글",
+    "search_tab_posts": "게시글 탭",
+    "search_tab_products": "상품 탭",
+    "search_tab_pages": "페이지 탭",
+    "cart_ordering": "주문 처리 중",
+    "checkout_summary_details": "금액 상세 펼침",
+    "cart_summary_details": "세금 상세 펼침",
+    "checkout_normal": "정상 결제",
+    "checkout_payment_error": "결제 오류",
+    "checkout_validation_failed": "입력 검증 실패",
+    "payment_card": "카드 결제",
+    "payment_vbank": "가상계좌",
+    "payment_dbank": "무통장 입금",
+    "reorder_pending": "재주문 진행 중",
+    "reorder_success_partial": "일부 재주문",
+    "reorder_error": "재주문 실패",
+    "guest_order_form_guest": "비회원 (조회 폼)",
+    "guest_order_form_member": "회원 (마이페이지 안내)",
+    "address_modal_list": "배송지 목록",
+    "address_modal_form": "배송지 직접 입력",
+    "order_show_default": "기본",
+    "order_change_address_manual": "배송지 변경 (직접 입력)",
+    "user_base_default": "기본",
+    "mobile_menu_open": "모바일 메뉴 펼침",
+    "gdpr_cookie_banner_visible": "쿠키 배너 표시",
+    "identity_challenge_inicis": "본인인증 모달 (이니시스)"
+  },
+  "cell_border": {
+    "side_all": "전체",
+    "side_top": "위",
+    "side_bottom": "아래",
+    "side_left": "왼쪽",
+    "side_right": "오른쪽",
+    "width_none": "없음",
+    "width_thin": "얇게",
+    "width_medium": "보통",
+    "width_thick": "굵게",
+    "color_gray": "회색",
+    "color_gray_dark": "진회색",
+    "color_dark": "검정",
+    "color_blue": "파랑",
+    "color_red": "빨강"
+  },
+  "cell_fill": {
+    "color_white": "흰색",
+    "color_gray": "연회색",
+    "color_gray_dark": "회색",
+    "color_yellow": "노랑",
+    "color_blue": "파랑",
+    "color_green": "초록",
+    "color_red": "빨강"
+  },
+  "cell_padding": {
+    "step_none": "없음",
+    "step_narrow": "좁게",
+    "step_normal": "보통",
+    "step_wide": "넓게"
+  },
+  "array_item": {
+    "tab": "탭",
+    "provider": "제공자"
+  },
+  "array_field": {
+    "label": "라벨",
+    "id": "ID",
+    "icon": "아이콘",
+    "badge": "뱃지",
+    "disabled": "비활성",
+    "provider": "제공자"
+  },
+  "provider": {
+    "naver": "네이버",
+    "kakao": "카카오"
+  },
+  "data_prop": {
+    "data": "데이터",
+    "chart_data": "차트 데이터",
+    "tree_data": "트리 데이터",
+    "images": "이미지",
+    "menu_items": "메뉴 항목",
+    "items": "항목",
+    "filters": "필터",
+    "suggestions": "추천 검색어",
+    "datasets": "데이터셋",
+    "tabs": "탭",
+    "breadcrumb_items": "경로 항목",
+    "available_locales": "사용 가능 언어",
+    "user": "사용자",
+    "current_page": "현재 페이지",
+    "total_pages": "전체 페이지 수",
+    "reactions": "반응",
+    "product": "상품",
+    "author": "작성자",
+    "value": "값",
+    "options": "선택지",
+    "selected_tags": "선택된 태그",
+    "selected_permissions": "선택된 권한",
+    "header_user": "로그인 사용자",
+    "header_boards": "게시판 목록",
+    "header_notifications": "알림 목록",
+    "header_available_locales": "사용 가능 언어",
+    "header_cart_count": "장바구니 수량",
+    "header_notification_count": "알림 수",
+    "footer_social_links": "소셜 링크",
+    "footer_link_groups": "링크 그룹",
+    "notification_items": "알림 목록",
+    "notification_unread_count": "읽지 않은 알림 수"
+  },
+  "state_label": {
+    "current_user": "현재 사용자",
+    "current_user_name": "현재 사용자 이름",
+    "current_user_email": "현재 사용자 이메일",
+    "current_user_id": "현재 사용자 ID",
+    "current_user_is_admin": "관리자 여부",
+    "site_name": "사이트 이름",
+    "query_q": "검색어 (URL)"
+  },
+  "data_source": {
+    "addresses": "배송지 목록",
+    "boardList": "게시판 목록",
+    "boards": "게시판",
+    "cart": "장바구니",
+    "cartItems": "장바구니 상품",
+    "categories": "카테고리 목록",
+    "category": "카테고리",
+    "challenge": "본인인증 요청",
+    "checkoutData": "주문서 데이터",
+    "current_user": "현재 사용자",
+    "form_data": "폼 데이터",
+    "form_meta": "폼 메타",
+    "home_boards": "홈 게시판",
+    "mileage_balance": "마일리지 잔액",
+    "mileage_history": "마일리지 내역",
+    "myActivityStats": "내 활동 통계",
+    "myComments": "내 댓글",
+    "myInquiries": "내 문의",
+    "myPosts": "내 게시글",
+    "navigation": "이전/다음 글",
+    "newProducts": "신상품",
+    "notification_unread_count": "읽지 않은 알림 수",
+    "notifications": "알림 목록",
+    "order": "주문",
+    "orderData": "주문 데이터",
+    "orders": "주문 목록",
+    "page": "페이지",
+    "paymentSettings": "결제 설정",
+    "popularPosts": "인기 게시글",
+    "popularProducts": "인기 상품",
+    "popular_boards": "인기 게시판",
+    "post": "게시글",
+    "postStats": "게시글 통계",
+    "posts": "게시글 목록",
+    "privacyContent": "개인정보처리방침 내용",
+    "product": "상품",
+    "productDownloadableCoupons": "다운로드 가능 쿠폰",
+    "products": "상품 목록",
+    "profile": "프로필",
+    "qna": "상품 문의",
+    "recentPosts": "최근 게시글",
+    "recentProducts": "최근 본 상품",
+    "recent_posts": "최근 게시글",
+    "refundReasons": "환불 사유",
+    "reviewSettings": "리뷰 정책 설정",
+    "reviews": "상품 후기",
+    "saveShippingAddress": "배송지 저장",
+    "searchResults": "검색 결과",
+    "shippingSettings": "배송 설정",
+    "stats": "통계",
+    "termsContent": "이용약관 내용",
+    "tokenValidation": "토큰 검증",
+    "user": "사용자",
+    "userAddresses": "사용자 배송지",
+    "userNotifications": "사용자 알림",
+    "userPosts": "사용자 게시글",
+    "userProfile": "사용자 프로필",
+    "user_notification_ws": "알림 (실시간)",
+    "wishlist": "위시리스트"
   }
 }

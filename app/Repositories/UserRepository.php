@@ -9,6 +9,7 @@ use App\Repositories\Concerns\HasMultipleSearchFilters;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 class UserRepository implements UserRepositoryInterface
 {
@@ -233,6 +234,46 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
+     * UUID 목록으로 사용자들을 조회합니다.
+     *
+     * @param  array<int, string>  $uuids  사용자 UUID 목록
+     * @return Collection<int, User> 조회된 사용자 컬렉션
+     */
+    public function findManyByUuids(array $uuids): Collection
+    {
+        return User::whereIn('uuid', $uuids)->get();
+    }
+
+    /**
+     * 슈퍼관리자 1명을 조회합니다.
+     *
+     * 역할 기반 수신자 해석에서 대상 역할에 사용자가 없을 때 폴백 수신자로 사용합니다.
+     *
+     * @return User|null 슈퍼관리자 또는 없으면 null
+     */
+    public function findSuperAdmin(): ?User
+    {
+        return User::superAdmins()->first();
+    }
+
+    /**
+     * 특정 권한 identifier 를 가진 역할에 소속된 모든 사용자를 조회합니다.
+     *
+     * "권한을 가진 자" 기준이므로 권한이 회수되면 자동으로 결과에서 제외됩니다.
+     *
+     * @param  string  $permissionIdentifier  권한 identifier
+     * @return Collection<int, User> 권한 보유 사용자 컬렉션
+     */
+    public function findManyByPermissionIdentifier(string $permissionIdentifier): Collection
+    {
+        return User::query()
+            ->whereHas('roles.permissions', function ($query) use ($permissionIdentifier) {
+                $query->where('permissions.identifier', $permissionIdentifier);
+            })
+            ->get();
+    }
+
+    /**
      * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.
      *
      * @param  User  $user  대상 사용자
@@ -255,9 +296,9 @@ class UserRepository implements UserRepositoryInterface
      *
      * @param  User  $user  잠글 사용자
      * @param  int  $minutes  잠금 유지 시간(분)
-     * @return \Illuminate\Support\Carbon 잠금 해제 시각
+     * @return Carbon 잠금 해제 시각
      */
-    public function lockAccount(User $user, int $minutes): \Illuminate\Support\Carbon
+    public function lockAccount(User $user, int $minutes): Carbon
     {
         $lockedUntil = now()->addMinutes(max(1, $minutes));
 
@@ -275,7 +316,6 @@ class UserRepository implements UserRepositoryInterface
      * 멱등 — 모든 컬럼이 이미 초기 상태면 UPDATE 를 발행하지 않습니다.
      *
      * @param  User  $user  대상 사용자
-     * @return void
      */
     public function resetLoginAttempts(User $user): void
     {

@@ -12,6 +12,9 @@ return [
     'template_not_found' => 'Template not found: :identifier',
     'template_not_active' => 'Template is not active: :identifier (status: :status)',
 
+    // Optimistic lock — concurrent save conflict
+    'concurrent_modification' => 'Another user has saved first. (resource: :resource, current version: :current, your version: :expected)',
+
     // Layout related exceptions
     'layout' => [
         'duplicate_data_source_id' => 'Duplicate data_sources ID: :id',

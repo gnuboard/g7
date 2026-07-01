@@ -15,22 +15,19 @@
       "id": "delete_confirm_content",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3"
+            "className": "flex-center gap-3"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -51,7 +48,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-gray-900 dark:text-white font-medium"
+                    "className": "text-primary font-medium"
                   },
                   "children": [
                     {
@@ -74,7 +71,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    "className": "text-label-subtle mt-1"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.product.labels.delete_modal.description"
                 }
@@ -87,7 +84,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
+            "className": "flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700"
           },
           "children": [
             {
@@ -127,7 +124,7 @@
                   "if": "{{_global.isDeletingLabel}}",
                   "props": {
                     "name": "spinner",
-                    "className": "w-4 h-4 mr-2 animate-spin"
+                    "className": "spinner-sm mr-2"
                   }
                 },
                 {
@@ -139,7 +136,9 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     }
   ]
 }

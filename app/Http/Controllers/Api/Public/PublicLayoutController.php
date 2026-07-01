@@ -59,14 +59,45 @@ class PublicLayoutController extends PublicBaseController
         }
 
         try {
-            // 캐시 버전을 키에 포함하여 모듈/플러그인 변경 시 캐시 무효화
-            $cacheVersion = request()->query('v', 0);
+            // 캐시 버전을 키에 포함하여 모듈/플러그인 변경 시 캐시 무효화.
+            //
+            // 서버 캐시 키에는 **정수 버전만** 쓴다(소수 nonce 제거). 레이아웃 편집기는 같은 세션의
+            // 저장·버전 복원 직후 브라우저 HTTP 캐시를 우회하려고 `?v={cacheVersion}.{nonce}` 형식으로
+            // 요청한다(클라이언트 cache-bust nonce). 그런데 `serve` 가 이 문자열을 그대로 캐시 키에
+            // 쓰면 키가 `...v{cacheVersion}.{nonce}.meta` 가 되는데, 저장 경로
+            // `LayoutService::clearPublicServingCache` 는 `(int) ext.cache_version` 으로 nonce 없는
+            // 키만 forget 하므로 키 형식이 어긋나 무효화가 빗나간다(저장/복원 후 편집기 캔버스만
+            // stale). nonce 는 브라우저 HTTP 캐시 우회용(URL·ETag 차이로 이미 달성)이고, 서버 캐시 키
+            // 정합은 정수 버전이 SSoT 다. `(int)` 캐스팅은 PHP 가 소수점에서 절단해 정수부만 남긴다.
+            $cacheVersion = (int) request()->query('v', 0);
 
-            // 서버 측 캐싱 (1시간 유효)
+            // 편집기 출처 메타 옵션
+            // - 옵션이 truthy 면 각 노드에 `__source` 메타를 부여한 응답을 반환
+            // - 일반 사이트 렌더는 옵션을 전달하지 않으므로 응답 형식 종전과 100% 동일
+            $withSourceMeta = (bool) request()->query('with_source_meta', false);
+
+            // 출처 메타 요청은 편집 권한 필요 — 일반 사용자가 메타를 보면 안 됨
+            // @since engine-v1.50.0
+            if ($withSourceMeta) {
+                $user = request()->user();
+                if ($user === null) {
+                    return $this->unauthorized('auth.layout_guest_permission_denied', [
+                        'required_permissions' => 'core.templates.layouts.edit',
+                    ]);
+                }
+                if (! PermissionHelper::check('core.templates.layouts.edit', $user)) {
+                    return $this->forbidden('auth.layout_permission_denied', [
+                        'required_permissions' => 'core.templates.layouts.edit',
+                    ]);
+                }
+            }
+
+            // 서버 측 캐싱 (1시간 유효) — 메타 포함/미포함은 별도 캐시 키
             // getLayout()을 사용하여 레이아웃 로드, 병합, 확장 적용을 한 번에 수행
+            $metaSuffix = $withSourceMeta ? '.meta' : '';
             $mergedLayout = $this->cached(
-                "layout.{$templateIdentifier}.{$layoutName}.v{$cacheVersion}",
-                fn () => $this->layoutService->getLayout($templateIdentifier, $layoutName),
+                "layout.{$templateIdentifier}.{$layoutName}.v{$cacheVersion}{$metaSuffix}",
+                fn () => $this->layoutService->getLayout($templateIdentifier, $layoutName, $withSourceMeta),
                 self::CACHE_TTL
             );
 

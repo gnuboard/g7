@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "스케줄 실행 이력 모달"
+    "description": "스케줄 실행 이력 모달",
+    "editor_label": "$t:admin.modal_label.admin_schedule_list.schedule_history_modal"
   },
   "id": "schedule_history_modal",
   "type": "composite",
@@ -9,6 +10,7 @@
   "data_sources": [
     {
       "id": "schedule_history",
+      "label_key": "$t:editor.data_source.schedule_history",
       "type": "api",
       "endpoint": "/api/admin/schedules/{{_global.selectedSchedule?.id}}/history",
       "method": "GET",
@@ -28,12 +30,16 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg" },
+      "props": {
+        "className": "mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Span",
-          "props": { "className": "font-medium text-gray-900 dark:text-white" },
+          "props": {
+            "className": "text-primary font-medium"
+          },
           "text": "{{_global.selectedSchedule?.name}}"
         }
       ]
@@ -42,12 +48,17 @@
       "type": "basic",
       "name": "Div",
       "if": "{{!schedule_history?.data?.data || schedule_history?.data?.data?.length === 0}}",
-      "props": { "className": "py-8 text-center text-gray-500 dark:text-gray-400" },
+      "props": {
+        "className": "py-8 text-center text-gray-500 dark:text-gray-400"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Icon",
-          "props": { "name": "clock", "className": "w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" }
+          "props": {
+            "name": "clock",
+            "className": "w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600"
+          }
         },
         {
           "type": "basic",
@@ -60,7 +71,9 @@
       "type": "basic",
       "name": "Div",
       "if": "{{schedule_history?.data?.data && schedule_history?.data?.data?.length > 0}}",
-      "props": { "className": "space-y-3 max-h-96 overflow-y-auto" },
+      "props": {
+        "className": "space-y-3 max-h-96 overflow-y-auto"
+      },
       "children": [
         {
           "type": "basic",
@@ -73,51 +86,67 @@
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "p-3 border border-gray-200 dark:border-gray-700 rounded-lg" },
+              "props": {
+                "className": "p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
+              },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "flex items-center justify-between mb-2" },
+                  "props": {
+                    "className": "flex-between mb-2"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "flex items-center gap-2" },
+                      "props": {
+                        "className": "flex-center gap-2"
+                      },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
                           "if": "{{item.status === 'success'}}",
-                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+                          "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                          },
                           "text": "$t:admin.schedules.result.success"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
                           "if": "{{item.status === 'failed'}}",
-                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" },
+                          "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                          },
                           "text": "$t:admin.schedules.result.failed"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
                           "if": "{{item.status === 'running'}}",
-                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" },
+                          "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                          },
                           "text": "$t:admin.schedules.result.running"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
                           "if": "{{item.trigger_type === 'manual'}}",
-                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
+                          "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                          },
                           "text": "$t:admin.schedules.trigger_type.manual"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
                           "if": "{{item.trigger_type === 'scheduled'}}",
-                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400" },
+                          "props": {
+                            "className": "text-secondary inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700"
+                          },
                           "text": "$t:admin.schedules.trigger_type.scheduled"
                         }
                       ]
@@ -125,7 +154,9 @@
                     {
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                      "props": {
+                        "className": "text-tertiary"
+                      },
                       "text": "{{item.started_at}}"
                     }
                   ]
@@ -133,7 +164,9 @@
                 {
                   "type": "basic",
                   "name": "Div",
-                  "props": { "className": "flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400" },
+                  "props": {
+                    "className": "flex-center gap-4 text-label"
+                  },
                   "children": [
                     {
                       "type": "basic",
@@ -159,12 +192,16 @@
                   "type": "basic",
                   "name": "Div",
                   "if": "{{item.output}}",
-                  "props": { "className": "mt-2" },
+                  "props": {
+                    "className": "mt-2"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Pre",
-                      "props": { "className": "text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-20 text-gray-700 dark:text-gray-300" },
+                      "props": {
+                        "className": "text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-20 text-gray-700 dark:text-gray-300"
+                      },
                       "text": "{{item.output}}"
                     }
                   ]
@@ -173,12 +210,16 @@
                   "type": "basic",
                   "name": "Div",
                   "if": "{{item.error_output}}",
-                  "props": { "className": "mt-2" },
+                  "props": {
+                    "className": "mt-2"
+                  },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Pre",
-                      "props": { "className": "text-xs bg-red-50 dark:bg-red-900/20 p-2 rounded overflow-x-auto max-h-20 text-red-700 dark:text-red-300" },
+                      "props": {
+                        "className": "text-danger-soft bg-red-50 dark:bg-red-900/20 p-2 rounded overflow-x-auto max-h-20"
+                      },
                       "text": "{{item.error_output}}"
                     }
                   ]
@@ -193,7 +234,9 @@
       "type": "basic",
       "name": "Div",
       "if": "{{schedule_history?.data?.last_page > 1}}",
-      "props": { "className": "mt-4 flex justify-center" },
+      "props": {
+        "className": "mt-4 flex justify-center"
+      },
       "children": [
         {
           "type": "composite",
@@ -220,7 +263,9 @@
                 },
                 {
                   "handler": "refetchDataSource",
-                  "params": { "dataSourceId": "schedule_history" }
+                  "params": {
+                    "dataSourceId": "schedule_history"
+                  }
                 }
               ]
             }
@@ -231,7 +276,9 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex justify-end mt-6 pt-4 border-t border-gray-200 dark:border-gray-700" },
+      "props": {
+        "className": "flex justify-end mt-6 pt-4"
+      },
       "children": [
         {
           "type": "basic",

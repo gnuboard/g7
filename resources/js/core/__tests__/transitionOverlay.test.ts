@@ -91,11 +91,23 @@ function showTransitionOverlay(config: TransitionOverlayConfig): HTMLElement | n
         document.head.appendChild(style);
         return style;
     } else {
-        // DOM 오버레이 방식 (폴백)
+        // DOM 오버레이 방식 (폴백) — TemplateApp.showTransitionOverlay 와 동일하게 개별 속성으로
+        // 설정한다. cssText 일괄 설정은 backdrop-filter(jsdom 미지원) 가 섞이면 그 선언 블록 전체가
+        // 거부되어 앞선 background 까지 무효화된다. 개별 setProperty 는 미지원 속성만 무시되고
+        // background 는 보존된다(실제 브라우저 동작은 cssText 일괄과 동일).
         const overlay = document.createElement('div');
         overlay.id = 'g7-transition-overlay';
         overlay.setAttribute('aria-hidden', 'true');
-        overlay.style.cssText = `position:fixed;inset:0;z-index:9999;pointer-events:none;background:${bgCss};${extraCss}`;
+        overlay.style.position = 'fixed';
+        overlay.style.inset = '0';
+        overlay.style.zIndex = '9999';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.background = bgCss;
+        for (const decl of extraCss.split(';')) {
+            const idx = decl.indexOf(':');
+            if (idx === -1) continue;
+            overlay.style.setProperty(decl.slice(0, idx).trim(), decl.slice(idx + 1).trim());
+        }
         document.body.appendChild(overlay);
         return overlay;
     }
@@ -177,9 +189,9 @@ describe('transition_overlay', () => {
 
         it('blur 스타일 시 backdrop-filter를 적용해야 한다', () => {
             const el = showTransitionOverlay({ enabled: true, style: 'blur' }) as HTMLDivElement;
-            // happy-dom은 backdrop-filter를 CSS 프로퍼티로 인식하지 않으므로
-            // DOM 오버레이 폴백의 blur는 배경색만 검증하고,
-            // backdrop-filter는 CSS <style> 주입 모드 테스트에서 검증
+            // jsdom 은 backdrop-filter 를 CSS 프로퍼티로 인식하지 않는다. 개별 속성 설정이라
+            // backdrop-filter 는 빈 값이 되지만 background 는 보존된다(cssText 일괄이면 동반 무효화).
+            // backdrop-filter 적용 자체는 CSS <style> 주입 모드 테스트(css.toContain)에서 검증.
             expect(el.style.background).toBe('rgba(255, 255, 255, 0.3)');
         });
 

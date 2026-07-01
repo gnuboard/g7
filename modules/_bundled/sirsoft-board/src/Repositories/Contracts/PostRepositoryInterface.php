@@ -123,6 +123,18 @@ interface PostRepositoryInterface
     public function isNotice(int $id, int $boardId): ?bool;
 
     /**
+     * navigation(이전/다음) 판별에 필요한 게시글 메타를 경량 조회합니다.
+     *
+     * 카테고리 필터 적용(47-1)과 답글 제외(47-4)에 사용합니다.
+     * 존재하지 않으면 null 을 반환합니다. 스코프/권한 체크를 수행하지 않습니다.
+     *
+     * @param  int  $id  게시글 ID
+     * @param  int  $boardId  게시판 ID
+     * @return array{category: string|null, parent_id: int|null}|null 메타 또는 미존재 시 null
+     */
+    public function getNavigationMeta(int $id, int $boardId): ?array;
+
+    /**
      * 신고 처리를 위한 게시글 상태를 일괄 업데이트합니다.
      *
      * @param  string  $slug  게시판 슬러그
@@ -216,6 +228,7 @@ interface PostRepositoryInterface
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
+     * @return int 키워드와 일치하는 게시글 수
      */
     public function countAcrossBoards(array $boardIds, string $keyword): int;
 
@@ -257,6 +270,17 @@ interface PostRepositoryInterface
      * @return int 삭제된 게시글 수
      */
     public function softDeleteByBoardId(int $boardId): int;
+
+    /**
+     * 게시판 ID 기준으로 게시글을 일괄 영구 삭제합니다.
+     *
+     * 게시판 영구 삭제(deleteBoard) 시 사용합니다. 소프트 삭제와 달리
+     * deleted_at 마킹이 아니라 레코드를 물리적으로 제거합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 삭제된 게시글 수
+     */
+    public function forceDeleteByBoardId(int $boardId): int;
 
     /**
      * ID로 게시글을 조회합니다 (게시판 슬러그 불필요, board 관계 포함).
@@ -314,4 +338,25 @@ interface PostRepositoryInterface
      * @return int 갱신된 카운트 값
      */
     public function recalculateRepliesCount(int $parentPostId): int;
+
+    /**
+     * 특정 날짜에 작성된 전체 게시판의 게시글 수를 조회합니다 (대시보드 집계용).
+     *
+     * 삭제되지 않은(deleted_at IS NULL) 게시글만 카운트합니다.
+     *
+     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @return int 해당 날짜 작성 게시글 수
+     */
+    public function countCreatedOnDate(string $date): int;
+
+    /**
+     * 전체 게시판에서 최신 게시글을 조회합니다 (대시보드 최신글 카드용).
+     *
+     * 삭제되지 않은(deleted_at IS NULL) 게시글만 최신순으로 조회하며,
+     * 게시판/작성자 관계를 eager load 합니다.
+     *
+     * @param  int  $limit  조회 건수
+     * @return Collection<int, Post> 최신 게시글 컬렉션
+     */
+    public function getRecentAcrossBoards(int $limit): Collection;
 }

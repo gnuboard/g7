@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Services\GeoIpService;
-use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class GeoIpServiceTest extends TestCase
@@ -137,7 +137,7 @@ class GeoIpServiceTest extends TestCase
         config(['geoip.cache.ttl' => 3600]);
 
         // CacheInterface 경유 — 실제 사용 키는 'geoip.timezone.'.{ip}
-        $cache = app(\App\Contracts\Extension\CacheInterface::class);
+        $cache = app(CacheInterface::class);
         $cacheKey = 'geoip.timezone.8.8.8.8';
         $cache->forget($cacheKey);
 
@@ -260,5 +260,155 @@ class GeoIpServiceTest extends TestCase
         $result = $service->getTimezoneByIp('127.0.0.1', ['Asia/Seoul', 'UTC']);
 
         $this->assertNull($result);
+    }
+
+    // ───────────────────────────────────────────────
+    // getCountryByIp — 국가 코드 조회 (MP08 유저별 배송국가)
+    // ───────────────────────────────────────────────
+
+    /**
+     * GeoIP 비활성화 시 국가 조회가 null을 반환하는지 테스트합니다.
+     */
+    public function test_country_returns_null_when_disabled(): void
+    {
+        config(['geoip.enabled' => false]);
+
+        $this->assertNull($this->geoIpService->getCountryByIp('8.8.8.8'));
+    }
+
+    /**
+     * mmdb 파일이 없을 때 국가 조회가 null을 반환하는지 테스트합니다.
+     */
+    public function test_country_returns_null_when_database_file_missing(): void
+    {
+        config(['geoip.enabled' => true]);
+        config(['geoip.database_path' => storage_path('app/geoip/nonexistent.mmdb')]);
+        config(['geoip.cache.enabled' => false]);
+
+        $service = app(GeoIpService::class);
+
+        $this->assertNull($service->getCountryByIp('8.8.8.8'));
+    }
+
+    /**
+     * 미국 IP가 대문자 국가 코드(US)를 반환하는지 테스트합니다.
+     */
+    public function test_country_us_ip_returns_us(): void
+    {
+        $dbPath = storage_path('app/geoip/GeoLite2-City.mmdb');
+
+        if (! file_exists($dbPath)) {
+            $this->markTestSkipped('GeoLite2-City.mmdb 파일이 없습니다.');
+        }
+
+        config(['geoip.enabled' => true]);
+        config(['geoip.database_path' => $dbPath]);
+        config(['geoip.cache.enabled' => false]);
+
+        $service = app(GeoIpService::class);
+
+        // Google DNS (미국)
+        $result = $service->getCountryByIp('8.8.8.8');
+
+        $this->assertSame('US', $result);
+    }
+
+    /**
+     * 한국 IP가 대문자 국가 코드(KR)를 반환하는지 테스트합니다.
+     */
+    public function test_country_korean_ip_returns_kr(): void
+    {
+        $dbPath = storage_path('app/geoip/GeoLite2-City.mmdb');
+
+        if (! file_exists($dbPath)) {
+            $this->markTestSkipped('GeoLite2-City.mmdb 파일이 없습니다.');
+        }
+
+        config(['geoip.enabled' => true]);
+        config(['geoip.database_path' => $dbPath]);
+        config(['geoip.cache.enabled' => false]);
+
+        $service = app(GeoIpService::class);
+
+        // KT DNS (한국)
+        $result = $service->getCountryByIp('168.126.63.1');
+
+        $this->assertSame('KR', $result);
+    }
+
+    /**
+     * 프라이빗 IP는 국가 조회가 null을 반환하는지 테스트합니다.
+     */
+    public function test_country_private_ip_returns_null(): void
+    {
+        $dbPath = storage_path('app/geoip/GeoLite2-City.mmdb');
+
+        if (! file_exists($dbPath)) {
+            $this->markTestSkipped('GeoLite2-City.mmdb 파일이 없습니다.');
+        }
+
+        config(['geoip.enabled' => true]);
+        config(['geoip.database_path' => $dbPath]);
+        config(['geoip.cache.enabled' => false]);
+
+        $service = app(GeoIpService::class);
+
+        $this->assertNull($service->getCountryByIp('192.168.1.1'));
+    }
+
+    /**
+     * 국가 조회 캐싱이 별도 키(geoip.country.*)로 동작하는지 테스트합니다.
+     */
+    public function test_country_caching_uses_separate_key(): void
+    {
+        $dbPath = storage_path('app/geoip/GeoLite2-City.mmdb');
+
+        if (! file_exists($dbPath)) {
+            $this->markTestSkipped('GeoLite2-City.mmdb 파일이 없습니다.');
+        }
+
+        config(['geoip.enabled' => true]);
+        config(['geoip.database_path' => $dbPath]);
+        config(['geoip.cache.enabled' => true]);
+        config(['geoip.cache.ttl' => 3600]);
+
+        // 타임존 캐시와 분리된 키 — 'geoip.country.'.{ip}
+        $cache = app(CacheInterface::class);
+        $cacheKey = 'geoip.country.8.8.8.8';
+        $cache->forget($cacheKey);
+
+        $service = app(GeoIpService::class);
+
+        $result1 = $service->getCountryByIp('8.8.8.8');
+
+        // 캐시에 저장되었는지 확인 (빈 문자열이어도 저장됨 — 음성 캐시)
+        $cached = $cache->get($cacheKey);
+        $this->assertNotNull($cached);
+
+        // 두 번째 조회 (캐시 히트)
+        $result2 = $service->getCountryByIp('8.8.8.8');
+        $this->assertSame($result1, $result2);
+
+        $cache->forget($cacheKey);
+    }
+
+    /**
+     * 조회 실패 시 음성 캐시(빈 문자열)가 저장되어 null로 해석되는지 테스트합니다.
+     */
+    public function test_country_negative_cache_resolves_to_null(): void
+    {
+        config(['geoip.enabled' => true]);
+        config(['geoip.cache.enabled' => true]);
+
+        // 음성 캐시(빈 문자열)를 미리 주입 → DB 조회 없이 null 반환
+        $cache = app(CacheInterface::class);
+        $cacheKey = 'geoip.country.203.0.113.7';
+        $cache->put($cacheKey, '', 3600);
+
+        $service = app(GeoIpService::class);
+
+        $this->assertNull($service->getCountryByIp('203.0.113.7'));
+
+        $cache->forget($cacheKey);
     }
 }

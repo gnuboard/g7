@@ -29,6 +29,7 @@ return [
         'menu_added_success' => 'Added to admin menu.',
         'menu_add_failed' => 'Failed to add to menu.',
         'menu_already_exists' => 'Menu already exists.',
+        'menu_name_suffix' => 'Board',
         'module_not_found' => 'Board module not found.',
         'error_404' => 'Board not found: :slug',
     ],
@@ -304,6 +305,15 @@ return [
         'blind_type' => [
             'auto' => 'Auto',
             'manual' => 'Manual',
+        ],
+        // Display convention for FormatsBoardDate — shared across post/comment lists, dashboard captions.
+        'relative_time' => [
+            'just_now' => 'just now',
+            'minutes_ago' => ':count minutes ago',
+            'hours_ago' => ':count hours ago',
+            'days_ago' => ':count days ago',
+            'months_ago' => ':count months ago',
+            'years_ago' => ':count years ago',
         ],
     ],
     'inquiry' => [

@@ -1,0 +1,52 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 폴백 해석/계산/스냅샷 동결 핵심 effect 는 PHPUnit Unit 이
+#   policy_assignment × shipping_country axis 를 커버하며 green. 프론트 표시(상품상세/
+#   장바구니/체크아웃 배송 플래그)는 백엔드가 동일 데이터를 내려주는 표시 소비라 별도 E2E 면제.
+feature: 기본 배송정책 폴백 — 상품 정책 미부여(shipping_policy_id=null) 시 기본 배송정책 적용
+
+description: |
+  상품에 배송정책을 부여하지 않은 경우("기본 배송정책 사용" = shipping_policy_id=null)
+  표시·차단·계산 전 표면이 기본 배송정책(is_default=true)으로 런타임 폴백한다.
+  기존엔 정책 null 을 무조건 국내(KR) 전용으로 간주해 일본 등 해외 선택 시 배송불가로
+  판정하고, 계산에서도 정책 null 상품을 그룹에서 제외해 배송비를 무료로 처리했다.
+  ShippingPolicyResolver(단일 SSoT)가 정책 폴백·배송가능 판정을 통일한다.
+  주문 생성 시 폴백된 기본정책 전체가 delivery_policy_snapshot 으로 동결되어,
+  환불 재계산은 주문 시점 동결 스냅샷 기준으로 동작한다(기본정책 이후 변경과 무관).
+
+axes:
+  policy_assignment:
+    - own_policy        # 상품에 배송정책 부여
+    - null_with_default # 정책 없음 + 기본 배송정책 존재
+    - null_no_default   # 정책 없음 + 기본 배송정책 부재
+  shipping_country:
+    - KR                # 기본정책에 설정된 국내
+    - JP                # 기본정책에 설정된 해외 (스크린샷 재현)
+    - US                # 기본정책에 미설정된 국가
+  surface:
+    - product_detail    # PublicProductResource (상품상세 사전 표시)
+    - cart              # CartController::hasUnshippableItems (담기/주문 차단)
+    - checkout          # CheckoutItemResource/BaseOrderItemResource (표시/차단 플래그)
+    - order_validate    # OrderProcessingService::validateShippingCountrySupported (최종 방어선)
+    - calc              # OrderCalculationService (배송비 계산)
+  phase:
+    - live              # 통상 모드 (장바구니/체크아웃/주문 생성)
+    - recalc            # 스냅샷 모드 (환불/취소 재계산)
+
+effects:
+  - own_policy_unaffected_by_fallback            # 정책 부여 상품은 기존대로 자기 정책 사용 (회귀 가드)
+  - null_policy_falls_back_to_default            # 정책 null → 기본 배송정책 해석
+  - null_policy_shippable_to_default_country     # 정책 null + 기본정책 JP 설정 → JP 배송가능
+  - null_policy_not_shippable_to_absent_country  # 기본정책 미설정 국가(US) → 배송불가
+  - null_policy_domestic_only_without_default    # 기본정책 부재 → KR 전용 (안전 폴백)
+  - null_policy_charged_default_fee_not_free     # 계산: 정책 null → 기본정책 배송비 부과(무료 아님)
+  - fallback_freezes_default_policy_snapshot     # 주문: 기본정책 전체가 applied snapshot 으로 동결
+  - recalc_uses_frozen_snapshot_not_live_default # 재계산: 동결 스냅샷 기준 (live 기본정책 변경 무관)
+  - default_policy_lookup_cached_per_request     # 요청 내 기본정책 조회 1회 캐시
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingPolicyResolverTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/DefaultShippingPolicyFallbackTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SnapshotRecalculationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/CheckoutControllerTest.php

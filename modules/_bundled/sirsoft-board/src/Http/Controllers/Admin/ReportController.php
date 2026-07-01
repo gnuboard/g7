@@ -5,7 +5,10 @@ namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\Exceptions\DeletedReportStatusChangeException;
+use Modules\Sirsoft\Board\Http\Requests\Admin\IndexReportRequest;
+use Modules\Sirsoft\Board\Http\Requests\Admin\ReportersRequest;
+use Modules\Sirsoft\Board\Http\Requests\Admin\StatusCountsRequest;
 use Modules\Sirsoft\Board\Http\Requests\BulkUpdateStatusRequest;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Modules\Sirsoft\Board\Http\Requests\UpdateStatusRequest;
@@ -40,10 +43,10 @@ class ReportController extends AdminBaseController
      *
      * 동일 대상(게시글/댓글)에 대한 신고는 그룹화하여 최초 신고만 목록에 표시합니다.
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  IndexReportRequest  $request  신고 목록 조회 요청
      * @return JsonResponse 신고 목록 응답
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexReportRequest $request): JsonResponse
     {
         try {
             // 조회 권한 체크
@@ -125,10 +128,10 @@ class ReportController extends AdminBaseController
      * 신고 케이스의 신고자 목록을 페이지네이션으로 반환합니다.
      *
      * @param  int  $id       신고 케이스 ID
-     * @param  Request  $request  HTTP 요청
+     * @param  ReportersRequest  $request  신고자 목록 조회 요청
      * @return JsonResponse 신고자 목록 응답
      */
-    public function reporters(int $id, Request $request): JsonResponse
+    public function reporters(int $id, ReportersRequest $request): JsonResponse
     {
         try {
             if (! $this->checkModulePermission('reports', 'view')) {
@@ -173,33 +176,29 @@ class ReportController extends AdminBaseController
         try {
             $validated = $request->validated();
 
-            // 1케이스 구조: 케이스 ID 직접 사용 (expandGroupedReportIds 불필요)
-            $result = $this->reportService->bulkUpdateStatus(
-                [$id],
-                [
-                    'status' => $validated['status'],
-                    'process_note' => $validated['process_note'] ?? null,
-                ]
-            );
+            // 단건 처리: 단건 전용 서비스 메서드 사용 (벌크 메서드 우회 금지)
+            // 전환 불가 상태(deleted 등)는 UpdateStatusRequest 검증에서 422로 선차단되며,
+            // 서비스의 deleted 가드가 2차 방어선으로 동작한다.
+            $this->reportService->updateReportStatus($id, [
+                'status' => $validated['status'],
+                'process_note' => $validated['process_note'] ?? null,
+            ]);
 
             // 케이스 재조회 (응답용)
             $report = $this->reportService->getReport($id);
             $report->reportableData = $this->reportService->buildReportableData($report);
 
-            // 수동 블라인드 복구 안내 메시지
-            $messageKey = 'sirsoft-board::messages.reports.status_updated';
-            if ($result['manual_blind_restored'] > 0) {
-                $messageKey = 'sirsoft-board::messages.reports.status_updated';
-            }
-
             return $this->successWithResource(
-                $messageKey,
+                'sirsoft-board::messages.reports.status_updated',
                 new ReportResource($report)
             );
         } catch (ModelNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.reports.error_404');
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
+        } catch (DeletedReportStatusChangeException $e) {
+            // 영구삭제 신고의 상태 변경 시도 (서비스 직접 호출 방어선) — 422 반환
+            return $this->error('sirsoft-board::messages.reports.cannot_change_deleted_status', 422);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.reports.status_update_failed', 500, $e->getMessage());
         }
@@ -209,18 +208,15 @@ class ReportController extends AdminBaseController
      * 선택된 신고들의 상태별 건수를 조회합니다.
      * 일괄 처리 전 사용자에게 선택한 신고의 상태 분포를 보여주기 위한 API입니다.
      *
-     * @param  Request  $request  HTTP 요청 (ids 배열 필요)
+     * @param  StatusCountsRequest  $request  상태별 건수 조회 요청 (ids 배열 필요)
      * @return JsonResponse 상태별 건수 응답
      */
-    public function getStatusCounts(Request $request): JsonResponse
+    public function getStatusCounts(StatusCountsRequest $request): JsonResponse
     {
         try {
-            $ids = $request->input('ids', []);
-            $targetStatus = $request->input('target_status');
-
-            if (empty($ids)) {
-                return $this->error('sirsoft-board::messages.reports.no_reports_selected', 422);
-            }
+            $validated = $request->validated();
+            $ids = $validated['ids'];
+            $targetStatus = $validated['target_status'] ?? null;
 
             // 상태별 건수 집계
             $statusCounts = $this->reportService->getStatusCountsByIds($ids, $targetStatus);

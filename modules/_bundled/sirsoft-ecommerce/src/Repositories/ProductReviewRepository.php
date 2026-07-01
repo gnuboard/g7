@@ -216,6 +216,9 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             ->count();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function getOptionFilters(int $productId): array
     {
         // 상품의 모든 옵션 조회 (기준: product_options 전체)
@@ -329,5 +332,39 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
     public function getByIdsWithImages(array $ids): Collection
     {
         return $this->model->with('images')->whereIn('id', $ids)->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function bulkSoftDeleteByIds(array $ids): int
+    {
+        if (empty($ids)) {
+            return 0;
+        }
+
+        return $this->model->whereIn('id', $ids)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function transferByOrderOptionId(int $fromOrderOptionId, int $toOrderOptionId): int
+    {
+        return $this->model->where('order_option_id', $fromOrderOptionId)
+            ->update(['order_option_id' => $toOrderOptionId]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getRecentAcrossProducts(int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->with(['product', 'user'])
+            ->where('status', ReviewStatus::VISIBLE)
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
     }
 }

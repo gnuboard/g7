@@ -14,15 +14,12 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-3"
+            "className": "flex-start gap-3"
           },
           "children": [
             {
@@ -53,7 +50,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-base text-gray-900 dark:text-white mb-2"
+                    "className": "text-primary text-base mb-2"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.message"
                 },
@@ -61,7 +58,7 @@
                   "type": "basic",
                   "name": "P",
                   "props": {
-                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                    "className": "text-label"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.confirm_message"
                 }
@@ -75,7 +72,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {

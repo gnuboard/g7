@@ -1,7 +1,7 @@
 {
   "form": {
     "sections": {
-      "notification_settings": "알림 설정"
+      "notification_settings": "게시판 알림 설정"
     },
     "notifications": {
       "post_complete": "게시글 완료 알림",

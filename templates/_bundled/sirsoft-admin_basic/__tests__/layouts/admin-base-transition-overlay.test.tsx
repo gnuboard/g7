@@ -70,6 +70,28 @@ describe('어드민 베이스 transition_overlay (이슈 #245)', () => {
     });
 });
 
+describe('어드민 베이스 사이드바 프로필 영역 (이슈 #384)', () => {
+    it('좌측 사이드바 하단 프로필/링크 영역을 렌더링하지 않는다', () => {
+        const sidebarFooter = findById((adminBase as any).components, 'sidebar_footer');
+        const sidebarProfile = findById((adminBase as any).components, 'user_profile');
+
+        expect(sidebarFooter).toBeUndefined();
+        expect(sidebarProfile).toBeUndefined();
+    });
+
+    it('계정 기능은 상단 헤더 드롭다운으로 유지한다', () => {
+        const headerDropdown = findById((adminBase as any).components, 'user_dropdown');
+
+        expect(headerDropdown).toBeDefined();
+        expect(headerDropdown?.name).toBe('UserProfile');
+        expect(headerDropdown?.props).toMatchObject({
+            dropdownOnly: true,
+            showAvatar: false,
+            showName: false,
+        });
+    });
+});
+
 describe('목록 페이지 페이지네이션 transition_overlay_target 가드 (이슈 #245)', () => {
     /**
      * DataGrid 사용 + `params.query.page` 를 가진 navigate handler 가 있는 페이지에서,
@@ -235,11 +257,16 @@ describe('admin_settings 탭 콘텐츠 영역 spinner (이슈 #245)', () => {
         expect(tabContent, 'settings_tab_content wrapper 미존재').toBeDefined();
     });
 
-    it('settings_tab_content 안에 10개 탭 partial 이 모두 들어 있어야 한다', () => {
+    it('settings_tab_content 안에 탭 partial 이 모두 들어 있어야 한다', () => {
         const settingsContent = findById((adminSettings as any).slots?.content ?? [], 'settings_content');
         const tabContent = findById(settingsContent!.children, 'settings_tab_content');
         const partials = (tabContent!.children ?? []).filter((c: any) => c.partial?.includes('partials/admin_settings/_tab_'));
-        expect(partials.length).toBe(10);
+        // tab_navigation 은 #399 Phase 1.3 에서 sticky 래퍼(sticky_header) 안으로 이동했으므로
+        // slots.content[0] 의 직접 자식이 아니다. 재귀 findById 로 중첩 깊이와 무관하게 탐색한다.
+        const tabNav = findById((adminSettings as any).slots?.content ?? [], 'tab_navigation');
+        const expectedPartials = ((tabNav as any)?.props?.tabs ?? [])
+            .map((tab: any) => `partials/admin_settings/_tab_${tab.id}.json`);
+        expect(partials.map((c: any) => c.partial)).toEqual(expectedPartials);
     });
 });
 
@@ -270,7 +297,10 @@ describe('어드민 자식 레이아웃 wait_for 일괄 가드 (이슈 #245, eng
                 .filter((s) => {
                     const type = s.type ?? 'api';
                     const strategy = s.loading_strategy ?? 'progressive';
-                    return type !== 'websocket' && strategy !== 'blocking' && strategy !== 'background';
+                    return s.auto_fetch !== false
+                        && type !== 'websocket'
+                        && strategy !== 'blocking'
+                        && strategy !== 'background';
                 })
                 .map((s) => s.id as string);
             return { name: path.basename(file, '.json'), layout, progressiveIds };

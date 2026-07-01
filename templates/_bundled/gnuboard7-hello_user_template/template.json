@@ -5,7 +5,7 @@
         "ko": "Hello 사용자 템플릿",
         "en": "Hello User Template"
     },
-    "version": "0.1.0-beta.1",
+    "version": "0.1.0",
     "license": "MIT",
     "description": {
         "ko": "학습용 최소 샘플 사용자 템플릿 (Basic 8개 컴포넌트)",
@@ -20,10 +20,10 @@
         "url": "https://gnuboard.com"
     },
     "release_date": "2026-04-21",
-    "g7_version": ">=7.0.0-beta.4",
+    "g7_version": ">=7.0.0",
     "dependencies": {
         "modules": {
-            "gnuboard7-hello_module": ">=0.1.0-beta.1"
+            "gnuboard7-hello_module": ">=0.1.0"
         },
         "plugins": {}
     },
@@ -50,6 +50,14 @@
             "maintenance": "errors/maintenance"
         }
     },
+    "externals": [
+        {
+            "id": "fontawesome",
+            "type": "style",
+            "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+            "preconnect": "https://cdnjs.cloudflare.com"
+        }
+    ],
     "features": {
         "dark_mode": false,
         "responsive": false,

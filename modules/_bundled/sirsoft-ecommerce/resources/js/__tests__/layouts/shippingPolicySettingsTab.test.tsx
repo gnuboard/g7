@@ -366,9 +366,10 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(codeSpan).toBeDefined();
         });
 
-        it('국가명이 $localized로 표시된다', () => {
+        it('국가명이 $localized로 표시된다 (fallbackKey 동반)', () => {
             const spans = allNodes.filter((n: any) => n.name === 'Span');
-            const nameSpan = spans.find((s: any) => s.text?.includes('$localized(country.name)'));
+            // catalogLangPackFallback 마이그레이션 이후 fallbackKey 인자 동반 (괄호 닫기 검사 제거)
+            const nameSpan = spans.find((s: any) => s.text?.includes('$localized(country.name'));
             expect(nameSpan).toBeDefined();
         });
 
@@ -737,8 +738,9 @@ describe('배송가능국가 모바일 카드 — 루트 구조', () => {
         expect(countryCards.meta?.is_partial).toBe(true);
     });
 
-    it('루트 컨테이너가 space-y-3 클래스를 가진다', () => {
-        expect(countryCards.props?.className).toContain('space-y-3');
+    it('루트 컨테이너에 className 이 정의되지 않는다 — partial root 의 spacing 은 부모 레이아웃/카드 자체 책임', () => {
+        // 실제 partial 은 root className 을 두지 않고 각 카드에 mb-3 로 간격을 둔다.
+        expect(countryCards.props?.className).toBeUndefined();
     });
 
     it('카드가 excel-card 클래스로 반복 렌더링된다', () => {
@@ -792,11 +794,11 @@ describe('배송가능국가 모바일 카드 — 헤더 구조', () => {
         expect(title.text).toBe('{{country.code}}');
     });
 
-    it('국가명이 $localized로 text-tertiary로 표시된다', () => {
+    it('국가명이 $localized로 text-tertiary로 표시된다 (fallbackKey 동반)', () => {
         const subtitle = allNodes.find(
             (n: any) =>
                 n.props?.className?.includes('text-tertiary') &&
-                n.text?.includes('$localized(country.name)')
+                n.text?.includes('$localized(country.name')
         );
         expect(subtitle).toBeDefined();
     });
@@ -953,6 +955,7 @@ describe('배송가능국가 모바일 카드 — 다국어/다크모드', () =>
         );
         expect(badge).toBeDefined();
         expect(badge.props.className).toContain('dark:bg-blue-900');
-        expect(badge.props.className).toContain('dark:text-blue-300');
+        // 텍스트 색은 .text-info-soft 시맨틱 자산이 흡수 (text-xs + text-blue-700 + dark:text-blue-300)
+        expect(badge.props.className).toContain('text-info-soft');
     });
 });

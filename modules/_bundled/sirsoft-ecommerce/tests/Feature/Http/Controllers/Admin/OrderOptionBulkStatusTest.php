@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Admin;
 
+use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
@@ -19,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class OrderOptionBulkStatusTest extends ModuleTestCase
 {
-    private \App\Models\User $adminUser;
+    private User $adminUser;
 
     private ShippingCarrier $carrier;
 
@@ -968,6 +969,107 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
 
         $option->refresh();
         $this->assertEquals(OrderStatusEnum::DELIVERED, $option->option_status);
+    }
+
+    // ========== 상태 전이 규칙 (A30) ==========
+
+    /**
+     * 옵션일괄: 역방향 전이(배송중 → 결제완료)는 422 로 차단되고 분할/병합·option_status 미발생.
+     *
+     * @scenario transition_path=option_bulk, from_status=shipping, to_status=payment_complete, classification=reverse_not_whitelisted
+     *
+     * @effects option_bulk_reverse_transition_blocked_no_split
+     */
+    public function test_bulk_change_blocks_reverse_transition(): void
+    {
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 3,
+            'option_status' => OrderStatusEnum::SHIPPING,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [
+                    ['option_id' => $option->id, 'quantity' => 3],
+                ],
+                'status' => 'payment_complete',
+            ]);
+
+        // Then: 422 + 항목별 에러키
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['items.0.status']);
+
+        // 분할/병합·option_status 미발생
+        $option->refresh();
+        $this->assertEquals(OrderStatusEnum::SHIPPING, $option->option_status);
+        $this->assertEquals(3, $option->quantity);
+        $this->assertNull(OrderOption::where('parent_option_id', $option->id)->first(), '차단 시 분할 미발생');
+    }
+
+    /**
+     * 옵션일괄: 여러 항목 중 1건이라도 역방향이면 전체 422 + 정상 항목도 미변경(all-or-nothing).
+     *
+     * @scenario transition_path=option_bulk, mix=1_forward_1_reverse, to_status=delivered, classification=all_or_nothing
+     *
+     * @effects option_bulk_all_or_nothing_blocks
+     */
+    public function test_bulk_change_blocks_all_when_one_reverse(): void
+    {
+        $order = OrderFactory::new()->create();
+        // forward 가능: SHIPPING → DELIVERED
+        $okOption = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 2,
+            'option_status' => OrderStatusEnum::SHIPPING,
+        ]);
+        // 역방향: CONFIRMED → DELIVERED (되돌림 금지)
+        $violator = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 1,
+            'option_status' => OrderStatusEnum::CONFIRMED,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [
+                    ['option_id' => $okOption->id, 'quantity' => 2],
+                    ['option_id' => $violator->id, 'quantity' => 1],
+                ],
+                'status' => 'delivered',
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['items.1.status']);
+
+        // all-or-nothing: 정상 항목도 미변경
+        $this->assertEquals(OrderStatusEnum::SHIPPING, $okOption->fresh()->option_status);
+        $this->assertEquals(OrderStatusEnum::CONFIRMED, $violator->fresh()->option_status);
+    }
+
+    /**
+     * 옵션일괄: forward 전이는 정상 통과(회귀 보호).
+     *
+     * @scenario transition_path=option_bulk, from_status=payment_complete, to_status=preparing, classification=forward
+     *
+     * @effects option_bulk_forward_transition_allowed
+     */
+    public function test_bulk_change_allows_forward_transition(): void
+    {
+        $order = OrderFactory::new()->create();
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'quantity' => 2,
+            'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson($this->bulkStatusUrl($order->order_number), [
+                'items' => [
+                    ['option_id' => $option->id, 'quantity' => 2],
+                ],
+                'status' => 'preparing',
+            ]);
+
+        $response->assertOk();
+        $this->assertEquals(OrderStatusEnum::PREPARING, $option->fresh()->option_status);
     }
 
     // ========== 부모 주문 상태 동기화 ==========

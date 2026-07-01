@@ -1,4 +1,26 @@
 {
+  "editor": {
+    "data_source": {
+      "availableChannels": "사용 가능 채널",
+      "boardIdentityPolicies": "게시판 본인인증 정책",
+      "boardIdentityPurposes": "게시판 본인인증 목적",
+      "boardNotificationDefinitions": "게시판 알림 정의",
+      "board_list_for_inquiry": "문의용 게시판 목록",
+      "board_types": "게시판 유형",
+      "boards": "게시판 목록",
+      "boards_list": "게시판 목록",
+      "form_data": "폼 데이터",
+      "form_meta": "폼 메타",
+      "identityProviders": "본인인증 제공자",
+      "post": "게시글",
+      "posts": "게시글 목록",
+      "report_detail": "신고 상세",
+      "reporters_list": "신고자 목록",
+      "reports": "신고 목록",
+      "roles": "역할 목록",
+      "settings": "게시판 설정"
+    }
+  },
   "common": {
     "$partial": "partial/ko/common.json"
   },
@@ -29,6 +51,9 @@
     },
     "ecommerce_settings": {
       "$partial": "partial/ko/admin/ecommerce_settings.json"
+    },
+    "dashboard": {
+      "$partial": "partial/ko/admin/dashboard.json"
     }
   },
   "board": {

@@ -11,7 +11,7 @@
   },
   "children": [
     {
-      "comment": "목록으로 버튼",
+      "comment": "목록으로 버튼 — 상세 URL 에 실린 목록 상태(category/search/page/del/filters)를 그대로 목록으로 복귀 (45-1)",
       "type": "basic",
       "name": "Button",
       "props": {
@@ -22,7 +22,9 @@
           "type": "click",
           "handler": "navigate",
           "params": {
-            "path": "/board/{{route.slug}}"
+            "path": "/board/{{route.slug}}",
+            "mergeQuery": true,
+            "query": {}
           }
         }
       ],

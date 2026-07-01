@@ -717,6 +717,41 @@
         }
       },
       {
+        "name": "UnifiedIcon",
+        "type": "basic",
+        "description": "통합 아이콘 컴포넌트 (Font Awesome, SVG, 이미지 지원)",
+        "path": "src/components/basic/UnifiedIcon.tsx",
+        "props": {
+          "icon": {
+            "type": "string",
+            "required": true,
+            "description": "아이콘 지정자 (fa:name | svg:path | img:path | name)"
+          },
+          "size": {
+            "type": "string",
+            "required": false,
+            "default": "md",
+            "description": "크기 (xs | sm | md | lg | xl)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          },
+          "color": {
+            "type": "string",
+            "required": false,
+            "description": "색상 (Tailwind 클래스)"
+          },
+          "ariaLabel": {
+            "type": "string",
+            "required": false,
+            "description": "접근성 레이블"
+          }
+        }
+      },
+      {
         "name": "Code",
         "type": "basic",
         "description": "HTML code element wrapper for inline code",
@@ -1687,13 +1722,13 @@
             "type": "string",
             "required": false,
             "default": "primary",
-            "description": "버튼 변형 (primary | secondary | danger | ghost)"
+            "description": "버튼 변형 (primary | secondary | danger | ghost | outline). outline 은 배경 없이 테두리만 있는 정사각 아이콘 버튼 (페이지 헤더 refresh 등)에 사용"
           },
           "size": {
             "type": "string",
             "required": false,
             "default": "md",
-            "description": "버튼 크기 (sm | md | lg)"
+            "description": "버튼 크기 (sm | md | lg). label 미지정 시 정사각 고정 크기 (sm=w-8 h-8, md=w-10 h-10, lg=w-12 h-12)"
           },
           "disabled": {
             "type": "boolean",
@@ -2213,6 +2248,40 @@
         }
       },
       {
+        "name": "SectionHeader",
+        "type": "composite",
+        "description": "Lightweight section header — title (좌측) + actions children (우측) 균형 배치. PageHeader 와 달리 페이지 단위가 아닌 카드/탭/폼 그룹 안의 섹션 머리 부분 표준화.",
+        "path": "src/components/composite/SectionHeader.tsx",
+        "props": {
+          "title": {
+            "type": "string",
+            "required": false,
+            "description": "섹션 제목"
+          },
+          "description": {
+            "type": "string",
+            "required": false,
+            "description": "섹션 보조 설명 (제목 아래 작은 회색 텍스트)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스 (mb-4 등 외부 간격 토큰 추가용)"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "우측 액션 자식 (Button / IconButton 등)"
+          }
+        }
+      },
+      {
         "name": "TemplateCard",
         "type": "composite",
         "description": "Template card for template selection",
@@ -2518,6 +2587,95 @@
             "type": "CSSProperties",
             "required": false,
             "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "BarChart",
+        "type": "composite",
+        "description": "Chart.js 기반 바 차트 컴포넌트",
+        "path": "src/components/composite/BarChart.tsx",
+        "props": {
+          "labels": {
+            "type": "array",
+            "required": true,
+            "description": "X축 라벨 배열"
+          },
+          "datasets": {
+            "type": "array",
+            "required": true,
+            "description": "데이터셋 배열 [{ label, data, backgroundColor, borderRadius }]"
+          },
+          "height": {
+            "type": "number",
+            "required": false,
+            "default": 200,
+            "description": "차트 높이 (px)"
+          },
+          "showLegend": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "범례 표시 여부"
+          },
+          "showGrid": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "그리드 표시 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          }
+        }
+      },
+      {
+        "name": "DonutChart",
+        "type": "composite",
+        "description": "Chart.js 기반 도넛 차트 컴포넌트",
+        "path": "src/components/composite/DonutChart.tsx",
+        "props": {
+          "data": {
+            "type": "array",
+            "required": true,
+            "description": "데이터 배열 [{ name, value, color }]"
+          },
+          "centerLabel": {
+            "type": "string",
+            "required": false,
+            "description": "중앙 라벨 (예: April 2025)"
+          },
+          "centerValue": {
+            "type": "string",
+            "required": false,
+            "description": "중앙 값 (예: $14,582.94)"
+          },
+          "size": {
+            "type": "number",
+            "required": false,
+            "default": 200,
+            "description": "차트 크기 (px)"
+          },
+          "cutout": {
+            "type": "string",
+            "required": false,
+            "default": "70%",
+            "description": "도넛 두께 비율"
+          },
+          "showLegend": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "범례 표시 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
           }
         }
       },

@@ -15,20 +15,26 @@
       "type": "basic",
       "name": "P",
       "if": "{{_global.bulkIssueStatus === 'issuing'}}",
-      "props": { "className": "text-gray-600 dark:text-gray-400" },
+      "props": {
+        "className": "text-secondary"
+      },
       "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.status_change.message|count={{(_global.bulkSelectedItems ?? []).length}}|status=$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing"
     },
     {
       "type": "basic",
       "name": "P",
       "if": "{{_global.bulkIssueStatus !== 'issuing'}}",
-      "props": { "className": "text-gray-600 dark:text-gray-400" },
+      "props": {
+        "className": "text-secondary"
+      },
       "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.status_change.message|count={{(_global.bulkSelectedItems ?? []).length}}|status=$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped"
     },
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex justify-end gap-3 mt-6" },
+      "props": {
+        "className": "modal-footer-buttons"
+      },
       "children": [
         {
           "type": "basic",
@@ -37,14 +43,25 @@
             "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isChangingStatus}}"
           },
-          "actions": [{ "type": "click", "handler": "closeModal" }],
-          "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
         },
         {
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isChangingStatus}}"
           },
           "actions": [
@@ -54,7 +71,10 @@
               "actions": [
                 {
                   "handler": "setState",
-                  "params": { "target": "global", "isChangingStatus": true }
+                  "params": {
+                    "target": "global",
+                    "isChangingStatus": true
+                  }
                 },
                 {
                   "handler": "apiCall",
@@ -68,14 +88,47 @@
                     }
                   },
                   "onSuccess": [
-                    { "handler": "setState", "params": { "target": "global", "isChangingStatus": false, "bulkSelectedItems": [], "bulkIssueStatus": "" } },
-                    { "handler": "refetchDataSource", "params": { "dataSourceId": "coupons" } },
-                    { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.admin.promotion_coupon.toast.status_changed" } },
-                    { "handler": "closeModal" }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isChangingStatus": false,
+                        "bulkSelectedItems": [],
+                        "bulkIssueStatus": ""
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "coupons"
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-ecommerce.admin.promotion_coupon.toast.status_changed"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
                   ],
                   "onError": [
-                    { "handler": "setState", "params": { "target": "global", "isChangingStatus": false } },
-                    { "handler": "toast", "params": { "type": "error", "message": "$t:sirsoft-ecommerce.common.error.general" } }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isChangingStatus": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "$t:sirsoft-ecommerce.common.error.general"
+                      }
+                    }
                   ]
                 }
               ]
@@ -86,7 +139,10 @@
               "type": "basic",
               "name": "Icon",
               "if": "{{_global.isChangingStatus}}",
-              "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+              "props": {
+                "name": "spinner",
+                "className": "spinner-sm"
+              }
             },
             {
               "type": "basic",

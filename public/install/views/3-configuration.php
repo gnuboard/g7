@@ -73,6 +73,7 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                                class="form-input"
                                placeholder="<?= htmlspecialchars(lang('db_prefix_placeholder')) ?>"
                                pattern="^[a-z][a-z0-9_]*$"
+                               maxlength="<?= MAX_DB_PREFIX_LENGTH ?>"
                                aria-invalid="false"
                                aria-describedby="db_prefix-error db_prefix-hint">
                         <small id="db_prefix-hint" class="form-hint">

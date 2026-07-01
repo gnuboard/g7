@@ -35,6 +35,11 @@ enum TriggerType: string
     case User = 'user';
 
     /**
+     * 부모(게시글) 삭제에 따른 하위 데이터 연쇄 삭제
+     */
+    case Cascade = 'cascade';
+
+    /**
      * 모든 값을 문자열 배열로 반환합니다.
      *
      * @return array<string>

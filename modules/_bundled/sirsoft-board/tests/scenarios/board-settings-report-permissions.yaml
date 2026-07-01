@@ -1,0 +1,32 @@
+feature: 게시판 환경설정 신고 관리 권한 검증 및 에러 표시
+
+description: |
+  신고 정책 탭의 "신고 관리 권한" 섹션 — view_roles/manage_roles 를 빈 배열로 저장 시
+  FormRequest(StoreBoardSettingsRequest)가 required_with + min:1 규칙으로 차단하고,
+  해당 섹션 내 TagInput에 빨간 테두리와 인라인 에러 메시지가 표시된다.
+
+  수정 이력:
+    - 이슈 #413 item 8: view_roles/manage_roles 빈 배열 시 검증 통과하던 버그 수정
+    - FormRequest nullable → required_with + min:1 으로 강화
+    - 에러 메시지가 report_permissions(영문 키) 그대로 노출되던 버그 수정 (messages() array_merge)
+    - 해당 섹션 내 TagInput에 인라인 에러 Span 누락 → 추가
+    - 에러 시 TagInput 컨테이너 빨간 테두리(bg-red-50 + border-red-300) 추가
+
+axes:
+  field: [view_roles, manage_roles, both_valid]
+
+effects:
+  - view_roles_empty_blocked_by_validation
+  - manage_roles_empty_blocked_by_validation
+  - error_message_uses_korean_field_name_not_key
+  - inline_error_shown_below_view_roles_taginput
+  - inline_error_shown_below_manage_roles_taginput
+  - taginput_shows_red_border_on_error
+  - valid_submission_succeeds
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/BoardRequestTest.php
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-settings-report-permissions.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

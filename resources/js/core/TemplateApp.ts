@@ -15,6 +15,7 @@ import { evaluateRenderCondition } from './template-engine/helpers/RenderHelpers
 import { ComponentRegistry } from './template-engine/ComponentRegistry';
 import { DataSourceManager } from './template-engine/DataSourceManager';
 import { initTemplateEngine, renderTemplate, destroyTemplate, getState, updateTemplateData } from './template-engine';
+import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
 import { ErrorDisplay } from './template-engine/ErrorDisplay';
 import { toTemplateEngineError } from './template-engine/TemplateEngineError';
 import { ErrorPageHandler } from './template-engine/ErrorPageHandler';
@@ -237,8 +238,17 @@ export class TemplateApp {
     private globalStateListeners: Set<(state: GlobalState) => void> = new Set();
     /** 현재 진행 중인 라우트 변경 요청 ID (새 요청 시 이전 요청 무시용) */
     private currentRouteChangeId: number = 0;
-    /** 현재 레이아웃의 데이터 소스 정의 (refetch용) */
+    /** 현재 레이아웃의 데이터 소스 정의 (if 조건으로 필터링된 결과 — refetch용) */
     private currentDataSources: any[] = [];
+    /**
+     * 현재 레이아웃의 원본 데이터 소스 정의 (if 필터링 전 전체).
+     *
+     * replace:true navigate(탭 전환/필터 변경)로 진입하는 updateQueryParams 경로는
+     * 변경된 query 컨텍스트로 데이터소스 if 를 재평가해야 한다. currentDataSources(필터링된
+     * 스냅샷)만으로는 직전 진입 시점 조건에 고정되어, 탭 전환 시 다른 탭의 데이터소스가
+     * 잘못 선택되는 회귀가 발생한다. 원본을 보존해 재평가 가능하게 한다.
+     */
+    private currentRawDataSources: any[] = [];
     /** 현재 라우트 파라미터 (refetch용) */
     private currentRouteParams: Record<string, string> = {};
     /** 현재 쿼리 파라미터 (refetch용) */
@@ -675,6 +685,32 @@ export class TemplateApp {
             // 8.5 routeNotFound 이벤트 핸들러 등록 (404 에러 페이지 처리)
             this.router.on('routeNotFound', (path: string) => this.handleRouteNotFound(path));
 
+            // 8.6 레이아웃 편집기 모드 가드
+            //
+            // URL 이 `/admin/layout-editor/:identifier` 패턴이면 라우터 매칭을 건너뛰고
+            // 직접 renderTemplate 호출 — template-engine.ts 의 checkLayoutEditorMode 분기가
+            // LayoutEditorChrome 을 같은 reactRoot + 코어 컨텍스트 안에서 렌더한다.
+            //
+            // 이 가드가 없으면 `/admin/layout-editor/...` 가 일반 라우트에 매칭되지 않아
+            // routeNotFound → 404 페이지 렌더 흐름을 타게 되고, 그 안의 renderTemplate
+            // 호출에서야 비로소 편집기 분기가 작동한다. 결과적으로 화면은 정상이지만
+            // 콘솔에 `[Router] No route matched` 워닝 + 불필요한 `/api/layouts/.../404.json`
+            // fetch 가 발생하며, 후속 Phase 에서 라우트 의존 기능 도입 시 회귀 위험이 있다.
+            if (typeof window !== 'undefined' && checkLayoutEditorMode(window.location.pathname)) {
+                logger.log('Layout editor mode detected — skipping router match');
+                await renderTemplate({
+                    containerId: 'app',
+                    layoutJson: { components: [] } as any,
+                    dataContext: {},
+                    translationContext: {
+                        templateId: this.config.templateId,
+                        locale: this.config.locale,
+                    },
+                });
+                logger.log('Template App initialized in layout editor mode');
+                return;
+            }
+
             // 9. 초기 라우트 처리
             this.router.navigateToCurrentPath();
 
@@ -941,6 +977,8 @@ export class TemplateApp {
 
             // 현재 데이터 소스 정보 저장 (refetch용)
             this.currentDataSources = dataSources;
+            // 원본(if 필터링 전) 보존 — updateQueryParams(replace:true) 의 if 재평가용
+            this.currentRawDataSources = rawDataSources;
             this.currentRouteParams = route.params || {};
             this.currentQueryParams = queryParams;
 
@@ -2114,7 +2152,22 @@ export class TemplateApp {
             const overlay = document.createElement('div');
             overlay.id = 'g7-transition-overlay';
             overlay.setAttribute('aria-hidden', 'true');
-            overlay.style.cssText = `position:fixed;inset:0;z-index:9999;pointer-events:none;background:${bgCss};${extraCss}`;
+            // cssText 일괄 설정 대신 개별 속성으로 — backdrop-filter 같은 미지원 프로퍼티가
+            // 한 선언 블록에 섞이면 일부 CSS 파서(jsdom 테스트 환경)가 그 블록 전체를 거부해
+            // 앞선 background 까지 무효화한다. 개별 setProperty 는 미지원 속성만 무시되고
+            // background 등 나머지는 보존된다(실제 브라우저 동작은 cssText 일괄과 동일).
+            overlay.style.position = 'fixed';
+            overlay.style.inset = '0';
+            overlay.style.zIndex = '9999';
+            overlay.style.pointerEvents = 'none';
+            overlay.style.background = bgCss;
+            // blur 스타일의 backdrop-filter — `prop:value;` 쌍을 분해해 개별 적용(브라우저에선
+            // 적용, 미지원 파서에선 무시되어도 background 보존).
+            for (const decl of extraCss.split(';')) {
+                const idx = decl.indexOf(':');
+                if (idx === -1) continue;
+                overlay.style.setProperty(decl.slice(0, idx).trim(), decl.slice(idx + 1).trim());
+            }
             document.body.appendChild(overlay);
             this.transitionOverlayEl = overlay;
         }
@@ -2517,7 +2570,7 @@ export class TemplateApp {
     private showRouteError(error: Error): void {
         // 레이아웃 fetch 401 가드: 토큰 만료 등으로 권한이 사라진 상태에서
         // 레이아웃을 받지 못하면 코어가 로그인 페이지로 자동 리다이렉트한다.
-        // (Issue #301 — 사용자 인식 문제 해결: 시스템 장애 화면 대신 안내 토스트)
+        // ( — 사용자 인식 문제 해결: 시스템 장애 화면 대신 안내 토스트)
         //
         // hadToken 판정 (reason='session_expired' 부여 여부):
         //   - 현재 apiClient 가 토큰을 보유했거나
@@ -3699,10 +3752,28 @@ export class TemplateApp {
         this.currentQueryParams = newQueryParams;
         logger.log('currentQueryParams updated:', Object.fromEntries(newQueryParams.entries()));
 
-        // 3. auto_fetch: true인 데이터 소스들 refetch
+        // 3. 데이터소스 if 재평가
+        // replace:true navigate(탭 전환/필터 변경)는 query 컨텍스트가 바뀌므로, 직전 진입 시점에
+        // 필터링된 currentDataSources 스냅샷을 재사용하면 다른 탭의 데이터소스가 잘못 선택된다.
+        // 원본(currentRawDataSources)을 변경된 query + 최신 _global 로 다시 filterByCondition 한다.
+        // 원본 미보존(구버전 캐시 등) 시 기존 currentDataSources 로 안전 폴백.
+        const reevalManager = new DataSourceManager();
+        const latestGlobal = getState().currentDataContext?._global || this.globalState || {};
+        const reevalContext = {
+            route: this.currentRouteParams || {},
+            query: parseQueryParams(this.currentQueryParams),
+            _global: latestGlobal,
+        };
+        const reevaluatedSources = Array.isArray(this.currentRawDataSources) && this.currentRawDataSources.length > 0
+            ? reevalManager.filterByCondition(this.currentRawDataSources, reevalContext as any)
+            : this.currentDataSources;
+        // 재평가 결과를 현재 데이터소스로 갱신 (이후 wait_for 판정/refetchDataSource 가 참조)
+        this.currentDataSources = reevaluatedSources;
+
+        // 4. auto_fetch: true인 데이터 소스들 refetch
         // WebSocket 소스는 이벤트 리스너(실시간 알림)이지 fetch 대상이 아님 (engine-v1.32.2 정책)
         // handleRouteChange progressive 경로와 동일하게 호출 전에 필터링하여 계약 일관성 확보
-        const autoFetchDataSources = this.currentDataSources.filter(
+        const autoFetchDataSources = reevaluatedSources.filter(
             (ds: any) => ds.auto_fetch !== false && ds.type !== 'websocket'
         );
 

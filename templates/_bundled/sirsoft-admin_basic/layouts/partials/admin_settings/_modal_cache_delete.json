@@ -1,5 +1,6 @@
 {
   "meta": {
+    "editor_label": "$t:admin.modal_label.admin_settings.settings_cache_delete_modal",
     "is_partial": true,
     "description": "캐시 삭제 확인 모달"
   },
@@ -8,7 +9,7 @@
   "name": "Modal",
   "props": {
     "title": "$t:admin.settings.modals.cache_delete_title",
-    "size": "small"
+    "size": "sm"
   },
   "children": [
     {
@@ -30,7 +31,7 @@
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+            "className": "mt-2 text-label-subtle"
           },
           "text": "$t:admin.settings.modals.cache_delete_warning"
         }
@@ -40,14 +41,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "btn btn-secondary",
             "disabled": "{{_global.isDeletingCache}}"
           },
           "actions": [
@@ -68,7 +69,7 @@
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isDeletingCache}}"
           },
           "actions": [
@@ -136,7 +137,7 @@
               "if": "{{_global.isDeletingCache}}",
               "props": {
                 "name": "spinner",
-                "className": "w-4 h-4 animate-spin"
+                "className": "spinner-sm"
               }
             },
             {

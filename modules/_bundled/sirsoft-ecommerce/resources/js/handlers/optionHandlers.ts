@@ -5,7 +5,7 @@
  */
 
 import type { ActionContext } from '../types';
-import { convertCurrencyPrice } from './productOptionHandlers';
+import { convertCurrencyPrice, sumActiveOptionStock } from './productOptionHandlers';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:Option')) ?? {
@@ -42,6 +42,24 @@ function getDefaultLocale(): string {
 function createEmptyLocalizedField(): Record<string, string> {
     const locales = getSupportedLocales();
     return locales.reduce((acc, locale) => ({ ...acc, [locale]: '' }), {});
+}
+
+/**
+ * 빈 추가옵션 선택지(값)를 생성합니다.
+ *
+ * @param sortOrder 정렬 순서
+ * @returns 빈 선택지 객체
+ */
+function createEmptyAdditionalOptionValue(sortOrder: number): AdditionalOptionValue {
+    return {
+        id: null,
+        name: createEmptyLocalizedField(),
+        price_adjustment: 0,
+        is_default: sortOrder === 0,
+        is_active: true,
+        allow_custom_text: false,
+        sort_order: sortOrder,
+    };
 }
 
 /**
@@ -85,11 +103,28 @@ interface OptionGroup {
     values: OptionValueMultilingual[] | string[];
 }
 
+/**
+ * 추가옵션 선택지 (값) 항목
+ */
+interface AdditionalOptionValue {
+    id?: number | null;
+    name: Record<string, string>;
+    /** 추가금 (KRW 기준, 0 이상) */
+    price_adjustment: number;
+    is_default: boolean;
+    is_active: boolean;
+    /** 직접입력 허용 — 유저가 이 선택지 선택 시 자유 텍스트 입력 필수 */
+    allow_custom_text: boolean;
+    sort_order: number;
+    [key: string]: any;
+}
+
 interface AdditionalOption {
     id?: number | null;
     name: Record<string, string>;
     is_required: boolean;
     sort_order: number;
+    values?: AdditionalOptionValue[];
 }
 
 interface RequiredItem {
@@ -430,6 +465,12 @@ export function generateOptionsHandler(
         return;
     }
 
+    // 신규 등록 모드(params.isCreate)에서는 옵션 행 재고 기본값을 1로 채워 입력 수고를 던다.
+    // 수정 모드에서는 기존 동작(0)을 유지한다. 등록/수정 구분은 레이아웃이 route.itemCode 로
+    // 판정해 params.isCreate 로 전달한다.
+    const isCreate = _action.params?.isCreate === true || _action.params?.isCreate === 'true';
+    const defaultStockQuantity = isCreate ? 1 : 0;
+
     // 상품의 정가/판매가 읽기
     const productListPrice = parseFloat(String(state.form?.list_price)) || 0;
     const productSellingPrice = parseFloat(String(state.form?.selling_price)) || 0;
@@ -494,7 +535,7 @@ export function generateOptionsHandler(
             list_price: productListPrice,
             selling_price: productSellingPrice,
             price_adjustment: 0,
-            stock_quantity: 0,
+            stock_quantity: defaultStockQuantity,
             safe_stock_quantity: 0,
             is_default: idx === 0,
             is_active: true,
@@ -517,12 +558,17 @@ export function generateOptionsHandler(
         return existing ? { ...newOpt, ...existing, id: existing.id } : newOpt;
     });
 
+    // 옵션 생성 즉시 상품 재고를 활성 옵션 재고 합계로 동기화
+    // (옵션당 기본 재고 × 생성 개수가 원 상품 재고에 바로 반영되어야 함)
+    const totalStock = sumActiveOptionStock(mergedOptions);
+
     G7Core.state.setLocal({
         form: {
             ...state.form,
             option_groups: optionGroups,
             options: mergedOptions,
             has_options: mergedOptions.length > 0,
+            stock_quantity: totalStock,
         },
         hasChanges: true,
     });
@@ -568,12 +614,22 @@ export function deleteOptionHandler(
     const options = [...(state.form?.options ?? [])];
     options.splice(rowIndex, 1);
 
+    // 옵션 삭제 후 상품 재고를 남은 활성 옵션 재고 합계로 재동기화
+    // (옵션이 모두 사라지면 has_options 도 해제)
+    const totalStock = sumActiveOptionStock(options);
+    const hasOptions = options.length > 0;
+
     G7Core.state.setLocal({
-        form: { ...state.form, options },
+        form: {
+            ...state.form,
+            options,
+            has_options: hasOptions,
+            ...(hasOptions ? { stock_quantity: totalStock } : {}),
+        },
         hasChanges: true,
     });
 
-    logger.log(`[deleteOption] Deleted option at index ${rowIndex}`);
+    logger.log(`[deleteOption] Deleted option at index ${rowIndex}, product stock_quantity = ${totalStock}`);
 }
 
 /**
@@ -845,9 +901,11 @@ export function addAdditionalOptionHandler(
                 ...options,
                 {
                     id: tempId,
-                    name: { ko: '', en: '' },
+                    name: createEmptyLocalizedField(),
                     is_required: false,
                     sort_order: options.length,
+                    // 빈 그룹(선택지 0개) 저장 차단(D11) — 최소 1개 선택지로 시작
+                    values: [createEmptyAdditionalOptionValue(0)],
                 },
             ],
         },
@@ -1025,4 +1083,266 @@ export function reorderAdditionalOptionsHandler(
     });
 
     logger.log(`[reorderAdditionalOptions] Moved item from ${oldIndex} to ${newIndex}`);
+}
+
+/**
+ * 추가옵션을 모두 비웁니다 (사용 → 미사용 전환 시 확인 모달의 확정 버튼).
+ *
+ * 레이아웃 인라인 setState 의 dot-path 갱신(`form.additional_options: []`)은 form 객체
+ * 참조를 교체하지 않아 form 을 watch 하는 토글 className 표현식이 리렌더되지 않는다
+ * (sortable source 는 배열을 직접 watch 하므로 갱신됨 → row 만 사라지고 토글은 "사용" 잔존).
+ * 다른 추가옵션 핸들러(add/update/reorder)와 동일하게 form 객체를 통째 교체하여
+ * 전체 파생 표현식의 일관 리렌더를 보장한다.
+ *
+ * @param _action 액션 객체 (파라미터 없음)
+ * @param _context 액션 컨텍스트
+ * @return void
+ */
+export function clearAdditionalOptionsHandler(
+    _action: ActionWithParams,
+    _context: ActionContext
+): void {
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) {
+        logger.warn('[clearAdditionalOptions] G7Core.state API is not available');
+        return;
+    }
+
+    const state = G7Core.state.getLocal() || {};
+
+    G7Core.state.setLocal({
+        form: { ...state.form, additional_options: [] },
+        hasChanges: true,
+    });
+
+    logger.log('[clearAdditionalOptions] Cleared all additional options.');
+}
+
+/**
+ * 추가옵션 그룹의 values(선택지) 배열을 안전하게 반환합니다.
+ *
+ * @param group 추가옵션 그룹
+ * @returns values 배열 (없으면 빈 배열)
+ */
+function ensureGroupValues(group: AdditionalOption | undefined): AdditionalOptionValue[] {
+    if (!group) return [];
+    const values = group.values;
+    if (Array.isArray(values)) return values;
+    if (values && typeof values === 'object') return Object.values(values);
+    return [];
+}
+
+/**
+ * 추가옵션 그룹에 선택지(값)를 추가합니다. (그룹당 최대 20개)
+ *
+ * @param action 액션 객체 (params.groupIndex 필요)
+ * @param _context 액션 컨텍스트
+ */
+export function addAdditionalOptionValueHandler(
+    action: ActionWithParams,
+    _context: ActionContext
+): void {
+    const params = action.params || {};
+    const groupIndex = typeof params.groupIndex === 'string' ? parseInt(params.groupIndex, 10) : params.groupIndex as number;
+
+    if (groupIndex === undefined || groupIndex === null || isNaN(groupIndex)) {
+        logger.warn('[addAdditionalOptionValue] Missing groupIndex param');
+        return;
+    }
+
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) {
+        logger.warn('[addAdditionalOptionValue] G7Core.state API is not available');
+        return;
+    }
+
+    const state = G7Core.state.getLocal() || {};
+    const options: AdditionalOption[] = [...(state.form?.additional_options ?? [])];
+
+    if (!options[groupIndex]) {
+        logger.warn('[addAdditionalOptionValue] Group not found at index', groupIndex);
+        return;
+    }
+
+    const values = [...ensureGroupValues(options[groupIndex])];
+
+    if (values.length >= 20) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('sirsoft-ecommerce.admin.product.options.messages.additional_value_max_20')
+            ?? 'You can add up to 20 choices per group.'
+        );
+        return;
+    }
+
+    values.push(createEmptyAdditionalOptionValue(values.length));
+    options[groupIndex] = { ...options[groupIndex], values };
+
+    G7Core.state.setLocal({
+        form: { ...state.form, additional_options: options },
+        hasChanges: true,
+    });
+
+    logger.log(`[addAdditionalOptionValue] Added value to group ${groupIndex}. Total: ${values.length}`);
+}
+
+/**
+ * 추가옵션 선택지(값)를 수정합니다.
+ *
+ * - name: 다국어 객체 유지 (MultilingualInput / 기본 Input 모두 지원)
+ * - price_adjustment: 숫자 변환 + 음수 차단(D16) + 다중통화 환산 표시값 재계산
+ * - is_default: 라디오(그룹당 1개) — 같은 그룹의 다른 선택지는 false 로 해제
+ * - is_active: boolean
+ *
+ * @param action 액션 객체 (params.groupIndex, params.valueIndex, params.field, params.value 필요)
+ * @param _context 액션 컨텍스트
+ */
+export function updateAdditionalOptionValueHandler(
+    action: ActionWithParams,
+    _context: ActionContext
+): void {
+    const params = action.params || {};
+    const groupIndex = typeof params.groupIndex === 'string' ? parseInt(params.groupIndex, 10) : params.groupIndex as number;
+    const valueIndex = typeof params.valueIndex === 'string' ? parseInt(params.valueIndex, 10) : params.valueIndex as number;
+    const field = params.field as string;
+    const value = params.value;
+
+    if (groupIndex === undefined || valueIndex === undefined || !field) {
+        logger.warn('[updateAdditionalOptionValue] Missing required params');
+        return;
+    }
+
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) {
+        logger.warn('[updateAdditionalOptionValue] G7Core.state API is not available');
+        return;
+    }
+
+    const state = G7Core.state.getLocal() || {};
+    const options: AdditionalOption[] = [...(state.form?.additional_options ?? [])];
+
+    if (!options[groupIndex]) {
+        logger.warn('[updateAdditionalOptionValue] Group not found at index', groupIndex);
+        return;
+    }
+
+    const values = [...ensureGroupValues(options[groupIndex])];
+
+    if (!values[valueIndex]) {
+        logger.warn('[updateAdditionalOptionValue] Value not found at index', valueIndex);
+        return;
+    }
+
+    if (field === 'name') {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            values[valueIndex] = { ...values[valueIndex], name: value };
+        } else {
+            const defaultLocale = getDefaultLocale();
+            const existingName = values[valueIndex].name;
+            const baseName = (existingName && typeof existingName === 'object' && !Array.isArray(existingName))
+                ? existingName
+                : createEmptyLocalizedField();
+            values[valueIndex] = {
+                ...values[valueIndex],
+                name: { ...baseName, [defaultLocale]: value },
+            };
+        }
+    } else if (field === 'price_adjustment') {
+        // 음수 차단(D16) — 0 미만은 0 으로 보정
+        let numeric = parseFloat(String(value));
+        if (isNaN(numeric) || numeric < 0) {
+            numeric = 0;
+        }
+        // 다통화 추가금은 레이아웃에서 price_adjustment × 환율 인라인 환산(읽기전용)하므로
+        // 별도 mc 필드 저장 불필요. price_adjustment 만 갱신하면 표시가 반응형으로 따라간다.
+        values[valueIndex] = {
+            ...values[valueIndex],
+            price_adjustment: numeric,
+        };
+    } else if (field === 'is_default') {
+        // 라디오: 그룹당 1개만 기본 — 선택된 항목만 true, 나머지 false
+        const checked = value === true || value === 'true';
+        if (checked) {
+            values.forEach((v, i) => { v.is_default = i === valueIndex; });
+        } else {
+            values[valueIndex].is_default = false;
+        }
+    } else if (field === 'is_active' || field === 'allow_custom_text') {
+        // Toggle: boolean 으로 명시 변환 (직접입력 허용은 유저단 입력칸 노출/필수 판정 기준)
+        const checked = value === true || value === 'true';
+        values[valueIndex] = { ...values[valueIndex], [field]: checked };
+    } else {
+        // 기타 직접 할당
+        values[valueIndex] = { ...values[valueIndex], [field]: value };
+    }
+
+    options[groupIndex] = { ...options[groupIndex], values };
+
+    G7Core.state.setLocal({
+        form: { ...state.form, additional_options: options },
+        hasChanges: true,
+    });
+
+    logger.log(`[updateAdditionalOptionValue] Updated group ${groupIndex} value ${valueIndex} field ${field}`);
+}
+
+/**
+ * 추가옵션 선택지(값)를 삭제합니다. (최소 1개 유지)
+ *
+ * @param action 액션 객체 (params.groupIndex, params.valueIndex 필요)
+ * @param _context 액션 컨텍스트
+ */
+export function removeAdditionalOptionValueHandler(
+    action: ActionWithParams,
+    _context: ActionContext
+): void {
+    const params = action.params || {};
+    const groupIndex = typeof params.groupIndex === 'string' ? parseInt(params.groupIndex, 10) : params.groupIndex as number;
+    const valueIndex = typeof params.valueIndex === 'string' ? parseInt(params.valueIndex, 10) : params.valueIndex as number;
+
+    if (groupIndex === undefined || valueIndex === undefined) {
+        logger.warn('[removeAdditionalOptionValue] Missing required params');
+        return;
+    }
+
+    const G7Core = (window as any).G7Core;
+    if (!G7Core?.state) {
+        logger.warn('[removeAdditionalOptionValue] G7Core.state API is not available');
+        return;
+    }
+
+    const state = G7Core.state.getLocal() || {};
+    const options: AdditionalOption[] = [...(state.form?.additional_options ?? [])];
+
+    if (!options[groupIndex]) {
+        logger.warn('[removeAdditionalOptionValue] Group not found at index', groupIndex);
+        return;
+    }
+
+    const values = [...ensureGroupValues(options[groupIndex])];
+
+    // 빈 그룹(선택지 0개) 저장 차단(D11) — 최소 1개 유지
+    if (values.length <= 1) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('sirsoft-ecommerce.admin.product.options.messages.additional_value_min_1')
+            ?? 'At least one choice is required per group.'
+        );
+        return;
+    }
+
+    values.splice(valueIndex, 1);
+
+    // sort_order 재정렬 + 기본 선택지가 사라졌으면 첫 항목을 기본으로
+    values.forEach((v, i) => { v.sort_order = i; });
+    if (!values.some((v) => v.is_default)) {
+        values[0].is_default = true;
+    }
+
+    options[groupIndex] = { ...options[groupIndex], values };
+
+    G7Core.state.setLocal({
+        form: { ...state.form, additional_options: options },
+        hasChanges: true,
+    });
+
+    logger.log(`[removeAdditionalOptionValue] Removed value ${valueIndex} from group ${groupIndex}`);
 }

@@ -29,6 +29,7 @@
     "data_sources": [
         {
             "id": "page",
+            "label_key": "$t:editor.data_source.page",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-page/pages/{{route?.slug}}",
             "method": "GET",

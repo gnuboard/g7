@@ -1,0 +1,93 @@
+feature: 레이아웃 편집기 데이터 소스 편집기 — data_sources CRUD + label_key 전수 부여
+
+description: |
+  페이지 설정(툴바 ⚙데이터 버튼) 모달에서 현재 레이아웃의 data_sources 를 추가·편집·삭제한다.
+ 원 계획서 "data_sources 읽기전용(코드 편집 위임)" 결정을 로 갱신 —
+  편집기가 data_sources 신규 생성/편집을 지원한다.
+
+  SSoT 분리:
+   - 자체 소스(편집 대상) = document.raw.__editor.original.data_sources. 저장 마스킹
+     (stripInheritedFromLayoutContent)이 골격으로 original 을 쓰므로 영속 대상은 original.
+   - 상속 소스(extends 레이아웃 부모 소스) = merged 최상위 중 자체 id 외 항목. 읽기전용 표시
+     (ValidDataSourceMerge 가 부모 id 중복 거부 → 자체 목록에 섞지 않음).
+
+  patchDocumentRaw('data_sources', merged, own) 한 번으로:
+   - 최상위 raw.data_sources = [상속 ∪ 자체] (검색 후보·오버레이 즉시 반영)
+   - __editor.original.data_sources = 자체만 (저장 골격에 들어감 — 상속/옛값 덮어쓰기 0)
+
+  편집 폼: id / label_key($t:) / type(api·static·route_params·query_params·websocket) /
+  endpoint / method / auth_mode / loading_strategy / auto_fetch / params(JSON, 바인딩 표현식 허용) /
+  fallback(JSON). 신규 소스는 즉시 검색형 데이터 피커(6-a/6-b) 후보로 노출되며 label_key 친화 명칭 표시.
+
+ label_key 전수 부여 의무: 모든 번들 레이아웃(admin 27 + basic 29 = 56 레이아웃,
+  134 data_source)의 data_source 가 label_key($t:editor.data_source.<id>) 를 갖는다(누락 0).
+  audit data-source-label-key-coverage 가 신규 레이아웃의 누락도 차단. 친화 명칭은 편집기 i18n
+  editor.data_source.<id>(admin 62 + basic 56 고유 키 × ko/en). 언어팩 동적 로케일 자동 대응.
+
+  백엔드: content.data_sources 는 bare 'array' 규칙(하위 키 미명시) → validated() 가 배열 전체를
+ 통과시켜 label_key 및 모든 필드가 별도 동기 없이 보존.
+
+# axes: 데이터 소스 편집의 직교 차원. field(개별 폼 필드)는 cross-product 가 아니라 effects 로
+# 커버한다(필드별 보존·검증은 항목 단위 동작이지 조합 폭발 대상이 아님). ds_type 은 add 전수,
+# edit/remove 는 대표 타입(api)로 충분(편집/삭제 로직은 타입 무관 — 객체 배열 조작).
+axes:
+  operation: [add, edit, remove]
+  source_origin: [own, inherited]
+  ds_type: [api, static, route_params, query_params, websocket]
+  template: [sirsoft-basic, sirsoft-admin_basic]
+
+exclusions:
+  - { source_origin: inherited, operation: add, reason: "추가는 자체 소스만 — 상속 개념 무관" }
+  - { source_origin: inherited, operation: edit, reason: "상속 소스는 읽기전용 — 편집 불가" }
+  - { source_origin: inherited, operation: remove, reason: "상속 소스는 읽기전용 — 삭제 불가" }
+  - { operation: edit, ds_type: static, reason: "편집 로직은 타입 무관(객체 배열 조작) — api 대표로 충분" }
+  - { operation: edit, ds_type: route_params, reason: "동일" }
+  - { operation: edit, ds_type: query_params, reason: "동일" }
+  - { operation: edit, ds_type: websocket, reason: "동일" }
+  - { operation: remove, ds_type: static, reason: "삭제 로직은 타입 무관 — api 대표로 충분" }
+  - { operation: remove, ds_type: route_params, reason: "동일" }
+  - { operation: remove, ds_type: query_params, reason: "동일" }
+  - { operation: remove, ds_type: websocket, reason: "동일" }
+
+effects:
+  # CRUD + SSoT 분리
+  - split_sources_own_from_editor_original_inherited_from_merged
+  - add_source_appends_to_own_and_merged_preserves_inherited
+  - edit_source_preserves_unedited_fields_like_source_meta
+  - remove_source_drops_from_own_and_merged
+  - inherited_sources_render_readonly_no_edit_remove_buttons
+  # 저장 생존
+  - patch_document_raw_writes_merged_to_toplevel_own_to_editor_original
+  - save_put_body_data_sources_contains_own_only_no_inherited_no_stale
+  - editor_meta_stripped_from_save_payload
+  # 검증
+  - id_required_invalid_format_duplicate_rejected_with_error
+  - params_fallback_invalid_json_rejected_with_error
+  - params_binding_expression_preserved_as_object
+  # label_key 친화 명칭 + 피커 연동
+  - label_key_saved_and_removed_on_empty
+  - new_source_appears_in_binding_picker_candidates_with_friendly_label
+  - all_bundled_layouts_data_sources_have_label_key_zero_missing
+  - audit_data_source_label_key_coverage_blocks_future_omission
+  # 백엔드
+  - validated_preserves_label_key_and_all_data_source_fields
+  - missing_id_rejected_by_valid_data_source_merge
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/DataSourcesPanel.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorToolbar.dataSources.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useLayoutDocument.patchDocumentRaw.test.tsx
+  - tests/Feature/Requests/UpdateLayoutRequestTest.php
+
+validation:
+  note: |
+    Vitest 단위가 splitSources(자체/상속 분리), CRUD(추가/편집/삭제 → onChange merged/own),
+    검증(id 필수·형식·중복·상속중복, params/fallback JSON), 상속 읽기전용, 그리고 hook
+    patchDocumentRaw 의 merged→raw / own→__editor.original 분리 기입과 save PUT body 가
+    자체만 포함(상속/옛값 덮어쓰기 0)을 잠근다. EditorToolbar 단위가 ⚙데이터 버튼 활성/비활성/
+    클릭을 가드. 백엔드 PHPUnit 이 validated() 의 label_key·전 필드 보존과 id 누락 거부를 잠근다.
+    label_key 전수 부여(134개 누락 0)는 audit data-source-label-key-coverage 로 잠근다.
+    data_sources 편집 모달은 검색형 폼 + 모달 인프라(EditorModalRoot, Provider 밖 마운트)라
+    Playwright 자동화 부적합 — 라이브(소스 추가 → prop 바인딩 → 저장 → 실사용자화면 fetch 렌더,
+    위지윅↔사용자 페이지 동일성)는 Chrome MCP §공통 5단계 매트릭스로 검증한다.
+  e2e_exempt: "data_sources 편집 모달 = 검색형 폼 + 편집기 모달 인프라 의존 — Chrome MCP 매트릭스로 라이브 검증(e2e:allow 정책 정합, DataSourcesPanel.tsx 헤더 e2e:allow 와 정합)"

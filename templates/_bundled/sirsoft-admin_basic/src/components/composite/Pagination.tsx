@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
+import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -17,6 +18,12 @@ export interface PaginationProps {
   style?: React.CSSProperties;
   prevText?: string;
   nextText?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -47,6 +54,8 @@ export const Pagination: React.FC<PaginationProps> = ({
   style,
   prevText,
   nextText,
+  id,
+  editorAttrs,
 }) => {
 
   // 페이지 번호 생성 알고리즘
@@ -118,17 +127,18 @@ export const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <Div
-      className={`flex items-center gap-2 ${className}`}
+      className={`pagination ${className}`}
       style={style}
       role="navigation"
       aria-label={t('common.pagination')}
+      id={id} {...editorAttrs}
     >
       {/* First Button */}
       {showFirstLast && (
         <Button
           onClick={() => handlePageClick(1)}
           disabled={currentPage === 1}
-          className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
+          className="pagination-btn"
           aria-label={t('common.first_page')}
         >
           &#171;
@@ -139,20 +149,20 @@ export const Pagination: React.FC<PaginationProps> = ({
       <Button
         onClick={handlePrevious}
         disabled={currentPage === 1}
-        className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
+        className="pagination-btn"
         aria-label={t('common.prev_page')}
       >
         {prevText || <>&#8249;</>}
       </Button>
 
       {/* Page Numbers */}
-      <Div className="flex items-center gap-1">
+      <Div className="pagination">
         {pageNumbers.map((page, index) => {
           if (page === '...') {
             return (
               <Span
                 key={`ellipsis-${index}`}
-                className="px-3 py-1 text-sm text-gray-500 dark:text-gray-400"
+                className="pagination-ellipsis"
               >
                 ...
               </Span>
@@ -166,11 +176,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             <Button
               key={pageNum}
               onClick={() => handlePageClick(pageNum)}
-              className={`px-3 py-1 text-sm border rounded ${
-                isActive
-                  ? 'bg-blue-500 dark:bg-blue-600 text-white border-blue-500 dark:border-blue-600'
-                  : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800'
-              }`}
+              className={isActive ? 'pagination-btn-active' : 'pagination-btn'}
               aria-label={t('common.page_n', { n: pageNum })}
               aria-current={isActive ? 'page' : undefined}
             >
@@ -184,7 +190,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       <Button
         onClick={handleNext}
         disabled={currentPage === totalPages}
-        className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
+        className="pagination-btn"
         aria-label={t('common.next_page')}
       >
         {nextText || <>&#8250;</>}
@@ -195,7 +201,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         <Button
           onClick={() => handlePageClick(totalPages)}
           disabled={currentPage === totalPages}
-          className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
+          className="pagination-btn"
           aria-label={t('common.last_page')}
         >
           &#187;

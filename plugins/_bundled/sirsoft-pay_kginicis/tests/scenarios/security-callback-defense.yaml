@@ -1,0 +1,123 @@
+# audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 KG 이니시스 콜백 보안 매트릭스의 명세 문서. 단위 테스트(ValidatesTimestampFreshnessTest 13건) 가 freshness 핵심 경로를 커버하며, replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
+
+feature: 콜백 보안 방어 (replay attack / signature timestamp freshness / post-approve net cancel)
+
+description: |
+  KG 이니시스 결제 콜백 처리 경로의 3가지 핵심 보안 위협에 대한 방어 매트릭스.
+
+  방어 대상 위협:
+    1. Replay attack — 동일 transaction_id (tid) 로 콜백 재전송 시 두 번 결제 처리되어
+       알림/마일리지/재고 중복. PreventsReplayCallback trait + DB unique index
+       (ecommerce module beta.5) 로 이중 방어.
+    2. Stale timestamp signature replay — signMessage = key + timestamp + payload 의
+       timestamp 가 오래된 경우 동일 signature 를 무한 재사용 가능. ±300s window
+       검증으로 차단.
+    3. Post-approve 실패 시 net cancel 누락 — server-side authorize 성공 후 도메인 처리
+       (재고/주문상태) 가 실패하면 PG 측은 승인 상태이지만 G7 주문은 미생성 → 결제됨
+       but 주문 없음 상태. autoCancelIfApproved() 헬퍼로 PG 승인 자동 취소.
+
+axes:
+  context: [authCallback_card, vbankNotify, mobileApproval_card, mobileVbankNotify, cbtCallback]
+  threat: [replay, stale_timestamp, post_approve_failure]
+  callback_state: [first_arrival, second_arrival_same_tid, signature_expired, signature_fresh, domain_succeeds, domain_fails]
+
+exclusions:
+  - { threat: replay, callback_state: signature_expired, reason: "replay 시나리오는 timestamp 와 무관" }
+  - { threat: replay, callback_state: signature_fresh, reason: "replay 시나리오는 timestamp 와 무관" }
+  - { threat: replay, callback_state: domain_succeeds, reason: "replay 는 domain 성공/실패 이전 단계" }
+  - { threat: replay, callback_state: domain_fails, reason: "replay 는 domain 성공/실패 이전 단계" }
+  - { threat: stale_timestamp, callback_state: first_arrival, reason: "timestamp 는 도착 차수 무관" }
+  - { threat: stale_timestamp, callback_state: second_arrival_same_tid, reason: "timestamp 는 도착 차수 무관" }
+  - { threat: stale_timestamp, callback_state: domain_succeeds, reason: "timestamp 는 도메인 처리 이전 단계" }
+  - { threat: stale_timestamp, callback_state: domain_fails, reason: "timestamp 는 도메인 처리 이전 단계" }
+  - { threat: stale_timestamp, context: cbtCallback, reason: "CBT 콜백은 별도 signature flow (CbtHashData) — 본 매트릭스는 PaymentSignature/MobileSignature 한정" }
+  - { threat: post_approve_failure, callback_state: first_arrival, reason: "post-approve 실패는 도메인 결과 분기" }
+  - { threat: post_approve_failure, callback_state: second_arrival_same_tid, reason: "post-approve 실패는 도메인 결과 분기" }
+  - { threat: post_approve_failure, callback_state: signature_expired, reason: "post-approve 실패는 timestamp 와 무관" }
+  - { threat: post_approve_failure, callback_state: signature_fresh, reason: "post-approve 실패는 timestamp 와 무관" }
+  - { threat: post_approve_failure, context: vbankNotify, reason: "vbank 입금통보는 post-approve 단계 없음 (PG 측 비동기 입금)" }
+  - { threat: post_approve_failure, context: mobileVbankNotify, reason: "vbank 입금통보는 post-approve 단계 없음" }
+  - { threat: post_approve_failure, context: cbtCallback, reason: "CBT 는 별도 일본 결제 API — net cancel 로직 동일 아님 (수동 정산 분기)" }
+
+effects:
+  # Replay defense — PreventsReplayCallback trait
+  - replay_detected_on_second_arrival
+  - replay_response_is_idempotent_ok
+  - replay_no_double_completion
+  - replay_logged_with_context
+  - replay_first_arrival_proceeds_normally
+  - replay_db_unique_blocks_concurrent_insert  # DB 레벨 1062 차단
+
+  # Timestamp freshness — ValidatesTimestampFreshness trait
+  - timestamp_fresh_yyyymmddhhmmss
+  - timestamp_fresh_epoch_ms
+  - timestamp_at_window_boundary_accepted
+  - timestamp_just_past_window_rejected
+  - timestamp_far_past_rejected
+  - timestamp_future_within_window_accepted
+  - timestamp_future_beyond_window_rejected
+  - timestamp_empty_rejected
+  - timestamp_non_numeric_rejected
+  - timestamp_invalid_date_rejected
+  - timestamp_short_length_rejected
+  - timestamp_long_length_rejected
+  - signature_endpoint_returns_422_on_stale
+
+  # Post-approve net cancel
+  - post_approve_failure_triggers_auto_cancel
+  - net_cancel_sends_pg_cancel_api_call
+  - net_cancel_passes_full_amount
+  - cbt_post_approve_failure_logs_for_manual_recon
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Concerns/ValidatesTimestampFreshnessTest.php
+
+manual_verification:
+  - description: "Replay PoC — vbankNotify 두 번 전송"
+    steps:
+      - "정상 가상계좌 입금통보 1차 전송 → 200 OK, payment_status=paid"
+      - "동일 페이로드 2차 전송 → 200 OK (멱등 응답), payment 두 번째 완료 호출 안 됨"
+      - "Log 에 'KG Inicis: replay detected' 항목 확인"
+      - "DB: g7_ecommerce_order_payments 에 동일 tid row 1건만 존재"
+  - description: "Replay PoC — DB unique 동시성 차단"
+    steps:
+      - "동일 tid 로 vbankNotify 2회 동시 전송 (race condition)"
+      - "1건은 정상 처리, 1건은 MySQL 1062 unique violation 으로 차단됨"
+      - "PG 측에는 200 OK 응답 (idempotent 분기)"
+  - description: "Stale timestamp PoC — signature endpoint"
+    steps:
+      - "현재 시각 - 600초 timestamp 로 PaymentSignature 호출"
+      - "응답: 422 Unprocessable Entity (timestamp not fresh)"
+      - "현재 시각 timestamp 로 호출 → 200 OK + 정상 signature"
+  - description: "Post-approve 실패 net cancel PoC — authCallback"
+    steps:
+      - "정상 authToken/authUrl 로 authCallback 진입"
+      - "server authorize 성공 (PG 승인 완료)"
+      - "이후 OrderProcessingService 에서 PaymentAmountMismatchException 발생 시뮬"
+      - "autoCancelIfApproved 가 KgInicisApiService::cancelPayment 호출"
+      - "PG 측 거래 상태: 승인 후 취소 (정산 영향 없음)"
+      - "G7 주문: 미생성 상태 유지"
+  - description: "CBT post-approve 실패 수동 정산 분기"
+    steps:
+      - "CBT authCallback 후 도메인 처리 실패 발생"
+      - "flagCbtManualReconciliation 가 ERROR 로그 emit"
+      - "Log: 'KG Inicis CBT manual reconciliation required' + tid/moid/amount"
+      - "운영자가 admin 페이지에서 수동 환불 처리 확인"
+
+notes: |
+  본 매니페스트는 Phase 2 보안 강화 작업의 SSoT.
+
+  관련 코드:
+   - src/Concerns/PreventsReplayCallback.php (replay 가드)
+   - src/Concerns/ValidatesTimestampFreshness.php (freshness 가드)
+   - src/Controllers/PaymentCallbackController.php (authCallback / vbankNotify / mobileVbankNotify)
+   - src/Controllers/MobileCallbackController.php (mobileApproval + autoCancelIfApproved)
+   - src/Controllers/CbtCallbackController.php (CBT + flagCbtManualReconciliation)
+   - src/Controllers/PaymentSignatureController.php (signature + freshness 422)
+   - src/Controllers/MobileSignatureController.php
+   - src/Controllers/CbtHashDataController.php
+
+  관련 modules (참고 — plugin scope 외):
+   - modules/_bundled/sirsoft-ecommerce/database/migrations/2026_05_16_000001_add_unique_index_to_transaction_id_on_ecommerce_order_payments_table.php
+
+  Phase 3 침투 PoC 에서 본 manual_verification 항목을 자동화 PoC 스크립트로 변환 예정.

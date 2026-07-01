@@ -59,4 +59,53 @@ class BoardModuleSeoTest extends ModuleTestCase
         $this->assertSame('article', $og['type']);
         $this->assertSame('이미지 없는 게시글', $og['image_alt']);
     }
+
+    /**
+     * seoOgDefaultMeta / seoStructuredDataMeta 가 게시글 데이터 경로(연결 칩) + 라벨을 선언한다.
+     */
+    public function test_post_seo_meta_declares_data_path_and_label(): void
+    {
+        $ogMeta = $this->module->seoOgDefaultMeta('post');
+        $this->assertSame('{{post.data.thumbnail}}', $ogMeta['image']['expr']);
+        $this->assertSame('{{post.data.subject}}', $ogMeta['image_alt']['expr']);
+        // label 은 번역 키(언어팩 대응) — __() 로 해석.
+        $this->assertSame('sirsoft-board::seo.auto_value.post_title', $ogMeta['image_alt']['label']);
+        $this->assertSame('게시글 제목', __($ogMeta['image_alt']['label'], [], 'ko'));
+        $this->assertSame('Post title', __($ogMeta['image_alt']['label'], [], 'en'));
+
+        $sdMeta = $this->module->seoStructuredDataMeta('post');
+        $this->assertSame('{{post.data.subject}}', $sdMeta['headline']['expr']);
+        $this->assertSame('{{post.data.thumbnail}}', $sdMeta['image']['expr']);
+
+        // 도메인 외 page_type 은 빈 배열(평문 폴백).
+        $this->assertSame([], $this->module->seoOgDefaultMeta('boards'));
+    }
+
+    /**
+     * 정합성: 메타가 선언한 키는 운영 declaration 산출 키의 부분집합이어야 한다(키 드리프트 차단).
+     */
+    public function test_post_meta_keys_are_subset_of_declaration_keys(): void
+    {
+        $context = [
+            'post' => [
+                'data' => [
+                    'subject' => '키정합 게시글',
+                    'thumbnail' => '/api/modules/sirsoft-board/x/preview',
+                    'summary' => '요약',
+                ],
+            ],
+        ];
+
+        $ogKeys = array_keys($this->module->seoOgDefaults('post', $context));
+        foreach (array_keys($this->module->seoOgDefaultMeta('post')) as $metaKey) {
+            $this->assertContains($metaKey, $ogKeys, "og 메타 키 '{$metaKey}' 는 declaration 키여야 합니다");
+        }
+
+        $structuredKeys = array_keys($this->module->seoStructuredData('post', $context));
+        foreach (array_keys($this->module->seoStructuredDataMeta('post')) as $metaKey) {
+            // 점 경로 첫 세그먼트가 declaration 키에 존재(중첩은 평탄 비교 생략 — 게시판은 단일 레벨).
+            $top = explode('.', $metaKey)[0];
+            $this->assertContains($top, $structuredKeys, "structured 메타 키 '{$metaKey}' 는 declaration 키여야 합니다");
+        }
+    }
 }

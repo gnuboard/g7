@@ -114,4 +114,39 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
         $this->assertNull($payment->paid_at);
     }
+
+    public function test_cancellable_amount_uses_payment_currency_cumulative_when_cross_currency(): void
+    {
+        // base JPY 주문을 KRW 로 결제: paid_amount_local 은 결제 통화(KRW 4750), 누적 취소도
+        // 결제 통화로 비교해야 한다. mc_cancelled_amount[KRW]=1000 이면 잔여 = 4750-1000 = 3750.
+        $order = OrderFactory::new()->create();
+        $payment = OrderPaymentFactory::new()->forOrder($order)->create([
+            'currency' => 'KRW',
+            'paid_amount_local' => 4750,
+            'paid_amount_base' => 500,
+            // base 누적(cancelled_amount)은 JPY 100 이지만 결제 통화 비교에는 쓰지 않는다.
+            'cancelled_amount' => 100,
+            'mc_cancelled_amount' => ['JPY' => 100, 'KRW' => 1000],
+        ]);
+
+        $this->assertSame(1000.0, $payment->cancelledLocalAmount());
+        // 3750 = 4750(KRW) - 1000(KRW). base cancelled(100)으로 빼면 4650 이 되는 회귀를 차단.
+        $this->assertSame(3750.0, $payment->getCancellableAmount());
+    }
+
+    public function test_cancellable_amount_falls_back_to_base_cancelled_for_legacy_payment(): void
+    {
+        // mc_cancelled_amount 가 없는(레거시) 결제는 base 누적 cancelled_amount 로 폴백한다.
+        $order = OrderFactory::new()->create();
+        $payment = OrderPaymentFactory::new()->forOrder($order)->create([
+            'currency' => 'KRW',
+            'paid_amount_local' => 50000,
+            'paid_amount_base' => 50000,
+            'cancelled_amount' => 20000,
+            'mc_cancelled_amount' => null,
+        ]);
+
+        $this->assertSame(20000.0, $payment->cancelledLocalAmount());
+        $this->assertSame(30000.0, $payment->getCancellableAmount());
+    }
 }

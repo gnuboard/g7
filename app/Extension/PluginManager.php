@@ -18,26 +18,27 @@ use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Enums\PermissionType;
 use App\Exceptions\LayoutIncludeException;
+use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
-use App\Extension\Concerns\ResolvesExtensionSharedRecords;
-use App\Extension\Helpers\IdentityMessageSyncHelper;
-use App\Extension\Helpers\IdentityPolicySyncHelper;
-use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
 use App\Extension\Helpers\GithubHelper;
-use App\Providers\CoreServiceProvider;
+use App\Extension\Helpers\IdentityMessageSyncHelper;
+use App\Extension\Helpers\IdentityPolicySyncHelper;
+use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
+use App\Models\IdentityPolicy;
 use App\Models\Module;
 use App\Models\Plugin;
 use App\Models\Template;
+use App\Providers\CoreServiceProvider;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Collection;
@@ -405,6 +406,14 @@ class PluginManager implements PluginManagerInterface
             $name = $this->convertToMultilingual($plugin->getName());
             $description = $this->convertToMultilingual($plugin->getDescription());
 
+            // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
+            $manifest = HookManager::applyFilters(
+                "plugin.{$plugin->getIdentifier()}.manifest.translations",
+                ['name' => $name, 'description' => $description]
+            );
+            $name = $manifest['name'] ?? $name;
+            $description = $manifest['description'] ?? $description;
+
             // 데이터베이스에 플러그인 정보 저장
             $this->pluginRepository->updateOrCreate(
                 ['identifier' => $plugin->getIdentifier()],
@@ -514,7 +523,7 @@ class PluginManager implements PluginManagerInterface
             );
         }
 
-        // 코어 버전 호환성 사전 검증 (#306 sync 훅보다 앞쪽)
+        // 코어 버전 호환성 사전 검증
         // - force=true 시 우회 (CLI/웹 모두)
         // - 코어 업데이트 spawn 컨텍스트에서는 매니페스트와 코어 버전이 일시적으로
         //   어긋날 수 있어 자동 비활성화 가드와 동일 정책으로 스킵
@@ -616,6 +625,10 @@ class PluginManager implements PluginManagerInterface
 
             // 플러그인 상태 캐시 무효화
             self::invalidatePluginStatusCache();
+
+            // 본인인증 route scope 캐시 무효화 — 재활성화 시 이 플러그인이 선언한 정책이
+            // 다시 enforce 대상에 포함되도록 한다 (applyActiveExtensionScope 재평가).
+            IdentityPolicy::flushRouteScopeCache();
         }
 
         // 훅 발행: 플러그인 활성화 완료
@@ -757,6 +770,11 @@ class PluginManager implements PluginManagerInterface
             // 플러그인 상태 캐시 무효화
             self::invalidatePluginStatusCache();
 
+            // 본인인증 route scope 캐시 무효화 — 비활성 플러그인이 선언한 정책이 enforce
+            // 대상에서 즉시 제외되도록 한다. 정책 행은 변경하지 않으므로(enabled 보존)
+            // IdentityPolicy 모델 이벤트가 발화하지 않아, 라이프사이클에서 명시적으로 호출한다.
+            IdentityPolicy::flushRouteScopeCache();
+
             // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
             HookManager::doAction('core.plugins.after_deactivate', $plugin->getIdentifier());
         }
@@ -893,7 +911,7 @@ class PluginManager implements PluginManagerInterface
                     $this->removePluginPermissions($plugin);
 
                     // IDV 정책도 data 옵션 선택 시 제거 (user_overrides 손실 허용)
-                    if (\Illuminate\Support\Facades\Schema::hasTable('identity_policies')) {
+                    if (Schema::hasTable('identity_policies')) {
                         try {
                             app(IdentityPolicySyncHelper::class)
                                 ->cleanupStalePolicies('plugin', $plugin->getIdentifier(), []);
@@ -906,7 +924,7 @@ class PluginManager implements PluginManagerInterface
                     }
 
                     // IDV 메시지 정의/템플릿도 data 옵션 선택 시 제거 (FK cascade 로 templates 자동 정리)
-                    if (\Illuminate\Support\Facades\Schema::hasTable('identity_message_definitions')) {
+                    if (Schema::hasTable('identity_message_definitions')) {
                         try {
                             app(IdentityMessageSyncHelper::class)
                                 ->cleanupStaleDefinitions('plugin', $plugin->getIdentifier(), []);
@@ -919,7 +937,7 @@ class PluginManager implements PluginManagerInterface
                     }
 
                     // 알림 정의/템플릿도 data 옵션 선택 시 제거 (FK cascade 로 templates 자동 정리)
-                    if (\Illuminate\Support\Facades\Schema::hasTable('notification_definitions')) {
+                    if (Schema::hasTable('notification_definitions')) {
                         try {
                             app(NotificationSyncHelper::class)
                                 ->cleanupStaleDefinitions('plugin', $plugin->getIdentifier(), []);
@@ -1499,7 +1517,7 @@ class PluginManager implements PluginManagerInterface
      * 중첩 구조 의존성 배열을 순회하며 (identifier => declaredType) 를 yield 합니다.
      *
      * @param  array  $dependencies  ['modules' => [...], 'plugins' => [...]] 형식
-     * @return \Generator<string, string>  identifier => 'module'|'plugin'
+     * @return \Generator<string, string> identifier => 'module'|'plugin'
      */
     private function iterateNestedDependencies(array $dependencies): \Generator
     {
@@ -1960,9 +1978,6 @@ class PluginManager implements PluginManagerInterface
      *
      * 플러그인은 메뉴(getAdminMenus) 를 지원하지 않으므로 권한·역할만 대상.
      * user_overrides 보존 및 `users.role_id` 참조 역할 삭제 차단은 helper 가 담당.
-     *
-     * @param  PluginInterface  $plugin
-     * @return void
      */
     protected function cleanupStalePluginEntries(PluginInterface $plugin): void
     {
@@ -2132,7 +2147,7 @@ class PluginManager implements PluginManagerInterface
             return;
         }
 
-        if (! \Illuminate\Support\Facades\Schema::hasTable('identity_policies')) {
+        if (! Schema::hasTable('identity_policies')) {
             return; // 마이그레이션 미실행 환경 보호
         }
 
@@ -2178,7 +2193,7 @@ class PluginManager implements PluginManagerInterface
             return;
         }
 
-        if (! \Illuminate\Support\Facades\Schema::hasTable('identity_message_definitions')) {
+        if (! Schema::hasTable('identity_message_definitions')) {
             return; // 마이그레이션 미실행 환경 보호
         }
 
@@ -2244,7 +2259,7 @@ class PluginManager implements PluginManagerInterface
             return;
         }
 
-        if (! \Illuminate\Support\Facades\Schema::hasTable('notification_definitions')) {
+        if (! Schema::hasTable('notification_definitions')) {
             return; // 마이그레이션 미실행 환경 보호
         }
 
@@ -2290,15 +2305,11 @@ class PluginManager implements PluginManagerInterface
 
     /**
      * 해당 source 가 기존에 등록한 IDV 정책이 있는지 확인합니다.
-     *
-     * @param  string  $sourceType
-     * @param  string  $sourceIdentifier
-     * @return bool
      */
     protected function hasExistingIdentityPolicies(string $sourceType, string $sourceIdentifier): bool
     {
         try {
-            return \Illuminate\Support\Facades\DB::table('identity_policies')
+            return DB::table('identity_policies')
                 ->where('source_type', $sourceType)
                 ->where('source_identifier', $sourceIdentifier)
                 ->exists();
@@ -2313,7 +2324,7 @@ class PluginManager implements PluginManagerInterface
     protected function hasExistingIdentityMessageDefinitions(string $extensionType, string $extensionIdentifier): bool
     {
         try {
-            return \Illuminate\Support\Facades\DB::table('identity_message_definitions')
+            return DB::table('identity_message_definitions')
                 ->where('extension_type', $extensionType)
                 ->where('extension_identifier', $extensionIdentifier)
                 ->exists();
@@ -2328,7 +2339,7 @@ class PluginManager implements PluginManagerInterface
     protected function hasExistingNotificationDefinitions(string $extensionType, string $extensionIdentifier): bool
     {
         try {
-            return \Illuminate\Support\Facades\DB::table('notification_definitions')
+            return DB::table('notification_definitions')
                 ->where('extension_type', $extensionType)
                 ->where('extension_identifier', $extensionIdentifier)
                 ->exists();
@@ -3758,7 +3769,7 @@ class PluginManager implements PluginManagerInterface
         // 레이아웃 확장(extension)은 모든 활성 템플릿에 적용될 수 있으므로
         // admin 템플릿뿐만 아니라 모든 활성 템플릿에 대해 갱신
         $allActiveTemplates = $this->templateRepository->getActive();
-        $extensionStats = $this->refreshLayoutExtensions($plugin, $allActiveTemplates);
+        $extensionStats = $this->refreshLayoutExtensions($plugin, $allActiveTemplates, $preserveModified);
 
         // 레이아웃 또는 레이아웃 확장이 실제로 변경된 경우에만 캐시 버전 증가
         $extensionChanged = ($extensionStats['created'] ?? 0) > 0 || ($extensionStats['updated'] ?? 0) > 0;
@@ -3786,11 +3797,12 @@ class PluginManager implements PluginManagerInterface
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
      * @param  Collection  $adminTemplates  admin 템플릿 컬렉션
-     * @return array{refreshed: int, created: int, updated: int, deleted: int} 갱신 통계
+     * @param  bool  $preserveModified  관리자가 편집한 확장을 보존할지 여부 (--layout-strategy=keep)
+     * @return array{refreshed: int, created: int, updated: int, deleted: int, skipped: int} 갱신 통계
      */
-    protected function refreshLayoutExtensions(PluginInterface $plugin, $adminTemplates): array
+    protected function refreshLayoutExtensions(PluginInterface $plugin, $adminTemplates, bool $preserveModified = false): array
     {
-        return $this->refreshExtensionLayoutExtensions($plugin, $adminTemplates, LayoutSourceType::Plugin);
+        return $this->refreshExtensionLayoutExtensions($plugin, $adminTemplates, LayoutSourceType::Plugin, $preserveModified);
     }
 
     /**
@@ -4209,14 +4221,18 @@ class PluginManager implements PluginManagerInterface
 
         if (empty($filteredSteps)) {
             return;
-    }
+        }
 
         // 버전순 정렬
         uksort($filteredSteps, 'version_compare');
 
+        // 확장 업그레이드는 코어(sudo/root)와 다른 실행 주체(php-fpm/www-data)로 실행되므로
+        // 코어 'upgrade' 채널과 로그 파일을 분리한다. 같은 파일 공유 시 root 소유 파일에
+        // www-data 가 append 하지 못해 Permission denied 로 실패하던 결함을 원천 차단.
         $context = new UpgradeContext(
             fromVersion: $fromVersion,
             toVersion: $toVersion,
+            logChannel: 'extension-upgrade',
         );
 
         foreach ($filteredSteps as $stepVersion => $step) {
@@ -4262,7 +4278,7 @@ class PluginManager implements PluginManagerInterface
     {
         $layouts = $this->layoutRepository->getBySourceIdentifier(
             $identifier,
-            \App\Enums\LayoutSourceType::Plugin,
+            LayoutSourceType::Plugin,
         );
 
         $modifiedLayouts = $layouts->filter(function ($layout) {
@@ -4325,8 +4341,7 @@ class PluginManager implements PluginManagerInterface
         ?\Closure $onUpgradeStep = null,
         ?string $sourceOverride = null,
         ?string $zipPath = null,
-    ): array
-    {
+    ): array {
         $record = $this->pluginRepository->findByIdentifier($identifier);
         if (! $record) {
             throw new \RuntimeException(__('plugins.not_found', ['plugin' => $identifier]));
@@ -4529,6 +4544,16 @@ class PluginManager implements PluginManagerInterface
             try {
                 $name = $plugin ? $this->convertToMultilingual($plugin->getName()) : $record->name;
                 $description = $plugin ? $this->convertToMultilingual($plugin->getDescription()) : $record->description;
+
+                // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입 (install 경로와 동일)
+                if ($plugin) {
+                    $manifest = HookManager::applyFilters(
+                        "plugin.{$identifier}.manifest.translations",
+                        ['name' => $name, 'description' => $description]
+                    );
+                    $name = $manifest['name'] ?? $name;
+                    $description = $manifest['description'] ?? $description;
+                }
 
                 $this->pluginRepository->updateByIdentifier($identifier, [
                     'version' => $toVersion,

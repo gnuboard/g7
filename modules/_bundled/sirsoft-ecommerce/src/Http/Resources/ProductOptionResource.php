@@ -17,6 +17,7 @@ class ProductOptionResource extends BaseApiResource
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  요청
+     * @return array<string, mixed> 옵션 리소스 배열
      */
     public function toArray(Request $request): array
     {
@@ -35,18 +36,18 @@ class ProductOptionResource extends BaseApiResource
             'option_name' => $this->option_name,
             'option_name_localized' => $this->resource->getLocalizedOptionName(),
 
-            'price_adjustment' => $this->price_adjustment,
+            'price_adjustment' => $this->roundToBaseCurrency($this->price_adjustment),
             'price_adjustment_formatted' => ($this->price_adjustment >= 0 ? '+' : '').$this->formatCurrencyPrice(abs($this->price_adjustment), $this->getDefaultCurrencyCode()),
             'price_adjustment_type' => $this->price_adjustment >= 0 ? 'increase' : 'decrease',
 
             // 정가/판매가 분리
-            'list_price' => $listPrice,
+            'list_price' => $this->roundToBaseCurrency($listPrice),
             'list_price_formatted' => $this->formatCurrencyPrice($listPrice, $this->getDefaultCurrencyCode()),
-            'selling_price' => $sellingPrice,
+            'selling_price' => $this->roundToBaseCurrency($sellingPrice),
             'selling_price_formatted' => $this->formatCurrencyPrice($sellingPrice, $this->getDefaultCurrencyCode()),
 
             // 기존 호환성 유지
-            'final_price' => $sellingPrice,
+            'final_price' => $this->roundToBaseCurrency($sellingPrice),
             'final_price_formatted' => $this->formatCurrencyPrice($sellingPrice, $this->getDefaultCurrencyCode()),
 
             // 다중 통화 가격
@@ -57,6 +58,8 @@ class ProductOptionResource extends BaseApiResource
             'stock_quantity' => $this->stock_quantity,
             'safe_stock_quantity' => $this->safe_stock_quantity,
             'is_below_safe_stock' => $this->isBelowSafeStock(),
+            // 품절 여부 — 재고 0 이하이거나 비활성 옵션 (프론트 드롭다운 비활성/라벨용, MP07 §2-b)
+            'is_sold_out' => ($this->stock_quantity ?? 0) <= 0 || ! $this->is_active,
 
             // 상태
             'is_default' => $this->is_default,

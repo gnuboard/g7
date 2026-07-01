@@ -1,0 +1,99 @@
+# audit:allow test-scenario-coverage reason: 텍스트 데이터 연결 UI 는 속성 모달(dnd-kit/합성 이벤트 의존)이라 Playwright/브라우저 axis 부적합(InlineBindingSection.tsx L1 e2e:allow 동일 정책). 5개 직교 축 cross product 350 케이스의 입력 조합·후속 효과는 단위 4파일(inlineBindingUtils 24 + textComponents 9 + InlineBindingSection 8 + TranslationField 토큰가드 2 = 43 green)이 전수 커버하고, 캔버스 라이브 반영·저장·실사용자화면 렌더는 Chrome MCP §공통 검증 매트릭스로 확인. 개별 케이스 docblock 마킹보다 RTL 전수 테스트가 SSoT.
+feature: 레이아웃 편집기 텍스트(보간) 데이터 연결 — text 의 {{...}} 보간 조각을 [속성] 탭에서 조각 단위 교체/해제/끝에 추가 + 번역 탭 토큰 보호
+phase: 3
+session: 9-b
+issue: 383
+axes:
+  node_kind: [core_text_component, string_text_fallback, non_text, capability_optin, capability_optout, iteration]
+  text_shape: [plain_no_binding, single_parseable, label_plus_binding, multi_binding, complex_binding, paramized_key]
+  binding_op: [replace, clear, append, insert_at_position, reorder_position, keyify_with_binding, none]
+  candidate_shape: [scalar, array]
+  translation_token: [preserved, removed, added_to_untranslated]
+  # 위치 편집 — 평문+보간 388건 중 69%(앞 19%·중 24%·멀티 26%)가 끝 아닌 위치.
+  binding_position: [start, middle, end, multi]
+exclusions:
+  - { node_kind: non_text, binding_op: replace,
+      reason: "비-텍스트 노드(string text 미보유, 코어 집합 밖)는 텍스트 데이터 연결 영역 자체가 비노출 — 조작 불가" }
+  - { node_kind: iteration, binding_op: append,
+      reason: "iteration 노드는 텍스트 인라인 바인딩 대상 제외(반복 소스는 IterationBindingSection 축)" }
+  - { node_kind: capability_optout, binding_op: replace,
+      reason: "textBinding:false 명시 opt-out 노드는 영역 비노출" }
+  - { text_shape: plain_no_binding, binding_op: replace,
+      reason: "보간 조각이 없으면 교체 대상 없음 — append 만 가능" }
+  - { text_shape: plain_no_binding, binding_op: clear,
+      reason: "보간 조각이 없으면 해제 대상 없음" }
+  - { text_shape: complex_binding, binding_op: replace,
+      reason: "복합 조각(삼항/필터/연산)은 읽기전용 디그레이드 — 교체 피커 미노출" }
+  - { text_shape: complex_binding, binding_op: clear,
+      reason: "복합 조각은 읽기전용 — 해제 버튼 미노출" }
+  - { candidate_shape: array, binding_op: append,
+      reason: "텍스트에 꽂는 값은 단일 스칼라 — append/replace 피커는 scalar 후보만 노출(array 미노출)" }
+  - { candidate_shape: array, binding_op: replace,
+      reason: "동일 — 텍스트 조각 교체는 scalar 후보만" }
+  - { translation_token: removed, binding_op: replace,
+      reason: "translation_token 축은 번역 탭(binding_op=none)에만 적용" }
+  - { translation_token: removed, binding_op: append,
+      reason: "동일 — translation_token 은 번역 탭 전용" }
+  - { translation_token: preserved, binding_op: replace,
+      reason: "동일" }
+  # 위치 편집 축 — reorder/insert_at_position/keyify 는 위치 편집 전용(다른 op 와 직교 비적용).
+  - { binding_op: reorder_position, node_kind: non_text,
+      reason: "비-텍스트는 데이터 연결 영역 비노출 — 칩 이동 불가" }
+  - { binding_op: keyify_with_binding, text_shape: plain_no_binding,
+      reason: "보간 0 평문 키화는 종전 $t:key 단독(param 정규화 비대상) — 위치 편집 무관" }
+  - { binding_op: keyify_with_binding, text_shape: paramized_key,
+      reason: "이미 키화된 노드는 재키화 대상 아님" }
+  - { binding_op: reorder_position, text_shape: single_parseable,
+      reason: "칩 이동은 키 값 자리표시 대상(paramized_key) 전용 — 비키화 단일 보간은 [속성]탭 교체/해제만" }
+effects:
+  - text_bindable_node_detected_for_core_text_components
+  - text_bindable_node_detected_for_string_text_fallback
+  - non_text_node_excluded_from_inline_binding
+  - capability_textbinding_optin_forces_inline_binding
+  - capability_textbinding_optout_excludes_inline_binding
+  - iteration_node_excluded_from_inline_binding
+  - plain_text_shows_none_and_append_affordance
+  - append_inserts_safe_binding_at_text_end_round_trip
+  - append_picker_shows_scalar_candidates_only
+  - parseable_segment_shows_expression_row_with_clear
+  - clear_removes_token_and_tidies_whitespace_preserving_label
+  - replace_swaps_only_target_token_preserving_other_segments_and_labels
+  - multi_binding_renders_independent_rows_per_segment
+  - complex_segment_degrades_readonly_no_replace_picker
+  - split_inline_segments_is_lossless_round_trip
+  - optional_chaining_fallback_segment_is_parseable
+  - translation_tab_preserves_binding_tokens_on_save
+  - translation_tab_blocks_save_when_binding_token_removed
+  - translation_tab_allows_token_in_untranslated_locale
+  # 위치 편집
+  - insert_binding_segment_at_arbitrary_char_index_start_middle_end
+  - keyify_with_binding_normalizes_to_param_preserving_position_and_count
+  - paramized_key_value_renders_placeholders_as_atomic_chips
+  - chip_is_atomic_not_deletable_by_keystroke
+  - move_placeholder_repositions_within_single_locale_independent_of_others
+  - append_placeholder_to_untranslated_locales_at_sentence_end
+  - disconnect_param_removes_token_from_text_and_placeholder_from_all_locales
+  - append_param_assigns_next_free_param_number_non_contiguous_ok
+  - plain_only_chips_allowed_keyvalue_equals_placeholder_alone
+  # 삽입=키화 통일 + 인라인 칩
+  - insert_data_immediately_keyifies_so_translation_tab_activates
+  - keyify_post_value_is_placeholder_sentence_binding_preserved
+  - inline_editor_renders_chip_widget_for_param_key_not_stripped_plain
+  - chip_is_draggable_badge_affordance_grip_and_dashed_border
+  - inline_chip_edit_saves_single_locale_keyvalue_others_preserved
+  - param_value_replace_disconnect_append_wired_in_props_tab
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/inlineBindingUtils.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/textComponents.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InlineBindingSection.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PlaceholderChipInput.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InlineParamChipEditor.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/inlineBindingApi.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useInlineEdit.commit.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/property-controls/TranslationField.test.tsx
+notes: |
+  텍스트 데이터 연결 UI 는 속성 모달(dnd-kit/합성 이벤트 의존)이라 Playwright 자동화 부적합
+  (InlineBindingSection.tsx / DataBindingSection.tsx L1 `// e2e:allow` 동일 정책). cross product 의
+  입력 조합·후속 효과는 단위(inlineBindingUtils/textComponents) + 레이아웃 렌더링(InlineBindingSection/
+  TranslationField RTL)이 전수 커버하고, 캔버스 라이브 반영·저장·실사용자화면 렌더는 Chrome MCP
+  §공통 검증 매트릭스로 확인한다(브라우저 axis 비대상).

@@ -1,5 +1,6 @@
 {
   "all": "전체",
+  "view_all": "전체보기",
   "loading": "로딩 중...",
   "saving": "저장하는 중...",
   "error": "오류가 발생했습니다.",
@@ -18,6 +19,7 @@
   "required": "필수",
   "cancel": "취소",
   "delete": "삭제",
+  "list": "목록",
   "deleting": "삭제 중...",
   "processing": "처리 중...",
   "confirm": "확인",

@@ -1,0 +1,112 @@
+# audit:allow test-scenario-coverage reason: 단계 1-a 는 속성 탭 위젯(icon-picker/options-list) + 공유 propControl 컨트롤 정의만으로, 컴포넌트 capability 부착(라이브 편집기 속성 탭 등장)은 단계 1-b/1-c 에서 수행된다. 따라서 라이브 E2E(추가→편집→사용자반영)는 capability 가 부착되는 1-b/1-c 의 spec 이 cover 하며(본 매니페스트 effects 를 그 spec 의 @scenario/@effects 로 매칭), 단계 1-a 의 axes cross product 회귀 가드는 test_files 의 Vitest 단위(IconPickerControl/OptionsListControl 위젯 동작, recipeEngine propValue 라운드트립)가 cover 한다.(expr_chip_* axes)는 칩 입력기·합성 클릭·contentEditable·포털 모달 의존으로 Playwright 자동화 부적합(page-settings.yaml/text-inline-binding.yaml 동일 정책) — 입력 조합 cross product 는 단위 RTL(prop-i18n-text-field/property-controls/DataChipValueInput)이 전수 커버하고, 캔버스 라이브 반영·저장→DB 영속·실사용자화면 렌더는 Chrome MCP §공통 매트릭스로 라이브 실측.
+
+feature: 레이아웃 편집기 속성 탭 — 비-스타일 prop 편집 위젯(icon-picker/options-list) + 공유 propControl 컨트롤
+
+description: |
+  단계 0 인프라(속성 탭/propValue 레시피) 위에 비-스타일 prop 을 실제 편집하는 위젯 2종과
+  양 템플릿 공유 propControl 컨트롤 21종을 깐다. 컴포넌트별 capability 부착(propControls 선언)은
+  단계 1-b(basic)/1-c(admin) 에서 전수 수행되며, 그 단계의 라이브 E2E 가 "추가→편집→사용자 반영"
+  3단계를 브라우저로 검증한다.
+
+  핵심 동작:
+    - icon-picker: 카탈로그(템플릿 소유) 그리드 + 검색 + 선택 → propValue(node.props.name). 카탈로그 미공급 시 자유입력 폴백. 코어 라이브러리 토큰 0(완전 중립). 프리뷰 폴백 preview.html → preview.className → raw value.
+    - options-list: Select/RadioGroup options 배열 value/label 행 추가·삭제·이동. 정적 값만 편집, {{...}} 바인딩이면 디그레이드(덮어쓰기 차단).
+    - 공유 propControl: iconName/imgSrc/imgAlt/linkHref/linkTarget/inputType/inputPlaceholder/inputName/inputRequired/inputDisabled/fieldLabel/fieldError/fieldHelper/htmlFor/textareaRows/elemId/selectPlaceholder/selectOptions/componentSize/buttonVariant/componentDisabled — 모두 apply:propValue, 위젯 text/i18n-text/select/toggle/icon-picker/options-list.
+    - propValue 레시피: 문자열/배열/불리언 round-trip, 빈값/undefined 삭제, 다크 scope no-op(인라인 무손실).
+
+axes:
+  widget: [icon-picker, options-list, text, i18n-text, select, toggle]
+  prop_value_kind: [string, array, boolean, empty_clear, binding_expression]
+  template: [sirsoft-basic, sirsoft-admin_basic]
+
+ # ( "범용 텍스트=값 전용 데이터칩 / 표현식 편집은 접힌
+  # 미리보기+[수정]") — 데이터 칩·표현식 분해 트리를 페이지 설정뿐 아니라 컴포넌트 속성 패널 전역과
+  # 목록/표/레시피 입력칸으로 넓힌다. 칸의 종류(키화형 vs 값 전용)에 따라 진입 위젯이 갈린다.
+  expr_chip_target:                  # 표현식 트리/데이터 칩이 닿는 입력칸(전수)
+    - prop_i18n_text                 # ControlRenderer: i18n-text + propValue (라벨/안내/제목)
+    - prop_value_text                # ControlRenderer: text + propValue (이미지 주소·격자 등 값)
+    - options_label                  # OptionsListControl 옵션 라벨
+    - array_item_field               # ArrayItemsEditor 항목 필드
+    - children_item_text             # ChildrenListControl 항목 텍스트
+    - table_cell_text                # TableEditor 표 셀 텍스트
+    - recipe_message                 # RecipePickerControls i18n-text 메시지
+    - data_source_label_key          # DataSourcesPanel label_key
+  expr_chip_value_shape: [plain, single_binding, settings_ref, single_conditional, multi_segment]
+  expr_chip_op: [enter_collapsed_preview, edit_expand_tree, change_data, keyify_zero_for_value_target, plaintext_regression_zero]
+
+exclusions:
+  - { widget: icon-picker, prop_value_kind: array, reason: "아이콘명은 문자열" }
+  - { widget: icon-picker, prop_value_kind: boolean, reason: "동일" }
+  - { widget: options-list, prop_value_kind: string, reason: "옵션은 배열" }
+  - { widget: options-list, prop_value_kind: boolean, reason: "동일" }
+  - { widget: text, prop_value_kind: array, reason: "자유 문자열" }
+  - { widget: text, prop_value_kind: boolean, reason: "동일" }
+  - { widget: i18n-text, prop_value_kind: array, reason: "다국어 문자열" }
+  - { widget: i18n-text, prop_value_kind: boolean, reason: "동일" }
+  - { widget: select, prop_value_kind: array, reason: "택1 문자열" }
+  - { widget: select, prop_value_kind: boolean, reason: "동일" }
+  - { widget: toggle, prop_value_kind: string, reason: "불리언" }
+  - { widget: toggle, prop_value_kind: array, reason: "동일" }
+  - { widget: binding_expression, prop_value_kind: string, reason: "binding 은 options-list 디그레이드 전용 — 다른 위젯은 정적값" }
+  # 칸 종류별 진입 위젯/키화 정책 상호 배제
+  - { expr_chip_target: prop_value_text, expr_chip_op: keyify_zero_for_value_target, expr_chip_value_shape: single_binding, reason: "값 전용 칸 + 데이터칩 = 키화 0 이 본질 — plain shape 에서 대표 검증(단일축 중복 배제)" }
+  - { expr_chip_target: data_source_label_key, expr_chip_value_shape: settings_ref, reason: "label_key 는 다국어 라벨 키 — 설정참조 값은 비주류(데이터 칩/표현식만 대표 검증)" }
+  - { expr_chip_op: change_data, expr_chip_value_shape: plain, reason: "데이터 바꾸기는 단일 바인딩 칩 상태 전용 — 평문은 검색/표현식 진입 어포던스만" }
+  - { expr_chip_op: change_data, expr_chip_value_shape: single_conditional, reason: "조건식은 분해 트리 안 분기 리프에서 데이터 교체 — 최상위 change_data 아님" }
+  - { expr_chip_op: edit_expand_tree, expr_chip_value_shape: plain, reason: "트리 펼침은 분해 가능식(조건/이어붙이기) 전용 — 평문은 접힘 미리보기 진입 없음" }
+  - { expr_chip_op: edit_expand_tree, expr_chip_value_shape: single_binding, reason: "단일 바인딩은 칩+[데이터 바꾸기] — 분기 트리 펼침 아님" }
+  - { expr_chip_op: enter_collapsed_preview, expr_chip_value_shape: plain, reason: "접힌 미리보기는 표현식(분해 가능)일 때만 — 평문은 일반 input" }
+
+effects:
+  # icon-picker
+  - icon_picker_catalog_renders_grid_and_search_filters_by_value_label_keywords
+  - icon_picker_select_writes_icon_name_to_propValue
+  - icon_picker_none_clears_prop
+  - icon_picker_no_catalog_falls_back_to_free_text_input
+  - icon_picker_preview_falls_back_html_then_className_then_value
+  # options-list
+  - options_list_renders_value_label_rows
+  - options_list_add_remove_move_updates_options_array
+  - options_list_last_remove_clears_prop_to_undefined
+  - options_list_binding_expression_degrades_not_editable
+  # propValue 레시피 round-trip
+  - propvalue_string_roundtrips_through_props
+  - propvalue_array_roundtrips_through_props
+  - propvalue_boolean_roundtrips_through_props
+  - propvalue_empty_or_undefined_deletes_prop
+  - propvalue_dark_scope_is_noop_inline_lossless
+  # 컨트롤 정의 동기
+  - shared_propcontrols_synced_across_both_templates_with_same_keys
+  - propcontrol_keys_resolve_to_propvalue_controls_audit_guard
+  # 단계 1-b/1-c 라이브(후속 단계 E2E 가 cover)
+  - capability_attachment_makes_props_tab_appear_in_live_editor # 단계 1-b/1-c
+  - prop_edit_reflects_on_canvas_live_and_persists_to_user_page # 단계 1-b/1-c
+  # 데이터 칩 + 표현식 분해 트리(접힌 미리보기 + [수정])
+  - prop_i18n_text_control_enables_expression_tree_collapsed_preview_and_data_chip
+  - prop_value_text_control_promoted_to_data_chip_value_input_no_keyification
+  - prop_value_text_plaintext_and_numeric_and_url_input_preserved_regression_zero
+  - options_label_array_item_children_text_table_cell_enable_expression_tree_and_data_chip
+  - recipe_message_i18n_text_enables_data_chip_and_expression_tree
+  - data_source_label_key_enables_data_chip_and_expression_tree
+  - decomposable_expression_enters_collapsed_preview_then_edit_expands_tree
+  - single_binding_renders_link_chip_with_change_data_affordance
+  - complex_unparseable_expression_stays_readonly_lossless_zero
+  - recipe_computed_condition_text_param_without_apply_stays_bare_widget_no_data_chip
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/IconPickerControl.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/OptionsListControl.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/recipeEngine.test.ts
+  # ControlRenderer 승격 분기(i18n-text→표현식트리 / text→값칩) +
+  # 식별자 경로 무파괴 + 표현식 접힌 미리보기 진입.
+  - resources/js/core/template-engine/layout-editor/__tests__/components/prop-i18n-text-field.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/DataChipValueInput.test.tsx
+
+validation:
+  note: |
+ 단계 1-a 는 위젯/컨트롤 정의만으로 라이브 편집기에 속성 탭이 아직 등장하지 않는다
+ (capability 부착이 단계 1-b/1-c). 라이브 E2E(추가→편집→사용자반영)는 1-b/1-c 의 spec 이
+    작성하며, 본 매니페스트의 effects(capability_attachment_*, prop_edit_reflects_*)를 그
+    spec 의 @scenario layout-editor-prop-controls / @effects 로 매칭한다.
+  e2e_spec_pending: tests/Playwright/specs/layout-editor/property-edit-propcontrols.spec.ts  # 단계 1-b/1-c

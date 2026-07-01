@@ -62,7 +62,7 @@ class PluginExtensibilityTest extends ModuleTestCase
         // 테스트 훅 정리
         HookManager::resetAll();
 
-        $settingsFile = storage_path('app/modules/sirsoft-ecommerce/settings/language_currency.json');
+        $settingsFile = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/language_currency.json');
         if (file_exists($settingsFile)) {
             unlink($settingsFile);
         }
@@ -74,7 +74,7 @@ class PluginExtensibilityTest extends ModuleTestCase
      */
     protected function setupTestCurrencySettings(): void
     {
-        $settingsPath = storage_path('app/modules/sirsoft-ecommerce/settings');
+        $settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         if (! is_dir($settingsPath)) {
             mkdir($settingsPath, 0755, true);
         }

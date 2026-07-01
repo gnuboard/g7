@@ -28,6 +28,14 @@
           "name": "Span",
           "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
           "text": "{{product.data.free_shipping ? '$t:shop.free_shipping' : '$t:shop.shipping_fee:' + product.data.shipping_fee_formatted}}"
+        },
+        {
+          "comment": "배송 불가 사전 표시 (B8 — 선택 배송국가로 배송 불가)",
+          "type": "basic",
+          "name": "Span",
+          "if": "{{product.data.is_shippable_to_selected_country === false}}",
+          "props": { "className": "text-sm font-medium text-red-600 dark:text-red-400" },
+          "text": "$t:shop.shippability.not_shippable"
         }
       ]
     },
@@ -164,7 +172,7 @@
                       "name": "Button",
                       "props": { "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" },
                       "children": [
-                        { "type": "basic", "name": "Icon", "props": { "name": "x", "className": "w-4 h-4" } }
+                        { "type": "basic", "name": "Icon", "size": "sm", "props": { "name": "x" } }
                       ],
                       "actions": [
                         {
@@ -191,7 +199,7 @@
                       "props": {
                         "value": "{{item.quantity}}",
                         "min": 1,
-                        "max": "{{item.stock}}",
+                        "max": "{{product.data?.max_purchase_qty > 0 ? Math.min(item.stock, product.data.max_purchase_qty) : item.stock}}",
                         "size": "sm"
                       },
                       "actions": [
@@ -220,6 +228,29 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "comment": "=== 구매수량 한도 안내 (선택 항목 합계가 한도 위반 시) ===",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_local.selectedItems ?? []).length > 0 && ((_local.selectedItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty))}}",
+      "props": { "className": "px-1 mb-2 space-y-0.5" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{(_local.selectedItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1)}}",
+          "props": { "className": "block text-xs text-red-500 dark:text-red-400" },
+          "text": "$t:shop.min_purchase_qty_notice|qty={{product.data?.min_purchase_qty ?? 1}}"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{product.data?.max_purchase_qty > 0 && (_local.selectedItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty}}",
+          "props": { "className": "block text-xs text-red-500 dark:text-red-400" },
+          "text": "$t:shop.max_purchase_qty_notice|qty={{product.data?.max_purchase_qty}}"
         }
       ]
     },
@@ -254,7 +285,7 @@
           "name": "Button",
           "props": {
             "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium mb-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-            "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0}}"
+            "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0 || (_local.selectedItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty) || product.data.is_shippable_to_selected_country === false}}"
           },
           "text": "$t:shop.buy_now",
           "actions": [
@@ -270,10 +301,10 @@
           "name": "Button",
           "props": {
             "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0}}"
+            "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0 || (_local.selectedItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty) || product.data.is_shippable_to_selected_country === false}}"
           },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "shopping-cart", "className": "w-5 h-5" } },
+            { "type": "basic", "name": "Icon", "size": "md", "props": { "name": "shopping-cart" } },
             { "type": "basic", "name": "Span", "text": "$t:shop.add_to_cart" }
           ],
           "actions": [
@@ -295,7 +326,7 @@
                 { "handler": "toast", "params": { "type": "success", "message": "$t:shop.cart_added" } }
               ],
               "onError": [
-                { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                { "handler": "toast", "params": { "type": "error", "message": "{{error.errors?.message ?? error.message}}" } }
               ]
             }
           ]

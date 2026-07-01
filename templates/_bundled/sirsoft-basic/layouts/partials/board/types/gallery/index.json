@@ -165,11 +165,12 @@
           "props": {
             "className": "block w-full text-left rounded-xl shadow-sm relative aspect-[4/3] group cursor-pointer border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200"
           },
+          "comment": "갤러리 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀)",
           "actions": [
             {
               "type": "click",
               "handler": "navigate",
-              "params": { "path": "/board/{{route.slug}}/{{post.id}}" }
+              "params": { "path": "/board/{{route.slug}}/{{post.id}}", "mergeQuery": true, "query": {} }
             }
           ],
           "children": [
@@ -391,6 +392,7 @@
                         {
                           "type": "basic",
                           "name": "Span",
+                          "if": "{{posts?.data?.board?.settings?.show_view_count !== false}}",
                           "props": { "className": "flex items-center gap-0.5 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-gray-300'}}" },
                           "children": [
                             { "type": "basic", "name": "Icon", "props": { "name": "eye", "size": "xs" } },

@@ -6,9 +6,6 @@
   "id": "payment_methods_sortable",
   "type": "basic",
   "name": "Div",
-  "props": {
-    "className": "space-y-2"
-  },
   "sortable": {
     "source": "{{_local.form?.order_settings?.payment_methods ?? []}}",
     "itemKey": "id",
@@ -32,7 +29,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-      "className": "border rounded-lg p-3 flex items-center gap-4"
+      "className": "flex-center border rounded-lg p-3 gap-4"
     },
     "classMap": {
       "key": "{{$method._orphaned ? 'orphaned' : 'normal'}}",
@@ -66,7 +63,7 @@
         "name": "Icon",
         "props": {
           "name": "{{$method._cached_icon ?? 'circle-question'}}",
-          "className": "text-2xl text-gray-600 dark:text-gray-400"
+          "className": "text-secondary text-2xl"
         }
       },
       {
@@ -80,7 +77,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-              "className": "flex items-center gap-2"
+              "className": "flex-center gap-2"
             },
             "children": [
               {
@@ -89,7 +86,7 @@
                 "props": {
                   "className": "font-medium text-gray-900 dark:text-gray-100"
                 },
-                "text": "{{$localized($method._cached_name) || $method.id}}"
+                "text": "{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}"
               },
               {
                 "type": "basic",
@@ -107,7 +104,7 @@
             "name": "Span",
             "if": "{{$localized($method._cached_description)}}",
             "props": {
-              "className": "text-sm text-gray-500 dark:text-gray-400"
+              "className": "text-label-subtle"
             },
             "text": "{{$localized($method._cached_description)}}"
           }
@@ -118,14 +115,14 @@
         "name": "Div",
         "if": "{{!$method._orphaned}}",
         "props": {
-          "className": "flex flex-col gap-1"
+          "className": "row-stack"
         },
         "children": [
           {
             "type": "basic",
             "name": "Span",
             "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400"
+              "className": "text-tertiary"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider"
           },
@@ -156,7 +153,7 @@
             "name": "Span",
             "if": "{{!['point','deposit','free','dbank'].includes($method.id) && (_local.form?.available_pg_providers ?? []).length === 0}}",
             "props": {
-              "className": "text-xs text-gray-400 dark:text-gray-500 italic"
+              "className": "text-hint italic"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed"
           },
@@ -165,7 +162,7 @@
             "name": "Span",
             "if": "{{['point','deposit','free','dbank'].includes($method.id)}}",
             "props": {
-              "className": "text-xs text-gray-400 dark:text-gray-500"
+              "className": "text-hint"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required"
           }
@@ -176,14 +173,14 @@
         "name": "Div",
         "if": "{{!$method._orphaned}}",
         "props": {
-          "className": "flex flex-col gap-1"
+          "className": "row-stack"
         },
         "children": [
           {
             "type": "basic",
             "name": "Span",
             "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400"
+              "className": "text-tertiary"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing"
           },
@@ -226,16 +223,63 @@
       {
         "type": "basic",
         "name": "Div",
-        "if": "{{!$method._orphaned}}",
         "props": {
-          "className": "flex flex-col gap-1"
+          "className": "row-stack"
         },
         "children": [
           {
             "type": "basic",
             "name": "Span",
             "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400"
+              "className": "text-tertiary"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing"
+          },
+          {
+            "type": "basic",
+            "name": "Select",
+            "props": {
+              "value": "{{$method.mileage_deduction_timing ?? 'payment_complete'}}",
+              "className": "w-36",
+              "options": [
+                {
+                  "value": "order_placed",
+                  "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed"
+                },
+                {
+                  "value": "payment_complete",
+                  "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete"
+                }
+              ],
+              "disabled": "{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}"
+            },
+            "actions": [
+              {
+                "type": "change",
+                "handler": "setState",
+                "params": {
+                  "target": "local",
+                  "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, mileage_deduction_timing: $event.target.value} : m)}}",
+                  "hasChanges": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Div",
+        "if": "{{!$method._orphaned}}",
+        "props": {
+          "className": "row-stack"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Span",
+            "props": {
+              "className": "text-tertiary"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount"
           },

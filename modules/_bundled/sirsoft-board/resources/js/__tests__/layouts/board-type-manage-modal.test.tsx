@@ -480,9 +480,10 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
       expect(tbody.props.className).toContain('dark:bg-gray-800');
     });
 
-    it('헤더 셀에 다크 모드 텍스트 색상이 있다', () => {
+    it('헤더 셀에 다크 모드 텍스트 색상이 있다 (#408 — .text-table-header 시맨틱이 흡수)', () => {
       const thSlug = findById(modal, 'bt_th_slug');
-      expect(thSlug.props.className).toContain('dark:text-gray-400');
+      // text-xs + text-gray-500 + dark:text-gray-400 + font-medium + uppercase + tracking-wider 토큰을 .text-table-header 자산이 흡수
+      expect(thSlug.props.className).toContain('text-table-header');
     });
 
     it('데이터 행에 다크 모드 호버 효과가 있다', () => {
@@ -529,32 +530,32 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
   });
 
   describe('폼 유효성 에러 표시', () => {
-    it('slug Input에 에러 시 빨간 테두리를 위한 classMap이 있다', () => {
+    it('slug Input에 에러 시 input-error 시맨틱이 분기 적용된다', () => {
       const slugInput = findById(modal, 'bt_input_slug');
       expect(slugInput.classMap).toBeDefined();
       expect(slugInput.classMap.key).toContain('btFormErrors?.slug');
-      expect(slugInput.classMap.variants.error).toContain('border-red-500');
-      expect(slugInput.classMap.variants.error).toContain('dark:border-red-400');
-      expect(slugInput.classMap.variants.normal).toContain('border-gray-300');
+      // Input 외형은 시맨틱 .input 이 디폴트로 제공, 에러는 input-error 토글로 통일 (#369)
+      expect(slugInput.classMap.variants.error).toBe('input-error');
+      expect(slugInput.classMap.variants.normal).toBe('');
     });
 
-    it('slug 에러 메시지 요소가 존재하고 조건부 렌더링된다', () => {
+    it('slug 에러 메시지 요소가 존재하고 조건부 렌더링된다 (#408 — .form-error-xs 흡수)', () => {
       const slugError = findById(modal, 'bt_slug_error');
       expect(slugError).not.toBeNull();
       expect(slugError.name).toBe('P');
       expect(slugError.if).toContain('btFormErrors?.slug');
       expect(slugError.text).toContain('btFormErrors?.slug?.[0]');
-      expect(slugError.props.className).toContain('text-red-500');
-      expect(slugError.props.className).toContain('dark:text-red-400');
+      // text-red-500 + dark:text-red-400 + text-xs 토큰을 .form-error-xs 자산이 흡수
+      expect(slugError.props.className).toContain('form-error-xs');
     });
 
-    it('name 에러 메시지 요소가 존재하고 조건부 렌더링된다', () => {
+    it('name 에러 메시지 요소가 존재하고 조건부 렌더링된다 (#408 — .form-error-xs 흡수)', () => {
       const nameError = findById(modal, 'bt_name_error');
       expect(nameError).not.toBeNull();
       expect(nameError.name).toBe('P');
       expect(nameError.if).toContain("btFormErrors?.['name.ko']");
       expect(nameError.text).toContain("btFormErrors?.['name.ko']?.[0]");
-      expect(nameError.props.className).toContain('text-red-500');
+      expect(nameError.props.className).toContain('form-error-xs');
     });
 
     it('MultilingualInput에 error prop이 전달된다', () => {

@@ -68,6 +68,42 @@ class ProductNoticeTemplateControllerTest extends ModuleTestCase
     }
 
     /**
+     * 목록 응답이 무한스크롤용 pagination 메타(total/has_more_pages)를 노출하는지 검증
+     *
+     * 헤더 총개수 표시와 무한스크롤 정지 판정이 전체 개수(total)에 의존한다.
+     */
+    #[Test]
+    public function test_index_exposes_pagination_meta(): void
+    {
+        // Given: per_page(20)보다 많은 템플릿 25건
+        for ($i = 1; $i <= 25; $i++) {
+            ProductNoticeTemplate::create([
+                'name' => ['ko' => "분류 {$i}", 'en' => "Category {$i}"],
+                'fields' => [
+                    ['name' => ['ko' => '항목', 'en' => 'Item'], 'content' => ['ko' => '내용', 'en' => 'content']],
+                ],
+                'is_active' => true,
+                'sort_order' => $i,
+            ]);
+        }
+
+        // When: 1페이지 조회
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/product-notice-templates?per_page=20&page=1');
+
+        // Then: pagination 메타가 전체 개수(25)와 다음 페이지 존재를 정확히 보고
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data' => ['data', 'abilities', 'pagination' => [
+                'current_page', 'last_page', 'per_page', 'total', 'has_more_pages',
+            ]],
+        ]);
+        $response->assertJsonPath('data.pagination.total', 25);
+        $response->assertJsonPath('data.pagination.has_more_pages', true);
+        $response->assertJsonCount(20, 'data.data');
+    }
+
+    /**
      * 템플릿 목록 검색 테스트
      */
     #[Test]
@@ -456,5 +492,86 @@ class ProductNoticeTemplateControllerTest extends ModuleTestCase
 
         // Then: 인증 필요 에러
         $response->assertStatus(401);
+    }
+
+    // ──────────────────────────────────────────────
+    // A9: toggle-active / active_only / 페이지네이션
+    // ──────────────────────────────────────────────
+
+    private function makeTemplate(string $name, bool $isActive, int $sort = 1): ProductNoticeTemplate
+    {
+        return ProductNoticeTemplate::create([
+            'name' => ['ko' => $name, 'en' => $name],
+            'fields' => [
+                ['name' => ['ko' => '항목', 'en' => 'Field'], 'content' => ['ko' => '값', 'en' => 'Value']],
+            ],
+            'is_active' => $isActive,
+            'sort_order' => $sort,
+        ]);
+    }
+
+    #[Test]
+    public function test_toggle_active_flips_is_active(): void
+    {
+        $template = $this->makeTemplate('토글대상', true);
+
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson("/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{$template->id}/toggle-active");
+
+        $response->assertOk();
+        $this->assertFalse($template->fresh()->is_active);
+
+        // 다시 토글 → 활성
+        $this->actingAs($this->adminUser)
+            ->patchJson("/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{$template->id}/toggle-active")
+            ->assertOk();
+        $this->assertTrue($template->fresh()->is_active);
+    }
+
+    #[Test]
+    public function test_toggle_active_requires_update_permission(): void
+    {
+        $template = $this->makeTemplate('권한확인', true);
+
+        // 읽기 권한만 있는 사용자
+        $readonlyUser = $this->createAdminUser([
+            'sirsoft-ecommerce.product-notice-templates.read',
+        ]);
+
+        $response = $this->actingAs($readonlyUser)
+            ->patchJson("/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{$template->id}/toggle-active");
+
+        $response->assertStatus(403);
+        $this->assertTrue($template->fresh()->is_active);
+    }
+
+    #[Test]
+    public function test_index_active_only_excludes_inactive(): void
+    {
+        $this->makeTemplate('활성고시', true, 1);
+        $this->makeTemplate('비활성고시', false, 2);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/product-notice-templates?active_only=true');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data.data'));
+        $this->assertTrue($response->json('data.data.0.is_active'));
+    }
+
+    #[Test]
+    public function test_index_pagination_page_two(): void
+    {
+        // per_page=20 기준 2페이지 분량 (25건)
+        for ($i = 1; $i <= 25; $i++) {
+            $this->makeTemplate("고시{$i}", true, $i);
+        }
+
+        $page2 = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/product-notice-templates?per_page=20&page=2');
+
+        $page2->assertOk();
+        // 2페이지에 나머지 5건
+        $this->assertCount(5, $page2->json('data.data'));
     }
 }

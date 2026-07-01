@@ -35,6 +35,7 @@ return [
         // 첨부파일
         'board_attachment_upload' => '첨부파일 업로드 (게시물: :post_id)',
         'board_attachment_delete' => '첨부파일 삭제 (게시물: :post_id)',
+        'board_attachment_download' => '첨부파일 다운로드 (게시물: :post_id)',
         'board_attachment_reorder' => '첨부파일 순서 변경 (게시물: :post_id)',
 
         // 신고 관리 (Admin)
@@ -49,5 +50,6 @@ return [
         // 게시판 설정
         'board_settings_index' => '게시판 설정 조회',
         'board_settings_bulk_apply' => '게시판 설정 일괄 적용',
+        'board_settings_bulk_apply_aborted' => '게시판 설정 일괄 적용 중단 (전체 롤백, 실패 게시판: :failed_board_name, :failed_at/:total)',
     ],
 ];

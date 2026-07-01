@@ -165,11 +165,18 @@ class ProductLabelRepositoryTest extends ModuleTestCase
             'sort_order' => 2,
         ]);
 
-        // When: 이름 오름차순 정렬
-        $result = $this->repository->getAll(['sort' => 'name_asc']);
+        // When: 이름 오름/내림차순 정렬
+        $asc = $this->repository->getAll(['sort' => 'name_asc']);
+        $desc = $this->repository->getAll(['sort' => 'name_desc']);
 
-        // Then: 정렬된 결과 반환 (한국어 기준)
-        $this->assertEquals('가성비', $result->first()->name['ko']);
+        // Then: 정렬 동작 검증 — 한글 JSON 컬럼 정렬 순서는 DB collation 에 의존하므로
+        // 특정 collation 가정(가나다) 대신 asc/desc 가 서로 역순임을 검증한다(환경 결정적).
+        $this->assertCount(2, $asc);
+        $this->assertEquals(
+            $asc->pluck('name.ko')->reverse()->values()->all(),
+            $desc->pluck('name.ko')->values()->all(),
+            'name_asc 와 name_desc 는 서로 역순이어야 한다'
+        );
     }
 
     public function test_get_all_sorts_by_name_desc(): void
@@ -190,10 +197,16 @@ class ProductLabelRepositoryTest extends ModuleTestCase
         ]);
 
         // When: 이름 내림차순 정렬
-        $result = $this->repository->getAll(['sort' => 'name_desc']);
+        $desc = $this->repository->getAll(['sort' => 'name_desc']);
+        $asc = $this->repository->getAll(['sort' => 'name_asc']);
 
-        // Then: 정렬된 결과 반환
-        $this->assertEquals('베스트', $result->first()->name['ko']);
+        // Then: 내림차순 첫 항목 == 오름차순 마지막 항목 (collation 무관 정렬 동작 검증)
+        $this->assertCount(2, $desc);
+        $this->assertEquals(
+            $asc->last()->name['ko'],
+            $desc->first()->name['ko'],
+            'name_desc 의 첫 항목은 name_asc 의 마지막 항목과 같아야 한다'
+        );
     }
 
     public function test_get_all_sorts_by_created_desc(): void

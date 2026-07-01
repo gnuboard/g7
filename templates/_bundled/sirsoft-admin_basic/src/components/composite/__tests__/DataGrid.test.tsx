@@ -58,6 +58,20 @@ describe('DataGrid', () => {
     expect(screen.getByText('관리자')).toBeInTheDocument();
   });
 
+  it('데이터 셀이 align-top 으로 상단 정렬된다 (셀 콘텐츠 높이가 달라도 입력칸 라인 정렬 유지)', () => {
+    // 회귀 가드: 한 셀(예: 판매가)에 다통화 환산값 같은 보조 표시가 세로로 쌓여
+    // 셀 높이가 커져도, 기본 vertical-align: middle 이면 다른 셀 입력칸이 중앙으로
+    // 내려가 라인이 어긋난다. 모든 데이터 셀을 align-top 으로 상단 정렬해 입력칸을
+    // 같은 수평선에 맞춘다.
+    const { container } = render(<DataGrid columns={mockColumns} data={mockData} />);
+
+    const bodyCells = container.querySelectorAll('tbody td');
+    expect(bodyCells.length).toBeGreaterThan(0);
+    bodyCells.forEach((td) => {
+      expect(td.className).toContain('align-top');
+    });
+  });
+
   it('컬럼 헤더 클릭 시 정렬됨', async () => {
     const user = userEvent.setup();
     const onSortChange = vi.fn();
@@ -135,6 +149,73 @@ describe('DataGrid', () => {
     // 정렬 화살표가 표시되지 않아야 함
     expect(roleHeader.parentElement).not.toContainHTML('↑');
     expect(roleHeader.parentElement).not.toContainHTML('↓');
+  });
+
+  // 회귀 가드: 서버가 정렬을 책임지는(controlled, onSortChange 연결) 그리드는
+  // 서버가 내려준 순서를 그대로 출력해야 한다. 클라이언트가 다시 정렬하면 null 값을
+  // 항상 앞으로 밀어 서버 ORDER BY 순서를 훼손한다(페이지 발행순 정렬 버그).
+  it('controlled 정렬(onSortChange 연결) 시 서버가 내려준 순서를 그대로 출력한다 (null 포함)', () => {
+    const columns: DataGridColumn[] = [
+      { field: 'title', header: '제목', sortable: true },
+      { field: 'published_at', header: '발행일', sortable: true },
+    ];
+
+    // 서버가 published_at asc(오래된 발행순)로 정렬해 내려준 순서.
+    // 발행된 건이 먼저, 미발행(null) 건이 뒤에 오도록 서버가 정한 순서를 가정한다.
+    const serverSortedData = [
+      { title: '먼저 발행', published_at: '2026-01-01 00:00:00' },
+      { title: '나중 발행', published_at: '2026-06-01 00:00:00' },
+      { title: '미발행 A', published_at: null },
+      { title: '미발행 B', published_at: null },
+    ];
+
+    const { container } = render(
+      <DataGrid
+        columns={columns}
+        data={serverSortedData}
+        sortable={true}
+        sortField="published_at"
+        sortDirection="asc"
+        onSortChange={vi.fn()}
+      />
+    );
+
+    const firstCellTexts = Array.from(
+      container.querySelectorAll('tbody tr')
+    ).map((tr) => tr.querySelector('td')?.textContent?.trim());
+
+    // 서버 순서 그대로 유지: null 행이 앞으로 튀어나오지 않는다.
+    expect(firstCellTexts).toEqual(['먼저 발행', '나중 발행', '미발행 A', '미발행 B']);
+  });
+
+  // uncontrolled(onSortChange 미연결) 그리드는 컴포넌트가 단독 정렬 주체이므로
+  // 전달받은 로컬 데이터를 클라이언트에서 정렬하는 동작을 유지한다.
+  it('uncontrolled 정렬(onSortChange 미연결) 시 클라이언트 정렬이 동작한다', () => {
+    const columns: DataGridColumn[] = [
+      { field: 'name', header: '이름', sortable: true },
+    ];
+    const localData = [
+      { name: '다람쥐' },
+      { name: '가나다' },
+      { name: '나비' },
+    ];
+
+    const { container } = render(
+      <DataGrid
+        columns={columns}
+        data={localData}
+        sortable={true}
+        sortField="name"
+        sortDirection="asc"
+      />
+    );
+
+    const cellTexts = Array.from(
+      container.querySelectorAll('tbody tr')
+    ).map((tr) => tr.querySelector('td')?.textContent?.trim());
+
+    // 클라이언트 정렬 적용: 가나다순
+    expect(cellTexts).toEqual(['가나다', '나비', '다람쥐']);
   });
 
   it('row 클릭 시 onRowClick 핸들러가 호출됨', async () => {

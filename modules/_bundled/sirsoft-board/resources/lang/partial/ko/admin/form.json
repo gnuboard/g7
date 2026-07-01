@@ -73,9 +73,9 @@
       "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
     },
     "blocked_keywords": {
-      "label": "제한 키워드",
-      "placeholder": "쉼표로 구분하여 입력 (예: 욕설, 비방, 광고)",
-      "description": "부적절한 단어 또는 해당 게시판에 제외될 키워드"
+      "label": "금지어",
+      "placeholder": "금지어 입력 후 Enter (예: 욕설, 비방, 광고)",
+      "description": "부적절한 단어 또는 해당 게시판에서 제외할 금지어"
     },
     "use_file_upload": {
       "label": "첨부 파일 설정",
@@ -92,8 +92,8 @@
     },
     "allowed_extensions": {
       "label": "허용 확장자",
-      "placeholder": "쉼표로 구분하여 입력 (예: jpg, png, pdf)",
-      "description": "빈 값일 경우 모든 확장자 허용"
+      "placeholder": "확장자 입력 후 Enter (예: jpg, png, pdf)",
+      "description": "허용할 파일 확장자를 최소 1개 이상 입력하세요"
     },
     "comment_order": {
       "label": "댓글 정렬 순서",
@@ -203,19 +203,14 @@
     "auto_role_notice": "게시판 관리자와 스텝 역할은 생성 시 각 권한에 기본값으로 포함되며, 아래에서 수정할 수 있습니다.",
     "create_mode_permissions_notice": "역할별 접근 제어는 게시판 생성 후 수정 화면에서 설정할 수 있습니다. 생성 시에는 기본 권한이 자동으로 적용됩니다."
   },
-  "modals": {
-    "category_remove": {
-      "title": "분류 삭제",
-      "warning": "이 작업은 되돌릴 수 없습니다",
-      "message": "'{{category}}' 분류를 삭제하시겠습니까?"
-    }
-  },
   "menu": {
-    "manual_guide": "메뉴 관리에서 아래 경로를 입력하여 등록하세요.",
+    "manual_guide": "이 게시판은 아래 경로로 접근할 수 있습니다.",
     "manual_admin_label": "관리자 메뉴 경로",
     "manual_user_label": "사용자 메뉴 경로",
     "example": "예시",
     "add_to_admin_menu": "관리자 메뉴에 추가",
+    "show_in_admin_menu": "관리자 메뉴에 표시",
+    "show_in_admin_menu_desc": "이 게시판을 관리자 메뉴에 노출합니다. 저장 시 반영되며, [게시판 관리] 메뉴 아래에 추가됩니다.",
     "menu_added_success": "관리자 메뉴에 추가되었습니다.",
     "menu_add_failed": "메뉴 추가에 실패했습니다."
   }

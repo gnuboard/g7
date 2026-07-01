@@ -25,7 +25,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-blue-600 text-white"
+            "className": "flex-center flex-col justify-center py-4 px-6 rounded-lg bg-blue-600 text-white"
           },
           "children": [
             {
@@ -58,24 +58,33 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+            "className": "admin-card"
           },
           "children": [
             {
               "type": "basic",
-              "name": "Span",
+              "name": "Div",
               "props": {
-                "className": "text-base font-medium"
+                "className": "row-stack"
               },
-              "text": "English"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
-              },
-              "text": "EN"
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-base font-medium"
+                  },
+                  "text": "English"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle mt-0.5"
+                  },
+                  "text": "EN"
+                }
+              ]
             }
           ],
           "actions": [
@@ -91,24 +100,33 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+            "className": "admin-card"
           },
           "children": [
             {
               "type": "basic",
-              "name": "Span",
+              "name": "Div",
               "props": {
-                "className": "text-base font-medium"
+                "className": "row-stack"
               },
-              "text": "日本語"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
-              },
-              "text": "JP"
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-base font-medium"
+                  },
+                  "text": "日本語"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle mt-0.5"
+                  },
+                  "text": "JP"
+                }
+              ]
             }
           ],
           "actions": [
@@ -124,24 +142,33 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+            "className": "admin-card"
           },
           "children": [
             {
               "type": "basic",
-              "name": "Span",
+              "name": "Div",
               "props": {
-                "className": "text-base font-medium"
+                "className": "row-stack"
               },
-              "text": "中文(简体)"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
-              },
-              "text": "CN"
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-base font-medium"
+                  },
+                  "text": "中文(简体)"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle mt-0.5"
+                  },
+                  "text": "CN"
+                }
+              ]
             }
           ],
           "actions": [
@@ -157,24 +184,33 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+            "className": "admin-card"
           },
           "children": [
             {
               "type": "basic",
-              "name": "Span",
+              "name": "Div",
               "props": {
-                "className": "text-base font-medium"
+                "className": "row-stack"
               },
-              "text": "中文(繁體)"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
-              },
-              "text": "TW"
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-base font-medium"
+                  },
+                  "text": "中文(繁體)"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle mt-0.5"
+                  },
+                  "text": "TW"
+                }
+              ]
             }
           ],
           "actions": [

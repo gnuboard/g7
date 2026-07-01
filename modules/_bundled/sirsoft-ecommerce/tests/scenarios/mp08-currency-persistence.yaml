@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
+#   환율 영속성 axis 는 PHPUnit(EcommerceSettingsServiceTest) 가 전수 커버하며 green 이다.
+feature: 통화 환율 영속성 — code 기준 병합 (U11-A)
+
+description: |
+  language_currency.currencies 는 정수키 리스트라 array_merge 가 통째 교체되어,
+  관리자가 일부 통화를 빼고 저장하면 defaults 통화가 영구 소실되던 영속성 공백을 수정한다.
+  getAllSettings() 에서 code 기준 병합(mergeCurrenciesByCode)으로 defaults 보충(환율은 저장본 우선).
+
+axes:
+  saved_currency_set:
+    - all_five           # 전 5종 저장
+    - jpy_missing        # JPY 빼고 저장
+    - usd_missing        # USD 빼고 저장
+    - new_added          # 관리자 신규 통화 추가
+  get_settings_result:
+    - defaults_supplemented   # 누락 통화 defaults 보충됨
+  exchange_rate_preservation:
+    - saved_value_kept   # 저장본 exchange_rate 보존
+
+effects:
+  - missing_currency_supplemented_from_defaults  # array_merge 통째교체로 통화 소실 안 됨
+  - saved_exchange_rate_preserved                # 저장본 환율 보존(defaults 로 덮어쓰지 않음)
+  - new_added_currency_preserved                 # 저장본에만 있는 신규 통화 보존
+  - default_currency_exchange_rate_null          # 기본통화 exchange_rate null 유지(syncCurrencyDefaults)
+  - currency_conversion_uses_persisted_rate      # 환율 109 설정 시 JPY 정확 환산, null 시 제외
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsServiceCurrencyMergeTest.php

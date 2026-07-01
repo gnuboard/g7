@@ -1,0 +1,47 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   ProductReviewImageService/ProductReviewService 의 review.* → review_settings.* 키 경로 교정,
+#   업로드 용량 동적화, 공개 설정 API, attributes 라벨을 PHPUnit Unit/Feature + Vitest 레이아웃
+#   렌더링이 커버하며 green.
+feature: 리뷰 이미지 정책(최대 개수/용량) 실반영 (A6)
+
+description: |
+  Service 가 존재하지 않는 review.* 대신 review_settings.* 설정 키를 읽도록 교정.
+  업로드 최대 용량(max_image_size_mb)을 설정 기반 동적 검증. 공개 설정 API(GET settings/review)
+  로 리뷰 정책을 프론트에 전달, 리뷰 작성 모달이 max_images=0 이면 첨부영역 숨김, 그 외엔
+  FileUploader maxFiles/maxSize 동적 반영. validation attributes 라벨로 키 원문 노출 차단.
+
+axes:
+  max_images:
+    - zero    # 0 → 첫 업로드부터 차단 + 프론트 첨부영역 숨김
+    - three
+    - five    # 기본
+  max_image_size_mb:
+    - one
+    - five
+    - ten     # 기본
+  entry:
+    - service_read       # Service 가 review_settings.* 읽음
+    - upload_validation  # UploadReviewImageRequest max 동적
+    - public_api         # GET settings/review 200
+    - front_render       # 리뷰 모달 조건부/props
+  locale:
+    - ko
+    - en
+
+effects:
+  - service_reads_review_settings_key   # review.* → review_settings.* 교정
+  - upload_max_size_dynamic             # max:(mb*1024) + :max 메시지 치환
+  - max_images_zero_blocks_first_upload # 0 → image_upload_limit_exceeded
+  - public_api_returns_review_settings  # GET settings/review payload
+  - front_hides_attach_when_zero        # max_images=0 → 첨부영역 미렌더
+  - front_props_reflect_settings        # maxFiles/maxSize 동적 바인딩
+  - attribute_label_not_raw_key         # 음수 입력 시 한글/영문 라벨
+  - review_settings_save_logs_activity  # 리뷰설정 저장 활동로그
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductReviewImageServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductReviewServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/ReviewSettingsApiTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/review-modal-image-policy.test.tsx

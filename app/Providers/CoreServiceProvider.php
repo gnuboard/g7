@@ -3,20 +3,19 @@
 namespace App\Providers;
 
 use App\Contracts\Extension\CacheInterface;
-use App\Enums\DeactivationReason;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
-use App\Contracts\Extension\IdentityVerificationInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
-use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityMessageDefinitionRepositoryInterface;
 use App\Contracts\Repositories\IdentityMessageTemplateRepositoryInterface;
+use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
+use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
@@ -33,10 +32,14 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\SystemConfigRepositoryInterface;
+use App\Contracts\Repositories\TemplateCustomTranslationRepositoryInterface;
+use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
+use App\Enums\DeactivationReason;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\CoreVersionChecker;
 use App\Extension\ExtensionManager;
 use App\Extension\HookListenerRegistrar;
@@ -45,9 +48,10 @@ use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Extension\TemplateManager;
+use App\Listeners\ExtensionCompatibilityAlertListener;
+use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Repositories\ActivityLogRepository;
 use App\Repositories\AttachmentRepository;
 use App\Repositories\IdentityMessageDefinitionRepository;
@@ -56,6 +60,7 @@ use App\Repositories\IdentityPolicyRepository;
 use App\Repositories\IdentityVerificationLogRepository;
 use App\Repositories\JsonConfigRepository;
 use App\Repositories\LayoutExtensionRepository;
+use App\Repositories\LayoutExtensionVersionRepository;
 use App\Repositories\LayoutPreviewRepository;
 use App\Repositories\LayoutRepository;
 use App\Repositories\LayoutVersionRepository;
@@ -72,12 +77,15 @@ use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleHistoryRepository;
 use App\Repositories\ScheduleRepository;
 use App\Repositories\SystemConfigRepository;
+use App\Repositories\TemplateCustomTranslationRepository;
+use App\Repositories\TemplateLayoutAttachmentRepository;
 use App\Repositories\TemplateRepository;
 use App\Repositories\UserConsentRepository;
 use App\Repositories\UserRepository;
 use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
+use App\Services\TemplateLayoutAttachmentService;
 use App\Services\UniqueIdService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -173,6 +181,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(AttachmentRepositoryInterface::class, AttachmentRepository::class);
         $this->app->bind(PasswordResetTokenRepositoryInterface::class, PasswordResetTokenRepository::class);
         $this->app->bind(LayoutExtensionRepositoryInterface::class, LayoutExtensionRepository::class);
+        $this->app->bind(LayoutExtensionVersionRepositoryInterface::class, LayoutExtensionVersionRepository::class);
         $this->app->singleton(ConfigRepositoryInterface::class, JsonConfigRepository::class);
         $this->app->bind(LayoutPreviewRepositoryInterface::class, LayoutPreviewRepository::class);
         $this->app->bind(LayoutRepositoryInterface::class, LayoutRepository::class);
@@ -186,6 +195,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(ScheduleRepositoryInterface::class, ScheduleRepository::class);
         $this->app->bind(SystemConfigRepositoryInterface::class, SystemConfigRepository::class);
         $this->app->bind(TemplateRepositoryInterface::class, TemplateRepository::class);
+        $this->app->bind(TemplateCustomTranslationRepositoryInterface::class, TemplateCustomTranslationRepository::class);
+        $this->app->bind(TemplateLayoutAttachmentRepositoryInterface::class, TemplateLayoutAttachmentRepository::class);
         $this->app->bind(UserConsentRepositoryInterface::class, UserConsentRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(NotificationDefinitionRepositoryInterface::class, NotificationDefinitionRepository::class);
@@ -201,7 +212,7 @@ class CoreServiceProvider extends ServiceProvider
 
         // IdentityVerification Manager + 기본 MailProvider 등록
         $this->app->singleton(IdentityVerificationManager::class, function ($app) {
-            $manager = new IdentityVerificationManager();
+            $manager = new IdentityVerificationManager;
             $manager->register($app->make(MailIdentityProvider::class));
 
             return $manager;
@@ -212,6 +223,13 @@ class CoreServiceProvider extends ServiceProvider
 
         // AttachmentService용 CoreStorageDriver 바인딩
         $this->app->when(AttachmentService::class)
+            ->needs(StorageInterface::class)
+            ->give(function () {
+                return new CoreStorageDriver(config('attachment.disk', 'local'));
+            });
+
+        // TemplateLayoutAttachmentService용 CoreStorageDriver 바인딩
+        $this->app->when(TemplateLayoutAttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
                 return new CoreStorageDriver(config('attachment.disk', 'local'));
@@ -347,6 +365,13 @@ class CoreServiceProvider extends ServiceProvider
         // 활성 모듈/플러그인이 선언한 IDV purpose 를 Manager 레지스트리에 수집
         // (DB 저장 없음 — 런타임 계약)
         $this->collectDeclaredIdentityPurposes($moduleManager, $pluginManager);
+
+        // 모듈/플러그인 로드가 끝나 모듈 IDV 정책이 모두 identity_policies 에 적재된 뒤,
+        // hook scope 정책 target 에 enforce 구독을 멱등 (재)바인딩한다.
+        // 코어 리스너 자동발견(registerCoreHookListeners, boot 전반부)은 모듈 로드보다 먼저
+        // 일어나므로, 모듈 hook target(예: 결제 직전 가드)이 그 시점엔 누락될 수 있다.
+        // 이 호출이 누락분을 보충한다(이미 바인딩된 target 은 멱등 스킵 — 이중 enforce 없음).
+        EnforceIdentityPolicyListener::syncDynamicHookSubscriptions();
     }
 
     /**
@@ -354,9 +379,6 @@ class CoreServiceProvider extends ServiceProvider
      * `IdentityVerificationManager` 에 일괄 등록합니다.
      *
      * DB 에 저장되지 않으며, 매 요청 부팅 시 수집됩니다 (코드 계약).
-     *
-     * @param  ModuleManager  $moduleManager
-     * @param  PluginManager  $pluginManager
      */
     private function collectDeclaredIdentityPurposes(ModuleManager $moduleManager, PluginManager $pluginManager): void
     {
@@ -526,7 +548,7 @@ class CoreServiceProvider extends ServiceProvider
         }
 
         $cache = $this->app->make(CacheInterface::class);
-        $cacheKey = \App\Listeners\ExtensionCompatibilityAlertListener::RECOVERY_CACHE_PREFIX
+        $cacheKey = ExtensionCompatibilityAlertListener::RECOVERY_CACHE_PREFIX
             .$type.'.'.CoreVersionChecker::getCoreVersion();
 
         // 이미 감지된 결과가 있으면 재계산 스킵 (TTL 1시간 + 코어 버전 변경 시 키 자체가 바뀜)
@@ -535,9 +557,9 @@ class CoreServiceProvider extends ServiceProvider
         }
 
         $repo = match ($type) {
-            'modules' => $this->app->make(\App\Contracts\Repositories\ModuleRepositoryInterface::class),
-            'plugins' => $this->app->make(\App\Contracts\Repositories\PluginRepositoryInterface::class),
-            'templates' => $this->app->make(\App\Contracts\Repositories\TemplateRepositoryInterface::class),
+            'modules' => $this->app->make(ModuleRepositoryInterface::class),
+            'plugins' => $this->app->make(PluginRepositoryInterface::class),
+            'templates' => $this->app->make(TemplateRepositoryInterface::class),
             default => null,
         };
 
@@ -588,6 +610,7 @@ class CoreServiceProvider extends ServiceProvider
 
         $argv = $_SERVER['argv'] ?? [];
         $command = $argv[1] ?? '';
+
         return in_array($command, ['core:update', 'core:execute-upgrade-steps'], true);
     }
 

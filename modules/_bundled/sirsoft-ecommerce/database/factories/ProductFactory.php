@@ -125,6 +125,18 @@ class ProductFactory extends Factory
     }
 
     /**
+     * 출시예정 상태
+     *
+     * @return static
+     */
+    public function comingSoon(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'sales_status' => ProductSalesStatus::COMING_SOON,
+        ]);
+    }
+
+    /**
      * 숨김 상태
      *
      * @return static

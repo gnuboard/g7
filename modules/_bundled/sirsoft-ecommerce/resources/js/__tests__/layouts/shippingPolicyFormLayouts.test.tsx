@@ -214,6 +214,14 @@ describe('shippingPolicyFormLayouts', () => {
             expect(expr).toContain('ecommerce_settings?.data?.language_currency?.currencies');
         });
 
+        it('computed: defaultCurrencyCode/Label이 기본 통화 SSoT 기반 (읽기전용 표시용)', () => {
+            const computed = mainLayout.computed as Record<string, string>;
+            expect(computed).toHaveProperty('defaultCurrencyCode');
+            expect(computed).toHaveProperty('defaultCurrencyLabel');
+            expect(computed.defaultCurrencyCode).toContain('language_currency?.default_currency');
+            expect(computed.defaultCurrencyLabel).toContain('language_currency?.default_currency');
+        });
+
         it('init_actions: 글로벌 상태 초기화 + 커스텀 핸들러 + 복사 모드 is_default 해제', () => {
             expect(mainLayout.init_actions).toHaveLength(3);
 
@@ -249,12 +257,12 @@ describe('shippingPolicyFormLayouts', () => {
             expect(extraFeeModal.partial).toContain('_modal_extra_fee_template.json');
         });
 
-        it('5개 partial 참조 (basic_info + country_settings_wrapper[tabs, basic_fields, charge, extra_fee])', () => {
+        it('5개 partial 참조 (basic_info + country_settings_wrapper[tabs, basic_fields, charge, extra_fee]) + footer_buttons (sticky 저장 영역)', () => {
             const content = mainLayout.slots.content[0];
             const formSections = findById(content, 'form_sections');
             expect(formSections).toBeDefined();
-            // form_sections: basic_info + country_settings_wrapper
-            expect(formSections.children).toHaveLength(2);
+            // form_sections: basic_info + country_settings_wrapper + footer_buttons
+            expect(formSections.children).toHaveLength(3);
             expect(formSections.children[0].partial).toContain('_partial_basic_info.json');
 
             // country_settings_wrapper: 4개 partial (tabs, basic_fields, charge, extra_fee)
@@ -265,6 +273,10 @@ describe('shippingPolicyFormLayouts', () => {
             expect(wrapper.children[1].partial).toContain('_partial_country_basic_fields.json');
             expect(wrapper.children[2].partial).toContain('_partial_charge_settings.json');
             expect(wrapper.children[3].partial).toContain('_partial_extra_fee.json');
+
+            // footer_buttons: sticky 하단 저장 영역
+            const footer = formSections.children[2];
+            expect(footer.id).toBe('footer_buttons');
         });
 
         it('form_sections에 dataKey + debounce 설정', () => {
@@ -289,22 +301,23 @@ describe('shippingPolicyFormLayouts', () => {
             expect(errorBanner.if).toBe('{{_local.errors}}');
         });
 
-        it('sticky_header: 목록 + 저장 버튼', () => {
+        it('sticky footer_buttons: 목록 + 저장 버튼', () => {
             const content = mainLayout.slots.content[0];
-            const listBtn = findById(content, 'list_button');
+            const listBtn = findById(content, 'footer_list_button');
             expect(listBtn).toBeDefined();
             const listJson = JSON.stringify(listBtn);
             expect(listJson).toContain('"handler":"navigate"');
             expect(listJson).toContain('/admin/ecommerce/shipping-policies');
 
-            const saveBtn = findById(content, 'save_button');
+            const saveBtn = findById(content, 'footer_save_button');
             expect(saveBtn).toBeDefined();
+            // 저장 버튼 외형: btn-primary 시맨틱 자산
             expect(saveBtn.props.className).toContain('btn-primary');
         });
 
         it('저장 버튼 sequence: setState → apiCall → onSuccess/onError', () => {
             const content = mainLayout.slots.content[0];
-            const saveBtn = findById(content, 'save_button');
+            const saveBtn = findById(content, 'footer_save_button');
             const json = JSON.stringify(saveBtn);
             expect(json).toContain('"handler":"sequence"');
             expect(json).toContain('"handler":"apiCall"');
@@ -314,7 +327,7 @@ describe('shippingPolicyFormLayouts', () => {
 
         it('저장 apiCall: target 사용, body 사용, auth_required', () => {
             const content = mainLayout.slots.content[0];
-            const saveBtn = findById(content, 'save_button');
+            const saveBtn = findById(content, 'footer_save_button');
             const findApiCall = (node: any): any => {
                 if (!node) return null;
                 if (node.handler === 'apiCall') return node;
@@ -465,11 +478,18 @@ describe('shippingPolicyFormLayouts', () => {
             expect(json).toContain('_computed.activeCountrySetting?.shipping_method');
         });
 
-        it('통화 Select: computed currencyOptions 참조', () => {
+        it('통화: 읽기전용 표시 (Select 아님, 기본 통화 라벨 + 안내 문구)', () => {
             const field = findById(countryBasicFieldsPartial, 'field_country_currency');
             const json = JSON.stringify(field);
-            expect(json).toContain('_computed.currencyOptions');
-            expect(json).toContain('_computed.activeCountrySetting?.currency_code');
+
+            // 통화는 상점 기본 통화로 고정되므로 입력(Select)이 아닌 읽기전용 표시여야 한다.
+            expect(json).toContain('_computed.defaultCurrencyLabel');
+            expect(json).toContain('currency_code_fixed_hint');
+
+            // 통화 입력/변경 경로가 제거되었는지 (Select·updateCountryField currency_code 분기 없음)
+            expect(json).not.toContain('"name": "Select"');
+            expect(json).not.toContain('"field": "currency_code"');
+            expect(json).not.toContain('_computed.currencyOptions');
         });
 
         it('사용여부 Toggle: activeCountrySetting?.is_active 바인딩', () => {
@@ -567,6 +587,15 @@ describe('shippingPolicyFormLayouts', () => {
             const baseFeeField = findById(chargeSettingsPartial, 'field_base_fee');
             const json = JSON.stringify(baseFeeField);
             expect(json).toContain('_computed.activeCountrySetting?.base_fee');
+        });
+
+        it('통화 접미사: 배송비/무료기준 입력칸 모두 기본 통화 SSoT(defaultCurrencyCode) 표시', () => {
+            const json = JSON.stringify(chargeSettingsPartial);
+            // 기준 통화 필드와 동일한 SSoT(_computed.defaultCurrencyCode)를 따라야 한다
+            expect(json).toContain('_computed.defaultCurrencyCode');
+            // 옛 per-country 바인딩 + KRW 하드코딩 폴백이 남아 있으면 안 됨
+            expect(json).not.toContain("activeCountrySetting?.currency_code ?? 'KRW'");
+            expect(json).not.toContain('KRW');
         });
 
         it('모든 필드가 커스텀 핸들러 사용 (setState {{}} 키 미사용)', () => {
@@ -935,13 +964,13 @@ describe('shippingPolicyFormLayouts', () => {
             expect(json).toContain('templateFormErrors');
         });
 
-        it('zipcode/region/fee Input에 조건부 적색 테두리 클래스', () => {
+        it('zipcode/region/fee Input에 조건부 input-error 시맨틱 클래스', () => {
             const json = JSON.stringify(extraFeeTemplateModal);
-            // 에러 시 border-red-500 적용
+            // 에러 시 input-error 시맨틱 자산 (원시 border-red-500 흡수)
             expect(json).toContain('templateFormErrors?.zipcode');
             expect(json).toContain('templateFormErrors?.fee');
             expect(json).toContain('templateFormErrors?.region');
-            expect(json).toContain('border-red-500');
+            expect(json).toContain('input-error');
         });
 
         it('에러 문구 Span이 templateFormErrors 필드별로 존재', () => {

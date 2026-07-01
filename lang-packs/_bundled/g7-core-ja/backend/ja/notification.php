@@ -56,8 +56,6 @@ return [
         'delete_all_failed' => '全件削除に失敗しました。',
         'not_found' => '通知が見つかりません。',
     ],
-
-    // 通知チャネルメタデータ (config/notification.php default_channels が参照)
     'channels' => [
         'core_default' => 'コアの基本チャネル',
         'mail' => [
@@ -69,4 +67,5 @@ return [
             'description' => 'サイト内の通知センターに表示',
         ],
     ],
+    'channel_guest_not_allowed' => '該当チャネルは非会員発送を許可していないため、発送をスキップしました。',
 ];

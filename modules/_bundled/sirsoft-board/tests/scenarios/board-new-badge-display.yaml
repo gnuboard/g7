@@ -1,0 +1,38 @@
+feature: 게시판 New 배지 표시 기간이 게시글 목록에 반영
+
+description: |
+  이슈 #413 item 22-2 — 게시판별 new_display_hours 설정을 저장해도 사용자 게시글
+  목록의 New 판정이 항상 기본값 24시간으로 계산되던 문제를 해소한다.
+
+  근본 원인: Post::isNew() 는 board 관계가 로드된 경우에만 게시판 설정값을 사용하는데,
+  목록 컨트롤러 User/PostController::index() 가 각 게시글에 board 관계를 주입하지 않아
+  24h 폴백 (상세 show() 는 setRelation('board') 로 정상). 목록 Repository 는 board 를
+  eager load 하지 않음("board는 Controller에서 전달" 최적화).
+
+  조치: index() 에서 이미 조회한 단일 $board 를 목록 각 게시글에 setRelation 주입.
+
+  크롬 MCP 실측 (2026-06-18): 사용자 게시판 화면에서 nh=48 → 06-17 작성글 [N] 배지 표시,
+  nh=1 로 변경+새로고침 → 동일 글 [N] 배지 제거 (DOM 렌더 before/after 대조).
+
+# axis 의미:
+#   case 는 (new_display_hours 설정값 + 게시글 경과의 기준 내/외) 의 의미 있는 조합을
+#   한 축으로 열거한다. 짧은 기간(nh=1)에서 초과 글이 New 가 아님, 긴 기간(nh=48)에서
+#   24h 초과 글이 New 임, 기본값(nh=24) 의 내/외 경계를 전수 단언한다.
+axes:
+  case: [nh1_beyond_not_new, nh48_within_new, default24_within_new, default24_beyond_not_new]
+
+effects:
+  - list_is_new_true_when_post_within_window
+  - list_is_new_false_when_post_beyond_window
+  - default_24h_window_preserved_when_unset
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostNewBadgeDisplayTest.php
+
+validation:
+  note: |
+    new_display_hours × post_age 4조합 + 기본 24h 보존은 PostNewBadgeDisplayTest 의
+    docblock 마킹 테스트군이 커버한다 (nh=1 beyond→false, nh=48 within→true, 기본 24h
+    within→true/beyond→false).
+    목록↔상세 일치 및 [New] 배지 DOM 렌더(nh 토글 시 표시/제거)는 크롬 MCP 수동 실측으로
+    확인 (계획서 413-22 §2.5).

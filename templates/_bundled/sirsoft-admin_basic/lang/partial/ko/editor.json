@@ -1,0 +1,1656 @@
+{
+  "control": {
+    "text_align": {
+      "label": "텍스트 정렬",
+      "left": "왼쪽",
+      "center": "가운데",
+      "right": "오른쪽",
+      "justify": "양쪽"
+    },
+    "font_size": {
+      "label": "글자 크기"
+    },
+    "font_weight": {
+      "label": "굵기",
+      "normal": "보통",
+      "semibold": "중간",
+      "bold": "굵게"
+    },
+    "text_color": {
+      "label": "글자 색상"
+    },
+    "background_color": {
+      "label": "배경색"
+    },
+    "color_preset": {
+      "gray_900": "진한 회색",
+      "gray_800": "어두운 회색",
+      "gray_700": "회색",
+      "gray_500": "중간 회색",
+      "gray_100": "연한 회색",
+      "gray_50": "아주 연한 회색",
+      "white": "흰색",
+      "blue_600": "파랑",
+      "red_600": "빨강",
+      "green_600": "초록",
+      "gray_300": "밝은 회색"
+    },
+    "padding": {
+      "label": "안쪽 여백"
+    },
+    "margin": {
+      "label": "바깥 여백"
+    },
+    "width": {
+      "label": "가로 크기",
+      "full": "전체",
+      "half": "절반"
+    },
+    "height": {
+      "label": "세로 크기",
+      "auto": "자동"
+    },
+    "flex_direction": {
+      "label": "방향",
+      "row": "가로",
+      "column": "세로"
+    },
+    "flex_justify": {
+      "label": "자식 정렬(주축)",
+      "start": "시작",
+      "center": "가운데",
+      "end": "끝",
+      "between": "양끝",
+      "around": "균등"
+    },
+    "flex_align": {
+      "label": "자식 정렬(교차축)",
+      "start": "시작",
+      "center": "가운데",
+      "end": "끝",
+      "stretch": "늘이기"
+    },
+    "flex_wrap": {
+      "label": "줄바꿈 허용",
+      "off": "끔",
+      "on": "켬"
+    },
+    "flex_gap": {
+      "label": "자식 간격"
+    },
+    "flex_enable": {
+      "label": "정렬 박스로 만들기",
+      "on": "정렬 박스",
+      "off": "일반 블록"
+    },
+    "flex_item_grow": {
+      "label": "늘어남",
+      "fixed": "고정",
+      "fill": "채우기",
+      "ratio": "비율"
+    },
+    "flex_item_align": {
+      "label": "혼자 정렬",
+      "start": "시작",
+      "center": "가운데",
+      "end": "끝",
+      "stretch": "늘이기"
+    },
+    "flex_item_order": {
+      "label": "순서"
+    },
+    "toggle": {
+      "on": "켜기",
+      "off": "끄기"
+    },
+    "box_shadow": {
+      "label": "그림자",
+      "none": "없음",
+      "sm": "약하게",
+      "md": "보통",
+      "lg": "강하게",
+      "xl": "더 강하게",
+      "xxl": "아주 강하게"
+    },
+    "border_style": {
+      "label": "테두리 모양",
+      "none": "없음",
+      "solid": "실선",
+      "dashed": "파선",
+      "dotted": "점선"
+    },
+    "border_color": {
+      "label": "테두리 색"
+    },
+    "border_radius": {
+      "label": "모서리 둥글기",
+      "none": "각짐",
+      "sm": "약간",
+      "md": "보통",
+      "lg": "둥글게",
+      "xl": "많이",
+      "full": "완전히"
+    },
+    "opacity": {
+      "label": "투명도"
+    },
+    "overflow": {
+      "label": "스크롤",
+      "auto": "자동",
+      "hidden": "숨김",
+      "x_auto": "가로 자동",
+      "y_auto": "세로 자동",
+      "visible": "표시"
+    },
+    "font_bold": {
+      "label": "굵게"
+    },
+    "font_italic": {
+      "label": "기울임"
+    },
+    "text_underline": {
+      "label": "밑줄"
+    },
+    "whitespace": {
+      "label": "줄바꿈",
+      "normal": "허용",
+      "nowrap": "안 함",
+      "pre_wrap": "공백 유지"
+    },
+    "icon_name": {
+      "label": "아이콘",
+      "search": "아이콘 검색"
+    },
+    "img_src": {
+      "label": "이미지 주소"
+    },
+    "img_alt": {
+      "label": "대체 텍스트"
+    },
+    "link_href": {
+      "label": "링크 주소"
+    },
+    "link_target": {
+      "label": "링크 대상",
+      "self": "현재 창",
+      "blank": "새 창",
+      "parent": "부모 프레임",
+      "top": "최상위 프레임"
+    },
+    "input_type": {
+      "label": "입력 유형",
+      "text": "텍스트",
+      "email": "이메일",
+      "password": "비밀번호",
+      "number": "숫자",
+      "tel": "전화번호",
+      "url": "URL",
+      "date": "날짜",
+      "search": "검색"
+    },
+    "input_placeholder": {
+      "label": "안내 문구"
+    },
+    "input_name": {
+      "label": "필드 이름"
+    },
+    "input_required": {
+      "label": "필수 입력"
+    },
+    "input_disabled": {
+      "label": "비활성화"
+    },
+    "field_label": {
+      "label": "라벨"
+    },
+    "field_error": {
+      "label": "오류 메시지"
+    },
+    "field_helper": {
+      "label": "도움말"
+    },
+    "html_for": {
+      "label": "연결 대상"
+    },
+    "textarea_rows": {
+      "label": "줄 수"
+    },
+    "elem_id": {
+      "label": "요소 ID"
+    },
+    "select_placeholder": {
+      "label": "안내 문구"
+    },
+    "select_options": {
+      "label": "선택지"
+    },
+    "component_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게"
+    },
+    "button_variant": {
+      "label": "버튼 스타일",
+      "primary": "기본",
+      "secondary": "보조",
+      "danger": "위험",
+      "success": "성공"
+    },
+    "component_disabled": {
+      "label": "비활성화"
+    },
+    "icon_style": {
+      "label": "아이콘 스타일",
+      "solid": "솔리드",
+      "regular": "레귤러",
+      "light": "라이트",
+      "duotone": "듀오톤",
+      "brands": "브랜드"
+    },
+    "icon_size": {
+      "label": "아이콘 크기",
+      "xs": "아주 작게",
+      "sm": "작게",
+      "lg": "크게",
+      "xl": "아주 크게",
+      "2x": "2배",
+      "3x": "3배"
+    },
+    "icon_color": {
+      "label": "아이콘 색상"
+    },
+    "icon_spin": {
+      "label": "회전 애니메이션"
+    },
+    "icon_pulse": {
+      "label": "펄스 애니메이션"
+    },
+    "icon_fixed_width": {
+      "label": "고정 너비"
+    },
+    "icon_aria": {
+      "label": "접근성 레이블"
+    },
+    "grid_cols": {
+      "label": "열 수"
+    },
+    "grid_gap": {
+      "label": "간격"
+    },
+    "grid_row_gap": {
+      "label": "행 간격"
+    },
+    "grid_col_gap": {
+      "label": "열 간격"
+    },
+    "grid_auto_rows": {
+      "label": "자동 행 높이",
+      "auto": "자동",
+      "min": "최소",
+      "max": "최대",
+      "fr": "균등"
+    },
+    "grid_auto_cols": {
+      "label": "자동 열 너비",
+      "auto": "자동",
+      "min": "최소",
+      "max": "최대",
+      "fr": "균등"
+    },
+    "grid_flow": {
+      "label": "배치 흐름",
+      "row": "행 우선",
+      "col": "열 우선",
+      "dense": "조밀",
+      "row-dense": "행 조밀",
+      "col-dense": "열 조밀"
+    },
+    "sec_title": {
+      "label": "제목"
+    },
+    "sec_subtitle": {
+      "label": "부제목"
+    },
+    "sec_padding": {
+      "label": "안쪽 여백",
+      "none": "없음",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게",
+      "xl": "아주 크게"
+    },
+    "sec_background": {
+      "label": "배경",
+      "none": "없음",
+      "white": "흰색",
+      "gray": "회색",
+      "primary": "주요색",
+      "secondary": "보조색"
+    },
+    "sec_max_width": {
+      "label": "최대 너비",
+      "sm": "SM",
+      "md": "MD",
+      "lg": "LG",
+      "xl": "XL",
+      "2xl": "2XL",
+      "4xl": "4XL",
+      "6xl": "6XL",
+      "7xl": "7XL",
+      "full": "전체"
+    },
+    "sec_centered": {
+      "label": "가운데 정렬"
+    },
+    "sec_border": {
+      "label": "테두리"
+    },
+    "sec_shadow": {
+      "label": "그림자",
+      "none": "없음",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게",
+      "xl": "아주 크게"
+    },
+    "sec_rounded": {
+      "label": "모서리 둥글게"
+    },
+    "card_title": {
+      "label": "제목"
+    },
+    "card_content": {
+      "label": "내용"
+    },
+    "card_image_url": {
+      "label": "이미지 URL"
+    },
+    "card_image_alt": {
+      "label": "이미지 대체텍스트"
+    },
+    "badge_color": {
+      "label": "색상",
+      "blue": "파랑",
+      "green": "초록",
+      "red": "빨강",
+      "gray": "회색",
+      "yellow": "노랑",
+      "purple": "보라",
+      "orange": "주황",
+      "teal": "청록",
+      "cyan": "하늘"
+    },
+    "badge_text": {
+      "label": "텍스트"
+    },
+    "badge_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게"
+    },
+    "sb_status": {
+      "label": "상태",
+      "success": "성공",
+      "warning": "경고",
+      "error": "오류",
+      "info": "정보",
+      "pending": "대기",
+      "default": "기본"
+    },
+    "sb_label": {
+      "label": "레이블"
+    },
+    "sb_show_icon": {
+      "label": "아이콘 표시"
+    },
+    "sb_icon_name": {
+      "label": "아이콘"
+    },
+    "alert_type": {
+      "label": "유형",
+      "info": "정보",
+      "success": "성공",
+      "warning": "경고",
+      "error": "오류"
+    },
+    "alert_message": {
+      "label": "메시지"
+    },
+    "alert_dismissible": {
+      "label": "닫기 가능"
+    },
+    "es_title": {
+      "label": "제목"
+    },
+    "es_desc": {
+      "label": "설명"
+    },
+    "es_icon_name": {
+      "label": "아이콘"
+    },
+    "es_illust_src": {
+      "label": "일러스트 URL"
+    },
+    "es_illust_alt": {
+      "label": "일러스트 대체텍스트"
+    },
+    "ls_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게",
+      "xl": "아주 크게"
+    },
+    "ls_color": {
+      "label": "색상"
+    },
+    "ls_fullscreen": {
+      "label": "전체화면"
+    },
+    "ls_text": {
+      "label": "텍스트"
+    },
+    "ph_title": {
+      "label": "제목"
+    },
+    "ph_desc": {
+      "label": "설명"
+    },
+    "bc_separator": {
+      "label": "구분자"
+    },
+    "bc_show_home": {
+      "label": "홈 표시"
+    },
+    "bc_home_href": {
+      "label": "홈 링크"
+    },
+    "bc_max_items": {
+      "label": "최대 항목 수"
+    },
+    "tn_active_tab_id": {
+      "label": "활성 탭 ID"
+    },
+    "tn_variant": {
+      "label": "스타일",
+      "default": "기본",
+      "pills": "알약형",
+      "underline": "밑줄형"
+    },
+    "tn_mobile_breakpoint": {
+      "label": "모바일 분기점"
+    },
+    "tns_active_tab_id": {
+      "label": "활성 탭 ID"
+    },
+    "tns_section_prefix": {
+      "label": "섹션 ID 접두"
+    },
+    "tns_scroll_offset": {
+      "label": "스크롤 오프셋"
+    },
+    "tns_scroll_delay": {
+      "label": "스크롤 지연"
+    },
+    "tns_enable_spy": {
+      "label": "스크롤 스파이"
+    },
+    "tns_spy_offset": {
+      "label": "스파이 오프셋"
+    },
+    "tns_container_id": {
+      "label": "스크롤 컨테이너 ID"
+    },
+    "tg_label": {
+      "label": "레이블"
+    },
+    "tg_desc": {
+      "label": "설명"
+    },
+    "tg_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게"
+    },
+    "tg_disabled": {
+      "label": "비활성화"
+    },
+    "tg_name": {
+      "label": "필드명"
+    },
+    "ff_label": {
+      "label": "레이블"
+    },
+    "ff_required": {
+      "label": "필수"
+    },
+    "ff_error": {
+      "label": "오류 메시지"
+    },
+    "ff_helper": {
+      "label": "도움말"
+    },
+    "ff_horizontal": {
+      "label": "가로 배치"
+    },
+    "ff_label_width": {
+      "label": "레이블 너비"
+    },
+    "rg_inline": {
+      "label": "한 줄 배치"
+    },
+    "rg_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게"
+    },
+    "fi_accept": {
+      "label": "허용 형식"
+    },
+    "fi_max_size": {
+      "label": "최대 크기"
+    },
+    "fi_button_text": {
+      "label": "버튼 텍스트"
+    },
+    "fu_type": {
+      "label": "첨부 대상 유형"
+    },
+    "fu_collection": {
+      "label": "컬렉션"
+    },
+    "fu_max_files": {
+      "label": "최대 파일 수"
+    },
+    "fu_max_size": {
+      "label": "최대 크기"
+    },
+    "fu_accept": {
+      "label": "허용 형식"
+    },
+    "fu_auto_upload": {
+      "label": "자동 업로드"
+    },
+    "fu_confirm_remove": {
+      "label": "삭제 전 확인"
+    },
+    "fu_primary_sel": {
+      "label": "대표 선택 허용"
+    },
+    "dg_pagination": {
+      "label": "페이지네이션"
+    },
+    "dg_page_size": {
+      "label": "페이지 크기"
+    },
+    "cg_grid_cols": {
+      "label": "열 수"
+    },
+    "cg_gap": {
+      "label": "간격"
+    },
+    "cg_pagination": {
+      "label": "페이지네이션"
+    },
+    "cg_page_size": {
+      "label": "페이지 크기"
+    },
+    "pg_max_visible": {
+      "label": "최대 표시 페이지"
+    },
+    "pg_show_first_last": {
+      "label": "처음/끝 표시"
+    },
+    "pg_prev_text": {
+      "label": "이전 텍스트"
+    },
+    "pg_next_text": {
+      "label": "다음 텍스트"
+    },
+    "sb_placeholder": {
+      "label": "안내 문구"
+    },
+    "sb_show_button": {
+      "label": "버튼 표시"
+    },
+    "sb_show_suggestions": {
+      "label": "제안 표시"
+    },
+    "sc_value": {
+      "label": "값"
+    },
+    "sc_label": {
+      "label": "레이블"
+    },
+    "sc_change": {
+      "label": "변화량"
+    },
+    "sc_change_label": {
+      "label": "변화 레이블"
+    },
+    "sc_icon_name": {
+      "label": "아이콘"
+    },
+    "sc_trend": {
+      "label": "추세",
+      "up": "상승",
+      "down": "하락",
+      "neutral": "보합"
+    },
+    "pc_image_url": {
+      "label": "이미지 URL"
+    },
+    "pc_image_alt": {
+      "label": "이미지 대체텍스트"
+    },
+    "pc_title": {
+      "label": "제목"
+    },
+    "pc_subtitle": {
+      "label": "부제목"
+    },
+    "pc_desc": {
+      "label": "설명"
+    },
+    "pc_price": {
+      "label": "가격"
+    },
+    "pc_orig_price": {
+      "label": "원래 가격"
+    },
+    "pc_discount": {
+      "label": "할인율"
+    },
+    "pc_currency": {
+      "label": "통화"
+    },
+    "pc_button_text": {
+      "label": "버튼 텍스트"
+    },
+    "tc_image": {
+      "label": "이미지"
+    },
+    "tc_image_alt": {
+      "label": "이미지 대체텍스트"
+    },
+    "tc_vendor": {
+      "label": "제작자"
+    },
+    "tc_name": {
+      "label": "이름"
+    },
+    "tc_version": {
+      "label": "버전"
+    },
+    "tc_status": {
+      "label": "상태",
+      "active": "활성",
+      "inactive": "비활성",
+      "pending": "대기",
+      "error": "오류"
+    },
+    "tc_update_avail": {
+      "label": "업데이트 가능"
+    },
+    "tc_latest_version": {
+      "label": "최신 버전"
+    },
+    "tc_show_layout_btn": {
+      "label": "레이아웃 편집 버튼"
+    },
+    "bc_height": {
+      "label": "높이"
+    },
+    "bc_show_legend": {
+      "label": "범례 표시"
+    },
+    "bc_show_grid": {
+      "label": "격자 표시"
+    },
+    "bc_show_ygrid": {
+      "label": "Y축 격자"
+    },
+    "bc_show_yaxis": {
+      "label": "Y축 표시"
+    },
+    "dc_center_label": {
+      "label": "중앙 레이블"
+    },
+    "dc_center_value": {
+      "label": "중앙 값"
+    },
+    "dc_size": {
+      "label": "크기"
+    },
+    "dc_cutout": {
+      "label": "도넛 두께"
+    },
+    "dc_show_legend": {
+      "label": "범례 표시"
+    },
+    "hc_is_html": {
+      "label": "HTML 렌더"
+    },
+    "he_multilingual": {
+      "label": "다국어"
+    },
+    "he_is_html": {
+      "label": "HTML 모드"
+    },
+    "he_rows": {
+      "label": "줄 수"
+    },
+    "he_placeholder": {
+      "label": "안내 문구"
+    },
+    "he_label": {
+      "label": "레이블"
+    },
+    "he_show_html_toggle": {
+      "label": "HTML 토글 표시"
+    },
+    "he_name": {
+      "label": "필드명"
+    },
+    "he_html_field_name": {
+      "label": "HTML 필드명"
+    },
+    "he_read_only": {
+      "label": "읽기 전용"
+    },
+    "ig_enable_zoom": {
+      "label": "확대 허용"
+    },
+    "ig_enable_slideshow": {
+      "label": "슬라이드쇼"
+    },
+    "ig_enable_fullscreen": {
+      "label": "전체화면"
+    },
+    "ig_show_counter": {
+      "label": "카운터 표시"
+    },
+    "ig_show_download": {
+      "label": "다운로드 표시"
+    },
+    "ig_show_thumbnails": {
+      "label": "썸네일 표시"
+    },
+    "acc_default_open": {
+      "label": "기본 열림"
+    },
+    "acc_disabled": {
+      "label": "비활성화"
+    },
+    "ib_icon_name": {
+      "label": "아이콘"
+    },
+    "ib_label": {
+      "label": "레이블"
+    },
+    "ib_variant": {
+      "label": "스타일",
+      "primary": "주요",
+      "secondary": "보조",
+      "danger": "위험",
+      "ghost": "고스트"
+    },
+    "ib_size": {
+      "label": "크기",
+      "sm": "작게",
+      "md": "보통",
+      "lg": "크게"
+    },
+    "ib_disabled": {
+      "label": "비활성화"
+    },
+    "dd_label": {
+      "label": "레이블"
+    },
+    "dd_position": {
+      "label": "위치",
+      "bottom-left": "아래 왼쪽",
+      "bottom-right": "아래 오른쪽",
+      "top-left": "위 왼쪽",
+      "top-right": "위 오른쪽"
+    },
+    "dd_variant": {
+      "label": "스타일",
+      "default": "기본",
+      "text": "텍스트"
+    },
+    "am_trigger_label": {
+      "label": "트리거 레이블"
+    },
+    "am_trigger_icon": {
+      "label": "트리거 아이콘"
+    },
+    "am_position": {
+      "label": "위치",
+      "left": "왼쪽",
+      "right": "오른쪽"
+    },
+    "ti_placeholder": {
+      "label": "안내 문구"
+    },
+    "ti_creatable": {
+      "label": "생성 허용"
+    },
+    "ti_disabled": {
+      "label": "비활성화"
+    },
+    "ti_is_multi": {
+      "label": "다중 선택"
+    },
+    "ti_clearable": {
+      "label": "비우기 허용"
+    },
+    "ti_searchable": {
+      "label": "검색 허용"
+    },
+    "ti_max_items": {
+      "label": "최대 항목 수"
+    },
+    "sd_multiple": {
+      "label": "다중 선택"
+    },
+    "sd_search_placeholder": {
+      "label": "검색 안내 문구"
+    },
+    "sd_disabled": {
+      "label": "비활성화"
+    },
+    "sd_trigger_label": {
+      "label": "트리거 레이블"
+    },
+    "sd_no_results": {
+      "label": "결과 없음 문구"
+    },
+    "sd_initial": {
+      "label": "초기 문구"
+    },
+    "rs_placeholder": {
+      "label": "안내 문구"
+    },
+    "rs_disabled": {
+      "label": "비활성화"
+    },
+    "rs_max_height": {
+      "label": "최대 높이"
+    },
+    "ts_placeholder": {
+      "label": "안내 문구"
+    },
+    "ts_disabled": {
+      "label": "비활성화"
+    },
+    "is_placeholder": {
+      "label": "안내 문구"
+    },
+    "is_search_placeholder": {
+      "label": "검색 안내 문구"
+    },
+    "is_no_results": {
+      "label": "결과 없음 문구"
+    },
+    "is_disabled": {
+      "label": "비활성화"
+    },
+    "cc_value": {
+      "label": "값"
+    },
+    "cc_icon": {
+      "label": "아이콘"
+    },
+    "cc_label": {
+      "label": "레이블"
+    },
+    "cc_variant": {
+      "label": "색상",
+      "green": "초록",
+      "orange": "주황",
+      "yellow": "노랑",
+      "gray": "회색",
+      "blue": "파랑"
+    },
+    "cc_custom_color": {
+      "label": "사용자 색상"
+    },
+    "mi_input_type": {
+      "label": "입력 유형",
+      "text": "텍스트",
+      "textarea": "여러 줄"
+    },
+    "mi_layout": {
+      "label": "배치",
+      "inline": "한 줄",
+      "tabs": "탭",
+      "compact": "간결"
+    },
+    "mi_placeholder": {
+      "label": "안내 문구"
+    },
+    "mi_required": {
+      "label": "필수"
+    },
+    "mi_disabled": {
+      "label": "비활성화"
+    },
+    "mi_max_length": {
+      "label": "최대 길이"
+    },
+    "mi_rows": {
+      "label": "줄 수"
+    },
+    "mti_placeholder": {
+      "label": "안내 문구"
+    },
+    "mti_disabled": {
+      "label": "비활성화"
+    },
+    "mti_creatable": {
+      "label": "생성 허용"
+    },
+    "mti_max_items": {
+      "label": "최대 항목 수"
+    },
+    "mti_modal_id": {
+      "label": "모달 ID"
+    },
+    "mti_state_path": {
+      "label": "상태 경로"
+    },
+    "ls_language_text": {
+      "label": "언어 텍스트"
+    },
+    "ls_api_endpoint": {
+      "label": "API 엔드포인트"
+    },
+    "ls_inline": {
+      "label": "한 줄 배치"
+    },
+    "ct_search_keyword": {
+      "label": "검색어"
+    },
+    "ct_show_product_count": {
+      "label": "상품 수 표시"
+    },
+    "ct_selectable": {
+      "label": "선택 가능"
+    },
+    "eb_type": {
+      "label": "유형",
+      "module": "모듈",
+      "plugin": "플러그인"
+    },
+    "eb_identifier": {
+      "label": "식별자"
+    },
+    "eb_name": {
+      "label": "이름"
+    },
+    "up_profile_text": {
+      "label": "프로필 텍스트"
+    },
+    "up_logout_text": {
+      "label": "로그아웃 텍스트"
+    },
+    "up_language_text": {
+      "label": "언어 텍스트"
+    },
+    "up_logout_endpoint": {
+      "label": "로그아웃 엔드포인트"
+    },
+    "up_redirect_path": {
+      "label": "리다이렉트 경로"
+    },
+    "up_show_chevron": {
+      "label": "화살표 표시"
+    },
+    "up_dropdown_dir": {
+      "label": "드롭다운 방향",
+      "up": "위",
+      "down": "아래"
+    },
+    "up_dropdown_only": {
+      "label": "드롭다운 전용"
+    },
+    "fg_title": {
+      "label": "제목"
+    },
+    "fg_show_reset": {
+      "label": "초기화 버튼 표시"
+    },
+    "sml_selected_id": {
+      "label": "선택 ID"
+    },
+    "sml_title": {
+      "label": "제목"
+    },
+    "sml_enable_drag": {
+      "label": "드래그 허용"
+    },
+    "sml_toggle_disabled": {
+      "label": "토글 비활성화"
+    },
+    "dfl_max_items": {
+      "label": "최대 항목 수"
+    },
+    "tcl_left_width": {
+      "label": "왼쪽 너비"
+    },
+    "tcl_right_width": {
+      "label": "오른쪽 너비"
+    },
+    "as_logo": {
+      "label": "로고 이미지 URL"
+    },
+    "as_logo_alt": {
+      "label": "로고 대체 텍스트"
+    },
+    "as_collapsed": {
+      "label": "접힘 상태"
+    },
+    "as_current_locale": {
+      "label": "현재 언어"
+    },
+    "af_copyright": {
+      "label": "저작권 문구"
+    },
+    "af_version": {
+      "label": "버전"
+    },
+    "af_copyright_modal_id": {
+      "label": "저작권 모달 ID"
+    },
+    "af_changelog_modal_id": {
+      "label": "변경 이력 모달 ID"
+    },
+    "tt_auto_text": {
+      "label": "자동 모드 문구"
+    },
+    "tt_light_text": {
+      "label": "라이트 모드 문구"
+    },
+    "tt_dark_text": {
+      "label": "다크 모드 문구"
+    },
+    "nc_title_text": {
+      "label": "제목 문구"
+    },
+    "nc_empty_text": {
+      "label": "빈 목록 문구"
+    },
+    "nc_mark_all_read_text": {
+      "label": "모두 읽음 문구"
+    },
+    "nc_delete_all_text": {
+      "label": "모두 삭제 문구"
+    },
+    "nc_unread_only_text": {
+      "label": "안 읽음만 보기 문구"
+    },
+    "nc_unread_only": {
+      "label": "안 읽음만 표시"
+    },
+    "nc_dropdown_align": {
+      "label": "드롭다운 정렬",
+      "left": "왼쪽",
+      "right": "오른쪽"
+    },
+    "cs_trigger_label": {
+      "label": "버튼 라벨"
+    },
+    "cs_required_text": {
+      "label": "필수 항목 문구"
+    },
+    "cs_menu_title": {
+      "label": "메뉴 제목"
+    },
+    "cs_menu_description": {
+      "label": "메뉴 설명"
+    },
+    "cs_position": {
+      "label": "메뉴 위치",
+      "left": "왼쪽",
+      "right": "오른쪽"
+    },
+    "cs_trigger_icon_name": {
+      "label": "버튼 아이콘"
+    },
+    "sh_title": {
+      "label": "제목"
+    },
+    "sh_description": {
+      "label": "설명"
+    }
+  },
+  "component": {
+    "h1": "제목 1",
+    "h2": "제목 2",
+    "h3": "제목 3",
+    "p": "문단",
+    "span": "인라인 텍스트",
+    "button": "버튼",
+    "div": "컨테이너",
+    "container": "레이아웃 컨테이너",
+    "flex": "플렉스",
+    "grid": "그리드",
+    "section_layout": "섹션 레이아웃",
+    "card": "카드",
+    "table": "테이블",
+    "page_header": "페이지 헤더",
+    "stat_card": "통계 카드",
+    "form_field": "폼 필드",
+    "data_grid": "데이터 그리드",
+    "h4": "제목 4",
+    "a": "링크",
+    "img": "이미지",
+    "icon": "아이콘",
+    "hr": "구분선",
+    "ul": "목록(순서 없음)",
+    "ol": "목록(순서 있음)",
+    "li": "목록 항목",
+    "nav": "내비게이션",
+    "section": "섹션",
+    "code": "코드",
+    "pre": "서식 텍스트",
+    "three_column_layout": "3단 레이아웃",
+    "badge": "배지",
+    "status_badge": "상태 배지",
+    "alert": "알림",
+    "empty_state": "빈 상태",
+    "loading_spinner": "로딩 스피너",
+    "breadcrumb": "경로 표시",
+    "tab_navigation": "탭 내비게이션",
+    "tab_navigation_scroll": "스크롤 탭 내비",
+    "toggle": "토글 스위치",
+    "input": "입력",
+    "textarea": "여러 줄 입력",
+    "label": "레이블",
+    "select": "선택",
+    "checkbox": "체크박스",
+    "radio_group": "라디오 그룹",
+    "file_input": "파일 입력",
+    "file_uploader": "파일 업로더",
+    "card_grid": "카드 그리드",
+    "pagination": "페이지네이션",
+    "search_bar": "검색 바",
+    "product_card": "상품 카드",
+    "template_card": "템플릿 카드",
+    "bar_chart": "막대 차트",
+    "donut_chart": "도넛 차트",
+    "html_content": "HTML 콘텐츠",
+    "html_editor": "HTML 에디터",
+    "image_gallery": "이미지 갤러리",
+    "form": "폼",
+    "accordion": "아코디언",
+    "icon_button": "아이콘 버튼",
+    "dropdown": "드롭다운",
+    "action_menu": "액션 메뉴",
+    "tag_input": "태그 입력",
+    "searchable_dropdown": "검색 드롭다운",
+    "rich_select": "리치 선택",
+    "tag_select": "태그 선택",
+    "icon_select": "아이콘 선택",
+    "chip_checkbox": "칩 체크박스",
+    "multilingual_input": "다국어 입력",
+    "multilingual_tag_input": "다국어 태그 입력",
+    "language_selector": "언어 선택기",
+    "permission_tree": "권한 트리",
+    "category_tree": "카테고리 트리",
+    "extension_badge": "확장 배지",
+    "user_profile": "사용자 프로필",
+    "filter_group": "필터 그룹",
+    "sortable_menu_list": "정렬 메뉴 목록",
+    "dynamic_field_list": "동적 필드 목록",
+    "td": "표 셀",
+    "th": "표 머리글 셀",
+    "admin_sidebar": "관리자 사이드바",
+    "admin_footer": "관리자 푸터",
+    "theme_toggle": "테마 전환",
+    "notification_center": "알림 센터",
+    "column_selector": "컬럼 선택기",
+    "section_header": "섹션 헤더"
+  },
+  "action": {
+    "go_to_page": {
+      "label": "다른 페이지로 이동",
+      "param_url": "이동할 페이지"
+    },
+    "show_message": {
+      "label": "안내 메시지 보여주기",
+      "param_text": "메시지",
+      "param_tone": "종류",
+      "tone_success": "성공",
+      "tone_error": "오류",
+      "tone_info": "안내"
+    },
+    "change_state": {
+      "label": "화면 상태 바꾸기",
+      "param_key": "상태 이름",
+      "param_value": "값"
+    },
+    "refresh_data": {
+      "label": "목록 새로고침",
+      "param_src": "대상 데이터"
+    },
+    "call_server_then": {
+      "label": "서버에 보내고 결과 처리",
+      "param_endpoint": "보낼 곳",
+      "param_on_success": "성공하면",
+      "param_on_error": "실패하면"
+    },
+    "set_locale": {
+      "label": "화면 언어 바꾸기",
+      "param_target": "언어",
+      "target_ko": "한국어",
+      "target_en": "영어",
+      "target_ja": "일본어"
+    },
+    "set_theme": {
+      "label": "화면 테마 바꾸기",
+      "param_target": "테마",
+      "target_auto": "자동",
+      "target_light": "밝게",
+      "target_dark": "어둡게"
+    },
+    "scroll_to_section": {
+      "label": "특정 영역으로 스크롤",
+      "param_section_id": "영역 ID"
+    },
+    "set_date_range": {
+      "label": "기간 빠르게 선택",
+      "param_preset": "기간",
+      "preset_today": "오늘",
+      "preset_week": "이번 주",
+      "preset_month": "이번 달",
+      "preset_year": "올해"
+    },
+    "toggle_filter_visibility": {
+      "label": "필터 보이기/숨기기",
+      "param_filter_key": "필터 키"
+    },
+    "save_multilingual_tag": {
+      "label": "다국어 태그 저장",
+      "param_tag": "태그"
+    },
+    "init_theme": {
+      "label": "화면 테마 초기화",
+      "param_target": "테마",
+      "target_auto": "자동",
+      "target_light": "밝게",
+      "target_dark": "어둡게"
+    },
+    "init_menu_from_url": {
+      "label": "주소로 메뉴 초기화"
+    },
+    "init_filter_visibility": {
+      "label": "필터 표시 초기화"
+    }
+  },
+  "computed": {
+    "filter_default": {
+      "label": "필터 기본값 정하기",
+      "param_local_path": "화면 상태 경로",
+      "param_query_key": "주소 파라미터 이름",
+      "param_fallback": "기본값"
+    },
+    "readonly_by_ability": {
+      "label": "권한 없으면 읽기 전용",
+      "param_source": "권한을 가진 데이터",
+      "param_ability_key": "권한 이름",
+      "param_require_route_id": "수정 화면에서만 적용"
+    },
+    "options_from_api": {
+      "label": "데이터로 선택지 만들기",
+      "param_source": "원본 데이터",
+      "param_filter": "걸러낼 조건",
+      "param_value_field": "값으로 쓸 필드",
+      "param_label_field": "표시할 필드"
+    },
+    "constant": {
+      "label": "고정값 정하기",
+      "param_value_kind": "값 종류",
+      "value_kind_string": "글자",
+      "value_kind_number": "숫자",
+      "value_kind_boolean": "참/거짓",
+      "param_value": "값"
+    }
+  },
+  "error": {
+    "show_error_page": {
+      "label": "오류 안내 페이지 보여주기",
+      "param_target": "표시 위치"
+    },
+    "navigate": {
+      "label": "다른 페이지로 보내기",
+      "param_path": "이동할 페이지"
+    },
+    "toast": {
+      "label": "안내 메시지 보여주기",
+      "param_text": "메시지"
+    },
+    "open_modal": {
+      "label": "안내 창 띄우기",
+      "param_modal_id": "열 창"
+    },
+    "set_state": {
+      "label": "화면 상태 바꾸기",
+      "param_target": "대상",
+      "param_state": "상태 값",
+      "param_merge": "병합",
+      "param_key": "상태 이름",
+      "param_value": "값"
+    },
+    "sequence": {
+      "label": "동작 차례대로 실행",
+      "param_actions": "실행할 동작"
+    },
+    "parallel": {
+      "label": "동작 동시에 실행",
+      "param_actions": "실행할 동작"
+    }
+  },
+  "loading": {
+    "loading_spinner": "로딩 스피너",
+    "page_loading": "페이지 로딩 표시"
+  },
+  "condition": {
+    "is_admin": "관리자일 때",
+    "is_logged_in": "로그인한 회원일 때",
+    "is_saving": "저장 중일 때",
+    "not_saving": "저장 중이 아닐 때",
+    "has_changes": "변경사항이 있을 때",
+    "has_errors": "오류가 있을 때",
+    "no_errors": "오류가 없을 때",
+    "ds_has_data": "데이터가 있을 때",
+    "ds_empty": "데이터가 없을 때",
+    "ds_loading": "데이터를 불러오는 중일 때",
+    "field_equals": "특정 값과 같을 때",
+    "field_not_equals": "특정 값과 다를 때",
+    "state_equals": "화면 상태가 특정 값일 때",
+    "is_edit_mode": "수정 화면일 때",
+    "is_create_mode": "새로 만들기 화면일 때",
+    "field_has_error": "특정 입력란에 오류가 있을 때",
+    "has_ability": "이 작업 권한이 있을 때",
+    "value_truthy": "값이 있을 때",
+    "value_falsy": "값이 없을 때",
+    "list_non_empty": "목록에 항목이 있을 때",
+    "list_empty": "목록이 비었을 때",
+    "num_gt": "숫자가 ~보다 클 때",
+    "num_gte": "숫자가 ~ 이상일 때",
+    "num_lt": "숫자가 ~보다 작을 때",
+    "num_lte": "숫자가 ~ 이하일 때",
+    "value_is_true": "값이 참(true)일 때",
+    "value_is_false": "값이 거짓(false)일 때",
+    "value_not_false": "값이 거짓(false)이 아닐 때",
+    "value_not_true": "값이 참(true)이 아닐 때",
+    "value_defined": "값이 정의되어 있을 때",
+    "value_undefined": "값이 정의되지 않았을 때",
+    "value_not_null": "값이 null 이 아닐 때",
+    "value_is_null": "값이 null 일 때",
+    "field_matches": "두 값이 같을 때",
+    "field_differs": "두 값이 다를 때",
+    "param_src": "데이터",
+    "param_field": "필드 경로",
+    "param_value": "값",
+    "param_state_key": "상태 키",
+    "param_scope": "권한 범위",
+    "param_ability": "능력 키",
+    "param_path": "상태/데이터 경로",
+    "param_number": "기준 숫자",
+    "param_field_a": "첫 번째 값 경로",
+    "param_field_b": "두 번째 값 경로"
+  },
+  "state": {
+    "with_data": "데이터 있음",
+    "empty_data": "데이터 없음",
+    "edit_existing": "기존 수정",
+    "create_mode": "신규 작성",
+    "validation_failed": "검증 실패",
+    "page_detail_default": "기본",
+    "page_detail_attachments_open": "첨부 펼침",
+    "settings_general": "일반 탭",
+    "settings_seo": "SEO 탭",
+    "settings_mail": "메일 탭",
+    "settings_upload": "업로드 탭",
+    "settings_security": "보안 탭",
+    "settings_drivers": "드라이버 탭",
+    "settings_advanced": "고급 탭",
+    "settings_notification_definitions": "알림 정의 탭",
+    "settings_language_packs": "언어팩 탭",
+    "settings_identity": "본인인증 탭",
+    "settings_info": "정보 탭",
+    "token_valid": "토큰 정상",
+    "token_invalid": "토큰 오류",
+    "reset_success": "재설정 완료",
+    "login_default": "기본",
+    "login_failed": "로그인 실패",
+    "forgot_default": "입력 화면",
+    "forgot_success": "메일 발송됨",
+    "reply_mode": "답글 작성",
+    "challenge_text_code": "코드 입력",
+    "challenge_link": "메일 링크",
+    "challenge_external": "외부 인증",
+    "challenge_error": "인증 실패",
+    "test_mode_on": "테스트 모드",
+    "test_mode_off": "운영 모드",
+    "order_detail_default": "일반 주문",
+    "order_detail_partially_cancelled": "부분 취소됨",
+    "tab": {
+      "general": "일반 탭",
+      "basic_defaults": "기본값 탭",
+      "report_policy": "신고 정책 탭",
+      "spam_security": "스팸·보안 탭",
+      "seo": "SEO 탭",
+      "notification_definitions": "알림 정의 탭",
+      "identity_policies": "본인인증 정책 탭",
+      "basic_info": "기본 정보 탭",
+      "language_currency": "언어·통화 탭",
+      "order_settings": "주문 설정 탭",
+      "claim": "취소·반품 탭",
+      "shipping": "배송 탭",
+      "review_settings": "리뷰 설정 탭",
+      "mileage": "마일리지 탭",
+      "deposit": "예치금 탭",
+      "template_user": "사용자 템플릿 탭",
+      "template_admin": "관리자 템플릿 탭"
+    }
+  },
+  "cell_border": {
+    "side_all": "전체",
+    "side_top": "위",
+    "side_bottom": "아래",
+    "side_left": "왼쪽",
+    "side_right": "오른쪽",
+    "width_none": "없음",
+    "width_thin": "얇게",
+    "width_medium": "보통",
+    "width_thick": "굵게",
+    "color_gray": "회색",
+    "color_gray_dark": "진회색",
+    "color_dark": "검정",
+    "color_blue": "파랑",
+    "color_red": "빨강"
+  },
+  "cell_fill": {
+    "color_white": "흰색",
+    "color_gray": "연회색",
+    "color_gray_dark": "회색",
+    "color_yellow": "노랑",
+    "color_blue": "파랑",
+    "color_green": "초록",
+    "color_red": "빨강"
+  },
+  "cell_padding": {
+    "step_none": "없음",
+    "step_narrow": "좁게",
+    "step_normal": "보통",
+    "step_wide": "넓게"
+  },
+  "array_item": {
+    "tab": "탭",
+    "crumb": "경로",
+    "menu_item": "메뉴 항목",
+    "column": "컬럼",
+    "action": "버튼",
+    "card": "카드",
+    "chart_label": "항목",
+    "chart_slice": "조각",
+    "chart_dataset": "데이터 계열",
+    "card_column": "컬럼",
+    "option": "옵션"
+  },
+  "array_group": {
+    "chart_labels": "항목 라벨",
+    "chart_datasets": "데이터 계열"
+  },
+  "col_type": {
+    "input": "입력",
+    "number": "숫자",
+    "select": "선택",
+    "textarea": "여러 줄",
+    "multilingual": "다국어"
+  },
+  "array_field": {
+    "label": "라벨",
+    "id": "ID",
+    "icon": "아이콘",
+    "badge": "뱃지",
+    "disabled": "비활성",
+    "divider": "구분선",
+    "variant": "스타일",
+    "href": "링크",
+    "value": "값",
+    "field": "필드",
+    "header": "헤더",
+    "sortable": "정렬 가능",
+    "width": "너비",
+    "variant_default": "기본",
+    "variant_danger": "위험",
+    "variant_primary": "주요",
+    "variant_secondary": "보조",
+    "variant_ghost": "고스트",
+    "chart_label": "항목 이름",
+    "chart_name": "항목 이름",
+    "chart_value": "값",
+    "chart_color": "색상",
+    "chart_series": "계열 이름",
+    "chart_data": "값 목록",
+    "col_type": "유형",
+    "placeholder": "안내 문구"
+  },
+  "tabnav_inplace": {
+    "new_tab": "새 탭",
+    "add": "탭 추가",
+    "remove": "탭 삭제",
+    "move_left": "왼쪽으로 이동",
+    "move_right": "오른쪽으로 이동"
+  },
+  "data_prop": {
+    "data": "데이터",
+    "chart_data": "차트 데이터",
+    "tree_data": "트리 데이터",
+    "images": "이미지",
+    "menu_items": "메뉴 항목",
+    "items": "항목",
+    "filters": "필터",
+    "suggestions": "추천 검색어",
+    "datasets": "데이터셋",
+    "tabs": "탭",
+    "breadcrumb_items": "경로 항목",
+    "available_locales": "사용 가능 언어",
+    "user": "사용자",
+    "current_page": "현재 페이지",
+    "total_pages": "전체 페이지 수",
+    "reactions": "반응",
+    "product": "상품",
+    "author": "작성자",
+    "value": "값",
+    "options": "선택지",
+    "selected_tags": "선택된 태그",
+    "selected_permissions": "선택된 권한",
+    "admin_sidebar_menu": "사이드바 메뉴",
+    "admin_footer_quick_links": "바로가기 링크",
+    "notification_items": "알림 항목",
+    "notification_unread_count": "안 읽은 알림 수",
+    "column_items": "컬럼 항목"
+  },
+  "state_label": {
+    "current_user": "현재 사용자",
+    "current_user_name": "현재 사용자 이름",
+    "current_user_email": "현재 사용자 이메일",
+    "current_user_id": "현재 사용자 ID",
+    "current_user_is_admin": "관리자 여부",
+    "site_name": "사이트 이름",
+    "query_q": "검색어 (URL)"
+  },
+  "data_source": {
+    "activityLogs": "활동 로그",
+    "adminIdentityPolicies": "관리자 본인인증 정책",
+    "admin_menu": "관리자 메뉴",
+    "appKey": "앱 키",
+    "auto_deactivated_banner": "자동 비활성 알림",
+    "availableChannels": "사용 가능 채널",
+    "clone_source": "복제 원본",
+    "current_extension": "현재 확장",
+    "current_layout": "현재 레이아웃",
+    "current_user": "현재 사용자",
+    "dashboard_activities": "대시보드 활동",
+    "dashboard_alerts": "대시보드 알림",
+    "dashboard_modules": "대시보드 모듈",
+    "dashboard_plugins": "대시보드 플러그인",
+    "dashboard_recent_notifications": "대시보드 최근 알림",
+    "dashboard_stats": "대시보드 통계",
+    "dashboard_stats_ws": "대시보드 통계 (실시간)",
+    "dashboard_templates": "대시보드 템플릿",
+    "extension_versions": "확장 버전 이력",
+    "identityLogs": "본인인증 로그",
+    "identityMessages": "본인인증 메시지",
+    "identityProviders": "본인인증 제공자",
+    "identityPurposes": "본인인증 목적",
+    "installed_modules": "설치된 모듈",
+    "installed_plugins": "설치된 플러그인",
+    "items": "항목 목록",
+    "language_pack_changelog": "언어팩 변경 이력",
+    "language_pack_detail": "언어팩 상세",
+    "language_packs": "언어팩 목록",
+    "layout_extensions": "레이아웃 확장",
+    "layout_files": "레이아웃 파일",
+    "layout_versions": "레이아웃 버전 이력",
+    "menus": "메뉴 목록",
+    "moduleDetail": "모듈 상세",
+    "moduleInstallPreview": "모듈 설치 미리보기",
+    "modules": "모듈 목록",
+    "notificationChannels": "알림 채널",
+    "notificationDefinitions": "알림 정의",
+    "notificationLogs": "알림 로그",
+    "notification_unread_count": "읽지 않은 알림 수",
+    "notification_ws": "알림 (실시간)",
+    "notifications": "알림 목록",
+    "permissions": "권한 목록",
+    "pluginDetail": "플러그인 상세",
+    "pluginInstallPreview": "플러그인 설치 미리보기",
+    "plugins": "플러그인 목록",
+    "policies": "정책 목록",
+    "role": "역할",
+    "role_check": "역할 확인",
+    "roles": "역할 목록",
+    "schedule_history": "스케줄 이력",
+    "schedules": "스케줄 목록",
+    "settings": "환경설정",
+    "systemInfo": "시스템 정보",
+    "templateDetail": "템플릿 상세",
+    "templateInstallPreview": "템플릿 설치 미리보기",
+    "template_info": "템플릿 정보",
+    "templates": "템플릿 목록",
+    "tokenValidation": "토큰 검증",
+    "user": "사용자",
+    "users": "사용자 목록"
+  }
+}

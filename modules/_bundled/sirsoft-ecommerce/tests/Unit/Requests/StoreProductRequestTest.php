@@ -2,8 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Requests;
 
+use App\Rules\LocaleRequiredTranslatable;
+use App\Rules\TranslatableField;
 use Illuminate\Support\Facades\Validator;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreProductRequest;
+use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -13,25 +16,20 @@ class StoreProductRequestTest extends ModuleTestCase
 {
     /**
      * 검증 수행
-     *
-     * @param array $data
-     * @return \Illuminate\Validation\Validator
      */
     protected function validate(array $data): \Illuminate\Validation\Validator
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
 
         return Validator::make($data, $request->rules());
     }
 
     /**
      * 기본 유효한 상품 데이터
-     *
-     * @return array
      */
     protected function validProductData(): array
     {
-        $category = new \Modules\Sirsoft\Ecommerce\Models\Category([
+        $category = new Category([
             'name' => ['ko' => '테스트 카테고리', 'en' => 'Test Category'],
             'slug' => 'test-category',
             'is_active' => true,
@@ -85,7 +83,7 @@ class StoreProductRequestTest extends ModuleTestCase
      */
     public function test_rules_name_uses_locale_required_translatable(): void
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
         $rules = $request->rules();
 
         $this->assertArrayHasKey('name', $rules);
@@ -93,7 +91,7 @@ class StoreProductRequestTest extends ModuleTestCase
         $this->assertContains('array', $rules['name']);
 
         $hasLocaleRule = collect($rules['name'])->contains(
-            fn ($rule) => $rule instanceof \App\Rules\LocaleRequiredTranslatable
+            fn ($rule) => $rule instanceof LocaleRequiredTranslatable
         );
         $this->assertTrue($hasLocaleRule, 'name 규칙에 LocaleRequiredTranslatable 이 포함돼야 함');
     }
@@ -103,7 +101,7 @@ class StoreProductRequestTest extends ModuleTestCase
      */
     public function test_rules_description_uses_translatable_field(): void
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
         $rules = $request->rules();
 
         $this->assertArrayHasKey('description', $rules);
@@ -111,7 +109,7 @@ class StoreProductRequestTest extends ModuleTestCase
         $this->assertContains('array', $rules['description']);
 
         $hasTranslatableRule = collect($rules['description'])->contains(
-            fn ($rule) => $rule instanceof \App\Rules\TranslatableField
+            fn ($rule) => $rule instanceof TranslatableField
         );
         $this->assertTrue($hasTranslatableRule, 'description 규칙에 TranslatableField 가 포함돼야 함');
     }
@@ -121,7 +119,7 @@ class StoreProductRequestTest extends ModuleTestCase
      */
     public function test_rules_additional_options_name_uses_locale_required_translatable(): void
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
         $rules = $request->rules();
 
         $this->assertArrayHasKey('additional_options.*.name', $rules);
@@ -129,7 +127,7 @@ class StoreProductRequestTest extends ModuleTestCase
         $this->assertContains('array', $rules['additional_options.*.name']);
 
         $hasLocaleRule = collect($rules['additional_options.*.name'])->contains(
-            fn ($rule) => $rule instanceof \App\Rules\LocaleRequiredTranslatable
+            fn ($rule) => $rule instanceof LocaleRequiredTranslatable
         );
         $this->assertTrue($hasLocaleRule);
     }
@@ -140,7 +138,7 @@ class StoreProductRequestTest extends ModuleTestCase
 
     public function test_messages_contains_all_required_field_messages(): void
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
         $messages = $request->messages();
 
         // LocaleRequiredTranslatable Rule 이 locale 레벨 메시지를 자체 처리하므로
@@ -173,6 +171,10 @@ class StoreProductRequestTest extends ModuleTestCase
             'label_assignments.*.label_id.required',
             'label_assignments.*.label_id.exists',
             'label_assignments.*.end_date.after_or_equal',
+            // 추가옵션 — 영문 키/원시 attribute 노출 방지
+            'additional_options.*.values.required_with',
+            'additional_options.*.values.min',
+            'additional_options.*.values.*.name.required',
         ];
 
         foreach ($expectedKeys as $key) {
@@ -180,9 +182,39 @@ class StoreProductRequestTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 빈 선택지 그룹 저장 시 에러 메시지가 한국어로 나오고 영문 키/원시 경로를 노출하지 않는다.
+     *
+     * 회귀: additional_options.* 커스텀 메시지 누락으로 Laravel 기본 required_with 메시지가
+     * "additional options이(가) 있을 때 additional_options.1.values 필드는 필수입니다" 처럼
+     * 영문 키와 원시 경로를 노출하던 결함.
+     */
+    public function test_empty_value_group_error_message_is_korean_without_raw_keys(): void
+    {
+        $request = new StoreProductRequest;
+        $data = $this->validProductData();
+        // 선택지가 비어 있는 추가옵션 그룹
+        $data['additional_options'] = [
+            ['name' => ['ko' => '각인'], 'is_required' => true, 'values' => []],
+        ];
+
+        $validator = Validator::make($data, $request->rules(), $request->messages());
+        $this->assertTrue($validator->fails());
+
+        $errors = $validator->errors()->get('additional_options.0.values');
+        $this->assertNotEmpty($errors);
+        $message = $errors[0];
+
+        // 영문 키/원시 경로가 메시지에 노출되지 않아야 함
+        $this->assertStringNotContainsString('additional_options.', $message, "메시지에 원시 경로 노출: {$message}");
+        $this->assertStringNotContainsString('additional options', $message, "메시지에 영문 키 노출: {$message}");
+        // 한국어 안내 문구 포함
+        $this->assertStringContainsString('선택지', $message);
+    }
+
     public function test_messages_does_not_contain_dead_code(): void
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
         $messages = $request->messages();
 
         // options.*.selling_price에는 lte 규칙이 없으므로 메시지도 없어야 함
@@ -191,7 +223,7 @@ class StoreProductRequestTest extends ModuleTestCase
 
     public function test_messages_name_required_is_translated(): void
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
         $messages = $request->messages();
 
         // name.required 메시지는 __('sirsoft-ecommerce::validation.product.name.required') 참조
@@ -210,7 +242,7 @@ class StoreProductRequestTest extends ModuleTestCase
 
     public function test_all_message_translation_keys_exist(): void
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
         $messages = $request->messages();
 
         foreach ($messages as $field => $translatedMessage) {
@@ -233,7 +265,7 @@ class StoreProductRequestTest extends ModuleTestCase
         $data = $this->validProductData();
         $validator = $this->validate($data);
 
-        $this->assertFalse($validator->fails(), '유효한 상품 데이터가 검증을 통과해야 합니다: ' . json_encode($validator->errors()->toArray()));
+        $this->assertFalse($validator->fails(), '유효한 상품 데이터가 검증을 통과해야 합니다: '.json_encode($validator->errors()->toArray()));
     }
 
     public function test_name_is_required(): void
@@ -395,13 +427,45 @@ class StoreProductRequestTest extends ModuleTestCase
         $this->assertArrayNotHasKey('images.0.alt_text', $errors, 'null alt_text는 검증을 통과해야 합니다.');
     }
 
+    /**
+     * 이미지 배열은 최대 20개까지 허용된다 (A24 — 프론트 maxFiles 와 SSoT 일치).
+     */
+    public function test_images_array_allows_up_to_20(): void
+    {
+        $data = $this->validProductData();
+        $data['images'] = array_map(
+            fn ($i) => ['id' => $i, 'sort_order' => $i],
+            range(1, 20),
+        );
+        $validator = $this->validate($data);
+
+        $errors = $validator->errors()->toArray();
+        $this->assertArrayNotHasKey('images', $errors, '20개 이미지는 검증을 통과해야 합니다.');
+    }
+
+    /**
+     * 이미지 배열이 20개를 초과하면 거부된다.
+     */
+    public function test_images_array_rejects_over_20(): void
+    {
+        $data = $this->validProductData();
+        $data['images'] = array_map(
+            fn ($i) => ['id' => $i, 'sort_order' => $i],
+            range(1, 21),
+        );
+        $validator = $this->validate($data);
+
+        $errors = $validator->errors()->toArray();
+        $this->assertArrayHasKey('images', $errors, '21개 이미지는 거부되어야 합니다.');
+    }
+
     // ========================================
     // notice_items 필드명 content 검증 테스트
     // ========================================
 
     public function test_options_id_is_included_in_rules(): void
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
         $rules = $request->rules();
 
         $this->assertArrayHasKey('options.*.id', $rules, 'options.*.id 규칙이 존재해야 합니다 (validated()에서 id 유지).');
@@ -415,13 +479,13 @@ class StoreProductRequestTest extends ModuleTestCase
 
     public function test_notice_items_uses_content_field_not_value(): void
     {
-        $request = new StoreProductRequest();
+        $request = new StoreProductRequest;
         $rules = $request->rules();
 
         // content 필드 규칙이 존재해야 함 (LocaleRequiredTranslatable 로 다국어 처리)
         $this->assertArrayHasKey('notice_items.*.content', $rules, 'notice_items.*.content 규칙이 존재해야 합니다.');
         $hasLocaleRule = collect($rules['notice_items.*.content'])->contains(
-            fn ($rule) => $rule instanceof \App\Rules\LocaleRequiredTranslatable
+            fn ($rule) => $rule instanceof LocaleRequiredTranslatable
         );
         $this->assertTrue($hasLocaleRule, 'notice_items.*.content 에 LocaleRequiredTranslatable 이 있어야 함');
 

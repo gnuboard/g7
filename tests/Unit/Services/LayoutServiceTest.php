@@ -1196,7 +1196,7 @@ class LayoutServiceTest extends TestCase
     /**
      * transition_overlay 병합 - 자식이 wait_for 만 명시해도 부모의 spinner 설정이 보존되어야 함
      *
-     * 이슈 #245 — engine-v1.30.0
+     * engine-v1.30.0
      */
     public function test_merge_transition_overlay_shallow_merge_preserves_parent_keys(): void
     {
@@ -1307,5 +1307,125 @@ class LayoutServiceTest extends TestCase
         $result = $this->layoutService->mergeLayouts($parent, $child);
 
         $this->assertSame(false, $result['transition_overlay']);
+    }
+
+    // ── 편집 모드 출처 메타 ──
+
+    /**
+     * 운영 렌더($sourceMeta 미지정)는 init_actions 에 __source 를 부착하지 않는다.
+     */
+    public function test_merge_init_actions_no_source_meta_in_render_mode(): void
+    {
+        $parent = [
+            'meta' => [],
+            'data_sources' => [],
+            'components' => [],
+            'init_actions' => [['handler' => 'initTheme']],
+        ];
+        $child = [
+            'meta' => [],
+            'data_sources' => [],
+            'components' => [],
+            'init_actions' => [['handler' => 'toast', 'params' => ['message' => 'hi']]],
+        ];
+
+        $result = $this->layoutService->mergeLayouts($parent, $child);
+
+        $this->assertCount(2, $result['initActions']);
+        $this->assertArrayNotHasKey('__source', $result['initActions'][0]);
+        $this->assertArrayNotHasKey('__source', $result['initActions'][1]);
+    }
+
+    /**
+     * 편집 모드($sourceMeta 지정)는 init_actions 항목에 부모=base / 자식=route __source 를 부착한다.
+     */
+    public function test_merge_init_actions_attaches_source_meta_in_edit_mode(): void
+    {
+        $parent = [
+            'meta' => [],
+            'data_sources' => [],
+            'components' => [],
+            'init_actions' => [['handler' => 'initTheme']],
+            'layout_name' => '_user_base',
+        ];
+        $child = [
+            'meta' => [],
+            'data_sources' => [],
+            'components' => [],
+            'init_actions' => [['handler' => 'toast', 'params' => ['message' => 'hi']]],
+            'layout_name' => 'shop/show',
+        ];
+
+        $sourceMeta = ['kind' => 'base', 'layout' => '_user_base'];
+        $result = $this->layoutService->mergeLayouts($parent, $child, $sourceMeta);
+
+        $this->assertCount(2, $result['initActions']);
+        // 부모 항목 = base
+        $this->assertSame(['kind' => 'base', 'layout' => '_user_base'], $result['initActions'][0]['__source']);
+        // 자식 항목 = route + 자식 레이아웃명
+        $this->assertSame(['kind' => 'route', 'layout' => 'shop/show'], $result['initActions'][1]['__source']);
+        // 핸들러/params 는 보존(dispatch 화이트리스트 무영향)
+        $this->assertSame('toast', $result['initActions'][1]['handler']);
+    }
+
+    /**
+     * 편집 모드는 computed 키별 출처 맵을 레이아웃 최상위 __computedSource 에 부착한다.
+     * (computed 객체 내부 아님 — 평가 순회 오평가 회피.)
+     */
+    public function test_merge_computed_attaches_source_map_at_top_level_in_edit_mode(): void
+    {
+        $parent = [
+            'meta' => [],
+            'data_sources' => [],
+            'components' => [],
+            'computed' => ['parentCalc' => '{{ a ?? 0 }}'],
+            'layout_name' => '_user_base',
+        ];
+        $child = [
+            'meta' => [],
+            'data_sources' => [],
+            'components' => [],
+            // childCalc 신규 + parentCalc override
+            'computed' => ['childCalc' => '{{ b ?? 0 }}', 'parentCalc' => '{{ c ?? 0 }}'],
+            'layout_name' => 'shop/show',
+        ];
+
+        $sourceMeta = ['kind' => 'base', 'layout' => '_user_base'];
+        $result = $this->layoutService->mergeLayouts($parent, $child, $sourceMeta);
+
+        // computed 객체 안에는 __computedSource 가 없다(평가 순회 안전).
+        $this->assertArrayNotHasKey('__computedSource', $result['computed']);
+        // 최상위에 출처 맵. 부모+자식이 모두 선언한 parentCalc 는 'route-override'(덮음),
+        // 자식만 선언한 childCalc 는 'route'. (route-override 구분은 표현식 분해 트리에서 도입 —
+        // 덮은 키에만 되돌리기 배지를 노출하기 위함. buildComputedSourceMap 참조.)
+        $this->assertSame(
+            ['parentCalc' => 'route-override', 'childCalc' => 'route'],
+            $result['__computedSource'],
+        );
+        // 자식 override 된 parentCalc 값은 자식 우선.
+        $this->assertSame('{{ c ?? 0 }}', $result['computed']['parentCalc']);
+    }
+
+    /**
+     * 운영 렌더는 __computedSource 를 부착하지 않는다.
+     */
+    public function test_merge_computed_no_source_map_in_render_mode(): void
+    {
+        $parent = [
+            'meta' => [],
+            'data_sources' => [],
+            'components' => [],
+            'computed' => ['parentCalc' => '{{ a ?? 0 }}'],
+        ];
+        $child = [
+            'meta' => [],
+            'data_sources' => [],
+            'components' => [],
+            'computed' => ['childCalc' => '{{ b ?? 0 }}'],
+        ];
+
+        $result = $this->layoutService->mergeLayouts($parent, $child);
+
+        $this->assertArrayNotHasKey('__computedSource', $result);
     }
 }

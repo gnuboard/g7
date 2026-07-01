@@ -1,35 +1,15 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "환경설정 본인인증(IDV) 탭 컨테이너 — sub-tab 스크롤 네비게이션 (게시판 설정 TabNavigationScroll 패턴) + 4 서브섹션 partial"
+    "description": "환경설정 본인인증(IDV) 탭 컨테이너 — sub-tab 은 admin_settings.json 의 sticky_header 안에 위치 (게시판 환경설정 패턴), 본 partial 은 4 서브섹션 partial 만 포함"
   },
   "id": "tab_content_identity",
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeSettingsTab || query.tab) === 'identity'}}",
   "props": {
-    "className": "mt-6 space-y-6"
   },
   "children": [
-    {
-      "id": "identity_sub_tab_navigation",
-      "type": "composite",
-      "name": "TabNavigationScroll",
-      "props": {
-        "tabs": [
-          { "id": "basic", "label": "$t:admin.settings.identity.sub_tabs.basic" },
-          { "id": "providers", "label": "$t:admin.settings.identity.sub_tabs.providers" },
-          { "id": "policies", "label": "$t:admin.settings.identity.sub_tabs.policies" },
-          { "id": "messages", "label": "$t:admin.settings.identity.sub_tabs.messages" }
-        ],
-        "className": "flex gap-1 border-b border-gray-200 dark:border-gray-700",
-        "sectionIdPrefix": "identity_section_",
-        "enableScrollSpy": true,
-        "scrollContainerId": "right_content_area",
-        "scrollSpyOffset": 180,
-        "scrollOffset": 180
-      }
-    },
     {
       "partial": "partials/admin_settings/_tab_identity_basic.json"
     },
@@ -44,7 +24,9 @@
         "className": "scroll-mt-44"
       },
       "children": [
-        { "partial": "partials/admin_settings/_tab_identity_policies.json" }
+        {
+          "partial": "partials/admin_settings/_tab_identity_policies.json"
+        }
       ]
     },
     {

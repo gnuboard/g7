@@ -14,15 +14,12 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+            "className": "alert-warning"
           },
           "children": [
             {
@@ -36,25 +33,28 @@
             {
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-1"
-              },
               "children": [
                 {
                   "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-sm font-medium text-amber-800 dark:text-amber-200"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-xs text-amber-700 dark:text-amber-300"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options_note"
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm font-medium text-warning-soft"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-warning-soft"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options_note"
+                    }
+                  ]
                 }
               ]
             }
@@ -64,7 +64,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex justify-end gap-3 pt-2"
+            "className": "flex justify-end gap-3"
           },
           "children": [
             {
@@ -102,7 +102,8 @@
                       {
                         "handler": "sirsoft-ecommerce.generateOptions",
                         "params": {
-                          "skipConfirm": true
+                          "skipConfirm": true,
+                          "isCreate": "{{!route.itemCode}}"
                         }
                       }
                     ]
@@ -112,7 +113,9 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     }
   ]
 }

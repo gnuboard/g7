@@ -129,14 +129,14 @@ describe('TabNavigationScroll', () => {
       render(<TabNavigationScroll tabs={mockTabs} />);
 
       const basicButton = getTabButton('기본정보');
-      expect(basicButton).toHaveClass('text-blue-600');
+      expect(basicButton).toHaveClass('tab-btn-default-active');
     });
 
     it('activeTabId가 설정된 탭이 활성화되어야 함', () => {
       render(<TabNavigationScroll tabs={mockTabs} activeTabId="list" />);
 
       const listButton = getTabButton('목록설정');
-      expect(listButton).toHaveClass('text-blue-600');
+      expect(listButton).toHaveClass('tab-btn-default-active');
     });
   });
 
@@ -165,7 +165,7 @@ describe('TabNavigationScroll', () => {
       const listButton = getTabButton('목록설정');
       fireEvent.click(listButton!);
 
-      expect(listButton).toHaveClass('text-blue-600');
+      expect(listButton).toHaveClass('tab-btn-default-active');
     });
 
     it('비활성화된 탭은 클릭할 수 없어야 함', () => {
@@ -320,7 +320,7 @@ describe('TabNavigationScroll', () => {
 
       await waitFor(() => {
         const listButton = getTabButton('목록설정');
-        expect(listButton).toHaveClass('text-blue-600');
+        expect(listButton).toHaveClass('tab-btn-default-active');
       });
     });
 
@@ -350,7 +350,7 @@ describe('TabNavigationScroll', () => {
 
       await waitFor(() => {
         const tab2Button = getTabButton('탭2');
-        expect(tab2Button).toHaveClass('text-blue-600');
+        expect(tab2Button).toHaveClass('tab-btn-default-active');
       });
     });
 
@@ -375,7 +375,7 @@ describe('TabNavigationScroll', () => {
 
       // 활성 탭이 변경되지 않아야 함
       const basicButton = getTabButton('기본정보');
-      expect(basicButton).toHaveClass('text-blue-600');
+      expect(basicButton).toHaveClass('tab-btn-default-active');
     });
   });
 

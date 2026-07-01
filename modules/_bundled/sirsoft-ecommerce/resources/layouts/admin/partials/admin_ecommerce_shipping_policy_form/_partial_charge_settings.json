@@ -1,846 +1,1251 @@
 {
-    "meta": {
-        "is_partial": true,
-        "description": "배송정책 폼 - 부과정책 설정 (국가별 탭 내 부과정책/배송비/구간/API 설정)"
+  "meta": {
+    "is_partial": true,
+    "description": "배송정책 폼 - 부과정책 설정 (국가별 탭 내 부과정책/배송비/구간/API 설정)"
+  },
+  "id": "charge_settings_section",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{_computed.activeCountrySetting}}",
+  "props": {
+    "className": "admin-card"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "H2",
+      "props": {
+        "className": "card-title"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_charge"
     },
-    "id": "charge_settings_section",
-    "type": "basic",
-    "name": "Div",
-    "if": "{{_computed.activeCountrySetting}}",
-    "props": {
-        "className": "card"
-    },
-    "children": [
+    {
+      "id": "charge_settings_fields",
+      "type": "basic",
+      "name": "Div",
+      "children": [
         {
-            "type": "basic",
-            "name": "H2",
-            "props": {
-                "className": "card-title mb-4"
-            },
-            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_charge"
+          "id": "field_charge_policy",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.charge_policy"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-required"
+                      },
+                      "text": "*"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy'] ? 'input input-error w-full' : 'input w-full'}}",
+                    "value": "{{_computed.activeCountrySetting?.charge_policy ?? 'fixed'}}",
+                    "options": "{{_computed.chargePolicyOptions ?? []}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.onChargePolicyChange",
+                      "params": {
+                        "value": "{{$event.target.value}}",
+                        "index": "{{_local.activeCountryTab ?? 0}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy']}}",
+                  "props": {
+                    "className": "form-error-xs"
+                  },
+                  "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy'] ?? [])[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
         },
         {
-            "id": "charge_settings_fields",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "space-y-4"
-            },
-            "children": [
+          "id": "field_base_fee",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.showBaseFee}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
                 {
-                    "id": "field_charge_policy",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "space-y-1"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Label",
-                            "props": {
-                                "className": "form-label"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.charge_policy"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "text-red-500 dark:text-red-400 ml-1"
-                                    },
-                                    "text": "*"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Select",
-                            "props": {
-                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy'] ? 'input input-error w-full' : 'input w-full'}}",
-                                "value": "{{_computed.activeCountrySetting?.charge_policy ?? 'fixed'}}",
-                                "options": "{{_computed.chargePolicyOptions ?? []}}",
-                                "disabled": "{{_computed.isReadOnly}}"
-                            },
-                            "actions": [
-                                {
-                                    "type": "change",
-                                    "handler": "sirsoft-ecommerce.onChargePolicyChange",
-                                    "params": {
-                                        "value": "{{$event.target.value}}",
-                                        "index": "{{_local.activeCountryTab ?? 0}}"
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy']}}",
-                            "props": {
-                                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
-                            },
-                            "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy'] ?? [])[0] ?? ''}}"
-                        }
-                    ]
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.base_fee"
                 },
                 {
-                    "id": "field_base_fee",
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{_local.showBaseFee}}",
-                    "props": {
-                        "className": "space-y-1"
-                    },
-                    "children": [
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "relative"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee'] ? 'input input-error pr-12' : 'input pr-12'}}",
+                        "value": "{{_computed.activeCountrySetting?.base_fee ?? 0}}",
+                        "min": 0,
+                        "step": 100,
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
                         {
-                            "type": "basic",
-                            "name": "Label",
-                            "props": {
-                                "className": "form-label"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.base_fee"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "relative"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "number",
-                                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee'] ? 'input input-error w-full pr-12' : 'input w-full pr-12'}}",
-                                        "value": "{{_computed.activeCountrySetting?.base_fee ?? 0}}",
-                                        "min": 0,
-                                        "step": 100,
-                                        "disabled": "{{_computed.isReadOnly}}"
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "change",
-                                            "handler": "sirsoft-ecommerce.updateCountryField",
-                                            "debounce": 300,
-                                            "params": {
-                                                "field": "base_fee",
-                                                "value": "{{parseFloat($event.target.value) || 0}}"
-                                            }
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "{{_computed.activeCountrySetting?.currency_code ?? 'KRW'}}"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee']}}",
-                            "props": {
-                                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
-                            },
-                            "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee'] ?? [])[0] ?? ''}}"
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.updateCountryField",
+                          "debounce": 300,
+                          "params": {
+                            "field": "base_fee",
+                            "value": "{{parseFloat($event.target.value) || 0}}"
+                          }
                         }
-                    ]
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "absolute right-3 top-1/2 -translate-y-1/2 text-label-subtle"
+                      },
+                      "text": "{{_computed.defaultCurrencyCode}}"
+                    }
+                  ]
                 },
                 {
-                    "id": "field_free_threshold",
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{_local.showFreeThreshold}}",
-                    "props": {
-                        "className": "space-y-1"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Label",
-                            "props": {
-                                "className": "form-label"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "relative"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "number",
-                                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold'] ? 'input input-error w-full pr-12' : 'input w-full pr-12'}}",
-                                        "value": "{{_computed.activeCountrySetting?.free_threshold ?? ''}}",
-                                        "min": 0,
-                                        "step": 1000,
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold_placeholder",
-                                        "disabled": "{{_computed.isReadOnly}}"
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "change",
-                                            "handler": "sirsoft-ecommerce.updateCountryField",
-                                            "debounce": 300,
-                                            "params": {
-                                                "field": "free_threshold",
-                                                "value": "{{parseFloat($event.target.value) || null}}"
-                                            }
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "{{_computed.activeCountrySetting?.currency_code ?? 'KRW'}}"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold_hint"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold']}}",
-                            "props": {
-                                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
-                            },
-                            "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold'] ?? [])[0] ?? ''}}"
-                        }
-                    ]
-                },
-                {
-                    "id": "field_unit_value",
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{_local.showUnitValue}}",
-                    "props": {
-                        "className": "space-y-1"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Label",
-                            "props": {
-                                "className": "form-label"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.per_unit_value"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Input",
-                            "props": {
-                                "type": "number",
-                                "className": "input w-full",
-                                "value": "{{_computed.activeCountrySetting?.ranges?.unit_value ?? 1}}",
-                                "min": 0.01,
-                                "step": 0.01,
-                                "disabled": "{{_computed.isReadOnly}}"
-                            },
-                            "actions": [
-                                {
-                                    "type": "change",
-                                    "handler": "sirsoft-ecommerce.updateUnitValue",
-                                    "debounce": 300,
-                                    "params": {
-                                        "value": "{{$event.target.value}}"
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.per_unit_hint"
-                        }
-                    ]
-                },
-                {
-                    "id": "field_ranges",
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{_local.showRanges}}",
-                    "props": {
-                        "className": "space-y-3"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex items-center justify-between"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "form-label"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_tiers"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn btn-sm btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_computed.isReadOnly}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "plus",
-                                                "className": "text-xs mr-1"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_add"
-                                        }
-                                    ],
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "sirsoft-ecommerce.addRangeTier",
-                                            "params": {
-                                                "index": "{{_local.activeCountryTab ?? 0}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "id": "range_tiers_table",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length > 0}}",
-                            "props": {
-                                "className": "table-container"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Table",
-                                    "props": {
-                                        "className": "table"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Thead",
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Tr",
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Th",
-                                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Th",
-                                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_max"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Th",
-                                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_fee"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Th",
-                                                            "props": {
-                                                                "className": "w-16"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Tbody",
-                                            "children": [
-                                                {
-                                                    "id": "range_tier_row",
-                                                    "type": "basic",
-                                                    "name": "Tr",
-                                                    "iteration": {
-                                                        "source": "{{_computed.activeCountrySetting?.ranges?.tiers ?? []}}",
-                                                        "item_var": "tier",
-                                                        "index_var": "tierIdx"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Td",
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Input",
-                                                                    "props": {
-                                                                        "type": "number",
-                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input w-full input-error' : 'input w-full'}}",
-                                                                        "value": "{{tier.min ?? 0}}",
-                                                                        "min": 0,
-                                                                        "placeholder": "0",
-                                                                        "disabled": "{{_computed.isReadOnly}}"
-                                                                    },
-                                                                    "actions": [
-                                                                        {
-                                                                            "type": "change",
-                                                                            "handler": "sirsoft-ecommerce.updateRangeTierField",
-                                                                            "debounce": 300,
-                                                                            "params": {
-                                                                                "countryIndex": "{{_local.activeCountryTab ?? 0}}",
-                                                                                "tierIndex": "{{tierIdx}}",
-                                                                                "field": "min",
-                                                                                "value": "{{parseFloat($event.target.value) || 0}}"
-                                                                            }
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "if": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min}}",
-                                                                    "props": {
-                                                                        "className": "text-red-500 dark:text-red-400 text-xs"
-                                                                    },
-                                                                    "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ?? ''}}"
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Td",
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Input",
-                                                                    "props": {
-                                                                        "type": "number",
-                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ? 'input w-full input-error' : 'input w-full'}}",
-                                                                        "value": "{{tier.max ?? ''}}",
-                                                                        "min": 0,
-                                                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_unlimited",
-                                                                        "disabled": "{{_computed.isReadOnly}}"
-                                                                    },
-                                                                    "actions": [
-                                                                        {
-                                                                            "type": "change",
-                                                                            "handler": "sirsoft-ecommerce.updateRangeTierField",
-                                                                            "debounce": 300,
-                                                                            "params": {
-                                                                                "countryIndex": "{{_local.activeCountryTab ?? 0}}",
-                                                                                "tierIndex": "{{tierIdx}}",
-                                                                                "field": "max",
-                                                                                "value": "{{$event.target.value ? parseFloat($event.target.value) : null}}"
-                                                                            }
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "if": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max}}",
-                                                                    "props": {
-                                                                        "className": "text-red-500 dark:text-red-400 text-xs"
-                                                                    },
-                                                                    "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ?? ''}}"
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Td",
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Input",
-                                                                    "props": {
-                                                                        "type": "number",
-                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'input w-full input-error' : 'input w-full'}}",
-                                                                        "value": "{{tier.fee ?? 0}}",
-                                                                        "min": 0,
-                                                                        "step": 100,
-                                                                        "disabled": "{{_computed.isReadOnly}}"
-                                                                    },
-                                                                    "actions": [
-                                                                        {
-                                                                            "type": "change",
-                                                                            "handler": "sirsoft-ecommerce.updateRangeTierField",
-                                                                            "debounce": 300,
-                                                                            "params": {
-                                                                                "countryIndex": "{{_local.activeCountryTab ?? 0}}",
-                                                                                "tierIndex": "{{tierIdx}}",
-                                                                                "field": "fee",
-                                                                                "value": "{{parseFloat($event.target.value) || 0}}"
-                                                                            }
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "if": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee}}",
-                                                                    "props": {
-                                                                        "className": "text-red-500 dark:text-red-400 text-xs"
-                                                                    },
-                                                                    "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ?? ''}}"
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Td",
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Button",
-                                                                    "if": "{{policy?.data?.abilities?.can_update === true}}",
-                                                                    "props": {
-                                                                        "type": "button",
-                                                                        "className": "btn-icon text-error"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Icon",
-                                                                            "props": {
-                                                                                "name": "trash",
-                                                                                "className": "text-sm"
-                                                                            }
-                                                                        }
-                                                                    ],
-                                                                    "actions": [
-                                                                        {
-                                                                            "type": "click",
-                                                                            "handler": "sirsoft-ecommerce.removeRangeTier",
-                                                                            "params": {
-                                                                                "countryIndex": "{{_local.activeCountryTab ?? 0}}",
-                                                                                "tierIndex": "{{tierIdx}}"
-                                                                            }
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}",
-                            "props": {
-                                "className": "text-center py-4 text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.no_ranges"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "field_api_settings",
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{_local.showApiSettings}}",
-                    "props": {
-                        "className": "space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "H3",
-                            "props": {
-                                "className": "text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_settings"
-                        },
-                        {
-                            "id": "field_api_endpoint",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "space-y-1"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "form-label"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_endpoint"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "url",
-                                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ? 'input input-error w-full font-mono text-sm' : 'input w-full font-mono text-sm'}}",
-                                        "value": "{{_computed.activeCountrySetting?.api_endpoint ?? ''}}",
-                                        "placeholder": "https://api.example.com/shipping/calculate",
-                                        "disabled": "{{_computed.isReadOnly}}"
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "change",
-                                            "handler": "sirsoft-ecommerce.updateCountryField",
-                                            "debounce": 300,
-                                            "params": {
-                                                "field": "api_endpoint",
-                                                "value": "{{$event.target.value || null}}"
-                                            }
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint']}}",
-                                    "props": {
-                                        "className": "text-red-500 dark:text-red-400 text-xs mt-1"
-                                    },
-                                    "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ?? [])[0] ?? ''}}"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "field_api_request_fields",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "space-y-2"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex items-center justify-between"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Label",
-                                            "props": {
-                                                "className": "form-label"
-                                            },
-                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Button",
-                                            "props": {
-                                                "type": "button",
-                                                "className": "btn btn-sm btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
-                                                "disabled": "{{_computed.isReadOnly}}"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Icon",
-                                                    "props": {
-                                                        "name": "plus",
-                                                        "className": "text-xs mr-1"
-                                                    }
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "text": "$t:common.add"
-                                                }
-                                            ],
-                                            "actions": [
-                                                {
-                                                    "type": "click",
-                                                    "handler": "sirsoft-ecommerce.addApiRequestField"
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{(_computed.activeCountrySetting?.api_request_fields ?? []).length > 0}}",
-                                    "props": {
-                                        "className": "space-y-2"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "iteration": {
-                                                "source": "{{(_computed.activeCountrySetting?.api_request_fields ?? []).map((f, i) => ({value: f, _idx: i}))}}",
-                                                "item_var": "field",
-                                                "index_var": "fieldIdx"
-                                            },
-                                            "props": {
-                                                "className": "flex items-center gap-2"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Input",
-                                                    "props": {
-                                                        "type": "text",
-                                                        "className": "input flex-1 font-mono text-sm",
-                                                        "value": "{{field.value ?? ''}}",
-                                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields_placeholder",
-                                                        "disabled": "{{_computed.isReadOnly}}"
-                                                    },
-                                                    "actions": [
-                                                        {
-                                                            "type": "change",
-                                                            "handler": "sirsoft-ecommerce.updateApiRequestField",
-                                                            "debounce": 300,
-                                                            "params": {
-                                                                "fieldIndex": "{{field._idx}}",
-                                                                "value": "{{$event.target.value}}"
-                                                            }
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Button",
-                                                    "if": "{{policy?.data?.abilities?.can_update === true}}",
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "btn-icon text-error"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Icon",
-                                                            "props": {
-                                                                "name": "trash",
-                                                                "className": "text-sm"
-                                                            }
-                                                        }
-                                                    ],
-                                                    "actions": [
-                                                        {
-                                                            "type": "click",
-                                                            "handler": "sirsoft-ecommerce.removeApiRequestField",
-                                                            "params": {
-                                                                "fieldIndex": "{{field._idx}}"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields_hint"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "field_api_response_fee_field",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "space-y-1"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "form-label"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_fee_field"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "className": "input w-full font-mono text-sm",
-                                        "value": "{{_computed.activeCountrySetting?.api_response_fee_field ?? ''}}",
-                                        "placeholder": "shipping_fee",
-                                        "disabled": "{{_computed.isReadOnly}}"
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "change",
-                                            "handler": "sirsoft-ecommerce.updateCountryField",
-                                            "debounce": 300,
-                                            "params": {
-                                                "field": "api_response_fee_field",
-                                                "value": "{{$event.target.value || null}}"
-                                            }
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_fee_field_hint"
-                                }
-                            ]
-                        }
-                    ]
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee']}}",
+                  "props": {
+                    "className": "form-error-xs"
+                  },
+                  "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee'] ?? [])[0] ?? ''}}"
                 }
-            ]
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_free_threshold",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.showFreeThreshold}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "relative"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold'] ? 'input input-error pr-12' : 'input pr-12'}}",
+                        "value": "{{_computed.activeCountrySetting?.free_threshold ?? ''}}",
+                        "min": 0,
+                        "step": 1000,
+                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold_placeholder",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.updateCountryField",
+                          "debounce": 300,
+                          "params": {
+                            "field": "free_threshold",
+                            "value": "{{parseFloat($event.target.value) || null}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "absolute right-3 top-1/2 -translate-y-1/2 text-label-subtle"
+                      },
+                      "text": "{{_computed.defaultCurrencyCode}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-tertiary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold_hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold']}}",
+                  "props": {
+                    "className": "form-error-xs"
+                  },
+                  "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold'] ?? [])[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_unit_value",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.showUnitValue}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.per_unit_value"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "className": "input",
+                    "value": "{{_computed.activeCountrySetting?.ranges?.unit_value ?? 1}}",
+                    "min": 0.01,
+                    "step": 0.01,
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.updateUnitValue",
+                      "debounce": 300,
+                      "params": {
+                        "value": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-tertiary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.per_unit_hint"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_ranges",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.showRanges}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_tiers"
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-sm btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "plus",
+                        "className": "text-xs mr-1"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_add"
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sirsoft-ecommerce.addRangeTier",
+                      "params": {
+                        "index": "{{_local.activeCountryTab ?? 0}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "range_tiers_table",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length > 0}}",
+              "props": {
+                "className": "table-container"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Table",
+                  "props": {
+                    "className": "table"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Thead",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Tr",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_max"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_fee"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "props": {
+                                "className": "w-16"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Tbody",
+                      "children": [
+                        {
+                          "id": "range_tier_row",
+                          "type": "basic",
+                          "name": "Tr",
+                          "iteration": {
+                            "source": "{{_computed.activeCountrySetting?.ranges?.tiers ?? []}}",
+                            "item_var": "tier",
+                            "index_var": "tierIdx"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "number",
+                                    "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error' : 'input'}}",
+                                    "value": "{{tier.min ?? 0}}",
+                                    "min": 0,
+                                    "placeholder": "0",
+                                    "disabled": "{{_computed.isReadOnly}}"
+                                  },
+                                  "actions": [
+                                    {
+                                      "type": "change",
+                                      "handler": "sirsoft-ecommerce.updateRangeTierField",
+                                      "debounce": 300,
+                                      "params": {
+                                        "countryIndex": "{{_local.activeCountryTab ?? 0}}",
+                                        "tierIndex": "{{tierIdx}}",
+                                        "field": "min",
+                                        "value": "{{parseFloat($event.target.value) || 0}}"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min}}",
+                                  "props": {
+                                    "className": "form-error-xs"
+                                  },
+                                  "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ?? ''}}"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "number",
+                                    "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ? 'input input-error' : 'input'}}",
+                                    "value": "{{tier.max ?? ''}}",
+                                    "min": 0,
+                                    "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_unlimited",
+                                    "disabled": "{{_computed.isReadOnly}}"
+                                  },
+                                  "actions": [
+                                    {
+                                      "type": "change",
+                                      "handler": "sirsoft-ecommerce.updateRangeTierField",
+                                      "debounce": 300,
+                                      "params": {
+                                        "countryIndex": "{{_local.activeCountryTab ?? 0}}",
+                                        "tierIndex": "{{tierIdx}}",
+                                        "field": "max",
+                                        "value": "{{$event.target.value ? parseFloat($event.target.value) : null}}"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max}}",
+                                  "props": {
+                                    "className": "form-error-xs"
+                                  },
+                                  "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ?? ''}}"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "number",
+                                    "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'input input-error' : 'input'}}",
+                                    "value": "{{tier.fee ?? 0}}",
+                                    "min": 0,
+                                    "step": 100,
+                                    "disabled": "{{_computed.isReadOnly}}"
+                                  },
+                                  "actions": [
+                                    {
+                                      "type": "change",
+                                      "handler": "sirsoft-ecommerce.updateRangeTierField",
+                                      "debounce": 300,
+                                      "params": {
+                                        "countryIndex": "{{_local.activeCountryTab ?? 0}}",
+                                        "tierIndex": "{{tierIdx}}",
+                                        "field": "fee",
+                                        "value": "{{parseFloat($event.target.value) || 0}}"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee}}",
+                                  "props": {
+                                    "className": "form-error-xs"
+                                  },
+                                  "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ?? ''}}"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Button",
+                                  "if": "{{policy?.data?.abilities?.can_update === true}}",
+                                  "props": {
+                                    "type": "button",
+                                    "className": "btn-icon text-error"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Icon",
+                                      "props": {
+                                        "name": "trash",
+                                        "className": "text-sm"
+                                      }
+                                    }
+                                  ],
+                                  "actions": [
+                                    {
+                                      "type": "click",
+                                      "handler": "sirsoft-ecommerce.removeRangeTier",
+                                      "params": {
+                                        "countryIndex": "{{_local.activeCountryTab ?? 0}}",
+                                        "tierIndex": "{{tierIdx}}"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}",
+              "props": {
+                "className": "text-center text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.no_ranges"
+                }
+              ]
+            }
+          ],
+          "props": {}
+        },
+        {
+          "id": "field_api_settings",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.showApiSettings}}",
+          "props": {
+            "className": "space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "text-body font-semibold mb-2"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_settings"
+            },
+            {
+              "id": "field_api_endpoint",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_endpoint"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "url",
+                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ? 'input input-error font-mono' : 'input font-mono'}}",
+                        "value": "{{_computed.activeCountrySetting?.api_endpoint ?? ''}}",
+                        "placeholder": "https://api.example.com/shipping/calculate",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.updateCountryField",
+                          "debounce": 300,
+                          "params": {
+                            "field": "api_endpoint",
+                            "value": "{{$event.target.value || null}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint']}}",
+                      "props": {
+                        "className": "form-error-xs"
+                      },
+                      "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ?? [])[0] ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_api_http_method",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-1 sm:grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {},
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_http_method"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Select",
+                      "props": {
+                        "className": "input w-full",
+                        "value": "{{_computed.activeCountrySetting?.api_config?.http_method ?? 'POST'}}",
+                        "options": "{{_computed.apiHttpMethodOptions ?? []}}",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.updateApiConfigField",
+                          "params": {
+                            "field": "http_method",
+                            "value": "{{$event.target.value}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {},
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_type"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Select",
+                      "props": {
+                        "className": "input w-full",
+                        "value": "{{_computed.activeCountrySetting?.api_config?.auth_type ?? 'none'}}",
+                        "options": "{{_computed.apiAuthTypeOptions ?? []}}",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.updateApiConfigField",
+                          "params": {
+                            "field": "auth_type",
+                            "value": "{{$event.target.value}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_api_auth_header_name",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_computed.activeCountrySetting?.api_config?.auth_type === 'custom_header'}}",
+              "props": {},
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_header_name"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "className": "input font-mono",
+                    "value": "{{_computed.activeCountrySetting?.api_config?.auth_header_name ?? ''}}",
+                    "placeholder": "X-Api-Key",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.updateApiConfigField",
+                      "debounce": 300,
+                      "params": {
+                        "field": "auth_header_name",
+                        "value": "{{$event.target.value || null}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_api_auth_token",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_computed.activeCountrySetting?.api_config?.auth_type && _computed.activeCountrySetting?.api_config?.auth_type !== 'none'}}",
+              "props": {},
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_token"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "password",
+                    "className": "input font-mono",
+                    "value": "{{_computed.activeCountrySetting?.api_config?.auth_token ?? ''}}",
+                    "placeholder": "{{_computed.activeCountrySetting?.api_config?.has_auth_token ? '••••••••' : ''}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.updateApiConfigField",
+                      "debounce": 300,
+                      "params": {
+                        "field": "auth_token",
+                        "value": "{{$event.target.value || null}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-tertiary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_token_hint"
+                }
+              ]
+            },
+            {
+              "id": "field_api_request_fields",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields"
+                },
+                {
+                  "comment": "후보 5종 체크박스 (자유 텍스트 대체 — silent drop 차단)",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 sm:grid-cols-2 gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "iteration": {
+                        "source": "{{_computed.apiRequestFieldOptions ?? []}}",
+                        "item_var": "fieldOption",
+                        "index_var": "fieldOptionIdx"
+                      },
+                      "props": {
+                        "className": "flex-center gap-2 cursor-pointer text-sm"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "className": "checkbox",
+                            "checked": "{{(_computed.activeCountrySetting?.api_request_fields ?? []).includes(fieldOption.value)}}",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "sirsoft-ecommerce.toggleApiRequestField",
+                              "params": {
+                                "field": "{{fieldOption.value}}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{fieldOption.label}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "체크된 후보별 외부 키 매핑 입력 (우리 키 → 외부 API 키 이름)",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(_computed.activeCountrySetting?.api_request_fields ?? []).length > 0}}",
+                  "props": {
+                    "className": "space-y-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-tertiary block"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_field_map_hint"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "iteration": {
+                        "source": "{{(_computed.apiRequestFieldOptions ?? []).filter(o => (_computed.activeCountrySetting?.api_request_fields ?? []).includes(o.value))}}",
+                        "item_var": "mapOption",
+                        "index_var": "mapOptionIdx"
+                      },
+                      "props": {
+                        "className": "grid grid-cols-2 gap-2 items-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-secondary"
+                          },
+                          "text": "{{mapOption.label}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "className": "input input-sm font-mono",
+                            "value": "{{_computed.activeCountrySetting?.api_config?.field_map?.[mapOption.value] ?? ''}}",
+                            "placeholder": "{{mapOption.value}}",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "sirsoft-ecommerce.updateApiFieldMap",
+                              "debounce": 300,
+                              "params": {
+                                "field": "{{mapOption.value}}",
+                                "value": "{{$event.target.value}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-tertiary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields_hint"
+                }
+              ],
+              "props": {}
+            },
+            {
+              "id": "field_api_response_type",
+              "type": "basic",
+              "name": "Div",
+              "props": {},
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_type"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "className": "input w-full",
+                    "value": "{{_computed.activeCountrySetting?.api_config?.response_type ?? 'json'}}",
+                    "options": "{{_computed.apiResponseTypeOptions ?? []}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.updateApiConfigField",
+                      "params": {
+                        "field": "response_type",
+                        "value": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_api_response_path",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_computed.activeCountrySetting?.api_config?.response_type ?? 'json') === 'json'}}",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_path"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "className": "input font-mono",
+                        "value": "{{_computed.activeCountrySetting?.api_config?.response_path ?? ''}}",
+                        "placeholder": "data.shipping.fee",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.updateApiConfigField",
+                          "debounce": 300,
+                          "params": {
+                            "field": "response_path",
+                            "value": "{{$event.target.value || null}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-tertiary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_path_hint"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_api_response_fee_field",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_computed.activeCountrySetting?.api_config?.response_type ?? 'json') === 'json'}}",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_fee_field"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "className": "input font-mono",
+                        "value": "{{_computed.activeCountrySetting?.api_response_fee_field ?? ''}}",
+                        "placeholder": "shipping_fee",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.updateCountryField",
+                          "debounce": 300,
+                          "params": {
+                            "field": "api_response_fee_field",
+                            "value": "{{$event.target.value || null}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-tertiary"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_fee_field_hint"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_api_test_call",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary btn-sm",
+                    "disabled": "{{_computed.isReadOnly || !_computed.activeCountrySetting?.api_endpoint || _global.apiTestLoading}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sirsoft-ecommerce.testShippingApi"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{_global.apiTestLoading ? '$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_loading' : '$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_button'}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "테스트 호출 결과 미리보기 (성공/실패 무관하게 요청·응답 전체 노출)",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{!!_global.apiTestResult}}",
+                  "props": {
+                    "className": "text-xs space-y-2 p-3 rounded-md bg-gray-100 dark:bg-gray-900 font-mono overflow-auto"
+                  },
+                  "children": [
+                    {
+                      "comment": "결과 요약 라인 — 추출 성공 / HTTP 응답 도달 / 호출 실패",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{_global.apiTestResult?.extracted_fee !== null && _global.apiTestResult?.extracted_fee !== undefined}}",
+                      "props": {
+                        "className": "text-green-600 dark:text-green-400 font-semibold"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee ?? '-'}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(_global.apiTestResult?.extracted_fee === null || _global.apiTestResult?.extracted_fee === undefined) && !!_global.apiTestResult?.response}}",
+                      "props": {
+                        "className": "text-amber-600 dark:text-amber-400 font-semibold"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_no_fee"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{!_global.apiTestResult?.response}}",
+                      "props": {
+                        "className": "text-red-600 dark:text-red-400 font-semibold"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_failed"
+                    },
+                    {
+                      "comment": "요청 라인 — 메서드 + 엔드포인트 (항상)",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-secondary break-all"
+                      },
+                      "text": "{{_global.apiTestResult?.request?.method ?? ''}} {{_global.apiTestResult?.request?.endpoint ?? ''}}"
+                    },
+                    {
+                      "comment": "요청 본문 (전송 데이터)",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{!!_global.apiTestResult?.request?.body}}",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-tertiary"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_request_body"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Pre",
+                          "props": {
+                            "className": "whitespace-pre-wrap break-all text-secondary mt-1"
+                          },
+                          "text": "{{_global.apiTestResult?.request?.body ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "응답 (상태 + 본문)",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{!!_global.apiTestResult?.response}}",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-tertiary"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_response|status={{_global.apiTestResult?.response?.status ?? '-'}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Pre",
+                          "props": {
+                            "className": "whitespace-pre-wrap break-all text-secondary mt-1"
+                          },
+                          "text": "{{_global.apiTestResult?.response?.body ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "호출 자체 실패 시 에러 메시지",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{!!_global.apiTestResult?.error}}",
+                      "props": {
+                        "className": "text-red-600 dark:text-red-400 break-all"
+                      },
+                      "text": "{{_global.apiTestResult?.error ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
-    ]
+      ],
+      "props": {
+        "className": "row-stack"
+      }
+    }
+  ]
 }

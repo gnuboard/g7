@@ -1,0 +1,417 @@
+{
+  "comment": "admin 목록/폼 상태 세트. with_data/empty_data/loading + edit_existing/validation_failed/saving.",
+  "groups": [
+    {
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/users"
+      },
+      "items": [
+        {
+          "id": "with_data",
+          "label": "$t:editor.state.with_data",
+          "default": true
+        },
+        {
+          "id": "empty_data",
+          "label": "$t:editor.state.empty_data",
+          "sampleDataOverrides": {
+            "byDataSourceId": {
+              "users": {
+                "data": {
+                  "data": [],
+                  "meta": {
+                    "total": 0,
+                    "per_page": 20,
+                    "current_page": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/users/:id/edit"
+      },
+      "items": [
+        {
+          "id": "edit_existing",
+          "label": "$t:editor.state.edit_existing",
+          "default": true,
+          "comment": "/1.1-bis — 편집기는 데이터소스 initLocal(\"form\")을 실행하지 않으므로(runtime API→form 흐름 부재) 수정 폼 입력칸이 비어 보인다. user.data 와 동일 값으로 _local.form 을 직접 시드해 캔버스에 prefill 한다(읽기전용 표시는 user.data, 입력칸은 _local.form). 필드명 = admin_user_form.json 의 name= 입력.",
+          "initialState": {
+            "local": {
+              "form": {
+                "name": "이서연",
+                "email": "seoyeon.lee@example.com",
+                "nickname": "서연",
+                "role_ids": [2, 5],
+                "status": "active",
+                "mobile": "010-3456-7890",
+                "phone": "02-777-8800",
+                "homepage": "https://seoyeon.example.com",
+                "zipcode": "06292",
+                "address": "서울특별시 강남구 강남대로 382",
+                "address_detail": "메리츠타워 22층",
+                "country": "KR",
+                "language": "ko",
+                "timezone": "Asia/Seoul",
+                "signature": "운영팀 이서연입니다.",
+                "bio": "커뮤니티 운영과 CS를 담당하고 있습니다.",
+                "admin_memo": "2025년 우수 운영자. CS 응대 만족도 1위. 콘텐츠 신고 처리 권한 보유."
+              }
+            }
+          }
+        },
+        {
+          "id": "create_mode",
+          "label": "$t:editor.state.create_mode",
+          "comment": " route 패치 — admin_user_form 은 {{route?.id}} 유무로 수정/신규 분기(제목·엔드포인트·메서드 PUT/POST). route.id 를 null 로 제거해 신규 작성 모드 화면을 미리본다. 신규 모드는 빈 폼이 의도이므로 _local.form 시드 없음.",
+          "initialState": {
+            "route": {
+              "id": null
+            }
+          }
+        },
+        {
+          "id": "validation_failed",
+          "label": "$t:editor.state.validation_failed",
+          "comment": "관리자 회원 폼(admin_user_form)은 _local.errors.{field}?.[0] (배열)을 읽으므로 그 경로로 배열 메시지를 주입한다(경로 직접 지정). 수정 컨텍스트이므로 edit_existing 과 동일 폼 시드 위에 검증 오류를 얹는다.",
+          "initialState": {
+            "local": {
+              "form": {
+                "name": "",
+                "email": "invalid-email",
+                "nickname": "서연",
+                "role_ids": [2, 5],
+                "status": "active",
+                "mobile": "010-3456-7890",
+                "phone": "02-777-8800",
+                "homepage": "https://seoyeon.example.com",
+                "zipcode": "06292",
+                "address": "서울특별시 강남구 강남대로 382",
+                "address_detail": "메리츠타워 22층",
+                "country": "KR",
+                "language": "ko",
+                "timezone": "Asia/Seoul",
+                "signature": "운영팀 이서연입니다.",
+                "bio": "커뮤니티 운영과 CS를 담당하고 있습니다.",
+                "admin_memo": "2025년 우수 운영자. CS 응대 만족도 1위. 콘텐츠 신고 처리 권한 보유."
+              }
+            }
+          },
+          "formErrors": {
+            "_local.errors.name": ["필수 입력 항목입니다"],
+            "_local.errors.email": ["올바른 이메일 형식이 아닙니다"]
+          }
+        }
+      ]
+    },
+    {
+      "comment": " query 패치 실증 — admin_settings 는 {{_global.activeSettingsTab || query.tab || 'general'}} 으로 탭 화면을 분기한다. 편집기는 평소 query 가 비어 있어 SEO 등 비-기본 탭을 미리볼 수 없으므로, query.tab + 우선 키 _global.activeSettingsTab 을 함께 주입해 탭 변종을 미리본다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/settings"
+      },
+      "items": [
+        {
+          "id": "settings_general",
+          "label": "$t:editor.state.settings_general",
+          "default": true,
+          "initialState": {
+            "query": { "tab": "general" },
+            "global": { "activeSettingsTab": "general" }
+          }
+        },
+        {
+          "id": "settings_mail",
+          "label": "$t:editor.state.settings_mail",
+          "initialState": {
+            "query": { "tab": "mail" },
+            "global": { "activeSettingsTab": "mail" }
+          }
+        },
+        {
+          "id": "settings_upload",
+          "label": "$t:editor.state.settings_upload",
+          "initialState": {
+            "query": { "tab": "upload" },
+            "global": { "activeSettingsTab": "upload" }
+          }
+        },
+        {
+          "id": "settings_seo",
+          "label": "$t:editor.state.settings_seo",
+          "initialState": {
+            "query": { "tab": "seo" },
+            "global": { "activeSettingsTab": "seo" }
+          }
+        },
+        {
+          "id": "settings_security",
+          "label": "$t:editor.state.settings_security",
+          "initialState": {
+            "query": { "tab": "security" },
+            "global": { "activeSettingsTab": "security" }
+          }
+        },
+        {
+          "id": "settings_drivers",
+          "label": "$t:editor.state.settings_drivers",
+          "initialState": {
+            "query": { "tab": "drivers" },
+            "global": { "activeSettingsTab": "drivers" }
+          }
+        },
+        {
+          "id": "settings_advanced",
+          "label": "$t:editor.state.settings_advanced",
+          "initialState": {
+            "query": { "tab": "advanced" },
+            "global": { "activeSettingsTab": "advanced" }
+          }
+        },
+        {
+          "id": "settings_notification_definitions",
+          "label": "$t:editor.state.settings_notification_definitions",
+          "initialState": {
+            "query": { "tab": "notification_definitions" },
+            "global": { "activeSettingsTab": "notification_definitions" }
+          }
+        },
+        {
+          "id": "settings_language_packs",
+          "label": "$t:editor.state.settings_language_packs",
+          "initialState": {
+            "query": { "tab": "language_packs" },
+            "global": { "activeSettingsTab": "language_packs" }
+          }
+        },
+        {
+          "id": "settings_identity",
+          "label": "$t:editor.state.settings_identity",
+          "initialState": {
+            "query": { "tab": "identity" },
+            "global": { "activeSettingsTab": "identity" }
+          }
+        },
+        {
+          "id": "settings_info",
+          "label": "$t:editor.state.settings_info",
+          "initialState": {
+            "query": { "tab": "info" },
+            "global": { "activeSettingsTab": "info" }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "관리자 비밀번호 재설정. admin_reset_password 는 _local.tokenError / _local.success 로 토큰오류·재설정폼·완료 화면을 if 분기하고(본문 line 97/212/262), 검증 실패는 _local.resetErrors.{password,password_confirmation} 인라인 필드 에러로 표시한다(본문 line 361/370/411).",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/reset-password"
+      },
+      "items": [
+        {
+          "id": "token_valid",
+          "label": "$t:editor.state.token_valid",
+          "default": true,
+          "initialState": {
+            "local": {
+              "tokenError": false,
+              "success": false
+            }
+          }
+        },
+        {
+          "id": "token_invalid",
+          "label": "$t:editor.state.token_invalid",
+          "initialState": {
+            "local": {
+              "tokenError": true
+            }
+          }
+        },
+        {
+          "id": "validation_failed",
+          "label": "$t:editor.state.validation_failed",
+          "initialState": {
+            "local": {
+              "tokenError": false,
+              "success": false
+            }
+          },
+          "formErrors": {
+            "_local.resetErrors.password": ["필수 입력 항목입니다"],
+            "_local.resetErrors.password_confirmation": ["필수 입력 항목입니다"]
+          }
+        },
+        {
+          "id": "success",
+          "label": "$t:editor.state.reset_success",
+          "initialState": {
+            "local": {
+              "tokenError": false,
+              "success": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "권한(역할) 폼. admin_role_form 은 {{route?.id}} 유무로 수정/신규를 분기한다(본문 line 33/71). 검증 오류는 회원 폼과 달리 _global.formErrors.{field}?.[0] 경로를 읽는다(본문 line 210/484 — 경로 직접 지정).",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/roles/:id/edit"
+      },
+      "items": [
+        {
+          "id": "edit_existing",
+          "label": "$t:editor.state.edit_existing",
+          "default": true
+        },
+        {
+          "id": "create_mode",
+          "label": "$t:editor.state.create_mode",
+          "initialState": {
+            "route": {
+              "id": null
+            }
+          }
+        },
+        {
+          "id": "validation_failed",
+          "label": "$t:editor.state.validation_failed",
+          "formErrors": {
+            "_global.formErrors.name": ["필수 입력 항목입니다"]
+          }
+        }
+      ]
+    },
+    {
+      "comment": "관리자 본인인증 챌린지. auth/identity_challenge 는 (_local.render_hint ?? 'text_code') 값(text_code/link/external_redirect)으로 세 화면을 if 분기한다(본문 line 94/324/369).",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/identity/challenge"
+      },
+      "items": [
+        {
+          "id": "text_code",
+          "label": "$t:editor.state.challenge_text_code",
+          "default": true,
+          "initialState": {
+            "local": {
+              "render_hint": "text_code"
+            }
+          }
+        },
+        {
+          "id": "link",
+          "label": "$t:editor.state.challenge_link",
+          "initialState": {
+            "local": {
+              "render_hint": "link"
+            }
+          }
+        },
+        {
+          "id": "external_redirect",
+          "label": "$t:editor.state.challenge_external",
+          "initialState": {
+            "local": {
+              "render_hint": "external_redirect"
+            }
+          }
+        },
+        {
+          "id": "code_error",
+          "label": "$t:editor.state.challenge_error",
+          "comment": "코드 입력 화면에서 인증 실패 시 _local.error 배너 표시.",
+          "initialState": {
+            "local": {
+              "render_hint": "text_code",
+              "error": "인증번호가 올바르지 않습니다. 다시 시도해 주세요."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "템플릿 목록. admin_template_list 는 라우트 path param route.type(user/admin)으로 데이터소스 type 파라미터를 분기한다(본문 line 45/600). 탭 하이라이트는 _global.activeTemplateTab 이지만 목록 내용은 route.type 이 SSoT 이므로 두 값을 함께 주입한다.",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/templates/:type"
+      },
+      "items": [
+        {
+          "id": "user_templates",
+          "label": "$t:editor.state.tab.template_user",
+          "default": true,
+          "initialState": {
+            "route": { "type": "user" },
+            "global": { "activeTemplateTab": "user" }
+          }
+        },
+        {
+          "id": "admin_templates",
+          "label": "$t:editor.state.tab.template_admin",
+          "initialState": {
+            "route": { "type": "admin" },
+            "global": { "activeTemplateTab": "admin" }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "관리자 로그인. admin_login 은 _local.loginError 배너 + _local.loginErrors.{email,password} 인라인 필드 에러로 로그인 실패를 표시한다(본문 line 139/178/221).",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/login"
+      },
+      "items": [
+        {
+          "id": "default",
+          "label": "$t:editor.state.login_default",
+          "default": true
+        },
+        {
+          "id": "login_failed",
+          "label": "$t:editor.state.login_failed",
+          "formErrors": {
+            "_local.loginError": "올바른 이메일 형식이 아닙니다",
+            "_local.loginErrors.email": ["올바른 이메일 형식이 아닙니다"],
+            "_local.loginErrors.password": ["필수 입력 항목입니다"]
+          }
+        }
+      ]
+    },
+    {
+      "comment": "관리자 비밀번호 찾기. admin_forgot_password 는 {{_local.success}} 로 입력 폼/메일 발송 완료 화면을 if 분기한다(본문 line 93/106).",
+      "scope": {
+        "kind": "route",
+        "match": "*/admin/forgot-password"
+      },
+      "items": [
+        {
+          "id": "default",
+          "label": "$t:editor.state.forgot_default",
+          "default": true,
+          "initialState": {
+            "local": { "success": false }
+          }
+        },
+        {
+          "id": "success",
+          "label": "$t:editor.state.forgot_success",
+          "initialState": {
+            "local": { "success": true }
+          }
+        }
+      ]
+    }
+  ]
+}

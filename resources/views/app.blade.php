@@ -8,12 +8,8 @@
 
         <title>{{ config('app.name', '그누보드7') }}</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
-
-        <!-- Font Awesome CDN -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- 템플릿 외부 리소스 (template.json의 externals) -->
+        @include('partials.template-externals-head')
 
         <!-- Fallback UI 스타일 -->
         @if(empty($activeUserTemplate))
@@ -22,10 +18,10 @@
 
         <!-- 템플릿 컴포넌트 스타일 -->
         @if(!empty($activeUserTemplate))
-        <link rel="stylesheet" href="/api/templates/assets/{{ $activeUserTemplate }}/css/components.css?v={{ time() }}">
+        <link rel="stylesheet" href="/api/templates/assets/{{ $activeUserTemplate }}/css/components.css?v={{ $extensionCacheVersion }}">
         @endif
     </head>
-    <body class="font-sans antialiased">
+    <body>
         <!-- React 렌더링 루트 -->
         <div id="app" data-template-id="{{ $activeUserTemplate ?? '' }}">
             <!-- Progressive Enhancement: 템플릿 없음 Fallback UI -->
@@ -43,7 +39,12 @@
                 modules: @json($moduleSettings ?? []),
                 moduleAssets: @json($moduleAssets ?? []),
                 pluginAssets: @json($pluginAssets ?? []),
-                appConfig: @json($appConfig ?? [])
+                activeModules: @json($activeModulesMeta ?? []),
+                activePlugins: @json($activePluginsMeta ?? []),
+                appConfig: @json($appConfig ?? []),
+                // 확장 캐시 버전 SSoT — 클라이언트 fetch (`?v=`) 동반 필수.
+                // 자세한 설명은 admin.blade.php 참조.
+                cache_version: {{ (int) ($extensionCacheVersion ?? 0) }}
             };
             @if(isset($errorCode) && isset($errorLayout))
             // 에러 상태 정보 (503 의존성 미충족 등)
@@ -55,11 +56,15 @@
             @endif
         </script>
 
+        @include('partials.template-externals-scripts', ['position' => 'before-core'])
+
         <!-- 코어 렌더링 엔진 -->
         <script src="{{ asset('build/core/template-engine.min.js') }}?v={{ filemtime(public_path('build/core/template-engine.min.js')) }}"></script>
 
+        @include('partials.template-externals-scripts', ['position' => 'before-template'])
+
         <!-- 템플릿 컴포넌트 번들 (IIFE) -->
-        <script src="/api/templates/assets/{{ $activeUserTemplate }}/js/components.iife.js?v={{ time() }}"></script>
+        <script src="/api/templates/assets/{{ $activeUserTemplate }}/js/components.iife.js?v={{ $extensionCacheVersion }}"></script>
 
         <!-- 템플릿 엔진 초기화 (TemplateApp 사용) -->
         <script>
@@ -81,6 +86,8 @@
                 console.error('[User] G7Core.initTemplateApp is not available');
             }
         </script>
+
+        @include('partials.template-externals-scripts', ['position' => 'body-end'])
         @endif
     </body>
 </html>

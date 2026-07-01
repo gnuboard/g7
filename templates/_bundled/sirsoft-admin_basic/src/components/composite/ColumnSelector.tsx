@@ -5,6 +5,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Checkbox } from '../basic/Checkbox';
+import type { EditorAttrs } from '../../types';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:ColumnSelector')) ?? {
@@ -79,6 +80,8 @@ export interface ColumnSelectorProps {
    * 지정하지 않으면 columns 끝에 추가됩니다.
    */
   dynamicColumnsInsertAfter?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -135,6 +138,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   labelClassName,
   dynamicColumns,
   dynamicColumnsInsertAfter,
+  editorAttrs,
 }) => {
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedTriggerLabel = triggerLabel ?? t('common.column_selector');
@@ -388,6 +392,8 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
       ref={menuRef}
       className={`relative inline-block ${className}`}
       style={style}
+      id={id}
+      {...editorAttrs}
     >
       {/* 트리거 버튼 */}
       <Button

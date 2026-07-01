@@ -4,14 +4,17 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OptionHasOrderHistoryException;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Exceptions\StockMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\Product;
-use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 
@@ -40,7 +43,8 @@ class ProductService
         protected ProductImageService $productImageService,
         protected SequenceService $sequenceService,
         protected OrderOptionRepositoryInterface $orderOptionRepository,
-        protected ProductLabelRepositoryInterface $productLabelRepository
+        protected ProductLabelRepositoryInterface $productLabelRepository,
+        protected ProductAdditionalOptionValueRepositoryInterface $additionalOptionValueRepository
     ) {}
 
     /**
@@ -66,9 +70,9 @@ class ProductService
      *
      * @param  array<string, mixed>  $filters  필터 조건 (category_id, search, sort, min_price, max_price, brand_id)
      * @param  int  $perPage  페이지당 개수
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator 페이지네이션된 공개 상품 목록
+     * @return LengthAwarePaginator 페이지네이션된 공개 상품 목록
      */
-    public function getPublicList(array $filters, int $perPage = 20): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function getPublicList(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         HookManager::doAction('sirsoft-ecommerce.product.before_public_list', $filters);
 
@@ -87,9 +91,9 @@ class ProductService
      * before/after_popular_list 훅과 filter_popular_list_result 훅을 발화합니다.
      *
      * @param  int  $limit  조회 개수
-     * @return \Illuminate\Database\Eloquent\Collection<int, Product> 인기 상품 컬렉션
+     * @return Collection<int, Product> 인기 상품 컬렉션
      */
-    public function getPopularProducts(int $limit = 10): \Illuminate\Database\Eloquent\Collection
+    public function getPopularProducts(int $limit = 10): Collection
     {
         HookManager::doAction('sirsoft-ecommerce.product.before_popular_list');
 
@@ -108,9 +112,9 @@ class ProductService
      * before/after_new_list 훅과 filter_new_list_result 훅을 발화합니다.
      *
      * @param  int  $limit  조회 개수
-     * @return \Illuminate\Database\Eloquent\Collection<int, Product> 신상품 컬렉션
+     * @return Collection<int, Product> 신상품 컬렉션
      */
-    public function getNewProducts(int $limit = 10): \Illuminate\Database\Eloquent\Collection
+    public function getNewProducts(int $limit = 10): Collection
     {
         HookManager::doAction('sirsoft-ecommerce.product.before_new_list');
 
@@ -127,12 +131,12 @@ class ProductService
      * ID 배열로 상품 컬렉션을 조회합니다 ('최근 본 상품' 등에 사용).
      *
      * @param  array<int, int>  $ids  조회할 상품 ID 배열
-     * @return \Illuminate\Database\Eloquent\Collection<int, Product> 상품 컬렉션 (빈 입력 시 빈 컬렉션)
+     * @return Collection<int, Product> 상품 컬렉션 (빈 입력 시 빈 컬렉션)
      */
-    public function getProductsByIds(array $ids): \Illuminate\Database\Eloquent\Collection
+    public function getProductsByIds(array $ids): Collection
     {
         if (empty($ids)) {
-            return new \Illuminate\Database\Eloquent\Collection;
+            return new Collection;
         }
 
         return $this->repository->findByIds($ids);
@@ -184,6 +188,9 @@ class ProductService
 
         // XSS 방어: HTML 설명 정화
         $data = $this->sanitizeDescription($data);
+
+        // SEO 동기화 플래그 적용 (서버 SSoT — ON 이면 name/description 으로 meta_* 채움)
+        $data = $this->applySeoSync($data);
 
         // 통화 코드 자동 설정
         $data['currency_code'] = $this->getCurrencyCode();
@@ -267,6 +274,9 @@ class ProductService
 
         // XSS 방어: HTML 설명 정화
         $data = $this->sanitizeDescription($data);
+
+        // SEO 동기화 플래그 적용 (서버 SSoT — 필드 미전송 시 기존 상품값으로 폴백)
+        $data = $this->applySeoSync($data, $product);
 
         // 수정자 정보 추가
         $data['updated_by'] = Auth::id();
@@ -357,6 +367,13 @@ class ProductService
      */
     public function delete(Product $product): bool
     {
+        // 도메인 가드: 주문 이력이 있는 상품은 삭제 불가 (컨트롤러 우회·bulk 경로 방어)
+        // DB FK restrictOnDelete 가 거부하기 전에 사유가 명확한 예외로 차단한다.
+        $ordersCount = $this->orderOptionRepository->countByProductId($product->id);
+        if ($ordersCount > 0) {
+            throw new ProductHasOrderHistoryException($ordersCount);
+        }
+
         // 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.product.before_delete', $product);
 
@@ -370,7 +387,10 @@ class ProductService
             // 3. 옵션 삭제
             $product->options()->delete();
 
-            // 4. 추가 옵션 삭제
+            // 4. 추가 옵션 삭제 (선택지 → 그룹 순서로 명시적 삭제)
+            $this->additionalOptionValueRepository->deleteByAdditionalOptionIds(
+                $product->additionalOptions()->pluck('id')->all()
+            );
             $product->additionalOptions()->delete();
 
             // 5. 라벨 할당 삭제
@@ -398,7 +418,7 @@ class ProductService
 
             // 8. 상품 레코드 완전 삭제 (SoftDeletes 무시)
             // 모든 연관 데이터가 완전 삭제되었으므로 상품도 완전 삭제합니다.
-            $result = $product->forceDelete();
+            $result = $this->repository->forceDelete($product);
 
             // 삭제 후 훅
             HookManager::doAction('sirsoft-ecommerce.product.after_delete', $product);
@@ -432,7 +452,7 @@ class ProductService
     public function bulkUpdateStatus(array $ids, string $field, string $value): array
     {
         // 스냅샷 캡처 (활동 로그 변경 감지용)
-        $snapshots = Product::whereIn('id', $ids)->get()->keyBy('id')->map->toArray()->all();
+        $snapshots = $this->repository->getSnapshotsByIds($ids);
 
         // 일괄 수정 전 훅
         HookManager::doAction('sirsoft-ecommerce.product.before_bulk_update', $ids, [
@@ -458,14 +478,14 @@ class ProductService
      *
      * @param  array<int, int>  $ids  대상 상품 ID 배열
      * @param  string  $method  변경 방식 ('set' | 'increase' | 'decrease')
-     * @param  int  $value  변경 값 (단위 의존)
+     * @param  float  $value  변경 값 (단위 의존, 소수 통화 대응)
      * @param  string  $unit  변경 단위 ('amount' | 'percent')
      * @return array{updated_count: int, requested_count: int} 갱신/요청 건수
      */
-    public function bulkUpdatePrice(array $ids, string $method, int $value, string $unit): array
+    public function bulkUpdatePrice(array $ids, string $method, float $value, string $unit): array
     {
         // 스냅샷 캡처 (활동 로그 변경 감지용)
-        $snapshots = Product::whereIn('id', $ids)->get()->keyBy('id')->map->toArray()->all();
+        $snapshots = $this->repository->getSnapshotsByIds($ids);
 
         HookManager::doAction('sirsoft-ecommerce.product.before_bulk_price_update', $ids, [
             'method' => $method,
@@ -497,7 +517,7 @@ class ProductService
     public function bulkUpdateStock(array $ids, string $method, int $value): array
     {
         // 스냅샷 캡처 (활동 로그 변경 감지용)
-        $snapshots = Product::whereIn('id', $ids)->get()->keyBy('id')->map->toArray()->all();
+        $snapshots = $this->repository->getSnapshotsByIds($ids);
 
         HookManager::doAction('sirsoft-ecommerce.product.before_bulk_stock_update', $ids, [
             'method' => $method,
@@ -528,9 +548,7 @@ class ProductService
     {
         // 스냅샷 캡처 (활동 로그 변경 감지용)
         $ids = $data['ids'] ?? [];
-        $snapshots = ! empty($ids)
-            ? Product::whereIn('id', $ids)->get()->keyBy('id')->map->toArray()->all()
-            : [];
+        $snapshots = $this->repository->getSnapshotsByIds($ids);
 
         // 1. before 훅 실행
         HookManager::doAction('sirsoft-ecommerce.product.before_bulk_update', $data);
@@ -713,6 +731,9 @@ class ProductService
         // 옵션 재고 합계로 상품 재고 업데이트
         $this->syncProductStock($product);
 
+        // 기본 옵션 판매가를 상품 판매가로 동기화 (프론트 우회 시 안전망)
+        $this->syncProductSellingPriceFromDefaultOption($product);
+
         // 옵션 동기화 완료 훅 호출 (option_groups 동기화용)
         HookManager::doAction(
             'sirsoft-ecommerce.product.after_options_sync',
@@ -733,6 +754,31 @@ class ProductService
         if ($product->has_options) {
             $stockSum = $product->calculateOptionStockSum();
             $product->update(['stock_quantity' => $stockSum]);
+        }
+    }
+
+    /**
+     * 상품 판매가를 기본 옵션 판매가로 동기화 (프론트 우회 시 안전망)
+     *
+     * 기본 옵션은 정의상 상품 판매가 = 기본 옵션 판매가이므로,
+     * 옵션 보유 상품에서 기본 옵션이 존재하면 상품 selling_price 를 일치시킵니다.
+     *
+     * @param  Product  $product  상품 모델
+     */
+    protected function syncProductSellingPriceFromDefaultOption(Product $product): void
+    {
+        if (! $product->has_options) {
+            return;
+        }
+
+        $defaultOption = $product->options()->where('is_default', true)->first();
+
+        if ($defaultOption === null) {
+            return;
+        }
+
+        if ((int) $product->selling_price !== (int) $defaultOption->selling_price) {
+            $product->update(['selling_price' => $defaultOption->selling_price]);
         }
     }
 
@@ -899,10 +945,32 @@ class ProductService
     protected function createAdditionalOptions(Product $product, array $additionalOptions): void
     {
         foreach ($additionalOptions as $index => $optionData) {
-            $product->additionalOptions()->create([
+            $group = $product->additionalOptions()->create([
                 'name' => $optionData['name'],
                 'is_required' => $optionData['is_required'] ?? false,
                 'sort_order' => $optionData['sort_order'] ?? $index,
+            ]);
+
+            $this->createAdditionalOptionValues($group, $optionData['values'] ?? []);
+        }
+    }
+
+    /**
+     * 추가옵션 그룹의 선택지 생성
+     *
+     * @param  ProductAdditionalOption  $group  추가옵션 그룹 모델
+     * @param  array  $values  선택지 데이터 배열
+     */
+    protected function createAdditionalOptionValues(ProductAdditionalOption $group, array $values): void
+    {
+        foreach ($values as $index => $valueData) {
+            $group->values()->create([
+                'name' => $valueData['name'],
+                'price_adjustment' => max(0, (int) ($valueData['price_adjustment'] ?? 0)),
+                'is_default' => $valueData['is_default'] ?? false,
+                'is_active' => $valueData['is_active'] ?? true,
+                'allow_custom_text' => $valueData['allow_custom_text'] ?? false,
+                'sort_order' => $valueData['sort_order'] ?? $index,
             ]);
         }
     }
@@ -938,19 +1006,64 @@ class ProductService
         foreach ($additionalOptions as $index => $optionData) {
             if (isset($optionData['id']) && in_array($optionData['id'], $existingIds)) {
                 // 업데이트
-                $product->additionalOptions()->where('id', $optionData['id'])->update([
-                    'name' => $optionData['name'],
-                    'is_required' => $optionData['is_required'] ?? false,
-                    'sort_order' => $optionData['sort_order'] ?? $index,
-                ]);
+                $group = $product->additionalOptions()->find($optionData['id']);
+                if ($group) {
+                    $group->update([
+                        'name' => $optionData['name'],
+                        'is_required' => $optionData['is_required'] ?? false,
+                        'sort_order' => $optionData['sort_order'] ?? $index,
+                    ]);
+                    $this->syncAdditionalOptionValues($group, $optionData['values'] ?? []);
+                }
             } else {
                 // 생성
-                $product->additionalOptions()->create([
+                $group = $product->additionalOptions()->create([
                     'name' => $optionData['name'],
                     'is_required' => $optionData['is_required'] ?? false,
                     'sort_order' => $optionData['sort_order'] ?? $index,
                 ]);
+                $this->createAdditionalOptionValues($group, $optionData['values'] ?? []);
             }
+        }
+    }
+
+    /**
+     * 추가옵션 그룹의 선택지 동기화
+     *
+     * 기존 선택지와 새 선택지를 비교하여 추가/수정/삭제합니다.
+     * 삭제되는 선택지는 cascade 로 정리되며, 과거 주문은 스냅샷으로 보존됩니다.
+     *
+     * @param  ProductAdditionalOption  $group  추가옵션 그룹 모델
+     * @param  array  $values  선택지 데이터 배열
+     */
+    protected function syncAdditionalOptionValues(ProductAdditionalOption $group, array $values): void
+    {
+        $existingIds = $group->values()->pluck('id')->toArray();
+        $newIds = [];
+
+        foreach ($values as $index => $valueData) {
+            $payload = [
+                'name' => $valueData['name'],
+                'price_adjustment' => max(0, (int) ($valueData['price_adjustment'] ?? 0)),
+                'is_default' => $valueData['is_default'] ?? false,
+                'is_active' => $valueData['is_active'] ?? true,
+                'allow_custom_text' => $valueData['allow_custom_text'] ?? false,
+                'sort_order' => $valueData['sort_order'] ?? $index,
+            ];
+
+            if (! empty($valueData['id']) && in_array($valueData['id'], $existingIds)) {
+                $group->values()->where('id', $valueData['id'])->update($payload);
+                $newIds[] = (int) $valueData['id'];
+            } else {
+                $value = $group->values()->create($payload);
+                $newIds[] = $value->id;
+            }
+        }
+
+        // 정의에서 제거된 선택지 삭제 (과거 주문은 스냅샷으로 표시 - D8)
+        $deleteIds = array_diff($existingIds, $newIds);
+        if (! empty($deleteIds)) {
+            $group->values()->whereIn('id', $deleteIds)->delete();
         }
     }
 
@@ -965,7 +1078,7 @@ class ProductService
      */
     protected function validateOptionsDeletion(array $optionIds): void
     {
-        $hasOrders = OrderOption::whereIn('product_option_id', $optionIds)->exists();
+        $hasOrders = $this->orderOptionRepository->existsByProductOptionIds($optionIds);
 
         if ($hasOrders) {
             throw new OptionHasOrderHistoryException(
@@ -1130,6 +1243,127 @@ class ProductService
     }
 
     /**
+     * SEO 동기화 플래그를 적용합니다 (서버 SSoT).
+     *
+     * - seo_sync_title 이 truthy 면 meta_title 을 상품명(name) 기본 로케일 값으로 채웁니다(입력 무시).
+     * - seo_sync_description 이 truthy 면 meta_description 을 상품 설명(description) 기본 로케일 값(160자)으로 채웁니다.
+     * - 플래그 미지정(null) 시 마이그레이션 default(true) 와 정합되도록 기본 ON 으로 간주합니다.
+     * - update 시 name/description 이 미전송이면 기존 상품값으로 폴백합니다.
+     *
+     * @param  array<string, mixed>  $data  상품 데이터
+     * @param  Product|null  $existing  기존 상품 (update 폴백용)
+     * @return array<string, mixed> meta_* 가 반영된 데이터
+     */
+    protected function applySeoSync(array $data, ?Product $existing = null): array
+    {
+        $syncTitle = array_key_exists('seo_sync_title', $data)
+            ? (bool) $data['seo_sync_title']
+            : ($existing?->seo_sync_title ?? true);
+        $syncDescription = array_key_exists('seo_sync_description', $data)
+            ? (bool) $data['seo_sync_description']
+            : ($existing?->seo_sync_description ?? true);
+
+        // 정규화하여 컬럼에 일관 저장
+        $data['seo_sync_title'] = $syncTitle;
+        $data['seo_sync_description'] = $syncDescription;
+
+        if ($syncTitle) {
+            // 상품명(다국어)을 SEO 제목에 로케일별 그대로 미러 — 언어별 SEO 분기 지원
+            $name = $data['name'] ?? $existing?->name ?? null;
+            $data['meta_title'] = $this->localizedAll($name);
+        }
+
+        if ($syncDescription) {
+            // 상품 설명(다국어)을 로케일별로 각자 strip_tags 후 160자 절단하여 미러
+            $description = $data['description'] ?? $existing?->description ?? null;
+            $data['meta_description'] = $this->localizedTruncatedPlain($description, 160);
+        }
+
+        return $data;
+    }
+
+    /**
+     * 다국어 값을 로케일별 문자열 배열로 정규화합니다.
+     *
+     * 문자열이면 기본 로케일 키 단일 항목 배열로 감싸고, 다국어 배열이면 문자열 항목만 보존합니다.
+     *
+     * @param  mixed  $value  다국어 배열 또는 문자열
+     * @return array<string, string> 로케일 → 문자열 배열 (빈 입력은 빈 배열)
+     */
+    protected function localizedAll($value): array
+    {
+        if (is_string($value)) {
+            return $value === '' ? [] : [config('app.locale', 'ko') => $value];
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($value as $locale => $localized) {
+            if (is_string($localized)) {
+                $result[$locale] = $localized;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * 다국어 값을 로케일별로 strip_tags 후 지정 길이로 절단한 배열로 반환합니다.
+     *
+     * @param  mixed  $value  다국어 배열 또는 문자열
+     * @param  int  $limit  로케일별 최대 글자 수
+     * @return array<string, string> 로케일 → 절단된 평문 배열
+     */
+    protected function localizedTruncatedPlain($value, int $limit): array
+    {
+        $normalized = $this->localizedAll($value);
+
+        $result = [];
+        foreach ($normalized as $locale => $localized) {
+            $plain = trim(strip_tags($localized));
+            $result[$locale] = mb_substr($plain, 0, $limit);
+        }
+
+        return $result;
+    }
+
+    /**
+     * 다국어 값에서 기본 로케일(폴백 포함) 문자열을 추출합니다.
+     *
+     * @param  mixed  $value  다국어 배열 또는 문자열
+     * @return string 기본 로케일 값 (없으면 빈 문자열)
+     */
+    protected function localizedPrimary($value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (! is_array($value)) {
+            return '';
+        }
+
+        $primary = config('app.locale', 'ko');
+        $fallback = config('app.fallback_locale', 'ko');
+
+        $resolved = $value[$primary] ?? $value[$fallback] ?? null;
+        if ($resolved === null) {
+            // 첫 번째 비어있지 않은 로케일 값
+            foreach ($value as $localized) {
+                if (is_string($localized) && $localized !== '') {
+                    $resolved = $localized;
+                    break;
+                }
+            }
+        }
+
+        return is_string($resolved) ? $resolved : '';
+    }
+
+    /**
      * 상품정보제공고시 동기화
      *
      * 기존 데이터를 삭제 후 재등록합니다.
@@ -1279,6 +1513,15 @@ class ProductService
                 'id' => $opt->id,
                 'name' => $opt->name,
                 'is_required' => $opt->is_required,
+                'sort_order' => $opt->sort_order,
+                'values' => $opt->values?->sortBy('sort_order')->map(fn ($val) => [
+                    'id' => $val->id,
+                    'name' => $val->name,
+                    'price_adjustment' => $val->price_adjustment,
+                    'is_default' => $val->is_default,
+                    'is_active' => $val->is_active,
+                    'sort_order' => $val->sort_order,
+                ])->values()->toArray() ?? [],
             ])->toArray() ?? [],
 
             'images' => $product->images->map(fn ($img) => [
@@ -1308,6 +1551,15 @@ class ProductService
             'notice_items' => $product->notice?->values,
 
             'shipping_policy_id' => $product->shipping_policy_id,
+            // 현재 부여된 배송정책 객체 (비활성 포함) — 수정폼에서 활성 목록에 없을 때 union 표시용
+            'shipping_policy' => $product->shippingPolicy ? [
+                'id' => $product->shippingPolicy->id,
+                'name' => $product->shippingPolicy->name,
+                'is_active' => $product->shippingPolicy->is_active,
+                'is_default' => $product->shippingPolicy->is_default,
+                'fee_summary' => $product->shippingPolicy->getFeeSummary(),
+                'country_settings' => $product->shippingPolicy->country_settings,
+            ] : null,
             'common_info_id' => $product->common_info_id,
 
             'label_assignments' => $product->labelAssignments?->map(fn ($la) => [
@@ -1324,6 +1576,9 @@ class ProductService
             'meta_title' => $product->meta_title,
             'meta_description' => $product->meta_description,
             'seo_tags' => $product->meta_keywords ?? [],
+            // SEO 동기화 의도 복원 (재로드 시 토글 상태 유지)
+            'seo_sync_title' => (bool) $product->seo_sync_title,
+            'seo_sync_description' => (bool) $product->seo_sync_description,
 
             'barcode' => $product->barcode,
             'hs_code' => $product->hs_code,
@@ -1333,8 +1588,8 @@ class ProductService
     /**
      * 상품 복사용 데이터 조회 (ID 제외, 옵션별 필터링)
      *
-     * @param int $id 상품 ID
-     * @param array $copyOptions 복사 옵션 (각 섹션별 true/false)
+     * @param  int  $id  상품 ID
+     * @param  array  $copyOptions  복사 옵션 (각 섹션별 true/false)
      * @return array|null 복사용 데이터 또는 null
      */
     public function getDetailForCopy(int $id, array $copyOptions = []): ?array
@@ -1425,7 +1680,11 @@ class ProductService
             $data['meta_title'] = null;
             $data['meta_description'] = null;
             $data['seo_tags'] = [];
+            // SEO 미복사 시 동기화 의도는 기본 ON 으로 리셋 (복사 상품이 상품명 기준 자동 채움)
+            $data['seo_sync_title'] = true;
+            $data['seo_sync_description'] = true;
         }
+        // copy_seo=1 이면 seo_sync_* 도 원본 의도 그대로 복사됨 (getDetailForForm 반환값 유지)
 
         // 식별 코드 (SKU, 바코드 등)
         if (! ($copyOptions['identification'] ?? true)) {
@@ -1445,7 +1704,6 @@ class ProductService
      * 파일 크기를 읽기 쉬운 형식으로 변환
      *
      * @param  int|null  $bytes  바이트 크기
-     * @return string
      */
     private function formatFileSize(?int $bytes): string
     {
@@ -1504,7 +1762,7 @@ class ProductService
      * @param  int|null  $categoryId  카테고리 필터
      * @param  int  $offset  오프셋
      * @param  int  $limit  조회할 최대 항목 수
-     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
+     * @return array{total: int, items: Collection}
      */
     public function searchByKeyword(string $keyword, string $sort = 'latest', ?int $categoryId = null, int $offset = 0, int $limit = 10): array
     {

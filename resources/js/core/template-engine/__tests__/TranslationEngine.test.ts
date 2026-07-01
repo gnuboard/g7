@@ -615,6 +615,47 @@ describe('TranslationEngine', () => {
       expect(result).toBe('페이지 정보: 총 500명 중 1-25명 표시');
     });
 
+    // 데이터 칩 param 은 개수 임의(0/1/N), 위치 임의(맨앞/중간/맨끝)일 수 있다.
+    // param 정의(`|pN={{소스}}`)가 있으면 모든 조합에서 전 param 이 정확히 치환되어야 한다
+    // (이전 "두 번째 파라미터 누락" 결함 재발 금지). param 정의가 없는 경우(desync)에는
+    // 키 값의 raw `{pN}` 을 그대로 노출한다.
+    describe('데이터 칩 param 임의 개수·위치 치환', () => {
+      const ctx: TranslationContext = { templateId: 'template-1', locale: 'ko' };
+      const dc = {
+        current_user: { data: { uuid: 'UU', email: 'a@b.com', name: '홍길동', id: 7 } },
+      };
+      const run = (keyValue: string, paramsStr: string): string => {
+        engine.setTranslationValue('template-1', 'ko', 'custom.t', keyValue);
+        return engine.translate('custom.t', ctx, paramsStr, dc);
+      };
+
+      it('맨 끝 1개', () => {
+        expect(run('회원 {p0}', "|p0={{current_user?.data?.id ?? ''}}")).toBe('회원 7');
+      });
+      it('맨 앞 1개', () => {
+        expect(run('{p0} 님', "|p0={{current_user?.data?.name ?? ''}}")).toBe('홍길동 님');
+      });
+      it('중간 1개', () => {
+        expect(run('회 {p0} 원', "|p0={{current_user?.data?.uuid ?? ''}}")).toBe('회 UU 원');
+      });
+      it('2개(앞+뒤) — 둘 다 치환(두 번째 누락 금지)', () => {
+        const r = run('회 {p0} 원 {p1} 끝', "|p0={{current_user?.data?.uuid ?? ''}}|p1={{current_user?.data?.email ?? ''}}");
+        expect(r).toBe('회 UU 원 a@b.com 끝');
+        expect(r).not.toContain('{p1}');
+      });
+      it('3개(앞·중간·끝) 전수 치환', () => {
+        const r = run('{p0}-{p1}-{p2}', "|p0={{current_user?.data?.id ?? ''}}|p1={{current_user?.data?.uuid ?? ''}}|p2={{current_user?.data?.name ?? ''}}");
+        expect(r).toBe('7-UU-홍길동');
+      });
+      it('불연속 번호(p0,p2 — p1 없음)도 각 자리 치환', () => {
+        const r = run('{p0} {p2}', "|p0={{current_user?.data?.id ?? ''}}|p2={{current_user?.data?.name ?? ''}}");
+        expect(r).toBe('7 홍길동');
+      });
+      it('param 0개(키화만, 평문) — 그대로', () => {
+        expect(run('순수 평문', '')).toBe('순수 평문');
+      });
+    });
+
     it('앰퍼샌드(&)로 구분된 파라미터도 처리', () => {
       const result = engine.translate(
         'pagination.info',
@@ -1251,6 +1292,36 @@ describe('TranslationEngine', () => {
       // 4. loadTranslations 재호출 전에도 기존 번역은 유지되어야 함
       //    → 병렬 toast 가 raw key 가 아닌 실제 번역을 받음
       expect(engine.translate('admin.modules.activate_success', context)).toBe('모듈 활성화 성공');
+    });
+  });
+
+  describe('setTranslationValue (낙관적 즉시 반영)', () => {
+    const context: TranslationContext = { templateId: 'tpl', locale: 'ko' };
+
+    // translate() 는 bare 키(`custom.home.2`)를 받는다($t: 접두 해석은 resolveTranslations 의 책임).
+    it('빈 사전에 점선 키를 주입하면 즉시 해석된다', () => {
+      engine.setTranslationValue('tpl', 'ko', 'custom.home.2', '환영합니다');
+      expect(engine.translate('custom.home.2', context)).toBe('환영합니다');
+    });
+
+    it('기존 사전의 다른 키를 보존하며 한 키만 덮어쓴다', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ nav: { home: '홈' }, custom: { home: { 1: '옛값' } } }),
+      });
+      await engine.loadTranslations('tpl', 'ko', '/api');
+      engine.setTranslationValue('tpl', 'ko', 'custom.home.1', '새값');
+      // 덮어쓴 키.
+      expect(engine.translate('custom.home.1', context)).toBe('새값');
+      // 다른 키 보존.
+      expect(engine.translate('nav.home', context)).toBe('홈');
+    });
+
+    it('중간 경로가 문자열이어도 객체로 승격해 주입한다(충돌 방지)', () => {
+      engine.setTranslationValue('tpl', 'ko', 'custom', '문자열');
+      // 이후 하위 키 주입 — custom 이 문자열이지만 객체로 승격.
+      engine.setTranslationValue('tpl', 'ko', 'custom.home.3', '값');
+      expect(engine.translate('custom.home.3', context)).toBe('값');
     });
   });
 });

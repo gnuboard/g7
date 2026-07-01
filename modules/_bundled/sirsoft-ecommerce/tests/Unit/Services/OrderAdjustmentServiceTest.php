@@ -3,13 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Models\User;
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
-use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\DTO\CancellationAdjustment;
@@ -20,8 +15,8 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
@@ -66,7 +61,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      */
     protected function setupTestCurrencySettings(): void
     {
-        $settingsPath = storage_path('app/modules/sirsoft-ecommerce/settings');
+        $settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         if (! is_dir($settingsPath)) {
             mkdir($settingsPath, 0755, true);
         }
@@ -94,9 +89,13 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     protected function tearDown(): void
     {
-        $settingsFile = storage_path('app/modules/sirsoft-ecommerce/settings/language_currency.json');
+        $settingsFile = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/language_currency.json');
         if (file_exists($settingsFile)) {
             unlink($settingsFile);
+        }
+        $mileageFile = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/mileage.json');
+        if (file_exists($mileageFile)) {
+            unlink($mileageFile);
         }
         parent::tearDown();
     }
@@ -159,7 +158,6 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * @param  bool  $extraFeeEnabled  도서산간 추가배송비 사용여부
      * @param  array|null  $extraFeeSettings  도서산간 추가배송비 설정
      * @param  bool  $extraFeeMultiply  도서산간 추가배송비 수량비례 적용
-     * @return ShippingPolicy
      */
     protected function createShippingPolicy(
         ChargePolicyEnum $chargePolicy = ChargePolicyEnum::FREE,
@@ -244,7 +242,6 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 테스트용 카테고리를 생성합니다.
      *
      * @param  string  $name  카테고리명
-     * @return Category
      */
     protected function createCategory(string $name = '테스트 카테고리'): Category
     {
@@ -268,7 +265,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * @param  CalculationInput  $input  계산 입력
      * @param  array  $orderOverrides  Order 추가/오버라이드 속성
-     * @return Order  생성된 주문 (옵션, 배송, 결제 관계 로드됨)
+     * @return Order 생성된 주문 (옵션, 배송, 결제 관계 로드됨)
      */
     protected function createOrderFromCalculation(
         CalculationInput $input,
@@ -350,6 +347,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
                 'subtotal_tax_amount' => $item->taxableAmount,
                 'subtotal_tax_free_amount' => $item->taxFreeAmount,
                 'subtotal_points_used_amount' => $item->pointsUsedShare,
+                'subtotal_earned_points_amount' => $item->pointsEarning,
             ];
 
             if ($productSnapshot) {
@@ -395,7 +393,6 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * CancellationAdjustment를 생성합니다.
      *
      * @param  array  $cancelItems  [{order_option_id, cancel_quantity}]
-     * @return CancellationAdjustment
      */
     protected function buildCancellation(array $cancelItems): CancellationAdjustment
     {
@@ -406,7 +403,6 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 주문의 모든 옵션을 전량 취소하는 CancellationAdjustment를 생성합니다.
      *
      * @param  Order  $order  주문
-     * @return CancellationAdjustment
      */
     protected function buildFullCancellation(Order $order): CancellationAdjustment
     {
@@ -6616,6 +6612,708 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
         $this->assertEquals(
             $preview['original_snapshot']['subtotal_amount'],
             $preview['original_snapshot']['total_list_price_amount']
+        );
+    }
+
+    /**
+     * 마일리지 설정을 활성화합니다 (적립 발생 테스트용).
+     *
+     * @param  int  $earnRate  기본 적립률 (%)
+     */
+    protected function enableMileageSettings(int $earnRate = 10): void
+    {
+        $settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
+        if (! is_dir($settingsPath)) {
+            mkdir($settingsPath, 0755, true);
+        }
+
+        file_put_contents(
+            $settingsPath.'/mileage.json',
+            json_encode([
+                'enabled' => true,
+                'default_earn_rate' => $earnRate,
+                'earn_trigger' => 'confirmed',
+                'earn_delay_days' => 0,
+                'currency_rules' => [
+                    ['currency_code' => 'KRW', 'point_value' => 1, 'min_use_amount' => 0, 'use_unit' => 1, 'max_use_type' => 'percent', 'max_use_percent' => 100, 'max_use_value' => 0],
+                ],
+                'expiry_enabled' => true,
+                'expiry_days' => 365,
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+
+        // 설정 파일을 새로 썼으므로 주입된 서비스 인스턴스를 재해석 (설정 캐시 초기화)
+        $this->calculationService = app(OrderCalculationService::class);
+        $this->adjustmentService = app(OrderAdjustmentService::class);
+    }
+
+    /**
+     * §6.3 회귀: 부분취소 후 잔여 옵션의 적립액(subtotal_earned_points_amount)이
+     * 재안분값으로 옵션 업데이트에 저장되는지 검증 (PG 우선).
+     *
+     * 결함: buildOptionUpdates 가 적립액 갱신을 누락하면 취소 상품 몫까지 적립됨.
+     */
+    public function test_partial_cancel_recalculates_earned_points_pg_first(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        [$productA, $optionA] = $this->createProductWithOption(price: 20000);
+        [$productB, $optionB] = $this->createProductWithOption(price: 10000);
+
+        $input = new CalculationInput(items: [
+            new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+            new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+        ]);
+
+        $order = $this->createOrderFromCalculation($input);
+        $optionToCancel = $order->options->firstWhere('product_option_id', $optionA->id);
+        $remainingOption = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        $adjustment = $this->buildCancellation([
+            ['order_option_id' => $optionToCancel->id, 'cancel_quantity' => 1],
+        ]);
+        $result = $this->adjustmentService->calculate($order, $adjustment);
+
+        // 잔여 옵션(B, 10,000)의 적립액이 옵션 업데이트에 저장되어야 함 (10% = 1,000)
+        $this->assertArrayHasKey($remainingOption->id, $result->optionUpdates);
+        $this->assertArrayHasKey(
+            'subtotal_earned_points_amount',
+            $result->optionUpdates[$remainingOption->id],
+            '부분취소 재계산 결과에 적립액 갱신이 누락되었습니다.'
+        );
+        $this->assertEquals(
+            1000,
+            $result->optionUpdates[$remainingOption->id]['subtotal_earned_points_amount'],
+            '취소 상품 몫이 제외된 잔여 옵션 적립액과 일치해야 합니다.'
+        );
+    }
+
+    /**
+     * §6.3 회귀: 마일리지 우선(POINTS_FIRST) 환불 시에도 잔여 옵션 적립액이 재안분 저장됨.
+     *
+     * 입력: A(20,000)+B(10,000), rate 10%, usePoints 3,000(A:2,000/B:1,000 안분), A 취소.
+     * 예상: 재계산 시 B만 남고 usePoints 3,000 전액이 B(결제금액 10,000)에 적용 →
+     *       B earnable = 10,000 − 3,000 = 7,000 → earn = floor(7,000 × 10%) = 700.
+     *       적립 재안분값은 환불 우선순위와 무관(우선순위는 refund split 만 변경)하므로 pg_first 와 동일.
+     */
+    public function test_partial_cancel_recalculates_earned_points_points_first(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        [$productA, $optionA] = $this->createProductWithOption(price: 20000);
+        [$productB, $optionB] = $this->createProductWithOption(price: 10000);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+                new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+            ],
+            usePoints: 3000,
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+        $optionToCancel = $order->options->firstWhere('product_option_id', $optionA->id);
+        $remainingOption = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        $adjustment = $this->buildCancellation([
+            ['order_option_id' => $optionToCancel->id, 'cancel_quantity' => 1],
+        ]);
+        $result = $this->adjustmentService->calculate($order, $adjustment, RefundPriorityEnum::POINTS_FIRST);
+
+        $this->assertArrayHasKey('subtotal_earned_points_amount', $result->optionUpdates[$remainingOption->id]);
+        // 잔여 B 적립액 = floor((10,000 − 3,000) × 10%) = 700 (마일리지 사용분 제외 정확값)
+        $this->assertEquals(
+            700,
+            $result->optionUpdates[$remainingOption->id]['subtotal_earned_points_amount'],
+            'POINTS_FIRST 부분취소 시 잔여 옵션 적립액은 사용분(3,000) 제외 기준 정확값이어야 합니다.'
+        );
+    }
+
+    /**
+     * §6.3: 마일리지 사용 + 부분취소 재안분 적립값은 환불 우선순위(PG_FIRST/POINTS_FIRST)에 무관하게 동일하다.
+     *
+     * 근거: 적립 재안분은 잔여 옵션 재계산(recalcResult)에서 도출되며, 우선순위는 환불 분배(refund split)에만 작용.
+     * 동일 입력(A 20,000 + B 10,000, rate 10%, usePoints 3,000, A 취소)으로 두 우선순위 각각 계산 →
+     * 잔여 B 적립액 == 700 으로 동일, 단 refund split(refundAmount/refundPointsAmount)은 상이.
+     */
+    public function test_partial_cancel_earned_points_equal_across_refund_priority(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        [$productA, $optionA] = $this->createProductWithOption(price: 20000);
+        [$productB, $optionB] = $this->createProductWithOption(price: 10000);
+
+        $makeOrder = function () use ($productA, $optionA, $productB, $optionB): Order {
+            $input = new CalculationInput(
+                items: [
+                    new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+                    new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+                ],
+                usePoints: 3000,
+            );
+
+            return $this->createOrderFromCalculation($input);
+        };
+
+        $orderPg = $makeOrder();
+        $cancelPg = $orderPg->options->firstWhere('product_option_id', $optionA->id);
+        $remainPg = $orderPg->options->firstWhere('product_option_id', $optionB->id);
+        $resultPg = $this->adjustmentService->calculate(
+            $orderPg,
+            $this->buildCancellation([['order_option_id' => $cancelPg->id, 'cancel_quantity' => 1]]),
+            RefundPriorityEnum::PG_FIRST
+        );
+
+        $orderPoints = $makeOrder();
+        $cancelPoints = $orderPoints->options->firstWhere('product_option_id', $optionA->id);
+        $remainPoints = $orderPoints->options->firstWhere('product_option_id', $optionB->id);
+        $resultPoints = $this->adjustmentService->calculate(
+            $orderPoints,
+            $this->buildCancellation([['order_option_id' => $cancelPoints->id, 'cancel_quantity' => 1]]),
+            RefundPriorityEnum::POINTS_FIRST
+        );
+
+        // 적립 재안분값은 두 우선순위에서 동일 (700)
+        $this->assertEquals(700, $resultPg->optionUpdates[$remainPg->id]['subtotal_earned_points_amount']);
+        $this->assertEquals(
+            $resultPg->optionUpdates[$remainPg->id]['subtotal_earned_points_amount'],
+            $resultPoints->optionUpdates[$remainPoints->id]['subtotal_earned_points_amount'],
+            '적립 재안분값은 환불 우선순위와 무관하게 동일해야 합니다.'
+        );
+
+        // 단, 환불 분배(refund split)는 우선순위에 따라 달라져야 함 (POINTS_FIRST 는 포인트 환불이 우선)
+        $this->assertGreaterThanOrEqual($resultPg->refundPointsAmount, $resultPoints->refundPointsAmount);
+    }
+
+    /**
+     * §6.3: 부분취소 후 잔여 옵션 적립액 합이 취소 상품 몫을 포함하지 않는다 (취소분 미적립).
+     *
+     * 입력: A(20,000)+B(10,000), rate 10%, 사용 없음. 원 적립 합 = 2,000 + 1,000 = 3,000.
+     * A 취소 → 잔여 적립(B) = 1,000 < 원 적립 합 3,000 (취소 A 몫 2,000 제외됨).
+     */
+    public function test_partial_cancel_excludes_cancelled_option_share_from_earned(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        [$productA, $optionA] = $this->createProductWithOption(price: 20000);
+        [$productB, $optionB] = $this->createProductWithOption(price: 10000);
+
+        $input = new CalculationInput(items: [
+            new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+            new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+        ]);
+
+        $order = $this->createOrderFromCalculation($input);
+        $originalEarnedSum = (int) $order->options->sum('subtotal_earned_points_amount');
+        $optionToCancel = $order->options->firstWhere('product_option_id', $optionA->id);
+        $remainingOption = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        $result = $this->adjustmentService->calculate(
+            $order,
+            $this->buildCancellation([['order_option_id' => $optionToCancel->id, 'cancel_quantity' => 1]])
+        );
+
+        // 원 적립 합은 3,000 (A 2,000 + B 1,000)
+        $this->assertEquals(3000, $originalEarnedSum);
+        // 잔여 B 적립 = 1,000 (취소 A 몫 2,000 미포함)
+        $this->assertEquals(1000, $result->optionUpdates[$remainingOption->id]['subtotal_earned_points_amount']);
+    }
+
+    /**
+     * §6.3 회귀: 부분취소 재계산 시 옵션 레벨 다통화(mc_) 컬럼이 재안분값으로 갱신된다 (PO 확정).
+     *
+     * 결함: buildOptionUpdates 가 plain subtotal_* 만 갱신하고 mc_subtotal_* 는 부분취소 후 stale.
+     */
+    public function test_partial_cancel_recalculates_option_multi_currency_columns(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        [$productA, $optionA] = $this->createProductWithOption(price: 20000);
+        [$productB, $optionB] = $this->createProductWithOption(price: 10000);
+
+        $input = new CalculationInput(items: [
+            new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+            new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+        ]);
+
+        $currencySnapshot = [
+            'base_currency' => 'KRW',
+            'exchange_rates' => [
+                'KRW' => ['rate' => 1, 'rounding_unit' => 1, 'rounding_method' => 'round'],
+                'USD' => ['rate' => 0.85, 'rounding_unit' => 0.01, 'rounding_method' => 'round'],
+            ],
+        ];
+
+        $order = $this->createOrderFromCalculation($input, ['currency_snapshot' => $currencySnapshot]);
+        $optionToCancel = $order->options->firstWhere('product_option_id', $optionA->id);
+        $remainingOption = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        $adjustment = $this->buildCancellation([
+            ['order_option_id' => $optionToCancel->id, 'cancel_quantity' => 1],
+        ]);
+        $result = $this->adjustmentService->calculate($order, $adjustment);
+
+        $updates = $result->optionUpdates[$remainingOption->id];
+
+        // mc_ 적립/사용 컬럼이 재산출되어야 함 (KRW 기준값 = plain 값과 동일)
+        $this->assertArrayHasKey('mc_subtotal_earned_points_amount', $updates, 'mc_ 적립 컬럼이 부분취소 재계산에 포함되어야 합니다.');
+        $this->assertArrayHasKey('mc_subtotal_points_used_amount', $updates, 'mc_ 사용 컬럼도 함께 갱신되어야 합니다(비대칭 해소).');
+        $this->assertArrayHasKey('KRW', $updates['mc_subtotal_earned_points_amount']);
+        $this->assertSame(
+            (int) $updates['subtotal_earned_points_amount'],
+            (int) $updates['mc_subtotal_earned_points_amount']['KRW'],
+            'KRW 기준 mc_ 적립값은 plain 재안분값과 일치해야 합니다.'
+        );
+        // USD 변환값 존재
+        $this->assertArrayHasKey('USD', $updates['mc_subtotal_earned_points_amount']);
+    }
+
+    // ================================================================
+    // §6.3 복합 상황: 배송정책 · 할인쿠폰 · 도서산간 · 상품별 정책 + 마일리지 (PO 추가 요구)
+    // OrderCalculation 테스트 수준의 정확값 검증. 각 케이스는 적립 재안분값이
+    // 환불 우선순위에 무관(우선순위는 refund split 만 변경)함을 함께 단언한다.
+    // ================================================================
+
+    /**
+     * 복합 1: 상품쿠폰 + 마일리지 사용 + 부분취소.
+     *
+     * A(20,000) + B(10,000), 상품쿠폰 FIXED 3,000(scope ALL), rate 10%, usePoints 3,000, A 취소.
+     * 잔여 B 적립 base = 상품쿠폰 차감 후 금액 − 재안분 마일리지 사용분. 취소 옵션 쿠폰 복원 동반.
+     * 정확값은 엔진 재계산 기준으로 고정하고, 취소분 미포함(잔여 적립 < 원 적립 합)을 함께 단언.
+     */
+    public function test_partial_cancel_product_coupon_and_mileage_usage_exact(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        $couponIssue = $this->createCouponWithIssue(
+            targetType: CouponTargetType::PRODUCT_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 3000,
+            targetScope: CouponTargetScope::ALL,
+        );
+
+        [$productA, $optionA] = $this->createProductWithOption(price: 20000);
+        [$productB, $optionB] = $this->createProductWithOption(price: 10000);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+                new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+            ],
+            couponIssueIds: [$couponIssue->id],
+            usePoints: 3000,
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+        $originalEarnedSum = (int) $order->options->sum('subtotal_earned_points_amount');
+        $optionToCancel = $order->options->firstWhere('product_option_id', $optionA->id);
+        $remainingOption = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        $result = $this->adjustmentService->calculate(
+            $order,
+            $this->buildCancellation([['order_option_id' => $optionToCancel->id, 'cancel_quantity' => 1]])
+        );
+
+        $earned = (int) $result->optionUpdates[$remainingOption->id]['subtotal_earned_points_amount'];
+        // 상품쿠폰 FIXED 3,000(scope ALL)은 상품별 적용 → B 에 3,000 적용.
+        // 잔여 B earnable = 10,000 − 3,000(상품쿠폰) − 3,000(사용) = 4,000 → earn = floor(4,000 × 10%) = 400.
+        $this->assertEquals(400, $earned, '상품쿠폰+마일리지 복합 부분취소 잔여 적립 정확값');
+        // 취소 A 몫이 잔여에 합산되지 않음
+        $this->assertLessThan($originalEarnedSum, $earned);
+    }
+
+    /**
+     * 복합 2: 주문쿠폰 + 마일리지 사용 + 부분취소.
+     *
+     * A(20,000) + B(10,000), 주문쿠폰 ORDER_AMOUNT FIXED 3,000, rate 10%, usePoints 3,000, A 취소.
+     * 주문쿠폰은 잔여 옵션 비례 재안분 → 취소 후 B 의 주문쿠폰 안분이 커짐. earnable 재산출 정확값 고정.
+     */
+    public function test_partial_cancel_order_coupon_and_mileage_usage_exact(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        $couponIssue = $this->createCouponWithIssue(
+            targetType: CouponTargetType::ORDER_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 3000,
+            targetScope: CouponTargetScope::ALL,
+        );
+
+        [$productA, $optionA] = $this->createProductWithOption(price: 20000);
+        [$productB, $optionB] = $this->createProductWithOption(price: 10000);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+                new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+            ],
+            couponIssueIds: [$couponIssue->id],
+            usePoints: 3000,
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+        $optionToCancel = $order->options->firstWhere('product_option_id', $optionA->id);
+        $remainingOption = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        $resultPg = $this->adjustmentService->calculate(
+            $order,
+            $this->buildCancellation([['order_option_id' => $optionToCancel->id, 'cancel_quantity' => 1]]),
+            RefundPriorityEnum::PG_FIRST
+        );
+
+        $earnedPg = (int) $resultPg->optionUpdates[$remainingOption->id]['subtotal_earned_points_amount'];
+        // 재계산: B 만 남으므로 주문쿠폰 3,000 전액 B 에 적용 + usePoints 3,000 전액 B.
+        // B earnable = 10,000 − 3,000(주문쿠폰) − 3,000(사용) = 4,000 → earn = floor(4,000 × 10%) = 400.
+        $this->assertEquals(400, $earnedPg, '주문쿠폰+마일리지 복합 부분취소 잔여 적립 정확값');
+
+        // 환불 우선순위 무관 동일
+        $order2 = $this->createOrderFromCalculation($input);
+        $cancel2 = $order2->options->firstWhere('product_option_id', $optionA->id);
+        $remain2 = $order2->options->firstWhere('product_option_id', $optionB->id);
+        $resultPoints = $this->adjustmentService->calculate(
+            $order2,
+            $this->buildCancellation([['order_option_id' => $cancel2->id, 'cancel_quantity' => 1]]),
+            RefundPriorityEnum::POINTS_FIRST
+        );
+        $this->assertEquals(
+            $earnedPg,
+            (int) $resultPoints->optionUpdates[$remain2->id]['subtotal_earned_points_amount'],
+            '주문쿠폰 복합에서도 적립 재안분값은 환불 우선순위와 무관해야 합니다.'
+        );
+    }
+
+    /**
+     * 복합 3: 조건부 무료배송 임계 붕괴 + 마일리지 사용 + 부분취소.
+     *
+     * 정책 CONDITIONAL_FREE(baseFee 3,000, freeThreshold 25,000). A(20,000)+B(10,000)=30,000 → 무료.
+     * A 취소 → 잔여 10,000 < 25,000 → 배송비 3,000 부활(shippingDifference 음수 방향).
+     * 배송비 재판정이 상품금액 기준 적립 안분을 오염시키지 않음을 검증.
+     */
+    public function test_partial_cancel_free_shipping_threshold_breaks_with_mileage_usage(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        $sp = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::CONDITIONAL_FREE,
+            baseFee: 3000,
+            freeThreshold: 25000,
+        );
+
+        [$productA, $optionA] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp);
+        [$productB, $optionB] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+                new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+            ],
+            usePoints: 3000,
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+        // 원 주문은 무료배송 (합계 30,000 >= 25,000)
+        $this->assertEquals(0, (int) $order->total_shipping_amount);
+
+        $optionToCancel = $order->options->firstWhere('product_option_id', $optionA->id);
+        $remainingOption = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        $result = $this->adjustmentService->calculate(
+            $order,
+            $this->buildCancellation([['order_option_id' => $optionToCancel->id, 'cancel_quantity' => 1]])
+        );
+
+        // 잔여 B 적립 = floor((10,000 − 3,000 사용) × 10%) = 700. 배송비 부활과 독립.
+        $this->assertEquals(
+            700,
+            (int) $result->optionUpdates[$remainingOption->id]['subtotal_earned_points_amount'],
+            '배송비 재판정이 상품금액 기준 적립 안분을 오염시키면 안 됩니다.'
+        );
+        // 잔여 주문은 무료배송 문턱 아래라 배송비 3,000 부활 → recalc 배송비 = 3,000
+        $this->assertEquals(3000, (int) $result->recalculated->summary->totalShipping);
+    }
+
+    /**
+     * 복합 4: 상품쿠폰 + 조건부 배송정책 + 마일리지 사용 3중 복합, 3옵션 중 1개 부분취소.
+     *
+     * 잔여 2옵션 적립 재안분 + 배송비 차이 + 복원 쿠폰 + 환불 split 동시 단언.
+     * 적립 재안분값은 두 우선순위에서 동일.
+     */
+    public function test_partial_cancel_coupon_and_shipping_and_mileage_usage_full_composite(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        $sp = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::FIXED, baseFee: 3000);
+
+        [$pA, $oA] = $this->createProductWithOption(price: 30000, shippingPolicy: $sp);
+        [$pB, $oB] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp);
+        [$pC, $oC] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp);
+
+        // 주문마다 신규 쿠폰 발급 (발급 1건을 두 주문에 재사용하면 첫 주문이 USED 처리 → 둘째 주문 오염)
+        $makeOrder = function () use ($pA, $oA, $pB, $oB, $pC, $oC): Order {
+            $couponIssue = $this->createCouponWithIssue(
+                targetType: CouponTargetType::PRODUCT_AMOUNT,
+                discountType: CouponDiscountType::FIXED,
+                discountValue: 3000,
+                targetScope: CouponTargetScope::ALL,
+            );
+            $input = new CalculationInput(
+                items: [
+                    new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                    new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+                    new CalculationItem(productId: $pC->id, productOptionId: $oC->id, quantity: 1),
+                ],
+                couponIssueIds: [$couponIssue->id],
+                usePoints: 6000,
+            );
+
+            return $this->createOrderFromCalculation($input);
+        };
+
+        $orderPg = $makeOrder();
+        $cancelA = $orderPg->options->firstWhere('product_option_id', $oA->id);
+        $remainB = $orderPg->options->firstWhere('product_option_id', $oB->id);
+        $remainC = $orderPg->options->firstWhere('product_option_id', $oC->id);
+        $resultPg = $this->adjustmentService->calculate(
+            $orderPg,
+            $this->buildCancellation([['order_option_id' => $cancelA->id, 'cancel_quantity' => 1]]),
+            RefundPriorityEnum::PG_FIRST
+        );
+
+        $earnedB = (int) $resultPg->optionUpdates[$remainB->id]['subtotal_earned_points_amount'];
+        $earnedC = (int) $resultPg->optionUpdates[$remainC->id]['subtotal_earned_points_amount'];
+
+        // 잔여 B/C earnable (상품쿠폰 3,000 각 적용 + usePoints 6,000 안분 B:4,000/C:2,000):
+        // B = 20,000 − 3,000 − 4,000 = 13,000 → 1,300 / C = 10,000 − 3,000 − 2,000 = 5,000 → 500.
+        $this->assertEquals(1300, $earnedB, '복합 잔여 B 적립 정확값');
+        $this->assertEquals(500, $earnedC, '복합 잔여 C 적립 정확값');
+        // 두 우선순위 적립값 동일
+        $orderPoints = $makeOrder();
+        $cancelA2 = $orderPoints->options->firstWhere('product_option_id', $oA->id);
+        $remainB2 = $orderPoints->options->firstWhere('product_option_id', $oB->id);
+        $remainC2 = $orderPoints->options->firstWhere('product_option_id', $oC->id);
+        $resultPoints = $this->adjustmentService->calculate(
+            $orderPoints,
+            $this->buildCancellation([['order_option_id' => $cancelA2->id, 'cancel_quantity' => 1]]),
+            RefundPriorityEnum::POINTS_FIRST
+        );
+        $this->assertEquals($earnedB, (int) $resultPoints->optionUpdates[$remainB2->id]['subtotal_earned_points_amount']);
+        $this->assertEquals($earnedC, (int) $resultPoints->optionUpdates[$remainC2->id]['subtotal_earned_points_amount']);
+        // 환불 총액은 두 우선순위에서 동일 (분배만 상이)
+        $this->assertEquals(
+            $resultPg->refundAmount + $resultPg->refundPointsAmount,
+            $resultPoints->refundAmount + $resultPoints->refundPointsAmount,
+            '환불 총액은 우선순위와 무관하게 동일해야 합니다.'
+        );
+    }
+
+    /**
+     * 복합 5: 복합 상황에서 옵션 전량취소가 아닌 수량 일부 축소.
+     *
+     * A(10,000)×3 + B(10,000)×1, rate 10%, usePoints 3,000. A 수량 2개만 취소(1개 잔존).
+     * 잔여 A(1개)+B 기준 적립 재산출 정확값.
+     */
+    public function test_partial_cancel_composite_reduce_quantity_not_full_option(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        [$pA, $oA] = $this->createProductWithOption(price: 10000);
+        [$pB, $oB] = $this->createProductWithOption(price: 10000);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 3),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+            usePoints: 3000,
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+        $optionA = $order->options->firstWhere('product_option_id', $oA->id);
+        $optionB = $order->options->firstWhere('product_option_id', $oB->id);
+
+        // A 3개 중 2개만 취소 → A 1개 잔존
+        $result = $this->adjustmentService->calculate(
+            $order,
+            $this->buildCancellation([['order_option_id' => $optionA->id, 'cancel_quantity' => 2]])
+        );
+
+        // 잔여: A(1×10,000)=10,000, B(10,000)=10,000, 총 20,000. usePoints 3,000 → A:1,500/B:1,500.
+        // A earnable = 10,000 − 1,500 = 8,500 → 850. B 동일 850.
+        $this->assertEquals(850, (int) $result->optionUpdates[$optionA->id]['subtotal_earned_points_amount']);
+        $this->assertEquals(850, (int) $result->optionUpdates[$optionB->id]['subtotal_earned_points_amount']);
+    }
+
+    /**
+     * 복합 6: 도서산간 추가배송비 + 마일리지 사용 + 부분취소.
+     *
+     * 정책 FIXED 3,000 + 도서산간(zipcode 63* → +3,000). 배송지 제주(63123).
+     * A(20,000)+B(10,000), rate 10%, usePoints 3,000, A 취소.
+     * 도서산간 추가배송비는 상품금액 기준 적립 base 와 독립 — 적립값이 추가배송비에 오염되지 않음.
+     */
+    public function test_partial_cancel_island_extra_shipping_fee_with_mileage_usage(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        $sp = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::FIXED,
+            baseFee: 3000,
+            extraFeeEnabled: true,
+            extraFeeSettings: [
+                ['zipcode' => '63*', 'fee' => 3000],
+            ],
+        );
+
+        [$pA, $oA] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp);
+        [$pB, $oB] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+            usePoints: 3000,
+            shippingAddress: new ShippingAddress(zipcode: '63123'),
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+        // 도서산간 추가배송비가 원 주문에 반영됨
+        $this->assertGreaterThan(0, (int) $order->extra_shipping_amount);
+
+        $optionA = $order->options->firstWhere('product_option_id', $oA->id);
+        $optionB = $order->options->firstWhere('product_option_id', $oB->id);
+
+        $result = $this->adjustmentService->calculate(
+            $order,
+            $this->buildCancellation([['order_option_id' => $optionA->id, 'cancel_quantity' => 1]])
+        );
+
+        // 잔여 B 적립 = floor((10,000 − 3,000 사용) × 10%) = 700. 도서산간 추가배송비와 독립.
+        $this->assertEquals(
+            700,
+            (int) $result->optionUpdates[$optionB->id]['subtotal_earned_points_amount'],
+            '도서산간 추가배송비가 상품금액 기준 적립 안분을 오염시키면 안 됩니다.'
+        );
+    }
+
+    /**
+     * 복합 7: 상품별 배송정책 상이 + 마일리지 사용 + 부분취소.
+     *
+     * 옵션 A=정책α(FIXED 3,000), 옵션 B=정책β(CONDITIONAL_FREE freeThreshold 5,000).
+     * A(20,000)+B(10,000), rate 10%, usePoints 3,000, A 취소.
+     * 잔여 B 는 정책β 기준 배송비 재판정(10,000 >= 5,000 → 무료), B 적립 재안분 정확값.
+     */
+    public function test_partial_cancel_per_product_distinct_shipping_policies_with_mileage(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        $spA = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::FIXED, baseFee: 3000);
+        $spB = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::CONDITIONAL_FREE, baseFee: 2500, freeThreshold: 5000);
+
+        [$pA, $oA] = $this->createProductWithOption(price: 20000, shippingPolicy: $spA);
+        [$pB, $oB] = $this->createProductWithOption(price: 10000, shippingPolicy: $spB);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+            usePoints: 3000,
+        );
+
+        $order = $this->createOrderFromCalculation($input);
+        $optionA = $order->options->firstWhere('product_option_id', $oA->id);
+        $optionB = $order->options->firstWhere('product_option_id', $oB->id);
+
+        $result = $this->adjustmentService->calculate(
+            $order,
+            $this->buildCancellation([['order_option_id' => $optionA->id, 'cancel_quantity' => 1]])
+        );
+
+        // 잔여 B 적립 = floor((10,000 − 3,000) × 10%) = 700. 정책β 기준 배송비는 무료(10,000 >= 5,000).
+        $this->assertEquals(
+            700,
+            (int) $result->optionUpdates[$optionB->id]['subtotal_earned_points_amount'],
+            '옵션별 배송정책이 달라도 적립 재안분은 상품금액 기준으로 정확해야 합니다.'
+        );
+        $this->assertEquals(0, (int) $result->recalculated->summary->totalShipping, '잔여 B 는 정책β 무료배송 문턱 충족');
+    }
+
+    /**
+     * 복합 8: 상품별 상이 배송정책 + 도서산간 + 쿠폰 + 마일리지 최대 복합, 3옵션 중 1개 부분취소.
+     *
+     * 잔여 2옵션 적립 재안분 + 옵션별 배송비 + 도서산간 + 쿠폰 복원 + 환불 split 전 항목 동시 단언.
+     * 적립 재안분값은 두 우선순위에서 동일.
+     */
+    public function test_partial_cancel_full_composite_per_product_policy_island_coupon_mileage(): void
+    {
+        $this->enableMileageSettings(earnRate: 10);
+
+        $spA = $this->createShippingPolicy(
+            chargePolicy: ChargePolicyEnum::FIXED,
+            baseFee: 3000,
+            extraFeeEnabled: true,
+            extraFeeSettings: [['zipcode' => '63*', 'fee' => 3000]],
+        );
+        $spB = $this->createShippingPolicy(chargePolicy: ChargePolicyEnum::CONDITIONAL_FREE, baseFee: 2500, freeThreshold: 5000);
+
+        [$pA, $oA] = $this->createProductWithOption(price: 30000, shippingPolicy: $spA);
+        [$pB, $oB] = $this->createProductWithOption(price: 20000, shippingPolicy: $spB);
+        [$pC, $oC] = $this->createProductWithOption(price: 10000, shippingPolicy: $spB);
+
+        // 주문마다 신규 쿠폰 발급 (발급 1건 재사용 시 첫 주문 USED → 둘째 주문 오염)
+        $makeOrder = function () use ($pA, $oA, $pB, $oB, $pC, $oC): Order {
+            $couponIssue = $this->createCouponWithIssue(
+                targetType: CouponTargetType::PRODUCT_AMOUNT,
+                discountType: CouponDiscountType::FIXED,
+                discountValue: 3000,
+                targetScope: CouponTargetScope::ALL,
+            );
+            $input = new CalculationInput(
+                items: [
+                    new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                    new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+                    new CalculationItem(productId: $pC->id, productOptionId: $oC->id, quantity: 1),
+                ],
+                couponIssueIds: [$couponIssue->id],
+                usePoints: 6000,
+                shippingAddress: new ShippingAddress(zipcode: '63123'),
+            );
+
+            return $this->createOrderFromCalculation($input);
+        };
+
+        $orderPg = $makeOrder();
+        $cancelA = $orderPg->options->firstWhere('product_option_id', $oA->id);
+        $remainB = $orderPg->options->firstWhere('product_option_id', $oB->id);
+        $remainC = $orderPg->options->firstWhere('product_option_id', $oC->id);
+        $resultPg = $this->adjustmentService->calculate(
+            $orderPg,
+            $this->buildCancellation([['order_option_id' => $cancelA->id, 'cancel_quantity' => 1]]),
+            RefundPriorityEnum::PG_FIRST
+        );
+
+        $earnedB = (int) $resultPg->optionUpdates[$remainB->id]['subtotal_earned_points_amount'];
+        $earnedC = (int) $resultPg->optionUpdates[$remainC->id]['subtotal_earned_points_amount'];
+        $this->assertGreaterThan(0, $earnedB);
+        $this->assertGreaterThan(0, $earnedC);
+
+        // 적립 재안분값은 두 우선순위에서 동일
+        $orderPoints = $makeOrder();
+        $cancelA2 = $orderPoints->options->firstWhere('product_option_id', $oA->id);
+        $remainB2 = $orderPoints->options->firstWhere('product_option_id', $oB->id);
+        $remainC2 = $orderPoints->options->firstWhere('product_option_id', $oC->id);
+        $resultPoints = $this->adjustmentService->calculate(
+            $orderPoints,
+            $this->buildCancellation([['order_option_id' => $cancelA2->id, 'cancel_quantity' => 1]]),
+            RefundPriorityEnum::POINTS_FIRST
+        );
+        $this->assertEquals($earnedB, (int) $resultPoints->optionUpdates[$remainB2->id]['subtotal_earned_points_amount']);
+        $this->assertEquals($earnedC, (int) $resultPoints->optionUpdates[$remainC2->id]['subtotal_earned_points_amount']);
+
+        // 환불 총액 동일
+        $this->assertEquals(
+            $resultPg->refundAmount + $resultPg->refundPointsAmount,
+            $resultPoints->refundAmount + $resultPoints->refundPointsAmount,
         );
     }
 }

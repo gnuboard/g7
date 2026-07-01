@@ -1,0 +1,57 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
+#   유저별 영속 통화 axis 는 PHPUnit(EcommerceUserProfile/Repository/통화 저장 컨트롤러)·
+#   Vitest(설정 UI)·Playwright(설치 게이트)가 커버하며 green 이다.
+feature: 유저별 영속 통화 — user-profile 확장 + 4곳 설정 (A3·A5 — PO 신규)
+
+description: |
+  유저별 통화 = 커머스 책임. 코어 users 미변경, 모듈 ecommerce_user_profiles 테이블 + layout_extensions.
+  유저 프로필>통화설정 / 회원정보 수정(유저·관리자) / 헤더 드롭다운(표시 전용). 영속 통화 1순위.
+  모듈 미설치 시 컬럼·UI·리스너 자동 부재(설치 게이트).
+
+axes:
+  actor:
+    - guest              # 비로그인
+    - logged_in_user     # 로그인 유저
+    - admin              # 관리자
+  setting_location:
+    - profile_currency   # 프로필>통화설정
+    - profile_edit_user  # 회원정보 수정(유저)
+    - profile_edit_admin # 회원정보 수정(관리자, layout_extensions)
+    - header_dropdown    # 헤더 드롭다운
+  module_state:
+    - installed
+    - uninstalled
+  persistence:
+    - persist_change     # 영속 변경
+    - session_display    # 세션 표시만
+  login_transition:
+    - guest_header_then_login   # 비로그인 헤더변경 → 로그인
+
+effects:
+  # 저장/resolve (PHPUnit)
+  - user_profile_stores_preferred_currency       # user-profile preferred_currency 저장
+  - persisted_currency_is_first_priority         # 영속 통화 1순위 resolve
+  - header_is_session_only                       # 헤더=세션 표시만(영속 미변경)
+  - login_overrides_session_with_account_currency # 로그인 시 계정 통화로 덮어씀(세션 버림)
+  - guest_falls_back_to_header_or_default        # 비로그인 → 헤더/default 폴백(유저 컨텍스트 부재 안전)
+  - only_registered_currency_allowed             # 등록 통화만 허용(미등록 422)
+  - admin_can_change_user_currency               # 관리자 특정 유저 통화 변경(permission)
+  - admin_currency_change_logged                 # 관리자 유저 통화 변경 활동로그
+  # 설정 UI (Vitest)
+  - profile_currency_ui_renders_selector         # 마이페이지 통화설정 셀렉터 렌더
+  - profile_edit_has_currency_field              # 회원정보 수정 통화 필드
+  - logged_in_initial_value_is_persisted         # 로그인 유저 진입 시 영속 통화 초기값
+  - admin_form_injects_currency_field            # admin_user_form layout_extensions 통화 필드 주입
+  # 설치 게이트 (PHPUnit + Playwright)
+  - uninstalled_no_currency_table                # 미설치 시 user-profile 테이블 부재
+  - uninstalled_no_admin_field_injection         # 미설치 시 admin_user_form 통화 필드 미주입
+  - uninstalled_core_member_no_regression        # 미설치 시 코어 회원 기능 회귀 0
+  - reactivate_preserves_user_profile            # 재활성화 시 기존 user-profile 값 보존
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/EcommerceUserProfileTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserCurrencyControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/AdminUserCurrencyControllerTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypageCurrencySettings.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/mp08-install-gate.spec.ts

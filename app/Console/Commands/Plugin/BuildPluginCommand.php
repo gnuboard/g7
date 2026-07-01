@@ -4,6 +4,7 @@ namespace App\Console\Commands\Plugin;
 
 use App\Extension\PluginManager;
 use App\Extension\Traits\ClearsTemplateCaches;
+use App\Extension\Traits\GeneratesComponentManifest;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
@@ -11,6 +12,7 @@ use Symfony\Component\Process\Process;
 class BuildPluginCommand extends Command
 {
     use ClearsTemplateCaches;
+    use GeneratesComponentManifest;
 
     /**
      * The name and signature of the console command.
@@ -195,6 +197,14 @@ class BuildPluginCommand extends Command
 
             // 빌드 결과 파일 확인
             $this->displayBuildResults($buildPath, $identifier);
+
+            // 편집기 컴포넌트 매니페스트(components.json) 생성
+            $manifestResult = $this->generateComponentManifest($buildPath, $identifier);
+            if ($manifestResult['written']) {
+                $this->line("   - components.json 생성됨 (컴포넌트 {$manifestResult['count']}개)");
+            } else {
+                $this->warn('   - components.json 생성 실패 (편집 모드 컨트롤 노출 제한)');
+            }
 
             // 캐시 버전 증가 (브라우저 캐시 무효화)
             $this->incrementExtensionCacheVersion();

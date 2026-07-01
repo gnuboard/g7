@@ -63,6 +63,9 @@ const createMockSetup = (overrides?: {
             put: overrides?.apiError
                 ? vi.fn().mockRejectedValue(overrides.apiError)
                 : vi.fn().mockResolvedValue(overrides?.apiResponse ?? { success: true }),
+            post: overrides?.apiError
+                ? vi.fn().mockRejectedValue(overrides.apiError)
+                : vi.fn().mockResolvedValue(overrides?.apiResponse ?? { success: true }),
         },
         dataSource: {
             refetch: vi.fn(),
@@ -72,6 +75,7 @@ const createMockSetup = (overrides?: {
             error: vi.fn(),
         },
         modal: {
+            open: vi.fn(),
             close: vi.fn(),
         },
         t: vi.fn((key: string) => key),
@@ -181,8 +185,8 @@ describe('labelHandlers', () => {
             });
         });
 
-        describe('라벨 제거 (이미 할당된 라벨 클릭)', () => {
-            it('할당된 라벨을 클릭하면 제거해야 한다', () => {
+        describe('A31 — 이미 할당된 라벨 클릭 = 기간 패널 전환만 (해제 안 함)', () => {
+            it('기간 없는 할당 칩 클릭 시 label_assignments 불변 + lastClickedLabelId 만 변경', () => {
                 const existingAssignments = [
                     { label_id: 1, started_at: null, ended_at: null },
                     { label_id: 2, started_at: null, ended_at: null },
@@ -199,18 +203,19 @@ describe('labelHandlers', () => {
 
                 toggleLabelAssignmentHandler(action, context);
 
+                // 패널 전환만 — label_assignments 미변경
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
-                    'form.label_assignments': [
-                        { label_id: 2, started_at: null, ended_at: null },
-                    ],
                     'ui.lastClickedLabelId': 1,
-                    hasChanges: true,
                 });
+                // 해제(필터링)되지 않음
+                expect(g7CoreMock.state.setLocal).not.toHaveBeenCalledWith(
+                    expect.objectContaining({ 'form.label_assignments': expect.anything() })
+                );
             });
 
-            it('마지막 라벨을 제거하면 빈 배열이 되어야 한다', () => {
+            it('기간 있는 할당 칩 클릭 시에도 패널 전환만 (해제 모달 미호출)', () => {
                 const existingAssignments = [
-                    { label_id: 1, started_at: null, ended_at: null },
+                    { label_id: 1, started_at: '2026-06-01', ended_at: '2026-06-30' },
                 ];
 
                 const { action, context, g7CoreMock } = createMockSetup({
@@ -225,18 +230,16 @@ describe('labelHandlers', () => {
                 toggleLabelAssignmentHandler(action, context);
 
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
-                    'form.label_assignments': [],
                     'ui.lastClickedLabelId': 1,
-                    hasChanges: true,
                 });
+                // 해제 확인 모달은 더 이상 토글에서 열리지 않음 (미리보기 "할당 해제" 전용)
+                expect(g7CoreMock.modal.open).not.toHaveBeenCalled();
             });
 
-            it('중간에 있는 라벨을 제거하면 나머지가 유지되어야 한다', () => {
-                // 기간이 없는 라벨만 테스트 (기간이 있으면 확인 모달이 열림)
+            it('다른 할당 칩으로 전환 시 둘 다 유지 + lastClickedLabelId 만 이동', () => {
                 const existingAssignments = [
-                    { label_id: 1, started_at: null, ended_at: null },
+                    { label_id: 1, started_at: '2026-06-01', ended_at: null },
                     { label_id: 2, started_at: null, ended_at: null },
-                    { label_id: 3, started_at: null, ended_at: null },
                 ];
 
                 const { action, context, g7CoreMock } = createMockSetup({
@@ -244,6 +247,7 @@ describe('labelHandlers', () => {
                         form: {
                             label_assignments: existingAssignments,
                         },
+                        ui: { lastClickedLabelId: 1 },
                     },
                     params: { labelId: 2 },
                 });
@@ -251,12 +255,7 @@ describe('labelHandlers', () => {
                 toggleLabelAssignmentHandler(action, context);
 
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
-                    'form.label_assignments': [
-                        { label_id: 1, started_at: null, ended_at: null },
-                        { label_id: 3, started_at: null, ended_at: null },
-                    ],
                     'ui.lastClickedLabelId': 2,
-                    hasChanges: true,
                 });
             });
         });
@@ -448,6 +447,102 @@ describe('labelHandlers', () => {
             });
         });
 
+        describe('A31 — 생성 시나리오 (editingLabelId 없음 → POST)', () => {
+            it('신규 라벨을 POST 로 생성하고 새 id 를 label_assignments 에 추가', async () => {
+                const { action, context, g7CoreMock } = createMockSetup({
+                    localState: {
+                        form: {
+                            label_assignments: [
+                                { label_id: 2, started_at: null, ended_at: null },
+                            ],
+                        },
+                    },
+                    globalState: {
+                        editingLabelId: null,
+                        labelFormData: {
+                            name: { ko: '신규라벨', en: 'New Label' },
+                            color: '#6B7280',
+                            started_at: null,
+                            ended_at: null,
+                        },
+                    },
+                    apiResponse: { success: true, data: { id: 99 } },
+                });
+
+                await saveLabelSettingsHandler(action, context);
+
+                // POST 호출 (name + color)
+                expect(g7CoreMock.api.post).toHaveBeenCalledWith(
+                    '/api/modules/sirsoft-ecommerce/admin/product-labels',
+                    {
+                        name: { ko: '신규라벨', en: 'New Label' },
+                        color: '#6B7280',
+                    }
+                );
+                // PUT 미호출
+                expect(g7CoreMock.api.put).not.toHaveBeenCalled();
+
+                // 새 id 가 label_assignments 에 추가 + lastClickedLabelId 설정
+                expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
+                    'form.label_assignments': [
+                        { label_id: 2, started_at: null, ended_at: null },
+                        { label_id: 99, started_at: null, ended_at: null },
+                    ],
+                    'ui.lastClickedLabelId': 99,
+                    hasChanges: true,
+                });
+
+                expect(g7CoreMock.dataSource.refetch).toHaveBeenCalledWith('product_labels');
+                expect(g7CoreMock.modal.close).toHaveBeenCalled();
+            });
+
+            it('color 미지정 시 기본 색상(#6B7280)으로 보정', async () => {
+                const { action, context, g7CoreMock } = createMockSetup({
+                    localState: { form: { label_assignments: [] } },
+                    globalState: {
+                        editingLabelId: null,
+                        labelFormData: {
+                            name: { ko: '색상없음', en: 'No Color' },
+                            color: null,
+                            started_at: null,
+                            ended_at: null,
+                        },
+                    },
+                    apiResponse: { success: true, data: { id: 50 } },
+                });
+
+                await saveLabelSettingsHandler(action, context);
+
+                expect(g7CoreMock.api.post).toHaveBeenCalledWith(
+                    '/api/modules/sirsoft-ecommerce/admin/product-labels',
+                    {
+                        name: { ko: '색상없음', en: 'No Color' },
+                        color: '#6B7280',
+                    }
+                );
+            });
+
+            it('name.ko 가 없으면 아무 동작도 하지 않는다', async () => {
+                const { action, context, g7CoreMock } = createMockSetup({
+                    localState: { form: { label_assignments: [] } },
+                    globalState: {
+                        editingLabelId: null,
+                        labelFormData: {
+                            name: { ko: '', en: 'No Korean' },
+                            color: '#6B7280',
+                            started_at: null,
+                            ended_at: null,
+                        },
+                    },
+                });
+
+                await saveLabelSettingsHandler(action, context);
+
+                expect(g7CoreMock.api.post).not.toHaveBeenCalled();
+                expect(g7CoreMock.api.put).not.toHaveBeenCalled();
+            });
+        });
+
         describe('에러 시나리오', () => {
             it('API가 실패 응답을 반환하면 에러 토스트를 표시해야 한다', async () => {
                 const { action, context, g7CoreMock } = createMockSetup({
@@ -504,7 +599,7 @@ describe('labelHandlers', () => {
         });
 
         describe('유효성 검사', () => {
-            it('editingLabelId가 없으면 아무 동작도 하지 않아야 한다', async () => {
+            it('A31: editingLabelId 없음 + name.ko 있음 → 생성(POST) 경로로 동작한다', async () => {
                 const { action, context, g7CoreMock } = createMockSetup({
                     localState: {
                         form: { label_assignments: [] },
@@ -518,12 +613,14 @@ describe('labelHandlers', () => {
                             ended_at: null,
                         },
                     },
+                    apiResponse: { success: true, data: { id: 7 } },
                 });
 
                 await saveLabelSettingsHandler(action, context);
 
+                // 생성 경로 → PUT 대신 POST 호출
                 expect(g7CoreMock.api.put).not.toHaveBeenCalled();
-                expect(g7CoreMock.state.setGlobal).not.toHaveBeenCalled();
+                expect(g7CoreMock.api.post).toHaveBeenCalled();
             });
 
             it('name.ko가 비어있으면 아무 동작도 하지 않아야 한다', async () => {
@@ -624,94 +721,53 @@ describe('labelHandlers', () => {
         });
     });
 
-    describe('toggleLabelAssignmentHandler - 기간 설정된 라벨 해제 시 확인 모달', () => {
-        it('기간이 설정된 라벨 클릭 시 모달을 열어야 한다', () => {
+    describe('A31 — 토글이 더 이상 해제/제거를 수행하지 않음 (패널 전환 전용)', () => {
+        const setup = (assignment: any) => {
             const g7CoreMock = {
                 state: {
                     get: vi.fn(() => ({})),
                     getLocal: vi.fn(() => ({
-                        form: {
-                            label_assignments: [
-                                { label_id: 1, started_at: '2025-01-01', ended_at: '2025-12-31' },
-                            ],
-                        },
+                        form: { label_assignments: [assignment] },
                     })),
                     setLocal: vi.fn(),
                     setGlobal: vi.fn(),
                 },
-                modal: {
-                    open: vi.fn(),
-                },
+                modal: { open: vi.fn() },
             };
             (window as any).G7Core = g7CoreMock;
+            return g7CoreMock;
+        };
 
-            const action = { handler: 'toggleLabelAssignment', params: { labelId: 1 } };
-            const context = {};
+        it('기간 설정된 라벨 클릭 시 해제 모달을 열지 않는다 (패널 전환만)', () => {
+            const g7CoreMock = setup({ label_id: 1, started_at: '2025-01-01', ended_at: '2025-12-31' });
 
-            toggleLabelAssignmentHandler(action, context);
-
-            expect(g7CoreMock.state.setGlobal).toHaveBeenCalledWith({ labelToUncheckId: 1 });
-            expect(g7CoreMock.modal.open).toHaveBeenCalledWith('modal_label_uncheck_confirm');
-            expect(g7CoreMock.state.setLocal).not.toHaveBeenCalled();
-        });
-
-        it('started_at만 있어도 확인 모달을 열어야 한다', () => {
-            const g7CoreMock = {
-                state: {
-                    get: vi.fn(() => ({})),
-                    getLocal: vi.fn(() => ({
-                        form: {
-                            label_assignments: [
-                                { label_id: 1, started_at: '2025-01-01', ended_at: null },
-                            ],
-                        },
-                    })),
-                    setLocal: vi.fn(),
-                    setGlobal: vi.fn(),
-                },
-                modal: {
-                    open: vi.fn(),
-                },
-            };
-            (window as any).G7Core = g7CoreMock;
-
-            const action = { handler: 'toggleLabelAssignment', params: { labelId: 1 } };
-
-            toggleLabelAssignmentHandler(action, {});
-
-            expect(g7CoreMock.modal.open).toHaveBeenCalledWith('modal_label_uncheck_confirm');
-        });
-
-        it('기간이 없는 라벨은 바로 제거해야 한다', () => {
-            const g7CoreMock = {
-                state: {
-                    get: vi.fn(() => ({})),
-                    getLocal: vi.fn(() => ({
-                        form: {
-                            label_assignments: [
-                                { label_id: 1, started_at: null, ended_at: null },
-                            ],
-                        },
-                    })),
-                    setLocal: vi.fn(),
-                    setGlobal: vi.fn(),
-                },
-                modal: {
-                    open: vi.fn(),
-                },
-            };
-            (window as any).G7Core = g7CoreMock;
-
-            const action = { handler: 'toggleLabelAssignment', params: { labelId: 1 } };
-
-            toggleLabelAssignmentHandler(action, {});
+            toggleLabelAssignmentHandler({ handler: 'toggleLabelAssignment', params: { labelId: 1 } }, {});
 
             expect(g7CoreMock.modal.open).not.toHaveBeenCalled();
-            expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
-                'form.label_assignments': [],
-                'ui.lastClickedLabelId': 1,
-                hasChanges: true,
-            });
+            expect(g7CoreMock.state.setGlobal).not.toHaveBeenCalled();
+            expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({ 'ui.lastClickedLabelId': 1 });
+        });
+
+        it('started_at만 있어도 패널 전환만 (해제 모달 미호출)', () => {
+            const g7CoreMock = setup({ label_id: 1, started_at: '2025-01-01', ended_at: null });
+
+            toggleLabelAssignmentHandler({ handler: 'toggleLabelAssignment', params: { labelId: 1 } }, {});
+
+            expect(g7CoreMock.modal.open).not.toHaveBeenCalled();
+            expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({ 'ui.lastClickedLabelId': 1 });
+        });
+
+        it('기간 없는 할당 라벨도 제거하지 않고 패널 전환만 한다', () => {
+            const g7CoreMock = setup({ label_id: 1, started_at: null, ended_at: null });
+
+            toggleLabelAssignmentHandler({ handler: 'toggleLabelAssignment', params: { labelId: 1 } }, {});
+
+            expect(g7CoreMock.modal.open).not.toHaveBeenCalled();
+            expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({ 'ui.lastClickedLabelId': 1 });
+            // 제거(빈 배열) 호출 없음
+            expect(g7CoreMock.state.setLocal).not.toHaveBeenCalledWith(
+                expect.objectContaining({ 'form.label_assignments': [] })
+            );
         });
     });
 

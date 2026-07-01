@@ -28,6 +28,8 @@ import { TemplateApp, initTemplateApp } from './TemplateApp';
 import { createLogger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7CoreGlobals';
+import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
+import { LayoutEditorChrome } from './template-engine/layout-editor/LayoutEditorChrome';
 
 const logger = createLogger('TemplateEngine');
 
@@ -370,7 +372,6 @@ async function initTemplateEngine(options: InitOptions): Promise<void> {
  * 템플릿 렌더링
  *
  * 레이아웃 JSON을 기반으로 React 컴포넌트를 렌더링합니다.
- * 편집 모드(URL에 mode=edit 파라미터 존재)인 경우 WysiwygEditor로 래핑하여 렌더링합니다.
  *
  * @param options - 렌더링 옵션
  * @throws {Error} 초기화되지 않은 경우 또는 렌더링 실패 시
@@ -420,14 +421,40 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
       state.reactRoot = ReactDOM.createRoot(container);
     }
 
-    // 편집 모드 감지 (URL 쿼리 파라미터 확인)
-    const isEditMode = checkEditMode();
-    logger.log('편집 모드:', isEditMode);
-
-    // 편집 모드인 경우 WysiwygEditor로 렌더링
-    if (isEditMode) {
-      await renderWithWysiwygEditor(options);
-      return;
+    // 레이아웃 편집기 모드 분기
+    // URL 이 `/admin/layout-editor/:identifier` 패턴이면 LayoutEditorChrome 을
+    // 같은 state.reactRoot + 같은 코어 컨텍스트 래퍼 안에서 렌더한다.
+    // 별도 createRoot / 별도 DOM 컨테이너 / 별도 컨텍스트 트리 일체 금지.
+    if (typeof window !== 'undefined') {
+      const editorMode = checkLayoutEditorMode(window.location.pathname);
+      if (editorMode) {
+        logger.log('레이아웃 편집기 모드 진입', editorMode);
+        const chrome = React.createElement(LayoutEditorChrome, {
+          templateIdentifier: editorMode.templateIdentifier,
+          initialLocale: state.locale,
+        });
+        state.reactRoot.render(
+          React.createElement(
+            TranslationProvider,
+            {
+              translationEngine: state.translationEngine!,
+              translationContext: state.translationContext,
+              children: React.createElement(
+                TransitionProvider,
+                {
+                  children: React.createElement(
+                    ResponsiveProvider,
+                    {
+                      children: React.createElement(SlotProvider, { children: chrome }),
+                    }
+                  ),
+                }
+              ),
+            } as any
+          )
+        );
+        return;
+      }
     }
 
     // 레이아웃 JSON의 components 배열 가져오기
@@ -595,13 +622,6 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
 function updateTemplateData(data: Record<string, any>, options?: UpdateOptions): void {
   try {
     logger.log('템플릿 데이터 업데이트 시작', Object.keys(data));
-
-    // 편집 모드일 때는 일반 렌더링 업데이트 건너뛰기
-    // WysiwygEditor가 자체적으로 상태를 관리하므로 updateTemplateData가 간섭하면 안 됨
-    if (checkEditMode()) {
-      logger.log('편집 모드에서는 updateTemplateData를 건너뜁니다.');
-      return;
-    }
 
     // 초기화 확인
     if (!state.isInitialized) {
@@ -845,125 +865,6 @@ function getState(): Readonly<TemplateEngineState> {
  */
 function getActionDispatcher(): ActionDispatcher | null {
   return state.actionDispatcher;
-}
-
-// ============================================================================
-// 위지윅 편집 모드 관련 함수
-// ============================================================================
-
-/**
- * URL 쿼리 파라미터에서 편집 모드 여부를 확인합니다.
- *
- * @returns boolean 편집 모드 여부
- */
-function checkEditMode(): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const mode = params.get('mode');
-  const template = params.get('template');
-
-  // mode=edit 파라미터와 template 파라미터가 모두 있어야 편집 모드
-  return mode === 'edit' && !!template;
-}
-
-/**
- * URL 쿼리 파라미터에서 템플릿 ID를 가져옵니다.
- *
- * @returns string | null 템플릿 ID
- */
-function getTemplateIdFromUrl(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  return params.get('template');
-}
-
-/**
- * 위지윅 편집기로 렌더링합니다.
- * 편집 모드일 때 WysiwygEditor를 동적으로 import하여 렌더링합니다.
- *
- * @param options - 렌더링 옵션
- */
-async function renderWithWysiwygEditor(options: RenderOptions): Promise<void> {
-  logger.log('위지윅 편집기 렌더링 시작');
-
-  try {
-    // WysiwygEditor 동적 import
-    const { WysiwygEditor } = await import('./template-engine/wysiwyg');
-
-    // URL에서 템플릿 ID 추출
-    const templateId = getTemplateIdFromUrl() || state.templateId || 'unknown';
-
-    // 편집 모드 닫기 핸들러 (mode 파라미터 제거)
-    const handleClose = () => {
-      const params = new URLSearchParams(window.location.search);
-      params.delete('mode');
-      params.delete('template');
-
-      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
-      window.location.href = newUrl;
-    };
-
-    // 저장 완료 핸들러
-    const handleSaveComplete = (layoutData: any) => {
-      logger.log('레이아웃 저장 완료:', layoutData);
-      // TODO: API 호출로 레이아웃 저장
-    };
-
-    logger.log('WysiwygEditor 렌더링', { templateId, layoutName: options.layoutJson?.layout_name });
-
-    // WysiwygEditor 렌더링
-    state.reactRoot!.render(
-      React.createElement(
-        TranslationProvider,
-        {
-          translationEngine: state.translationEngine!,
-          translationContext: state.translationContext,
-        },
-        React.createElement(WysiwygEditor, {
-          layoutData: options.layoutJson,
-          templateId,
-          onClose: handleClose,
-          onSaveComplete: handleSaveComplete,
-          initialEditMode: 'visual',
-          readOnly: false,
-        })
-      )
-    );
-
-    logger.log('위지윅 편집기 렌더링 완료');
-  } catch (error) {
-    logger.error('위지윅 편집기 로드 실패:', error);
-
-    // 편집기 로드 실패 시 에러 메시지 표시
-    state.reactRoot!.render(
-      React.createElement('div', {
-        className: 'flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900',
-      },
-        React.createElement('div', {
-          className: 'text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg',
-        },
-          React.createElement('h1', {
-            className: 'text-xl font-bold text-red-600 dark:text-red-400 mb-4',
-          }, '위지윅 편집기 로드 실패'),
-          React.createElement('p', {
-            className: 'text-gray-600 dark:text-gray-400 mb-4',
-          }, '편집기를 불러오는 중 오류가 발생했습니다.'),
-          React.createElement('button', {
-            className: 'px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700',
-            onClick: () => window.location.reload(),
-          }, '새로고침')
-        )
-      )
-    );
-
-    throw error;
-  }
 }
 
 /**

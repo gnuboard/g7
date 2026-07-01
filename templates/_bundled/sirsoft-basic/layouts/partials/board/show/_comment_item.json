@@ -396,10 +396,10 @@
           ]
         },
         {
-          "comment": "삭제된 댓글",
+          "comment": "삭제된 댓글 (게시글 삭제로 함께 숨겨진 cascade 댓글은 제외 — 원문 노출)",
           "type": "basic",
           "name": "Div",
-          "if": "{{comment?.deleted_at && _global.commentEdit?.editingCommentId !== comment?.id}}",
+          "if": "{{comment?.deleted_at && !comment?.is_cascade_deleted && _global.commentEdit?.editingCommentId !== comment?.id}}",
           "props": {
             "className": "py-3 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-2"
           },
@@ -546,10 +546,10 @@
           ]
         },
         {
-          "comment": "댓글 내용 (읽기 모드)",
+          "comment": "댓글 내용 (읽기 모드) — cascade 댓글은 삭제되었어도 원문 노출",
           "type": "basic",
           "name": "P",
-          "if": "{{!comment?.deleted_at && comment?.status !== 'blinded' && _global.commentEdit?.editingCommentId !== comment?.id}}",
+          "if": "{{(!comment?.deleted_at || comment?.is_cascade_deleted) && comment?.status !== 'blinded' && _global.commentEdit?.editingCommentId !== comment?.id}}",
           "props": {
             "className": "text-gray-700 dark:text-gray-300"
           },

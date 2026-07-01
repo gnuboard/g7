@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "IDV 메시지 템플릿 미리보기 모달 — 변수 치환 결과 (subject/body) 렌더링"
+    "description": "IDV 메시지 템플릿 미리보기 모달 — 변수 치환 결과 (subject/body) 렌더링",
+    "editor_label": "$t:admin.modal_label.admin_settings.modal_identity_message_template_preview"
   },
   "id": "modal_identity_message_template_preview",
   "type": "composite",
@@ -15,7 +16,9 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "space-y-4 p-4" },
+      "props": {
+        "className": "space-y-4 p-4"
+      },
       "children": [
         {
           "type": "basic",
@@ -27,13 +30,17 @@
             {
               "type": "basic",
               "name": "P",
-              "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1" },
+              "props": {
+                "className": "text-tertiary font-semibold mb-1"
+              },
               "text": "$t:admin.settings.identity.messages.modal.subject_label"
             },
             {
               "type": "basic",
               "name": "P",
-              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
+              "props": {
+                "className": "text-heading"
+              },
               "text": "{{_global.identity_message_template_preview_modal?.subject ?? ''}}"
             }
           ]
@@ -48,15 +55,18 @@
             {
               "type": "basic",
               "name": "P",
-              "props": { "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2" },
+              "props": {
+                "className": "text-tertiary font-semibold mb-2"
+              },
               "text": "$t:admin.settings.identity.messages.modal.body_label"
             },
             {
-              "type": "basic",
-              "name": "Div",
+              "type": "composite",
+              "name": "HtmlContent",
               "props": {
-                "className": "prose prose-sm max-w-none dark:prose-invert",
-                "innerHTML": "{{_global.identity_message_template_preview_modal?.body ?? ''}}"
+                "content": "{{_global.identity_message_template_preview_modal?.body ?? ''}}",
+                "isHtml": true,
+                "className": "prose prose-sm max-w-none dark:prose-invert"
               }
             }
           ]
@@ -64,16 +74,18 @@
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex justify-end pt-3 border-t border-gray-200 dark:border-gray-700" },
+          "props": {
+            "className": "flex justify-end pt-3 border-t border-gray-200 dark:border-gray-700"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
+                "className": "px-3 py-2 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
               },
-              "text": "$t:admin.common.close",
+              "text": "$t:common.close",
               "actions": [
                 {
                   "type": "click",

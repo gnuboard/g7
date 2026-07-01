@@ -1,9 +1,28 @@
+// e2e:allow basic Input 디폴트 시맨틱(.input/.checkbox/.radio) 머지 — 동작 무변, 외형 통일 시범. 패턴 확정 후 다음 사이클에 E2E spec 일괄 작성 예정.
 import React, { useRef, useCallback, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
 }
+
+// 타입별 디폴트 시맨틱 클래스 (admin main.css 정의)
+// 호출처 className 은 뒤에 머지되어 덮어쓸 수 있음 (의미 토큰/override 모두 지원)
+const resolveDefaultSemanticClass = (type: string): string => {
+  if (type === 'checkbox') return 'checkbox';
+  if (type === 'radio') return 'radio';
+  return 'input';
+};
+
+// 호출처 className 에 이미 시맨틱 토큰이 포함된 경우 prepend 를 스킵하여
+// "input input" 같은 중복 발생을 방지. 기존 호출처가 명시적으로 시맨틱을 적던 패턴 호환.
+const composeSemanticClassName = (type: string, className: string): string => {
+  const semantic = resolveDefaultSemanticClass(type);
+  if (!className) return semantic;
+  const tokens = className.split(/\s+/).filter(Boolean);
+  if (tokens.includes(semantic)) return className;
+  return `${semantic} ${className}`;
+};
 
 /**
  * 기본 입력 필드 컴포넌트
@@ -29,6 +48,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
 }, ref) => {
   // radio/checkbox 타입인지 확인
   const isCheckableType = type === 'radio' || type === 'checkbox';
+
+  // 디폴트 시맨틱 + 호출처 className 머지 (호출처가 의미 토큰만 명시해도 시맨틱은 자동 적용)
+  // 호출처가 이미 시맨틱 토큰을 명시한 경우 중복 prepend 방지.
+  const mergedClassName = composeSemanticClassName(type, className);
 
   // IME 조합 중인지 추적 (text input에만 필요)
   const isComposingRef = useRef(false);
@@ -125,7 +148,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
       <input
         ref={internalRef}
         type={type}
-        className={className}
+        className={mergedClassName}
         onChange={onChange}
         checked={checked}
         defaultChecked={defaultChecked}
@@ -144,7 +167,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
     <input
       ref={internalRef}
       type={type}
-      className={className}
+      className={mergedClassName}
       onChange={handleChange}
       onKeyPress={handleKeyPress}
       onCompositionStart={handleCompositionStart}

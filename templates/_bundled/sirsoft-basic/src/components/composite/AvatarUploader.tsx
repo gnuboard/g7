@@ -21,6 +21,7 @@ import { Label } from '../basic/Label';
 import { Input } from '../basic/Input';
 import { Img } from '../basic/Img';
 import { Avatar } from './Avatar';
+import type { EditorAttrs } from '../../types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -74,6 +75,12 @@ export interface AvatarUploaderProps {
   deleteSuccessActions?: Array<Record<string, any>>;
   /** 삭제 실패 시 실행할 액션 배열 */
   deleteErrorActions?: Array<Record<string, any>>;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 // AvatarUploader size를 Avatar size로 매핑
@@ -111,6 +118,8 @@ export function AvatarUploader({
   uploadErrorActions,
   deleteSuccessActions,
   deleteErrorActions,
+  id,
+  editorAttrs,
 }: AvatarUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -420,7 +429,7 @@ export function AvatarUploader({
   );
 
   return (
-    <Div className={`flex flex-col items-center gap-3 ${className}`}>
+    <Div className={`flex flex-col items-center gap-3 ${className}`} id={id} {...editorAttrs}>
       {/* 아바타 이미지 - 업로드 확인 시 미리보기 표시 */}
       {showUploadConfirm && previewUrl ? (
         <Div className="relative">

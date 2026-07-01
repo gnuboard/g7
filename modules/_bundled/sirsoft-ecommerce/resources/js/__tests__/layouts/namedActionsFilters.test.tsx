@@ -47,6 +47,38 @@ function findActionRefs(obj: any, refName: string, results: any[] = []): any[] {
     return results;
 }
 
+/**
+ * 지정한 actionRef 를 (직접 또는 중첩 sequence 내부에서) 참조하는 액션 노드를 수집합니다.
+ *
+ * keypress/click 액션이 sequence 핸들러로 setState + actionRef 를 묶는 패턴을 지원합니다.
+ */
+function findActionNodesReferencing(obj: any, refName: string, results: any[] = []): any[] {
+    if (!obj || typeof obj !== 'object') return results;
+    if (Array.isArray(obj)) {
+        for (const item of obj) findActionNodesReferencing(item, refName, results);
+        return results;
+    }
+
+    const referencesRef = (node: any): boolean => {
+        if (!node || typeof node !== 'object') return false;
+        if (node.actionRef === refName) return true;
+        if (Array.isArray(node.actions)) {
+            return node.actions.some((a: any) => referencesRef(a));
+        }
+        return false;
+    };
+
+    // 액션처럼 보이는 노드(type 또는 handler 보유)가 ref 를 참조하면 수집
+    if ((obj.type || obj.handler || obj.actionRef) && referencesRef(obj)) {
+        results.push(obj);
+    }
+
+    for (const key of Object.keys(obj)) {
+        findActionNodesReferencing(obj[key], refName, results);
+    }
+    return results;
+}
+
 // ============================================
 // 쿠폰관리
 // ============================================
@@ -134,14 +166,15 @@ describe('주문관리 named_actions 검증', () => {
     });
 
     it('파샬 필터의 검색 Input에 Enter keypress actionRef가 있어야 함', () => {
-        const refs = findActionRefs(orderFilter, 'searchOrders');
-        const enterRef = refs.find((r: any) => r.type === 'keypress' && r.key === 'Enter');
+        // keypress/Enter 액션이 sequence 로 setState + actionRef 를 묶는 패턴 지원
+        const nodes = findActionNodesReferencing(orderFilter, 'searchOrders');
+        const enterRef = nodes.find((r: any) => r.type === 'keypress' && r.key === 'Enter');
         expect(enterRef).toBeDefined();
     });
 
     it('파샬 필터의 검색 버튼 click이 actionRef를 참조해야 함', () => {
-        const refs = findActionRefs(orderFilter, 'searchOrders');
-        const clickRef = refs.find((r: any) => r.type === 'click');
+        const nodes = findActionNodesReferencing(orderFilter, 'searchOrders');
+        const clickRef = nodes.find((r: any) => r.type === 'click');
         expect(clickRef).toBeDefined();
     });
 });

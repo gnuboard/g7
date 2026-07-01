@@ -11,6 +11,7 @@
     "data_sources": [
         {
             "id": "items",
+            "label_key": "$t:editor.data_source.items",
             "endpoint": "/api/modules/sirsoft-sample/admin/items",
             "method": "GET"
         }
@@ -39,7 +40,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex items-center justify-between mb-6"
+                            "className": "flex-between mb-6"
                         },
                         "children": [
                             {
@@ -164,7 +165,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white"
+                                                            "className": "text-primary px-6 py-4 whitespace-nowrap text-sm"
                                                         },
                                                         "text": "{{item.id}}"
                                                     },
@@ -201,7 +202,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+                                                            "className": "px-6 py-4 whitespace-nowrap text-label-subtle"
                                                         },
                                                         "text": "{{item.created_at}}"
                                                     },
@@ -238,7 +239,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-4 flex items-center justify-between"
+                            "className": "mt-4 flex-between"
                         },
                         "children": [
                             {

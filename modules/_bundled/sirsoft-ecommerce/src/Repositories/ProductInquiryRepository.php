@@ -179,4 +179,27 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             ->whereIn('inquirable_id', $inquirableIds)
             ->delete();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getPendingRecent(int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->with(['product', 'user'])
+            ->where('is_answered', false)
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countPending(): int
+    {
+        return $this->model->newQuery()
+            ->where('is_answered', false)
+            ->count();
+    }
 }

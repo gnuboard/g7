@@ -2,8 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Models;
 
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderAddressFactory;
+use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
@@ -16,7 +17,6 @@ use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\OrderTaxInvoice;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -118,6 +118,37 @@ class OrderTest extends ModuleTestCase
         $this->assertNull($order->getOrdererName());
     }
 
+    public function test_get_orderer_email_returns_orderer_email(): void
+    {
+        $order = OrderFactory::new()->create();
+        OrderAddressFactory::new()->forOrder($order)->shipping()->create([
+            'orderer_email' => 'guest@example.com',
+        ]);
+
+        $this->assertEquals('guest@example.com', $order->fresh()->getOrdererEmail());
+    }
+
+    public function test_get_orderer_email_returns_null_without_address(): void
+    {
+        $order = OrderFactory::new()->create();
+
+        $this->assertNull($order->getOrdererEmail());
+    }
+
+    public function test_is_guest_order_true_when_user_id_null(): void
+    {
+        $order = OrderFactory::new()->forGuest()->create();
+
+        $this->assertTrue($order->isGuestOrder());
+    }
+
+    public function test_is_guest_order_false_for_member_order(): void
+    {
+        $order = OrderFactory::new()->create();
+
+        $this->assertFalse($order->isGuestOrder());
+    }
+
     public function test_get_recipient_name_returns_recipient_name(): void
     {
         $order = OrderFactory::new()->create();
@@ -202,6 +233,22 @@ class OrderTest extends ModuleTestCase
             $order = OrderFactory::new()->create(['order_status' => $status->value]);
             $this->assertTrue($order->isCancellable(), "상태 '{$status->value}'는 취소 가능해야 합니다.");
         }
+    }
+
+    /**
+     * 부분취소된 주문은 잔여 옵션 기준 진행 상태(예: payment_complete)로 유지되므로
+     * 그 진행 상태가 취소 가능 목록에 있으면 잔여 항목을 다시 취소할 수 있다.
+     * 전체취소(cancelled) 주문은 항상 차단된다. (partial_cancelled 별도 상태 제거)
+     */
+    public function test_partially_cancelled_order_remains_cancellable_via_progress_status(): void
+    {
+        // 부분취소 후 잔여 옵션 기준으로 payment_complete 가 유지된 주문 → 재취소 가능
+        $order = OrderFactory::new()->create(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE->value]);
+        $this->assertTrue($order->isCancellable(), '잔여 진행 상태(payment_complete)는 취소 가능');
+        $this->assertTrue($order->isCancellable(['payment_complete']));
+
+        $cancelled = OrderFactory::new()->create(['order_status' => OrderStatusEnum::CANCELLED->value]);
+        $this->assertFalse($cancelled->isCancellable(), 'cancelled 는 항상 차단(가드)');
     }
 
     public function test_is_cancellable_returns_false_for_non_cancellable_statuses(): void
@@ -292,7 +339,7 @@ class OrderTest extends ModuleTestCase
         $order = OrderFactory::new()->create();
 
         // When: 숫자 ID로 바인딩 해석
-        $resolved = (new Order())->resolveRouteBinding($order->id);
+        $resolved = (new Order)->resolveRouteBinding($order->id);
 
         // Then: 동일 주문 반환
         $this->assertEquals($order->id, $resolved->id);
@@ -304,7 +351,7 @@ class OrderTest extends ModuleTestCase
         $order = OrderFactory::new()->create(['order_number' => 'ORD-20260322-99999']);
 
         // When: order_number로 바인딩 해석
-        $resolved = (new Order())->resolveRouteBinding('ORD-20260322-99999');
+        $resolved = (new Order)->resolveRouteBinding('ORD-20260322-99999');
 
         // Then: 동일 주문 반환
         $this->assertEquals($order->id, $resolved->id);
@@ -317,7 +364,7 @@ class OrderTest extends ModuleTestCase
         $order = OrderFactory::new()->create(['order_number' => 'ORD-FIELD-TEST']);
 
         // When: 명시적 필드 지정으로 바인딩 해석
-        $resolved = (new Order())->resolveRouteBinding('ORD-FIELD-TEST', 'order_number');
+        $resolved = (new Order)->resolveRouteBinding('ORD-FIELD-TEST', 'order_number');
 
         // Then: 동일 주문 반환
         $this->assertEquals($order->id, $resolved->id);
@@ -331,7 +378,7 @@ class OrderTest extends ModuleTestCase
         $this->expectException(ModelNotFoundException::class);
 
         // When: 존재하지 않는 주문번호로 바인딩 해석
-        (new Order())->resolveRouteBinding('ORD-NONEXISTENT-00000');
+        (new Order)->resolveRouteBinding('ORD-NONEXISTENT-00000');
     }
 
     public function test_resolve_route_binding_throws_for_nonexistent_id(): void
@@ -342,6 +389,6 @@ class OrderTest extends ModuleTestCase
         $this->expectException(ModelNotFoundException::class);
 
         // When: 존재하지 않는 ID로 바인딩 해석
-        (new Order())->resolveRouteBinding(999999);
+        (new Order)->resolveRouteBinding(999999);
     }
 }

@@ -4,6 +4,8 @@ namespace Modules\Sirsoft\Board\Tests\Unit\Seo;
 
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
@@ -45,7 +47,7 @@ class BoardSitemapContributorTest extends BoardTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->contributor = new BoardSitemapContributor();
+        $this->contributor = new BoardSitemapContributor;
     }
 
     /**
@@ -136,7 +138,7 @@ class BoardSitemapContributorTest extends BoardTestCase
     public function test_get_urls_excludes_deleted_post(): void
     {
         $postId = $this->createTestPost(['status' => 'published', 'is_secret' => false]);
-        \Illuminate\Support\Facades\DB::table('board_posts')
+        DB::table('board_posts')
             ->where('id', $postId)
             ->update(['deleted_at' => now()]);
 
@@ -171,5 +173,62 @@ class BoardSitemapContributorTest extends BoardTestCase
         $this->assertNotNull($boardItem);
         $this->assertArrayHasKey('changefreq', $boardItem);
         $this->assertArrayHasKey('priority', $boardItem);
+    }
+
+    /**
+     * getUrls: seo_boards 토글 OFF 시 /boards 목록 URL이 제외된다 (회귀)
+     */
+    public function test_get_urls_excludes_boards_index_when_toggle_off(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-board.seo.seo_boards', false);
+
+        $urls = $this->contributor->getUrls();
+        $urlPaths = array_column($urls, 'url');
+
+        $this->assertNotContains('/boards', $urlPaths);
+    }
+
+    /**
+     * getUrls: seo_board 토글 OFF 시 개별 게시판 URL이 제외된다 (회귀)
+     */
+    public function test_get_urls_excludes_board_detail_when_toggle_off(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-board.seo.seo_board', false);
+
+        $urls = $this->contributor->getUrls();
+        $urlPaths = array_column($urls, 'url');
+
+        $this->assertNotContains("/board/{$this->board->slug}", $urlPaths);
+    }
+
+    /**
+     * getUrls: seo_post_detail 토글 OFF 시 게시글 상세 URL이 제외된다 (회귀)
+     */
+    public function test_get_urls_excludes_post_detail_when_toggle_off(): void
+    {
+        $postId = $this->createTestPost(['status' => 'published', 'is_secret' => false]);
+        Config::set('g7_settings.modules.sirsoft-board.seo.seo_post_detail', false);
+
+        $urls = $this->contributor->getUrls();
+        $urlPaths = array_column($urls, 'url');
+
+        $this->assertNotContains("/board/{$this->board->slug}/{$postId}", $urlPaths);
+        // 게시판 URL 자체는 토글이 켜져 있으므로 유지된다
+        $this->assertContains("/board/{$this->board->slug}", $urlPaths);
+    }
+
+    /**
+     * getUrls: 토글이 모두 켜진 기본 상태에서는 모든 URL 유형이 포함된다 (비파괴 회귀)
+     */
+    public function test_get_urls_includes_all_when_toggles_default_on(): void
+    {
+        $postId = $this->createTestPost(['status' => 'published', 'is_secret' => false]);
+
+        $urls = $this->contributor->getUrls();
+        $urlPaths = array_column($urls, 'url');
+
+        $this->assertContains('/boards', $urlPaths);
+        $this->assertContains("/board/{$this->board->slug}", $urlPaths);
+        $this->assertContains("/board/{$this->board->slug}/{$postId}", $urlPaths);
     }
 }

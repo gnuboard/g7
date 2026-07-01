@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — KG이니시스 본인인증 플러그인 sampleData. 내정보 레이아웃의 inicisRecord 데이터소스 응답 shape 를 실제 바인딩 필드(data.{method,verified_at,name_masked,birthday_masked,phone_masked,is_adult}) 기준으로 작성.",
+  "pluginId": "sirsoft-verification_kginicis",
+  "version": "1.0.0",
+  "description": "KG이니시스 본인인증 플러그인 레이아웃 편집기 샘플 데이터.",
+  "sampleData": {
+    "byDataSourceId": {
+      "inicisRecord": {
+        "data": {
+          "method": "KG이니시스 본인확인",
+          "verified_at": "2026-05-28 14:32:09",
+          "name_masked": "김*준",
+          "birthday_masked": "1990-**-**",
+          "phone_masked": "010-****-6789",
+          "is_adult": true,
+          "is_foreigner": false
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "플러그인 설정 변종.",
+    "groups": [
+      {
+        "comment": "결제/인증 플러그인 설정. _local.form.is_test_mode 로 운영모드 경고(live_mode_warning)를 if 분기한다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-verification_kginicis/settings"
+        },
+        "items": [
+          {
+            "id": "test_mode_on",
+            "label": "$t:editor.state.test_mode_on",
+            "default": true,
+            "initialState": {
+              "local": {
+                "form": {
+                  "is_test_mode": true
+                }
+              }
+            }
+          },
+          {
+            "id": "test_mode_off",
+            "label": "$t:editor.state.test_mode_off",
+            "initialState": {
+              "local": {
+                "form": {
+                  "is_test_mode": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": " states 전수 — 본인인증 모달(identity-challenge-modal) 내 identity_provider_ui:provider EP 주입 조각. 모달 내부 게이트(_global.identityChallenge.provider_id !== 'g7:core.mail')와 조각 루트 if(provider_id === 'inicis')를 함께 연다. 모달 자체는 확장 편집 모드가 표시용 isOpen=true 로 append. default 항목은 템플릿 _user_base 그룹이 소유(concat — 중복 default 금지).",
+        "scope": {
+          "kind": "base",
+          "match": "_user_base"
+        },
+        "items": [
+          {
+            "id": "identity_challenge_inicis",
+            "label": "$t:editor.state.identity_challenge_inicis",
+            "initialState": {
+              "global": {
+                "identityChallenge": {
+                  "provider_id": "inicis",
+                  "purpose": "login_second_factor",
+                  "providerInProgress": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

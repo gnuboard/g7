@@ -1,0 +1,15 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "GDPR (일반 데이터 보호 규정) 플러그인 환경설정 기본값 및 프론트엔드 스키마. banner_enabled 가 GDPR 컴플라이언스 모드 단일 토글 — ON 시 배너 노출 + 동의 전 외부 추적 자동 차단 + 마이페이지 동의 관리 카드 일괄 활성."
+    },
+    "frontend_schema": {
+        "privacy_policy_slug": { "type": "string", "expose": true },
+        "legal_entity_name": { "type": "string", "expose": true },
+        "data_storage_location": { "type": "string", "expose": true },
+        "banner_enabled": { "type": "boolean", "expose": true },
+        "banner_position": { "type": "string", "expose": true },
+        "cookie_categories": { "type": "string", "expose": true },
+        "blocked_domains": { "type": "object", "expose": true }
+    }
+}

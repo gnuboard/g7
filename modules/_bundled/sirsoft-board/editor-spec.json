@@ -1,0 +1,2386 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "moduleId": "sirsoft-board",
+  "version": "1.0.0",
+  "description": "레이아웃 편집기 스펙 — 게시판 모듈 도메인 sampleData/sampleGlobal/states. 실제 admin 레이아웃 data_source ID 전수 스캔 기반 도메인 ID(posts/post/reports/report_detail/reporters_list/boards/boards_list/board_types/form_data/form_meta/settings) + 사용자 게시판 페이지 byEndpointPattern. 공용 인프라(roles/availableChannels/identityProviders/boardIdentity*/boardNotificationDefinitions)는 admin 템플릿 스펙(roles/availableChannels/identityProviders)·코어 프리셋 폴백이 커버.",
+  "sampleGlobal": {
+    "comment": "게시판 도메인 _global keyspace.",
+    "notifications": {
+      "unread_post_count": 3
+    }
+  },
+  "sampleData": {
+    "comment": "실제 ID(admin): boards/posts/post/reports/report_detail + 사용자 게시판 페이지 byEndpointPattern(api/modules/sirsoft-board/boards/*). 계획서 추정(board_activity/user_comments 등 미존재) 정정.",
+    "byDataSourceId": {
+      "posts": {
+        "data": {
+          "board": {
+            "slug": "free",
+            "name": "자유게시판",
+            "description": "<p>회원 자유 소통 공간</p>",
+            "type": "normal",
+            "categories": [
+              "일상",
+              "질문",
+              "정보공유",
+              "후기"
+            ],
+            "show_category": true,
+            "show_view_count": true,
+            "settings": {
+              "use_file_upload": true,
+              "use_comment": true,
+              "use_reply": true,
+              "use_report": true,
+              "secret_mode": "enabled",
+              "show_view_count": true,
+              "per_page": 20,
+              "posts_per_page": 20,
+              "posts_per_page_mobile": 10,
+              "new_display_hours": 24,
+              "order_by": "created_at",
+              "order_direction": "desc"
+            }
+          },
+          "data": [
+            {
+              "id": 101,
+              "number": "공지",
+              "row_type": "notice",
+              "slug": "free",
+              "title": "[필독] 게시판 이용 규칙 안내",
+              "category": null,
+              "author": {
+                "uuid": "00000000-0000-0000-0000-000000000010",
+                "name": "운영자",
+                "email": "운영자@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "is_notice": true,
+              "is_secret": false,
+              "content_mode": "html",
+              "is_new": false,
+              "status": "published",
+              "status_label": "게시됨",
+              "view_count": 5821,
+              "comment_count": 12,
+              "reply_count": 0,
+              "attachment_count": 1,
+              "has_attachment": true,
+              "thumbnail": null,
+              "parent_id": null,
+              "depth": 0,
+              "is_reply": false,
+              "created_at": "2026-05-01 09:00:00",
+              "created_at_formatted": "2026-05-01",
+              "is_author": false,
+              "is_guest_post": false,
+              "deleted_at": null,
+              "content_preview": "게시판 이용 규칙을 안내드립니다..."
+            },
+            {
+              "id": 142,
+              "number": 142,
+              "row_type": "normal",
+              "slug": "free",
+              "title": "봄맞이 등산 다녀왔습니다 🏔️",
+              "category": "일상",
+              "author": {
+                "uuid": "00000000-0000-0000-0000-000000000001",
+                "name": "김민준",
+                "email": "김민준@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "is_notice": false,
+              "is_secret": false,
+              "content_mode": "html",
+              "is_new": true,
+              "status": "published",
+              "status_label": "게시됨",
+              "view_count": 348,
+              "comment_count": 7,
+              "reply_count": 2,
+              "attachment_count": 3,
+              "has_attachment": true,
+              "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+              "parent_id": null,
+              "depth": 0,
+              "is_reply": false,
+              "created_at": "2026-06-03 14:22:10",
+              "created_at_formatted": "2026-06-03",
+              "is_author": false,
+              "is_guest_post": false,
+              "deleted_at": null,
+              "content_preview": "날씨가 좋아서 북한산에 다녀왔어요..."
+            },
+            {
+              "id": 141,
+              "number": 141,
+              "row_type": "normal",
+              "slug": "free",
+              "title": "노트북 추천 부탁드립니다 (예산 150만원)",
+              "category": "질문",
+              "author": {
+                "uuid": "00000000-0000-0000-0000-000000000002",
+                "name": "이서연",
+                "email": "이서연@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "is_notice": false,
+              "is_secret": false,
+              "content_mode": "text",
+              "is_new": true,
+              "status": "published",
+              "status_label": "게시됨",
+              "view_count": 213,
+              "comment_count": 15,
+              "reply_count": 1,
+              "attachment_count": 0,
+              "has_attachment": false,
+              "thumbnail": null,
+              "parent_id": null,
+              "depth": 0,
+              "is_reply": false,
+              "created_at": "2026-06-03 11:05:42",
+              "created_at_formatted": "2026-06-03",
+              "is_author": false,
+              "is_guest_post": false,
+              "deleted_at": null,
+              "content_preview": "주로 문서 작업과 가벼운 영상 편집을 합니다..."
+            },
+            {
+              "id": 143,
+              "number": "답글",
+              "row_type": "reply",
+              "slug": "free",
+              "title": "RE: 노트북 추천 부탁드립니다",
+              "category": "질문",
+              "author": {
+                "uuid": "00000000-0000-0000-0000-000000000003",
+                "name": "박도윤",
+                "email": "박도윤@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "is_notice": false,
+              "is_secret": false,
+              "content_mode": "text",
+              "is_new": true,
+              "status": "published",
+              "status_label": "게시됨",
+              "view_count": 56,
+              "comment_count": 0,
+              "reply_count": 0,
+              "attachment_count": 0,
+              "has_attachment": false,
+              "thumbnail": null,
+              "parent_id": 141,
+              "depth": 1,
+              "is_reply": true,
+              "created_at": "2026-06-03 12:30:00",
+              "created_at_formatted": "2026-06-03",
+              "is_author": false,
+              "is_guest_post": false,
+              "deleted_at": null,
+              "content_preview": "저는 그 예산이면 OO모델 추천드려요..."
+            },
+            {
+              "id": 140,
+              "number": 140,
+              "row_type": "normal",
+              "slug": "free",
+              "title": "비밀글입니다",
+              "category": "일상",
+              "author": {
+                "uuid": "00000000-0000-0000-0000-000000000004",
+                "name": "최예나",
+                "email": "최예나@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "is_notice": false,
+              "is_secret": true,
+              "content_mode": "text",
+              "is_new": false,
+              "status": "published",
+              "status_label": "게시됨",
+              "view_count": 8,
+              "comment_count": 2,
+              "reply_count": 0,
+              "attachment_count": 0,
+              "has_attachment": false,
+              "thumbnail": null,
+              "parent_id": null,
+              "depth": 0,
+              "is_reply": false,
+              "created_at": "2026-06-02 18:40:00",
+              "created_at_formatted": "2026-06-02",
+              "is_author": false,
+              "is_guest_post": false,
+              "deleted_at": null,
+              "content_preview": "비밀글 내용입니다..."
+            },
+            {
+              "id": 139,
+              "number": 139,
+              "row_type": "normal",
+              "slug": "free",
+              "title": "광고성 게시글 (관리자 삭제)",
+              "category": null,
+              "author": {
+                "uuid": null,
+                "name": "비회원",
+                "email": null,
+                "avatar": null,
+                "status": null,
+                "status_label": null,
+                "is_guest": true
+              },
+              "is_notice": false,
+              "is_secret": false,
+              "content_mode": "text",
+              "is_new": false,
+              "status": "published",
+              "status_label": "게시됨",
+              "view_count": 31,
+              "comment_count": 0,
+              "reply_count": 0,
+              "attachment_count": 0,
+              "has_attachment": false,
+              "thumbnail": null,
+              "parent_id": null,
+              "depth": 0,
+              "is_reply": false,
+              "created_at": "2026-06-01 10:15:00",
+              "created_at_formatted": "2026-06-01",
+              "is_author": false,
+              "is_guest_post": true,
+              "deleted_at": "2026-06-02 09:00:00",
+              "content_preview": "삭제된 게시글입니다."
+            }
+          ],
+          "pagination": {
+            "total": 137,
+            "all_total": 138,
+            "count": 6,
+            "per_page": 20,
+            "current_page": 1,
+            "last_page": 7,
+            "from": 1,
+            "to": 6,
+            "has_more_pages": true
+          },
+          "abilities": {
+            "can_read": true,
+            "can_write": true,
+            "can_read_secret": true,
+            "can_read_comments": true,
+            "can_write_comments": true,
+            "can_upload": true,
+            "can_download": true,
+            "can_manage": true,
+            "can_view_deleted": true
+          }
+        }
+      },
+      "post": {
+        "data": {
+          "id": 142,
+          "category": "일상",
+          "title": "봄맞이 등산 다녀왔습니다 🏔️",
+          "content": "<p>날씨가 좋아서 북한산에 다녀왔어요. 정상에서 본 풍경이 정말 멋졌습니다.</p><p>사진 몇 장 첨부합니다.</p>",
+          "content_mode": "html",
+          "author": {
+            "uuid": "00000000-0000-0000-0000-000000000001",
+            "name": "김민준",
+            "email": "김민준@example.com",
+            "avatar": null,
+            "status": "active",
+            "status_label": "활성",
+            "is_guest": false
+          },
+          "is_notice": false,
+          "is_secret": false,
+          "is_new": true,
+          "status": "published",
+          "status_label": "게시됨",
+          "trigger_type": null,
+          "view_count": 348,
+          "comment_count": 3,
+          "reply_count": 1,
+          "attachment_count": 3,
+          "has_attachment": true,
+          "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+          "parent_id": null,
+          "depth": 0,
+          "is_reply": false,
+          "user_id": "00000000-0000-0000-0000-000000000001",
+          "ip_address": "203.0.113.42",
+          "created_at": "2026-06-03 14:22:10",
+          "created_at_formatted": "2026-06-03",
+          "updated_at": "2026-06-03 14:22:10",
+          "deleted_at": null,
+          "is_author": false,
+          "is_guest_post": false,
+          "is_already_reported": false,
+          "board": {
+            "slug": "free",
+            "name": "자유게시판",
+            "type": "normal",
+            "use_comment": true,
+            "use_reply": true,
+            "use_report": true,
+            "show_view_count": true,
+            "max_reply_depth": 5,
+            "max_comment_depth": 10,
+            "report_types": [
+              {
+                "value": "abuse",
+                "label": "욕설/비방"
+              },
+              {
+                "value": "spam",
+                "label": "스팸/광고"
+              },
+              {
+                "value": "sexual",
+                "label": "음란성"
+              },
+              {
+                "value": "privacy",
+                "label": "개인정보 노출"
+              },
+              {
+                "value": "other",
+                "label": "기타"
+              }
+            ]
+          },
+          "navigation": {
+            "prev": {
+              "id": 141,
+              "title": "노트북 추천 부탁드립니다 (예산 150만원)",
+              "is_notice": false
+            },
+            "next": {
+              "id": 143,
+              "title": "회사 워크샵 후기",
+              "is_notice": false
+            }
+          },
+          "parent": null,
+          "attachments": [
+            {
+              "id": 1,
+              "hash": "img-hash-1",
+              "original_filename": "북한산_정상.jpg",
+              "mime_type": "image/jpeg",
+              "size": 2411520,
+              "size_formatted": "2.3 MB",
+              "collection": "attachments",
+              "order": 0,
+              "download_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/download",
+              "preview_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+              "is_image": true,
+              "meta": null
+            },
+            {
+              "id": 3,
+              "hash": "pdf-hash-3",
+              "original_filename": "등산코스_정리.pdf",
+              "mime_type": "application/pdf",
+              "size": 524288,
+              "size_formatted": "512 KB",
+              "collection": "attachments",
+              "order": 1,
+              "download_url": "/api/modules/sirsoft-board/boards/free/attachment/pdf-hash-3/download",
+              "preview_url": null,
+              "is_image": false,
+              "meta": null
+            }
+          ],
+          "comments": [
+            {
+              "id": 501,
+              "post_id": 142,
+              "parent_id": null,
+              "content": "풍경이 정말 멋지네요! 등산로는 어디로 오르셨나요?",
+              "author": {
+                "uuid": "00000000-0000-0000-0000-000000000002",
+                "name": "이서연",
+                "email": "이서연@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "is_secret": false,
+              "status": "published",
+              "status_label": "게시됨",
+              "depth": 0,
+              "replies_count": 1,
+              "created_at": "2026-06-03 15:01:22",
+              "created_at_formatted": "2026-06-03",
+              "updated_at": "2026-06-03 15:01:22",
+              "deleted_at": null,
+              "ip_address": "203.0.113.51",
+              "is_author": false,
+              "is_guest_comment": false,
+              "is_already_reported": false,
+              "action_logs": null,
+              "is_owner": false,
+              "abilities": {
+                "can_write": true,
+                "can_manage": true
+              }
+            },
+            {
+              "id": 502,
+              "post_id": 142,
+              "parent_id": 501,
+              "content": "우이동 코스로 올랐어요. 초보자도 무난합니다 :)",
+              "author": {
+                "uuid": "00000000-0000-0000-0000-000000000001",
+                "name": "김민준",
+                "email": "김민준@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "is_secret": false,
+              "status": "published",
+              "status_label": "게시됨",
+              "depth": 1,
+              "replies_count": 0,
+              "created_at": "2026-06-03 15:20:10",
+              "created_at_formatted": "2026-06-03",
+              "updated_at": "2026-06-03 15:20:10",
+              "deleted_at": null,
+              "ip_address": "203.0.113.42",
+              "is_author": false,
+              "is_guest_comment": false,
+              "is_already_reported": false,
+              "action_logs": null,
+              "is_owner": false,
+              "abilities": {
+                "can_write": true,
+                "can_manage": true
+              }
+            },
+            {
+              "id": 503,
+              "post_id": 142,
+              "parent_id": null,
+              "content": "삭제된 댓글입니다.",
+              "author": {
+                "uuid": null,
+                "name": "비회원",
+                "email": null,
+                "avatar": null,
+                "status": null,
+                "status_label": null,
+                "is_guest": true
+              },
+              "is_secret": false,
+              "status": "published",
+              "status_label": "게시됨",
+              "depth": 0,
+              "replies_count": 0,
+              "created_at": "2026-06-03 16:00:00",
+              "created_at_formatted": "2026-06-03",
+              "updated_at": "2026-06-03 16:00:00",
+              "deleted_at": "2026-06-03 16:30:00",
+              "ip_address": "198.51.100.7",
+              "is_author": false,
+              "is_guest_comment": true,
+              "is_already_reported": false,
+              "action_logs": null,
+              "is_owner": false,
+              "abilities": {
+                "can_write": true,
+                "can_manage": true
+              }
+            }
+          ],
+          "replies": [
+            {
+              "id": 144,
+              "category": "일상",
+              "title": "RE: 봄맞이 등산 다녀왔습니다",
+              "content": "저도 다음 주에 가보려고요!",
+              "content_mode": "text",
+              "author": {
+                "uuid": "00000000-0000-0000-0000-000000000003",
+                "name": "박도윤",
+                "email": "박도윤@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "is_notice": false,
+              "is_secret": false,
+              "is_new": true,
+              "status": "published",
+              "status_label": "게시됨",
+              "view_count": 12,
+              "comment_count": 0,
+              "reply_count": 0,
+              "attachment_count": 0,
+              "has_attachment": false,
+              "thumbnail": null,
+              "parent_id": 142,
+              "depth": 1,
+              "is_reply": true,
+              "created_at": "2026-06-03 17:10:00",
+              "created_at_formatted": "2026-06-03",
+              "ip_address": "203.0.113.88",
+              "is_author": false,
+              "is_guest_post": false,
+              "deleted_at": null
+            }
+          ],
+          "is_owner": false,
+          "abilities": {
+            "can_read": true,
+            "can_write": true,
+            "can_read_secret": true,
+            "can_read_comments": true,
+            "can_write_comments": true,
+            "can_upload": true,
+            "can_download": true,
+            "can_manage": true
+          }
+        }
+      },
+      "reports": {
+        "data": {
+          "data": [
+            {
+              "id": 9001,
+              "board_id": 1,
+              "board": {
+                "id": 1,
+                "name": "자유게시판",
+                "slug": "free",
+                "title": "광고성 게시글 (관리자 삭제)",
+                "current_status": "blinded",
+                "deleted_at": null
+              },
+              "target_type": "post",
+              "target_type_label": "게시글",
+              "target_id": 139,
+              "post_id": 139,
+              "content": null,
+              "content_mode": "text",
+              "content_preview": "지금 바로 클릭하면 무료 쿠폰을 드립니다! 한정 수량...",
+              "author": {
+                "uuid": null,
+                "name": "비회원",
+                "email": null,
+                "avatar": null,
+                "status": null,
+                "status_label": null,
+                "is_guest": true
+              },
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000002",
+                "name": "이서연",
+                "email": "이서연@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "reason_type": "spam",
+              "reason_type_label": "스팸/광고",
+              "status": "pending",
+              "status_label": "대기 중",
+              "status_variant": "primary",
+              "processor": null,
+              "processed_at": null,
+              "metadata": null,
+              "report_count": 3,
+              "last_reported_at": "2026-06-03 18:00:00",
+              "is_reactivated": false,
+              "target_status": "blinded",
+              "target_trigger_type": "auto_hide",
+              "target_status_label": "블라인드 (자동)",
+              "created_at": "2026-06-03 17:30:00",
+              "updated_at": "2026-06-03 18:00:00"
+            },
+            {
+              "id": 9002,
+              "board_id": 1,
+              "board": {
+                "id": 1,
+                "name": "자유게시판",
+                "slug": "free",
+                "title": "봄맞이 등산 다녀왔습니다",
+                "current_status": "published",
+                "deleted_at": null
+              },
+              "target_type": "comment",
+              "target_type_label": "댓글",
+              "target_id": 503,
+              "post_id": 142,
+              "content": null,
+              "content_mode": "text",
+              "content_preview": "여기 욕설이 포함된 댓글입니다...",
+              "author": {
+                "uuid": null,
+                "name": "비회원",
+                "email": null,
+                "avatar": null,
+                "status": null,
+                "status_label": null,
+                "is_guest": true
+              },
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000003",
+                "name": "박도윤",
+                "email": "박도윤@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "reason_type": "abuse",
+              "reason_type_label": "욕설/비방",
+              "status": "review",
+              "status_label": "검토 중",
+              "status_variant": "info",
+              "processor": {
+                "uuid": "00000000-0000-0000-0000-000000000010",
+                "name": "운영자"
+              },
+              "processed_at": "2026-06-03 19:00:00",
+              "metadata": null,
+              "report_count": 1,
+              "last_reported_at": "2026-06-03 16:45:00",
+              "is_reactivated": false,
+              "target_status": "published",
+              "target_trigger_type": null,
+              "target_status_label": "게시됨",
+              "created_at": "2026-06-03 16:45:00",
+              "updated_at": "2026-06-03 19:00:00"
+            },
+            {
+              "id": 9003,
+              "board_id": 1,
+              "board": {
+                "id": 1,
+                "name": "자유게시판",
+                "slug": "free",
+                "title": "노트북 추천 부탁드립니다",
+                "current_status": "published",
+                "deleted_at": null
+              },
+              "target_type": "post",
+              "target_type_label": "게시글",
+              "target_id": 141,
+              "post_id": 141,
+              "content": null,
+              "content_mode": "text",
+              "content_preview": "신고 사유가 불충분하여 반려된 케이스입니다...",
+              "author": {
+                "uuid": "00000000-0000-0000-0000-000000000002",
+                "name": "이서연",
+                "email": "이서연@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000004",
+                "name": "최예나",
+                "email": "최예나@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "reason_type": "other",
+              "reason_type_label": "기타",
+              "status": "rejected",
+              "status_label": "반려",
+              "status_variant": "secondary",
+              "processor": {
+                "uuid": "00000000-0000-0000-0000-000000000010",
+                "name": "운영자"
+              },
+              "processed_at": "2026-06-02 11:00:00",
+              "metadata": null,
+              "report_count": 1,
+              "last_reported_at": "2026-06-02 10:00:00",
+              "is_reactivated": false,
+              "target_status": "published",
+              "target_trigger_type": null,
+              "target_status_label": "게시됨",
+              "created_at": "2026-06-02 10:00:00",
+              "updated_at": "2026-06-02 11:00:00"
+            },
+            {
+              "id": 9004,
+              "board_id": 1,
+              "board": {
+                "id": 1,
+                "name": "자유게시판",
+                "slug": "free",
+                "title": "부적절한 게시글",
+                "current_status": "blinded",
+                "deleted_at": null
+              },
+              "target_type": "post",
+              "target_type_label": "게시글",
+              "target_id": 138,
+              "post_id": 138,
+              "content": null,
+              "content_mode": "text",
+              "content_preview": "음란성 콘텐츠로 신고되어 중단 처리된 케이스...",
+              "author": {
+                "uuid": null,
+                "name": "비회원",
+                "email": null,
+                "avatar": null,
+                "status": null,
+                "status_label": null,
+                "is_guest": true
+              },
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000001",
+                "name": "김민준",
+                "email": "김민준@example.com",
+                "avatar": null,
+                "status": "active",
+                "status_label": "활성",
+                "is_guest": false
+              },
+              "reason_type": "sexual",
+              "reason_type_label": "음란성",
+              "status": "suspended",
+              "status_label": "중단",
+              "status_variant": "warning",
+              "processor": {
+                "uuid": "00000000-0000-0000-0000-000000000010",
+                "name": "운영자"
+              },
+              "processed_at": "2026-06-01 14:00:00",
+              "metadata": null,
+              "report_count": 5,
+              "last_reported_at": "2026-06-01 13:30:00",
+              "is_reactivated": true,
+              "target_status": "blinded",
+              "target_trigger_type": "admin",
+              "target_status_label": "블라인드 (수동)",
+              "created_at": "2026-06-01 13:00:00",
+              "updated_at": "2026-06-01 14:00:00"
+            }
+          ],
+          "statistics": {
+            "total": 24,
+            "pending": 8,
+            "review": 5,
+            "rejected": 6,
+            "suspended": 3,
+            "deleted": 2
+          },
+          "pagination": {
+            "current_page": 1,
+            "last_page": 2,
+            "per_page": 20,
+            "total": 24,
+            "from": 1,
+            "to": 4,
+            "has_more_pages": true
+          },
+          "abilities": {
+            "can_view": true,
+            "can_manage": true
+          }
+        }
+      },
+      "report_detail": {
+        "data": {
+          "id": 9001,
+          "board_id": 1,
+          "board": {
+            "id": 1,
+            "name": "자유게시판",
+            "slug": "free"
+          },
+          "target_type": "post",
+          "target_id": 139,
+          "post": {
+            "id": 139,
+            "title": "광고성 게시글 (관리자 삭제)",
+            "content": "지금 바로 클릭하면 무료 쿠폰을 드립니다! 한정 수량이니 서두르세요. http://spam.example.com",
+            "content_mode": "text",
+            "created_at": "2026-06-01 10:15:00",
+            "author": {
+              "uuid": null,
+              "name": "비회원",
+              "email": null
+            }
+          },
+          "comment": null,
+          "target_status": "blinded",
+          "target_status_label": "블라인드",
+          "blind_trigger_type": "auto_hide",
+          "blind_trigger_type_label": "자동 숨김",
+          "status": "pending",
+          "available_actions": [
+            "review",
+            "rejected",
+            "suspended",
+            "deleted"
+          ],
+          "abilities": {
+            "can_view": true,
+            "can_manage": true
+          },
+          "reporters": [
+            {
+              "id": 7001,
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000002",
+                "name": "이서연",
+                "email": "lee@example.com"
+              },
+              "reason_type": "spam",
+              "reason_type_label": "스팸/광고",
+              "reason_detail": "광고 링크가 포함되어 있습니다.",
+              "snapshot": {
+                "board_name": "자유게시판",
+                "title": "광고성 게시글",
+                "author_name": "비회원"
+              },
+              "reported_at": "2026-06-03 17:30:00"
+            },
+            {
+              "id": 7002,
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000003",
+                "name": "박도윤",
+                "email": "park@example.com"
+              },
+              "reason_type": "spam",
+              "reason_type_label": "스팸/광고",
+              "reason_detail": "도배성 광고글입니다.",
+              "snapshot": {
+                "board_name": "자유게시판",
+                "title": "광고성 게시글",
+                "author_name": "비회원"
+              },
+              "reported_at": "2026-06-03 17:45:00"
+            },
+            {
+              "id": 7003,
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000004",
+                "name": "최예나",
+                "email": "choi@example.com"
+              },
+              "reason_type": "abuse",
+              "reason_type_label": "욕설/비방",
+              "reason_detail": null,
+              "snapshot": {
+                "board_name": "자유게시판",
+                "title": "광고성 게시글",
+                "author_name": "비회원"
+              },
+              "reported_at": "2026-06-03 18:00:00"
+            }
+          ],
+          "report_count": 3,
+          "reason_summary": "스팸/광고 (2건) · 욕설/비방 (1건)",
+          "first_reported_at": "2026-06-03 17:30:00",
+          "last_reported_at": "2026-06-03 18:00:00",
+          "histories": [
+            {
+              "id": 1,
+              "type": "reported",
+              "action_label": "신고 접수",
+              "processor_id": null,
+              "processor_name": null,
+              "processor_email": "",
+              "reason": null,
+              "reporter_count": 1,
+              "created_at": "2026-06-03 17:30:00"
+            },
+            {
+              "id": 2,
+              "type": "re_reported",
+              "action_label": "재신고 접수",
+              "processor_id": null,
+              "processor_name": null,
+              "processor_email": "",
+              "reason": null,
+              "reporter_count": 2,
+              "created_at": "2026-06-03 18:00:00"
+            },
+            {
+              "id": 3,
+              "type": "auto_hidden",
+              "action_label": "자동 블라인드",
+              "processor_id": null,
+              "processor_name": "시스템",
+              "processor_email": "",
+              "reason": "신고 누적 3건으로 자동 숨김 처리",
+              "reporter_count": 3,
+              "created_at": "2026-06-03 18:00:05"
+            }
+          ],
+          "metadata": null,
+          "created_at": "2026-06-03 17:30:00",
+          "updated_at": "2026-06-03 18:00:05"
+        }
+      },
+      "reporters_list": {
+        "data": {
+          "data": [
+            {
+              "id": 7001,
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000002",
+                "name": "이서연",
+                "email": "lee@example.com"
+              },
+              "reason_type": "spam",
+              "reason_type_label": "스팸/광고",
+              "reason_detail": "광고 링크가 포함되어 있습니다.",
+              "snapshot": {
+                "board_name": "자유게시판",
+                "title": "광고성 게시글",
+                "author_name": "비회원"
+              },
+              "reported_at": "2026-06-03 17:30:00"
+            },
+            {
+              "id": 7002,
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000003",
+                "name": "박도윤",
+                "email": "park@example.com"
+              },
+              "reason_type": "spam",
+              "reason_type_label": "스팸/광고",
+              "reason_detail": "도배성 광고글입니다.",
+              "snapshot": {
+                "board_name": "자유게시판",
+                "title": "광고성 게시글",
+                "author_name": "비회원"
+              },
+              "reported_at": "2026-06-03 17:45:00"
+            },
+            {
+              "id": 7003,
+              "reporter": {
+                "uuid": "00000000-0000-0000-0000-000000000004",
+                "name": "최예나",
+                "email": "choi@example.com"
+              },
+              "reason_type": "abuse",
+              "reason_type_label": "욕설/비방",
+              "reason_detail": null,
+              "snapshot": {
+                "board_name": "자유게시판",
+                "title": "광고성 게시글",
+                "author_name": "비회원"
+              },
+              "reported_at": "2026-06-03 18:00:00"
+            }
+          ],
+          "pagination": {
+            "total": 3,
+            "from": 1,
+            "to": 3,
+            "per_page": 10,
+            "current_page": 1,
+            "last_page": 1
+          }
+        }
+      },
+      "boards": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "name": "공지사항",
+              "slug": "notice",
+              "is_active": true,
+              "type": "basic",
+              "description": "공지사항 게시판입니다.",
+              "per_page": 20,
+              "per_page_mobile": 15,
+              "order_by": "created_at",
+              "order_direction": "DESC",
+              "categories": [],
+              "show_view_count": true,
+              "secret_mode": "disabled",
+              "use_comment": true,
+              "use_reply": true,
+              "max_reply_depth": 5,
+              "use_report": false,
+              "comment_order": "ASC",
+              "max_comment_depth": 10,
+              "min_title_length": 2,
+              "max_title_length": 200,
+              "min_content_length": 2,
+              "max_content_length": 10000,
+              "min_comment_length": 2,
+              "max_comment_length": 1000,
+              "blocked_keywords": [],
+              "use_file_upload": false,
+              "max_file_size": 10,
+              "max_file_count": 5,
+              "allowed_extensions": [
+                "jpg",
+                "jpeg",
+                "png",
+                "gif",
+                "webp",
+                "pdf",
+                "doc",
+                "docx",
+                "xls",
+                "xlsx",
+                "ppt",
+                "pptx",
+                "hwp",
+                "txt",
+                "zip"
+              ],
+              "new_display_hours": 24,
+              "board_managers": [
+                {
+                  "uuid": "00000000-0000-4000-8000-000000000001",
+                  "name": "관리자",
+                  "email": "admin@example.com"
+                }
+              ],
+              "board_steps": [],
+              "board_manager_ids": [
+                "00000000-0000-4000-8000-000000000001"
+              ],
+              "board_step_ids": [],
+              "notify_author": true,
+              "notify_admin_on_post": true,
+              "created_at": "2026-05-26 02:41:23",
+              "updated_at": "2026-05-26 02:41:23",
+              "permissions": null,
+              "category_post_counts": null,
+              "posts_count": 0,
+              "user_abilities": null,
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": true
+              }
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 1,
+            "from": 1,
+            "to": 1,
+            "has_more_pages": false
+          },
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          },
+          "board_types": [
+            {
+              "value": "normal",
+              "label": "일반게시판"
+            },
+            {
+              "value": "gallery",
+              "label": "갤러리"
+            },
+            {
+              "value": "qna",
+              "label": "Q&A"
+            }
+          ]
+        }
+      },
+      "boards_list": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "name": "공지사항",
+              "slug": "notice",
+              "is_active": true,
+              "type": "basic",
+              "description": "공지사항 게시판입니다.",
+              "per_page": 20,
+              "per_page_mobile": 15,
+              "order_by": "created_at",
+              "order_direction": "DESC",
+              "categories": [],
+              "show_view_count": true,
+              "secret_mode": "disabled",
+              "use_comment": true,
+              "use_reply": true,
+              "max_reply_depth": 5,
+              "use_report": false,
+              "comment_order": "ASC",
+              "max_comment_depth": 10,
+              "min_title_length": 2,
+              "max_title_length": 200,
+              "min_content_length": 2,
+              "max_content_length": 10000,
+              "min_comment_length": 2,
+              "max_comment_length": 1000,
+              "blocked_keywords": [],
+              "use_file_upload": false,
+              "max_file_size": 10,
+              "max_file_count": 5,
+              "allowed_extensions": [
+                "jpg",
+                "jpeg",
+                "png",
+                "gif",
+                "webp",
+                "pdf",
+                "doc",
+                "docx",
+                "xls",
+                "xlsx",
+                "ppt",
+                "pptx",
+                "hwp",
+                "txt",
+                "zip"
+              ],
+              "new_display_hours": 24,
+              "board_managers": [
+                {
+                  "uuid": "00000000-0000-4000-8000-000000000001",
+                  "name": "관리자",
+                  "email": "admin@example.com"
+                }
+              ],
+              "board_steps": [],
+              "board_manager_ids": [
+                "00000000-0000-4000-8000-000000000001"
+              ],
+              "board_step_ids": [],
+              "notify_author": true,
+              "notify_admin_on_post": true,
+              "created_at": "2026-05-26 02:41:23",
+              "updated_at": "2026-05-26 02:41:23",
+              "permissions": null,
+              "category_post_counts": null,
+              "posts_count": 0,
+              "user_abilities": null,
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": true
+              }
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 999,
+            "total": 1,
+            "from": 1,
+            "to": 1,
+            "has_more_pages": false
+          },
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
+      },
+      "board_types": {
+        "data": [
+          {
+            "value": "general",
+            "label": "일반 게시판"
+          },
+          {
+            "value": "gallery",
+            "label": "갤러리"
+          },
+          {
+            "value": "qna",
+            "label": "질문답변"
+          }
+        ]
+      },
+      "form_data": {
+        "data": {
+          "id": 142,
+          "title": "봄맞이 등산 다녀왔습니다 🏔️",
+          "content": "<p>날씨가 좋아서 북한산에 다녀왔어요.</p>",
+          "content_mode": "html",
+          "category": "일상",
+          "is_notice": false,
+          "is_secret": false,
+          "parent_id": null,
+          "author": {
+            "uuid": "00000000-0000-0000-0000-000000000001",
+            "name": "김민준",
+            "email": "김민준@example.com",
+            "avatar": null,
+            "status": "active",
+            "status_label": "활성",
+            "is_guest": false
+          },
+          "created_at": "2026-06-03 14:22:10",
+          "created_at_formatted": "2026-06-03",
+          "attachments": [
+            {
+              "id": 1,
+              "hash": "img-hash-1",
+              "original_filename": "북한산_정상.jpg",
+              "mime_type": "image/jpeg",
+              "size": 2411520,
+              "size_formatted": "2.3 MB",
+              "collection": "attachments",
+              "order": 0,
+              "download_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/download",
+              "preview_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+              "is_image": true,
+              "meta": null
+            }
+          ],
+          "parent": null
+        }
+      },
+      "form_meta": {
+        "data": {
+          "board": {
+            "name": "자유게시판",
+            "type": "normal",
+            "slug": "free",
+            "categories": [
+              "일상",
+              "질문",
+              "정보공유",
+              "후기"
+            ],
+            "secret_mode": "enabled",
+            "min_title_length": 2,
+            "max_title_length": 100,
+            "min_content_length": 1,
+            "max_content_length": 50000,
+            "use_file_upload": true,
+            "max_file_size": 10,
+            "max_file_count": 5,
+            "allowed_extensions": [
+              "jpg",
+              "jpeg",
+              "png",
+              "gif",
+              "pdf",
+              "zip",
+              "docx"
+            ],
+            "user_abilities": {
+              "can_manage": true,
+              "can_write": true,
+              "can_upload": true
+            }
+          },
+          "author": {
+            "uuid": "00000000-0000-0000-0000-000000000010",
+            "name": "운영자",
+            "email": "운영자@example.com",
+            "avatar": null,
+            "status": "active",
+            "status_label": "활성",
+            "is_guest": false
+          },
+          "is_guest_post": false,
+          "requires_password": false,
+          "created_at": "2026-06-03 14:22:10"
+        }
+      },
+      "settings": {
+        "data": {
+          "notification_channels": [
+            {
+              "channel": "mail",
+              "enabled": true
+            }
+          ],
+          "notification_templates": [
+            {
+              "key": "board.post.created",
+              "name": "게시글 등록 알림",
+              "channels": [
+                "mail"
+              ]
+            }
+          ],
+          "identity_purposes": [
+            {
+              "key": "board.write",
+              "name": "글쓰기 본인인증",
+              "enabled": false
+            }
+          ],
+          "identity_policies": [
+            {
+              "purpose_key": "board.write",
+              "provider": "kginicis",
+              "enforcement": "optional"
+            }
+          ],
+          "basic_defaults": {
+            "default_board_permissions": {
+              "read": "all",
+              "write": "member",
+              "comment": "member"
+            }
+          }
+        }
+      },
+      "availableChannels": {
+        "data": {
+          "channels": [
+            {
+              "id": "mail",
+              "name": "이메일",
+              "icon": "fas fa-envelope",
+              "source": "core",
+              "source_label": "코어"
+            },
+            {
+              "id": "sms",
+              "name": "SMS",
+              "icon": "fas fa-comment-sms",
+              "source": "core",
+              "source_label": "코어"
+            },
+            {
+              "id": "push",
+              "name": "푸시",
+              "icon": "fas fa-bell",
+              "source": "core",
+              "source_label": "코어"
+            }
+          ]
+        }
+      },
+      "identityProviders": {
+        "data": [
+          {
+            "id": "kginicis",
+            "label": "KG이니시스"
+          },
+          {
+            "id": "nice",
+            "label": "나이스"
+          }
+        ]
+      },
+      "boardIdentityPurposes": {
+        "data": [
+          {
+            "id": "board.write",
+            "label": "글쓰기 본인인증",
+            "source_identifier": "sirsoft-board",
+            "description": "게시글 작성 시 본인인증",
+            "allowed_channels": [
+              "mobile"
+            ]
+          },
+          {
+            "id": "sensitive_action",
+            "label": "민감 작업",
+            "source_identifier": "core",
+            "description": "민감 작업 시 본인인증",
+            "allowed_channels": [
+              "mobile",
+              "ipin"
+            ]
+          }
+        ]
+      },
+      "boardIdentityPolicies": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "key": "board.write",
+              "scope": "hook",
+              "target": "board.post.create",
+              "purpose": "board.write",
+              "provider_id": "kginicis",
+              "grace_minutes": 0,
+              "enabled": true,
+              "source_type": "admin",
+              "abilities": {
+                "can_update": true,
+                "can_delete": true
+              }
+            }
+          ],
+          "meta": {
+            "total": 1,
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20
+          },
+          "abilities": {
+            "can_create": true
+          }
+        }
+      },
+      "boardNotificationDefinitions": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "type": "board.post.created",
+              "is_active": true,
+              "is_default": true,
+              "variables": [
+                {
+                  "key": "post_title"
+                }
+              ],
+              "templates": [
+                {
+                  "id": 21,
+                  "channel": "mail",
+                  "is_active": true,
+                  "is_default": true,
+                  "subject": {
+                    "ko": "게시글 등록 알림",
+                    "en": "New post"
+                  },
+                  "body": {
+                    "ko": "<p>새 게시글이 등록되었습니다.</p>",
+                    "en": "<p>A new post has been created.</p>"
+                  },
+                  "recipients": [
+                    {
+                      "type": "trigger_user"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "pagination": {
+            "total": 1,
+            "current_page": 1,
+            "last_page": 1
+          },
+          "abilities": {
+            "can_update": true
+          }
+        }
+      },
+      "roles": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "identifier": "super_admin",
+              "name": "최고 관리자",
+              "display_name": "최고 관리자",
+              "description": "전체 권한",
+              "is_system": true
+            },
+            {
+              "id": 2,
+              "identifier": "manager",
+              "name": "운영자",
+              "display_name": "운영자",
+              "description": "운영 권한",
+              "is_system": false
+            },
+            {
+              "id": 3,
+              "identifier": "member",
+              "name": "일반 회원",
+              "display_name": "일반 회원",
+              "description": "기본 회원",
+              "is_system": true
+            }
+          ]
+        }
+      },
+      "stats": {
+        "comments": [
+          "샘플"
+        ],
+        "data": {
+          "boards": "샘플",
+          "comments": [
+            "샘플"
+          ],
+          "posts": "샘플",
+          "users": "샘플"
+        }
+      },
+      "myActivityStats": {
+        "data": {
+          "total_comments": 10000,
+          "total_posts": 10000,
+          "total_views": 10000
+        }
+      },
+      "myPosts": {
+        "data": {
+          "current_page": 3,
+          "data": [
+            "샘플"
+          ],
+          "last_page": 3,
+          "query": {
+            "board_slug": "sample-slug",
+            "search": "샘플"
+          },
+          "total": 10000
+        }
+      },
+      "myComments": {
+        "data": {
+          "current_page": 3,
+          "data": [
+            "샘플"
+          ],
+          "last_page": 3,
+          "query": {
+            "board_slug": "sample-slug",
+            "search": "샘플"
+          },
+          "total": 10000
+        }
+      },
+      "board_list_for_inquiry": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "name": "공지사항",
+              "slug": "notice",
+              "is_active": true,
+              "type": "basic",
+              "description": "공지사항 게시판입니다.",
+              "per_page": 20,
+              "per_page_mobile": 15,
+              "order_by": "created_at",
+              "order_direction": "DESC",
+              "categories": [],
+              "show_view_count": true,
+              "secret_mode": "disabled",
+              "use_comment": true,
+              "use_reply": true,
+              "max_reply_depth": 5,
+              "use_report": false,
+              "comment_order": "ASC",
+              "max_comment_depth": 10,
+              "min_title_length": 2,
+              "max_title_length": 200,
+              "min_content_length": 2,
+              "max_content_length": 10000,
+              "min_comment_length": 2,
+              "max_comment_length": 1000,
+              "blocked_keywords": [],
+              "use_file_upload": false,
+              "max_file_size": 10,
+              "max_file_count": 5,
+              "allowed_extensions": [
+                "jpg",
+                "jpeg",
+                "png",
+                "gif",
+                "webp",
+                "pdf",
+                "doc",
+                "docx",
+                "xls",
+                "xlsx",
+                "ppt",
+                "pptx",
+                "hwp",
+                "txt",
+                "zip"
+              ],
+              "new_display_hours": 24,
+              "board_managers": [
+                {
+                  "uuid": "00000000-0000-4000-8000-000000000001",
+                  "name": "관리자",
+                  "email": "admin@example.com"
+                }
+              ],
+              "board_steps": [],
+              "board_manager_ids": [
+                "00000000-0000-4000-8000-000000000001"
+              ],
+              "board_step_ids": [],
+              "notify_author": true,
+              "notify_admin_on_post": true,
+              "created_at": "2026-05-26 02:41:23",
+              "updated_at": "2026-05-26 02:41:23",
+              "permissions": null,
+              "category_post_counts": null,
+              "posts_count": 0,
+              "user_abilities": null,
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": true
+              }
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 1,
+            "from": 1,
+            "to": 1,
+            "has_more_pages": false
+          },
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
+      },
+      "notifications": {
+        "channels": [
+          {
+            "key": "email",
+            "label": "이메일",
+            "enabled": true
+          },
+          {
+            "key": "push",
+            "label": "푸시",
+            "enabled": true
+          }
+        ],
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "type": "comment",
+              "title": "샘플 알림",
+              "message": "샘플 알림 내용입니다.",
+              "is_read": false,
+              "created_at": "2026-05-24 09:32:38",
+              "link": "/"
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "total": 1,
+            "has_more_pages": false
+          },
+          "unread_count": 2
+        }
+      }
+    },
+    "byEndpointPattern": {
+      "/api/modules/sirsoft-board/boards/*/posts*": {
+        "data": {
+          "board": {
+            "slug": "notice",
+            "board_name": "공지사항"
+          },
+          "data": [
+            {
+              "id": 1,
+              "title": "샘플 게시글 제목 1",
+              "author_name": "관리자",
+              "comment_count": 3,
+              "view_count": 120,
+              "created_at": "2026-05-28",
+              "is_secret": false
+            },
+            {
+              "id": 2,
+              "title": "샘플 게시글 제목 2",
+              "author_name": "관리자",
+              "comment_count": 0,
+              "view_count": 45,
+              "created_at": "2026-05-27",
+              "is_secret": false
+            }
+          ],
+          "meta": {
+            "total": 2,
+            "per_page": 20,
+            "current_page": 1
+          }
+        }
+      },
+      "/api/modules/sirsoft-board/boards/popular*": {
+        "data": [
+          {
+            "slug": "notice",
+            "board_name": "공지사항",
+            "post_count_today": 2,
+            "latest_post": {
+              "title": "샘플 게시글 제목 1",
+              "created_at": "2026-05-28"
+            }
+          },
+          {
+            "slug": "free",
+            "board_name": "자유게시판",
+            "post_count_today": 8,
+            "latest_post": {
+              "title": "샘플 자유 글",
+              "created_at": "2026-05-29"
+            }
+          }
+        ]
+      },
+      "/api/modules/sirsoft-board/me/*": {
+        "data": {
+          "data": [
+            {
+              "type": "post",
+              "board_slug": "free",
+              "board_name": "자유게시판",
+              "post_id": 10,
+              "title": "내가 쓴 글",
+              "excerpt": "내 게시글 일부…",
+              "created_at": "2026-05-26"
+            }
+          ],
+          "meta": {
+            "total": 1,
+            "per_page": 20,
+            "current_page": 1
+          }
+        }
+      },
+      "/api/modules/sirsoft-board/users/*/posts*": {
+        "data": {
+          "data": [
+            {
+              "id": 10,
+              "board_slug": "free",
+              "board_name": "자유게시판",
+              "title": "프로필 작성글",
+              "comment_count": 2,
+              "view_count": 30,
+              "created_at": "2026-05-26"
+            }
+          ],
+          "meta": {
+            "total": 1,
+            "per_page": 20,
+            "current_page": 1
+          }
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "게시판 도메인 변종. 게시글 상세 비밀글/삭제 + 게시판 목록 유무.",
+    "groups": [
+      {
+        "scope": {
+          "kind": "route",
+          "match": "/board/:slug/:id"
+        },
+        "items": [
+          {
+            "id": "read_normal",
+            "label": "$t:editor.state.read_normal",
+            "default": true
+          },
+          {
+            "id": "read_secret_locked",
+            "label": "$t:editor.state.read_secret_locked",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "post": {
+                  "data": {
+                    "id": 140,
+                    "category": "일상",
+                    "title": "비밀글입니다",
+                    "content": null,
+                    "content_mode": "html",
+                    "author": {
+                      "uuid": "00000000-0000-0000-0000-000000000004",
+                      "name": "최예나",
+                      "email": "최예나@example.com",
+                      "avatar": null,
+                      "status": "active",
+                      "status_label": "활성",
+                      "is_guest": false
+                    },
+                    "is_notice": false,
+                    "is_secret": true,
+                    "is_new": true,
+                    "status": "published",
+                    "status_label": "게시됨",
+                    "trigger_type": null,
+                    "view_count": 348,
+                    "comment_count": 0,
+                    "reply_count": 0,
+                    "attachment_count": 0,
+                    "has_attachment": false,
+                    "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+                    "parent_id": null,
+                    "depth": 0,
+                    "is_reply": false,
+                    "user_id": "00000000-0000-0000-0000-000000000001",
+                    "ip_address": "203.0.113.42",
+                    "created_at": "2026-06-03 14:22:10",
+                    "created_at_formatted": "2026-06-03",
+                    "updated_at": "2026-06-03 14:22:10",
+                    "deleted_at": null,
+                    "is_author": false,
+                    "is_guest_post": true,
+                    "is_already_reported": false,
+                    "board": {
+                      "slug": "free",
+                      "name": "자유게시판",
+                      "type": "normal",
+                      "use_comment": true,
+                      "use_reply": true,
+                      "use_report": true,
+                      "show_view_count": true,
+                      "max_reply_depth": 5,
+                      "max_comment_depth": 10,
+                      "report_types": [
+                        {
+                          "value": "abuse",
+                          "label": "욕설/비방"
+                        },
+                        {
+                          "value": "spam",
+                          "label": "스팸/광고"
+                        },
+                        {
+                          "value": "sexual",
+                          "label": "음란성"
+                        },
+                        {
+                          "value": "privacy",
+                          "label": "개인정보 노출"
+                        },
+                        {
+                          "value": "other",
+                          "label": "기타"
+                        }
+                      ]
+                    },
+                    "navigation": {
+                      "prev": {
+                        "id": 141,
+                        "title": "노트북 추천 부탁드립니다 (예산 150만원)",
+                        "is_notice": false
+                      },
+                      "next": {
+                        "id": 143,
+                        "title": "회사 워크샵 후기",
+                        "is_notice": false
+                      }
+                    },
+                    "parent": null,
+                    "attachments": [],
+                    "comments": [],
+                    "replies": [],
+                    "is_owner": false,
+                    "abilities": {
+                      "can_read": true,
+                      "can_write": true,
+                      "can_read_secret": false,
+                      "can_read_comments": true,
+                      "can_write_comments": true,
+                      "can_upload": true,
+                      "can_download": true,
+                      "can_manage": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "replies_expanded",
+            "label": "답글 펼침",
+            "comment": "대댓글(depth>0) 은 collapsedReplies 기본 접힘이라 캔버스 미렌더. collapsedReplies:{501:false} 로 댓글 502(대댓글) 본체를 표시. 첨부는 `!== false` 라 기본 펼침.",
+            "initialState": {
+              "local": {
+                "collapsedReplies": {
+                  "501": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "scope": {
+          "kind": "route",
+          "match": "/board/:slug"
+        },
+        "items": [
+          {
+            "id": "with_data",
+            "label": "$t:editor.state.with_data",
+            "default": true
+          },
+          {
+            "id": "empty_data",
+            "label": "$t:editor.state.empty_data",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "posts": {
+                  "data": {
+                    "board": {
+                      "slug": "free",
+                      "name": "자유게시판",
+                      "description": "<p>회원 자유 소통 공간</p>",
+                      "type": "normal",
+                      "categories": [
+                        "일상",
+                        "질문",
+                        "정보공유",
+                        "후기"
+                      ],
+                      "show_category": true,
+                      "show_view_count": true,
+                      "settings": {
+                        "use_file_upload": true,
+                        "use_comment": true,
+                        "use_reply": true,
+                        "use_report": true,
+                        "secret_mode": "enabled",
+                        "show_view_count": true,
+                        "per_page": 20,
+                        "posts_per_page": 20,
+                        "posts_per_page_mobile": 10,
+                        "new_display_hours": 24,
+                        "order_by": "created_at",
+                        "order_direction": "desc"
+                      }
+                    },
+                    "data": [],
+                    "pagination": {
+                      "total": 0,
+                      "all_total": 0,
+                      "count": 0,
+                      "per_page": 20,
+                      "current_page": 1,
+                      "last_page": 1,
+                      "from": 0,
+                      "to": 0,
+                      "has_more_pages": false
+                    },
+                    "abilities": {
+                      "can_read": true,
+                      "can_write": true,
+                      "can_read_secret": true,
+                      "can_read_comments": true,
+                      "can_write_comments": true,
+                      "can_upload": true,
+                      "can_download": true,
+                      "can_manage": true,
+                      "can_view_deleted": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "board/boards (사용자) — 게시판 목록 유무. boardList 데이터소스를 빈 배열로 오버라이드해 빈 상태를 미리본다.",
+        "scope": {
+          "kind": "route",
+          "match": "/boards"
+        },
+        "items": [
+          {
+            "id": "with_data",
+            "label": "$t:editor.state.boards_with",
+            "default": true
+          },
+          {
+            "id": "empty_boards",
+            "label": "$t:editor.state.boards_empty",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "boardList": {
+                  "data": []
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "board/form (사용자) — route.id 유무로 새 글/수정 분기(본문 line 7). 작성은 /board/:slug/write, 수정은 /board/:slug/:id/edit 라우트.",
+        "scope": {
+          "kind": "route",
+          "match": "/board/:slug/write"
+        },
+        "items": [
+          {
+            "id": "create_mode",
+            "label": "$t:editor.state.board_create",
+            "default": true,
+            "initialState": {
+              "route": {
+                "id": null
+              },
+              "local": {
+                "form": {}
+              }
+            }
+          },
+          {
+            "id": "edit_existing",
+            "label": "$t:editor.state.board_edit",
+            "initialState": {
+              "route": {
+                "id": 1
+              },
+              "local": {
+                "form": {
+                  "id": 142,
+                  "title": "봄맞이 등산 다녀왔습니다 🏔️",
+                  "content": "<p>날씨가 좋아서 북한산에 다녀왔어요. 정상에서 본 풍경이 정말 멋졌습니다.</p>",
+                  "content_mode": "html",
+                  "category": "일상",
+                  "is_notice": false,
+                  "is_secret": false,
+                  "parent_id": null
+                }
+              }
+            }
+          },
+          {
+            "id": "validation_failed",
+            "label": "검증 실패",
+            "comment": "게시글 작성 폼 검증 실패 — _post_form partial 이 _local.errors.{title,...} 인라인 에러를 if/className 으로 표시(본문 line 17/552).",
+            "formErrors": {
+              "_local.errors.title": [
+                "제목을 입력해 주세요"
+              ]
+            },
+            "initialState": {
+              "local": {
+                "form": {
+                  "title": "",
+                  "content": "<p>내용은 입력했지만 제목이 비어있습니다.</p>",
+                  "content_mode": "html",
+                  "category": "일상",
+                  "is_notice": false,
+                  "is_secret": false,
+                  "parent_id": null
+                }
+              }
+            }
+          },
+          {
+            "id": "reply_with_quote",
+            "label": "$t:editor.state.board_reply_with_quote",
+            "comment": "답글 작성(부모글 인용) 상태 — 부모글 인용 영역은 `(form_data.parent_id || query.parent_id) && form_meta.parent_post.id` + `form_meta.parent_post.content` 게이트 뒤이며, 그 안에 CKEditor(html_content extension_point)가 주입된다. 기본/수정 상태로는 이 영역이 미렌더라 확장 조각이 캔버스에 안 보이므로, 답글 맥락을 시뮬레이션해 인용 영역(+ 주입된 CKEditor)을 노출한다. form_meta/form_data 샘플은 base shape 보존(키 추가만).",
+            "initialState": {
+              "route": {
+                "id": null
+              },
+              "query": {
+                "parent_id": "141"
+              },
+              "local": {
+                "form": {
+                  "parent_id": 141
+                }
+              }
+            },
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "form_meta": {
+                  "data": {
+                    "board": {
+                      "type": "normal",
+                      "user_abilities": {
+                        "can_manage": false
+                      }
+                    },
+                    "is_guest_post": false,
+                    "requires_password": false,
+                    "parent_post": {
+                      "id": 141,
+                      "title": "봄맞이 등산 다녀왔습니다 🏔️",
+                      "content": "<p>날씨가 좋아서 북한산에 다녀왔어요. 정상에서 본 풍경이 정말 멋졌습니다.</p>",
+                      "content_mode": "html",
+                      "is_notice": false,
+                      "is_secret": false,
+                      "author": {
+                        "nickname": "민준이"
+                      },
+                      "created_at": "2026-06-01 14:22:00"
+                    }
+                  }
+                },
+                "form_data": {
+                  "data": {
+                    "id": null,
+                    "title": "",
+                    "content": "",
+                    "content_mode": "html",
+                    "category": "일상",
+                    "is_notice": false,
+                    "is_secret": false,
+                    "parent_id": 141
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "admin 게시판 폼 — route.id 유무로 수정/신규(본문 line 9), _local.activeTab 으로 탭 분기(본문 line 161). 검증 오류는 _local.errors.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/boards/:id/edit"
+        },
+        "items": [
+          {
+            "id": "edit_mode",
+            "label": "$t:editor.state.edit_existing",
+            "default": true
+          },
+          {
+            "id": "create_mode",
+            "label": "$t:editor.state.create_mode",
+            "initialState": {
+              "route": {
+                "id": null
+              }
+            }
+          },
+          {
+            "id": "validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "formErrors": {
+              "_local.errors.board_name": [
+                "필수 입력 항목입니다"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "comment": "admin 게시글 폼 — route.id 유무(수정), query.parent_id(답글)로 분기(본문 line 9). 검증 오류는 _local.errors.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/board/:slug/:id/edit"
+        },
+        "items": [
+          {
+            "id": "edit_mode",
+            "label": "$t:editor.state.edit_existing",
+            "default": true
+          },
+          {
+            "id": "create_mode",
+            "label": "$t:editor.state.create_mode",
+            "initialState": {
+              "route": {
+                "id": null
+              }
+            }
+          },
+          {
+            "id": "reply_mode",
+            "label": "$t:editor.state.reply_mode",
+            "initialState": {
+              "route": {
+                "id": null
+              },
+              "query": {
+                "parent_id": "1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "admin 게시판 설정 — {{_global.activeBoardSettingsTab || query.tab || 'general'}} 으로 7개 탭 화면을 if 분기한다(각 _tab_*.json partial, 본문 line 488/674~). query.tab + 우선 키 _global.activeBoardSettingsTab 함께 주입.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/boards/settings"
+        },
+        "items": [
+          {
+            "id": "tab_general",
+            "label": "$t:editor.state.tab.general",
+            "initialState": {
+              "query": {
+                "tab": "general"
+              },
+              "global": {
+                "activeBoardSettingsTab": "general"
+              }
+            },
+            "default": true
+          },
+          {
+            "id": "tab_basic_defaults",
+            "label": "$t:editor.state.tab.basic_defaults",
+            "initialState": {
+              "query": {
+                "tab": "basic_defaults"
+              },
+              "global": {
+                "activeBoardSettingsTab": "basic_defaults"
+              }
+            }
+          },
+          {
+            "id": "tab_report_policy",
+            "label": "$t:editor.state.tab.report_policy",
+            "initialState": {
+              "query": {
+                "tab": "report_policy"
+              },
+              "global": {
+                "activeBoardSettingsTab": "report_policy"
+              },
+              "local": {
+                "form": {
+                  "report_policy": {
+                    "auto_hide_threshold": 5,
+                    "auto_hide_target": "post",
+                    "daily_report_limit": 10,
+                    "rejection_limit_count": 3,
+                    "rejection_limit_days": 7,
+                    "notify_admin_on_report": true,
+                    "notify_admin_on_report_scope": "report_manager",
+                    "notify_admin_on_report_channels": ["in_app"],
+                    "notify_author_on_report_action": true,
+                    "notify_author_on_report_action_channels": ["in_app"]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "tab_spam_security",
+            "label": "$t:editor.state.tab.spam_security",
+            "initialState": {
+              "query": {
+                "tab": "spam_security"
+              },
+              "global": {
+                "activeBoardSettingsTab": "spam_security"
+              }
+            }
+          },
+          {
+            "id": "tab_seo",
+            "label": "$t:editor.state.tab.seo",
+            "initialState": {
+              "query": {
+                "tab": "seo"
+              },
+              "global": {
+                "activeBoardSettingsTab": "seo"
+              }
+            }
+          },
+          {
+            "id": "tab_notification_definitions",
+            "label": "$t:editor.state.tab.notification_definitions",
+            "initialState": {
+              "query": {
+                "tab": "notification_definitions"
+              },
+              "global": {
+                "activeBoardSettingsTab": "notification_definitions"
+              }
+            }
+          },
+          {
+            "id": "tab_identity_policies",
+            "label": "$t:editor.state.tab.identity_policies",
+            "initialState": {
+              "query": {
+                "tab": "identity_policies"
+              },
+              "global": {
+                "activeBoardSettingsTab": "identity_policies"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": " /admin 게시글 상세 토글 게이트 본체 노출. 첨부파일 목록(_local.showAttachments)·대댓글(collapsedReplies[root]) 은 편집기 정적 시뮬레이션이라 클릭 불가 → 상태로 ON 패치해 본체를 캔버스에 렌더.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/board/:slug/post/:id"
+        },
+        "items": [
+          {
+            "id": "default",
+            "label": "$t:editor.state.read_normal",
+            "default": true,
+            "initialState": {
+              "route": {
+                "id": 142
+              }
+            }
+          },
+          {
+            "id": "attachments_replies_open",
+            "label": "첨부·답글 펼침",
+            "comment": "첨부파일 목록(image/non-image 분기) + 대댓글(depth>0) 펼침. showAttachments:true + collapsedReplies:{501:false}(댓글 502 의 root=501).",
+            "initialState": {
+              "local": {
+                "showAttachments": true,
+                "collapsedReplies": {
+                  "501": false
+                }
+              },
+              "route": {
+                "id": 142
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

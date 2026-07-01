@@ -1,0 +1,25 @@
+{
+  "quick_menu": {
+    "boards": "掲示板",
+    "reports": "通報"
+  },
+  "today_badges": {
+    "new_posts": "新しい投稿 {{count}}件",
+    "new_comments": "新しいコメント {{count}}件"
+  },
+  "community": {
+    "title": "コミュニティ",
+    "post_graph": "投稿状況",
+    "posts": "投稿",
+    "comments": "コメント",
+    "total_posts": "総投稿数",
+    "total_comments": "総コメント数",
+    "latest_posts": "最新投稿",
+    "report_management": "通報管理",
+    "no_posts": "登録された投稿がありません",
+    "no_reports": "通報されたコンテンツがありません",
+    "updated_at": "最終更新: {{time}}",
+    "go_to_boards": "すべての掲示板",
+    "go_to_reports": "すべて表示"
+  }
+}

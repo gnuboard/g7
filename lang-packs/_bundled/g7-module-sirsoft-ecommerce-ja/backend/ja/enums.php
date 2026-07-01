@@ -45,7 +45,6 @@ return [
         'delivered' => '配送完了',
         'confirmed' => '購入確定',
         'cancelled' => '注文キャンセル',
-        'partial_cancelled' => '部分キャンセル',
     ],
     'payment_status' => [
         'ready' => '決済待機',
@@ -235,5 +234,45 @@ return [
     'has_reply' => [
         'replied' => '回答済み',
         'not_replied' => '未回答',
+    ],
+    'mileage_transaction_type' => [
+        'purchase_earn' => '購入時に積立',
+        'admin_earn' => '管理者付与',
+        'order_use' => '注文で使用',
+        'admin_deduct' => '管理者減額',
+        'expired' => '有効期限失効',
+        'refund_restore' => '返金時に復元',
+        'order_cancel_restore' => '注文キャンセル時に復元',
+        'earn_cancel' => '積立回収',
+    ],
+    'mileage_earn_trigger' => [
+        'delivered' => '配送完了',
+        'confirmed' => '購入確定',
+    ],
+    'shipping_api_request_field' => [
+        'policy_id' => '配送ポリシー ID',
+        'country_code' => '国コード',
+        'items' => '注文項目',
+        'group_total' => 'グループ合計金額',
+        'total_quantity' => '総数量',
+    ],
+    'shipping_api_http_method' => [
+        'GET' => 'GET',
+        'POST' => 'POST',
+    ],
+    'shipping_api_auth_type' => [
+        'none' => '認証なし',
+        'bearer' => 'Bearerトークン',
+        'custom_header' => 'カスタムヘッダー',
+    ],
+    'shipping_api_response_type' => [
+        'json' => 'JSON',
+        'text' => 'テキスト',
+    ],
+    'delivery_memo_preset' => [
+        'door' => 'ドアの前に置いてください',
+        'security' => '警備室に預けてください',
+        'parcel_box' => '宅配ボックスに入れてください',
+        'call' => '配送前にご連絡ください',
     ],
 ];

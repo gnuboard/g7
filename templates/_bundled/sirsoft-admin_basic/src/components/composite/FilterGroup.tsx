@@ -5,6 +5,7 @@ import { Select } from '../basic/Select';
 import { Checkbox } from '../basic/Checkbox';
 import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
+import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -32,6 +33,12 @@ export interface FilterGroupProps {
   showResetButton?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -70,6 +77,8 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
   showResetButton = true,
   className = '',
   style,
+  id,
+  editorAttrs,
 }) => {
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedTitle = title ?? t('common.filter');
@@ -104,6 +113,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
     <Div
       className={`rounded-lg bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 p-4 ${className}`}
       style={style}
+      id={id} {...editorAttrs}
     >
       {/* 헤더 */}
       <Div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">

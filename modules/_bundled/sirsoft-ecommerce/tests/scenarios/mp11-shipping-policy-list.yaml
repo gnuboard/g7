@@ -1,0 +1,47 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   배송정책 목록 empty_state if 경계 정비 + 상품폼 /active endpoint + activeList 응답 필드 보강
+#   + 비활성 부여 정책 union 표시/안내를 PHPUnit Feature + Vitest 레이아웃 렌더링이 커버하며 green.
+feature: 배송정책 목록 빈 화면 단일화 + 상품폼 활성 정책 노출 (A11)
+
+description: |
+  목록의 DataGrid partial if 와 empty_state if 가 정확히 상보가 되도록 정비해 빈 메시지가
+  1개만 보이게 한다(로딩→완료 전환 깜빡임 없음). 상품폼 배송정책 데이터소스를 /active 로 교체하고
+  activeList() 응답에 폼 필요 풀 필드(country_settings/fee_summary/is_default)를 추가(비파괴).
+  상품에 이미 부여된 정책이 비활성(OFF)되면 active 목록에 union 하여 선택지/칩/요약에 유지 +
+  "비활성화된 배송정책 적용 중" 안내. 저장 시 강제 변경 없이 그대로 유지.
+
+axes:
+  policy_count:
+    - zero       # 빈 목록 → empty_state 1개만
+    - many       # 1+ → DataGrid 렌더, empty_state 미렌더
+  filter:
+    - none
+    - applied
+  view:
+    - desktop
+    - mobile
+  loading:
+    - loading    # 로딩 중 둘 다 미렌더(깜빡임 없음)
+    - done
+  product_form:
+    - new                  # active 만 노출
+    - edit_active          # 부여 정책 active → 정상
+    - edit_inactive        # 부여 정책 비활성 → union 표시 + 안내
+
+effects:
+  - empty_message_count_zero_or_one      # 절대 2 아님
+  - no_flicker_on_loading_transition
+  - product_form_uses_active_endpoint
+  - active_list_includes_form_fields     # country_settings/fee_summary/is_default
+  - active_list_excludes_inactive_for_new
+  - inactive_assigned_policy_union_shown  # 비활성 부여 정책 칩/요약 유지
+  - inactive_policy_warning_displayed     # 안내 문구
+  - inactive_policy_save_preserved        # 강제 변경 안 함
+  - shipping_policy_save_logs_activity    # 배송정책 저장 활동로그
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ShippingPolicyActiveListTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shipping-policy-list-empty.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/product-form-shipping-active.test.tsx

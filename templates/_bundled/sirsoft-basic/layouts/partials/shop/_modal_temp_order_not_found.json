@@ -1,14 +1,15 @@
 {
     "meta": {
         "is_partial": true,
-        "description": "임시 주문 정보 없음 알림 모달"
+        "description": "임시 주문 정보 없음 알림 모달",
+        "editor_label": "$t:user.modal_label.shop.tempOrderNotFoundModal"
     },
     "id": "tempOrderNotFoundModal",
     "type": "composite",
     "name": "Modal",
     "props": {
         "title": "$t:shop.checkout.temp_order_not_found_title",
-        "size": "small",
+        "size": "sm",
         "showCloseButton": false,
         "closeOnOverlayClick": false,
         "closeOnEscape": false

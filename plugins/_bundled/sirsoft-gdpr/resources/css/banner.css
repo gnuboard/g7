@@ -1,0 +1,52 @@
+/**
+ * sirsoft-gdpr 쿠키 배너·환경설정 모달 스타일
+ *
+ * 레이아웃 확장(`cookie_banner.json` 등)이 Tailwind 클래스로 대부분 스타일링하므로
+ * 본 파일은 다음 두 가지에 한정:
+ *
+ * 1. JS 토글용 유틸리티 클래스 (`.gdpr-hidden`)
+ * 2. 자동 차단 엔진의 placeholder 스타일 (`.gdpr-blocked-embed`)
+ *
+ * 다크 모드는 Tailwind `dark:` variant 와 OS 미디어 쿼리 양쪽 지원.
+ */
+
+/* 배너/모달 숨김 토글 — JS 가 add/remove */
+.gdpr-hidden {
+    display: none !important;
+}
+
+/* 자동 차단된 임베드의 플레이스홀더
+   blocker.ts 가 script/iframe 을 div.gdpr-blocked-embed 로 치환할 때 사용.
+   기본은 inline-flex 0 사이즈 (사용자에게 안 보이도록).
+   카테고리별 플레이스홀더 UI 가 필요한 경우 사이트 측에서 오버라이드 가능. */
+.gdpr-blocked-embed {
+    display: none;
+}
+
+.gdpr-blocked-embed[data-gdpr-blocked-category]:not([aria-hidden='true']) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280; /* gray-500 */
+    background-color: #f9fafb; /* gray-50 */
+    border: 1px dashed #d1d5db; /* gray-300 */
+    border-radius: 0.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    .gdpr-blocked-embed[data-gdpr-blocked-category]:not([aria-hidden='true']) {
+        color: #9ca3af; /* gray-400 */
+        background-color: rgba(31, 41, 55, 0.5); /* gray-800/50 */
+        border-color: #4b5563; /* gray-600 */
+    }
+}
+
+/* 페이지에 .dark 클래스가 있는 경우 (Tailwind dark variant) */
+.dark .gdpr-blocked-embed[data-gdpr-blocked-category]:not([aria-hidden='true']) {
+    color: #9ca3af;
+    background-color: rgba(31, 41, 55, 0.5);
+    border-color: #4b5563;
+}

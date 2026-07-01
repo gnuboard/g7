@@ -1,0 +1,47 @@
+feature: 블라인드 게시글/댓글 원문 접근 차단 (권한자 한정)
+
+description: |
+  블라인드(status=blinded) 처리된 게시글·댓글의 원문(content)은 게시판 관리자
+  (manager / admin.manage) 또는 작성자 본인만 열람할 수 있다. 그 외(비로그인·제3자)에게는
+  상세 API 응답의 content 가 null 로 내려가, 프론트 '원글 보기' 버튼이 자동으로 노출되지 않는다.
+
+  목록 제목·블라인드 안내·사유(trigger_type) 문구는 그대로 노출(투명성) — 차단 대상은 원문뿐.
+  목록 미리보기(content_preview)도 블라인드 글은 빈 문자열로 응답해 우회 노출을 차단한다.
+
+  수정 이력 (이슈 #413 item 34):
+    - 34-1 (목록 제목 마스킹 누락): 오류 아님 — 블라인드 제목 노출은 일반 게시판 관례.
+      현 설계(아이콘+원제목) 유지, 코드 변경 없음.
+    - 34-2 (원문 접근 차단 누락): 결함 수정.
+      · PostResource::getFilteredContent — status=Blinded 미처리로 content 원문을 권한 무관 응답하던 결함 →
+        canViewBlindedContent(관리자 OR 작성자 본인) 게이트 추가, 권한 없으면 null
+      · CommentResource::getFilteredContent — 동일 결함 → 동일 게이트 추가
+      · PostResource::toListArray — 블라인드 글 content_preview 를 빈 문자열로 차단
+    - PO 정책 확정 (일반 관례): 원문 = 관리자 + 작성자 본인. 안내/사유/제목은 전원 노출.
+    - 비밀글(canViewSecretContent)과 달리 비밀번호 검증·posts.read-secret 은 인정하지 않음
+      (블라인드는 운영 제재이므로 비밀번호로 해제되지 않음).
+
+axes:
+  # 차단 동작을 가르는 핵심 변별 축은 viewer(요청자 권한). target(post/comment)·status·
+  # author_kind 변종은 effects 와 개별 테스트 메서드로 커버한다.
+  viewer: [guest, other_member, author, manager]
+
+effects:
+  - published_content_visible_to_all
+  - blinded_content_null_for_guest
+  - blinded_content_null_for_other_member
+  - blinded_content_visible_to_author
+  - blinded_content_visible_to_manager
+  - blinded_guest_authored_content_null_for_guest
+  - blinded_post_preview_empty_in_list
+  - blinded_comment_content_matrix
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostBlindedAccessControlTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-blinded-original-access.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-blinded-original-access.spec.ts
+
+validation:
+  note: |
+    백엔드 효과별 단언은 PostBlindedAccessControlTest 가 status×viewer×target cross product 로 커버.
+    프론트 '원글 보기' 게이트(content=null → 버튼/원문 미노출)는 board-blinded-original-access 레이아웃
+    테스트가 if 조건 의존성으로 고정. E2E 는 비로그인/관리자 변종에서 버튼 노출 차이를 실측.

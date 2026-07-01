@@ -159,9 +159,12 @@ describe('show.json - SEO meta 설정', () => {
         expect(ogDesc).toContain('_seo');
     });
 
-    it('structured_data.headline이 _seo 컨텍스트를 참조한다', () => {
-        const headline = seo.structured_data?.headline ?? '';
-        expect(headline).toContain('_seo');
+    // structured_data 는 show.json 정적 선언이 아니라 백엔드(module.php seoStructuredData)가
+    // 런타임에 게시글 데이터로 Article 스키마(headline=post.subject 등)를 동적 주입한다. og 는
+    // show.json 에 _seo 폴백을 정적 선언하지만 structured_data 는 주입 구조라 정적 키가 없는 게
+    // 정상이다. 편집기용 경로 메타(seoStructuredDataMeta)는 BoardModuleSeoTest 에서 검증한다.
+    it('structured_data 는 show.json 정적 선언 없음(백엔드 module.php 가 런타임 주입)', () => {
+        expect(seo.structured_data).toBeUndefined();
     });
 
     it('data_sources에 post가 정의된다', () => {

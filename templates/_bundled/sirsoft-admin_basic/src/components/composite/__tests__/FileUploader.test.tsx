@@ -376,4 +376,94 @@ describe('FileUploader - 업로드 응답 파싱 (useFileUploader 훅 직접 테
     expect(result.current.existingFiles[0].id).toBe(300);
     expect(result.current.existingFiles[0].original_filename).toBe('single-wrap.jpg');
   });
+
+  // A24 ① — 개수 상한 초과 silent 무시 방지
+  it('maxFiles 초과 시 onUploadError 로 안내하고 상한까지만 추가한다', async () => {
+    const onUploadError = vi.fn();
+
+    const { result } = renderHook(() =>
+      useFileUploader({
+        collection: 'test',
+        maxFiles: 2,
+        maxSize: 10,
+        maxConcurrentUploads: 3,
+        roleIds: STABLE_EMPTY_ROLE_IDS,
+        autoUpload: false,
+        initialFiles: STABLE_EMPTY_FILES,
+        confirmBeforeRemove: false,
+        onUploadError,
+        endpoints: defaultEndpoints,
+      })
+    );
+
+    // 상한(2)보다 많은 3개 선택
+    const f1 = new File(['1'], 'a.png', { type: 'image/png' });
+    const f2 = new File(['2'], 'b.png', { type: 'image/png' });
+    const f3 = new File(['3'], 'c.png', { type: 'image/png' });
+    const fileList = {
+      0: f1,
+      1: f2,
+      2: f3,
+      length: 3,
+      item: (i: number) => [f1, f2, f3][i],
+    } as unknown as FileList;
+
+    await act(async () => {
+      await result.current.handleFiles(fileList);
+    });
+
+    // 초과 안내 콜백 1회
+    expect(onUploadError).toHaveBeenCalledTimes(1);
+    // 상한까지만 추가 (2개)
+    expect(result.current.pendingFiles).toHaveLength(2);
+  });
+
+  // 업로드 트리거 이벤트 listener 가 기존+신규 이미지(allFiles)를 반환해야
+  // 저장 sequence 가 form.images 를 정확히 PUT body 에 실어 백엔드 삭제 회귀를 막는다.
+  it('업로드 후 트리거 이벤트 emit 결과의 allFiles 가 기존+신규를 드래그 없이 순서대로 담는다', async () => {
+    const uploaded = createAttachment({ id: 600, hash: 'h600', original_filename: 'fresh.jpg' });
+    (window as any).G7Core.api.post = vi.fn().mockResolvedValue({
+      success: true,
+      message: 'ok',
+      data: uploaded,
+    });
+
+    // 안정적인 참조 — 매 렌더마다 새 배열 생성 시 initialFiles 동기화 effect 무한 루프
+    const stableInitial: Attachment[] = [
+      createAttachment({ id: 401, hash: 'h401', original_filename: 'kept.jpg' }),
+    ];
+
+    const { result } = renderHook(() =>
+      useFileUploader({
+        collection: 'test',
+        maxFiles: 5,
+        maxSize: 10,
+        maxConcurrentUploads: 3,
+        roleIds: STABLE_EMPTY_ROLE_IDS,
+        autoUpload: false,
+        initialFiles: stableInitial,
+        confirmBeforeRemove: false,
+        endpoints: defaultEndpoints,
+        uploadTriggerEvent: 'upload:test_images',
+      })
+    );
+
+    // 신규 파일 1개 추가
+    const testFile = new File(['x'], 'fresh.png', { type: 'image/png' });
+    await act(async () => {
+      const fileList = { 0: testFile, length: 1, item: () => testFile } as unknown as FileList;
+      await result.current.handleFiles(fileList);
+    });
+
+    // 트리거 이벤트 emit → listener 가 업로드 후 allFiles 반환
+    let emitResults: any[] = [];
+    await act(async () => {
+      emitResults = await (window as any).G7Core.componentEvent.emit('upload:test_images');
+    });
+
+    expect(emitResults).toHaveLength(1);
+    const allFiles = emitResults[0].allFiles;
+    // 기존(401) + 신규(600) 두 장 모두 포함, 기존 → 신규 순서
+    expect(allFiles.map((f: any) => f.id)).toEqual([401, 600]);
+  });
 });

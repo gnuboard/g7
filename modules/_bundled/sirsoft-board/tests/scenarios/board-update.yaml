@@ -1,0 +1,42 @@
+feature: 게시판 정보 수정 시 SEO 메타 캐시 무효화
+
+description: |
+  게시판 이름/설명 수정 시 sirsoft-board.board.after_update 훅이 발화하며,
+  SeoBoardCacheListener 가 이를 구독하여 해당 게시판의 SEO HTML 캐시를 무효화한다.
+  이를 통해 봇/검색엔진이 수정 후에도 이전 title/description 을 받는 문제를 해소한다.
+
+  수정 이력 (이슈 #413 item 17-(2)):
+    - 증상: 게시판 이름/설명 수정 후에도 봇 요청이 X-SEO-Cache: HIT 로 이전 메타 반환
+    - 근본 원인: SeoBoardCacheListener 가 post.* 훅만 구독하고
+      sirsoft-board.board.after_update 를 미구독 (훅은 BoardService::updateBoard 에서 정상 발화)
+    - 조치: board.after_update 구독 + onBoardUpdate 핸들러 추가
+      · /board/{slug} (게시판 목록) + /boards (인덱스) URL 무효화
+      · home / search/index 레이아웃 무효화
+      · seo.sitemap 캐시 무효화
+    - 무효화 범위: 게시판명은 게시글 상세(/board/{slug}/{id}) 메타에 노출되지 않으므로
+      게시글 상세 광역 무효화는 제외 (과도 무효화 회피, SeoRenderer 확인)
+    - 17-(1) 슬러그 수정: Won't Fix (생성 후 수정 불가 = 설계 의도)
+
+  크롬 MCP 실측 (2026-06-17): board name PUT 200 직후 봇 재요청에서
+  HIT + 옛 title 재현 → 버그 확정. 수정 후 무효화 동작 확인.
+
+axes:
+  name_changed: [no, yes]
+  description_changed: [no, yes]
+
+effects:
+  - board_after_update_hook_subscribed
+  - board_update_invalidates_board_list_url
+  - board_update_invalidates_boards_index_url
+  - board_update_invalidates_home_and_search_layouts
+  - board_update_invalidates_sitemap_cache
+  - board_update_invalidation_graceful_on_exception
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/SeoBoardCacheListenerTest.php
+
+validation:
+  note: |
+    효과별 단언은 SeoBoardCacheListenerTest 의 board.after_update 테스트군이 커버한다.
+    (구독 등록 / 무효화 대상 URL·레이아웃 / 예외 graceful 처리)
+    봇 경로의 X-SEO-Cache 전이(HIT→MISS+새 메타)는 크롬 MCP 수동 실측으로 확인 (계획서 413-17 §4.5).

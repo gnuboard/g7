@@ -6,6 +6,7 @@ import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
 import { scrollToSectionHandler } from '../../handlers/scrollToSectionHandler';
+import type { EditorAttrs } from '../../types';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:TabNavigation')) ?? {
@@ -61,6 +62,12 @@ export interface TabNavigationScrollProps {
   scrollSpyOffset?: number;
   /** 스크롤 컨테이너 ID (IntersectionObserver root 및 scrollToSection 대상, 미지정 시 window) */
   scrollContainerId?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -90,10 +97,10 @@ export interface TabNavigationScrollProps {
 export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   tabs,
   activeTabId,
-  className = 'bg-white dark:bg-gray-800 flex gap-1 border-b border-gray-200 dark:border-gray-700 px-6',
+  className = 'bg-white dark:bg-gray-800 flex gap-2 border-b border-gray-200 dark:border-gray-700 px-6',
   style,
-  activeClassName = 'flex items-center gap-2 px-3 py-2 border-b-2 border-blue-500 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-medium -mb-px text-sm',
-  inactiveClassName = 'flex items-center gap-2 px-3 py-2 border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 text-sm',
+  activeClassName = 'tab-btn-base tab-btn-default-active',
+  inactiveClassName = 'tab-btn-base tab-btn-default',
   sectionIdPrefix = 'tab_content_',
   scrollOffset = 120,
   scrollDelay = 100,
@@ -101,6 +108,8 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   enableScrollSpy = false,
   scrollSpyOffset = 80,
   scrollContainerId,
+  id,
+  editorAttrs,
 }) => {
   const [activeTab, setActiveTab] = useState<string | number>(
     activeTabId ?? (tabs.length > 0 ? tabs[0].id : '')
@@ -334,7 +343,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   // 모바일: Select 드롭다운 단일 렌더
   if (isMobile) {
     return (
-      <Div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <Div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3" id={id} {...editorAttrs}>
         <Select
           value={String(activeTab)}
           onChange={handleSelectChange}
@@ -351,7 +360,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
 
   // 데스크톱: 탭 버튼 단일 렌더
   return (
-    <Div className={className} style={style}>
+    <Div className={className} style={style} id={id} {...editorAttrs}>
       {tabs.map((tab) => (
         <Button
           key={tab.id}

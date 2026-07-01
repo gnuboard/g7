@@ -1,0 +1,50 @@
+# audit:allow test-scenario-coverage reason: 핵심 회귀 가드는 test_files 의 단위/Feature 테스트가 cover (injector axis cross product + ServiceProvider 자동 등록 × 3 scope). 개별 effect 의 docblock 매핑은 후속 단계 적용.
+
+feature: 확장 출처명(manifest name/description) 일본어 폴백 주입
+
+description: |
+  레이아웃 편집기 트리의 확장 주입 노드 라벨(🔌 {sourceLabel} · {targetName})은
+  PluginManager/ModuleManager 의 DB 저장 name 을 현재 locale 로 해석한다. manifest 의
+  name 에 ja 키가 없으면 ko 로 폴백되어 ja locale 에서도 한국어가 노출됐다.
+
+  핵심 동작:
+    - LanguagePackSeedInjector::injectExtensionManifest 가 활성 비-fallback locale 팩의
+      seed/manifest.json({name, description} 평문)을 manifest[field][locale] 에 주입
+    - ja 팩 없으면 입력 그대로 (ko/en 회귀 0)
+    - LanguagePackServiceProvider::registerExtensionSeedFilters 가 seed/manifest.json 존재
+      시 {scope}.{id}.manifest.translations 필터를 자동 등록 (module/plugin/template 3 scope)
+    - 각 Manager 가 DB 저장 직전 applyFilters("{scope}.{id}.manifest.translations") 적용
+ - self-heal 미구현: 기존 환경은 해당 확장 재설치/재동기화 시에만 반영
+
+axes:
+  scope: [module, plugin, template]
+  pack_state: [active_ja_pack_present, no_pack]
+  name_shape: [multilingual_array, plain_string]
+  description_state: [present, missing]
+  seed_field_state: [both_filled, name_empty]
+  locale: [ko, en, ja]
+
+exclusions:
+  - { pack_state: no_pack, seed_field_state: name_empty, reason: "seed 미존재 시 seed 필드 상태 무의미" }
+  - { locale: ko, pack_state: active_ja_pack_present, reason: "ja 팩은 ja locale 만 보강 — ko/en 은 회귀 검증용 단일 케이스" }
+
+effects:
+  - ja_injected_into_name_and_description_when_pack_present
+  - ko_en_preserved_after_ja_injection
+  - input_returned_unchanged_when_no_active_pack
+  - other_target_pack_does_not_inject
+  - plain_string_name_normalized_to_array_before_inject
+  - missing_description_filled_from_seed
+  - empty_seed_name_skipped
+  - manifest_filter_auto_registered_for_module_scope
+  - manifest_filter_auto_registered_for_plugin_scope
+  - manifest_filter_auto_registered_for_template_scope
+
+test_files:
+  - tests/Unit/Services/LanguagePack/LanguagePackSeedInjectorTest.php
+  - tests/Feature/LanguagePack/ManagerSyncFilterTest.php
+
+validation:
+  manual: |
+    대상 확장 재동기화(plugin:update / module:update / template:update --force) 후
+    편집기 ja locale 에서 확장 노드 라벨이 일본어 출처명으로 표시되는지 브라우저 실측.

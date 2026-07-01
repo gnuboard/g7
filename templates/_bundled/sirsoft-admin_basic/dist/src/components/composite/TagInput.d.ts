@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 export interface TagOption {
     value: string | number;
     label: string;
@@ -59,6 +60,10 @@ export interface TagInputProps {
     splitOnPaste?: boolean;
     /** 검색 입력 변경 콜백 (비동기 검색용, 매 키 입력 시 호출) */
     onInputChange?: (event: any) => void;
+    /** 요소 ID (레이아웃 편집기 elemId / DOM id) */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (data-editor-* 등 — 편집 모드 선택용) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * 태그 입력 컴포넌트

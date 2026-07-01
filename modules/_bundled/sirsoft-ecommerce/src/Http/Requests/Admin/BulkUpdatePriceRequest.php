@@ -15,7 +15,7 @@ class BulkUpdatePriceRequest extends FormRequest
     /**
      * 권한 확인
      *
-     * @return bool
+     * @return bool 인가 여부
      */
     public function authorize(): bool
     {
@@ -25,7 +25,7 @@ class BulkUpdatePriceRequest extends FormRequest
     /**
      * 유효성 검사 규칙
      *
-     * @return array
+     * @return array 검증 규칙 배열
      */
     public function rules(): array
     {
@@ -33,7 +33,8 @@ class BulkUpdatePriceRequest extends FormRequest
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', Rule::exists(Product::class, 'id')],
             'method' => ['required', 'in:increase,decrease,set'],
-            'value' => ['required', 'integer', 'min:0'],
+            // 금액(won) 변경은 기본통화가 소수 통화일 수 있어 소수 허용. 비율(percent)도 소수 허용.
+            'value' => ['required', 'numeric', 'min:0'],
             'unit' => ['required', 'in:won,percent'],
         ];
 
@@ -44,7 +45,7 @@ class BulkUpdatePriceRequest extends FormRequest
     /**
      * 유효성 검사 메시지
      *
-     * @return array
+     * @return array 검증 메시지 배열
      */
     public function messages(): array
     {

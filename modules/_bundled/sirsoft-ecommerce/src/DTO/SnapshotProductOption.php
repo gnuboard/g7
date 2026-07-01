@@ -13,9 +13,9 @@ class SnapshotProductOption
 {
     public int $id;
 
-    public int $selling_price;
+    public float $selling_price;
 
-    public int $price_adjustment;
+    public float $price_adjustment;
 
     public ?float $weight;
 
@@ -27,14 +27,14 @@ class SnapshotProductOption
 
     public string|array|null $option_name;
 
-    /** @var int 상품 판매가 (ProductOption::getFinalPrice() = product.selling_price + price_adjustment) */
-    private int $productSellingPrice;
+    /** @var float 상품 판매가 (ProductOption::getFinalPrice() = product.selling_price + price_adjustment) */
+    private float $productSellingPrice;
 
     /**
      * @param  array  $snapshot  ProductOption::toSnapshotArray() 형식의 배열
-     * @param  int  $productSellingPrice  상품의 판매가 (스냅샷 상품의 selling_price)
+     * @param  float  $productSellingPrice  상품의 판매가 (스냅샷 상품의 selling_price)
      */
-    public function __construct(array $snapshot, int $productSellingPrice = 0)
+    public function __construct(array $snapshot, float $productSellingPrice = 0)
     {
         $this->id = $snapshot['id'] ?? 0;
         $this->selling_price = $snapshot['selling_price'] ?? 0;
@@ -52,19 +52,19 @@ class SnapshotProductOption
      *
      * ProductOption::getFinalPrice()와 동일하게 상품 판매가 + 옵션 조정액으로 계산합니다.
      *
-     * @return int 스냅샷 기반 판매가
+     * @return float 스냅샷 기반 판매가
      */
-    public function getSellingPrice(): int
+    public function getSellingPrice(): float
     {
-        return $this->productSellingPrice + $this->price_adjustment;
+        return (float) $this->productSellingPrice + (float) $this->price_adjustment;
     }
 
     /**
      * 최종 판매가를 반환합니다 (getSellingPrice 별칭).
      *
-     * @return int
+     * @return float 스냅샷 기반 판매가
      */
-    public function getFinalPrice(): int
+    public function getFinalPrice(): float
     {
         return $this->getSellingPrice();
     }

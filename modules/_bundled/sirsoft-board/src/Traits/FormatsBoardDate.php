@@ -16,9 +16,9 @@ trait FormatsBoardDate
     /**
      * 게시글/댓글 작성일을 표시용 문자열로 포맷합니다.
      *
-     * @param  mixed   $dateTime  날짜/시간 (Carbon, string, null)
-     * @param  string  $format    포맷 방식 ('standard' | 'relative')
-     * @return string  포맷된 날짜 문자열
+     * @param  mixed  $dateTime  날짜/시간 (Carbon, string, null)
+     * @param  string  $format  포맷 방식 ('standard' | 'relative')
+     * @return string 포맷된 날짜 문자열
      */
     protected function formatCreatedAtFormat(mixed $dateTime, string $format = 'standard'): string
     {
@@ -30,28 +30,31 @@ trait FormatsBoardDate
         $userCarbon = TimezoneHelper::toUserCarbon($carbon);
         $now = TimezoneHelper::toUserCarbon(Carbon::now());
 
+        // 미래 시각(시드/시계 어긋남 등)은 절댓값 차이를 양수처럼 표기하지 않고 just_now 로 폴백.
+        if ($userCarbon->greaterThan($now)) {
+            return __('sirsoft-board::messages.common.relative_time.just_now');
+        }
+
         $diffInMinutes = (int) $now->diffInMinutes($userCarbon, absolute: true);
         $diffInHours = (int) $now->diffInHours($userCarbon, absolute: true);
 
-        // 1시간 미만: N분 전 (공통)
+        // 1시간 미만: N분 전 (공통). 라벨은 현재 로케일을 따른다.
         if ($diffInMinutes < 60) {
             if ($diffInMinutes < 1) {
-                return '방금 전';
+                return __('sirsoft-board::messages.common.relative_time.just_now');
             }
 
             // 10분 이상은 10분 단위로 내림 (예: 21분 → 20분 전)
-            if ($diffInMinutes >= 10) {
-                $rounded = (int) floor($diffInMinutes / 10) * 10;
+            $minutes = $diffInMinutes >= 10
+                ? (int) floor($diffInMinutes / 10) * 10
+                : $diffInMinutes;
 
-                return $rounded.'분 전';
-            }
-
-            return $diffInMinutes.'분 전';
+            return __('sirsoft-board::messages.common.relative_time.minutes_ago', ['count' => $minutes]);
         }
 
         // 1~23시간: N시간 전 (공통)
         if ($diffInHours < 24) {
-            return $diffInHours.'시간 전';
+            return __('sirsoft-board::messages.common.relative_time.hours_ago', ['count' => $diffInHours]);
         }
 
         if ($format === 'relative') {
@@ -61,14 +64,14 @@ trait FormatsBoardDate
             $diffInYears = (int) $now->diffInYears($userCarbon, absolute: true);
 
             if ($diffInYears >= 1) {
-                return $diffInYears.'년 전';
+                return __('sirsoft-board::messages.common.relative_time.years_ago', ['count' => $diffInYears]);
             }
 
             if ($diffInMonths >= 1) {
-                return $diffInMonths.'개월 전';
+                return __('sirsoft-board::messages.common.relative_time.months_ago', ['count' => $diffInMonths]);
             }
 
-            return $diffInDays.'일 전';
+            return __('sirsoft-board::messages.common.relative_time.days_ago', ['count' => $diffInDays]);
         }
 
         // 표준형: MM-DD (올해) → YY-MM-DD (지난해 이전)
@@ -80,12 +83,16 @@ trait FormatsBoardDate
     }
 
     /**
-     * 게시글/댓글 작성일을 요일 포함 전체 날짜+시간 문자열로 포맷합니다.
+     * 게시글/댓글 작성일을 전체 날짜+시간 문자열로 포맷합니다.
      *
-     * 예시: "2026-03-18 화요일 14:30"
+     * 코어 BaseApiResource::formatDateTimeStringForUser() / 이커머스 주문일시와 동일한
+     * "Y-m-d H:i:s" 형식 (사용자 타임존 보정 포함). 사용자 페이지 tooltip(title 속성) 과
+     * 관리자 페이지 본문 표시 양쪽에서 사용된다.
+     *
+     * 예시: "2026-03-18 14:30:45"
      *
      * @param  mixed  $dateTime  날짜/시간 (Carbon, string, null)
-     * @return string  요일 포함 날짜 문자열
+     * @return string 전체 날짜+시간 문자열
      */
     protected function formatCreatedAt(mixed $dateTime): string
     {
@@ -94,11 +101,7 @@ trait FormatsBoardDate
         }
 
         $carbon = $dateTime instanceof Carbon ? $dateTime : Carbon::parse($dateTime);
-        $userCarbon = TimezoneHelper::toUserCarbon($carbon);
 
-        $weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-        $weekday = $weekdays[$userCarbon->dayOfWeek];
-
-        return $userCarbon->format('Y-m-d').' '.$weekday.'요일 '.$userCarbon->format('H:i');
+        return TimezoneHelper::toUserDateTimeString($carbon) ?? '';
     }
 }

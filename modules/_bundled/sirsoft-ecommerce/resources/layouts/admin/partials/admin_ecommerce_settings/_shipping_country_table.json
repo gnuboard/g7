@@ -15,7 +15,7 @@
       "name": "Div",
       "if": "{{(_local.form?.shipping?.available_countries ?? []).length === 0}}",
       "props": {
-        "className": "p-8 text-center text-sm text-gray-500 dark:text-gray-400"
+        "className": "p-8 text-center text-label-subtle"
       },
       "children": [
         {
@@ -128,7 +128,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-2"
+                            "className": "flex-center gap-2"
                           },
                           "children": [
                             {
@@ -154,7 +154,7 @@
                         {
                           "type": "basic",
                           "name": "Span",
-                          "text": "{{$localized(country.name)}}"
+                          "text": "{{$localized(country.name, 'sirsoft-ecommerce::settings.countries.' + (country.code ?? '') + '.name')}}"
                         }
                       ]
                     },
@@ -228,7 +228,7 @@
                           "name": "Span",
                           "if": "{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}",
                           "props": {
-                            "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                            "className": "text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge"
                         }

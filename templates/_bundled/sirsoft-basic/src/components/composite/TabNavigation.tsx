@@ -6,6 +6,7 @@ import { IconName } from '../basic/IconTypes';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
+import type { EditorAttrs } from '../../types';
 
 export interface Tab {
   id: string | number;
@@ -26,6 +27,14 @@ export interface TabNavigationProps {
   hiddenTabIds?: (string | number)[];
   /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
   mobileBreakpoint?: number;
+    /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+/**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -67,6 +76,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   style,
   hiddenTabIds = [],
   mobileBreakpoint = 768,
+  id,
+  editorAttrs,
 }) => {
   // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
   const G7Core = (window as any).G7Core;
@@ -102,9 +113,12 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     : tabs;
 
   // 모바일: Select 드롭다운 단일 렌더
+  // 데스크톱 분기와 동일하게 id/editorAttrs 를 루트에 spread 해야 레이아웃 편집기가
+  // 모바일 디바이스 미리보기에서도 이 노드를 선택/측정할 수 있다(모든 렌더 분기 패리티 —
+  // 누락 시 모바일 프리뷰에서 data-editor-* 가 사라져 캔버스에서 선택 불가).
   if (isMobile) {
     return (
-      <Div className={`relative ${className}`} style={style}>
+      <Div className={`relative ${className}`} style={style} id={id} {...editorAttrs}>
         <Select
           value={activeTabId !== undefined ? String(activeTabId) : ''}
           onChange={handleSelectChange}
@@ -154,7 +168,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
 
   // 데스크톱: 탭 버튼 단일 렌더
   return (
-    <Div className={`relative ${className}`} style={style}>
+    <Div className={`relative ${className}`} style={style} id={id} {...editorAttrs}>
       <Nav className={navClasses}>
         {visibleTabs.map((tab) => (
           <Button

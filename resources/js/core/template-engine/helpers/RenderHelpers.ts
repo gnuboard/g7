@@ -115,14 +115,25 @@ export interface RenderItemChildrenOptions {
 /**
  * 복잡한 표현식 여부 감지
  *
- * 삼항 연산자(?:), 논리 연산자(&&, ||), 비교 연산자, 함수 호출 등이 포함된 경우 true 반환
+ * 삼항 연산자(?:), 논리 연산자(&&, ||), 비교 연산자, 함수 호출,
+ * 배열/객체 리터럴 등이 포함된 경우 true 반환
+ *
+ * true 인 경우 evaluateExpression(JS 평가)로, false 인 경우 resolve(dot/bracket
+ * path 탐색)로 라우팅된다.
+ *
+ * `[`/`]`/`{`/`}` 포함 (@since engine-v1.50.0):
+ *   `{{['a','b']}}` 같은 배열 리터럴이나 `{{[{...}]}}` 같은 객체 리터럴이
+ *   "단순 경로"로 오판되어 resolve() 경로탐색 → undefined 가 되던 문제를 해결한다.
+ *   순수 숫자 대괄호 인덱싱(`items[0]`, `entry[1]`)은 resolve()/evaluateExpression()
+ *   양 경로의 결과가 동일하므로(회귀 테스트로 입증) 경로 이동에 따른 동작 변화가 없다.
  *
  * @param expr - 검사할 표현식
  * @returns 복잡한 표현식 여부
  */
 function isComplexExpression(expr: string): boolean {
   // () 추가: $localized(menu.name) 같은 함수 호출 표현식도 복잡한 표현식으로 처리
-  return /[?:|&!+\-*/<>=()]/.test(expr);
+  // []{} 추가: 배열/객체 리터럴(`['a','b']`, `[{...}]`)을 evaluateExpression 으로 라우팅
+  return /[?:|&!+\-*/<>=()[\]{}]/.test(expr);
 }
 
 /**

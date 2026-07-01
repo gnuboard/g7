@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Requests;
 use Illuminate\Support\Facades\Validator;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
-use PHPUnit\Framework\Attributes\Test;
 
 /**
  * 이커머스 설정 저장 요청 검증 테스트
@@ -22,12 +21,11 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
     /**
      * 검증 수행
      *
-     * @param array $data 검증 대상 데이터
-     * @return \Illuminate\Validation\Validator
+     * @param  array  $data  검증 대상 데이터
      */
     protected function validate(array $data): \Illuminate\Validation\Validator
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
 
         return Validator::make($data, $request->rules());
     }
@@ -64,7 +62,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertTrue(
             $validator->errors()->has('_tab'),
-            "_tab 필드가 유효하지 않은 탭 이름을 거부해야 합니다"
+            '_tab 필드가 유효하지 않은 탭 이름을 거부해야 합니다'
         );
     }
 
@@ -78,7 +76,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertFalse(
             $validator->errors()->has('_tab'),
-            "_tab 필드는 선택 사항이어야 합니다"
+            '_tab 필드는 선택 사항이어야 합니다'
         );
     }
 
@@ -88,7 +86,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_validated_settings_excludes_tab_field(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings'];
 
         // validatedSettings()는 유효 카테고리만 반환하므로 _tab은 제외됨
@@ -112,7 +110,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_validated_settings_returns_only_sent_category(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings'];
 
         // seo 탭만 전송 시 seo만 포함
@@ -150,7 +148,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertTrue(
             $validator->passes(),
-            'basic_info 탭만 전송해도 검증을 통과해야 합니다. 오류: ' . $validator->errors()->toJson()
+            'basic_info 탭만 전송해도 검증을 통과해야 합니다. 오류: '.$validator->errors()->toJson()
         );
     }
 
@@ -165,7 +163,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertTrue(
             $validator->passes(),
-            'seo 탭만 전송해도 검증을 통과해야 합니다. 오류: ' . $validator->errors()->toJson()
+            'seo 탭만 전송해도 검증을 통과해야 합니다. 오류: '.$validator->errors()->toJson()
         );
     }
 
@@ -181,7 +179,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertTrue(
             $validator->passes(),
-            'order_settings 탭만 전송해도 검증을 통과해야 합니다. 오류: ' . $validator->errors()->toJson()
+            'order_settings 탭만 전송해도 검증을 통과해야 합니다. 오류: '.$validator->errors()->toJson()
         );
     }
 
@@ -197,7 +195,69 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertTrue(
             $validator->passes(),
-            'language_currency 탭만 전송해도 검증을 통과해야 합니다. 오류: ' . $validator->errors()->toJson()
+            'language_currency 탭만 전송해도 검증을 통과해야 합니다. 오류: '.$validator->errors()->toJson()
+        );
+    }
+
+    // ──────────────────────────────────────────────
+    // 통화 기호(symbol) 검증
+    // ──────────────────────────────────────────────
+
+    public function test_currency_symbol_accepts_valid_value(): void
+    {
+        $validator = $this->validate([
+            '_tab' => 'language_currency',
+            'language_currency' => [
+                'default_currency' => 'KRW',
+                'currencies' => [
+                    ['code' => 'KRW', 'name' => ['ko' => '원'], 'symbol' => '₩'],
+                ],
+            ],
+        ]);
+
+        $this->assertTrue(
+            $validator->passes(),
+            '통화 기호(symbol)가 포함된 통화 설정은 검증을 통과해야 합니다. 오류: '.$validator->errors()->toJson()
+        );
+    }
+
+    public function test_currency_symbol_is_optional(): void
+    {
+        $validator = $this->validate([
+            '_tab' => 'language_currency',
+            'language_currency' => [
+                'default_currency' => 'KRW',
+                'currencies' => [
+                    ['code' => 'KRW', 'name' => ['ko' => '원']],
+                ],
+            ],
+        ]);
+
+        $this->assertTrue(
+            $validator->passes(),
+            'symbol 미전송 시에도 검증을 통과해야 합니다(nullable). 오류: '.$validator->errors()->toJson()
+        );
+    }
+
+    public function test_currency_symbol_rejects_too_long_value(): void
+    {
+        $validator = $this->validate([
+            '_tab' => 'language_currency',
+            'language_currency' => [
+                'default_currency' => 'KRW',
+                'currencies' => [
+                    ['code' => 'KRW', 'name' => ['ko' => '원'], 'symbol' => str_repeat('₩', 9)],
+                ],
+            ],
+        ]);
+
+        $this->assertTrue(
+            $validator->fails(),
+            'symbol 이 max:8 을 초과하면 검증에 실패해야 합니다.'
+        );
+        $this->assertArrayHasKey(
+            'language_currency.currencies.0.symbol',
+            $validator->errors()->toArray()
         );
     }
 
@@ -291,7 +351,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_order_settings_attributes_are_translated(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $attributes = $request->attributes();
 
         $this->assertArrayHasKey(
@@ -319,7 +379,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_order_settings_custom_messages_exist(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $messages = $request->messages();
 
         $this->assertArrayHasKey(
@@ -347,7 +407,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_payment_methods_requires_at_least_one_active(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $request->merge([
             '_tab' => 'order_settings',
             'order_settings' => [
@@ -379,7 +439,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_payment_methods_passes_with_one_active(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $request->merge([
             '_tab' => 'order_settings',
             'order_settings' => [
@@ -486,7 +546,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_bank_accounts_requires_at_least_one_active_default(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $request->merge([
             '_tab' => 'order_settings',
             'order_settings' => [
@@ -553,7 +613,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertTrue(
             $validator->passes(),
-            '현재 로케일(ko)만 입력해도 유효해야 합니다. 오류: ' . $validator->errors()->toJson()
+            '현재 로케일(ko)만 입력해도 유효해야 합니다. 오류: '.$validator->errors()->toJson()
         );
     }
 
@@ -572,7 +632,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertTrue(
             $validator->passes(),
-            '다른 로케일이 null이어도 유효해야 합니다. 오류: ' . $validator->errors()->toJson()
+            '다른 로케일이 null이어도 유효해야 합니다. 오류: '.$validator->errors()->toJson()
         );
     }
 
@@ -630,13 +690,13 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertTrue(
             $validator->passes(),
-            '유효한 은행 데이터를 허용해야 합니다. 오류: ' . $validator->errors()->toJson()
+            '유효한 은행 데이터를 허용해야 합니다. 오류: '.$validator->errors()->toJson()
         );
     }
 
     public function test_banks_custom_messages_exist(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $messages = $request->messages();
 
         $locale = app()->getLocale();
@@ -656,7 +716,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_bank_accounts_passes_with_active_default(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $request->merge([
             '_tab' => 'order_settings',
             'order_settings' => [
@@ -714,7 +774,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
         $this->assertFalse(
             $validator->fails(),
-            '유효한 carriers 데이터로 검증이 통과해야 합니다: ' . json_encode($validator->errors()->toArray())
+            '유효한 carriers 데이터로 검증이 통과해야 합니다: '.json_encode($validator->errors()->toArray())
         );
     }
 
@@ -971,7 +1031,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_carrier_duplicate_codes_rejected(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $request->merge([
             '_tab' => 'shipping',
             'shipping' => [
@@ -1002,7 +1062,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_carrier_duplicate_codes_case_insensitive(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $request->merge([
             '_tab' => 'shipping',
             'shipping' => [
@@ -1033,7 +1093,11 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_carrier_empty_name_rejected_by_custom_validator(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        // validateCarrierNames 는 현재 앱 로케일의 배송사명을 검사한다.
+        // 테스트 데이터가 ko 공백을 제공하므로 환경 로케일(ja 등)과 무관하게 ko 로 고정한다.
+        app()->setLocale('ko');
+
+        $request = new StoreEcommerceSettingsRequest;
         $request->merge([
             '_tab' => 'shipping',
             'shipping' => [
@@ -1063,7 +1127,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_carrier_missing_name_array_rejected_by_custom_validator(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $request->merge([
             '_tab' => 'shipping',
             'shipping' => [
@@ -1093,7 +1157,7 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 
     public function test_carrier_custom_messages_exist(): void
     {
-        $request = new StoreEcommerceSettingsRequest();
+        $request = new StoreEcommerceSettingsRequest;
         $messages = $request->messages();
 
         // LocaleRequiredTranslatable 은 field 레벨에서 보고 — name.ko 분리 키 미사용
@@ -1138,5 +1202,101 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
             $validator->errors()->has('shipping.carriers.1.type'),
             '두 번째 항목의 type 오류가 있어야 합니다'
         );
+    }
+
+    // ──────────────────────────────────────────────
+    // mileage 탭 검증 (§8.2)
+    // ──────────────────────────────────────────────
+
+    public function test_tab_field_accepts_mileage(): void
+    {
+        $validator = $this->validate(['_tab' => 'mileage', 'mileage' => ['enabled' => true]]);
+
+        $this->assertFalse($validator->errors()->has('_tab'), 'mileage 탭이 허용되어야 합니다');
+    }
+
+    public function test_mileage_valid_settings_pass(): void
+    {
+        $validator = $this->validate([
+            'mileage' => [
+                'enabled' => true,
+                'default_earn_rate' => 5,
+                'earn_trigger' => 'confirmed',
+                'earn_delay_days' => 0,
+                'currency_rules' => [
+                    ['currency_code' => 'KRW', 'point_value' => 1, 'min_use_amount' => 1000, 'use_unit' => 10, 'max_use_type' => 'fixed', 'max_use_percent' => 30, 'max_use_value' => 50000],
+                ],
+                'expiry_enabled' => true,
+                'expiry_days' => 365,
+                'expiry_notification_enabled' => true,
+                'expiry_notification_days_before' => 7,
+            ],
+        ]);
+
+        $this->assertFalse($validator->fails(), '유효한 마일리지 설정은 통과해야 합니다');
+    }
+
+    public function test_mileage_earn_trigger_rejects_invalid(): void
+    {
+        $validator = $this->validate(['mileage' => ['enabled' => true, 'earn_trigger' => 'invalid']]);
+
+        $this->assertTrue($validator->errors()->has('mileage.earn_trigger'));
+    }
+
+    public function test_mileage_max_use_type_rejects_invalid(): void
+    {
+        $validator = $this->validate([
+            'mileage' => [
+                'enabled' => true,
+                'currency_rules' => [['currency_code' => 'KRW', 'max_use_type' => 'percentage']],
+            ],
+        ]);
+
+        $this->assertTrue($validator->errors()->has('mileage.currency_rules.0.max_use_type'));
+    }
+
+    public function test_mileage_default_earn_rate_rejects_negative(): void
+    {
+        $validator = $this->validate(['mileage' => ['enabled' => true, 'default_earn_rate' => -5]]);
+
+        $this->assertTrue($validator->errors()->has('mileage.default_earn_rate'));
+    }
+
+    public function test_mileage_duplicate_currency_code_rejected(): void
+    {
+        // withValidator after-검증을 포함한 전체 검증
+        $request = new StoreEcommerceSettingsRequest;
+        $request->merge([
+            'mileage' => [
+                'enabled' => true,
+                'currency_rules' => [
+                    ['currency_code' => 'KRW', 'max_use_type' => 'fixed'],
+                    ['currency_code' => 'KRW', 'max_use_type' => 'fixed'],
+                ],
+            ],
+        ]);
+        $validator = Validator::make($request->all(), $request->rules());
+        $request->withValidator($validator);
+        $validator->passes();
+
+        $this->assertTrue(
+            $validator->errors()->has('mileage.currency_rules.1.currency_code'),
+            '통화 코드 중복은 거부되어야 합니다'
+        );
+    }
+
+    public function test_validated_settings_includes_mileage(): void
+    {
+        $request = new StoreEcommerceSettingsRequest;
+        $request->merge([
+            '_tab' => 'mileage',
+            'mileage' => ['enabled' => true, 'default_earn_rate' => 3],
+        ]);
+        $request->setValidator(Validator::make($request->all(), $request->rules()));
+
+        $settings = $request->validatedSettings();
+
+        $this->assertArrayHasKey('mileage', $settings, 'validatedSettings 에 mileage 카테고리가 포함되어야 합니다');
+        $this->assertArrayNotHasKey('_tab', $settings, '_tab 은 제외되어야 합니다');
     }
 }

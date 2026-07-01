@@ -233,6 +233,7 @@ import activityLogPartial from '../../../layouts/admin/partials/admin_ecommerce_
 import batchChangeModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json';
 import smsModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_send_sms.json';
 import emailModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_send_email.json';
+import resetGuestPasswordModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json';
 
 // ========== Mock 주문 데이터 ==========
 
@@ -415,15 +416,17 @@ describe('admin_ecommerce_order_detail.json (메인 레이아웃)', () => {
             expect(Object.keys(layout.computed)).toHaveLength(0);
         });
 
-        it('modals에 4개의 모달 partial이 정의되어 있다 (cancel_order 추가)', () => {
+        it('modals에 6개의 모달 partial이 정의되어 있다 (reset_guest_password + confirm_deposit 추가)', () => {
             const layout = mainLayout as any;
             expect(Array.isArray(layout.modals)).toBe(true);
-            expect(layout.modals).toHaveLength(4);
+            expect(layout.modals).toHaveLength(6);
             const partialPaths = layout.modals.map((m: any) => m.partial);
             expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json');
             expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_send_sms.json');
             expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_send_email.json');
             expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_cancel_order.json');
+            expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json');
+            expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json');
         });
     });
 
@@ -614,6 +617,22 @@ describe('Partial 레이아웃 구조 검증', () => {
             expect(json).toContain('_local.form.admin_memo');
         });
 
+        it('취소 사유 섹션이 취소 이력이 있을 때만 노출된다', () => {
+            const json = JSON.stringify(orderInfoPartial);
+            expect(json).toContain('cancel_reason_section');
+            expect(json).toContain('order.data?.cancels?.data ?? order.data?.cancels ?? []');
+            expect(json).toContain('sirsoft-ecommerce.admin.order.detail.order_info.cancel_reason.title');
+        });
+
+        it('취소 건별 사유 라벨·취소유형·상세 사유가 바인딩된다', () => {
+            const json = JSON.stringify(orderInfoPartial);
+            expect(json).toContain('"item_var":"cancel"');
+            expect(json).toContain('cancel.cancel_reason_label ?? \'\'');
+            expect(json).toContain('cancel.cancel_type_label ?? \'\'');
+            expect(json).toContain('"if":"{{cancel.cancel_reason_detail}}"');
+            expect(json).toContain('cancel.cancel_reason_detail ?? \'\'');
+        });
+
         it('이메일 모달 열기 버튼이 존재한다', () => {
             const json = JSON.stringify(orderInfoPartial);
             expect(json).toContain('"target":"modal_send_email"');
@@ -765,6 +784,36 @@ describe('Partial 레이아웃 구조 검증', () => {
             expect(json).not.toContain('.map(([code, val]) => val?.formatted).filter(Boolean).join');
         });
 
+        // ========== 재고 적용 여부 / 적립 여부 배지 검증 ==========
+
+        it('구매수량 컬럼에 재고 차감/미차감 배지가 존재한다', () => {
+            const json = JSON.stringify(orderInfoPartial);
+            // 재고 적용 여부에 따른 배지 분기 (is_stock_deducted)
+            expect(json).toContain('"if":"{{row.is_stock_deducted}}"');
+            expect(json).toContain('"if":"{{!row.is_stock_deducted}}"');
+            // 다국어 키
+            expect(json).toContain('stock_status.deducted');
+            expect(json).toContain('stock_status.not_deducted');
+        });
+
+        it('적립예정 컬럼에 적립완료/예정 배지가 존재한다', () => {
+            const json = JSON.stringify(orderInfoPartial);
+            // 적립예정액이 있을 때만 + 실제 적립 여부(is_points_earned)에 따른 분기
+            expect(json).toContain('row.subtotal_earned_points_amount > 0 && row.is_points_earned');
+            expect(json).toContain('row.subtotal_earned_points_amount > 0 && !row.is_points_earned');
+            // 다국어 키
+            expect(json).toContain('earn_status.earned');
+            expect(json).toContain('earn_status.pending');
+        });
+
+        it('재고/적립 배지가 Badge 컴포넌트로 color prop을 사용한다', () => {
+            const json = JSON.stringify(orderInfoPartial);
+            // Badge 컴포넌트 사용 + color prop (admin Badge 는 color prop 기반)
+            expect(json).toContain('"name":"Badge"');
+            expect(json).toContain('"color":"green"');
+            expect(json).toContain('"color":"gray"');
+        });
+
         // ========== 합계행 세부 표시 검증 ==========
 
         it('합계행 실구매가격에 세금/마일리지/예치금 세부 표시가 있다', () => {
@@ -819,6 +868,31 @@ describe('Partial 레이아웃 구조 검증', () => {
             expect(json).toContain('payment.paid_at_formatted');
             expect(json).toContain('payment.payment_status_label');
         });
+
+        // 마일리지 사용/적립 표시는 주문(Order) 레벨 집계를 바인딩한다.
+        it('마일리지 사용/적립 표시는 order.data 경로를 사용한다', () => {
+            const json = JSON.stringify(paymentInfoPartial);
+            expect(json).toContain('order.data?.total_points_used_amount');
+            expect(json).toContain('order.data?.total_points_used_amount_formatted');
+            expect(json).toContain('order.data?.total_earned_points_amount');
+        });
+
+        // 결함 C-2: 환불 금액/환불 마일리지는 결제(payment) 레벨이 아니라
+        // 주문(Order) 레벨 집계(total_refunded_amount / total_refunded_points_amount)가 SSoT.
+        // OrderPaymentResource 에 없는 payment.refund_* / payment.refunded_amount 바인딩은 제거되어야 한다 (silent 미표시 회귀 차단).
+        it('환불 금액/환불 마일리지는 order.data 집계 경로를 바인딩한다', () => {
+            const json = JSON.stringify(paymentInfoPartial);
+            expect(json).toContain('order.data?.total_refunded_amount');
+            expect(json).toContain('order.data?.total_refunded_points_amount');
+            expect(json).toContain('order.data?.total_cancelled_amount');
+        });
+
+        it('OrderPaymentResource 미노출 환불 키(payment.refund_*/payment.refunded_amount)를 바인딩하지 않는다', () => {
+            const json = JSON.stringify(paymentInfoPartial);
+            expect(json).not.toContain('payment.refunded_amount');
+            expect(json).not.toContain('payment.refund_points_amount');
+            expect(json).not.toContain('payment.refund_status_label');
+        });
     });
 
     describe('_partial_activity_log.json (활동 로그 탭)', () => {
@@ -860,7 +934,10 @@ describe('Partial 레이아웃 구조 검증', () => {
             const json = JSON.stringify(activityLogPartial);
             // 아바타 원형 (rounded-full)
             expect(json).toContain('rounded-full');
-            expect(json).toContain('flex items-center justify-center');
+            // flex + items-center 클러스터는 .flex-center 자산이 흡수
+            // (justify-center 는 다른 토큰들과 섞일 수 있어 별도 검사)
+            expect(json).toContain('flex-center');
+            expect(json).toContain('justify-center');
             // 이름 첫 글자 추출 표현식
             expect(json).toContain('.charAt(0).toUpperCase()');
         });
@@ -927,6 +1004,57 @@ describe('Partial 레이아웃 구조 검증', () => {
         it('이메일 모달에 emailAddress 바인딩이 있다', () => {
             const json = JSON.stringify(emailModal);
             expect(json).toContain('emailAddress');
+        });
+    });
+});
+
+// ========================================
+// 비회원 조회 비밀번호 재설정 (모달 + 버튼) 검증
+// ========================================
+
+describe('비회원 조회 비밀번호 재설정', () => {
+    describe('_modal_reset_guest_password.json', () => {
+        it('id가 modal_reset_guest_password 인 Modal 이다', () => {
+            expect((resetGuestPasswordModal as any).id).toBe('modal_reset_guest_password');
+            expect((resetGuestPasswordModal as any).name).toBe('Modal');
+        });
+
+        it('재설정 API 엔드포인트(reset-guest-lookup-password)를 호출한다', () => {
+            const json = JSON.stringify(resetGuestPasswordModal);
+            expect(json).toContain('/reset-guest-lookup-password');
+            expect(json).toContain('"method":"POST"');
+        });
+
+        it('새 비밀번호와 확인 필드를 body로 전송한다', () => {
+            const json = JSON.stringify(resetGuestPasswordModal);
+            expect(json).toContain('guest_lookup_password');
+            expect(json).toContain('guest_lookup_password_confirmation');
+        });
+
+        it('성공 시 토스트 + closeModal 한다', () => {
+            const json = JSON.stringify(resetGuestPasswordModal);
+            expect(json).toContain('reset_success');
+            expect(json).toContain('closeModal');
+        });
+
+        it('평문 비밀번호 입력은 password 타입 input 으로 마스킹한다', () => {
+            const json = JSON.stringify(resetGuestPasswordModal);
+            expect(json).toContain('"type":"password"');
+        });
+    });
+
+    describe('주문정보 비회원 블록 재설정 버튼', () => {
+        it('!user_id 조건의 비회원 블록에 재설정 버튼이 있다', () => {
+            const json = JSON.stringify(orderInfoPartial);
+            expect(json).toContain('modal_reset_guest_password');
+            expect(json).toContain('reset_guest_password');
+        });
+
+        it('재설정 버튼이 openModal 핸들러로 모달을 연다', () => {
+            const json = JSON.stringify(orderInfoPartial);
+            // openModal + 대상 모달 id 가 함께 존재
+            expect(json).toContain('"handler":"openModal"');
+            expect(json).toContain('"target":"modal_reset_guest_password"');
         });
     });
 });

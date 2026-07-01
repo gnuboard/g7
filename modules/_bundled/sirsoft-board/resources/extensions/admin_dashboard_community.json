@@ -1,0 +1,641 @@
+{
+  "extension_point": "admin_dashboard_community",
+  "mode": "append",
+  "priority": 100,
+  "data_sources": [
+    {
+      "id": "board_overview",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/admin/dashboard/overview",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "fallback": {
+        "data": {
+          "today_posts": 0,
+          "today_comments": 0
+        }
+      }
+    },
+    {
+      "id": "board_post_graph",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/admin/dashboard/post-graph",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "fallback": {
+        "data": {
+          "days": [],
+          "total_posts": 0,
+          "total_comments": 0,
+          "posts_change": null,
+          "comments_change": null,
+          "updated_at": null,
+          "updated_at_display": ""
+        }
+      }
+    },
+    {
+      "id": "board_recent_posts",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/admin/dashboard/recent-posts",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "fallback": {
+        "data": {
+          "data": []
+        }
+      }
+    },
+    {
+      "id": "board_pending_reports",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/admin/dashboard/pending-reports",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "fallback": {
+        "data": {
+          "items": [],
+          "total": 0
+        }
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "community_section_wrapper",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-4 md:mb-6 lg:mb-8"
+      },
+      "children": [
+        {
+          "id": "community_section_grid",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5"
+          },
+          "children": [
+            {
+              "id": "post_graph_today_summary",
+              "type": "basic",
+              "name": "Div",
+              "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "board_overview"
+              },
+              "props": {
+                "className": "flex-center flex-wrap gap-2 md:col-span-2 lg:col-span-4"
+              },
+              "children": [
+                {
+                  "id": "post_graph_today_label",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-semibold text-slate-500 dark:text-slate-400"
+                  },
+                  "text": "$t:admin.dashboard.stats.today"
+                },
+                {
+                  "id": "today_new_posts_badge",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                  },
+                  "text": "$t:sirsoft-board.admin.dashboard.today_badges.new_posts|count={{board_overview?.data?.today_posts ?? 0}}",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/boards"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "today_new_comments_badge",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                  },
+                  "text": "$t:sirsoft-board.admin.dashboard.today_badges.new_comments|count={{board_overview?.data?.today_comments ?? 0}}",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/boards"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "community_section_badge",
+                  "type": "composite",
+                  "name": "ExtensionBadge",
+                  "props": {
+                    "className": "ml-auto",
+                    "type": "module",
+                    "identifier": "sirsoft-board",
+                    "installedModules": "{{_global.installedModules}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "post_graph_card",
+              "type": "basic",
+              "name": "Div",
+              "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": [
+                  "board_overview",
+                  "board_post_graph"
+                ]
+              },
+              "props": {
+                "className": "bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl md:col-span-2 h-full flex flex-col"
+              },
+              "children": [
+                {
+                  "id": "post_graph_header",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-4 md:mb-6"
+                  },
+                  "children": [
+                    {
+                      "id": "post_graph_title",
+                      "type": "basic",
+                      "name": "H3",
+                      "props": {
+                        "className": "text-lg font-semibold text-slate-900 dark:text-white"
+                      },
+                      "text": "$t:sirsoft-board.admin.dashboard.community.post_graph"
+                    },
+                    {
+                      "id": "post_graph_legend",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-center gap-4"
+                      },
+                      "children": [
+                        {
+                          "id": "posts_legend_item",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-center gap-2"
+                          },
+                          "children": [
+                            {
+                              "id": "posts_legend_dot",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "w-3 h-3 rounded-full bg-violet-500"
+                              }
+                            },
+                            {
+                              "id": "posts_legend_label",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm text-slate-500 dark:text-slate-400"
+                              },
+                              "text": "$t:sirsoft-board.admin.dashboard.community.posts"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "comments_legend_item",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-center gap-2"
+                          },
+                          "children": [
+                            {
+                              "id": "comments_legend_dot",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "w-3 h-3 rounded-full bg-violet-200"
+                              }
+                            },
+                            {
+                              "id": "comments_legend_label",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm text-slate-500 dark:text-slate-400"
+                              },
+                              "text": "$t:sirsoft-board.admin.dashboard.community.comments"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "post_graph_stats",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex gap-4 md:gap-8 mb-4 md:mb-6"
+                  },
+                  "children": [
+                    {
+                      "id": "total_posts_stat",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "id": "total_posts_label",
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-sm text-slate-500 dark:text-slate-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-board.admin.dashboard.community.total_posts"
+                        },
+                        {
+                          "id": "total_posts_value_wrapper",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-baseline gap-2"
+                          },
+                          "children": [
+                            {
+                              "id": "total_posts_value",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-lg md:text-2xl font-bold text-slate-900 dark:text-white"
+                              },
+                              "text": "{{board_post_graph?.data?.total_posts ?? 0 | number}}"
+                            },
+                            {
+                              "id": "total_posts_change",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "{{(board_post_graph?.data?.posts_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((board_post_graph?.data?.posts_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}"
+                              },
+                              "text": "{{(board_post_graph?.data?.posts_change ?? null) === null ? '—' : ((board_post_graph?.data?.posts_change >= 0 ? '+' : '') + board_post_graph?.data?.posts_change + '%')}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "total_comments_stat",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "id": "total_comments_label",
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-sm text-slate-500 dark:text-slate-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-board.admin.dashboard.community.total_comments"
+                        },
+                        {
+                          "id": "total_comments_value_wrapper",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-baseline gap-2"
+                          },
+                          "children": [
+                            {
+                              "id": "total_comments_value",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-lg md:text-2xl font-bold text-slate-900 dark:text-white"
+                              },
+                              "text": "{{board_post_graph?.data?.total_comments ?? 0 | number}}"
+                            },
+                            {
+                              "id": "total_comments_change",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "{{(board_post_graph?.data?.comments_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((board_post_graph?.data?.comments_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}"
+                              },
+                              "text": "{{(board_post_graph?.data?.comments_change ?? null) === null ? '—' : ((board_post_graph?.data?.comments_change >= 0 ? '+' : '') + board_post_graph?.data?.comments_change + '%')}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "post_graph_chart",
+                  "type": "composite",
+                  "name": "BarChart",
+                  "props": {
+                    "labels": "{{(board_post_graph?.data?.days ?? []).map(d => (d.date ?? '').slice(5).replace('-', '/'))}}",
+                    "datasets": "{{[{label: $t('sirsoft-board.admin.dashboard.community.posts'), data: (board_post_graph?.data?.days ?? []).map(d => d.post_count ?? 0), backgroundColor: '#7C3AED'}, {label: $t('sirsoft-board.admin.dashboard.community.comments'), data: (board_post_graph?.data?.days ?? []).map(d => d.comment_count ?? 0), backgroundColor: '#DDD6FE'}]}}",
+                    "height": 180,
+                    "showYGrid": true,
+                    "showYAxis": true
+                  }
+                },
+                {
+                  "id": "post_graph_updated_at_caption",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{!!board_post_graph?.data?.updated_at_display}}",
+                  "props": {
+                    "className": "text-xs text-slate-400 dark:text-slate-500 mt-2 text-right"
+                  },
+                  "text": "$t:sirsoft-board.admin.dashboard.community.updated_at|time={{board_post_graph?.data?.updated_at_display ?? ''}}"
+                }
+              ]
+            },
+            {
+              "id": "latest_posts_card",
+              "type": "basic",
+              "name": "Div",
+              "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "board_recent_posts"
+              },
+              "props": {
+                "className": "bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col"
+              },
+              "children": [
+                {
+                  "id": "latest_posts_header",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between mb-4"
+                  },
+                  "children": [
+                    {
+                      "id": "latest_posts_title",
+                      "type": "basic",
+                      "name": "H3",
+                      "props": {
+                        "className": "text-base font-semibold text-slate-900 dark:text-white"
+                      },
+                      "text": "$t:sirsoft-board.admin.dashboard.community.latest_posts"
+                    },
+                    {
+                      "id": "latest_posts_view_all",
+                      "type": "basic",
+                      "name": "A",
+                      "props": {
+                        "href": "/admin/boards",
+                        "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                      },
+                      "text": "$t:sirsoft-board.admin.dashboard.community.go_to_boards"
+                    }
+                  ]
+                },
+                {
+                  "id": "latest_posts_empty",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{(board_recent_posts?.data ?? []).length === 0}}",
+                  "props": {
+                    "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
+                  },
+                  "text": "$t:sirsoft-board.admin.dashboard.community.no_posts"
+                },
+                {
+                  "id": "latest_posts_list",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(board_recent_posts?.data ?? []).length > 0}}",
+                  "props": {
+                    "className": "divide-y divide-slate-200 dark:divide-slate-700"
+                  },
+                  "children": [
+                    {
+                      "id": "latest_post_item_{{i}}",
+                      "type": "basic",
+                      "name": "Div",
+                      "iteration": {
+                        "source": "board_recent_posts?.data",
+                        "item_var": "post",
+                        "index_var": "i"
+                      },
+                      "props": {
+                        "className": "py-3 min-h-12 flex flex-col justify-center cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/board/{{post?.board_slug}}/post/{{post?.id}}"
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "latest_post_title_{{i}}",
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-sm font-medium text-slate-900 dark:text-white truncate"
+                          },
+                          "text": "{{post?.title ?? ''}}"
+                        },
+                        {
+                          "id": "latest_post_meta_{{i}}",
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '') + ' · ' + (post?.created_at ?? '')}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "report_management_card",
+              "type": "basic",
+              "name": "Div",
+              "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "board_pending_reports"
+              },
+              "props": {
+                "className": "bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col"
+              },
+              "children": [
+                {
+                  "id": "report_management_header",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between mb-4"
+                  },
+                  "children": [
+                    {
+                      "id": "report_management_title_wrapper",
+                      "type": "basic",
+                      "name": "H3",
+                      "props": {
+                        "className": "flex-center text-base font-semibold text-slate-900 dark:text-white gap-1"
+                      },
+                      "children": [
+                        {
+                          "id": "report_management_title_text",
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.dashboard.community.report_management"
+                        },
+                        {
+                          "id": "report_management_count",
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{(board_pending_reports?.data?.total ?? 0) > 0}}",
+                          "props": {
+                            "className": "text-purple-600 dark:text-purple-400"
+                          },
+                          "text": "({{board_pending_reports?.data?.total ?? 0}})"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "report_management_view_all",
+                      "type": "basic",
+                      "name": "A",
+                      "props": {
+                        "href": "/admin/boards/reports",
+                        "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                      },
+                      "text": "$t:sirsoft-board.admin.dashboard.community.go_to_reports"
+                    }
+                  ]
+                },
+                {
+                  "id": "report_management_empty",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{(board_pending_reports?.data?.items ?? []).length === 0}}",
+                  "props": {
+                    "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
+                  },
+                  "text": "$t:sirsoft-board.admin.dashboard.community.no_reports"
+                },
+                {
+                  "id": "report_management_list",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(board_pending_reports?.data?.items ?? []).length > 0}}",
+                  "props": {
+                    "className": "divide-y divide-slate-200 dark:divide-slate-700"
+                  },
+                  "children": [
+                    {
+                      "id": "report_item_{{i}}",
+                      "type": "basic",
+                      "name": "Div",
+                      "iteration": {
+                        "source": "board_pending_reports?.data?.items",
+                        "item_var": "report",
+                        "index_var": "i"
+                      },
+                      "props": {
+                        "className": "py-3 min-h-12 flex flex-col justify-center cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/boards/reports/{{report?.id}}"
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "report_header_{{i}}",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-center gap-2"
+                          },
+                          "children": [
+                            {
+                              "id": "report_target_type_badge_{{i}}",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "{{report?.target_type === 'comment' ? 'shrink-0 px-2 text-xs font-medium rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'shrink-0 px-2 text-xs font-medium rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}}"
+                              },
+                              "text": "{{report?.target_type_label ?? ''}}"
+                            },
+                            {
+                              "id": "report_title_line_{{i}}",
+                              "type": "basic",
+                              "name": "P",
+                              "props": {
+                                "className": "flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate"
+                              },
+                              "text": "{{report?.target_title ?? '(제목 없음)'}}"
+                            },
+                            {
+                              "id": "report_status_badge_{{i}}",
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{!!report?.status_label}}",
+                              "props": {
+                                "className": "shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{report?.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : report?.status === 'review' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : report?.status === 'rejected' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : report?.status === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : report?.status === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                              },
+                              "text": "{{report?.status_label ?? ''}}"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "report_meta_{{i}}",
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? '익명') + ' · ' + (report?.last_reported_at ?? '')}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

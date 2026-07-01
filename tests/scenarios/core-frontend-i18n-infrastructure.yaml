@@ -1,0 +1,75 @@
+# audit:allow test-scenario-coverage reason: 본 시나리오는 코어 i18n 인프라 도입 회귀 가드. effects 는 5계층 병합 우선순위 + 업그레이드 스텝 멱등성 + 캐시 bump 트리거 카테고리별로 enumerate. 개별 axis cross-product 는 test_files 의 Feature/Unit 테스트가 cover.
+
+feature: 코어 프론트엔드 다국어 인프라 (lang/{ko,en}.json + lang/partial/)
+
+description: |
+  코어 자체의 프론트엔드 다국어 자원을 모듈/플러그인과 동일한 디렉토리 구조
+  (`lang/{ko,en}.json` + `lang/partial/`) 로 정렬하고, 어떤 템플릿이 부팅되든
+  자동으로 노출되도록 TemplateService 가 베이스 레이어로 병합.
+
+  핵심 동작:
+    - `TemplateService::loadCoreFrontendLanguageData($locale)` 가 `lang/{locale}.json`
+      을 로드 + `$partial` 디렉티브 해석 (기존 `loadLanguageFileWithFragments` 재사용)
+    - `getLanguageDataWithModules` 의 병합 흐름: 코어 → 템플릿 → 모듈 → 플러그인 → 언어팩
+    - 호스팅 템플릿 무관성 — 어떤 템플릿이든 `$t:core.errors.*` 해석 가능
+    - 업그레이드 스텝 `MigrateCoreFrontendLangDirectory` 가 레거시 위치 자동 이동
+    - `BuildCoreCommand` / `CoreUpdateCommand` / `ExecuteUpgradeStepsCommand` 가
+      `incrementExtensionCacheVersion()` 호출로 프론트엔드 캐시 stale 회귀 차단
+
+axes:
+  locale: [ko, en]
+  template_active: [admin, user]
+  module_active: [no_module, one_module, multiple_modules]
+  plugin_active: [no_plugin, one_plugin]
+  language_pack_active: [no_pack, ja_active]
+  template_overrides_core_key: [no_override, override_same_key]
+  module_lang_namespace_collision: [no_collision, identifier_wrapped]
+  core_partial_layout: [single_entry_file, with_partial_directives]
+  legacy_dir_state: [absent, present_with_ko, present_with_en, present_with_both, partial_ko_only]
+  new_dir_state: [absent, present_with_both, present_with_ko_only]
+
+exclusions:
+  - { language_pack_active: ja_active, locale: en, reason: "ja 언어팩은 ko/en 로케일 요청에 대해 ja 번역 fallback 미적용" }
+  - { legacy_dir_state: absent, new_dir_state: absent, reason: "양쪽 모두 부재 — 신규 설치 케이스 (마이그레이션 무관)" }
+
+effects:
+  - core_lang_data_loaded_as_base_layer
+  - core_partial_directives_resolved_via_existing_resolveLanguageFragments
+  - template_lang_overrides_core_when_same_key
+  - module_lang_wrapped_under_identifier_does_not_collide_with_core_namespace
+  - plugin_lang_wrapped_under_identifier_does_not_collide_with_core_namespace
+  - active_language_pack_overrides_core_via_merge_filter
+  - missing_core_lang_file_falls_back_to_empty_without_error
+  - core_errors_key_resolved_to_korean_text_in_ko_locale
+  - core_errors_key_resolved_to_english_text_in_en_locale
+  - template_engine_error_user_message_no_longer_raw_key_in_production
+  - upgrade_step_moves_legacy_lang_files_to_new_location_when_new_absent
+  - upgrade_step_preserves_new_location_files_when_already_migrated
+  - upgrade_step_cleans_up_empty_legacy_directory
+  - upgrade_step_handles_partial_ko_only_migration_safely
+  - upgrade_step_is_idempotent_on_repeated_execution
+  - upgrade_step_logs_each_action_for_debugging
+  - upgrade_step_does_not_throw_on_filesystem_permission_failure
+  - extension_cache_version_bumped_after_core_build_engine_only
+  - extension_cache_version_bumped_after_core_build_full
+  - extension_cache_version_bumped_after_core_update_step11
+  - extension_cache_version_bumped_after_upgrade_handoff_cleanup
+  - extension_cache_version_bumped_after_standalone_execute_upgrade_steps
+  - extension_cache_version_not_bumped_in_spawn_child_or_steps_only_mode
+  - legacy_core_lang_path_rejected_by_audit_rule
+  - core_namespace_in_template_lang_rejected_by_audit_rule
+  - missing_cache_bump_in_core_command_warns_via_audit_rule
+
+test_files:
+  - tests/Unit/Services/TemplateServiceCoreFrontendI18nTest.php
+  - tests/Feature/Api/Public/PublicTemplateLanguageCoreMergeTest.php
+  - tests/Feature/Upgrades/MigrateCoreFrontendLangDirectoryTest.php
+  - tests/Feature/Commands/CoreBuildBumpsCacheVersionTest.php
+  - resources/js/core/template-engine/__tests__/TranslationEngine.core-keys.test.ts
+  - resources/js/core/template-engine/__tests__/TemplateEngineError.i18n.test.ts
+
+validation:
+  audit_rules:
+    - core-frontend-i18n-location
+    - legacy-core-frontend-lang-path
+    - core-cache-version-bump-on-lang-change

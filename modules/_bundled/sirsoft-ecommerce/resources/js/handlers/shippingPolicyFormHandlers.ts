@@ -33,6 +33,7 @@ interface CountrySetting {
     api_endpoint: string | null;
     api_request_fields: string[] | null;
     api_response_fee_field: string | null;
+    api_config: ApiConfig | null;
     extra_fee_enabled: boolean;
     extra_fee_settings: Array<{ zipcode: string; fee: number; region?: string }> | null;
     extra_fee_multiply: boolean;
@@ -43,6 +44,17 @@ interface RangeTier {
     min: number;
     max: number | null;
     fee: number;
+}
+
+interface ApiConfig {
+    http_method?: string;
+    auth_type?: string;
+    auth_token?: string | null;
+    auth_header_name?: string | null;
+    response_type?: string;
+    response_path?: string | null;
+    field_map?: Record<string, string> | null;
+    has_auth_token?: boolean;
 }
 
 interface RangeTierError {
@@ -89,6 +101,7 @@ const DEFAULT_COUNTRY_SETTING: Omit<CountrySetting, 'country_code'> = {
     api_endpoint: null,
     api_request_fields: null,
     api_response_fee_field: null,
+    api_config: null,
     extra_fee_enabled: false,
     extra_fee_settings: [],
     extra_fee_multiply: false,
@@ -440,6 +453,7 @@ export function onChargePolicyChangeHandler(
         updatedCS.api_endpoint = null;
         updatedCS.api_request_fields = null;
         updatedCS.api_response_fee_field = null;
+        updatedCS.api_config = null;
     }
 
     // ranges 초기화 (구간 정책 선택 시 기본 구조 제공)
@@ -1017,6 +1031,210 @@ export function removeApiRequestFieldHandler(
         'form.country_settings': countrySettings,
     });
     logger.log('[removeApiRequestField] Removed index:', fieldIndex, 'remaining:', currentFields.length);
+}
+
+/**
+ * API 요청 참고 필드 후보를 토글합니다 (체크박스 선택/해제).
+ *
+ * 후보 5종(policy_id/country_code/items/group_total/total_quantity) 중 하나를
+ * api_request_fields 배열에 추가하거나 제거합니다. 자유 텍스트 입력을 대체하여
+ * 시스템이 지원하지 않는 필드명 입력(silent drop)을 원천 차단합니다.
+ *
+ * @param action params.field: 토글할 후보 필드 값
+ * @param context 액션 컨텍스트
+ */
+export function toggleApiRequestFieldHandler(
+    action: ActionWithParams,
+    context: ActionContext
+): void {
+    const params = action.params || {};
+    const field = (params.field ?? '') as string;
+    if (!field) {
+        logger.warn('[toggleApiRequestField] Missing field param');
+        return;
+    }
+
+    const G7Core = getG7Core();
+    if (!G7Core) return;
+
+    const localState = G7Core.state.getLocal?.() ?? {};
+    const countryIndex = Number(localState.activeCountryTab ?? 0);
+    const countrySettings = getCountrySettings(G7Core);
+    const cs = countrySettings[countryIndex];
+    if (!cs) return;
+
+    const currentFields = [...(cs.api_request_fields ?? [])];
+    const existingIndex = currentFields.indexOf(field);
+
+    if (existingIndex >= 0) {
+        currentFields.splice(existingIndex, 1);
+    } else {
+        currentFields.push(field);
+    }
+
+    // 빈 배열은 null 로 정규화 (전체 전송 = 현 동작 유지)
+    const nextFields = currentFields.length > 0 ? currentFields : null;
+
+    // 새 객체 생성 (원본 mutation 방지 — deepMerge 변경 감지를 위해 필수)
+    countrySettings[countryIndex] = { ...cs, api_request_fields: nextFields };
+
+    updateLocalState(context, {
+        'form.country_settings': countrySettings,
+    });
+    logger.log('[toggleApiRequestField] Toggled:', field, 'selected:', nextFields);
+}
+
+/**
+ * 계산 API 고급 설정(api_config)의 개별 필드를 업데이트합니다.
+ *
+ * api_config 는 중첩 객체이므로 updateCountryField(평면 필드)와 별도로 처리합니다.
+ *
+ * @param action params.field: api_config 하위 키, params.value: 새 값
+ * @param context 액션 컨텍스트
+ */
+export function updateApiConfigFieldHandler(
+    action: ActionWithParams,
+    context: ActionContext
+): void {
+    const params = action.params || {};
+    const field = (params.field ?? '') as string;
+    if (!field) {
+        logger.warn('[updateApiConfigField] Missing field param');
+        return;
+    }
+
+    const G7Core = getG7Core();
+    if (!G7Core) return;
+
+    const localState = G7Core.state.getLocal?.() ?? {};
+    const index = Number(localState.activeCountryTab ?? 0);
+    const countrySettings = getCountrySettings(G7Core);
+    const cs = countrySettings[index];
+    if (!cs) return;
+
+    const nextConfig: ApiConfig = { ...(cs.api_config ?? {}), [field]: params.value };
+
+    // 새 객체 생성 (deepMerge 변경 감지)
+    countrySettings[index] = { ...cs, api_config: nextConfig };
+
+    updateLocalState(context, {
+        'form.country_settings': countrySettings,
+    });
+    logger.log('[updateApiConfigField] Updated', field, 'at index:', index);
+}
+
+/**
+ * 계산 API 요청 필드의 외부 키 매핑(field_map)을 업데이트합니다.
+ *
+ * @param action params.field: 우리 키(후보), params.value: 외부 키 이름(빈 값이면 매핑 제거)
+ * @param context 액션 컨텍스트
+ */
+export function updateApiFieldMapHandler(
+    action: ActionWithParams,
+    context: ActionContext
+): void {
+    const params = action.params || {};
+    const field = (params.field ?? '') as string;
+    if (!field) {
+        logger.warn('[updateApiFieldMap] Missing field param');
+        return;
+    }
+
+    const G7Core = getG7Core();
+    if (!G7Core) return;
+
+    const localState = G7Core.state.getLocal?.() ?? {};
+    const index = Number(localState.activeCountryTab ?? 0);
+    const countrySettings = getCountrySettings(G7Core);
+    const cs = countrySettings[index];
+    if (!cs) return;
+
+    const externalKey = (params.value ?? '') as string;
+    const fieldMap: Record<string, string> = { ...(cs.api_config?.field_map ?? {}) };
+
+    if (externalKey.trim() === '') {
+        delete fieldMap[field];
+    } else {
+        fieldMap[field] = externalKey;
+    }
+
+    const nextConfig: ApiConfig = {
+        ...(cs.api_config ?? {}),
+        field_map: Object.keys(fieldMap).length > 0 ? fieldMap : null,
+    };
+
+    countrySettings[index] = { ...cs, api_config: nextConfig };
+
+    updateLocalState(context, {
+        'form.country_settings': countrySettings,
+    });
+    logger.log('[updateApiFieldMap] Mapped', field, '→', externalKey || '(removed)');
+}
+
+/**
+ * 현재 입력 중인 계산 API 설정으로 외부 API 를 테스트 호출합니다.
+ *
+ * 백엔드 test-api-call 엔드포인트로 요청하고 결과를 _global.apiTestResult 에 저장합니다.
+ *
+ * @param action 액션 정의
+ * @param context 액션 컨텍스트
+ */
+export function testShippingApiHandler(
+    action: ActionWithParams,
+    context: ActionContext
+): void {
+    const G7Core = getG7Core();
+    if (!G7Core) return;
+
+    const localState = G7Core.state.getLocal?.() ?? {};
+    const index = Number(localState.activeCountryTab ?? 0);
+    const countrySettings = getCountrySettings(G7Core);
+    const cs = countrySettings[index];
+    if (!cs) return;
+
+    if (!cs.api_endpoint) {
+        G7Core.toast?.warning?.(G7Core.t?.('sirsoft-ecommerce.admin.shipping_policy.form.api_test_endpoint_required') ?? 'Endpoint required');
+        return;
+    }
+
+    // 전역 상태 설정은 객체 형태로 넘긴다 (set 의 첫 인자는 updates 객체)
+    G7Core.state.set?.({ apiTestLoading: true, apiTestResult: null });
+
+    // apiCall 구조: URL 은 액션 top-level target, method/body 는 params,
+    // onSuccess/onError 도 top-level (CLAUDE.md apiCall 규약). 백엔드 test-api-call
+    // 엔드포인트가 사용자가 입력한 설정으로 외부 API 를 대신 호출하고 결과를 서빙한다.
+    G7Core.dispatch({
+        handler: 'apiCall',
+        target: '/api/modules/sirsoft-ecommerce/admin/shipping-policies/test-api-call',
+        auth_required: true,
+        params: {
+            method: 'POST',
+            body: {
+                endpoint: cs.api_endpoint,
+                request_fields: cs.api_request_fields,
+                config: cs.api_config ?? {},
+                sample: {
+                    country_code: cs.country_code,
+                },
+            },
+        },
+        onSuccess: {
+            handler: 'setState',
+            params: {
+                target: 'global',
+                apiTestLoading: false,
+                apiTestResult: '{{response.data}}',
+            },
+        },
+        onError: {
+            handler: 'setState',
+            params: {
+                target: 'global',
+                apiTestLoading: false,
+                apiTestResult: '{{error.errors ?? error}}',
+            },
+        },
+    });
 }
 
 /**

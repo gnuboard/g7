@@ -1,0 +1,10 @@
+{
+  "core": {
+    "errors": {
+      "$partial": "partial/errors.json"
+    }
+  },
+  "layout_editor": {
+    "$partial": "partial/layout_editor.json"
+  }
+}

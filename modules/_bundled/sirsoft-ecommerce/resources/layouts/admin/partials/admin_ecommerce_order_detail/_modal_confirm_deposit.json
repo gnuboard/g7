@@ -1,0 +1,294 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Order Detail - Confirm Bank Deposit Modal (무통장 입금확인)"
+  },
+  "id": "modal_confirm_deposit",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.title",
+    "size": "md",
+    "closeOnOverlayClick": false,
+    "closeOnEscape": false
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-label-subtle"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.description"
+        },
+        {
+          "comment": "결제예정금액 요약 (참고용)",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 flex-between text-sm"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.due_amount"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "font-semibold text-gray-900 dark:text-gray-100"
+              },
+              "text": "{{order.data?.total_due_amount_formatted ?? ''}}"
+            }
+          ]
+        },
+        {
+          "comment": "입금자명 (선택)",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "form-label-block"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.depositor_name"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "depositor_name",
+                "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.depositor_name_placeholder",
+                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400",
+                "value": "{{_local.depositorName ?? ''}}"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "depositorName": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "입금액 (기본값 = 결제예정금액, 정확 일치 검증)",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "form-label-block"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.amount"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-required"
+                  },
+                  "text": "*"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "name": "amount",
+                "min": 0,
+                "className": "{{_local.depositConfirmErrors?.amount ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400'}}",
+                "value": "{{_local.depositAmount ?? 0}}"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "depositAmount": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.depositConfirmErrors?.amount}}",
+              "props": {
+                "className": "form-error-xs mt-1 block"
+              },
+              "text": "{{_local.depositConfirmErrors?.amount?.[0] ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!_local.depositConfirmErrors?.amount}}",
+              "props": {
+                "className": "text-hint mt-1 block"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.amount_hint"
+            }
+          ]
+        },
+        {
+          "comment": "원 주문서 결제완료 처리 여부 — 체크 시 주문 상태를 결제완료로 전이(마일리지/재고/알림). 미체크 시 입금만 기록.",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "flex items-start gap-2 cursor-pointer"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "checkbox",
+                    "name": "mark_order_complete",
+                    "className": "mt-0.5",
+                    "checked": "{{_local.markOrderComplete ?? false}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "markOrderComplete": "{{$event.target.checked}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary text-sm font-medium block"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.mark_order_complete"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-hint block"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.mark_order_complete_hint"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "modal-footer-buttons"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_local.isConfirmingDeposit}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_local.isConfirmingDeposit}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sirsoft-ecommerce.confirmDeposit",
+              "params": {
+                "orderId": "{{route.orderNumber}}",
+                "amount": "{{_local.depositAmount}}",
+                "depositorName": "{{_local.depositorName ?? ''}}",
+                "markOrderComplete": "{{_local.markOrderComplete ?? false}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_local.isConfirmingDeposit}}",
+              "props": {
+                "name": "spinner",
+                "className": "animate-spin",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

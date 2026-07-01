@@ -8,10 +8,28 @@
  */
 
 /**
+ * 본인인증(IDV) 대상 — 인증 코드/링크를 보낼 이메일·전화번호.
+ *
+ * 비로그인(게스트) 흐름에서 레이아웃의 apiCall `identity_target` 속성으로 선언되어
+ * `IdentityGuardInterceptor.handle()` → launcher 로 전달된다. email / phone 둘 중 하나만
+ * 있어도 충분하며(서버 `RequestChallengeRequest` 가 둘 다 허용), 로그인 사용자는 서버가
+ * 세션에서 자동 도출하므로 비어 있을 수 있다.
+ *
+ * @since engine-v1.51.0
+ */
+export interface IdentityVerificationTarget {
+  email?: string;
+  phone?: string;
+}
+
+/**
  * 백엔드가 428 응답의 `verification` 필드로 내려보내는 페이로드.
  *
  * `scope=route`(미들웨어 강제)와 `scope=hook`(이벤트 강제) 모두 동일 형식이며,
  * `return_request` 만 hook 강제에서 null 일 수 있습니다.
+ *
+ * `target` 은 서버 응답에는 없고, `IdentityGuardInterceptor.handle()` 이 호출자(ActionDispatcher)가
+ * apiCall `identity_target` 으로 선언한 인증 대상을 launcher 에 전달하기 위해 병합하는 런타임 필드입니다.
  */
 export interface VerificationPayload {
   policy_key: string;
@@ -25,6 +43,8 @@ export interface VerificationPayload {
     url: string;
     headers_echo?: string[];
   } | null;
+  /** 흐름이 선언한 인증 대상(이메일·전화) — 인터셉터가 병합. 서버 응답에는 없음. */
+  target?: IdentityVerificationTarget | null;
 }
 
 /**

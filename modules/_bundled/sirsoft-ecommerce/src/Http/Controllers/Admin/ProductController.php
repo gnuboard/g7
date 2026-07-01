@@ -8,21 +8,23 @@ use App\Http\Resources\ActivityLogResource;
 use App\Models\ActivityLog;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
+use Modules\Sirsoft\Ecommerce\Exceptions\ProductImageUploadLimitException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdatePriceRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateProductsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateStockRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductListRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ReorderProductImagesRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreProductRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateProductRequest;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ReorderProductImagesRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UploadProductImageRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductCollection;
-use Modules\Sirsoft\Ecommerce\Http\Resources\ProductResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductOptionResource;
+use Modules\Sirsoft\Ecommerce\Http\Resources\ProductResource;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
@@ -43,7 +45,7 @@ class ProductController extends AdminBaseController
     /**
      * 필터링된 상품 목록을 조회합니다.
      *
-     * @param ProductListRequest $request 상품 목록 요청 데이터
+     * @param  ProductListRequest  $request  상품 목록 요청 데이터
      * @return JsonResponse 상품 목록과 통계 정보를 포함한 JSON 응답
      */
     public function index(ProductListRequest $request): JsonResponse
@@ -76,7 +78,7 @@ class ProductController extends AdminBaseController
      * - 숫자 ID: 먼저 ID로 조회 시도, 없으면 product_code로 조회
      * - product_code: product_code로 조회
      *
-     * @param string $identifier 상품 ID 또는 product_code
+     * @param  string  $identifier  상품 ID 또는 product_code
      * @return JsonResponse 상품 상세 정보를 포함한 JSON 응답
      */
     public function show(string $identifier): JsonResponse
@@ -111,7 +113,7 @@ class ProductController extends AdminBaseController
     /**
      * 새로운 상품을 생성합니다.
      *
-     * @param StoreProductRequest $request 상품 생성 요청 데이터
+     * @param  StoreProductRequest  $request  상품 생성 요청 데이터
      * @return JsonResponse 생성된 상품 정보를 포함한 JSON 응답
      */
     public function store(StoreProductRequest $request): JsonResponse
@@ -152,8 +154,8 @@ class ProductController extends AdminBaseController
     /**
      * 기존 상품 정보를 수정합니다.
      *
-     * @param UpdateProductRequest $request 상품 수정 요청 데이터
-     * @param Product $product 수정할 상품 모델
+     * @param  UpdateProductRequest  $request  상품 수정 요청 데이터
+     * @param  Product  $product  수정할 상품 모델
      * @return JsonResponse 수정된 상품 정보를 포함한 JSON 응답
      */
     public function update(UpdateProductRequest $request, Product $product): JsonResponse
@@ -196,7 +198,7 @@ class ProductController extends AdminBaseController
      *
      * 주문 이력이 있는 상품은 삭제할 수 없습니다.
      *
-     * @param Product $product 확인할 상품 모델
+     * @param  Product  $product  확인할 상품 모델
      * @return JsonResponse 삭제 가능 여부 JSON 응답
      */
     public function canDelete(Product $product): JsonResponse
@@ -221,19 +223,43 @@ class ProductController extends AdminBaseController
     /**
      * 상품을 삭제합니다.
      *
-     * @param Product $product 삭제할 상품 모델
+     * @param  Product  $product  삭제할 상품 모델
      * @return JsonResponse 삭제 결과 JSON 응답
      */
     public function destroy(Product $product): JsonResponse
     {
+        // 주문 이력 선행 검사 — 사유가 명확한 409 Conflict 로 차단 (입력검증 422 아님)
+        $canDelete = $this->productService->checkCanDelete($product);
+        if ($canDelete['canDelete'] !== true) {
+            $count = $canDelete['relatedData']['orders'] ?? 0;
+
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.products.has_order_history',
+                409,
+                null,
+                ['count' => $count]
+            );
+        }
+
         try {
-            $productId = $product->id;
             $this->productService->delete($product);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.products.deleted',
                 ['deleted' => true]
+            );
+        } catch (ProductHasOrderHistoryException $e) {
+            // 서비스 도메인 가드 (선행 검사 우회/경합 방어) — 409 Conflict
+            $count = $this->productService->checkCanDelete($product)['relatedData']['orders'] ?? 0;
+
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.products.has_order_history',
+                409,
+                null,
+                ['count' => $count]
             );
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
@@ -247,7 +273,7 @@ class ProductController extends AdminBaseController
     /**
      * 여러 상품의 상태를 일괄 변경합니다.
      *
-     * @param BulkUpdateStatusRequest $request 일괄 상태 변경 요청 데이터
+     * @param  BulkUpdateStatusRequest  $request  일괄 상태 변경 요청 데이터
      * @return JsonResponse 변경 결과 JSON 응답
      */
     public function bulkUpdateStatus(BulkUpdateStatusRequest $request): JsonResponse
@@ -263,7 +289,9 @@ class ProductController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.products.bulk_updated',
-                $result
+                $result,
+                200,
+                ['count' => $result['updated_count'] ?? 0]
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -283,7 +311,7 @@ class ProductController extends AdminBaseController
     /**
      * 여러 상품의 가격을 일괄 변경합니다.
      *
-     * @param BulkUpdatePriceRequest $request 일괄 가격 변경 요청 데이터
+     * @param  BulkUpdatePriceRequest  $request  일괄 가격 변경 요청 데이터
      * @return JsonResponse 변경 결과 JSON 응답
      */
     public function bulkUpdatePrice(BulkUpdatePriceRequest $request): JsonResponse
@@ -300,7 +328,9 @@ class ProductController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.products.bulk_price_updated',
-                $result
+                $result,
+                200,
+                ['count' => $result['updated_count'] ?? 0]
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -320,7 +350,7 @@ class ProductController extends AdminBaseController
     /**
      * 여러 상품의 재고를 일괄 변경합니다.
      *
-     * @param BulkUpdateStockRequest $request 일괄 재고 변경 요청 데이터
+     * @param  BulkUpdateStockRequest  $request  일괄 재고 변경 요청 데이터
      * @return JsonResponse 변경 결과 JSON 응답
      */
     public function bulkUpdateStock(BulkUpdateStockRequest $request): JsonResponse
@@ -336,7 +366,9 @@ class ProductController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.products.bulk_stock_updated',
-                $result
+                $result,
+                200,
+                ['count' => $result['updated_count'] ?? 0]
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -359,7 +391,7 @@ class ProductController extends AdminBaseController
      * 일괄 변경(bulk_changes)과 개별 인라인 수정(items)을 동시 처리합니다.
      * 일괄 변경 조건이 설정된 필드는 우선 적용되며, 나머지는 개별 수정이 적용됩니다.
      *
-     * @param BulkUpdateProductsRequest $request 통합 업데이트 요청 데이터
+     * @param  BulkUpdateProductsRequest  $request  통합 업데이트 요청 데이터
      * @return JsonResponse 변경 결과 JSON 응답
      */
     public function bulkUpdate(BulkUpdateProductsRequest $request): JsonResponse
@@ -371,7 +403,9 @@ class ProductController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.products.bulk_updated',
-                $result
+                $result,
+                200,
+                ['count' => ($result['products_updated'] ?? 0) + ($result['options_updated'] ?? 0)]
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -415,7 +449,7 @@ class ProductController extends AdminBaseController
     /**
      * 상품코드로 상품을 조회합니다.
      *
-     * @param string $itemCode 상품코드
+     * @param  string  $itemCode  상품코드
      * @return JsonResponse 상품 정보 JSON 응답
      */
     public function showByCode(string $itemCode): JsonResponse
@@ -448,8 +482,8 @@ class ProductController extends AdminBaseController
     /**
      * 상품코드로 상품을 수정합니다.
      *
-     * @param UpdateProductRequest $request 상품 수정 요청 데이터
-     * @param string $itemCode 상품코드
+     * @param  UpdateProductRequest  $request  상품 수정 요청 데이터
+     * @param  string  $itemCode  상품코드
      * @return JsonResponse 수정된 상품 정보 JSON 응답
      */
     public function updateByCode(UpdateProductRequest $request, string $itemCode): JsonResponse
@@ -490,7 +524,7 @@ class ProductController extends AdminBaseController
     /**
      * 폼 상세 데이터를 조회합니다.
      *
-     * @param Product $product 조회할 상품 모델
+     * @param  Product  $product  조회할 상품 모델
      * @return JsonResponse 폼 상세 데이터 JSON 응답
      */
     public function showForForm(Product $product): JsonResponse
@@ -523,8 +557,8 @@ class ProductController extends AdminBaseController
     /**
      * 상품 복사용 데이터를 조회합니다.
      *
-     * @param Request $request HTTP 요청 (복사 옵션 포함)
-     * @param Product $product 복사할 상품 모델
+     * @param  Request  $request  HTTP 요청 (복사 옵션 포함)
+     * @param  Product  $product  복사할 상품 모델
      * @return JsonResponse 복사용 데이터 JSON 응답
      */
     public function showForCopy(Request $request, Product $product): JsonResponse
@@ -606,7 +640,7 @@ class ProductController extends AdminBaseController
      *
      * @param  UploadProductImageRequest  $request  이미지 업로드 요청
      * @param  int|null  $productId  상품 ID (신규 등록 시 null)
-     * @return JsonResponse
+     * @return JsonResponse 업로드된 이미지 정보 JSON 응답
      */
     public function uploadImage(UploadProductImageRequest $request, ?int $productId = null): JsonResponse
     {
@@ -642,7 +676,16 @@ class ProductController extends AdminBaseController
                 ],
                 201
             );
-        } catch (\Exception $e) {
+        } catch (ProductImageUploadLimitException $e) {
+            // 개수 상한 초과는 도메인 검증 실패 → 422 + 전용 메시지 (메시지 키 + 파라미터)
+            return ResponseHelper::error(
+                'exceptions.product_image_limit_exceeded',
+                422,
+                null,
+                ['max' => $e->maxImages],
+                'sirsoft-ecommerce'
+            );
+        } catch (Exception $e) {
             Log::error('상품 이미지 업로드 실패', [
                 'product_id' => $productId,
                 'error' => $e->getMessage(),
@@ -661,7 +704,7 @@ class ProductController extends AdminBaseController
      * 상품 이미지 삭제
      *
      * @param  int  $id  이미지 ID
-     * @return JsonResponse
+     * @return JsonResponse 삭제 결과 JSON 응답
      */
     public function deleteImage(int $id): JsonResponse
     {
@@ -680,7 +723,7 @@ class ProductController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.product_images.deleted'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
@@ -692,8 +735,8 @@ class ProductController extends AdminBaseController
     /**
      * 상품 이미지 순서 변경
      *
-     * @param  Request  $request
-     * @return JsonResponse
+     * @param  ReorderProductImagesRequest  $request  이미지 순서 변경 요청
+     * @return JsonResponse 순서 변경 결과 JSON 응답
      */
     public function reorderImages(ReorderProductImagesRequest $request): JsonResponse
     {
@@ -705,7 +748,7 @@ class ProductController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.product_images.reordered'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
@@ -719,7 +762,7 @@ class ProductController extends AdminBaseController
      *
      * @param  int  $productId  상품 ID
      * @param  int  $imageId  이미지 ID
-     * @return JsonResponse
+     * @return JsonResponse 대표 이미지 설정 결과 JSON 응답
      */
     public function setThumbnail(int $productId, int $imageId): JsonResponse
     {
@@ -730,7 +773,7 @@ class ProductController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.product_images.thumbnail_set'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
@@ -743,7 +786,6 @@ class ProductController extends AdminBaseController
      * 파일 크기를 읽기 쉬운 형식으로 변환합니다.
      *
      * @param  int  $bytes  바이트 크기
-     * @return string
      */
     private function formatFileSize(int $bytes): string
     {
@@ -754,14 +796,14 @@ class ProductController extends AdminBaseController
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 
     /**
      * 상품 처리로그(활동 로그) 목록을 조회합니다.
      *
-     * @param Request $request 요청
-     * @param Product $product 상품
+     * @param  Request  $request  요청
+     * @param  Product  $product  상품
      * @return JsonResponse 활동 로그 목록
      */
     public function logs(Request $request, Product $product): JsonResponse

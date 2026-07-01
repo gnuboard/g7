@@ -11,8 +11,8 @@ use App\Models\Module;
 use App\Models\Template;
 use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\TestCase;
 
 /**
  * LayoutExtensionService 버전 호환성 테스트
@@ -22,6 +22,16 @@ use PHPUnit\Framework\Attributes\DataProvider;
 class LayoutExtensionServiceVersionTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * 같은 스위트의 레이아웃/GDPR 미들웨어 의존 테스트와 migrate:fresh 정합성을
+     * 맞추기 위해 GDPR 플러그인 마이그레이션을 일관 선언한다.
+     *
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
 
     private LayoutExtensionService $service;
 
@@ -42,7 +52,6 @@ class LayoutExtensionServiceVersionTest extends TestCase
             'status' => ExtensionStatus::Active->value,
         ]);
     }
-
 
     /**
      * version_constraint가 없으면 항상 적용되는지 테스트

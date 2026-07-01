@@ -1,0 +1,37 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   ValidatesCouponTargetScope trait + 양 Request withValidator 의 적용대상 미선택 차단을
+#   PHPUnit Feature 가 target_scope × entries × request cross product 로 커버하며 green.
+feature: 쿠폰 적용대상 미선택 저장 차단 (A16① / A17①)
+
+description: |
+  target_scope=products 인데 include 상품 0건이면 422(적용 상품 1개 이상). target_scope=categories
+  인데 include 카테고리 0건이면 422. exclude 만 있으면 적용 대상 공집합이라 차단. target_scope=all
+  또는 미전송(all 폴백)이면 비어도 저장(전체 적용 의도, 회귀 보존). Update 는 scope 를
+  products/categories 로 명시 변경했는데 대상 미전송 시에만 차단.
+
+axes:
+  target_scope:
+    - all
+    - products
+    - categories
+  entries:
+    - empty        # 빈 배열
+    - exclude_only # exclude 만 → include 0건 차단
+    - include_one  # include 1건 → 통과
+    - include_multi # include 다건 → 통과
+    - omitted      # 미전송 → all 폴백(Update)
+  request:
+    - store
+    - update
+
+effects:
+  - products_required_when_scope_products_no_include   # scope=products + include 0 → 422
+  - categories_required_when_scope_categories_no_include # scope=categories + include 0 → 422
+  - scope_all_never_blocks                              # scope=all → 비어도 통과
+  - update_partial_skip_when_scope_omitted             # Update scope 미전송 → all 폴백 통과
+  - include_entry_passes                               # include 1건 이상 → 통과
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CouponTargetScopeValidationTest.php

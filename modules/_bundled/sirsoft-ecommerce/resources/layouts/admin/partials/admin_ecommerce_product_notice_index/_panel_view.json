@@ -13,14 +13,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+        "className": "px-4 panel-header"
       },
       "children": [
         {
           "type": "basic",
           "name": "H3",
           "props": {
-            "className": "text-sm font-medium text-gray-900 dark:text-white"
+            "className": "text-heading"
           },
           "text": "$t:sirsoft-ecommerce.admin.product_notice_template.info.title"
         }
@@ -39,14 +39,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3 mb-4"
+            "className": "flex-center gap-3 mb-4"
           },
           "children": [
             {
               "type": "basic",
               "name": "H2",
               "props": {
-                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                "className": "section-heading"
               },
               "text": "{{$localized(_global.selectedTemplate?.name)}}"
             },
@@ -54,7 +54,7 @@
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                "className": "text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
               },
               "text": "{{_global.selectedTemplate?.fields_count ?? 0}}"
             },
@@ -72,7 +72,7 @@
               "name": "Span",
               "if": "{{!_global.selectedTemplate?.is_active}}",
               "props": {
-                "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded"
               },
               "text": "$t:sirsoft-ecommerce.common.inactive"
             }
@@ -109,7 +109,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                "className": "toggle-group"
               },
               "children": [
                 {
@@ -134,7 +134,7 @@
                               "type": "basic",
                               "name": "Th",
                               "props": {
-                                "className": "px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-16"
+                                "className": "text-tertiary px-4 py-2 text-left font-medium uppercase w-16"
                               },
                               "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.order"
                             },
@@ -142,7 +142,7 @@
                               "type": "basic",
                               "name": "Th",
                               "props": {
-                                "className": "px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                                "className": "text-tertiary px-4 py-2 text-left font-medium uppercase"
                               },
                               "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.name"
                             },
@@ -150,7 +150,7 @@
                               "type": "basic",
                               "name": "Th",
                               "props": {
-                                "className": "px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                                "className": "text-tertiary px-4 py-2 text-left font-medium uppercase"
                               },
                               "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.content"
                             }
@@ -162,7 +162,7 @@
                       "type": "basic",
                       "name": "Tbody",
                       "props": {
-                        "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                        "className": "divider-list"
                       },
                       "iteration": {
                         "source": "{{_global.selectedTemplate?.fields ?? []}}",
@@ -181,7 +181,7 @@
                               "type": "basic",
                               "name": "Td",
                               "props": {
-                                "className": "px-4 py-3 text-sm text-gray-500 dark:text-gray-400"
+                                "className": "px-4 py-3 text-label-subtle"
                               },
                               "text": "{{fieldIndex + 1}}"
                             },
@@ -189,7 +189,7 @@
                               "type": "basic",
                               "name": "Td",
                               "props": {
-                                "className": "px-4 py-3 text-sm text-gray-900 dark:text-white"
+                                "className": "text-primary px-4 py-3 text-sm"
                               },
                               "text": "{{field.name?.[_local.viewLocale ?? $locale] ?? '-'}}"
                             },
@@ -197,7 +197,7 @@
                               "type": "basic",
                               "name": "Td",
                               "props": {
-                                "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-300"
+                                "className": "px-4 py-3 text-body"
                               },
                               "text": "{{field.content?.[_local.viewLocale ?? $locale] ?? '-'}}"
                             }
@@ -225,7 +225,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3"
+            "className": "flex-center gap-3"
           },
           "children": [
             {
@@ -233,7 +233,7 @@
               "name": "Button",
               "props": {
                 "disabled": "{{_global.selectedTemplate?.abilities?.can_update !== true}}",
-                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               },
               "actions": [
                 {

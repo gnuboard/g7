@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "플러그인 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함"
+    "description": "플러그인 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함",
+    "editor_label": "$t:admin.modal_label.admin_plugin_list.plugin_install_modal"
   },
   "id": "plugin_install_modal",
   "type": "composite",
@@ -9,6 +10,7 @@
   "data_sources": [
     {
       "id": "pluginInstallPreview",
+      "label_key": "$t:editor.data_source.pluginInstallPreview",
       "type": "api",
       "endpoint": "/api/admin/plugins/{{_global.selectedPlugin.identifier}}/install-preview",
       "auth_required": true,
@@ -23,18 +25,24 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "py-2" },
+      "props": {
+        "className": "py-2"
+      },
       "children": [
         {
           "type": "basic",
           "name": "P",
-          "props": { "className": "text-gray-700 dark:text-gray-300" },
+          "props": {
+            "className": "text-gray-700 dark:text-gray-300"
+          },
           "text": "$t:admin.plugins.modals.install_confirm|name={{_global.selectedPlugin.name}}"
         },
         {
           "type": "basic",
           "name": "P",
-          "props": { "className": "mt-2 text-sm text-gray-500 dark:text-gray-400" },
+          "props": {
+            "className": "mt-2 text-label-subtle"
+          },
           "text": "$t:admin.plugins.modals.install_description"
         }
       ]
@@ -42,24 +50,37 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "mt-4" },
+      "props": {
+        "className": "mt-4"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Label",
-          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+          "props": {
+            "className": "form-label"
+          },
           "text": "$t:admin.plugins.modals.vendor_mode_label"
         },
         {
           "type": "basic",
           "name": "Select",
           "props": {
-            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+            "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
             "value": "{{_global.pluginInstallVendorMode ?? 'auto'}}",
             "options": [
-              { "value": "auto", "label": "$t:admin.plugins.modals.vendor_mode_auto" },
-              { "value": "composer", "label": "$t:admin.plugins.modals.vendor_mode_composer" },
-              { "value": "bundled", "label": "$t:admin.plugins.modals.vendor_mode_bundled" }
+              {
+                "value": "auto",
+                "label": "$t:admin.plugins.modals.vendor_mode_auto"
+              },
+              {
+                "value": "composer",
+                "label": "$t:admin.plugins.modals.vendor_mode_composer"
+              },
+              {
+                "value": "bundled",
+                "label": "$t:admin.plugins.modals.vendor_mode_bundled"
+              }
             ]
           },
           "actions": [
@@ -76,7 +97,9 @@
         {
           "type": "basic",
           "name": "P",
-          "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+          "props": {
+            "className": "form-hint"
+          },
           "text": "$t:admin.plugins.modals.vendor_mode_hint"
         }
       ]
@@ -86,28 +109,53 @@
       "type": "basic",
       "name": "Div",
       "if": "{{_global.installPreview?.dependencies && _global.installPreview.dependencies.length > 0}}",
-      "props": { "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4" },
+      "props": {
+        "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex items-center gap-2 mb-2" },
+          "props": {
+            "className": "flex-center gap-2 mb-2"
+          },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "link", "className": "w-4 h-4 text-gray-500" } },
-            { "type": "basic", "name": "Span", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" }, "text": "$t:admin.plugins.modals.cascade_dependencies_title" }
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "link",
+                "className": "w-4 h-4 text-gray-500"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary text-sm font-semibold"
+              },
+              "text": "$t:admin.plugins.modals.cascade_dependencies_title"
+            }
           ]
         },
         {
           "type": "basic",
           "name": "P",
-          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-2" },
+          "props": {
+            "className": "text-tertiary mb-2"
+          },
           "text": "$t:admin.plugins.modals.cascade_dependencies_hint"
         },
         {
           "type": "basic",
           "name": "Div",
-          "iteration": { "source": "_global.installPreview.dependencies", "item_var": "dep" },
-          "props": { "className": "flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1" },
+          "iteration": {
+            "source": "_global.installPreview.dependencies",
+            "item_var": "dep"
+          },
+          "props": {
+            "className": "flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1"
+          },
           "children": [
             {
               "type": "basic",
@@ -129,13 +177,67 @@
                 }
               ]
             },
-            { "type": "basic", "name": "Icon", "if": "{{dep.type === 'module'}}", "props": { "name": "cube", "className": "w-4 h-4 text-gray-500" } },
-            { "type": "basic", "name": "Icon", "if": "{{dep.type === 'plugin'}}", "props": { "name": "puzzle-piece", "className": "w-4 h-4 text-gray-500" } },
-            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-900 dark:text-white" }, "text": "{{dep.name ?? dep.identifier}} ({{dep.identifier}})" },
-            { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 font-mono" }, "text": "{{dep.required_version}}" },
-            { "type": "basic", "name": "Span", "if": "{{dep.is_met}}", "props": { "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded" }, "text": "$t:admin.plugins.modals.dependency_met" },
-            { "type": "basic", "name": "Span", "if": "{{!dep.is_installed}}", "props": { "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded" }, "text": "$t:admin.plugins.modals.dependency_not_installed" },
-            { "type": "basic", "name": "Span", "if": "{{dep.is_installed && !dep.is_active}}", "props": { "className": "px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded" }, "text": "$t:admin.plugins.modals.dependency_inactive" }
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{dep.type === 'module'}}",
+              "props": {
+                "name": "cube",
+                "className": "w-4 h-4 text-gray-500"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{dep.type === 'plugin'}}",
+              "props": {
+                "name": "puzzle-piece",
+                "className": "w-4 h-4 text-gray-500"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary text-sm"
+              },
+              "text": "{{dep.name ?? dep.identifier}} ({{dep.identifier}})"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-tertiary font-mono"
+              },
+              "text": "{{dep.required_version}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{dep.is_met}}",
+              "props": {
+                "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
+              },
+              "text": "$t:admin.plugins.modals.dependency_met"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!dep.is_installed}}",
+              "props": {
+                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+              },
+              "text": "$t:admin.plugins.modals.dependency_not_installed"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{dep.is_installed && !dep.is_active}}",
+              "props": {
+                "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
+              },
+              "text": "$t:admin.plugins.modals.dependency_inactive"
+            }
           ]
         }
       ]
@@ -145,28 +247,53 @@
       "type": "basic",
       "name": "Div",
       "if": "{{_global.installPreview?.language_packs && _global.installPreview.language_packs.length > 0}}",
-      "props": { "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4" },
+      "props": {
+        "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex items-center gap-2 mb-2" },
+          "props": {
+            "className": "flex-center gap-2 mb-2"
+          },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "language", "className": "w-4 h-4 text-gray-500" } },
-            { "type": "basic", "name": "Span", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" }, "text": "$t:admin.plugins.modals.cascade_language_packs_title" }
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "language",
+                "className": "w-4 h-4 text-gray-500"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary text-sm font-semibold"
+              },
+              "text": "$t:admin.plugins.modals.cascade_language_packs_title"
+            }
           ]
         },
         {
           "type": "basic",
           "name": "P",
-          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-2" },
+          "props": {
+            "className": "text-tertiary mb-2"
+          },
           "text": "$t:admin.plugins.modals.cascade_language_packs_hint"
         },
         {
           "type": "basic",
           "name": "Div",
-          "iteration": { "source": "_global.installPreview.language_packs", "item_var": "lp" },
-          "props": { "className": "flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1" },
+          "iteration": {
+            "source": "_global.installPreview.language_packs",
+            "item_var": "lp"
+          },
+          "props": {
+            "className": "flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1"
+          },
           "children": [
             {
               "type": "basic",
@@ -188,9 +315,31 @@
                 }
               ]
             },
-            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-900 dark:text-white" }, "text": "{{lp.locale_native_name}} ({{lp.locale}})" },
-            { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 font-mono" }, "text": "v{{lp.version}}" },
-            { "type": "basic", "name": "Span", "if": "{{lp.depends_on_extension}}", "props": { "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded" }, "text": "$t:admin.plugins.modals.cascade_lp_depends_on|target={{lp.depends_on_extension}}" }
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary text-sm"
+              },
+              "text": "{{lp.locale_native_name}} ({{lp.locale}})"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-tertiary font-mono"
+              },
+              "text": "v{{lp.version}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{lp.depends_on_extension}}",
+              "props": {
+                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+              },
+              "text": "$t:admin.plugins.modals.cascade_lp_depends_on|target={{lp.depends_on_extension}}"
+            }
           ]
         }
       ]
@@ -198,21 +347,30 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex justify-end gap-3 mt-6" },
+      "props": {
+        "className": "modal-footer-buttons"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "btn btn-secondary",
             "disabled": "{{_global.isPluginInstalling}}"
           },
           "actions": [
-            { "type": "click", "handler": "closeModal" }
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
           ],
           "children": [
-            { "type": "basic", "name": "Span", "text": "$t:common.cancel" }
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
           ]
         },
         {
@@ -220,7 +378,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isPluginInstalling}}"
           },
           "actions": [
@@ -228,7 +386,13 @@
               "type": "click",
               "handler": "sequence",
               "actions": [
-                { "handler": "setState", "params": { "target": "global", "isPluginInstalling": true } },
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isPluginInstalling": true
+                  }
+                },
                 {
                   "handler": "apiCall",
                   "auth_required": true,
@@ -243,26 +407,92 @@
                     }
                   },
                   "onSuccess": [
-                    { "handler": "setState", "params": { "target": "global", "isPluginInstalling": false, "installSelectedDeps": null, "installSelectedLPs": null } },
-                    { "handler": "setState", "params": { "target": "global", "selectedPlugin": null } },
-                    { "handler": "toast", "params": { "type": "success", "message": "$t:admin.plugins.install_success" } },
-                    { "handler": "refetchDataSource", "params": { "dataSourceId": "plugins" } },
-                    { "handler": "refetchDataSource", "params": { "dataSourceId": "admin_menu" } },
-                    { "handler": "reloadExtensions" },
-                    { "handler": "closeModal" }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isPluginInstalling": false,
+                        "installSelectedDeps": null,
+                        "installSelectedLPs": null
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "selectedPlugin": null
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:admin.plugins.install_success"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "plugins"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "admin_menu"
+                      }
+                    },
+                    {
+                      "handler": "reloadExtensions"
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
                   ],
                   "onError": [
-                    { "handler": "setState", "params": { "target": "global", "isPluginInstalling": false } },
-                    { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isPluginInstalling": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    }
                   ]
                 }
               ]
             }
           ],
           "children": [
-            { "type": "basic", "name": "Icon", "if": "{{!_global.isPluginInstalling}}", "props": { "name": "download", "className": "w-4 h-4" } },
-            { "type": "basic", "name": "Icon", "if": "{{_global.isPluginInstalling}}", "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" } },
-            { "type": "basic", "name": "Span", "text": "{{_global.isPluginInstalling ? '$t:admin.plugins.installing' : '$t:admin.plugins.actions.install'}}" }
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{!_global.isPluginInstalling}}",
+              "props": {
+                "name": "download",
+                "className": "w-4 h-4"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isPluginInstalling}}",
+              "props": {
+                "name": "spinner",
+                "className": "spinner-sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isPluginInstalling ? '$t:admin.plugins.installing' : '$t:admin.plugins.actions.install'}}"
+            }
           ]
         }
       ]

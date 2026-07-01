@@ -478,4 +478,66 @@ class PermissionServiceTest extends TestCase
 
         $this->assertFalse($parentNode['is_assignable']);
     }
+
+    // ========================================================================
+    // getPermissionCandidates — 레이아웃 편집기 표시 권한 후보
+    // ========================================================================
+
+    /**
+     * 후보 목록은 리프(할당 가능) 권한만 포함하고 카테고리(자식 보유)는 제외한다.
+     */
+    public function test_get_permission_candidates_excludes_category_parents(): void
+    {
+        $parent = Permission::factory()->create([
+            'identifier' => 'cat.users',
+            'name' => ['ko' => '회원 관리', 'en' => 'Users'],
+            'parent_id' => null,
+        ]);
+        Permission::factory()->create([
+            'identifier' => 'cat.users.read',
+            'name' => ['ko' => '회원 조회', 'en' => 'Read users'],
+            'parent_id' => $parent->id,
+        ]);
+
+        $candidates = $this->permissionService->getPermissionCandidates('ko');
+        $keys = array_column($candidates, 'key');
+
+        $this->assertContains('cat.users.read', $keys, '리프 권한은 후보에 포함되어야 한다');
+        $this->assertNotContains('cat.users', $keys, '카테고리(부모) 권한은 후보에서 제외되어야 한다');
+    }
+
+    /**
+     * 각 후보는 식별자(key)와 로케일 표시명(name)을 함께 반환한다.
+     */
+    public function test_get_permission_candidates_returns_identifier_and_localized_name(): void
+    {
+        Permission::factory()->create([
+            'identifier' => 'shop.order.refund',
+            'name' => ['ko' => '주문 환불', 'en' => 'Refund order'],
+            'parent_id' => null,
+        ]);
+
+        $candidates = $this->permissionService->getPermissionCandidates('ko');
+        $row = collect($candidates)->firstWhere('key', 'shop.order.refund');
+
+        $this->assertNotNull($row);
+        $this->assertSame('shop.order.refund', $row['key']);
+        $this->assertSame('주문 환불', $row['name']);
+    }
+
+    /**
+     * 자식이 없는 단독 권한(루트지만 리프)도 후보에 포함된다.
+     */
+    public function test_get_permission_candidates_includes_leaf_root_permission(): void
+    {
+        Permission::factory()->create([
+            'identifier' => 'standalone.permission',
+            'name' => ['ko' => '단독 권한', 'en' => 'Standalone'],
+            'parent_id' => null,
+        ]);
+
+        $keys = array_column($this->permissionService->getPermissionCandidates('ko'), 'key');
+
+        $this->assertContains('standalone.permission', $keys);
+    }
 }

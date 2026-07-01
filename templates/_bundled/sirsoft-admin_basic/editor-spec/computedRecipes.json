@@ -1,0 +1,103 @@
+{
+  "comment": "admin_basic 소유 자동 계산 친화 보기 프리셋 (R-P1~R-P4). expr 은 {{}} 없이 {paramKey} 플레이스홀더만.",
+  "filter_default": {
+    "label": "$t:editor.computed.filter_default.label",
+    "group": "common",
+    "params": [
+      {
+        "key": "localPath",
+        "label": "$t:editor.computed.filter_default.param_local_path",
+        "widget": "text",
+        "required": true
+      },
+      {
+        "key": "queryKey",
+        "label": "$t:editor.computed.filter_default.param_query_key",
+        "widget": "text",
+        "required": true
+      },
+      {
+        "key": "fallback",
+        "label": "$t:editor.computed.filter_default.param_fallback",
+        "widget": "text"
+      }
+    ],
+    "expr": "_local.{localPath} ?? query.{queryKey} ?? '{fallback}'"
+  },
+  "readonly_by_ability": {
+    "label": "$t:editor.computed.readonly_by_ability.label",
+    "group": "common",
+    "params": [
+      {
+        "key": "source",
+        "label": "$t:editor.computed.readonly_by_ability.param_source",
+        "widget": "datasource-picker",
+        "required": true
+      },
+      {
+        "key": "abilityKey",
+        "label": "$t:editor.computed.readonly_by_ability.param_ability_key",
+        "widget": "text",
+        "required": true
+      },
+      {
+        "key": "requireRouteId",
+        "label": "$t:editor.computed.readonly_by_ability.param_require_route_id",
+        "widget": "toggle"
+      }
+    ],
+    "expr": "{source}?.data?.abilities?.{abilityKey} !== true"
+  },
+  "options_from_api": {
+    "label": "$t:editor.computed.options_from_api.label",
+    "group": "common",
+    "params": [
+      {
+        "key": "source",
+        "label": "$t:editor.computed.options_from_api.param_source",
+        "widget": "binding-picker",
+        "required": true
+      },
+      {
+        "key": "filter",
+        "label": "$t:editor.computed.options_from_api.param_filter",
+        "widget": "condition"
+      },
+      {
+        "key": "valueField",
+        "label": "$t:editor.computed.options_from_api.param_value_field",
+        "widget": "text",
+        "required": true
+      },
+      {
+        "key": "labelField",
+        "label": "$t:editor.computed.options_from_api.param_label_field",
+        "widget": "text",
+        "required": true
+      }
+    ],
+    "expr": "({source} ?? []).filter({filter}).map(x => ({ value: x.{valueField}, label: x.{labelField} }))"
+  },
+  "constant": {
+    "label": "$t:editor.computed.constant.label",
+    "group": "common",
+    "params": [
+      {
+        "key": "valueKind",
+        "label": "$t:editor.computed.constant.param_value_kind",
+        "widget": "select",
+        "options": [
+          { "value": "string", "label": "$t:editor.computed.constant.value_kind_string" },
+          { "value": "number", "label": "$t:editor.computed.constant.value_kind_number" },
+          { "value": "boolean", "label": "$t:editor.computed.constant.value_kind_boolean" }
+        ]
+      },
+      {
+        "key": "value",
+        "label": "$t:editor.computed.constant.param_value",
+        "widget": "text"
+      }
+    ],
+    "expr": "'{value}'"
+  }
+}

@@ -16,14 +16,17 @@
       "type": "basic",
       "name": "Div",
       "if": "{{!presets.data || presets.data.length === 0}}",
-      "props": { "className": "text-center py-8 text-gray-500 dark:text-gray-400" },
+      "props": {
+        "className": "text-center py-8 text-gray-500 dark:text-gray-400"
+      },
       "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty"
     },
     {
       "type": "basic",
       "name": "Div",
       "if": "{{presets.data && presets.data.length > 0}}",
-      "props": { "className": "space-y-3" },
+      "props": {
+      },
       "children": [
         {
           "type": "basic",
@@ -32,18 +35,24 @@
             "source": "presets.data",
             "item_var": "presetItem"
           },
-          "props": { "className": "flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg" },
+          "props": {
+            "className": "flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
+          },
           "children": [
             {
               "type": "basic",
               "name": "Span",
-              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
+              "props": {
+                "className": "text-heading"
+              },
               "text": "{{presetItem.name}}"
             },
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex items-center gap-2" },
+              "props": {
+                "className": "flex-center gap-2"
+              },
               "children": [
                 {
                   "type": "basic",
@@ -56,7 +65,10 @@
                     {
                       "type": "basic",
                       "name": "Icon",
-                      "props": { "name": "pen-to-square", "className": "text-sm" }
+                      "props": {
+                        "name": "pen-to-square",
+                        "className": "text-sm"
+                      }
                     }
                   ],
                   "actions": [
@@ -91,7 +103,10 @@
                     {
                       "type": "basic",
                       "name": "Icon",
-                      "props": { "name": "trash", "className": "text-sm" }
+                      "props": {
+                        "name": "trash",
+                        "className": "text-sm"
+                      }
                     }
                   ],
                   "actions": [
@@ -124,7 +139,9 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "mt-6" },
+      "props": {
+        "className": "mt-6"
+      },
       "children": [
         {
           "type": "basic",

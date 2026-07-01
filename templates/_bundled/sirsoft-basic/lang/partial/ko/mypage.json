@@ -15,7 +15,24 @@
     "wishlist": "찜 목록",
     "addresses": "배송지",
     "notifications": "알림",
-    "inquiries": "상품 문의"
+    "inquiries": "상품 문의",
+    "mileage": "마일리지"
+  },
+  "currency_settings": {
+    "title": "결제 통화",
+    "description": "주문·결제 시 사용할 통화를 선택합니다.",
+    "edit_hint": "통화는 회원정보 수정에서 함께 변경됩니다.",
+    "save_button": "저장",
+    "saved": "결제 통화가 변경되었습니다.",
+    "save_failed": "결제 통화 변경에 실패했습니다."
+  },
+  "shipping_country_settings": {
+    "title": "배송국가",
+    "description": "기본 배송국가를 선택합니다.",
+    "edit_hint": "배송국가는 회원정보 수정에서 함께 변경됩니다.",
+    "save_button": "저장",
+    "saved": "배송국가가 변경되었습니다.",
+    "save_failed": "배송국가 변경에 실패했습니다."
   },
   "notification_settings": {
     "title": "게시판 알림 설정",
@@ -149,9 +166,12 @@
       "confirmed": "구매확정",
       "cancelled": "취소"
     },
+    "partial_cancelled_badge": "일부취소",
     "total_amount": "결제금액",
     "shipping_fee": "배송비",
     "free_shipping": "무료",
+    "points_used": "마일리지 사용",
+    "points_earning": "적립 예정",
     "view_detail": "상세보기",
     "empty": "주문 내역이 없습니다.",
     "go_shopping": "쇼핑하러 가기",
@@ -167,11 +187,17 @@
     "back": "주문 내역",
     "order_number": "주문번호",
     "items_title": "주문 상품",
+    "orderer_title": "주문자 정보",
+    "orderer_name": "주문자",
+    "orderer_phone": "연락처",
+    "orderer_email": "이메일",
     "shipping_title": "배송지 정보",
     "shipping_name": "받는 분",
     "shipping_phone": "연락처",
     "shipping_address": "주소",
     "shipping_memo": "배송 메모",
+    "track_shipment": "배송조회",
+    "cancelled_at": "취소일시",
     "payment_title": "결제 정보",
     "product_amount": "상품 금액",
     "discount_amount": "할인",
@@ -192,12 +218,16 @@
     "history_title": "주문 이력",
     "ordered_at": "주문일시",
     "paid_at": "결제일시",
+    "cancel_reason_title": "취소 사유",
+    "cancel_reason": "사유",
+    "cancel_reason_detail": "상세 사유",
     "continue_shopping": "계속 쇼핑하기",
     "cancel_order": "주문 취소",
     "reorder": "재주문",
     "write_review": "리뷰 작성",
     "confirm_purchase": "구매확정",
     "review_written": "리뷰 작성 완료",
+    "review_deadline_passed": "리뷰 작성 기간이 지났습니다",
     "confirm_modal": {
       "title": "구매확정",
       "option_label": "옵션",
@@ -211,7 +241,7 @@
       "content_label": "리뷰 내용",
       "content_placeholder": "상품에 대한 솔직한 리뷰를 작성해 주세요. (최소 10자)",
       "content_min_length": "최소 10자 이상",
-      "image_label": "이미지 첨부 (최대 5장)",
+      "image_label": "이미지 첨부 (최대 {{count}}장)",
       "add_image": "이미지 추가",
       "submit_button": "등록"
     },
@@ -235,6 +265,7 @@
       "reason_required": "취소 사유를 선택해주세요.",
       "reason_label": "취소 사유",
       "reason_placeholder": "취소 사유를 선택하세요",
+      "cancel_reason_detail_placeholder": "상세 사유를 입력하세요 (선택)",
       "reason": {
         "order_mistake": "주문 실수",
         "changed_mind": "단순 변심",
@@ -289,7 +320,8 @@
     "manual_input": "직접 입력",
     "apply_change": "변경 적용",
     "shipping_address_changed": "배송지가 변경되었습니다.",
-    "confirm_change_address": "배송지를 변경하시겠습니까?"
+    "confirm_change_address": "배송지를 변경하시겠습니까?",
+    "charged_in_payment_currency": "결제 통화 {{currency}} {{amount}} 청구"
   },
   "addresses": {
     "title": "배송지 관리",
@@ -346,6 +378,39 @@
     "removed": "찜 목록에서 제거되었습니다.",
     "empty": "찜한 상품이 없습니다.",
     "go_shopping": "쇼핑하러 가기"
+  },
+  "mileage": {
+    "title": "마일리지",
+    "summary": {
+      "available": "사용 가능",
+      "expiring_soon": "소멸 예정",
+      "expiring_until": "{{date}}까지",
+      "total_earned": "누적 적립",
+      "total_used": "누적 사용"
+    },
+    "filter": {
+      "all": "전체",
+      "earn": "적립",
+      "use": "사용",
+      "expire": "소멸",
+      "adjust": "조정"
+    },
+    "category": {
+      "earn": "적립",
+      "use": "사용",
+      "expire": "소멸",
+      "adjust": "조정"
+    },
+    "table": {
+      "date": "일시",
+      "category": "구분",
+      "description": "내용",
+      "amount": "마일리지",
+      "expires_at": "만료일"
+    },
+    "expires_label": "만료 {{date}}",
+    "empty": "마일리지 내역이 없습니다.",
+    "disabled_notice": "마일리지 기능이 비활성화되어 있습니다."
   },
   "posts": {
     "filter": {

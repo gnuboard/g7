@@ -19,6 +19,7 @@
   "data_sources": [
     {
       "id": "addresses",
+      "label_key": "$t:editor.data_source.addresses",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
       "method": "GET",

@@ -8,8 +8,11 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Illuminate\Validation\ValidationException;
 use Mockery;
 use Tests\TestCase;
 
@@ -540,6 +543,93 @@ class TemplateControllerTest extends TestCase
         $this->assertArrayNotHasKey('deleted_at', $data);
     }
 
+    /**
+     * 상세 응답에 template.json 의 externals 가 정규화되어 포함된다.
+     */
+    public function test_show_response_includes_normalized_externals(): void
+    {
+        // Arrange
+        $template = Template::factory()->create();
+
+        // Mock 설정 — externals 에 정규화 대상(HTTP URL, 중복) 포함
+        $mock = Mockery::mock(TemplateManagerInterface::class);
+        $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('getTemplateInfo')->andReturn([
+            'id' => $template->id,
+            'identifier' => $template->identifier,
+            'vendor' => $template->vendor,
+            'name' => $template->name,
+            'version' => $template->version,
+            'type' => $template->type,
+            'status' => $template->status,
+            'externals' => [
+                [
+                    'id' => 'fontawesome',
+                    'type' => 'style',
+                    'url' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+                ],
+                // 중복 — normalize 가 제거해야 함
+                [
+                    'id' => 'fontawesome-dup',
+                    'type' => 'style',
+                    'url' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+                ],
+                // HTTP URL — normalize 가 탈락시켜야 함
+                [
+                    'id' => 'insecure',
+                    'type' => 'style',
+                    'url' => 'http://insecure.example.com/style.css',
+                ],
+            ],
+        ]);
+        $this->app->instance(TemplateManagerInterface::class, $mock);
+
+        // Act
+        $response = $this->authRequest()->getJson("/api/admin/templates/{$template->identifier}");
+
+        // Assert
+        $response->assertStatus(200);
+
+        $externals = $response->json('data.externals');
+        $this->assertIsArray($externals);
+        // 중복 1건 + HTTP 1건 탈락 → 1건만 남음
+        $this->assertCount(1, $externals);
+        $this->assertSame('style', $externals[0]['type']);
+        $this->assertSame(
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+            $externals[0]['url'],
+        );
+    }
+
+    /**
+     * externals 가 없는 템플릿은 상세 응답에서 빈 배열로 노출된다.
+     */
+    public function test_show_response_externals_defaults_to_empty_array(): void
+    {
+        // Arrange
+        $template = Template::factory()->create();
+
+        $mock = Mockery::mock(TemplateManagerInterface::class);
+        $mock->shouldReceive('loadTemplates')->andReturnNull();
+        $mock->shouldReceive('getTemplateInfo')->andReturn([
+            'id' => $template->id,
+            'identifier' => $template->identifier,
+            'vendor' => $template->vendor,
+            'name' => $template->name,
+            'version' => $template->version,
+            'type' => $template->type,
+            'status' => $template->status,
+        ]);
+        $this->app->instance(TemplateManagerInterface::class, $mock);
+
+        // Act
+        $response = $this->authRequest()->getJson("/api/admin/templates/{$template->identifier}");
+
+        // Assert
+        $response->assertStatus(200);
+        $this->assertSame([], $response->json('data.externals'));
+    }
+
     // ========================================
     // activate() 테스트
     // ========================================
@@ -623,7 +713,7 @@ class TemplateControllerTest extends TestCase
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
         $mock->shouldReceive('activateTemplate')->andThrow(
-            \Illuminate\Validation\ValidationException::withMessages([
+            ValidationException::withMessages([
                 'template' => ['No active template found'],
             ])
         );
@@ -734,7 +824,7 @@ class TemplateControllerTest extends TestCase
         $mock->shouldReceive('loadTemplates')->andReturnNull();
         $mock->shouldReceive('getTemplate')->andReturn(null);
         $mock->shouldReceive('installTemplate')->andThrow(
-            \Illuminate\Validation\ValidationException::withMessages([
+            ValidationException::withMessages([
                 'identifier' => ['Failed to install template.: Template not found'],
             ])
         );
@@ -898,7 +988,7 @@ class TemplateControllerTest extends TestCase
      */
     public function test_install_from_file_succeeds_with_valid_zip(): void
     {
-        $templateServiceMock = \Mockery::mock(\App\Services\TemplateService::class);
+        $templateServiceMock = Mockery::mock(TemplateService::class);
         $templateServiceMock->shouldReceive('installFromZipFile')
             ->once()
             ->andReturn([
@@ -906,7 +996,7 @@ class TemplateControllerTest extends TestCase
                 'name' => 'Test Template',
                 'version' => '1.0.0',
             ]);
-        $this->app->instance(\App\Services\TemplateService::class, $templateServiceMock);
+        $this->app->instance(TemplateService::class, $templateServiceMock);
 
         $file = UploadedFile::fake()->create('template.zip', 100, 'application/zip');
 
@@ -924,11 +1014,11 @@ class TemplateControllerTest extends TestCase
      */
     public function test_install_from_file_returns_422_on_runtime_exception(): void
     {
-        $templateServiceMock = \Mockery::mock(\App\Services\TemplateService::class);
+        $templateServiceMock = Mockery::mock(TemplateService::class);
         $templateServiceMock->shouldReceive('installFromZipFile')
             ->once()
             ->andThrow(new \RuntimeException('template.json을 찾을 수 없습니다.'));
-        $this->app->instance(\App\Services\TemplateService::class, $templateServiceMock);
+        $this->app->instance(TemplateService::class, $templateServiceMock);
 
         $file = UploadedFile::fake()->create('template.zip', 100, 'application/zip');
 
@@ -945,11 +1035,11 @@ class TemplateControllerTest extends TestCase
      */
     public function test_install_from_file_returns_500_on_general_exception(): void
     {
-        $templateServiceMock = \Mockery::mock(\App\Services\TemplateService::class);
+        $templateServiceMock = Mockery::mock(TemplateService::class);
         $templateServiceMock->shouldReceive('installFromZipFile')
             ->once()
             ->andThrow(new \Exception('예상치 못한 오류'));
-        $this->app->instance(\App\Services\TemplateService::class, $templateServiceMock);
+        $this->app->instance(TemplateService::class, $templateServiceMock);
 
         $file = UploadedFile::fake()->create('template.zip', 100, 'application/zip');
 
@@ -969,7 +1059,7 @@ class TemplateControllerTest extends TestCase
      */
     public function test_install_from_github_calls_service_with_valid_url(): void
     {
-        $templateServiceMock = \Mockery::mock(\App\Services\TemplateService::class);
+        $templateServiceMock = Mockery::mock(TemplateService::class);
         $templateServiceMock->shouldReceive('installFromGithub')
             ->once()
             ->with('https://github.com/sirsoft/sample-template')
@@ -978,7 +1068,7 @@ class TemplateControllerTest extends TestCase
                 'name' => 'Sample Template',
                 'version' => '1.0.0',
             ]);
-        $this->app->instance(\App\Services\TemplateService::class, $templateServiceMock);
+        $this->app->instance(TemplateService::class, $templateServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/templates/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-template',
@@ -994,11 +1084,11 @@ class TemplateControllerTest extends TestCase
      */
     public function test_install_from_github_returns_422_on_runtime_exception(): void
     {
-        $templateServiceMock = \Mockery::mock(\App\Services\TemplateService::class);
+        $templateServiceMock = Mockery::mock(TemplateService::class);
         $templateServiceMock->shouldReceive('installFromGithub')
             ->once()
             ->andThrow(new \RuntimeException('GitHub 저장소를 찾을 수 없습니다.'));
-        $this->app->instance(\App\Services\TemplateService::class, $templateServiceMock);
+        $this->app->instance(TemplateService::class, $templateServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/templates/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-template',
@@ -1013,11 +1103,11 @@ class TemplateControllerTest extends TestCase
      */
     public function test_install_from_github_returns_500_on_general_exception(): void
     {
-        $templateServiceMock = \Mockery::mock(\App\Services\TemplateService::class);
+        $templateServiceMock = Mockery::mock(TemplateService::class);
         $templateServiceMock->shouldReceive('installFromGithub')
             ->once()
             ->andThrow(new \Exception('예상치 못한 오류'));
-        $this->app->instance(\App\Services\TemplateService::class, $templateServiceMock);
+        $this->app->instance(TemplateService::class, $templateServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/templates/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-template',
@@ -1210,7 +1300,7 @@ class TemplateControllerTest extends TestCase
         $mock = Mockery::mock(TemplateManagerInterface::class);
         $mock->shouldReceive('loadTemplates')->andReturnNull();
         $mock->shouldReceive('deactivateTemplate')->andThrow(
-            \Illuminate\Validation\ValidationException::withMessages([
+            ValidationException::withMessages([
                 'template' => ['No active template found'],
             ])
         );
@@ -1448,8 +1538,8 @@ class TemplateControllerTest extends TestCase
     public function test_changelog_returns_parsed_entries(): void
     {
         $templatePath = base_path('templates/test-changelog-tpl');
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($templatePath);
-        \Illuminate\Support\Facades\File::put($templatePath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.1] - 2026-02-25\n\n### Changed\n- UI 개선\n");
+        File::ensureDirectoryExists($templatePath);
+        File::put($templatePath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.1] - 2026-02-25\n\n### Changed\n- UI 개선\n");
 
         try {
             $response = $this->authRequest()->getJson('/api/admin/templates/test-changelog-tpl/changelog');
@@ -1458,7 +1548,7 @@ class TemplateControllerTest extends TestCase
                 ->assertJsonPath('data.changelog.0.version', '0.1.1')
                 ->assertJsonPath('data.changelog.0.categories.0.name', 'Changed');
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($templatePath);
+            File::deleteDirectory($templatePath);
         }
     }
 

@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "상품 1:1 문의 삭제 확인 모달"
+    "description": "상품 1:1 문의 삭제 확인 모달",
+    "editor_label": "$t:user.modal_label.shop_detail.inquiry_delete_modal"
   },
   "id": "inquiry_delete_modal",
   "type": "composite",

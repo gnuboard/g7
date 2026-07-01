@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
+import type { EditorAttrs } from '../../types';
 
 export interface AccordionProps {
   /** 기본 열림 상태 */
@@ -17,6 +18,12 @@ export interface AccordionProps {
   children?: ReactNode;
   /** 비활성화 여부 */
   disabled?: boolean;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 interface AccordionSlots {
@@ -59,6 +66,8 @@ export const Accordion: React.FC<AccordionProps> = ({
   style,
   children,
   disabled = false,
+  id,
+  editorAttrs,
 }) => {
   // 내부 상태 (제어 모드가 아닐 때 사용)
   const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
@@ -135,6 +144,7 @@ export const Accordion: React.FC<AccordionProps> = ({
     <Div
       className={`border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden ${className}`}
       style={style}
+      id={id} {...editorAttrs}
     >
       {/* Trigger (헤더) */}
       <Button

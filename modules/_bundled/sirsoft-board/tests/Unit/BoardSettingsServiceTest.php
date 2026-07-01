@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Tests\Unit;
 
+use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Board\Services\BoardPermissionService;
 use Modules\Sirsoft\Board\Services\BoardSettingsService;
@@ -23,7 +24,11 @@ class BoardSettingsServiceTest extends ModuleTestCase
         parent::setUp();
 
         $permissionService = $this->createMock(BoardPermissionService::class);
-        $this->service = new BoardSettingsService($permissionService);
+        $notificationDefinitionRepository = $this->createMock(NotificationDefinitionRepositoryInterface::class);
+        // report_policy 저장 시 호출되는 알림 정의 동기화 경로가 빈 컬렉션을 안전하게 다루도록 기본 stub
+        $notificationDefinitionRepository->method('getByExtension')
+            ->willReturn(new \Illuminate\Database\Eloquent\Collection());
+        $this->service = new BoardSettingsService($permissionService, $notificationDefinitionRepository);
         $this->storagePath = storage_path('app/modules/sirsoft-board/settings');
 
         // 테스트 전 저장소 정리

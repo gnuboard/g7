@@ -34,6 +34,7 @@ export { AvatarUploader } from './AvatarUploader';
 export { UserInfo } from './UserInfo';
 export { Modal } from './Modal';
 export { TabNavigation } from './TabNavigation';
+export { SlotContainer } from './SlotContainer';
 /**
  * 컴포넌트 등록 맵
  *
@@ -52,6 +53,7 @@ export declare const compositeComponents: {
     Header: () => Promise<typeof import("./Header")>;
     Footer: () => Promise<typeof import("./Footer")>;
     MobileNav: () => Promise<typeof import("./MobileNav")>;
+    SlotContainer: () => Promise<typeof import("./SlotContainer")>;
     NotificationCenter: () => Promise<typeof import("./NotificationCenter")>;
     ProductCard: () => Promise<typeof import("./ProductCard")>;
     ImageGallery: () => Promise<typeof import("./ImageGallery")>;

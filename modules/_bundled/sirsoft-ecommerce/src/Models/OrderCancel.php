@@ -35,6 +35,7 @@ class OrderCancel extends Model
         'cancel_reason_type',
         'cancel_reason',
         'items_snapshot',
+        'shipping_snapshot',
         'cancelled_by',
         'cancelled_at',
     ];
@@ -51,6 +52,7 @@ class OrderCancel extends Model
             'cancel_status' => CancelStatusEnum::class,
             'cancel_reason_type' => 'string',
             'items_snapshot' => 'array',
+            'shipping_snapshot' => 'array',
             'cancelled_at' => 'datetime',
         ];
     }
@@ -58,7 +60,7 @@ class OrderCancel extends Model
     /**
      * 주문과의 관계
      *
-     * @return BelongsTo
+     * @return BelongsTo 소속 주문 관계
      */
     public function order(): BelongsTo
     {
@@ -68,7 +70,7 @@ class OrderCancel extends Model
     /**
      * 취소 옵션 목록과의 관계
      *
-     * @return HasMany
+     * @return HasMany 취소 옵션 목록 관계
      */
     public function cancelOptions(): HasMany
     {
@@ -78,7 +80,7 @@ class OrderCancel extends Model
     /**
      * 환불 레코드와의 관계
      *
-     * @return HasOne
+     * @return HasOne 연결된 환불 레코드 관계
      */
     public function refund(): HasOne
     {
@@ -88,7 +90,7 @@ class OrderCancel extends Model
     /**
      * 취소 요청자와의 관계
      *
-     * @return BelongsTo
+     * @return BelongsTo 취소 요청 사용자 관계
      */
     public function cancelledByUser(): BelongsTo
     {
@@ -98,7 +100,7 @@ class OrderCancel extends Model
     /**
      * 전체취소 여부를 반환합니다.
      *
-     * @return bool
+     * @return bool 전체취소이면 true
      */
     public function isFullCancel(): bool
     {
@@ -108,7 +110,7 @@ class OrderCancel extends Model
     /**
      * 취소 완료 여부를 반환합니다.
      *
-     * @return bool
+     * @return bool 취소 완료 상태이면 true
      */
     public function isCompleted(): bool
     {
@@ -120,7 +122,7 @@ class OrderCancel extends Model
      *
      * DB에서 클래임 사유를 조회하여 다국어 이름을 반환합니다.
      *
-     * @return string
+     * @return string 현지화된 환불 사유 라벨
      */
     public function getRefundReasonLabel(): string
     {

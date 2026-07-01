@@ -89,6 +89,9 @@ export type { AdminFooterProps, QuickLink } from './AdminFooter';
 export { PageHeader } from './PageHeader';
 export type { PageHeaderProps, TabItem, ActionButton } from './PageHeader';
 
+export { SectionHeader } from './SectionHeader';
+export type { SectionHeaderProps } from './SectionHeader';
+
 export { TemplateCard } from './TemplateCard';
 export type { TemplateCardProps, TemplateStatus } from './TemplateCard';
 
@@ -229,3 +232,10 @@ export type {
   MultilingualLocaleContextValue,
   UseCurrentMultilingualLocaleResult,
 } from './MultilingualLocaleContext';
+
+// Chart 컴포넌트
+export { BarChart } from './BarChart';
+export type { BarChartProps, BarChartDataset } from './BarChart';
+
+export { DonutChart } from './DonutChart';
+export type { DonutChartProps, DonutChartDataItem } from './DonutChart';

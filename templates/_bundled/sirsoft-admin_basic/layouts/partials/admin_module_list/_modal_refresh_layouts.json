@@ -1,14 +1,15 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "모듈 레이아웃 갱신 확인 모달"
+    "description": "모듈 레이아웃 갱신 확인 모달",
+    "editor_label": "$t:admin.modal_label.admin_module_list.module_refresh_layouts_modal"
   },
   "id": "module_refresh_layouts_modal",
   "type": "composite",
   "name": "Modal",
   "props": {
     "title": "$t:admin.modules.modals.refresh_layouts_title",
-    "size": "small"
+    "size": "sm"
   },
   "children": [
     {
@@ -22,7 +23,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg mb-4"
+            "className": "alert-warning"
           },
           "children": [
             {
@@ -37,7 +38,7 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-sm text-amber-800 dark:text-amber-200"
+                "className": "text-warning-soft"
               },
               "text": "$t:admin.modules.modals.refresh_layouts_warning"
             }
@@ -55,7 +56,7 @@
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+            "className": "mt-2 text-label-subtle"
           },
           "text": "$t:admin.modules.modals.refresh_layouts_description"
         }
@@ -65,14 +66,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "btn btn-secondary",
             "disabled": "{{_global.isModuleRefreshingLayouts}}"
           },
           "actions": [
@@ -93,7 +94,7 @@
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isModuleRefreshingLayouts}}"
           },
           "actions": [
@@ -177,7 +178,7 @@
               "if": "{{_global.isModuleRefreshingLayouts}}",
               "props": {
                 "name": "spinner",
-                "className": "w-4 h-4 animate-spin"
+                "className": "spinner-sm"
               }
             },
             {

@@ -1,14 +1,15 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "쿠폰 다운로드 확인 모달 - 상품 상세에서 개별 쿠폰 다운로드 확인"
+    "description": "쿠폰 다운로드 확인 모달 - 상품 상세에서 개별 쿠폰 다운로드 확인",
+    "editor_label": "$t:user.modal_label.shop_detail.coupon_download_confirm_modal"
   },
   "type": "composite",
   "name": "Modal",
   "id": "coupon_download_confirm_modal",
   "props": {
     "title": "$t:shop.coupon_download.confirm_title",
-    "size": "small"
+    "size": "sm"
   },
   "children": [
     {

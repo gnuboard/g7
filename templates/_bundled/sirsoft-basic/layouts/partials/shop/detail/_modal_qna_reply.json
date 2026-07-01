@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "상품 1:1 문의 답변 작성/수정 모달"
+    "description": "상품 1:1 문의 답변 작성/수정 모달",
+    "editor_label": "$t:user.modal_label.shop_detail.qna_reply_modal"
   },
   "id": "qna_reply_modal",
   "type": "composite",

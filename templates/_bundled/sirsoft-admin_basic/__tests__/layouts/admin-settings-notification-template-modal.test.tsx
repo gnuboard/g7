@@ -117,6 +117,27 @@ describe('환경설정 > 알림 템플릿 편집 모달 회귀 (옵션 K)', () =
     });
   });
 
+  // 회귀: 역할/사용자 드롭다운이 저장된 선택값을 표시하지 못하던 버그.
+  // SearchableDropdown 은 value 를 options 에서 찾아 라벨을 표시하므로,
+  // 검색 전(roleSearchResults/userSearchResults 빈 배열) 에도 현재 선택값을
+  // options 에 시드해야 한다(백엔드가 내려준 rcpt.display_name / display_names 사용).
+  describe('수신자 드롭다운 — 현재 선택값 options 시드', () => {
+    it('role 드롭다운 options 가 rcpt.value + rcpt.display_name 으로 시드', () => {
+      const modalStr = JSON.stringify(modalPartial);
+      // 검색 결과만 바인딩하던 옛 형태가 남아있지 않아야 한다
+      expect(modalStr).not.toContain('"options":"{{_global.notification_template_form_modal?.roleSearchResults ?? []}}"');
+      // 현재 선택값 시드 표현식
+      expect(modalStr).toContain('rcpt.display_name ?? rcpt.value');
+      expect(modalStr).toContain("String(o.value) !== String(rcpt.value)");
+    });
+
+    it('specific_users 드롭다운 options 가 rcpt.value + rcpt.display_names 로 시드', () => {
+      const modalStr = JSON.stringify(modalPartial);
+      expect(modalStr).not.toContain('"options":"{{_global.notification_template_form_modal?.userSearchResults ?? []}}"');
+      expect(modalStr).toContain('(rcpt.display_names ?? [])[i] ?? uid');
+    });
+  });
+
   describe('미리보기 / 저장 흐름', () => {
     it('미리보기 onSuccess 가 _global.notification_template_form_modal.preview 에 저장', () => {
       const modalStr = JSON.stringify(modalPartial);

@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Contracts\Extension\UpgradeStepInterface;
+use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
 use App\Exceptions\CoreUpdateOperationException;
 use App\Exceptions\UpgradeHandoffException;
+use App\Extension\AbstractUpgradeStep;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\CoreBackupHelper;
@@ -910,7 +912,12 @@ class CoreUpdateService
             $onProgress?->__invoke('apply', $target);
 
             if (File::isDirectory($src)) {
-                FilePermissionHelper::copyDirectory($src, $dest, $onProgress, $excludes, removeOrphans: true);
+                // `{domain}/_bundled` 타깃은 최상위 한 레벨의 orphan 을 보존한다 — 사용자가
+                // `_bundled/` 바로 아래에 직접 만든 커스텀 확장 디렉토리/파일이 코어 업데이트
+                // 소스(번들 확장만 포함)에 없다는 이유로 삭제되던 결함 차단.
+                // 번들 확장 디렉토리 *내부* stale 정리는 그대로 유지된다.
+                $preserveTopLevelOrphans = str_ends_with($this->normalizeRelativePath($target), '_bundled');
+                FilePermissionHelper::copyDirectory($src, $dest, $onProgress, $excludes, removeOrphans: true, preserveTopLevelOrphans: $preserveTopLevelOrphans);
             } else {
                 File::ensureDirectoryExists(dirname($dest));
                 FilePermissionHelper::copyFile($src, $dest);
@@ -1383,7 +1390,7 @@ class CoreUpdateService
 
         // 3. 역할-권한 할당 동기화 (user_overrides 보호)
         // 코어: core/core 소유 전체 권한을 diff 범위로 사용해 이관된 구 식별자도 detach 가능
-        $allCorePermIdentifiers = app(\App\Contracts\Repositories\PermissionRepositoryInterface::class)
+        $allCorePermIdentifiers = app(PermissionRepositoryInterface::class)
             ->getByExtension(ExtensionOwnerType::Core, 'core')
             ->pluck('identifier')
             ->all();
@@ -1514,7 +1521,7 @@ class CoreUpdateService
 
         try {
             if (Schema::hasTable('notification_definitions')) {
-                (new NotificationDefinitionSeeder())->run();
+                (new NotificationDefinitionSeeder)->run();
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 알림 정의 재시딩 실패', ['error' => $e->getMessage()]);
@@ -1522,7 +1529,7 @@ class CoreUpdateService
 
         try {
             if (Schema::hasTable('identity_policies')) {
-                (new IdentityPolicySeeder())->run();
+                (new IdentityPolicySeeder)->run();
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 정책 재시딩 실패', ['error' => $e->getMessage()]);
@@ -1530,7 +1537,7 @@ class CoreUpdateService
 
         try {
             if (Schema::hasTable('identity_message_definitions') && Schema::hasTable('identity_message_templates')) {
-                (new IdentityMessageDefinitionSeeder())->run();
+                (new IdentityMessageDefinitionSeeder)->run();
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 메시지 정의 재시딩 실패', ['error' => $e->getMessage()]);
@@ -1557,8 +1564,8 @@ class CoreUpdateService
         // 부모 in-process fallback 진입 시 stale 메모리 가드.
         //
         // 현재 메모리의 `config('app.version')` 이 toVersion 보다 낮으면 부모는 stale 코드를
-        // 보유한 채 step 을 실행 중. upgrade step 안에서 신규 메서드 호출 시 fatal 위험
-        // (이슈 #28 의 발현 메커니즘). `spawn_failure_mode` 와 연동하여 abort/fallback 분기.
+        // 보유한 채 step 을 실행 중. upgrade step 안에서 신규 메서드 호출 시 fatal 위험.
+        // `spawn_failure_mode` 와 연동하여 abort/fallback 분기.
         //
         // spawn 자식 (ExecuteUpgradeStepsCommand) 의 경우 spawn env 의 APP_VERSION=toVersion
         // 이 적용된 채 새 프로세스에서 부팅되므로 memoryVersion === toVersion → 가드 미발동.
@@ -1633,7 +1640,7 @@ class CoreUpdateService
                         // 미상속 시점에 즉시 throw → core:update 전체 중단 → 상위 백업 복원.
                         // 상세: docs/extension/upgrade-step-guide.md §12
                         if (version_compare($version, '7.0.0-beta.5', '>=')
-                            && ! $instance instanceof \App\Extension\AbstractUpgradeStep) {
+                            && ! $instance instanceof AbstractUpgradeStep) {
                             throw new CoreUpdateOperationException(sprintf(
                                 'Upgrade step %s must extend App\\Extension\\AbstractUpgradeStep '
                                 .'(introduced in 7.0.0-beta.5). See docs/extension/upgrade-step-guide.md §12.',
@@ -1881,7 +1888,7 @@ class CoreUpdateService
      */
     private function detectBundledUpdatesFor(string $tableAndDir, string $manifestName): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable($tableAndDir)) {
+        if (! Schema::hasTable($tableAndDir)) {
             return [];
         }
 
@@ -1924,7 +1931,7 @@ class CoreUpdateService
      * 대상 경로는 config('app.update.restore_ownership') 에 정의된 목록.
      * chown 미지원 환경(Windows 등) 은 빈 배열을 반환한다.
      *
-     * @return array<string, array{owner:int|false, group:int|false}>  target => {owner, group}
+     * @return array<string, array{owner:int|false, group:int|false}> target => {owner, group}
      */
     public function snapshotOwnership(): array
     {
@@ -2116,7 +2123,6 @@ class CoreUpdateService
      * @param  array<string, array{owner:int|false, group:int|false}>  $snapshot  snapshotOwnership() 결과
      * @param  \Closure|null  $onProgress  진행 콜백
      * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $detailedSnapshot  snapshotOwnershipDetailed() 결과 (선택)
-     * @return void
      */
     public function restoreOwnership(array $snapshot, ?\Closure $onProgress = null, array $detailedSnapshot = []): void
     {
@@ -2204,6 +2210,16 @@ class CoreUpdateService
             'storage',
             'bootstrap/cache',
         ]);
+        // 백업 디렉토리는 운영자 정책 보존 대상이 아니라 업데이트/롤백이 생성·소비·삭제하는
+        // 임시 산출물이다. sudo 업데이트가 이들을 g-w(0755) 로 만들어 두면 이후 www-data 가
+        // 그 안에 백업을 mkdir 하지 못한다(mkdir(): Permission denied). 따라서 이 경로들은
+        // force=true 로 정상화하여 루트가 g-w 라도 g+w 승격 후 하위까지 재귀 전파한다.
+        // (그 외 경로는 force=false — 운영자가 의도적으로 차단한 그룹 쓰기 정책을 보존.)
+        $forceGroupWritablePaths = [
+            'storage/app/extension_backups',
+            'storage/app/core_backups',
+        ];
+
         $groupWritableChanged = 0;
         foreach ($groupWritableTargets as $target) {
             $path = base_path($target);
@@ -2211,8 +2227,10 @@ class CoreUpdateService
                 continue;
             }
 
+            $force = in_array($target, $forceGroupWritablePaths, true);
+
             $onProgress?->__invoke('group_writable', $target);
-            $report = FilePermissionHelper::syncGroupWritabilityDetailed($path);
+            $report = FilePermissionHelper::syncGroupWritabilityDetailed($path, $force);
             $groupWritableChanged += $report['changed'];
 
             if ($report['failed'] > 0) {
@@ -2251,7 +2269,6 @@ class CoreUpdateService
      * - 실패 항목 누적 → `lastPermissionWarnings` 에 'kind' => 'detailed' 로 기록
      *
      * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $detailedSnapshot
-     * @param  \Closure|null  $onProgress
      */
     private function restoreFromDetailedSnapshot(array $detailedSnapshot, ?\Closure $onProgress = null): void
     {
@@ -2428,5 +2445,4 @@ class CoreUpdateService
     {
         return config('core.menus', []);
     }
-
 }

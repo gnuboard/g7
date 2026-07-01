@@ -33,7 +33,6 @@ class CouponRestoreListenerTest extends ModuleTestCase
      * 테스트용 쿠폰과 발급 레코드를 생성합니다.
      *
      * @param  array  $issueOverrides  발급 레코드 오버라이드
-     * @return CouponIssue
      */
     protected function createCouponIssue(array $issueOverrides = []): CouponIssue
     {
@@ -67,13 +66,14 @@ class CouponRestoreListenerTest extends ModuleTestCase
      * 테스트용 주문을 생성합니다.
      *
      * @param  array  $couponIssueIds  적용된 쿠폰 발급 ID 목록
-     * @return Order
      */
     protected function createOrderWithCoupons(array $couponIssueIds): Order
     {
         $user = User::factory()->create();
 
-        // promotions_applied_snapshot 구성
+        // promotions_applied_snapshot 구성 — 실데이터 키 형식 (coupon_issue_ids 평탄 +
+        // product_promotions.coupons). 종전 테스트는 실제로 존재하지 않는
+        // product_coupons/shipping_coupons/order_coupons 키를 써서 false-green 이었다.
         $productCoupons = [];
         foreach ($couponIssueIds as $issueId) {
             $productCoupons[] = [
@@ -98,9 +98,11 @@ class CouponRestoreListenerTest extends ModuleTestCase
             'total_amount' => 45000,
             'total_paid_amount' => 45000,
             'promotions_applied_snapshot' => [
-                'product_coupons' => $productCoupons,
-                'shipping_coupons' => [],
-                'order_coupons' => [],
+                'coupon_issue_ids' => array_values($couponIssueIds),
+                'item_coupons' => [],
+                'discount_code' => null,
+                'product_promotions' => ['coupons' => $productCoupons],
+                'order_promotions' => ['coupons' => []],
             ],
         ]);
     }
@@ -217,5 +219,47 @@ class CouponRestoreListenerTest extends ModuleTestCase
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_cancel', $hooks);
         $this->assertEquals('restoreCoupons', $hooks['sirsoft-ecommerce.order.after_cancel']['method']);
         $this->assertEquals(10, $hooks['sirsoft-ecommerce.order.after_cancel']['priority']);
+
+        // 부분취소 명시 복원 훅
+        $this->assertArrayHasKey('sirsoft-ecommerce.coupon.restore', $hooks);
+        $this->assertEquals('restoreCouponsByIds', $hooks['sirsoft-ecommerce.coupon.restore']['method']);
+    }
+
+    /**
+     * 부분취소(coupon.restore 훅): 전달된 ID 만 used→available 복원한다.
+     */
+    public function test_restore_coupons_by_ids_restores_only_passed_ids(): void
+    {
+        $dropped = $this->createCouponIssue();           // 탈락 → 복원 대상
+        $kept = $this->createCouponIssue();              // 유지 → 복원 안 됨 (USED 유지)
+        $order = $this->createOrderWithCoupons([$dropped->id, $kept->id]);
+
+        // When: 탈락 쿠폰 ID 만 전달
+        $this->listener->restoreCouponsByIds($order, [$dropped->id]);
+
+        // Then
+        $dropped->refresh();
+        $kept->refresh();
+        $this->assertEquals(CouponIssueRecordStatus::AVAILABLE, $dropped->status);
+        $this->assertEquals(CouponIssueRecordStatus::USED, $kept->status, '유지 쿠폰은 USED 유지');
+    }
+
+    /**
+     * after_cancel 경로가 신형식 스냅샷(coupon_issue_ids 평탄)에서 복원한다.
+     *
+     * 종전 listener 는 product_coupons/order_coupons 키만 봐 0/66 매칭 → 복원 미발동이었다.
+     */
+    public function test_restores_from_real_snapshot_coupon_issue_ids(): void
+    {
+        $couponIssue = $this->createCouponIssue();
+        $order = $this->createOrderWithCoupons([$couponIssue->id]);
+
+        // coupon_issue_ids 평탄 키가 채워졌는지 확인 (실데이터 형식)
+        $this->assertNotEmpty($order->promotions_applied_snapshot['coupon_issue_ids']);
+
+        $this->listener->restoreCoupons($order);
+
+        $couponIssue->refresh();
+        $this->assertEquals(CouponIssueRecordStatus::AVAILABLE, $couponIssue->status);
     }
 }

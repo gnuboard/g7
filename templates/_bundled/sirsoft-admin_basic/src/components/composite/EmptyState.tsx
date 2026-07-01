@@ -6,6 +6,7 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { Img } from '../basic/Img';
 import { IconName } from '../basic/IconTypes';
+import type { EditorAttrs } from '../../types';
 
 export interface EmptyStateAction {
   label: string;
@@ -22,6 +23,12 @@ export interface EmptyStateProps {
   illustrationAlt?: string;
   actions?: EmptyStateAction[];
   className?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -55,6 +62,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   illustrationAlt = 'Empty state illustration',
   actions = [],
   className = '',
+  id,
+  editorAttrs,
 }) => {
   // 버튼 variant별 스타일 매핑
   const variantClassMap: Record<'primary' | 'secondary' | 'danger' | 'ghost', string> = {
@@ -69,6 +78,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       className={`flex flex-col items-center justify-center p-8 text-center ${className}`}
       role="status"
       aria-live="polite"
+      id={id} {...editorAttrs}
     >
       {/* Icon 또는 Illustration */}
       {illustrationSrc ? (

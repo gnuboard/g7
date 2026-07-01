@@ -14,31 +14,46 @@
     {
       "type": "basic",
       "name": "P",
-      "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+      "props": {
+        "className": "text-body"
+      },
       "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_delete.confirm|name={{_global.deletingPresetName}}"
     },
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex justify-end gap-3 mt-6" },
+      "props": {
+        "className": "modal-footer-buttons"
+      },
       "children": [
         {
           "type": "basic",
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isDeleting}}"
           },
-          "actions": [{ "type": "click", "handler": "closeModal" }],
-          "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
         },
         {
           "type": "basic",
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isDeleting}}"
           },
           "actions": [
@@ -48,22 +63,58 @@
               "actions": [
                 {
                   "handler": "setState",
-                  "params": { "target": "global", "isDeleting": true }
+                  "params": {
+                    "target": "global",
+                    "isDeleting": true
+                  }
                 },
                 {
                   "handler": "apiCall",
                   "auth_required": true,
                   "target": "/api/modules/sirsoft-ecommerce/admin/presets/{{_global.deletingPresetId}}",
-                  "params": { "method": "DELETE" },
+                  "params": {
+                    "method": "DELETE"
+                  },
                   "onSuccess": [
-                    { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
-                    { "handler": "refetchDataSource", "params": { "dataSourceId": "presets" } },
-                    { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.messages.presets.deleted" } },
-                    { "handler": "closeModal" }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isDeleting": false
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "presets"
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-ecommerce.messages.presets.deleted"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
                   ],
                   "onError": [
-                    { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
-                    { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isDeleting": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{$error.message}}"
+                      }
+                    }
                   ]
                 }
               ]
@@ -74,7 +125,10 @@
               "type": "basic",
               "name": "Icon",
               "if": "{{_global.isDeleting}}",
-              "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+              "props": {
+                "name": "spinner",
+                "className": "spinner-sm"
+              }
             },
             {
               "type": "basic",

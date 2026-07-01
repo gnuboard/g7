@@ -528,7 +528,17 @@ CoreUpdateCommand::handle                   └─ disableMaintenanceMode
 - `--skip-cache-clear`
 - `--skip-bundled-updates`
 
-수동 복구 시나리오에서 사용자가 부분 단계만 제어하고 싶다면 위 옵션을 선택적으로 조합한다. 옵션을 모두 부여하면 부모 spawn 시나리오와 등가 — 본 명령은 upgrade step 만 실행한다.
+수동 복구 시나리오에서 사용자가 부분 단계만 제어하고 싶다면 위 옵션을 선택적으로 조합한다.
+
+##### `--steps-only` — 업그레이드 스텝만 실행
+
+`--steps-only` 는 위 5개 `--skip-*` 옵션이 제어하는 단계뿐 아니라 **권한 정상화(`ensureWritableDirectories`) · 오토로드 재생성(`updateComposerAutoload`)** 까지 — 즉 upgrade step 을 제외한 모든 보조 단계를 생략한다.
+
+```bash
+php artisan core:execute-upgrade-steps --from=<v> --to=<v> --force --steps-only
+```
+
+`--skip-*` 5개만으로는 spawn 자식 진입 블록의 `ensureWritableDirectories` 가 무조건 실행된다. 이 블록은 `modules` / `plugins` / `templates` 등 활성 디렉토리를 재귀 `chown`/`chmod` 하므로, `vendor/` · `node_modules/` 가 포함된 대규모 트리에서는 매우 느리다. 보조 단계가 이미 정상인 환경에서 특정 스텝의 데이터 보정만 단발 재실행할 때 `--steps-only` 로 이 비용을 건너뛴다.
 
 ### 사용 시점
 

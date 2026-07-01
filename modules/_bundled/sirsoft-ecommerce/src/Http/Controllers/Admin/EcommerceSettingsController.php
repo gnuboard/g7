@@ -2,12 +2,19 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
+use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use App\Services\NotificationChannelService;
+use App\Services\NotificationDefinitionService;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingApiRequestField;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingApiResponseType;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\GetSettingRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreBanksRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
@@ -42,7 +49,9 @@ class EcommerceSettingsController extends AdminBaseController
             $settings = $this->settingsService->getAllSettings();
             $settings = $this->appendCarriersToSettings($settings);
             $settings = $this->appendShippingTypesToSettings($settings);
+            $settings = $this->appendShippingApiRequestFieldsToSettings($settings);
             $settings = $this->appendClaimReasonsToSettings($settings);
+            $settings = $this->appendMileageNotificationChannelsToSettings($settings);
             $settings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
             $settings['abilities'] = [
                 'can_update' => PermissionHelper::check('sirsoft-ecommerce.settings.update', request()->user()),
@@ -65,7 +74,7 @@ class EcommerceSettingsController extends AdminBaseController
     /**
      * 카테고리별 설정을 조회합니다.
      *
-     * @param string $category 카테고리명
+     * @param  string  $category  카테고리명
      * @return JsonResponse 카테고리 설정을 포함한 JSON 응답
      */
     public function show(string $category): JsonResponse
@@ -96,7 +105,7 @@ class EcommerceSettingsController extends AdminBaseController
     /**
      * 이커머스 설정을 저장합니다.
      *
-     * @param StoreEcommerceSettingsRequest $request 저장 요청 데이터
+     * @param  StoreEcommerceSettingsRequest  $request  저장 요청 데이터
      * @return JsonResponse 저장 결과 JSON 응답
      */
     public function store(StoreEcommerceSettingsRequest $request): JsonResponse
@@ -143,11 +152,16 @@ class EcommerceSettingsController extends AdminBaseController
             }
 
             if ($result) {
+                // 설정 저장 활동로그 (저장된 카테고리 목록 전달)
+                HookManager::doAction('sirsoft-ecommerce.settings.after_save', array_keys($settings));
+
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
                 $updatedSettings = $this->settingsService->getAllSettings();
                 $updatedSettings = $this->appendCarriersToSettings($updatedSettings);
                 $updatedSettings = $this->appendShippingTypesToSettings($updatedSettings);
+                $updatedSettings = $this->appendShippingApiRequestFieldsToSettings($updatedSettings);
                 $updatedSettings = $this->appendClaimReasonsToSettings($updatedSettings);
+                $updatedSettings = $this->appendMileageNotificationChannelsToSettings($updatedSettings);
                 $updatedSettings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
 
                 return ResponseHelper::moduleSuccess(
@@ -174,7 +188,7 @@ class EcommerceSettingsController extends AdminBaseController
     /**
      * 은행 목록만 저장합니다.
      *
-     * @param StoreBanksRequest $request 은행 목록 저장 요청 데이터
+     * @param  StoreBanksRequest  $request  은행 목록 저장 요청 데이터
      * @return JsonResponse 저장 결과 JSON 응답
      */
     public function storeBanks(StoreBanksRequest $request): JsonResponse
@@ -211,7 +225,7 @@ class EcommerceSettingsController extends AdminBaseController
     /**
      * 특정 설정값을 조회합니다.
      *
-     * @param GetSettingRequest $request 요청 데이터
+     * @param  GetSettingRequest  $request  요청 데이터
      * @return JsonResponse 설정값을 포함한 JSON 응답
      */
     public function getSetting(GetSettingRequest $request): JsonResponse
@@ -241,7 +255,7 @@ class EcommerceSettingsController extends AdminBaseController
     /**
      * 특정 설정값을 업데이트합니다.
      *
-     * @param UpdateSettingRequest $request 요청 데이터
+     * @param  UpdateSettingRequest  $request  요청 데이터
      * @return JsonResponse 업데이트 결과 JSON 응답
      */
     public function updateSetting(UpdateSettingRequest $request): JsonResponse
@@ -364,7 +378,7 @@ class EcommerceSettingsController extends AdminBaseController
      *
      * DB 관리 대상인 carriers를 shipping 섹션에 포함시킵니다.
      *
-     * @param array $settings 설정 배열
+     * @param  array  $settings  설정 배열
      * @return array carriers가 추가된 설정 배열
      */
     private function appendCarriersToSettings(array $settings): array
@@ -389,7 +403,7 @@ class EcommerceSettingsController extends AdminBaseController
      *
      * DB 관리 대상인 shipping types를 shipping 섹션에 포함시킵니다.
      *
-     * @param array $settings 설정 배열
+     * @param  array  $settings  설정 배열
      * @return array shipping types가 추가된 설정 배열
      */
     private function appendShippingTypesToSettings(array $settings): array
@@ -400,16 +414,74 @@ class EcommerceSettingsController extends AdminBaseController
     }
 
     /**
+     * 설정 응답에 배송 계산 API 요청 참고 필드 후보 목록을 추가합니다.
+     *
+     * 배송정책 폼의 "API 전송 필드" 후보(체크박스)는 프론트 하드코딩이 아니라
+     * 백엔드 SSoT enum(ShippingApiRequestField)에서 번역된 {value, label} 로 내려갑니다.
+     *
+     * @param  array  $settings  설정 배열
+     * @return array 후보 목록이 추가된 설정 배열
+     */
+    private function appendShippingApiRequestFieldsToSettings(array $settings): array
+    {
+        $settings['shipping']['api_request_fields'] = ShippingApiRequestField::options();
+        // 계산 API 고급 설정 옵션 — 프론트 하드코딩이 아닌 백엔드 enum SSoT 에서 번역되어 내려감
+        $settings['shipping']['api_http_methods'] = ShippingApiHttpMethod::options();
+        $settings['shipping']['api_auth_types'] = ShippingApiAuthType::options();
+        $settings['shipping']['api_response_types'] = ShippingApiResponseType::options();
+
+        return $settings;
+    }
+
+    /**
      * 설정 응답에 클래임 사유 목록을 추가합니다.
      *
      * DB 관리 대상인 claim reasons를 claim 섹션에 포함시킵니다.
      *
-     * @param array $settings 설정 배열
+     * @param  array  $settings  설정 배열
      * @return array claim reasons가 추가된 설정 배열
      */
     private function appendClaimReasonsToSettings(array $settings): array
     {
         $settings['claim']['refund_reasons'] = $this->claimReasonService->getReasonsForSettings('refund');
+
+        return $settings;
+    }
+
+    /**
+     * 마일리지 소멸 예정 알림의 실제 활성 채널을 설정 응답에 병합합니다.
+     *
+     * 설정 카드의 "활성 채널" 칩은 선언 고정값이 아니라 관리자가 알림 설정에서 켜고 끈
+     * 실제 활성 채널을 보여줍니다. GenericNotification::via() 와 동일하게 도출합니다:
+     * definition resolve → notification.channels 필터 → 확장 단위 채널 활성 여부.
+     *
+     * @param  array  $settings  설정 배열
+     * @return array 활성 채널이 병합된 설정 배열
+     */
+    private function appendMileageNotificationChannelsToSettings(array $settings): array
+    {
+        $type = 'mileage_expiring_soon';
+
+        try {
+            $definition = app(NotificationDefinitionService::class)->resolve($type);
+            $channels = $definition?->channels ?? ['mail', 'database'];
+
+            $channels = HookManager::applyFilters(
+                'sirsoft-ecommerce.notification.channels',
+                $channels,
+                $type
+            );
+
+            $channelService = app(NotificationChannelService::class);
+            $active = array_values(array_filter(
+                $channels,
+                fn (string $channel) => $channelService->isChannelEnabledForExtension('module', 'sirsoft-ecommerce', $channel)
+            ));
+        } catch (Exception) {
+            $active = [];
+        }
+
+        $settings['mileage']['notification_channels'] = $active;
 
         return $settings;
     }

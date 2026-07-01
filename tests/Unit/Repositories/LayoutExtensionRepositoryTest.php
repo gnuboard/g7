@@ -17,6 +17,16 @@ class LayoutExtensionRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 같은 스위트의 레이아웃/GDPR 미들웨어 의존 테스트와 migrate:fresh 정합성을
+     * 맞추기 위해 GDPR 플러그인 마이그레이션을 일관 선언한다.
+     *
+     * @var array<string>
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-gdpr',
+    ];
+
     private LayoutExtensionRepositoryInterface $repository;
 
     private Template $template;
@@ -455,6 +465,100 @@ class LayoutExtensionRepositoryTest extends TestCase
         $result->each(function ($extension) {
             $this->assertEquals($this->template->id, $extension->template_id);
         });
+    }
+
+    /**
+     * 오버라이드 해석 조회 시 템플릿 오버라이드에 가려진 모듈/플러그인 확장은 제외됨
+     *
+     * 회귀: 레이아웃 편집 화면 좌측 트리(getResolvedByTemplateId 기반)가
+     * 화면에 실제 적용되지 않는 "가려진 행"을 노출하여, 관리자가 그 행을
+     * 편집해도 반영되지 않던 문제. 렌더링 경로(getResolvedExtensionPoints/
+     * getResolvedOverlays)와 동일한 오버라이드 해석을 적용해야 한다.
+     */
+    public function test_get_resolved_by_template_id_excludes_overridden_extensions(): void
+    {
+        // Arrange - 플러그인 Extension Point 확장
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'address_search_slot',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-daum_postcode',
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        // Arrange - 템플릿 오버라이드 (위 플러그인 확장을 가림)
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'address_search_slot',
+            'source_type' => LayoutSourceType::Template,
+            'source_identifier' => 'sirsoft-admin_basic',
+            'override_target' => 'sirsoft-daum_postcode',
+            'priority' => 50,
+            'is_active' => true,
+        ]);
+
+        // Arrange - 가려지지 않은 다른 모듈 확장 (다른 확장점)
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin/dashboard',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-ecommerce',
+            'priority' => 50,
+            'is_active' => true,
+        ]);
+
+        // Act
+        $result = $this->repository->getResolvedByTemplateId($this->template->id);
+
+        // Assert - 오버라이드된 플러그인 원본은 제외, 오버라이드 + 무관 확장만 남음
+        $this->assertCount(2, $result);
+
+        $identifiers = $result->pluck('source_identifier')->toArray();
+        $this->assertContains('sirsoft-admin_basic', $identifiers);
+        $this->assertContains('sirsoft-ecommerce', $identifiers);
+        $this->assertNotContains('sirsoft-daum_postcode', $identifiers);
+    }
+
+    /**
+     * 오버라이드가 없으면 오버라이드 해석 조회는 모든 확장을 그대로 반환함
+     */
+    public function test_get_resolved_by_template_id_returns_all_when_no_override(): void
+    {
+        // Arrange - 오버라이드 없는 확장 3개 (서로 다른 확장점/레이아웃)
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'address_search_slot',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-daum_postcode',
+            'is_active' => true,
+        ]);
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin/dashboard',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-ecommerce',
+            'is_active' => true,
+        ]);
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'sidebar-top',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-other',
+            'is_active' => true,
+        ]);
+
+        // Act
+        $result = $this->repository->getResolvedByTemplateId($this->template->id);
+
+        // Assert - 가림 대상이 없으므로 전부 반환
+        $this->assertCount(3, $result);
     }
 
     /**

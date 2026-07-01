@@ -31,9 +31,9 @@ class Product extends Model implements FulltextSearchable
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
-        'sales_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sales_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus::class],
-        'display_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.display_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus::class],
-        'tax_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.tax_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus::class],
+        'sales_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sales_status', 'type' => 'enum', 'enum' => ProductSalesStatus::class],
+        'display_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.display_status', 'type' => 'enum', 'enum' => ProductDisplayStatus::class],
+        'tax_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.tax_status', 'type' => 'enum', 'enum' => ProductTaxStatus::class],
         'tax_rate' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.tax_rate', 'type' => 'number'],
         'list_price' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.list_price', 'type' => 'currency'],
         'selling_price' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.selling_price', 'type' => 'currency'],
@@ -57,7 +57,7 @@ class Product extends Model implements FulltextSearchable
      *
      * @param  mixed  $value  라우트 파라미터 값 (ID 또는 product_code)
      * @param  string|null  $field  검색할 필드명
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @return Model|null
      */
     public function resolveRouteBinding($value, $field = null)
     {
@@ -96,6 +96,8 @@ class Product extends Model implements FulltextSearchable
         'meta_title',
         'meta_description',
         'meta_keywords',
+        'seo_sync_title',
+        'seo_sync_description',
         'has_options',
         'option_groups',
         'min_purchase_qty',
@@ -111,12 +113,16 @@ class Product extends Model implements FulltextSearchable
     protected $casts = [
         'name' => AsUnicodeJson::class,
         'description' => AsUnicodeJson::class,
+        'meta_title' => AsUnicodeJson::class,
+        'meta_description' => AsUnicodeJson::class,
         'meta_keywords' => 'array',
+        'seo_sync_title' => 'boolean',
+        'seo_sync_description' => 'boolean',
         'option_groups' => 'array',
         'allowed_roles' => 'array',
         'has_options' => 'boolean',
-        'list_price' => 'integer',
-        'selling_price' => 'integer',
+        'list_price' => 'decimal:2',
+        'selling_price' => 'decimal:2',
         'stock_quantity' => 'integer',
         'safe_stock_quantity' => 'integer',
         'min_purchase_qty' => 'integer',
@@ -302,7 +308,7 @@ class Product extends Model implements FulltextSearchable
     /**
      * 상품 리뷰 관계
      *
-     * @return HasMany
+     * @return HasMany ProductReview 컬렉션 관계
      */
     public function reviews(): HasMany
     {
@@ -312,7 +318,7 @@ class Product extends Model implements FulltextSearchable
     /**
      * 전시중(visible) 리뷰만 조회 (withCount/withAvg eager loading용)
      *
-     * @return HasMany
+     * @return HasMany 전시중 ProductReview 컬렉션 관계
      */
     public function visibleReviews(): HasMany
     {
@@ -497,6 +503,20 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
+     * 상품이 현재 구매 가능한 상태인지 반환합니다.
+     *
+     * 담기/합계/체크아웃의 판매상태 판정을 한 곳으로 통일하는 단일 기준(SSoT).
+     * 판매중(on_sale) + 전시중(visible) 두 조건을 모두 만족해야 구매 가능합니다.
+     *
+     * @return bool 판매중(on_sale) + 전시중(visible) 이면 true
+     */
+    public function isPurchasable(): bool
+    {
+        return $this->sales_status === ProductSalesStatus::ON_SALE
+            && $this->display_status === ProductDisplayStatus::VISIBLE;
+    }
+
+    /**
      * 정가 대비 판매가의 할인율(%) 을 소수 1자리로 반환합니다.
      *
      * @return float 할인율(%) — 정가가 0 이하면 0
@@ -578,7 +598,7 @@ class Product extends Model implements FulltextSearchable
     /**
      * MySQL FULLTEXT 엔진에서는 인덱스 업데이트가 불필요합니다.
      *
-     * @return bool
+     * @return bool 인덱스 갱신 필요 여부 (항상 false)
      */
     public function searchIndexShouldBeUpdated(): bool
     {

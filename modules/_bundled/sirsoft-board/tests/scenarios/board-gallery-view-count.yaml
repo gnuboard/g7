@@ -1,0 +1,30 @@
+feature: 갤러리형 목록 조회수 표시 토글 반영
+
+description: |
+  게시판 환경설정/기본 탭의 "조회수 표시"(show_view_count) 토글이 사용자 페이지
+  갤러리형 목록에 즉시 반영된다. OFF 로 저장하면 갤러리 목록 카드의 눈 아이콘/조회수가
+  표시되지 않고, ON(또는 미설정)이면 표시된다.
+
+  배경 (이슈 #413 item 19-4b):
+    - 갤러리형 목록(types/gallery/index.json) 의 조회수 Span 에 show_view_count 조건이
+      없어, 토글 OFF 후에도 갤러리형에서만 조회수가 항상 노출되던 회귀.
+    - basic/card 형 목록은 동일 조건("{{posts?.data?.board?.settings?.show_view_count !== false}}")
+      으로 정상 동작 → 갤러리 조회수 Span 에 동일 if 조건을 추가하여 정합.
+    - 데이터 경로 SSoT: BoardResource::toBoardInfoForUser() → settings.show_view_count.
+
+axes:
+  show_view_count: [true, false, unset]
+  board_type: [gallery]
+
+effects:
+  - gallery_shows_view_count_when_true
+  - gallery_shows_view_count_when_unset
+  - gallery_hides_view_count_when_false
+  - gallery_matches_basic_and_card_condition
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-gallery-view-count-toggle.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-gallery-view-count.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

@@ -152,6 +152,23 @@ export class ComponentRegistry {
   }
 
   /**
+   * 격리 인스턴스 생성 — 싱글톤과 독립된 별도 ComponentRegistry.
+   *
+   * 레이아웃 편집기 캔버스 처럼 한 페이지에서 호스트 템플릿과
+   * 편집 대상 템플릿이 동시에 살아 있어야 하는 케이스용. 싱글톤을 점유 중인
+   * 호스트(`getInstance()`)의 등록 상태와 충돌하지 않도록, 격리 인스턴스는
+   * 정적 manifestCache 만 공유하고 registry/manifest/loadingState 는 자기
+   * 인스턴스 안에만 존재한다.
+   *
+   * `loadComponents()` 등 인스턴스 메서드는 싱글톤과 동일하게 사용 가능.
+   *
+   * @since engine-v1.50.0
+   */
+  public static createIsolatedInstance(): ComponentRegistry {
+    return new ComponentRegistry();
+  }
+
+  /**
    * 레지스트리 초기화 (테스트용)
    */
   public static resetInstance(): void {

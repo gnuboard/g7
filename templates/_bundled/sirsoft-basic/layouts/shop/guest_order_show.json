@@ -1,0 +1,147 @@
+{
+    "version": "1.0.0",
+    "layout_name": "shop/guest_order_show",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "title": "$t:shop.guest_order_show.page_title",
+        "description": "비회원 주문 상세"
+    },
+    "_comment": "비회원 주문 상세 — 회원 mypage/orders/show.json 과 동일한 partial 5개를 재사용하되, 회원 전용 데이터/CTA 는 비노출. data_source endpoint 는 user/orders/{N} 통합 라우트 사용 (optional.sanctum) — 백엔드가 X-Guest-Order-Token 으로 비회원 분기, 토큰 매칭되면 GuestOrderResource 반환. 401/404 시 토큰 삭제 + 로그인 페이지로 안내.",
+    "initLocal": {
+        "selectedItemIds": [],
+        "selectAllItems": false,
+        "showCancelModal": false,
+        "cancelItems": [],
+        "cancelSelectAll": false,
+        "cancelReason": "",
+        "refundEstimate": null,
+        "refundLoading": false,
+        "isCancelling": false,
+        "cancelError": null,
+        "confirmTarget": null,
+        "isConfirming": false,
+        "isSubmittingAddress": false
+    },
+    "data_sources": [
+        {
+            "_comment": "비회원 주문 상세 — user/orders/{N} 통합 엔드포인트 (optional.sanctum). X-Guest-Order-Token 은 이 데이터소스에만 명시적으로 주입 (globalHeaders 의 user/orders/* 광역 패턴은 회원 라우트에도 토큰 노출되어 부적합). 401/404 시 토스트 + 백엔드 redirect_to 안내.",
+            "id": "order",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{route.order_number}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "headers": {
+                "X-Guest-Order-Token": "{{_global.guestOrderToken}}"
+            },
+            "_errorHandling_comment": "백엔드(UserOrderController::showByOrderNumber) 가 회원/비회원 분기 + 메시지 + errors.redirect_to 결정. 401/404 응답 시 sessionStorage 토큰을 즉시 비워야 다음 헤더 '주문 조회' 클릭에서 만료 안 된 토큰을 보고 무한 redirect 회귀가 일어나지 않는다. 위조 토큰 / 관리자 비밀번호 재설정 / 30분 만료 모두 동일 흐름.",
+            "errorHandling": {
+                "401": {
+                    "handler": "sequence",
+                    "params": {
+                        "actions": [
+                            { "handler": "clearGuestOrderToken" },
+                            { "handler": "toast", "params": { "type": "warning", "message": "{{error.message ?? '$t:shop.order_complete.guest_token_expired'}}" } },
+                            { "handler": "navigate", "params": { "path": "{{error.errors?.redirect_to ?? (_global.shopBase + '/guest/orders')}}" } }
+                        ]
+                    }
+                },
+                "404": {
+                    "handler": "sequence",
+                    "params": {
+                        "actions": [
+                            { "handler": "clearGuestOrderToken" },
+                            { "handler": "toast", "params": { "type": "warning", "message": "{{error.message ?? '$t:shop.order_complete.guest_token_expired'}}" } },
+                            { "handler": "navigate", "params": { "path": "{{error.errors?.redirect_to ?? (_global.shopBase + '/guest/orders')}}" } }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "_comment": "환불 사유 — 회원/비회원 공유 카탈로그 엔드포인트 (optional.sanctum). 백엔드 라우트가 그룹 밖으로 분리되어 비회원도 동일 endpoint 로 카탈로그 조회 가능. 취소 모달의 사유 Select 옵션을 채운다.",
+            "id": "refundReasons",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/claim-reasons",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "params": { "type": "refund" },
+            "fallback": { "data": [] }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "_comment": "blur_until_loaded: order 데이터소스 응답 도착 전까지 콘텐츠 가림. 데이터 빈 화면 노출 회귀 차단 (order_complete.json 와 동일 패턴).",
+                "type": "basic",
+                "name": "Div",
+                "blur_until_loaded": { "enabled": true, "data_sources": ["order"] },
+                "props": { "className": "min-h-screen bg-gray-50 dark:bg-gray-900" },
+                "children": [
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "props": { "className": "py-8" },
+                        "responsive": {
+                            "portable": { "props": { "className": "py-4" } }
+                        },
+                        "children": [
+                            {
+                                "comment": "주문 상세 카드 컨테이너 — 회원과 동일 partial 재사용. order.data.* 표현식 호환. 뒤로가기는 헤더 '주문 조회' 메뉴로 충분하므로 페이지 상단 뒤로가기 버튼은 두지 않음.",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": { "className": "max-w-3xl mx-auto space-y-4" },
+                                "responsive": {
+                                    "portable": { "props": { "className": "space-y-3" } }
+                                },
+                                "children": [
+                                    { "partial": "partials/mypage/orders/_status_header.json" },
+                                    { "partial": "partials/mypage/orders/_items.json" },
+                                    { "partial": "partials/mypage/orders/_orderer.json" },
+                                    { "partial": "partials/mypage/orders/_shipping.json" },
+                                    { "partial": "partials/mypage/orders/_payment.json" },
+                                    { "partial": "partials/mypage/orders/_history.json" },
+                                    {
+                                        "comment": "비회원 액션 영역 — 쇼핑 계속하기만 노출. 리뷰 작성 / 재주문은 회원 전용이라 제외.",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": { "className": "flex flex-row gap-4" },
+                                        "responsive": {
+                                            "portable": { "props": { "className": "flex flex-col gap-3" } }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": { "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer" },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": { "path": "{{_global.shopBase}}/products" }
+                                                    }
+                                                ],
+                                                "children": [
+                                                    { "type": "basic", "name": "Icon", "props": { "name": "shopping-bag", "className": "w-5 h-5" } },
+                                                    { "type": "basic", "name": "Span", "text": "$t:mypage.order_detail.continue_shopping" }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        { "partial": "partials/mypage/orders/_modal_cancel.json" },
+        { "partial": "partials/mypage/orders/_modal_confirm_purchase.json" },
+        { "partial": "partials/mypage/orders/_modal_change_address.json" }
+    ]
+}

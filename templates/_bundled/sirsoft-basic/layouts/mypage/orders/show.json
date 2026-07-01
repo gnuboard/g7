@@ -4,15 +4,7 @@
     "permissions": [],
     "extends": "_user_base",
     "initLocal": {
-        "changeAddressMode": "saved",
-        "selectedAddressId": null,
-        "manualAddress": {
-            "recipient_name": "",
-            "recipient_phone": "",
-            "zipcode": "",
-            "address": "",
-            "address_detail": ""
-        },
+        "isSubmittingAddress": false,
         "selectedItemIds": [],
         "selectAllItems": false,
         "showCancelModal": false,
@@ -35,6 +27,7 @@
     "data_sources": [
         {
             "id": "order",
+            "label_key": "$t:editor.data_source.order",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{route.order_number}}",
             "method": "GET",
@@ -44,6 +37,7 @@
         },
         {
             "id": "userAddresses",
+            "label_key": "$t:editor.data_source.userAddresses",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
             "method": "GET",
@@ -53,6 +47,7 @@
         },
         {
             "id": "refundReasons",
+            "label_key": "$t:editor.data_source.refundReasons",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/user/claim-reasons",
             "method": "GET",
@@ -61,6 +56,14 @@
             "params": {
                 "type": "refund"
             }
+        },
+        {
+            "id": "reviewSettings",
+            "label_key": "$t:editor.data_source.reviewSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/settings/review",
+            "method": "GET",
+            "auto_fetch": true
         }
     ],
     "slots": {
@@ -122,7 +125,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "chevron-left",
-                                                    "className": "w-5 h-5"
+                                                    "size": "md"
                                                 }
                                             },
                                             {
@@ -157,6 +160,9 @@
                                     },
                                     {
                                         "partial": "partials/mypage/orders/_items.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/orders/_orderer.json"
                                     },
                                     {
                                         "partial": "partials/mypage/orders/_shipping.json"
@@ -203,46 +209,13 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "shopping-bag",
-                                                            "className": "w-5 h-5"
+                                                            "size": "md"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "text": "$t:mypage.order_detail.continue_shopping"
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "comment": "리뷰 작성 버튼 - 배송완료 시만 표시",
-                                                "type": "basic",
-                                                "name": "Button",
-                                                "if": "{{order.data.order_status === 'delivered' || order.data.order_status === 'confirmed'}}",
-                                                "props": {
-                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/mypage/reviews/write?order_id={{order.data.id ?? ''}}"
-                                                        }
-                                                    }
-                                                ],
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Icon",
-                                                        "props": {
-                                                            "name": "pen-to-square",
-                                                            "className": "w-5 h-5"
-                                                        }
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "text": "$t:mypage.order_detail.write_review"
                                                     }
                                                 ]
                                             },
@@ -269,7 +242,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "refresh-cw",
-                                                            "className": "w-5 h-5"
+                                                            "size": "md"
                                                         }
                                                     },
                                                     {

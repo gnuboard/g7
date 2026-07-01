@@ -99,6 +99,7 @@
     "data_sources": [
         {
             "id": "orders",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.orders",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders",
             "method": "GET",
@@ -126,7 +127,8 @@
                 "shipping_policy_id": "{{query.shipping_policy_id}}",
                 "min_shipping_amount": "{{query.min_shipping_amount}}",
                 "max_shipping_amount": "{{query.max_shipping_amount}}",
-                "orderer_uuid": "{{query.orderer_uuid}}"
+                "orderer_uuid": "{{query.orderer_uuid}}",
+                "member_type": "{{query.member_type}}"
             },
             "errorHandling": {
                 "403": {
@@ -145,6 +147,7 @@
         },
         {
             "id": "categories",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.categories",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/categories",
             "method": "GET",
@@ -157,6 +160,7 @@
         },
         {
             "id": "ecommerce_settings",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
             "method": "GET",
@@ -166,6 +170,7 @@
         },
         {
             "id": "active_carriers",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.active_carriers",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active",
             "method": "GET",
@@ -175,6 +180,7 @@
         },
         {
             "id": "shipping_policies",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.shipping_policies",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/active",
             "method": "GET",
@@ -184,6 +190,7 @@
         },
         {
             "id": "presets",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.presets",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/presets",
             "method": "GET",
@@ -240,7 +247,8 @@
                         "minShippingFee": "{{query.min_shipping_amount || ''}}",
                         "maxShippingFee": "{{query.max_shipping_amount || ''}}",
                         "selectedPreset": "{{query.preset_id || ''}}",
-                        "ordererUuid": "{{query.orderer_uuid || ''}}"
+                        "ordererUuid": "{{query.orderer_uuid || ''}}",
+                        "memberType": "{{query.member_type || ''}}"
                     }
                 }
             }
@@ -311,7 +319,8 @@
                     "shipping_policy_id": "{{_local.filter.shippingPolicy || null}}",
                     "min_shipping_amount": "{{_local.filter.minShippingFee || null}}",
                     "max_shipping_amount": "{{_local.filter.maxShippingFee || null}}",
-                    "orderer_uuid": "{{_local.filter.ordererUuid || null}}"
+                    "orderer_uuid": "{{_local.filter.ordererUuid || null}}",
+                    "member_type": "{{_local.filter.memberType || null}}"
                 },
                 "transition_overlay_target": "order_datagrid__body"
             }
@@ -324,7 +333,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -340,7 +349,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-3"
+                                    "className": "flex-center gap-3"
                                 },
                                 "children": [
                                     {

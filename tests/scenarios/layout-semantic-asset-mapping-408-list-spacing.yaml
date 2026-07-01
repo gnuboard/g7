@@ -1,0 +1,52 @@
+# audit:allow test-scenario-coverage reason: 시각 회귀 없는 단순 spacing 토큰 추가. (1) list_info 헤더(count + per-page select 묶음)에 py-3 추가 (5건), (2) iteration 안의 admin-card 에 mb-3 override 추가 (7건) — 자산 default mb-6 보다 작게. 데이터/액션/i18n 키 모두 동일.
+
+feature: 어드민 목록 화면의 list_info 헤더 + iteration admin-card 시각 여백 정합 (#408 보강)
+
+description: |
+  이슈 #408 후속 — PO 가 어드민 알림 정의 화면에서 두 가지 시각 여백 부족을 지적:
+    1. 카운트 + 페이지당 셀렉트 묶음 (list_info 헤더) 의 위/아래 여백 없음
+    2. iteration 으로 반복되는 admin-card 의 하단 margin 이 자산 default mb-6
+       (1.5rem) 으로 너무 큼
+
+  결정 요약:
+    - list_info 헤더 5건에 py-3 (0.75rem) 추가:
+      · admin_basic notif_list_info / identity_messages_list_info / list_info_right
+      · board board_notif_list_info
+      · ecommerce ecommerce_notif_list_info
+    - iteration admin-card 7 파일에서 className 을 "admin-card" → "admin-card mb-3"
+      으로 override (자산 mb-6 보다 작게 — 목록 내 카드 간격 압축):
+      · admin_basic _tab_notification_definitions / _tab_identity_messages /
+        _tab_mail_templates
+      · board _tab_notification_definitions
+      · ecommerce _modal_download_history / _partial_product_datagrid /
+        _tab_notification_definitions
+    - admin-card 자산 자체는 변경 없음 — standalone 카드 (탭 페이지의 단일 카드 등)
+      의 mb-6 default 는 유지. iteration 컨텍스트에서만 호출처 override
+
+axes:
+  pattern:
+    - list_info_header_count_per_page_select
+    - iteration_admin_card_row_item
+  call_site:
+    - notif_list_info
+    - identity_messages_list_info
+    - list_info_right
+    - board_notif_list_info
+    - ecommerce_notif_list_info
+  spacing_token:
+    - py-3
+    - mb-3
+  viewport: [desktop, portable]
+  theme: [light, dark]
+
+effects:
+  - list_info_header_5_sites_add_py_3_vertical_padding_for_visual_breathing_room
+  - iteration_admin_card_7_files_override_mb_3_smaller_than_asset_default_mb_6
+  - admin_card_standalone_uses_keep_asset_default_mb_6_no_regression
+  - list_info_header_keeps_flex_between_or_flex_center_gap_3_layout_unchanged
+  - data_action_i18n_key_unchanged_across_all_12_modified_files
+
+test_files: []
+
+validation:
+  audit_rule: frontend-change-requires-e2e

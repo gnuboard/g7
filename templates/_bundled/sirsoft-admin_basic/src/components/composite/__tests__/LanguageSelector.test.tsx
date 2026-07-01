@@ -79,6 +79,23 @@ describe('LanguageSelector', () => {
       expect(templateAppMock.changeLocale).toHaveBeenCalledWith('en');
     });
 
+    it('showCode 미지정 시 현재 로케일 코드는 표시되지 않는다 (아이콘 전용 기본)', () => {
+      localStorage.setItem('g7_locale', 'ko');
+      const { container } = render(<LanguageSelector availableLocales={['ko', 'en']} />);
+      // 드롭다운을 열지 않은 상태에서 버튼에 로케일 코드 텍스트가 없어야 함(기본 아이콘 전용)
+      const codeSpan = container.querySelector('span.uppercase');
+      expect(codeSpan).toBeNull();
+    });
+
+    it('showCode 지정 시 버튼에 현재 선택 언어 코드를 표시한다 (유저 헤더 패리티)', () => {
+      localStorage.setItem('g7_locale', 'ko');
+      const { container } = render(<LanguageSelector availableLocales={['ko', 'en']} showCode />);
+      // 드롭다운을 열지 않아도 현재 로케일 코드(시각적 대문자, DOM 은 'ko')가 버튼에 노출되어야 함
+      const codeSpan = container.querySelector('span.uppercase');
+      expect(codeSpan).not.toBeNull();
+      expect(codeSpan?.textContent).toBe('ko');
+    });
+
     it('외부 클릭 시 드롭다운이 닫혀야 함', async () => {
       const user = userEvent.setup();
       render(

@@ -19,7 +19,7 @@ class NotificationChannelService
      *
      * config 기본 채널 + Filter 훅으로 플러그인 채널 확장 가능.
      *
-     * @return array
+     * @return array 채널 메타데이터 배열 (id, name, description, source_label 등)
      */
     public function getAvailableChannels(): array
     {
@@ -47,14 +47,47 @@ class NotificationChannelService
     /**
      * 특정 채널이 사용 가능한지 확인합니다.
      *
-     * @param string $channelId
-     * @return bool
+     * @param  string  $channelId  채널 식별자
+     * @return bool 사용 가능 여부
      */
     public function isChannelAvailable(string $channelId): bool
     {
         $channels = $this->getAvailableChannels();
 
         return collect($channels)->contains('id', $channelId);
+    }
+
+    /**
+     * 특정 채널이 비회원(게스트) 발송을 허용하는지 확인합니다.
+     *
+     * 채널 메타데이터의 `allow_guest` 플래그를 조회합니다 (config 기본 채널 +
+     * `core.notification.filter_available_channels` 훅으로 추가된 모듈/플러그인 채널 공통).
+     * 미선언 채널은 기본 `false`(차단) — 비회원 개인정보(이메일 등)가 의도치 않게
+     * 새 프로바이더로 노출되는 것을 방지하기 위한 opt-in 정책입니다.
+     * (확장 단위 채널 활성 `isChannelEnabledForExtension` 의 "미선언=활성" 과 반대 방향)
+     *
+     * `core.notification.channel_guest_allowed` 필터 훅으로 동적 재정의 가능합니다.
+     *
+     * @param  string  $channelId  채널 식별자 (mail, database, sms 등)
+     * @return bool true = 비회원 발송 허용, false = 차단
+     */
+    public function isChannelGuestAllowed(string $channelId): bool
+    {
+        $channels = $this->getAvailableChannels();
+
+        $allow = false;
+        foreach ($channels as $channel) {
+            if (($channel['id'] ?? null) === $channelId) {
+                $allow = (bool) ($channel['allow_guest'] ?? false);
+                break;
+            }
+        }
+
+        return (bool) HookManager::applyFilters(
+            'core.notification.channel_guest_allowed',
+            $allow,
+            $channelId
+        );
     }
 
     /**
@@ -68,9 +101,9 @@ class NotificationChannelService
      *
      * `core.notification.channel_enabled` 필터 훅으로 재정의 가능합니다.
      *
-     * @param string $extensionType 확장 타입 (core, module, plugin)
-     * @param string|null $extensionIdentifier 확장 식별자 (core는 'core' 허용)
-     * @param string $channelId 채널 식별자 (mail, database 등)
+     * @param  string  $extensionType  확장 타입 (core, module, plugin)
+     * @param  string|null  $extensionIdentifier  확장 식별자 (core는 'core' 허용)
+     * @param  string  $channelId  채널 식별자 (mail, database 등)
      * @return bool true = 발송 허용, false = 발송 차단
      */
     public function isChannelEnabledForExtension(
@@ -102,8 +135,6 @@ class NotificationChannelService
 
     /**
      * 메모이제이션 캐시를 초기화합니다. (테스트 및 설정 변경 후 사용)
-     *
-     * @return void
      */
     public function clearChannelEnabledCache(): void
     {
@@ -112,10 +143,6 @@ class NotificationChannelService
 
     /**
      * 확장 타입별 notifications.channels 배열을 조회합니다.
-     *
-     * @param string $extensionType
-     * @param string|null $extensionIdentifier
-     * @return array
      */
     private function resolveExtensionChannels(string $extensionType, ?string $extensionIdentifier): array
     {
@@ -157,10 +184,6 @@ class NotificationChannelService
      * notifications.channels 배열에서 특정 채널의 is_active 값을 추출합니다.
      *
      * 엔트리가 없으면 true(기본 활성)를 반환합니다.
-     *
-     * @param array $channels
-     * @param string $channelId
-     * @return bool
      */
     private function extractChannelActive(array $channels, string $channelId): bool
     {

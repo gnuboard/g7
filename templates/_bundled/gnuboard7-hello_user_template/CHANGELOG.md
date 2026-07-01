@@ -4,7 +4,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [0.1.0-beta.1] - 2026-05-11
+## [0.1.0] - 2026-07-01
+
+### Changed
+
+- 헤더 좌우 정렬 컨테이너 외형을 sirsoft-admin_basic 표준 시맨틱(.flex-between) 과 정합 — 다른 화면과 같은 결로 통일.
 
 ### Added
 
@@ -14,5 +18,6 @@
 - `_user_base` 레이아웃: 간단한 헤더(홈 링크) + 콘텐츠 슬롯 + 푸터
 - 홈 레이아웃: `gnuboard7-hello_module` 의 Memo 목록을 data_sources 로 호출하여 iteration 렌더링
 - 다국어 지원 (ko/en)
+- `externals` 외부 리소스 선언 예시 (Font Awesome 스타일시트)
 - `__tests__/layouts/home.test.tsx` — `createLayoutTest()` + `mockApi()` 로 Memo 목록 렌더링 검증
 - `__tests__/components/Div.test.tsx` — Basic 컴포넌트 단위 테스트

@@ -1,0 +1,104 @@
+# audit:allow test-scenario-coverage reason: axes cross product 의 회귀 가드는 test_files 의
+# 단위(matchStateScope=scope 매칭 route/base/modal+glob, pageStateSimulator=applyInitialPatch
+# local/global/query/route 합성+resolveSampleOverride+getFormErrors, sampleDataProvider=override
+# 우선순위, useEditorTemplateAssets=캐시버전 주입 회귀)·레이아웃렌더(pageStateSimulation.render=
+# formErrors/local분기/query/route dataContext)·E2E(page-state-switcher.spec.ts // @scenario/@effects)
+# 가 cover.
+
+feature: 레이아웃 편집기 페이지 상태 토글 + 3 갈래 시뮬레이션(샘플데이터/초기상태 local·global·query·route/폼검증)
+
+description: |
+  한 라우트/base/modal 이 진입 맥락·사용자·검증 결과에 따라 가질 수 있는 변종 화면을
+  editor-spec.json.states 로 선언하고, 캔버스 툴바의 상태 드롭다운(PageStateSwitcher)으로
+  전환해 미리본다. 상태 1건은 (1) sampleDataOverrides 통째 교체 (2) initialState
+  local/global/query/route 패치 (3) formErrors 폼 검증 실패 시뮬레이션의 결합이다.
+
+  핵심 동작:
+    - scope 매칭: route(정확 일치 + `*` 세그먼트 glob 1단계) / base / modal(정확 일치).
+      scope.match 는 routes.json 실제 path 와 문자 단위 일치(admin = `*/admin/...` 프리픽스).
+    - 토글 표시: items 2개 이상 scope 에서만. 1개 이하/미선언/scope 미매칭 → 미표시 + no-op 디그레이드.
+    - sampleData 오버라이드: 활성 상태 sampleDataOverrides 매칭 시 통째 교체, 미매칭 base 폴백.
+    - initialState.local 권위 주입: PreviewCanvas 가 _localInit(force/deep)+_local 로
+      레이아웃 init_actions 기본값을 이긴다(profile-edit isPasswordVerified).
+    - initialState.query: baseline 위 부분 머지(settings query.tab=general|seo 서브탭 변종).
+    - initialState.route: path param 오버라이드, null 값=토큰 제거(users/:id/edit route.id null=신규).
+    - formErrors: 키=화면이 읽는 실제 상태 경로(_local.errors.* / _global.loginErrors.*), $t: 해석.
+      점이 박힌 필드명은 대괄호 표기(_local.errors['orderer.name'])로 리터럴 leaf 보존(tokenizePath).
+    - 신규 상태 라벨/formErrors $t: 키가 캐시 무효화 구멍 없이 친화명으로 해석(raw 키 회귀 차단).
+
+axes:
+  scope_kind: [route_exact, route_glob, base, modal]
+  states_count: [zero, one, two_or_more]
+  patch_branch: [sample_override, local, global, query, route_set, route_null, form_errors]
+  template: [sirsoft-basic, sirsoft-admin_basic]
+  label_resolution: [existing_key, new_key_cache_busted]
+
+exclusions:
+  - { states_count: zero, patch_branch: local, reason: "states 미선언 → 토글 미표시 + no-op(패치 분기 무관)" }
+  - { states_count: zero, patch_branch: global, reason: "동일" }
+  - { states_count: zero, patch_branch: query, reason: "동일" }
+  - { states_count: zero, patch_branch: route_set, reason: "동일" }
+  - { states_count: zero, patch_branch: route_null, reason: "동일" }
+  - { states_count: zero, patch_branch: form_errors, reason: "동일" }
+  - { states_count: zero, patch_branch: sample_override, reason: "동일" }
+  - { states_count: one, patch_branch: query, reason: "단일 상태 → 토글 미표시(전환 변종 없음)" }
+  - { states_count: one, patch_branch: route_set, reason: "동일" }
+  - { states_count: one, patch_branch: route_null, reason: "동일" }
+  - { scope_kind: route_glob, patch_branch: form_errors, reason: "glob 매칭은 scope 판정 축 — 패치 분기와 직교(route_exact 가 cover)" }
+  - { scope_kind: base, patch_branch: query, reason: "query/route 패치는 라우트 진입 맥락 — base/modal 비해당" }
+  - { scope_kind: base, patch_branch: route_set, reason: "동일" }
+  - { scope_kind: base, patch_branch: route_null, reason: "동일" }
+  - { scope_kind: modal, patch_branch: query, reason: "동일" }
+  - { scope_kind: modal, patch_branch: route_set, reason: "동일" }
+  - { scope_kind: modal, patch_branch: route_null, reason: "동일" }
+  - { label_resolution: new_key_cache_busted, patch_branch: sample_override, reason: "캐시버전 회귀는 라벨/formErrors $t: 해석 축 — sampleData 무관" }
+
+effects:
+  # scope 매칭 + 토글 표시/디그레이드
+  - scope_route_exact_matches_current_route_path
+  - scope_route_glob_matches_one_segment_wildcard
+  - scope_base_and_modal_match_exactly
+  - state_switcher_visible_when_two_or_more_items
+  - state_switcher_hidden_when_single_or_zero_or_unmatched
+  - simulator_noop_when_no_active_state
+  # sampleData 오버라이드
+  - active_state_sample_override_replaces_base_wholesale
+  - unmatched_sample_falls_back_to_base
+  # initialState 합성
+  - applyInitialPatch_merges_local_over_global_baseline
+  - localInit_authoritative_beats_layout_init_actions
+  - immutable_baseline_recompute_reverts_prior_patch_on_switch
+  - applyInitialPatch_query_merges_over_empty_baseline
+  - applyInitialPatch_route_overrides_path_params
+  - applyInitialPatch_route_null_removes_token_for_create_mode
+  # 폼 검증 시뮬레이션
+  - formErrors_key_deep_set_to_actual_state_path
+  - formErrors_local_prefix_routes_to_local_store
+  - formErrors_global_prefix_routes_to_global_store
+  - formErrors_message_t_key_resolved_against_edit_target_dict
+  - formErrors_bracket_notation_preserves_dotted_literal_leaf_key
+  # 라벨 해석 / 캐시 무효화 회귀
+  - existing_state_label_resolves_to_friendly_name
+  - new_state_label_resolves_via_cache_busted_lang_fetch
+  - state_label_never_shows_raw_t_key
+  # 브라우저 가시 결과 (E2E)
+  - login_route_shows_state_toggle_with_two_options
+  - root_route_hides_state_toggle
+  - login_failed_state_renders_form_error_text_on_canvas
+  - profile_edit_password_entry_vs_actual_edit_section_toggle
+  - admin_users_edit_vs_create_title_via_route_id_removal
+  - admin_settings_general_vs_seo_tab_via_query_tab
+  - checkout_validation_failed_renders_dotted_key_inline_errors
+  # 비편집 무영향
+  - non_edit_user_page_unaffected_simulation_gated_by_isEditMode
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/matchStateScope.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/state/pageStateSimulator.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/sample-data/sampleDataProvider.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorTemplateAssets.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/pageStateSimulation.render.test.tsx
+  - tests/Playwright/specs/layout-editor/page-state-switcher.spec.ts
+
+validation:
+  e2e_spec: tests/Playwright/specs/layout-editor/page-state-switcher.spec.ts

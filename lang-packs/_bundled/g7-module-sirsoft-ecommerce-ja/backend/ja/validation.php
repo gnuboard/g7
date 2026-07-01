@@ -156,6 +156,58 @@ return [
             'string' => '配送国家は文字列である必要があります。',
             'in' => '正しい配送国家を選択してください。',
         ],
+        'category_id' => [
+            'integer' => 'カテゴリーIDは数字である必要があります。',
+        ],
+        'no_category' => [
+            'boolean' => 'カテゴリー未登録フィルターはtrueまたはfalseである必要があります。',
+        ],
+        'date_type' => [
+            'in' => '正しい日付タイプを選択してください。',
+        ],
+        'start_date' => [
+            'date' => '開始日は日付形式である必要があります。',
+        ],
+        'end_date' => [
+            'date' => '終了日は日付形式である必要があります。',
+            'after_or_equal' => '終了日は開始日以降である必要があります。',
+        ],
+        'sales_status' => [
+            'array' => '販売ステータスは配列形式である必要があります。',
+            'in' => '正しい販売ステータスを選択してください。',
+        ],
+        'display_status' => [
+            'in' => '正しい表示ステータスを選択してください。',
+        ],
+        'brand_id' => [
+            'integer' => 'ブランドIDは数字である必要があります。',
+        ],
+        'no_brand' => [
+            'boolean' => 'ブランド未登録フィルターはtrueまたはfalseである必要があります。',
+        ],
+        'tax_status' => [
+            'in' => '正しい課税対象を選択してください。',
+        ],
+        'price_type' => [
+            'in' => '正しい価格タイプを選択してください。',
+        ],
+        'min_price' => [
+            'integer' => '最小価格は数字である必要があります。',
+            'min' => '最小価格は0以上である必要があります。',
+        ],
+        'max_price' => [
+            'integer' => '最大価格は数字である必要があります。',
+            'min' => '最大価格は0以上である必要があります。',
+        ],
+        'min_stock' => [
+            'integer' => '最小在庫は数字である必要があります。',
+        ],
+        'max_stock' => [
+            'integer' => '最大在庫は数字である必要があります。',
+        ],
+        'shipping_policy_id' => [
+            'integer' => '配送ポリシーIDは数字である必要があります。',
+        ],
     ],
     'category_required' => 'カテゴリを選択してください。',
     'category_min' => '最小1個以上のカテゴリを選択してください。',
@@ -165,6 +217,20 @@ return [
     'selling_price_lte_list' => '販売価格は定価より大きくすることはできません。',
     'option_selling_price_lte_list' => 'オプション販売価格は定価より大きくすることはできません。',
     'product' => [
+        'attributes' => [
+            'name' => '商品名',
+            'product_code' => '商品コード',
+            'list_price' => '定価',
+            'selling_price' => '販売価格',
+            'stock_quantity' => '在庫数量',
+            'safe_stock_quantity' => '安全在庫数量',
+            'option_list_price' => 'オプション定価',
+            'option_selling_price' => 'オプション販売価格',
+            'option_price_adjustment' => 'オプション価格調整額',
+            'option_stock_quantity' => 'オプション在庫数量',
+            'option_name' => 'オプション名',
+            'option_code' => 'オプションコード',
+        ],
         'name' => [
             'required' => '商品名を入力してください。',
         ],
@@ -251,6 +317,26 @@ return [
             'ids_min' => '最小1個以上の商品を選択してください。',
             'product_not_found' => '存在しない商品です。',
             'option_not_found' => '存在しないオプションです。',
+        ],
+        'allowed_roles' => [
+            'required_when_restricted' => '購入対象制限を選択した場合、許可するロールを1つ以上選択してください。',
+        ],
+        'additional_options' => [
+            'values' => [
+                'required_with' => '各追加オプショングループには選択肢を1つ以上登録してください。',
+                'min' => '各追加オプショングループには選択肢を1つ以上登録してください。',
+                'max' => '追加オプショングループごとの選択肢は最大:max個まで登録できます。',
+                'name' => [
+                    'required' => '選択肢名を入力してください。',
+                ],
+                'price_adjustment' => [
+                    'min' => '追加金額は0以上である必要があります。',
+                ],
+            ],
+            'name' => [
+                'required_with' => '追加オプショングループ名を入力してください。',
+            ],
+            'max' => '追加オプショングループは最大:max個まで登録できます。',
         ],
     ],
     'option' => [
@@ -494,6 +580,12 @@ return [
         'id_required' => 'クーポンIDは必須です。',
         'id_integer' => 'クーポンIDは整数である必要があります。',
         'id_not_found' => '存在しないクーポンです。',
+        'discount_value_fixed_min' => '割引額は1円以上である必要があります。',
+        'target_products_required' => '適用商品を1つ以上選択してください。',
+        'target_categories_required' => '適用カテゴリを1つ以上選択してください。',
+        'user_ids_required' => '発行する会員を選択してください。',
+        'user_ids_min' => '最低1名以上の会員を選択してください。',
+        'user_ids_invalid' => '存在しない会員が含まれています。',
     ],
     'orders' => [
         'ids' => [
@@ -643,6 +735,13 @@ return [
             'integer' => 'ページ番号は数字である必要があります。',
             'min' => 'ページ番号は1以上である必要があります。',
         ],
+        'member_type' => [
+            'in' => '正しい会員区分を選択してください。',
+        ],
+        'status_transition' => [
+            'invalid' => ':from ステータスから :to ステータスへは変更できません。',
+            'bulk_invalid' => '一部の項目(:count件)を :to ステータスに変更できません。(現在のステータス: :from)',
+        ],
     ],
     'quantity_exceeds_available' => '変更数量が保有数量を超えています。',
     'quantity_min_one' => '変更数量は1個以上である必要があります。',
@@ -709,6 +808,11 @@ return [
         'dbank_bank_name_required' => '入金銀行名が必要です。',
         'dbank_account_number_required' => '入金口座番号が必要です。',
         'dbank_account_holder_required' => '預金者名が必要です。',
+        'orderer_email_required' => '注文者のメールアドレスを入力してください。',
+        'guest_lookup_password_required' => '注文照会パスワードを入力してください。',
+        'guest_lookup_password_min' => '注文照会パスワードは8文字以上である必要があります。',
+        'guest_lookup_password_confirmed' => '注文照会パスワードが一致しません。',
+        'guest_lookup_password_confirmation_required' => '注文照会パスワード確認を入力してください。',
     ],
     'order_bulk' => [
         'ids_required' => '変更する注文を選択してください。',
@@ -783,6 +887,58 @@ return [
             'continuity' => '区間が連続していません。',
             'min_less_than_max' => '開始値が終了値より小さい必要があります。',
             'fee_non_negative' => '送料は0以上である必要があります。',
+            'fee_required' => '区間配送料を入力してください。',
+            'tier_min_non_negative' => '区間開始値は0以上である必要があります。',
+            'tier_max_non_negative' => '区間終了値は0以上である必要があります。',
+            'unit_value_min' => '区間単位値は0より大きくする必要があります。',
+        ],
+        'country_settings' => [
+            'country_code' => [
+                'required' => '国を選択してください。',
+                'distinct' => '国が重複しています。',
+            ],
+            'shipping_method' => [
+                'required' => '配送方法を選択してください。',
+                'in' => '正しい配送方法を選択してください。',
+            ],
+            'charge_policy' => [
+                'required' => '課金ポリシーを選択してください。',
+                'in' => '正しい課金ポリシーを選択してください。',
+            ],
+            'base_fee' => [
+                'numeric' => '基本配送料は数字である必要があります。',
+                'min' => '基本配送料は0以上である必要があります。',
+            ],
+            'free_threshold' => [
+                'numeric' => '送料無料基準金額は数字である必要があります。',
+                'min' => '送料無料基準金額は0以上である必要があります。',
+            ],
+            'api_endpoint' => [
+                'url' => '正しいURL形式ではありません。',
+                'required' => '計算API ポリシー選択時にAPI アドレスを入力してください。',
+            ],
+            'api_request_fields' => [
+                'in' => 'サポートされていない参照フィールドです。',
+            ],
+            'extra_fee_enabled' => [
+                'required' => '追加配送料の使用有無を選択してください。',
+            ],
+            'is_active' => [
+                'required' => '使用有無を選択してください。',
+            ],
+            'required' => '国別配送設定を1つ以上追加してください。',
+            'min' => '国別配送設定を1つ以上追加してください。',
+            'api_config' => [
+                'http_method_in' => 'サポートされていないHTTPメソッドです。',
+                'auth_type_in' => 'サポートされていない認証方式です。',
+                'auth_header_name_required' => 'カスタムヘッダー認証を選択する場合、ヘッダー名を入力してください。',
+                'auth_header_name_format' => 'ヘッダー名に使用できない文字が含まれています。',
+                'response_type_in' => 'サポートされていないレスポンス形式です。',
+                'field_map_format' => '外部キー名に使用できない文字が含まれています。',
+            ],
+        ],
+        'name' => [
+            'required' => '配送ポリシー名を入力してください。',
         ],
     ],
     'extra_fee_template' => [
@@ -986,7 +1142,6 @@ return [
         'basic_info.mail_order_number' => '通信販売業通知番号',
         'basic_info.telecom_number' => '付加通信事業者番号',
         'language_currency' => '言語·通貨設定',
-        'language_currency.default_language' => 'デフォルト言語',
         'language_currency.default_currency' => 'デフォルト通貨',
         'language_currency.currencies' => '通貨リスト',
         'language_currency.currencies.*.code' => '通貨コード',
@@ -996,6 +1151,8 @@ return [
         'language_currency.currencies.*.rounding_unit' => '四捨五入単位',
         'language_currency.currencies.*.rounding_method' => '四捨五入方式',
         'language_currency.currencies.*.decimal_places' => '小数点以下の桁数',
+        'language_currency.currencies.*.locales' => '使用言語',
+        'language_currency.currencies.*.locales.*' => '使用言語',
         'seo' => 'SEO設定',
         'seo.meta_main_title' => 'メインページタイトル',
         'seo.meta_main_description' => 'メインページ説明',
@@ -1024,8 +1181,6 @@ return [
         'order_settings.bank_accounts.*.is_default' => 'デフォルト口座',
         'order_settings.auto_cancel_expired' => '未決済自動キャンセル',
         'order_settings.auto_cancel_days' => '自動キャンセル期限（日）',
-        'order_settings.vbank_due_days' => '仮想口座入金期限（日）',
-        'order_settings.dbank_due_days' => '銀行振込入金期限（日）',
         'order_settings.cart_expiry_days' => 'カート保管期間（日）',
         'order_settings.default_pg_provider' => 'デフォルトPG会社',
         'order_settings.payment_methods.*.pg_provider' => 'PG会社',
@@ -1057,6 +1212,41 @@ return [
         'label_color' => 'ラベル色',
         'is_active' => '使用有無',
         'sort_order' => '並べ替え順序',
+        'mileage.default_earn_rate' => '基本積立率',
+        'mileage.earn_trigger' => '積立タイミング',
+        'mileage.earn_delay_days' => '積立遅延日',
+        'mileage.currency_rules.*.currency_code' => '通貨コード',
+        'mileage.currency_rules.*.point_value' => '1ポイント当たりの金額',
+        'mileage.currency_rules.*.min_use_amount' => '最小使用金額',
+        'mileage.currency_rules.*.use_unit' => '使用単位',
+        'mileage.currency_rules.*.max_use_percent' => '最大使用率',
+        'mileage.currency_rules.*.max_use_value' => '最大使用金額',
+        'mileage.expiry_days' => '有効期限',
+        'mileage.expiry_notification_days_before' => '失効予定通知日',
+        'country_settings' => '国別設定',
+        'country_settings.*.country_code' => '国',
+        'country_settings.*.shipping_method' => '配送方法',
+        'country_settings.*.currency_code' => '通貨',
+        'country_settings.*.charge_policy' => '課金ポリシー',
+        'country_settings.*.base_fee' => '基本配送料',
+        'country_settings.*.free_threshold' => '送料無料基準金額',
+        'country_settings.*.ranges.unit_value' => '区間単位値',
+        'country_settings.*.ranges.tiers.*.min' => '区間開始値',
+        'country_settings.*.ranges.tiers.*.max' => '区間終了値',
+        'country_settings.*.ranges.tiers.*.fee' => '区間配送料',
+        'country_settings.*.api_endpoint' => '計算API アドレス',
+        'country_settings.*.extra_fee_settings.*.zipcode' => '郵便番号',
+        'country_settings.*.extra_fee_settings.*.fee' => '追加配送料',
+        'review_settings.write_deadline_days' => 'レビュー作成期限(日)',
+        'review_settings.max_images' => 'レビュー画像最大枚数',
+        'review_settings.max_image_size_mb' => 'レビュー画像最大容量(MB)',
+        'country_settings.*.api_config.http_method' => 'HTTPメソッド',
+        'country_settings.*.api_config.auth_type' => '認証方式',
+        'country_settings.*.api_config.auth_token' => '認証トークン',
+        'country_settings.*.api_config.auth_header_name' => '認証ヘッダー名',
+        'country_settings.*.api_config.response_type' => 'レスポンス形式',
+        'country_settings.*.api_config.response_path' => 'レスポンス配送料金パス',
+        'language_currency.currencies.*.base_unit' => '基準単位',
     ],
     'custom' => [
         'basic_info' => [
@@ -1139,10 +1329,6 @@ return [
             ],
         ],
         'language_currency' => [
-            'default_language' => [
-                'string' => '基本言語は文字列である必要があります。',
-                'max' => '基本言語は最大10字まで入力可能です。',
-            ],
             'default_currency' => [
                 'string' => '基本通貨は文字列である必要があります。',
                 'max' => '基本通貨は最大10字まで入力可能です。',
@@ -1153,7 +1339,7 @@ return [
                 'code' => [
                     'required_with' => '通貨コードは必須です。',
                     'string' => '通貨コードは文字列である必要があります。',
-                    'max' => '通貨コードは最大10字まで入力可能です。',
+                    'regex' => '通貨コードはISO 4217形式(英文大文字3字、例：KRW)である必要があります。',
                 ],
                 'name' => [
                     'required_with' => '通貨名は必須です。',
@@ -1181,6 +1367,7 @@ return [
                     'boolean' => '基本通貨の有無は真偽値である必要があります。',
                 ],
             ],
+            'base_locked_after_data' => '商品または注文が1件以上登録された後は、基本通貨を変更できません。',
         ],
         'seo' => [
             'meta_main_title' => [
@@ -1311,16 +1498,6 @@ return [
                 'min' => '自動キャンセルの期限は0日以上である必要があります。',
                 'max' => '自動キャンセルの期限は最大30日まで設定可能です。',
             ],
-            'vbank_due_days' => [
-                'integer' => '仮想口座の入金期限は整数である必要があります。',
-                'min' => '仮想口座の入金期限は1日以上である必要があります。',
-                'max' => '仮想口座の入金期限は最大30日まで設定可能です。',
-            ],
-            'dbank_due_days' => [
-                'integer' => '無通帳入金の入金期限は整数である必要があります。',
-                'min' => '無通帳入金の入金期限は1日以上である必要があります。',
-                'max' => '無通帳入金の入金期限は最大30日まで設定可能です。',
-            ],
             'cart_expiry_days' => [
                 'integer' => 'カートの保管期間は整数である必要があります。',
                 'min' => 'カートの保管期間は1日以上である必要があります。',
@@ -1435,6 +1612,31 @@ return [
                 ],
             ],
         ],
+        'mileage' => [
+            'currency_rules' => [
+                'currency_code' => [
+                    'required_with' => '通貨コードは必須です。',
+                    'regex' => '通貨コードはISO 4217形式(英文大文字3字、例：KRW)である必要があります。',
+                ],
+                'point_value' => [
+                    'numeric' => '1ポイント当たりの金額は数字である必要があります。',
+                    'min' => '1ポイント当たりの金額は0より大きい必要があります。',
+                ],
+                'max_use_value' => [
+                    'integer' => '最大使用金額は整数である必要があります。',
+                    'min' => '最大使用金額は0以上である必要があります。',
+                    'max' => '最大使用金額が大きすぎます。(最大10億)',
+                ],
+            ],
+        ],
+        'user_currency' => [
+            'required' => '決済通貨を選択してください。',
+            'invalid' => '登録された通貨のみ選択できます。',
+        ],
+        'user_shipping_country' => [
+            'required' => '配送先国を選択してください。',
+            'invalid' => '配送可能な国のみ選択できます。',
+        ],
     ],
     'user_address' => [
         'name_required' => '配送先名は必須です。',
@@ -1454,5 +1656,20 @@ return [
         'image_file' => '有効なファイル形式ではありません。',
         'image_image' => '画像ファイルのみアップロード可能です。',
         'image_max' => '画像サイズは10MBを超えることはできません。',
+    ],
+    'guest_order' => [
+        'order_number_required' => '注文番号を入力してください。',
+        'orderer_phone_required' => '電話番号を入力してください。',
+        'guest_lookup_password_required' => '注文照会パスワードを入力してください。',
+    ],
+    'mileage' => [
+        'user_required' => '対象会員を選択してください。',
+        'amount_min' => '金額は1ポイント以上である必要があります。',
+        'action_invalid' => '付与または差引のみが可能です。',
+        'duplicate_currency' => '通貨コードが重複しています。',
+        'first_must_be_default' => '最初の通貨はデフォルト通貨(:currency)である必要があります。',
+        'currency_not_registered' => '登録されていない通貨(:currency)です。言語/通貨設定に先に追加してください。',
+        'earn_rate_required_when_enabled' => 'マイレージを使用するには、基本積立率は0より大きい必要があります。',
+        'expires_at_invalid' => '有効期限は正しい日付である必要があります。',
     ],
 ];

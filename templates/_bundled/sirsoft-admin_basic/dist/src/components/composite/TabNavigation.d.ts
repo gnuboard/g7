@@ -1,5 +1,6 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
+import { EditorAttrs } from '../../types';
 export interface Tab {
     id: string | number;
     label: string;
@@ -16,6 +17,12 @@ export interface TabNavigationProps {
     style?: React.CSSProperties;
     /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
     mobileBreakpoint?: number;
+    /**
+     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+     */
+    id?: string;
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * TabNavigation 집합 컴포넌트

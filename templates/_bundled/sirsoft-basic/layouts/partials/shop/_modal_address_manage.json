@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "체크아웃 배송지 관리 모달 - 배송지 선택, 추가, 삭제"
+    "description": "체크아웃 배송지 관리 모달 - 배송지 선택, 추가, 삭제",
+    "editor_label": "$t:user.modal_label.shop.addressManageModal"
   },
   "type": "composite",
   "name": "Modal",
@@ -385,12 +386,16 @@
                         "shipping": {
                           "recipient_name": "{{_local.selectedAddressObj.recipient_name}}",
                           "recipient_phone": "{{_local.selectedAddressObj.recipient_phone}}",
-                          "zipcode": "{{_local.selectedAddressObj.zipcode}}",
-                          "address": "{{_local.selectedAddressObj.address}}",
+                          "country_code": "{{_local.selectedAddressObj.country_code ?? 'KR'}}",
+                          "zipcode": "{{_local.selectedAddressObj.zipcode ?? ''}}",
+                          "address": "{{_local.selectedAddressObj.address ?? ''}}",
                           "address_detail": "{{_local.selectedAddressObj.address_detail ?? ''}}",
                           "region": "{{_local.selectedAddressObj.region ?? ''}}",
-                          "city": "{{_local.selectedAddressObj.city ?? ''}}",
-                          "country_code": "{{_local.selectedAddressObj.country_code ?? 'KR'}}"
+                          "address_line_1": "{{_local.selectedAddressObj.address_line_1 ?? ''}}",
+                          "address_line_2": "{{_local.selectedAddressObj.address_line_2 ?? ''}}",
+                          "intl_city": "{{_local.selectedAddressObj.city ?? ''}}",
+                          "intl_state": "{{_local.selectedAddressObj.state ?? ''}}",
+                          "intl_postal_code": "{{_local.selectedAddressObj.postal_code ?? ''}}"
                         }
                       }
                     },
@@ -490,6 +495,30 @@
                     "className": "text-red-500 text-xs mt-1"
                   },
                   "text": "{{_local.addressErrors?.name?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "comment": "배송국가 (D10 — 해외배송 활성 시에만 표시. name 바인딩으로 editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기.)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                  "text": "$t:shop.checkout.shipping_country"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "country_code",
+                    "value": "{{_local.editingAddress?.country_code ?? _global.preferredShippingCountry ?? 'KR'}}",
+                    "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[_global.locale] ?? c.name?.ko ?? c.code) }))}}",
+                    "className": "w-full"
+                  }
                 }
               ]
             },
@@ -609,9 +638,10 @@
               ]
             },
             {
-              "comment": "주소 검색",
+              "comment": "주소 검색 (국내 KR — 다음우편번호. 해외배송 OFF 또는 KR 선택 시 표시)",
               "type": "basic",
               "name": "Div",
+              "if": "{{(_local.editingAddress?.country_code ?? 'KR') === 'KR'}}",
               "children": [
                 {
                   "type": "basic",
@@ -709,9 +739,83 @@
               ]
             },
             {
-              "comment": "상세 주소",
+              "comment": "해외 주소 입력 (D10 — KR 외 국가 선택 시. 체크아웃 해외폼과 동일 필드: address_line_1/2, intl_city/state/postal_code. UserAddress 컬럼 매핑은 백엔드 MapsAddressBookFields 트레이트가 처리.)",
               "type": "basic",
               "name": "Div",
+              "if": "{{(_local.editingAddress?.country_code ?? 'KR') !== 'KR'}}",
+              "props": { "className": "space-y-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "address_line_1",
+                    "placeholder": "$t:shop.checkout.intl_address1_placeholder",
+                    "className": "{{_local.addressErrors?.address_line_1 ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "address_line_2",
+                    "placeholder": "$t:shop.checkout.intl_address2_placeholder",
+                    "className": "w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-2 gap-2" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "intl_city",
+                        "placeholder": "$t:shop.checkout.intl_city_placeholder",
+                        "className": "{{_local.addressErrors?.intl_city ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "intl_state",
+                        "placeholder": "$t:shop.checkout.intl_state_placeholder",
+                        "className": "w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "intl_postal_code",
+                    "placeholder": "$t:shop.checkout.intl_postal_code_placeholder",
+                    "className": "{{_local.addressErrors?.intl_postal_code ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.addressErrors?.address_line_1 || _local.addressErrors?.intl_city || _local.addressErrors?.intl_postal_code}}",
+                  "props": { "className": "text-red-500 text-xs mt-1 block" },
+                  "text": "{{_local.addressErrors?.address_line_1?.[0] ?? _local.addressErrors?.intl_city?.[0] ?? _local.addressErrors?.intl_postal_code?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "comment": "상세 주소 (국내 KR 전용 — 해외는 address_line_2 사용)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_local.editingAddress?.country_code ?? 'KR') === 'KR'}}",
               "children": [
                 {
                   "type": "basic",

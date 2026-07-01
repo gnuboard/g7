@@ -56,7 +56,9 @@ return [
     // categories validation messages
     'categories' => [
         'array' => 'Categories must be an array.',
+        'max' => 'You can add up to :max categories.',
         'item_max' => 'Category name cannot exceed :max characters.',
+        'item_required' => 'Category name cannot be empty.',
     ],
 
     // feature settings validation messages
@@ -88,6 +90,9 @@ return [
     'max_file_count' => [
         'min' => 'Maximum file count must be at least :min.',
         'max' => 'Maximum file count cannot exceed :max.',
+    ],
+    'allowed_extensions' => [
+        'min' => 'At least one allowed file extension is required.',
     ],
 
     // permissions validation messages
@@ -126,6 +131,7 @@ return [
     'max_title_length' => [
         'min' => 'Maximum title length must be at least :min characters.',
         'max' => 'Maximum title length cannot exceed :max characters.',
+        'gte_min' => 'Maximum title length cannot be less than the minimum title length.',
     ],
 
     // content length limit validation messages
@@ -136,6 +142,7 @@ return [
     'max_content_length' => [
         'min' => 'Maximum content length must be at least :min characters.',
         'max' => 'Maximum content length cannot exceed :max characters.',
+        'gte_min' => 'Maximum content length cannot be less than the minimum content length.',
     ],
 
     // comment length limit validation messages
@@ -146,6 +153,7 @@ return [
     'max_comment_length' => [
         'min' => 'Maximum comment length must be at least :min characters.',
         'max' => 'Maximum comment length cannot exceed :max characters.',
+        'gte_min' => 'Maximum comment length cannot be less than the minimum comment length.',
     ],
 
     // security settings validation messages
@@ -305,6 +313,9 @@ return [
             'report_policy.daily_report_limit' => 'Daily Report Limit',
             'report_policy.rejection_limit_count' => 'Rejection Limit Count',
             'report_policy.rejection_limit_days' => 'Rejection Limit (Days)',
+            // report_permissions
+            'report_permissions.view_roles' => 'Report View Permission Roles',
+            'report_permissions.manage_roles' => 'Report Manage Permission Roles',
             // spam_security
             'spam_security.blocked_keywords' => 'Blocked Keywords',
             'spam_security.post_cooldown_seconds' => 'Post Cooldown (Seconds)',
@@ -349,6 +360,9 @@ return [
         ],
         'restore' => [
             'reason' => 'Restore Reason',
+        ],
+        'board' => [
+            'add_to_menu' => 'Show in admin menu',
         ],
     ],
 
@@ -499,6 +513,7 @@ return [
         'posts' => [
             'read' => 'View Posts',
             'write' => 'Create Posts',
+            'read-secret' => 'View Secret Posts',
         ],
         'comments' => [
             'read' => 'View Comments',
@@ -513,6 +528,18 @@ return [
 
     // Permission field attribute suffix
     'role_field_suffix' => 'Roles',
+
+    // Report permissions settings validation messages
+    'report_permissions' => [
+        'view_roles' => [
+            'required_with' => 'Please select at least one role for report view permission.',
+            'min' => 'Please select at least :min role(s) for report view permission.',
+        ],
+        'manage_roles' => [
+            'required_with' => 'Please select at least one role for report manage permission.',
+            'min' => 'Please select at least :min role(s) for report manage permission.',
+        ],
+    ],
 
     // Report validation messages
     'report' => [

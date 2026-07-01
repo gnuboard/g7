@@ -2,6 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
+import type { EditorAttrs } from '../../types';
 
 export interface TagSelectOption {
   value: string | number;
@@ -21,6 +22,12 @@ export interface TagSelectProps {
   disabled?: boolean;
   /** 추가 클래스 */
   className?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 // CSS 클래스 상수 (ui-elements.css의 .tag 클래스 재사용)
@@ -47,6 +54,8 @@ export const TagSelect: React.FC<TagSelectProps> = ({
   placeholder = 'No items selected',
   disabled = false,
   className = '',
+  id,
+  editorAttrs,
 }) => {
   // 값으로 라벨 찾기
   const getLabel = useCallback(
@@ -78,7 +87,7 @@ export const TagSelect: React.FC<TagSelectProps> = ({
   const containerClassName = `${STYLES.container.base} ${disabled ? STYLES.container.disabled : ''} ${className}`.trim();
 
   return (
-    <Div className={containerClassName}>
+    <Div className={containerClassName} id={id} {...editorAttrs}>
       {selectedItems.length === 0 ? (
         <Span className={STYLES.placeholder}>{placeholder}</Span>
       ) : (

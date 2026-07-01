@@ -112,6 +112,10 @@ class IdentityVerificationService
     /**
      * Challenge 를 취소합니다.
      *
+     * before/after_cancel 훅을 발행하여 외부 plugin 이 자기 record (예: 이니시스의 challenge_mapping)
+     * 를 cancel 시점에 정리할 수 있도록 한다. 다른 라이프사이클 이벤트(before/after_request,
+     * before/after_verify) 와 일관된 hook 페어 구조 유지.
+     *
      * @param  string  $challengeId  Challenge UUID
      * @return bool 취소 성공 여부 (대상 challenge 가 없으면 false)
      */
@@ -119,15 +123,26 @@ class IdentityVerificationService
     {
         $log = $this->logRepository->findById($challengeId);
 
+        HookManager::doAction('core.identity.before_cancel', $challengeId, $log);
+
         if (! $log) {
+            HookManager::doAction('core.identity.after_cancel', $challengeId, null, false);
+
             return false;
         }
 
-        return $this->manager->get($log->provider_id)->cancel($challengeId);
+        $result = $this->manager->get($log->provider_id)->cancel($challengeId);
+
+        HookManager::doAction('core.identity.after_cancel', $challengeId, $log, $result);
+
+        return $result;
     }
 
     /**
      * verification_token 을 소비(consume)합니다 — signup_before_submit 정책 통과 시 재사용 방지.
+     *
+     * before/after_consume_token 훅을 발행하여 외부 plugin 이 token 소비 시점에 자기 후속 작업
+     * (예: 이니시스의 가입 완료 후 record 영속화) 을 listener 로 분리할 수 있도록 한다.
      *
      * @param  string  $token  IDV 발행 verification_token
      * @return bool consume 성공 여부 (verified 로그 부재 시 false)
@@ -136,13 +151,21 @@ class IdentityVerificationService
     {
         $log = $this->logRepository->findVerifiedForToken($token, 'signup');
 
+        HookManager::doAction('core.identity.before_consume_token', $token, $log);
+
         if (! $log) {
+            HookManager::doAction('core.identity.after_consume_token', $token, null, false);
+
             return false;
         }
 
-        return $this->logRepository->updateById($log->id, [
+        $result = $this->logRepository->updateById($log->id, [
             'consumed_at' => now(),
         ]);
+
+        HookManager::doAction('core.identity.after_consume_token', $token, $log, $result);
+
+        return $result;
     }
 
     /**
@@ -151,8 +174,11 @@ class IdentityVerificationService
      * 비동기 검증 흐름(Stripe Identity / 토스인증 push / 외부 redirect 콜백 대기) 에서 클라이언트가
      * `GET /api/identity/challenges/{id}` 로 상태를 폴링할 때 사용합니다.
      *
-     * 반환 필드는 시도 횟수·코드 본체·내부 metadata 를 제외한 공개 안전 필드만:
-     * - id / status / render_hint / expires_at / public_payload (요청 폴링에 필요한 최소집합)
+     * 반환 필드는 코드 본체·내부 metadata 를 제외한 공개 안전 필드만:
+     * - id / status / provider_id / purpose / render_hint / expires_at / attempts / max_attempts / public_payload
+     *
+     * attempts/max_attempts 는 프론트 풀페이지 (`auth/identity_challenge.json`) 가 "남은 시도 횟수" UI
+     * 카운트다운에 사용한다. URL 직접 진입(외부 redirect 콜백 후) 흐름에서도 정확한 한도 표시 보장.
      *
      * @param  string  $challengeId  Challenge UUID
      * @return array<string, mixed>|null 공개 상태 또는 null (없는 경우)
@@ -175,8 +201,12 @@ class IdentityVerificationService
         return [
             'id' => $log->id,
             'status' => $log->status->value,
+            'provider_id' => $log->provider_id,
+            'purpose' => $log->purpose,
             'render_hint' => $log->render_hint,
             'expires_at' => optional($log->expires_at)->toIso8601String(),
+            'attempts' => (int) $log->attempts,
+            'max_attempts' => (int) $log->max_attempts,
             'public_payload' => $publicPayload,
         ];
     }

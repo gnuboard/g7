@@ -2,12 +2,18 @@
 
 namespace Tests\Feature\LanguagePack;
 
+use App\Enums\LanguagePackStatus;
 use App\Extension\AbstractModule;
 use App\Extension\AbstractPlugin;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Models\LanguagePack;
+use App\Providers\LanguagePackServiceProvider;
+use App\Services\LanguagePack\LanguagePackRegistry;
+use App\Services\LanguagePack\LanguagePackSeedInjector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use ReflectionClass;
 use Tests\TestCase;
 
@@ -31,7 +37,6 @@ class ManagerSyncFilterTest extends TestCase
      * @param  string  $identifier  모듈 식별자
      * @param  array  $payload  getter 가 반환할 페이로드
      * @param  string  $getter  override 할 메서드 이름
-     * @return AbstractModule
      */
     private function fakeModule(string $identifier, array $payload, string $getter): AbstractModule
     {
@@ -215,5 +220,71 @@ class ManagerSyncFilterTest extends TestCase
 
         $this->assertNotNull($captured, 'seed.{id}.identity_messages.translations 필터가 플러그인에서 발화되지 않음');
         $this->assertSame('sensitive_action', $captured[0]['scope_value'] ?? null);
+    }
+
+    /**
+     * 활성 언어팩(plugin/module/template scope)에 seed/manifest.json 이 있으면
+     * ServiceProvider 가 `{scope}.{id}.manifest.translations` 필터를 자동 등록하고,
+     * 그 필터가 manifest name/description 에 ja 를 주입함을 검증.
+     *
+     * Manager DB 저장 직전이 호출하는 `applyFilters("{scope}.{id}.manifest.translations", ...)`
+     * 와 동일 경로 — Manager 결선이 끊기면 라벨이 영영 ko 폴백된다.
+     *
+     * @return iterable<string, array{string, string}>
+     */
+    public static function manifestScopeProvider(): iterable
+    {
+        yield 'plugin' => ['plugin', 'sirsoft-gdpr'];
+        yield 'module' => ['module', 'sirsoft-ecommerce'];
+        yield 'template' => ['template', 'sirsoft-basic'];
+    }
+
+    /**
+     * @dataProvider manifestScopeProvider
+     */
+    public function test_manifest_translations_filter_auto_registered_and_injects_ja(string $scope, string $target): void
+    {
+        $packRoot = base_path("lang-packs/g7-{$scope}-{$target}-ja");
+        File::ensureDirectoryExists($packRoot.'/seed');
+        File::put($packRoot.'/seed/manifest.json', json_encode([
+            'name' => 'ジャパニーズ名',
+            'description' => 'ジャパニーズ説明',
+        ]));
+
+        try {
+            LanguagePack::query()->create([
+                'identifier' => "g7-{$scope}-{$target}-ja",
+                'vendor' => 'g7',
+                'scope' => $scope,
+                'target_identifier' => $target,
+                'locale' => 'ja',
+                'locale_name' => 'Japanese',
+                'locale_native_name' => '日本語',
+                'text_direction' => 'ltr',
+                'version' => '1.0.0',
+                'status' => LanguagePackStatus::Active->value,
+                'is_protected' => false,
+                'manifest' => [],
+                'source_type' => 'bundled',
+            ]);
+            $this->app->make(LanguagePackRegistry::class)->invalidate();
+
+            // ServiceProvider 의 동적 등록 재실행 (활성 팩 변경 반영)
+            $provider = new LanguagePackServiceProvider($this->app);
+            $provider->registerExtensionSeedFilters($this->app->make(LanguagePackSeedInjector::class));
+
+            // Manager DB 저장 직전과 동일한 필터 호출
+            $result = HookManager::applyFilters("{$scope}.{$target}.manifest.translations", [
+                'name' => ['ko' => '한국어명', 'en' => 'English'],
+                'description' => ['ko' => '한국어설명', 'en' => 'English desc'],
+            ]);
+
+            $this->assertSame('ジャパニーズ名', $result['name']['ja'], "{$scope} manifest 필터가 ja name 미주입");
+            $this->assertSame('ジャパニーズ説明', $result['description']['ja'], "{$scope} manifest 필터가 ja description 미주입");
+            $this->assertSame('한국어명', $result['name']['ko'], 'ko 회귀');
+            $this->assertSame('English', $result['name']['en'], 'en 회귀');
+        } finally {
+            File::deleteDirectory($packRoot);
+        }
     }
 }

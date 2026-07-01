@@ -88,14 +88,24 @@
       },
       "children": [
         {
-          "comment": "첨부파일 카드 - 권한 있을 때 (A 태그로 다운로드)",
+          "comment": "첨부파일 카드 - 권한 있을 때 (토큰 동반 핸들러로 다운로드, #413 item 58b)",
           "type": "basic",
-          "name": "A",
+          "name": "Div",
           "if": "{{post?.data?.abilities?.can_download === true}}",
           "props": {
-            "href": "{{attachment?.download_url}}",
-            "className": "group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer no-underline"
+            "data-testid": "attachment-download-card",
+            "className": "group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer"
           },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "downloadAttachment",
+              "params": {
+                "url": "{{attachment?.download_url}}",
+                "filename": "{{attachment?.original_filename}}"
+              }
+            }
+          ],
           "children": [
             {
               "comment": "이미지 썸네일 (이미지 파일인 경우) - preview_url 사용",

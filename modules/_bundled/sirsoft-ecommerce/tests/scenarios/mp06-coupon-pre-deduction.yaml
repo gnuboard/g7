@@ -1,0 +1,41 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다. 본 기능은 백엔드 변경
+#   (쿠폰 선차감/반환 + 마일리지 차감시점 결제수단별화)으로, PHPUnit Unit/Feature 테스트가
+#   결제수단·자산·취소유형 조합을 커버하며 green 이다.
+feature: 무통장 쿠폰·마일리지 선차감/반환 + 마일리지 차감시점 결제수단별화 (공개#57 + 마일리지/MP06)
+
+description: |
+  무통장입금 주문 생성 시 1회 제한 쿠폰을 즉시 USED 차감(입금 전까지 USED 유지)하고
+  미입금/취소 시 AVAILABLE 복원한다. 마일리지 차감 시점을 결제수단별로 분기
+  (무통장=order_placed, 카드=payment_complete). 마일리지 OFF 시 컨트롤 비활성화.
+
+axes:
+  payment_method:
+    - vbank            # 가상계좌 → order_placed
+    - dbank            # 무통장입금 → order_placed
+    - card             # PG 카드 → payment_complete
+    - zero_payable     # 결제액 0원 → 타이밍 무관 즉시 차감
+  asset:
+    - coupon           # 쿠폰 USED/AVAILABLE
+    - mileage          # 마일리지 lot 차감/반환
+  cancel_type:
+    - full             # 전체취소 → 전부 복원
+    - partial_keep     # 부분취소(쿠폰 조건 유지) → 미복원
+    - partial_drop     # 부분취소(쿠폰 조건 깨짐) → 탈락분만 복원
+    - unpaid_auto      # 미입금 자동취소 → 복원(환불 0원이어도)
+
+effects:
+  - order_placed_marks_coupon_used               # 무통장 생성 즉시 USED
+  - cancel_restores_coupon_available             # 취소 → AVAILABLE 복원
+  - coupon_reuse_blocked_until_cancel            # USED 라 둘째 주문 재사용 차단(공개#57)
+  - mileage_timing_per_method                    # 결제수단별 마일리지 차감시점
+  - card_mileage_deducted_on_payment_complete    # 카드 → 결제완료 시 차감
+  - mileage_off_disables_control                 # mileage.enabled=false → 컨트롤 disabled
+  - zero_payable_always_immediate_deduct         # 0원 주문 즉시 차감(회귀)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/CouponUseListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/CouponRestoreListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsMileageTimingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingServiceTest.php

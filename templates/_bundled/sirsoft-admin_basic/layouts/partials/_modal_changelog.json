@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "코어 Changelog 모달"
+    "description": "코어 Changelog 모달",
+    "editor_label": "$t:admin.modal_label.changelog_modal"
   },
   "id": "changelog_modal",
   "type": "composite",
@@ -29,7 +30,7 @@
               "type": "basic",
               "name": "Pre",
               "props": {
-                "className": "whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-mono leading-relaxed"
+                "className": "whitespace-pre-wrap text-body font-mono leading-relaxed"
               },
               "text": "{{_global.coreChangelogContent ?? ''}}"
             }

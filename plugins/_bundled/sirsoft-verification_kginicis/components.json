@@ -1,0 +1,10 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "identifier": "sirsoft-verification_kginicis",
+    "version": "1.0.0-beta.1",
+    "components": {
+        "basic": [],
+        "composite": [],
+        "layout": []
+    }
+}

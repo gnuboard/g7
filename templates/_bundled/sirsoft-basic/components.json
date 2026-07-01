@@ -407,6 +407,71 @@
         }
       },
       {
+        "name": "Thead",
+        "type": "basic",
+        "description": "HTML thead element wrapper",
+        "path": "src/components/basic/Thead.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Tbody",
+        "type": "basic",
+        "description": "HTML tbody element wrapper",
+        "path": "src/components/basic/Tbody.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Tr",
+        "type": "basic",
+        "description": "HTML tr element wrapper",
+        "path": "src/components/basic/Tr.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Th",
+        "type": "basic",
+        "description": "HTML th element wrapper",
+        "path": "src/components/basic/Th.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Td",
+        "type": "basic",
+        "description": "HTML td element wrapper",
+        "path": "src/components/basic/Td.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
         "name": "Icon",
         "type": "basic",
         "description": "FontAwesome icon wrapper",
@@ -440,32 +505,6 @@
             "required": false,
             "description": "대체 텍스트"
           },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Footer",
-        "type": "basic",
-        "description": "HTML footer element wrapper",
-        "path": "src/components/basic/Footer.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Header",
-        "type": "basic",
-        "description": "HTML header element wrapper",
-        "path": "src/components/basic/Header.tsx",
-        "props": {
           "className": {
             "type": "string",
             "required": false,
@@ -1339,6 +1378,29 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "SlotContainer",
+        "type": "composite",
+        "description": "동적 슬롯 컨테이너 — 레이아웃 JSON 노드(slot)/확장 주입 조각을 떙겨 렌더 (빈 슬롯=미렌더). 헤더 통화 등 모듈 주입 UI 소비",
+        "path": "src/components/composite/SlotContainer.tsx",
+        "props": {
+          "slotId": {
+            "type": "string",
+            "required": true,
+            "description": "렌더할 슬롯 ID"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "컨테이너 클래스"
+          },
+          "emptyContent": {
+            "type": "node",
+            "required": false,
+            "description": "빈 슬롯일 때 표시할 내용"
           }
         }
       },

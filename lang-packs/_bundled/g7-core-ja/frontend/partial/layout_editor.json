@@ -1,0 +1,1360 @@
+{
+  "chrome": {
+    "toolbar": {
+      "toggle_route_tree": "ルートツリーを折りたたむ/展開",
+      "undo": "元に戻す",
+      "redo": "やり直す",
+      "template_route_separator": " ▸ ",
+      "locale_switcher_label": "コンテンツ言語",
+      "add_element": "要素を追加",
+      "device_desktop": "デスクトップ",
+      "device_tablet": "タブレット",
+      "device_mobile": "モバイル",
+      "zoom_out": "縮小",
+      "zoom_in": "拡大",
+      "zoom_reset": "元のサイズ",
+      "page_settings": "ページ設定",
+      "preview": "プレビュー",
+      "edit_code": "コード編集",
+      "save": "保存",
+      "exit": "終了",
+      "exit_base_edit": "共通レイアウト編集を終了",
+      "exit_modal_edit": "モーダル編集を終了",
+      "exit_extension_edit": "拡張編集を終了",
+      "exit_iteration_item_edit": "繰り返し項目編集を終了",
+      "mode_badge": {
+        "base": "共通レイアウト編集中",
+        "modal": "モーダル編集中",
+        "extension": "拡張編集中",
+        "iteration_item": "繰り返し項目編集中"
+      },
+      "saving": "保存中…",
+      "images": "画像",
+      "reset": "初期化",
+      "translations": "多言語",
+      "data_sources": "データ",
+      "switch_template": "別のテンプレートに切り替え",
+      "previewing": "開く中…",
+      "version_history": "バージョン履歴"
+    },
+    "route_tree": {
+      "panel_title": "画面/ルート",
+      "search_placeholder": "名称・ルートで検索…",
+      "search_clear": "検索をクリア",
+      "search_no_results": "検索結果がありません",
+      "group": {
+        "base": "共通レイアウト",
+        "template": "テンプレート",
+        "module": "モジュール: {name}",
+        "plugin": "プラグイン: {name}",
+        "modal": "モーダル",
+        "extension": "拡張インジェクション"
+      },
+      "connected": {
+        "modals": "この画面のモーダル ({count})",
+        "extensions": "注入される拡張 ({count})"
+      },
+      "badge": {
+        "hidden": "非表示",
+        "redirect": "リダイレクト",
+        "shared_layout": "{count}個のルートを共有",
+        "modified": "変更",
+        "extension_point": "拡張ポイント",
+        "overlay": "オーバーレイ",
+        "priority": "p:{priority}",
+        "inactive": "無効",
+        "version_tooltip": "現在の保存バージョン v{version}"
+      },
+      "empty": "表示するルートがありません"
+    },
+    "fab": {
+      "label": "レイアウト編集",
+      "tooltip": "このスクリーンをレイアウトエディターで開く"
+    },
+    "denied": {
+      "title": "レイアウト編集権限がありません",
+      "message": "この機能を使用するには管理者権限が必要です。",
+      "go_login": "ログイン",
+      "go_home": "ホームへ"
+    },
+    "dirty_guard": {
+      "title": "保存していない変更があります",
+      "message": "変更を保存せずに終了しますか?",
+      "stay": "編集を続ける",
+      "discard": "変更を破棄"
+    },
+    "canvas": {
+      "placeholder": "キャンバス領域 — Phase 2 で入力されます"
+    },
+    "reset_guard": {
+      "title": "この画面を初期化します",
+      "message": "この画面の変更を破棄し、前回保存した状態に戻します。"
+    }
+  },
+  "preview": {
+    "empty": "左側から編集するルートを選択してください",
+    "empty_layout": "このレイアウトに表示するコンポーネントがありません",
+    "loading": "レイアウトを読み込み中...",
+    "error": "レイアウトの読み込みに失敗しました: {error}",
+    "assets_loading": "編集対象のテンプレートアセットを読み込み中...",
+    "assets_error": "編集対象のテンプレートアセットの読み込みに失敗しました: {error}",
+    "sample_data_badge": "サンプルデータ",
+    "extension_no_injection_title": "この画面には編集可能な要素がありません",
+    "extension_no_injection_desc": "この拡張はこの画面にビジュアル編集可能な要素を追加しません。コード編集を使用してください。",
+    "extension_gated_title": "この状態では編集可能な要素が表示されていません",
+    "extension_gated_desc": "この拡張が配置される領域は特定の画面状態でのみ表示されます。その状態が編集設定で定義されていないため、ビジュアル編集できません。コード編集を使用してください。",
+    "extension_gated_desc_with_states": "この拡張が配置される領域は特定の画面状態でのみ表示されます。上部の状態選択でその状態に変更すると編集できます。",
+    "slot_area_label": "コンテンツエリア"
+  },
+  "access_error": {
+    "required_permission_label": "必要な権限:",
+    "detail_summary": "詳細なエラー情報",
+    "action": {
+      "sign_in": "ログインへ",
+      "go_home": "管理者ホームへ",
+      "go_admin_home": "管理者ホームへ",
+      "retry": "再試行"
+    },
+    "unauthorized": {
+      "title": "ログインが必要です",
+      "message": "セッションの有効期限が切れているか、ログアウトしています。しばらく後にログインページに移動します。"
+    },
+    "forbidden": {
+      "title": "このレイアウトにアクセスする権限がありません",
+      "message": "現在のアカウントにはこの画面を編集する権限がありません。管理者に権限の付与をリクエストするか、別のアカウントで再度ログインしてください。"
+    },
+    "not_found": {
+      "title": "レイアウトが見つかりません",
+      "message": "リクエストされたレイアウトが存在しないか、削除されています。ルートを再度選択してください。"
+    },
+    "server_error": {
+      "title": "サーバーで問題が発生しました",
+      "message": "レイアウトの読み込み中にサーバーエラーが発生しました。しばらく後に再度お試しください。"
+    },
+    "network": {
+      "title": "ネットワーク接続をご確認ください",
+      "message": "サーバーに接続できません。ネットワークの状態を確認してから再度お試しください。"
+    },
+    "unknown": {
+      "title": "レイアウトの読み込みに失敗しました",
+      "message": "予期しない問題が発生しました。再度お試しいただくか、管理者にお問い合わせください。"
+    }
+  },
+  "device": {
+    "group_label": "デバイスプレビュー",
+    "desktop": "🖥 デスクトップ",
+    "tablet": "📱 タブレット",
+    "mobile": "📲 モバイル",
+    "custom": "📐 カスタマイズ",
+    "custom_width_label": "幅",
+    "portable": "📱 モバイル+タブレット"
+  },
+  "zoom": {
+    "label": "ズーム",
+    "aria_label": "キャンバスズームスライダー"
+  },
+  "palette": {
+    "title": "要素を追加",
+    "search_placeholder": "要素を検索…",
+    "group": {
+      "design": "デザイン要素",
+      "db": "DB要素"
+    },
+    "empty": "この位置に追加できる要素がありません",
+    "spec_missing": "このテンプレートにはビジュアル編集仕様がありません。要素の追加は無効化されています。",
+    "category": {
+      "all": "すべて",
+      "other": "その他",
+      "fallback": {
+        "basic": "基本要素",
+        "composite": "複合要素",
+        "layout": "レイアウト"
+      }
+    },
+    "default_node_missing_badge": "基本スペックなし",
+    "requires_default_node_missing": "このコンポーネントはテンプレートが基本スタイルを定義してから追加できます。editor-spec.json の componentPalette.entries.<名前>.defaultNode を定義してください。",
+    "table": {
+      "label": "表",
+      "header_1": "タイトル",
+      "header_2": "コンテンツ",
+      "cell": "コンテンツ"
+    },
+    "select": {
+      "default_option1_label": "オプション 1",
+      "default_option2_label": "オプション 2"
+    }
+  },
+  "insertion": {
+    "above": "上に追加",
+    "below": "下に追加",
+    "left": "左に追加",
+    "right": "右に追加"
+  },
+  "context_menu": {
+    "edit_props": "プロパティを設定",
+    "duplicate": "コンポーネントをコピー",
+    "delete": "削除",
+    "separate_branch": "このデバイス専用で分離",
+    "merge_branch": "デバイス専用分離を解除",
+    "separate_branch_device": "この領域を{device}専用で分離",
+    "merge_branch_device": "{device}専用分離を解除",
+    "separate_branch_hint": "このデバイスのみで異なる構成(要素)を配置したい場合に使用します。色·余白などのスタイルのみ異なる場合は[属性 > スタイル]タブを使用してください。",
+    "merge_branch_hint": "このデバイス専用に分離しておいた構成を削除し、デフォルト構成に戻します。",
+    "device_desktop": "デスクトップ",
+    "device_tablet": "タブレット",
+    "device_mobile": "モバイル",
+    "device_portable": "モバイル+タブレット",
+    "device_custom": "{range}"
+  },
+  "overlay": {
+    "edit_common_layout": "共通レイアウトを編集",
+    "edit_extension": "拡張編集",
+    "edit_iteration_item": "繰り返し項目を編集",
+    "edit_destination_route": "→ この画面を編集",
+    "cannot_drop_here": "ここには配置できません",
+    "locked_data_bound": "データ領域は直接編集できません",
+    "select_parent": "親要素を選択 (↑)",
+    "branch_mobile": "モバイル構成",
+    "branch_tablet": "タブレット構成",
+    "branch_desktop": "デスクトップ構成",
+    "branch_custom": "{range} 構成",
+    "branch_boundary_denied": "デバイス別構成間での移動はできません",
+    "jump_device": "{device}構成に移動",
+    "jump_device_hint": "この領域には{device}に別途構成が定義されています。クリックするとそのデバイスビューに切り替えて編集します。",
+    "inherit_banner": "共通レイアウトから受け取ったローディング画面設定があります。下記でこの画面に合わせて変更できます。",
+    "enabled_label": "ローディング画面表示",
+    "enabled_hint": "データを読み込む間に表示するローディング画面をオンまたはオフにします。",
+    "on": "オン",
+    "off": "オフ",
+    "scope_label": "覆う範囲",
+    "scope_full": "フルスクリーン",
+    "scope_region": "特定の領域",
+    "target_label": "対象領域",
+    "fallback_label": "代替領域",
+    "fallback_hint": "対象領域が見つからない場合に代わりに覆う領域です。",
+    "style_label": "表示方法",
+    "style_opaque": "単色カバー",
+    "style_blur": "ぼかし",
+    "style_fade": "フェードイン",
+    "style_skeleton": "スケルトン表示",
+    "style_spinner": "回転表示",
+    "anim_wave": "波紋",
+    "anim_pulse": "点滅",
+    "anim_none": "なし",
+    "skeleton_component": "スケルトン形状",
+    "skeleton_animation": "モーション効果",
+    "skeleton_count": "繰り返し回数",
+    "spinner_component": "回転形状",
+    "spinner_text": "ガイダンステキスト",
+    "waitfor_label": "待つデータ",
+    "waitfor_hint": "選択したすべてのデータを受け取るまでローディング画面を保持します。",
+    "waitfor_empty": "待つことができるデータがありません。",
+    "reset_inherit": "すべてデフォルトに",
+    "loading_picker": {
+      "none": "選択なし",
+      "select": "選択",
+      "search": "形状検索...",
+      "empty": "選択可能な形状がありません。"
+    },
+    "inherited_badge": "継承",
+    "overridden_badge": "この画面で変更",
+    "override_field": "この画面だけを変更"
+  },
+  "save": {
+    "success": "レイアウトを保存しました",
+    "in_progress": "保存中…",
+    "validation_failed": "バリデーションに失敗しました",
+    "blocked_inactive_extension": "無効化された拡張コンポーネントが新たに追加されたため、保存できません",
+    "concurrent": {
+      "title": "別のユーザーが先に保存しました",
+      "message": "このレイアウトは別の管理者が先に保存しました。最新バージョンを読み込みますか？",
+      "load_latest": "最新を読み込む",
+      "view_my_changes": "私の変更内容を表示",
+      "cancel": "キャンセル",
+      "version_info": "最新バージョン：{current} / マイバージョン：{yours}"
+    },
+    "network_error_title": "保存中にネットワークエラーが発生しました",
+    "guard_no_document": "保存するレイアウトドキュメントがロードされていません",
+    "conflict": "別の場所で先に保存されて競合が発生しました"
+  },
+  "control": {
+    "use": "使用",
+    "default": "デフォルト",
+    "color_hex_placeholder": "#000000 / なし",
+    "tag_add": "+ 追加",
+    "background_image": {
+      "upload": "画像アップロード",
+      "clear": "削除",
+      "mode_fill": "フィル",
+      "mode_fit": "フィット",
+      "mode_tile": "タイル",
+      "upload_failed": "画像アップロードに失敗しました"
+    },
+    "dimension": {
+      "placeholder": "例: 320px, 50%, 24rem, auto"
+    },
+    "spacing": {
+      "mode_all": "一括",
+      "mode_sides": "個別",
+      "all": "すべて",
+      "x": "左右",
+      "y": "上下",
+      "top": "上",
+      "right": "右",
+      "bottom": "下",
+      "left": "左"
+    }
+  },
+  "property_modal": {
+    "title": "属性編集: {name}",
+    "settings_title": "{name} 設定",
+    "element": "要素",
+    "close": "閉じる",
+    "delete_element": "この要素を削除",
+    "no_editable_props": "この要素に編集可能な属性がありません",
+    "injected_props": {
+      "title": "拡張が注入した属性",
+      "help": "基本属性はすべての画面に適用され、注入属性はこの拡張が有効なときのみ適用されます。",
+      "origin": "{source} が注入",
+      "save_target": "保存時: この拡張行に記録されます。",
+      "save_button": "{source} に保存",
+      "saving": "保存中…",
+      "saved": "保存しました。",
+      "invalid_json": "JSON 形式が正しくありません。"
+    },
+    "tab_deferred": "このタブは次のバージョンでサポートされます",
+    "advanced_deferred": "この高度な属性は次のバージョンでサポートされます",
+    "unsupported_widget": "サポートされていないコントロール",
+    "value_conflict": "重複する値",
+    "settings_group": "グループ {index}",
+    "advanced_badge": "この要素はコードエディターで作成された高度な設定を含みます",
+    "advanced_preserved_title": "コード編集で作成された高度な設定 {count}個（保持）",
+    "advanced_kind_developer": "開発者属性",
+    "advanced_kind_expression": "複雑な式",
+    "tab": {
+      "settings": "設定",
+      "style": "スタイル",
+      "action": "動作",
+      "visibility": "表示条件",
+      "translation": "翻訳",
+      "advanced": "詳細",
+      "props": "属性"
+    },
+    "advanced": {
+      "permissions": "表示権限",
+      "blur_until_loaded": "データ読み込み時にオーバーレイを表示",
+      "blur_hint": "データ読み込み中にオーバーレイを表示",
+      "comment": "メモ"
+    },
+    "scope": {
+      "scheme_light": "ライト",
+      "scheme_dark": "ダーク",
+      "device_base": "共通",
+      "device_desktop": "PC",
+      "device_tablet": "タブレット",
+      "device_mobile": "モバイル",
+      "add_custom": "カスタムサイズ",
+      "custom_min": "最小",
+      "custom_max": "最大",
+      "custom_priority_note": "カスタム範囲がPC/タブレット/モバイルより優先的に適用されます。",
+      "custom_invalid": "無効な範囲です (最小 ≤ 最大、数字)。",
+      "reset_to_base": "デフォルト値にリセット",
+      "device_portable": "モバイル+タブレット"
+    },
+    "dark_code_only": "この色はダークモードではコードモードでのみ編集できます",
+    "dark_preset_only": "ダークモードではパネルのプリセット色を選ぶと適用されます（直接入力した自由値はライト専用）",
+    "branch_badge": "この要素は{device}専用構成に属します — 他のデバイスでは異なる構成が表示されます。"
+  },
+  "attachment_manager": {
+    "title": "このレイアウトの画像を管理",
+    "recent": "最近アップロードされた",
+    "manage_link": "画像管理",
+    "upload": "画像アップロード",
+    "use_as_bg": "背景",
+    "delete": "削除",
+    "delete_confirm": "この画像を削除しますか？ 取り消すことはできません。",
+    "empty": "このレイアウトにアップロードされた画像がありません。",
+    "loading": "読み込み中…",
+    "close": "閉じる"
+  },
+  "recipe": {
+    "custom_input": "直接入力…",
+    "pick_from_list": "リストから選択",
+    "page_placeholder": "移動するパス (例: /board)",
+    "datasource_placeholder": "データ名",
+    "state_key_placeholder": "ステータスキー",
+    "i18n_text_placeholder": "表示するテキスト",
+    "modal_placeholder": "列モーダルを選択"
+  },
+  "action": {
+    "no_events": "このエレメントはアクションを設定できません",
+    "no_recipes": "このテンプレートは使用可能なアクションがありません",
+    "add_action": "+ アクションを追加",
+    "remove": "アクションを削除",
+    "advanced_action": "直接作成されたアクション",
+    "advanced_preserved": "コードエディタで作成されたアクションです (保持されます)",
+    "event": {
+      "onClick": "クリックしたとき",
+      "onHover": "マウスをホバーしたとき",
+      "onChange": "値が変更されたとき",
+      "onSubmit": "送信したとき",
+      "onComponentEvent": "特定のイベントが発生したとき",
+      "onClose": "閉じたら",
+      "onFilesChange": "ファイルが変わったら",
+      "onPageChange": "ページが変わったら",
+      "onReact": "反応したら",
+      "onTabChange": "タブが変わったら",
+      "onUploadSuccess": "アップロードに成功したら",
+      "onUploadError": "アップロードに失敗したら",
+      "onButtonClick": "ボタンをクリックすると",
+      "onDismiss": "閉じると",
+      "onItemAdd": "項目を追加すると",
+      "onItemClick": "項目をクリックすると",
+      "onItemRemove": "項目を削除すると",
+      "onLanguageChange": "言語を変更すると",
+      "onLayoutEditClick": "レイアウト編集をクリックすると",
+      "onLogoutClick": "ログアウトをクリックすると",
+      "onOrderChange": "順序を変更すると",
+      "onProfileClick": "プロフィールをクリックすると",
+      "onReset": "初期化すると",
+      "onRowClick": "行をクリックすると",
+      "onSelect": "選択すると",
+      "onSelectionChange": "選択が変更されると",
+      "onToggle": "展開または折りたたむと"
+    },
+    "advanced": "詳細設定",
+    "add_search": "アクション検索...",
+    "add_no_match": "一致するアクションがありません。",
+    "view_code": "コード表示",
+    "source_core": "コア",
+    "source_module": "モジュール",
+    "source_plugin": "プラグイン",
+    "source_template": "テンプレート",
+    "source_base": "共通",
+    "source_route": "この画面",
+    "summary_missing_required": "必ず入力する値が空です。",
+    "group": {
+      "state": "ステート管理",
+      "nav": "画面遷移",
+      "notify": "通知·モーダル",
+      "data": "データ",
+      "locale": "言語",
+      "etc": "その他",
+      "flow": "フロー制御",
+      "error": "エラー処理",
+      "extension": "拡張アクション"
+    }
+  },
+  "visibility": {
+    "no_recipes": "このテンプレートは使用可能な表示条件がありません",
+    "show_when": "このエレメントを表示する条件",
+    "and": "かつ",
+    "or": "または",
+    "remove": "条件を削除",
+    "preview": "プレビュー",
+    "clear": "条件をクリア",
+    "advanced_preserved": "コードエディタで作成された条件です (保持されます)"
+  },
+  "flex": {
+    "container_title": "フレックスボックス",
+    "item_title": "フレックスボックス内で",
+    "direction": "方向",
+    "justify": "子の配置(メイン軸)",
+    "align": "子の配置(交差軸)",
+    "wrap": "折り返しを許可",
+    "gap": "子要素間隔",
+    "item_grow": "拡張",
+    "item_align": "個別配置",
+    "item_order": "順序",
+    "make_flex": "フレックスボックスにする",
+    "not_flex": "このエレメントはフレックスボックスではありません",
+    "unmake_flex": "配列ボックスを解除"
+  },
+  "toolbar": {
+    "color_scheme_group": "色テーマ",
+    "color_scheme_light": "☀ ライト",
+    "color_scheme_dark": "🌙 ダーク",
+    "state": "状態:"
+  },
+  "locale": {
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語",
+    "zh": "中文",
+    "vi": "Tiếng Việt"
+  },
+  "inline_edit": {
+    "aria_label": "テキストインライン編集",
+    "toolbar_label": "テキスト書式",
+    "new_key_hint": "確定時に多言語キーが生成されます",
+    "existing_key_hint": "多言語 — 現在の言語値のみ修正されます",
+    "open_translations": "すべての言語を編集",
+    "empty_warning": "コンテンツを入力してください",
+    "format": {
+      "fontWeight": "太字",
+      "fontBold": "太字",
+      "fontStyle": "イタリック",
+      "fontItalic": "イタリック",
+      "textDecoration": "下線",
+      "textUnderline": "下線",
+      "textAlign": "配置",
+      "fontSize": "フォントサイズ",
+      "textColor": "フォントカラー"
+    },
+    "prompt": {
+      "fontSize": "フォントサイズを入力してください (例: 16px, 1.2rem)",
+      "textColor": "フォントカラーを入力してください (例: #2563eb)"
+    }
+  },
+  "translation": {
+    "key_label": "多言語キー",
+    "needs_translation": "翻訳が必要です",
+    "not_a_key": "この要素は多言語キーではありません。キャンバスでテキストをダブルクリックしてインライン編集するとキーが生成されます。",
+    "loading": "読み込み中…",
+    "load_failed": "多言語値を読み込めませんでした",
+    "save": "保存",
+    "saving": "保存中…",
+    "save_failed": "保存に失敗しました",
+    "conflict": "別のユーザーが先に修正しました。更新後、もう一度お試しください。",
+    "token_mismatch": "翻訳値のデータ連結({{ }})を変更または削除することはできません。データ連結は[プロパティ]タブで編集してください。",
+    "placeholder_mismatch": "翻訳値のデータプレースホルダー({p0} など)を削除または変更することはできません。文は自由に翻訳してください。ただしプレースホルダーはそのままにしてください。",
+    "placeholder_locked": "データチップは文字のように削除できません。位置はドラッグで移動し、解除は[プロパティ]タブで行ってください。",
+    "saved": "保存済み"
+  },
+  "translation_manager": {
+    "title": "このレイアウトの多言語キー管理",
+    "filter_label": "ステータスフィルター",
+    "filter_all": "すべて",
+    "filter_active": "使用中",
+    "filter_orphaned": "未使用",
+    "badge_orphaned": "未使用/接続切断",
+    "badge_live_in_use": "現在のキャンバス使用中",
+    "badge_live_unused": "現在のキャンバス未使用",
+    "select_aria": "{key}を選択",
+    "delete_selected": "選択を削除 ({count})",
+    "purge_orphaned": "未使用をすべて削除 ({count})",
+    "delete_confirm": "選択した多言語キー{count}個を削除してもよろしいですか？元に戻すことはできません。",
+    "conflict": "別の場所で先に編集されています。更新後、もう一度お試しください。",
+    "save": "保存",
+    "saving": "保存中…",
+    "delete": "削除",
+    "empty": "このレイアウトに作成された多言語キーはありません。",
+    "loading": "読み込み中…",
+    "close": "閉じる"
+  },
+  "icon_picker": {
+    "search_placeholder": "アイコン検索",
+    "none": "なし",
+    "no_results": "検索結果がありません",
+    "free_input_hint": "アイコン名を直接入力してください"
+  },
+  "list_editor": {
+    "add": "項目追加",
+    "remove": "削除",
+    "move_up": "上へ移動",
+    "move_down": "下へ移動",
+    "empty": "項目がありません",
+    "item": "項目",
+    "edit_translation": "翻訳編集",
+    "option_value": "値",
+    "option_label": "ラベル",
+    "bound_degraded": "データに連結された一覧です（コード編集）",
+    "items_title": "項目",
+    "item_text": "項目テキスト",
+    "new_item": "新規項目",
+    "add_child": "{component} を追加",
+    "no_child_component": "追加する子コンポーネントが指定されていません",
+    "item_label": "ラベル",
+    "item_placeholder": "ガイダンステキスト"
+  },
+  "table_editor": {
+    "add_row": "行追加",
+    "add_col": "列追加",
+    "remove_row": "行削除",
+    "remove_col": "列削除",
+    "merge_cells": "セル結合",
+    "unmerge_cells": "結合解除",
+    "cell_border": "セル枠線",
+    "move_row_up": "行上へ移動",
+    "move_row_down": "行下へ移動",
+    "header_row": "ヘッダー行",
+    "title": "テーブル編集",
+    "cell_class_placeholder": "例: border border-gray-300",
+    "move_col_left": "列を左に移動",
+    "move_col_right": "列を右に移動",
+    "cell_text": "セルテキスト",
+    "structural_cell": "構造セル (キャンバスで編集)",
+    "grid_invalid": "テーブル構造が一致していません (セル結合/穴を確認)",
+    "select_hint": "セルをクリック=選択、Shift+クリック=領域を選択してから結合",
+    "move_blocked_section": "表のヘッダー/本文の境界を超えて移動することはできません",
+    "cell_fill": "セル背景色",
+    "cell_fill_none": "なし(透明)",
+    "cell_fill_custom": "直接色を選択",
+    "cell_padding": "セル内部の余白",
+    "cell_padding_custom": "直接",
+    "cell_color": "セルカラー",
+    "dark_free_color_hint": "ダークモードはプリセット色のみ指定できます (自由色はライトのみ対応)",
+    "cell_i18n_label": "選択セル多言語"
+  },
+  "core_props": {
+    "id": {
+      "label": "要素 ID",
+      "placeholder": "例：main-content",
+      "add_data": "データ",
+      "binding_hint": "繰り返しリストのインデックスや行キーをデータとして連結すると、項目ごとに一意の ID が生成されます（例：item_{{$idx}}）"
+    },
+    "dataKey": {
+      "placeholder": "例：form",
+      "hint": "入力フィールドをグループ化する名前です。_global.または_isolated.接頭辞でグローバル/分離領域に接続できます。",
+      "bound_degraded": "この値はコードエディターで設定されます。",
+      "label": "フォームデータ接続ポイント"
+    },
+    "isolatedState": {
+      "label": "分離領域",
+      "initial_label": "分離初期値",
+      "off_hint": "この領域のみの独立した状態を持ちたい場合はオンにします。"
+    },
+    "isolatedScopeId": {
+      "label": "領域名",
+      "placeholder": "例：cart-scope",
+      "search": "領域名検索...",
+      "duplicate": "同じ名前の領域が他の場所にも存在します。2つの領域が状態を共有します。"
+    }
+  },
+  "table_inplace": {
+    "select_cell": "セルを選択",
+    "add_row": "行を追加",
+    "add_col": "列を追加",
+    "remove_row": "行を削除",
+    "remove_col": "列を削除",
+    "move_row_up": "行を上に移動",
+    "move_row_down": "行を下に移動",
+    "move_col_left": "列を左に移動",
+    "move_col_right": "列を右に移動",
+    "merge": "統合",
+    "unmerge": "解除",
+    "select_all": "すべてを選択",
+    "border_apply_count": "{count}個のセルに適用",
+    "merge_right": "右のセルと統合",
+    "merge_down": "下のセルと統合",
+    "border_apply_all": "表全体に適用",
+    "select_cell_hint": "キャンバス内のセルをクリックすると、統合・枠線ツールが表示されます。",
+    "merge_range": "領域を統合",
+    "range_selected": "{count}個のセルが選択されています",
+    "custom_color": "直接選択"
+  },
+  "shortcuts": {
+    "title": "ショートカットキー",
+    "close": "閉じる",
+    "or": "または",
+    "footnote": "入力欄・モーダルにフォーカスがある場合、ショートカットキーは動作しません。",
+    "group": {
+      "clipboard": "クリップボード",
+      "element": "要素",
+      "history": "元に戻す",
+      "view": "表示/ツール",
+      "document": "ドキュメント"
+    },
+    "action": {
+      "copy": "コピー",
+      "cut": "切り取り",
+      "paste": "貼り付け（別レイアウトも可能）",
+      "open_props": "属性パネルを開く",
+      "delete": "削除",
+      "select_parent": "親要素を選択",
+      "deselect": "選択を解除",
+      "add_element": "要素を追加",
+      "undo": "元に戻す",
+      "redo": "やり直す",
+      "edit_code": "コードを編集",
+      "preview": "プレビュー",
+      "translations": "多言語画面",
+      "help": "ショートカットキーマップ",
+      "reset": "初期化",
+      "save": "保存",
+      "exit": "終了"
+    }
+  },
+  "array_editor": {
+    "items_title": "項目リスト",
+    "item": "項目",
+    "add": "{item}を追加",
+    "remove": "削除",
+    "move_up": "上に移動",
+    "move_down": "下に移動",
+    "empty": "項目がありません",
+    "icon_placeholder": "アイコン名（例：user、cog）",
+    "bound_degraded": "データにバインドされたリストです（コード編集）",
+    "no_array_prop": "編集する配列プロパティが指定されていません",
+    "number_list_placeholder": "カンマで区切られた数字 (例: 10, 20, 30)"
+  },
+  "binding": {
+    "section_title": "データバインディング",
+    "search": "データ検索",
+    "search_placeholder": "名前·パスで検索…",
+    "no_results": "一致するデータがありません",
+    "not_connected": "未接続",
+    "clear": "解除",
+    "complex": "複合バインディング（コード編集）",
+    "required": "必須",
+    "item_fields": "項目フィールド",
+    "shape_scalar": "単一値",
+    "shape_array": "配列",
+    "shape_object": "オブジェクト",
+    "iteration_title": "リピートデータ接続",
+    "iteration_label": "リピートデータソース",
+    "iteration_hint": "このエリアが繰り返すための配列データです。1つの項目が内側の構造でレンダリングされ、データ数だけ繰り返されます。",
+    "iteration_item_var": "アイテム変数",
+    "iteration_index_var": "シーケンス番号変数"
+  },
+  "data_sources": {
+    "title": "データソース",
+    "description": "この画面が読み込むデータソースを追加·編集·削除します。ソースを定義するとコンポーネントのデータ接続で選択できます。",
+    "add": "データソースを追加",
+    "edit": "編集",
+    "remove": "削除",
+    "close": "閉じる",
+    "empty": "この画面に定義されたデータソースがありません。",
+    "no_label": "表示名称(label_key)未指定",
+    "inherited_title": "継承されたソース(読み取り専用)",
+    "source": {
+      "module": "モジュール",
+      "plugin": "プラグイン"
+    },
+    "form": {
+      "add_title": "データソースを追加",
+      "edit_title": "データソースを編集",
+      "save": "保存",
+      "cancel": "キャンセル"
+    },
+    "field": {
+      "id": "ID",
+      "label_key": "表示名称",
+      "label_key_placeholder": "例:商品一覧",
+      "label_key_hint": "検索型データピッカーに表示される親切な名称です。平文を入力すると多言語キーが自動生成され、🌐ボタンで言語ごとの値を編集できます。",
+      "type": "タイプ",
+      "endpoint": "エンドポイント",
+      "method": "HTTPメソッド",
+      "auth_mode": "認証モード",
+      "loading_strategy": "ロード戦略",
+      "auto_fetch": "画面読み込み時に自動呼び出し",
+      "params": "リクエストパラメータ(JSON)",
+      "params_hint": "値に{{query.page}}のようなバインディング式を使用できます。",
+      "fallback": "デフォルト値(fallback、JSON)",
+      "content_type": "コンテンツタイプ",
+      "refetch_on_mount": "再進入時に再読み込み",
+      "channel": "チャネル",
+      "event": "イベント",
+      "channel_type": "チャネル種別",
+      "target_source": "対象ソース",
+      "on_receive": "メッセージ受信時の動作",
+      "params_empty": "API に一緒に送信する値を追加してください。例：page、per_page、検索語など。",
+      "params_preview": "送信される値のプレビュー",
+      "params_mode_block": "ブロックで",
+      "params_mode_code": "コードで",
+      "param_key_placeholder": "パラメータ名",
+      "param_add": "パラメータを追加",
+      "fallback_add": "デフォルト値を追加",
+      "fallback_add_field": "項目を追加",
+      "fallback_clear": "デフォルト値を削除",
+      "fallback_empty": "データを読み込む前・失敗時の代わりに表示する値です。例：data に空のリスト([])。",
+      "fallback_key_placeholder": "フィールド名（例：data）",
+      "fallback_preview": "デフォルト値のプレビュー"
+    },
+    "ds_type": {
+      "api": "API呼び出し",
+      "static": "静的データ",
+      "route_params": "パスパラメータ",
+      "query_params": "クエリパラメータ",
+      "websocket": "WebSocket"
+    },
+    "auth_mode": {
+      "none": "なし(公開)",
+      "optional": "選択(トークンがあれば送信)",
+      "required": "必須(トークンがなければ失敗)"
+    },
+    "loading_strategy": {
+      "progressive": "段階的",
+      "blocking": "ブロック",
+      "background": "バックグラウンド"
+    },
+    "error": {
+      "id_required": "IDを入力してください。",
+      "id_invalid": "IDは英文字·数字·アンダースコアのみ使用でき、数字で始まることはできません。",
+      "id_duplicate": "ID'{id}'は既に使用中です。",
+      "params_json": "リクエストパラメータが正しいJSON形式ではありません。",
+      "params_object": "リクエストパラメータはオブジェクト(JSON)形式である必要があります。",
+      "fallback_json": "デフォルト値(fallback)が正しいJSON形式ではありません。"
+    },
+    "global_headers": "グローバルヘッダー",
+    "global_headers_empty": "設定されたグローバルヘッダーがありません。",
+    "global_headers_hint": "グローバルヘッダーはコードエディターでのみ変更できます。",
+    "scripts": "外部スクリプト",
+    "scripts_empty": "追加された外部スクリプトがありません。",
+    "scripts_hint": "外部スクリプトはコードエディターでのみ変更できます。",
+    "section": {
+      "websocket": "リアルタイム(WebSocket)設定",
+      "on_success": "成功時の動作",
+      "on_error": "失敗時の動作",
+      "error_handling": "エラーコード別処理",
+      "load_condition": "読み込み条件"
+    },
+    "add_error_code": "+ エラーコードを追加"
+  },
+  "prop_i18n": {
+    "placeholder": "文句を入力してください",
+    "edit_languages": "言語ごとに編集",
+    "bound_code_only": "バインディング済み(コード編集)",
+    "create_first": "現在の言語値を先に入力すると多言語キーが生成され、言語ごとに編集できます。"
+  },
+  "cell_tree_editor": {
+    "columns_title": "カラムリスト",
+    "id_placeholder": "カラム識別子",
+    "expand_cells": "セルの内容を編集",
+    "collapse_cells": "セルの内容を閉じる",
+    "add_column": "{item} を追加"
+  },
+  "version_history": {
+    "title": "バージョン履歴",
+    "close": "閉じる",
+    "loading": "バージョンリストを読み込み中…",
+    "empty": "保存されたバージョンがありません。",
+    "restore": "復元",
+    "restoring": "復元中…",
+    "restore_confirm": "このバージョンに復元しますか？現在編集中の変更内容は失われます。",
+    "restore_not_found": "該当するバージョンが見つかりません。リストを更新してください。",
+    "latest": "最新",
+    "added": "+{count} 行",
+    "removed": "-{count} 行",
+    "chars": "({diff} 文字)",
+    "saved_by": "保存者: {name}",
+    "unknown_author": "不明",
+    "compare": "比較",
+    "comparing": "比較中…",
+    "diff_title": "v{old} → v{new} の変更内容",
+    "diff_back": "リスト",
+    "diff_identical": "2つのバージョンの内容は同じです。",
+    "diff_too_large": "変更内容が大きすぎて表示できません。"
+  },
+  "preview_action": {
+    "no_document": "プレビューするレイアウトが選択されていません。"
+  },
+  "inline_binding": {
+    "section_title": "テキストデータ連結",
+    "none": "このテキストに連結されたデータはありません",
+    "search": "データ検索",
+    "search_placeholder": "名称・パスで検索…",
+    "no_results": "一致するデータがありません",
+    "clear": "解除",
+    "complex": "複合バインディング(コード編集)",
+    "append_hint": "テキストの最後にデータを挿入",
+    "insert_data": "データ",
+    "param_hint": "このフレーズは[翻訳]タブで文を編集し(データチップの位置はドラッグで移動)、ここでは連結されたデータソースを変更または新規追加・解除できます。"
+  },
+  "host_picker": {
+    "title": "代表ホストレイアウト選択",
+    "description": "この拡張は複数の画面に挿入されます。どの画面上で編集するかを選択してください。保存した変更は、この拡張が挿入されるすべての画面に反映されます。",
+    "description_with_label": "\"{label}\" 拡張は複数の画面に挿入されます。どの画面上で編集するかを選択してください。"
+  },
+  "computed": {
+    "empty": "設定された自動計算値がありません。",
+    "add": "値追加",
+    "group_common": "よく使用",
+    "group_more": "その他",
+    "source_base": "共通",
+    "source_overridden": "この画面で覆う",
+    "overridden_hint": "共通レイアウトの値をこの画面で上書きしています。",
+    "override_notice": "共通レイアウトの値をこの画面でのみ変更します。",
+    "revert": "共通値に戻す",
+    "custom_open": "手動作成",
+    "custom_add": "追加",
+    "custom_step1": "どのデータを",
+    "custom_step2": "何をしましょうか",
+    "custom_step3": "結果名",
+    "custom_sum_field": "合計するフィールド (例: price)",
+    "custom_value_field": "値として使用するフィールド",
+    "custom_label_field": "表示するフィールド",
+    "custom_prop": "取得する属性 (選択)",
+    "custom_candidates": "候補値 (カンマ区切り)",
+    "custom_fallback": "ない場合のデフォルト値",
+    "cond_add": "条件を追加",
+    "cond_field": "フィールド",
+    "cond_value": "値",
+    "key_duplicate": "既に使用されている名前です。",
+    "kind_string": "文字",
+    "kind_number": "数字",
+    "kind_boolean": "はい・いいえ",
+    "op_count": "個数を数える",
+    "op_sum": "合計を求める",
+    "op_filter": "条件でフィルター",
+    "op_to_options": "選択項目に置き換える",
+    "op_nth": "N番目を取得",
+    "op_first_of": "最初にある値を使用",
+    "op_literal": "固定値",
+    "preview_label": "結果",
+    "preview_error": "この値は計算できません (保存されます)。",
+    "effect_preview": "この条件の場合の画面",
+    "list_more": "他に {count} 件",
+    "value_none": "なし",
+    "type_number": "数字",
+    "type_string": "文字",
+    "type_boolean": "はい・いいえ",
+    "type_list": "リスト",
+    "type_object": "グループ",
+    "type_null": "なし"
+  },
+  "init_actions": {
+    "empty": "追加された画面アクションがありません。",
+    "empty_self": "この画面に追加されたアクションがありません。",
+    "group_base": "共通レイアウトアクション",
+    "group_self": "この画面アクション",
+    "edit": "編集",
+    "remove": "削除",
+    "locked_parent": "共通項目",
+    "merge_order": "共通レイアウトアクションが最初に実行され、その後この画面アクションが続きます。",
+    "cond_badge": "条件",
+    "if_label": "実行条件",
+    "if_placeholder": "例: {{user?.uuid}} (条件が真の場合のみ実行)",
+    "advanced_param_hint": "この値はコード編集器で設定します。",
+    "drag_reorder": "ドラッグして順序を変更",
+    "base_readonly_hint": "共通レイアウト動作は共通(base)レイアウトのページ設定で修正します。"
+  },
+  "initstate": {
+    "legacy_state": "古い方式で保存された初期値があります。編集すると新しい方式に整理されます。",
+    "section_local": "この画面の初期値",
+    "section_global": "グローバル初期値",
+    "section_isolated": "分離領域の初期値",
+    "section_isolated_desc": "分離領域はコンポーネント別の初期値です。",
+    "isolated_dynamic_hint": "分離領域は画面を使用している間に作成されることもあります。",
+    "isolated_orphan": "この名前の分離領域を使用するコンポーネントがありません。",
+    "no_values": "設定された値がありません。",
+    "value_name": "値の名前",
+    "add_value": "値を追加",
+    "revert": "元に戻す",
+    "subkey_name": "下位の名前",
+    "add_subkey": "下位の値を追加",
+    "add_item": "項目を追加",
+    "kind_string": "文字",
+    "kind_number": "数字",
+    "kind_boolean": "はい・いいえ",
+    "kind_null": "なし",
+    "kind_list": "リスト",
+    "kind_object": "グループ",
+    "value_kind": "値の種類",
+    "name_required": "値の名前を入力してください。",
+    "name_duplicate": "同じ名前の値がすでに存在します。",
+    "name_invalid": "値の名前は英文字で始まり、英文字・数字・_ のみが使用できます。"
+  },
+  "error": {
+    "intro": "ステータスコード別に表示する画面または実行するアクションを設定します。",
+    "degrade": "このテンプレートはフレンドリーな編集をサポートしていません。コード編集器で設定してください。",
+    "handler_none": "設定なし",
+    "handler_showErrorPage": "エラー画面を表示",
+    "handler_navigate": "別の画面に移動",
+    "handler_openModal": "モーダルを開く",
+    "handler_toast": "通知を表示",
+    "handler_setState": "ステータスを変更",
+    "handler_sequence": "複数のアクションを順序で",
+    "handler_parallel": "複数のアクションを同時に",
+    "target_content": "コンテンツ領域のみ",
+    "target_full": "フルスクリーン",
+    "setstate_key": "ステータス名",
+    "message_placeholder": "表示するメッセージ（🔍 でエラー情報を挿入可能）"
+  },
+  "target_picker": {
+    "canvas_pick_hint": "画面上で接続する要素をクリックしてください",
+    "cancel": "キャンセル",
+    "select_area": "領域を選択",
+    "id_placeholder": "要素IDを入力するか、領域を選択してください",
+    "none": "選択なし",
+    "minimized_hint": "キャンバスで接続する要素をクリックしてください",
+    "needs_id": "接続するにはIDが必要です"
+  },
+  "page_settings": {
+    "title": "{name} 設定",
+    "close": "閉じる",
+    "advanced_summary": "コードエディターで作成された高度な設定 {count}個が含まれています",
+    "tab": {
+      "meta": "基本情報",
+      "seo": "検索エンジン",
+      "init": "画面動作",
+      "overlay": "読み込み画面",
+      "computed": "自動計算",
+      "state": "初期状態",
+      "error": "エラー処理",
+      "data": "データ"
+    },
+    "banner": {
+      "inline_hint": "⏎ 保存 · Esc キャンセル",
+      "dblclick_hint": "ダブルクリックして編集",
+      "advanced": "詳細設定",
+      "open_settings": "ページ設定を開く"
+    },
+    "meta": {
+      "title": "ページ名",
+      "description": "ページの説明",
+      "icon": "メニューアイコン",
+      "icon_placeholder": "例：fa-solid fa-house",
+      "editor_label": "エディターツリー名（選択）",
+      "editor_label_hint": "エディター左側の画面リストに表示される名前です。空欄の場合はページ名を使用します。",
+      "permissions": "ページアクセス権限",
+      "permissions_hint": "選択した権限を持つユーザーのみがこの画面を表示できます。空欄の場合は制限なしです。",
+      "dynamic_hint": "動的タイトル"
+    },
+    "computed": {
+      "heading": "データで自動計算される値を設定します。タイトル·表示条件などで使用できます。"
+    },
+    "init_actions": {
+      "heading": "画面が最初に開かれるときに順番に実行するアクションを設定します。"
+    },
+    "initstate": {
+      "heading": "画面が開かれるときにあらかじめ入力する開始値を設定します。"
+    },
+    "error": {
+      "heading": "データの読み込み中にエラーが発生した場合の対応を設定します。"
+    },
+    "seo": {
+      "title": "検索タイトル",
+      "description": "検索の説明",
+      "enabled": "検索エンジンへの公開",
+      "disabled_note": "この画面は検索エンジンに公開されません。有効にすると以下の設定を使用できます。",
+      "page_type": "ページ種別",
+      "page_type_none": "選択なし",
+      "page_type_free_placeholder": "ページ種別を直接入力",
+      "page_type_free_note": "連携可能な種別がないため直接入力します。",
+      "page_type_free": "直接入力",
+      "extensions": "拡張 SEO 連携",
+      "add_extension": "拡張を追加",
+      "no_extension_candidate": "連携できる拡張がありません。",
+      "defaults_precondition": "デフォルト値を取得するには、以下の項目を先に入力してください。",
+      "missing_extensions": "連携する拡張を選択してください。",
+      "missing_page_type": "ページ種別を選択してください。",
+      "toggle_setting": "公開スイッチ設定の連携",
+      "toggle_setting_search": "設定を検索…",
+      "data_sources": "SEO 連携データ",
+      "data_sources_empty": "この画面に定義されたデータがありません。",
+      "data_sources_hint": "検索エンジン変数・構造化データが参照するデータを選択してください。",
+      "priority": "優先度（sitemap）",
+      "changefreq": "更新頻度",
+      "use_default": "デフォルト値を使用",
+      "value_placeholder": "値を入力（データ接続可能）",
+      "og_section": "Open Graph（ソーシャル共有）",
+      "og_type": "タイプ（og:type）",
+      "og_title": "タイトル",
+      "og_description": "説明",
+      "og_image": "画像",
+      "og_image_alt": "画像の代替テキスト",
+      "og_site_name": "サイト名",
+      "og_locale": "言語",
+      "og_extra": "その他の属性",
+      "og_locked": "フィルターで固定",
+      "og_source_core": "コア設定",
+      "og_source_filter": "フィルターを適用",
+      "og_source_module": "拡張提供",
+      "tw_section": "Twitter カード",
+      "tw_fallback_note": "空欄の場合は Open Graph の値をそのまま使用します。",
+      "tw_card": "カード種別",
+      "tw_site": "サイトアカウント",
+      "tw_creator": "作成者アカウント",
+      "tw_title": "タイトル",
+      "tw_description": "説明",
+      "tw_image": "画像",
+      "tw_image_alt": "画像の代替テキスト",
+      "tw_extra": "その他の属性",
+      "extra_property": "属性（property）",
+      "extra_name": "名前 (name)",
+      "extra_content": "値",
+      "add_extra": "属性を追加",
+      "remove": "削除",
+      "structured_data": "構造化データ",
+      "sd_mode": "構造化データを直接指定",
+      "sd_manual_toggle": "直接指定",
+      "sd_filter_locked": "フィルターで固定されています",
+      "sd_filter_locked_note": "フィルターが構造化データを代わりに入力しているため、ここでは編集できません。",
+      "sd_auto_title": "自動生成 (モジュール提供)",
+      "sd_auto_empty": "自動生成された構造化データがありません。",
+      "sd_replace_pre_warn": "直接指定を有効にすると、自動生成の内容はすべて削除され、以下の内容に置き換わります。",
+      "sd_replace_warn": "この内容は自動生成された構造化データをすべて置き換えます。",
+      "sd_type": "@type (構造タイプ)",
+      "sd_prop_key": "属性パス (例: offers.price)",
+      "sd_prop_value": "値",
+      "sd_add_prop": "属性を追加",
+      "sd_seed_from_module": "モジュール自動値を読み込む",
+      "sd_empty_note": "値が空の属性は保存時に除外されます。",
+      "sd_has_empty": "空の値があります。",
+      "vars": "動的変数",
+      "vars_precondition": "連携拡張とページタイプをまず選択すると、使用できる変数が表示されます。",
+      "vars_auto_group": "自動入力 (読み取り専用)",
+      "vars_auto": "自動",
+      "vars_data_group": "値を入力",
+      "vars_custom_group": "直接追加",
+      "vars_required_empty": "必須変数です。値を入力してください。",
+      "vars_add": "変数を追加",
+      "vars_add_name": "変数名",
+      "vars_value_hint": "変数はタイトル·説明·構造化データで {中括弧名} として使用できます。",
+      "vars_name_reserved": "{name} は自動入力変数と名前が重複しています。",
+      "vars_name_duplicate": "{name} は既に追加済みの変数です。",
+      "vars_name_not_provided": "{name} はどの拡張も提供していない変数です。",
+      "bot_preview_title": "検索ボット プレビュー",
+      "bot_preview_refresh": "更新",
+      "bot_preview_disabled": "この画面は検索エンジンに表示されません。",
+      "bot_preview_mode_code": "コード",
+      "bot_preview_mode_render": "レンダー",
+      "bot_preview_empty": "表示するコンテンツがありません。",
+      "bot_preview_sample_note": "サンプルデータと保存前の設定に基づいて表示されます。",
+      "revert_default": "やり直す",
+      "og_image_adv": "詳細画像オプション(高さ·形式·セキュアURL)",
+      "og_image_height": "画像の高さ(px)",
+      "og_image_type": "画像形式(例:image/png)",
+      "og_image_secure_url": "画像セキュアURL(https)",
+      "og_intro": "空白はコア·拡張が定めたデフォルト値を使用します(ソース表示)。入力するとこの画面の値で上書きされます",
+      "og_source_inherited": "共通レイアウト",
+      "auto_chip_source": "拡張提供",
+      "auto_chip_replace": "別のデータに変更"
+    }
+  },
+  "value_tree": {
+    "show_source": "元の式を表示",
+    "raw_code_only": "コードで編集",
+    "segmented_hint": "複数の断片がつながった値です。断片を追加·削除するか、ハンドルで順序を変更してください",
+    "drag_reorder": "ドラッグして順序を変更",
+    "change_data": "データを置き換え",
+    "edit": "編集",
+    "collapse": "折りたたむ",
+    "to_expression": "式で置き換え",
+    "to_plain": "通常の名前で",
+    "to_plain_lead": "式を削除し、以下の値だけを残します:",
+    "to_plain_warn": "その他の条件·分岐·データ接続はすべて削除され、取り消すことができません",
+    "to_plain_ok": "この値に戻す",
+    "to_plain_cancel": "キャンセル",
+    "segment": {
+      "text": "固定テキスト",
+      "expression": "条件に応じて異なる部分",
+      "fallback": "値がない場合は代わりに",
+      "data": "データ",
+      "remove": "この断片を削除",
+      "data_pick_hint": "表示するデータを検索して選択してください",
+      "data_no_candidates": "この画面で接続できるデータがありません"
+    },
+    "cond": {
+      "label": "条件",
+      "code_only": "コードで編集",
+      "field_placeholder": "基準値(例:編集モード)",
+      "value_placeholder": "比較する値",
+      "when_true": "この条件の場合",
+      "when_false": "その他の場合",
+      "op_truthy": "値がある場合",
+      "op_falsy": "値がない場合",
+      "op_eq": "と等しい",
+      "op_neq": "と異なる",
+      "op_gt": "より大きい",
+      "op_lt": "より小さい",
+      "op_gte": "以上",
+      "op_lte": "以下"
+    },
+    "fallback": {
+      "primary": "デフォルト値",
+      "when_empty": "値がない場合は代わりに",
+      "when_falsy": "空の場合は代わりに"
+    },
+    "concat": {
+      "hint": "複数の値を順番に連結します",
+      "part": "{n}番目の断片"
+    },
+    "done": "完了",
+    "raw_expression_hint": "すでに式として書き込まれた値であるため、フレンドリーな編集では展開して表示することができません。式自体は上記で直接編集でき、より複雑な編集は上部の [コード編集] を使用してください。"
+  },
+  "action_recipe": {
+    "set_state": {
+      "label": "画面状態を埋める/置き換え",
+      "param_target": "対象(ローカル/グローバル)",
+      "param_state": "状態値",
+      "param_merge": "既存の値とマージ"
+    },
+    "load_local": {
+      "label": "保存された設定を読み込む",
+      "param_key": "ストレージキー",
+      "param_state_key": "保持する状態キー",
+      "param_default": "デフォルト値"
+    },
+    "save_local": {
+      "label": "設定を保存",
+      "param_key": "ストレージキー",
+      "param_value": "保存する値"
+    },
+    "navigate": {
+      "label": "別のページに移動",
+      "param_path": "移動するページ",
+      "param_query": "クエリ値",
+      "param_merge_query": "既存のクエリを維持",
+      "param_scroll": "スクロール位置",
+      "param_replace": "履歴を置換",
+      "param_overlay_target": "移動中のローディング表示領域"
+    },
+    "open_window": {
+      "label": "新しいウィンドウで開く",
+      "param_target": "開くページ",
+      "param_window_target": "ウィンドウ方式（新規/現在）"
+    },
+    "navigate_back": {
+      "label": "戻る"
+    },
+    "navigate_forward": {
+      "label": "進む"
+    },
+    "replace_url": {
+      "label": "URLのみ変更",
+      "param_path": "ページ",
+      "param_query": "クエリ値"
+    },
+    "toast": {
+      "label": "案内メッセージを表示",
+      "param_message": "メッセージ",
+      "param_type": "種類（情報/成功/警告/エラー）",
+      "param_duration": "表示時間（ms）",
+      "param_icon": "アイコン"
+    },
+    "open_modal": {
+      "label": "通知ダイアログを開く",
+      "param_target": "開く通知ダイアログ"
+    },
+    "close_modal": {
+      "label": "通知ダイアログを閉じる"
+    },
+    "show_alert": {
+      "label": "ブラウザ通知を表示",
+      "param_message": "メッセージ"
+    },
+    "set_error": {
+      "label": "エラー状態を設定",
+      "param_message": "メッセージ",
+      "param_state_target": "対象（ローカル/グローバル）"
+    },
+    "refetch": {
+      "label": "リストを更新",
+      "param_data_source": "データソース",
+      "param_sync": "同期実行"
+    },
+    "append_data": {
+      "label": "リストにデータを追加",
+      "param_data_source": "データソース",
+      "param_data_path": "データパス",
+      "param_new_data": "追加するデータ"
+    },
+    "update_data": {
+      "label": "リストデータを置換",
+      "param_data_source": "データソース",
+      "param_data": "新しいデータ",
+      "param_merge": "既存と統合"
+    },
+    "scroll": {
+      "label": "特定の位置にスクロール",
+      "param_selector": "対象セレクター",
+      "param_behavior": "スクロール方式（スムーズ/即時）",
+      "param_block": "配置位置"
+    },
+    "login": {
+      "label": "ログイン処理",
+      "param_body": "ログイン情報"
+    },
+    "logout": {
+      "label": "ログアウト処理",
+      "param_target": "移動先"
+    },
+    "set_locale": {
+      "label": "言語を変更",
+      "param_target": "言語"
+    },
+    "emit_event": {
+      "label": "コンポーネントイベントを送信",
+      "param_event": "イベント名",
+      "param_data": "送信データ"
+    },
+    "api_call": {
+      "label": "サーバーに送信して結果を処理",
+      "param_target": "リクエストアドレス",
+      "param_method": "方式（GET/POSTなど）",
+      "param_body": "送信するデータ",
+      "param_query": "クエリ値",
+      "param_on_success": "成功時のアクション",
+      "param_on_error": "失敗時のアクション",
+      "param_identity_target_email": "本人認証対象メールアドレス",
+      "param_identity_target_phone": "本人認証対象電話番号"
+    },
+    "sequence": {
+      "label": "順次複数のアクション",
+      "param_actions": "アクションリスト"
+    },
+    "parallel": {
+      "label": "同時に複数のアクション",
+      "param_actions": "アクションリスト"
+    },
+    "switch": {
+      "label": "値に基づいて分岐",
+      "param_value": "判定値",
+      "param_cases": "ケース別アクション"
+    },
+    "suppress": {
+      "label": "何もしない（エラー抑制）"
+    },
+    "conditions": {
+      "label": "条件に基づいて分岐",
+      "param_branches": "分岐リスト",
+      "param_if": "実行条件",
+      "param_then": "実行するアクション",
+      "branch_when": "条件",
+      "branch_else": "その他",
+      "add_branch": "分岐を追加",
+      "remove_branch": "分岐を削除",
+      "move_up": "上へ",
+      "move_down": "下へ"
+    }
+  },
+  "action_list": {
+    "drag_reorder": "ドラッグして順序を変更",
+    "remove": "削除",
+    "unknown": "不明なアクション",
+    "view_code": "コードを表示"
+  },
+  "error_rows": {
+    "default": "デフォルト（その他すべてのエラー）",
+    "clear": "設定をクリア",
+    "no_action": "設定なし",
+    "default_warning": "上記で設定されていないすべてのエラーに適用され、テンプレートのデフォルト動作をオーバーライドします",
+    "source_self": "このページで設定",
+    "source_inherited": "共通レイアウトから継承",
+    "source_template": "テンプレートデフォルト",
+    "source_none": "テンプレートデフォルト",
+    "revert": "元に戻す",
+    "override_here": "このページで上書き",
+    "override_inherited": "この値を変更すると、このページにのみ適用され、親の設定を上書きします。",
+    "override_template": "この動作はテンプレート全体に設定されています。ここで変更すると、このページにのみ適用されテンプレート設定を上書きします。"
+  },
+  "modal": {
+    "minimized_default": "ページ設定",
+    "restore": "復元"
+  },
+  "action_param": {
+    "key_placeholder": "名前",
+    "value_placeholder": "値（データ連携・式が利用可能）",
+    "add_pair": "値を追加",
+    "number_placeholder": "数値またはデータ連携"
+  },
+  "action_chip": {
+    "response_data": "レスポンスデータ",
+    "response_message": "レスポンスメッセージ",
+    "error_status": "エラーステータスコード",
+    "error_message": "エラーメッセージ",
+    "error_errors": "検証エラーリスト",
+    "error_data": "エラーレスポンスデータ",
+    "error_status_text": "エラーステータステキスト",
+    "payload_data": "受信データ"
+  },
+  "json_block": {
+    "mode_code": "コードで",
+    "mode_block": "ブロックで",
+    "invalid": "正しい JSON 形式ではありません。",
+    "must_be_object": "オブジェクト(JSON)形式である必要があります。例: { \"名前\": 値 }",
+    "invalid_keys": "値の名前は英文字で始まり、英文字・数字・_ のみが使用できます: {keys}"
+  }
+}

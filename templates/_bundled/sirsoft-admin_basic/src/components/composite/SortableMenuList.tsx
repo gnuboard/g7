@@ -20,6 +20,7 @@ import {
 import { SortableMenuItem, MenuItemData } from './SortableMenuItem';
 import { Div } from '../basic/Div';
 import { H3 } from '../basic/H3';
+import type { EditorAttrs } from '../../types';
 
 // G7Core 전역 객체 접근
 const getG7Core = () => (window as any).G7Core;
@@ -77,6 +78,12 @@ export interface SortableMenuListProps {
   titleClassName?: string;
   enableDrag?: boolean;
   toggleDisabled?: boolean;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /** 평탄화된 트리 아이템 */
@@ -248,6 +255,8 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
   titleClassName = 'px-4 py-3 border-b border-gray-200 dark:border-gray-700',
   enableDrag = true,
   toggleDisabled = false,
+  id,
+  editorAttrs,
 }) => {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -424,7 +433,7 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
   const activeItem = activeId ? findItemById(localItems, Number(activeId)) : null;
 
   return (
-    <Div className={className}>
+    <Div className={className} id={id} {...editorAttrs}>
       {title && (
         <Div className={titleClassName}>
           <H3 className="text-sm font-medium text-gray-900 dark:text-white">{title}</H3>

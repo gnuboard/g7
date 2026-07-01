@@ -512,16 +512,8 @@ export function saveAsNoticeTemplateHandler(
     }
 
     const state = G7Core.state.getLocal() || {};
-    const templateName = state.form?.new_template_name;
 
-    if (!templateName?.ko?.trim()) {
-        G7Core.toast?.warning?.(
-            G7Core.t?.('sirsoft-ecommerce.admin.product.notice.messages.template_name_required')
-            ?? 'Please enter template name.'
-        );
-        return;
-    }
-
+    // 템플릿 이름은 모달 안에서 입력하므로 여기서는 저장 대상 항목 존재만 검증한다
     const items: NoticeItem[] = state.form?.notice_items ?? [];
     if (items.length === 0) {
         G7Core.toast?.warning?.(
@@ -531,13 +523,13 @@ export function saveAsNoticeTemplateHandler(
         return;
     }
 
-    // 저장 확인 모달 표시
-    G7Core.state.setLocal({
-        ui: {
-            ...state.ui,
-            showSaveTemplateModal: true,
-        },
+    // 모달 입력 상태(_global.ui.saveTemplateData)를 초기화
+    G7Core.state.set?.({
+        'ui.saveTemplateData': { name: createEmptyLocaleObject(), category_id: null, is_default: false },
     });
+
+    // 루트 modals 배열의 Modal 은 show prop 이 아니라 modalStack(openModal) 으로 열린다
+    G7Core.dispatch?.({ handler: 'openModal', target: 'modal_save_template' });
 }
 
 /**
@@ -679,32 +671,48 @@ export async function confirmSaveNoticeTemplateHandler(
     }
 
     const state = G7Core.state.getLocal() || {};
+    // 템플릿 이름/분류/기본여부는 모달 입력(_global.ui.saveTemplateData)이 SSoT
+    const saveTemplateData = G7Core.state.get?.()?.ui?.saveTemplateData ?? {};
+    const templateName = saveTemplateData.name;
+
+    if (!templateName?.ko?.trim()) {
+        G7Core.toast?.warning?.(
+            G7Core.t?.('sirsoft-ecommerce.admin.product.notice.messages.template_name_required')
+            ?? 'Please enter template name.'
+        );
+        return;
+    }
 
     try {
+        // 백엔드(StoreProductNoticeTemplateRequest)는 name/fields.*.{name,content}/is_active 를 받는다
         const items: NoticeItem[] = state.form?.notice_items ?? [];
         const response = await G7Core.api.post(
             '/api/modules/sirsoft-ecommerce/admin/products/notice-templates',
             {
-                name: state.form?.new_template_name,
-                items: items.map((item) => ({
-                    key: item.key,
+                name: templateName,
+                is_active: saveTemplateData.is_default ?? false,
+                fields: items.map((item) => ({
                     name: item.name,
+                    content: item.content,
                 })),
             }
         );
 
+        // 모달 입력 상태 초기화 (_global)
+        G7Core.state.set?.({
+            'ui.saveTemplateData': { name: createEmptyLocaleObject(), category_id: null, is_default: false },
+        });
+
         G7Core.state.setLocal({
-            form: {
-                ...state.form,
-                new_template_name: createEmptyLocaleObject(),
-            },
             ui: {
                 ...state.ui,
-                showSaveTemplateModal: false,
                 noticeMode: 'existing',
             },
             hasChanges: true,
         });
+
+        // 루트 modals 배열의 Modal 은 modalStack(closeModal) 으로 닫는다
+        G7Core.dispatch?.({ handler: 'closeModal' });
 
         G7Core.toast?.success?.(
             G7Core.t?.('sirsoft-ecommerce.admin.product.notice.messages.template_saved')

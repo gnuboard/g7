@@ -16,4 +16,6 @@ return [
     'activities' => [
         'user_registered' => ':name さんが会員登録しました。',
     ],
+    'recent_notifications_loaded' => '最近の通知を正常に閲覧しました。',
+    'recent_notifications_failed' => '最近の通知の閲覧に失敗しました。',
 ];

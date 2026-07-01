@@ -1,4 +1,12 @@
 {
+  "editor": {
+    "data_source": {
+      "page": "페이지",
+      "pageData": "페이지 데이터",
+      "pages": "페이지 목록",
+      "versions": "버전 이력"
+    }
+  },
   "admin": {
     "$partial": "partial/ko/admin.json"
   }

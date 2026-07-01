@@ -50,7 +50,8 @@ $ARGUMENTS 경로의 파일을 읽습니다.
 
 경로가 지정되지 않은 경우, 다음 파일들을 대상으로 합니다:
 
-- `lang/ko/*.php`, `lang/en/*.php` - 코어 언어 파일
+- `lang/ko/*.php`, `lang/en/*.php` - 코어 백엔드 언어 파일 (Laravel `__()`/`trans()`)
+- `lang/{ko,en}.json`, `lang/partial/{ko,en}/*.json` - 코어 프론트엔드 언어 파일 (`$t:` 프리픽스)
 - `**/lang/ko/*.php`, `**/lang/en/*.php` - 모듈 언어 파일
 - `**/resources/lang/*.json` - 프론트엔드 언어 파일
 - `templates/**/lang/*.json` - 템플릿 언어 파일
@@ -137,6 +138,7 @@ ko/en 언어 파일과 번들 locale 파일의 키를 직접 비교한다.
 **파일 유형별 매칭 (코어/모듈/플러그인/템플릿 4 scope)**:
 
 - 코어 backend: `lang/{ko,en}/*.php` ⇔ `lang-packs/_bundled/g7-core-{locale}/backend/{locale}/*.php`
+- 코어 frontend: `lang/{ko,en}.json` (+ `lang/partial/{ko,en}/*.json`) ⇔ `lang-packs/_bundled/g7-core-{locale}/frontend/{locale}.json` (+ `frontend/partial/*.json`)
 - 모듈 backend: `modules/_bundled/{mod}/{src,resources}/lang/{ko,en}/*.php` (union) ⇔ `g7-module-{mod}-{locale}/backend/{locale}/*.php`
 - 모듈 frontend: `modules/_bundled/{mod}/resources/lang/partial/{ko,en}/*.json` ⇔ `g7-module-{mod}-{locale}/frontend/partial/*.json`
 - 플러그인: `plugins/_bundled/{pl}/lang/{ko,en}/*.php` ⇔ `g7-plugin-{pl}-{locale}/backend/{locale}/*.php`
@@ -151,6 +153,7 @@ ko/en 언어 파일과 번들 locale 파일의 키를 직접 비교한다.
 | 파일 유형 | 우선 적용 규정 |
 | --------- | -------------- |
 | `lang/**/*.php` | database-guide.md (다국어 섹션) |
+| `lang/{ko,en}.json`, `lang/partial/**/*.json` | data-binding-i18n.md (코어 프론트엔드 다국어) |
 | `**/resources/lang/*.json` | module-i18n.md |
 | `templates/**/lang/*.json` | data-binding-i18n.md |
 | `app/Http/Requests/**` | validation.md |

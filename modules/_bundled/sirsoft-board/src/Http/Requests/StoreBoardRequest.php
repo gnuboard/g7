@@ -9,15 +9,21 @@ use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
 use Modules\Sirsoft\Board\Rules\SlugUniqueRule;
 
 class StoreBoardRequest extends FormRequest
 {
+    use ValidatesLengthRange;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -93,6 +99,8 @@ class StoreBoardRequest extends FormRequest
 
     /**
      * 요청에 적용할 검증 규칙
+     *
+     * @return array<string, mixed> 검증 규칙 배열
      */
     public function rules(): array
     {
@@ -102,6 +110,7 @@ class StoreBoardRequest extends FormRequest
         $perPageMax = $limits['per_page_max'] ?? 100;
         $maxFileSizeMax = $limits['max_file_size_max'] ?? 200; // MB
         $maxFileCountMax = $limits['max_file_count_max'] ?? 20;
+        $categoryMax = $limits['category_max'] ?? 50;
 
         // 제목 길이 제한
         $minTitleLengthMin = $limits['min_title_length_min'] ?? 0;
@@ -135,15 +144,18 @@ class StoreBoardRequest extends FormRequest
             'is_active' => ['sometimes', 'boolean'],
             'type' => ['required', 'string', 'max:50', new BoardTypeValidationRule],
 
+            // 관리자 메뉴 추가 토글 (DB 컬럼 아님 - Service에서 메뉴 등록에 사용)
+            'add_to_menu' => ['sometimes', 'boolean'],
+
             // 목록 설정
             'per_page' => ['required', 'integer', "min:{$perPageMin}", "max:{$perPageMax}"],
             'per_page_mobile' => ['required', 'integer', "min:{$perPageMin}", "max:{$perPageMax}"],
             'order_by' => ['required', 'in:created_at,view_count,title,author'],
             'order_direction' => ['required', 'in:ASC,DESC'],
 
-            // 분류 설정
-            'categories' => ['nullable', 'array'],
-            'categories.*' => ['string', 'max:50'],
+            // 분류 설정 (개수 상한은 config 기준, 빈/공백 이름 차단)
+            'categories' => ['nullable', 'array', "max:{$categoryMax}"],
+            'categories.*' => ['string', 'filled', 'regex:/\S/', 'max:50'],
 
             // 기능 설정
             'show_view_count' => ['required', 'boolean'],
@@ -170,7 +182,10 @@ class StoreBoardRequest extends FormRequest
             'use_file_upload' => ['required', 'boolean'],
             'max_file_size' => ['nullable', 'integer', 'min:1', "max:{$maxFileSizeMax}"],
             'max_file_count' => ['nullable', 'integer', 'min:1', "max:{$maxFileCountMax}"],
-            'allowed_extensions' => ['nullable', 'array'],
+            // 허용 확장자: 첨부 사용 게시판은 최소 1개 필수 (빈 배열 저장 시 전 파일 거부되던 버그 방지).
+            // 첨부 미사용 게시판은 검증 제외(exclude_if) — min:1 이 빈 배열에 무조건 걸리므로
+            // required_if 만으로는 빈 값 허용이 불가하다. exclude_if 로 필드 자체를 검증에서 제거한다.
+            'allowed_extensions' => ['exclude_if:use_file_upload,false', 'required', 'array', 'min:1'],
             'allowed_extensions.*' => ['string', 'max:10'],
 
             // 게시판 관리 인원 설정 (관리자는 최소 1명 필수, 스텝은 선택적)
@@ -202,12 +217,27 @@ class StoreBoardRequest extends FormRequest
     }
 
     /**
+     * 검증기에 교차 검증 규칙을 추가합니다.
+     *
+     * 길이 제한 필드의 min ≤ max 관계를 검증합니다.
+     *
+     * @param  Validator  $validator  검증기
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $this->applyLengthRangeValidation($validator);
+    }
+
+    /**
      * 검증할 필드의 이름을 커스터마이징
+     *
+     * @return array<string, string> 필드명 → 표시명 매핑
      */
     public function attributes(): array
     {
         $attributes = [
             'blocked_keywords' => __('sirsoft-board::admin.form.fields.blocked_keywords.label'),
+            'add_to_menu' => __('sirsoft-board::validation.attributes.board.add_to_menu'),
         ];
 
         // 권한 필드에 대한 동적 속성 매핑
@@ -228,7 +258,7 @@ class StoreBoardRequest extends FormRequest
 
             // permissions.{key}.roles 필드에 대한 속성 이름 지정
             $fieldKey = str_replace('.', '_', $permKey); // admin.posts.read -> admin_posts_read
-            $attributes["permissions.{$fieldKey}.roles"] = "{$permissionName} " . __('sirsoft-board::validation.role_field_suffix');
+            $attributes["permissions.{$fieldKey}.roles"] = "{$permissionName} ".__('sirsoft-board::validation.role_field_suffix');
         }
 
         return $attributes;
@@ -236,6 +266,8 @@ class StoreBoardRequest extends FormRequest
 
     /**
      * 검증 오류 메시지 커스터마이징
+     *
+     * @return array<string, string> 규칙 키 → 메시지 매핑
      */
     public function messages(): array
     {
@@ -269,7 +301,10 @@ class StoreBoardRequest extends FormRequest
 
             // 분류 검증 메시지
             'categories.array' => __('sirsoft-board::validation.categories.array'),
+            'categories.max' => __('sirsoft-board::validation.categories.max'),
             'categories.*.max' => __('sirsoft-board::validation.categories.item_max'),
+            'categories.*.filled' => __('sirsoft-board::validation.categories.item_required'),
+            'categories.*.regex' => __('sirsoft-board::validation.categories.item_required'),
 
             // 기능 설정 검증 메시지
             'show_view_count.required' => __('sirsoft-board::validation.show_view_count.required'),
@@ -309,6 +344,8 @@ class StoreBoardRequest extends FormRequest
             'max_file_size.max' => __('sirsoft-board::validation.max_file_size.max'),
             'max_file_count.min' => __('sirsoft-board::validation.max_file_count.min'),
             'max_file_count.max' => __('sirsoft-board::validation.max_file_count.max'),
+            'allowed_extensions.required' => __('sirsoft-board::validation.allowed_extensions.min'),
+            'allowed_extensions.min' => __('sirsoft-board::validation.allowed_extensions.min'),
 
             // 관리자 설정 검증 메시지
             'board_manager_ids.required' => __('sirsoft-board::validation.board_manager_ids.required'),

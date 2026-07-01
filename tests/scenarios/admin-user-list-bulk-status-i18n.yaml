@@ -1,0 +1,37 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 회원 목록 일괄 작업 라벨 i18n 키화 시나리오 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+
+feature: 회원 목록 일괄 작업 "상태 변경" 라벨 i18n 키화 (공개#45)
+
+description: |
+  sirsoft-admin_basic 회원 목록(admin_user_list.json) 일괄 작업 바의 "상태 변경"
+  Span 라벨이 $t: 키 대신 한글 하드코딩이던 결함을 키화하는 시나리오.
+
+  배경:
+    - status_change_label Span 만 $t: 키 부착 누락 (바로 위 형제 selected_count 는 키화됨).
+    - admin.users 네임스페이스에 bulk_status_change 키 신규 추가 (ko/en).
+    - 범위: 실 UI 라벨 1건만(D-45-1). 테스트 픽스처/바인딩 fallback/placeholder 예시/
+      언어명 라벨(②~⑤)은 제외.
+
+axes:
+  locale: [ko, en, ja]
+  node: [status_change_label]
+  layout_dir: [bundled, active]
+
+exclusions:
+  - { locale: ja, layout_dir: active, reason: "ja 증분은 ANTHROPIC_API_KEY 필요 — 환경 제약, PO 후속" }
+
+effects:
+  - hardcoded_korean_text_removed_from_layout
+  - status_change_label_uses_bulk_status_change_key
+  - ko_partial_defines_bulk_status_change
+  - en_partial_defines_bulk_status_change
+  - translation_engine_resolves_key_for_ko_and_en
+  - active_dir_reflects_keyed_layout_and_lang
+  - ja_bundle_increment_pending_api_key  # 환경 제약 (PO ANTHROPIC_API_KEY)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-list-bulk-status-i18n.test.tsx
+
+rules_layer_coverage:
+  - rule: layout-i18n-hardcoded-text
+    coverage: 본 룰은 후속 분리(D-45-2) — 현재는 렌더 테스트가 하드코딩 부재를 구조적으로 가드

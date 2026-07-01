@@ -1,5 +1,5 @@
 {
-    "meta": { "is_partial": true, "description": "코어 업데이트 터미널 안내 모달" },
+    "meta": { "is_partial": true, "description": "코어 업데이트 터미널 안내 모달", "editor_label": "$t:admin.modal_label.admin_settings.core_update_guide_modal" },
     "id": "core_update_guide_modal",
     "type": "composite",
     "name": "Modal",
@@ -11,12 +11,12 @@
         {
             "type": "basic",
             "name": "Div",
-            "props": { "className": "space-y-4" },
+            "props": { "className": "row-stack" },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3" },
+                    "props": { "className": "alert-warning" },
                     "children": [
                         {
                             "type": "basic",
@@ -24,7 +24,7 @@
                             "props": { "className": "flex gap-2" },
                             "children": [
                                 { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" } },
-                                { "type": "basic", "name": "P", "props": { "className": "text-sm text-yellow-700 dark:text-yellow-300" }, "text": "$t:admin.settings.info.update_guide_warning" }
+                                { "type": "basic", "name": "P", "props": { "className": "text-warning-soft" }, "text": "$t:admin.settings.info.update_guide_warning" }
                             ]
                         }
                     ]
@@ -32,7 +32,7 @@
                 {
                     "type": "basic",
                     "name": "P",
-                    "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                    "props": { "className": "text-label" },
                     "text": "$t:admin.settings.info.update_guide_desc"
                 },
                 {
@@ -47,7 +47,7 @@
                 {
                     "type": "basic",
                     "name": "P",
-                    "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                    "props": { "className": "text-tertiary" },
                     "text": "$t:admin.settings.info.update_guide_note"
                 },
                 {
@@ -58,7 +58,7 @@
                         {
                             "type": "basic",
                             "name": "P",
-                            "props": { "className": "text-sm text-gray-600 dark:text-gray-400 mb-2" },
+                            "props": { "className": "text-label mb-2" },
                             "text": "$t:admin.settings.info.upgrade_guide_link_desc"
                         },
                         {
@@ -91,7 +91,7 @@
                         {
                             "type": "basic",
                             "name": "P",
-                            "props": { "className": "text-sm text-gray-600 dark:text-gray-400 mb-3" },
+                            "props": { "className": "text-label mb-3" },
                             "text": "$t:admin.settings.info.manual_update_desc"
                         },
                         {

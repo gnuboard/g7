@@ -14,5 +14,1163 @@
   "link_modal": {
     "title": "リンク挿入",
     "insert": "挿入"
+  },
+  "control": {
+    "text_align": {
+      "label": "テキスト配置",
+      "left": "左",
+      "center": "中央",
+      "right": "右",
+      "justify": "両側"
+    },
+    "font_size": {
+      "label": "フォントサイズ"
+    },
+    "font_weight": {
+      "label": "太さ",
+      "normal": "標準",
+      "semibold": "やや太く",
+      "bold": "太く"
+    },
+    "letter_spacing": {
+      "label": "文字間隔",
+      "tight": "狭く",
+      "normal": "標準",
+      "wide": "広く"
+    },
+    "line_height": {
+      "label": "行間",
+      "tight": "狭く",
+      "normal": "標準",
+      "relaxed": "広く"
+    },
+    "text_color": {
+      "label": "文字色"
+    },
+    "background_color": {
+      "label": "背景色"
+    },
+    "background_image": {
+      "label": "背景画像"
+    },
+    "color_preset": {
+      "gray_900": "濃いグレー",
+      "gray_800": "暗いグレー",
+      "gray_700": "グレー",
+      "gray_500": "ミディアムグレー",
+      "gray_100": "薄いグレー",
+      "gray_50": "ごく薄いグレー",
+      "white": "白",
+      "blue_600": "青",
+      "red_600": "赤",
+      "green_600": "緑",
+      "gray_300": "明るいグレー"
+    },
+    "padding": {
+      "label": "内側の余白"
+    },
+    "margin": {
+      "label": "外側の余白"
+    },
+    "width": {
+      "label": "横幅",
+      "full": "全体",
+      "three_quarter": "3/4",
+      "half": "半分",
+      "quarter": "1/4"
+    },
+    "height": {
+      "label": "縦幅",
+      "auto": "自動"
+    },
+    "self_align": {
+      "label": "配置",
+      "start": "開始",
+      "center": "中央",
+      "end": "終了"
+    },
+    "flex_direction": {
+      "label": "方向",
+      "row": "横",
+      "column": "縦"
+    },
+    "flex_justify": {
+      "label": "子要素の配置(主軸)",
+      "start": "開始",
+      "center": "中央",
+      "end": "終了",
+      "between": "両端",
+      "around": "均等"
+    },
+    "flex_align": {
+      "label": "子要素の配置(交差軸)",
+      "start": "開始",
+      "center": "中央",
+      "end": "終了",
+      "stretch": "拡張"
+    },
+    "flex_wrap": {
+      "label": "折り返しを許可",
+      "off": "オフ",
+      "on": "オン"
+    },
+    "flex_gap": {
+      "label": "子要素の間隔"
+    },
+    "flex_enable": {
+      "label": "配置ボックスにする",
+      "on": "並べ替えボックス",
+      "off": "一般ブロック"
+    },
+    "flex_item_grow": {
+      "label": "拡張",
+      "fixed": "固定",
+      "fill": "埋める",
+      "ratio": "比率"
+    },
+    "flex_item_align": {
+      "label": "単体での配置",
+      "start": "開始",
+      "center": "中央",
+      "end": "終了",
+      "stretch": "拡張"
+    },
+    "flex_item_order": {
+      "label": "順序"
+    },
+    "toggle": {
+      "on": "オン",
+      "off": "オフ"
+    },
+    "box_shadow": {
+      "label": "影",
+      "none": "なし",
+      "sm": "弱い",
+      "md": "通常",
+      "lg": "強い",
+      "xl": "より強い",
+      "xxl": "非常に強い"
+    },
+    "border_style": {
+      "label": "枠線スタイル",
+      "none": "なし",
+      "solid": "実線",
+      "dashed": "破線",
+      "dotted": "点線"
+    },
+    "border_color": {
+      "label": "枠線色"
+    },
+    "border_radius": {
+      "label": "角の丸さ",
+      "none": "角ばった",
+      "sm": "わずか",
+      "md": "通常",
+      "lg": "丸い",
+      "xl": "多い",
+      "full": "完全に"
+    },
+    "opacity": {
+      "label": "透明度"
+    },
+    "overflow": {
+      "label": "スクロール",
+      "auto": "自動",
+      "hidden": "非表示",
+      "x_auto": "横方向自動",
+      "y_auto": "縦方向自動",
+      "visible": "表示"
+    },
+    "font_bold": {
+      "label": "太字"
+    },
+    "font_italic": {
+      "label": "斜体"
+    },
+    "text_underline": {
+      "label": "下線"
+    },
+    "whitespace": {
+      "label": "改行",
+      "normal": "許可",
+      "nowrap": "しない",
+      "pre_wrap": "空白を保持"
+    },
+    "icon_name": {
+      "label": "アイコン",
+      "search": "アイコン検索"
+    },
+    "img_src": {
+      "label": "画像アドレス"
+    },
+    "img_alt": {
+      "label": "代替テキスト"
+    },
+    "link_href": {
+      "label": "リンクアドレス"
+    },
+    "link_target": {
+      "label": "リンク対象",
+      "self": "現在のウィンドウ",
+      "blank": "新しいウィンドウ",
+      "parent": "親フレーム",
+      "top": "最上位フレーム"
+    },
+    "input_type": {
+      "label": "入力タイプ",
+      "text": "テキスト",
+      "email": "メール",
+      "password": "パスワード",
+      "number": "数値",
+      "tel": "電話番号",
+      "url": "URL",
+      "date": "日付",
+      "search": "検索"
+    },
+    "input_placeholder": {
+      "label": "ガイドテキスト"
+    },
+    "input_name": {
+      "label": "フィールド名"
+    },
+    "input_required": {
+      "label": "必須入力"
+    },
+    "input_disabled": {
+      "label": "無効化"
+    },
+    "field_label": {
+      "label": "ラベル"
+    },
+    "field_error": {
+      "label": "エラーメッセージ"
+    },
+    "field_helper": {
+      "label": "ヘルプ"
+    },
+    "html_for": {
+      "label": "接続先"
+    },
+    "textarea_rows": {
+      "label": "行数"
+    },
+    "elem_id": {
+      "label": "要素ID"
+    },
+    "select_placeholder": {
+      "label": "ガイドテキスト"
+    },
+    "select_options": {
+      "label": "選択肢"
+    },
+    "component_size": {
+      "label": "サイズ",
+      "sm": "小",
+      "md": "中",
+      "lg": "大"
+    },
+    "button_variant": {
+      "label": "ボタンスタイル",
+      "primary": "デフォルト",
+      "secondary": "補助",
+      "danger": "危険",
+      "success": "成功"
+    },
+    "component_disabled": {
+      "label": "無効化"
+    },
+    "av_name": {
+      "label": "名前"
+    },
+    "av_avatar": {
+      "label": "アバター画像"
+    },
+    "av_size": {
+      "label": "サイズ",
+      "xs": "非常に小さい",
+      "sm": "小さい",
+      "md": "普通",
+      "lg": "大きい",
+      "xl": "非常に大きい",
+      "2xl": "2XL",
+      "3xl": "3XL",
+      "4xl": "4XL",
+      "5xl": "5XL"
+    },
+    "av_text": {
+      "label": "テキスト"
+    },
+    "av_withdrawn": {
+      "label": "退会会員"
+    },
+    "av_guest": {
+      "label": "非会員"
+    },
+    "ui_name": {
+      "label": "名前"
+    },
+    "ui_user_id": {
+      "label": "ユーザーID"
+    },
+    "ui_sub_text": {
+      "label": "補助テキスト"
+    },
+    "ui_sub_title": {
+      "label": "補助テキストタイトル"
+    },
+    "ui_guest": {
+      "label": "非会員"
+    },
+    "ui_withdrawn": {
+      "label": "退会会員"
+    },
+    "ui_show_dropdown": {
+      "label": "ドロップダウン表示"
+    },
+    "ui_clickable": {
+      "label": "クリック可能"
+    },
+    "ui_profile_path": {
+      "label": "プロフィールパス"
+    },
+    "ui_layout": {
+      "label": "レイアウト",
+      "vertical": "縦",
+      "horizontal": "横"
+    },
+    "ui_text": {
+      "label": "テキスト"
+    },
+    "ui_stop_prop": {
+      "label": "イベント伝播防止"
+    },
+    "hc_is_html": {
+      "label": "HTMLレンダリング"
+    },
+    "rte_name": {
+      "label": "フィールド名"
+    },
+    "rte_initial_value": {
+      "label": "初期内容"
+    },
+    "rte_placeholder": {
+      "label": "案内文言"
+    },
+    "rte_image_upload_url": {
+      "label": "画像アップロードURL"
+    },
+    "rte_min_height": {
+      "label": "最小高さ"
+    },
+    "rte_disabled": {
+      "label": "無効化"
+    },
+    "ec_max_height": {
+      "label": "折りたたみ最大高さ"
+    },
+    "ec_expand_text": {
+      "label": "展開テキスト"
+    },
+    "ec_collapse_text": {
+      "label": "折りたたみテキスト"
+    },
+    "qs_value": {
+      "label": "初期数量"
+    },
+    "qs_min": {
+      "label": "最小数量"
+    },
+    "qs_max": {
+      "label": "最大数量"
+    },
+    "qs_size": {
+      "label": "サイズ",
+      "sm": "小さい",
+      "md": "普通",
+      "lg": "大きい"
+    },
+    "qs_disabled": {
+      "label": "無効化"
+    },
+    "au_src": {
+      "label": "アバターURL"
+    },
+    "au_fallback": {
+      "label": "代替テキスト"
+    },
+    "au_size": {
+      "label": "サイズ",
+      "sm": "小さい",
+      "md": "普通",
+      "lg": "大きい",
+      "xl": "非常に大きい",
+      "2xl": "2XL"
+    },
+    "au_upload_endpoint": {
+      "label": "アップロードエンドポイント"
+    },
+    "au_delete_endpoint": {
+      "label": "削除エンドポイント"
+    },
+    "au_accept": {
+      "label": "許可ファイル形式"
+    },
+    "au_max_size": {
+      "label": "最大ファイルサイズ(MB)"
+    },
+    "au_upload_btn": {
+      "label": "アップロードボタンテキスト"
+    },
+    "au_delete_btn": {
+      "label": "削除ボタンテキスト"
+    },
+    "au_read_only": {
+      "label": "読み取り専用"
+    },
+    "au_confirm_delete": {
+      "label": "削除確認"
+    },
+    "au_delete_confirm_msg": {
+      "label": "削除確認メッセージ"
+    },
+    "au_confirm_upload": {
+      "label": "アップロード確認"
+    },
+    "au_upload_confirm_msg": {
+      "label": "アップロード確認メッセージ"
+    },
+    "au_show_delete": {
+      "label": "削除ボタン表示"
+    },
+    "slb_mode": {
+      "label": "モード",
+      "login": "ログイン",
+      "register": "会員登録"
+    },
+    "slb_variant": {
+      "label": "ボタンスタイル",
+      "full": "すべて",
+      "icon": "アイコン"
+    },
+    "pr_user_reaction": {
+      "label": "マイリアクション",
+      "like": "いいね",
+      "funny": "面白い",
+      "agree": "共感",
+      "thanks": "ありがとう",
+      "wow": "驚き"
+    },
+    "pr_post_id": {
+      "label": "投稿ID"
+    },
+    "pr_size": {
+      "label": "サイズ",
+      "sm": "小さい",
+      "md": "普通",
+      "lg": "大きい"
+    },
+    "pi_label": {
+      "label": "ラベル"
+    },
+    "pi_error": {
+      "label": "エラーメッセージ"
+    },
+    "pi_show_toggle": {
+      "label": "表示トグルボタン"
+    },
+    "pi_show_validation": {
+      "label": "バリデーション表示"
+    },
+    "pi_wrapper_class": {
+      "label": "ラッパークラス"
+    },
+    "pi_is_confirm": {
+      "label": "確認フィールド"
+    },
+    "pi_confirm_target": {
+      "label": "確認対象"
+    },
+    "pc_shop_base": {
+      "label": "ストア基本パス"
+    },
+    "grid_cols": {
+      "label": "列数"
+    },
+    "grid_gap": {
+      "label": "間隔"
+    },
+    "tcl_left_width": {
+      "label": "左幅"
+    },
+    "tcl_right_width": {
+      "label": "右幅"
+    },
+    "ig_enable_zoom": {
+      "label": "ズーム"
+    },
+    "ig_enable_slideshow": {
+      "label": "スライドショー"
+    },
+    "ig_enable_fullscreen": {
+      "label": "フルスクリーン"
+    },
+    "ig_show_counter": {
+      "label": "カウンター表示"
+    },
+    "ig_show_download": {
+      "label": "ダウンロード表示"
+    },
+    "ig_show_thumbnails": {
+      "label": "サムネイル表示"
+    },
+    "pg_max_visible": {
+      "label": "最大表示ページ"
+    },
+    "pg_show_first_last": {
+      "label": "最初/最後ボタン"
+    },
+    "pg_prev_text": {
+      "label": "前へテキスト"
+    },
+    "pg_next_text": {
+      "label": "次へテキスト"
+    },
+    "sb_placeholder": {
+      "label": "ガイドテキスト"
+    },
+    "sb_show_button": {
+      "label": "ボタン表示"
+    },
+    "sb_show_suggestions": {
+      "label": "推薦表示"
+    },
+    "he_multilingual": {
+      "label": "多言語"
+    },
+    "he_is_html": {
+      "label": "HTMLモード"
+    },
+    "he_rows": {
+      "label": "行数"
+    },
+    "he_placeholder": {
+      "label": "ガイドテキスト"
+    },
+    "he_label": {
+      "label": "ラベル"
+    },
+    "he_show_html_toggle": {
+      "label": "HTMLトグル表示"
+    },
+    "he_name": {
+      "label": "フィールド名"
+    },
+    "he_html_field_name": {
+      "label": "HTMLフィールド名"
+    },
+    "he_read_only": {
+      "label": "読み取り専用"
+    },
+    "tn_active_tab_id": {
+      "label": "アクティブタブID"
+    },
+    "tn_variant": {
+      "label": "スタイル",
+      "default": "デフォルト",
+      "pills": "ピル型",
+      "underline": "アンダーライン型"
+    },
+    "tn_mobile_breakpoint": {
+      "label": "モバイルブレークポイント"
+    },
+    "fu_type": {
+      "label": "添付対象タイプ"
+    },
+    "fu_collection": {
+      "label": "コレクション"
+    },
+    "fu_max_files": {
+      "label": "最大ファイル数"
+    },
+    "fu_max_size": {
+      "label": "最大ファイルサイズ"
+    },
+    "fu_accept": {
+      "label": "許可形式"
+    },
+    "fu_auto_upload": {
+      "label": "自動アップロード"
+    },
+    "fu_confirm_remove": {
+      "label": "削除確認"
+    },
+    "fu_primary_sel": {
+      "label": "代表選択"
+    },
+    "hdr_site_name": {
+      "label": "サイト名"
+    },
+    "hdr_logo": {
+      "label": "ロゴ画像"
+    },
+    "hdr_shop_base": {
+      "label": "ショッピングモール基本パス"
+    },
+    "hdr_max_boards": {
+      "label": "タブ表示掲示板数"
+    },
+    "hdr_current_locale": {
+      "label": "現在の言語"
+    },
+    "hdr_notif_title": {
+      "label": "通知タイトルテキスト"
+    },
+    "hdr_notif_empty": {
+      "label": "通知なしテキスト"
+    },
+    "hdr_notif_mark_all_read": {
+      "label": "すべて読了テキスト"
+    },
+    "hdr_notif_delete_all": {
+      "label": "すべて削除テキスト"
+    },
+    "hdr_notif_unread_only": {
+      "label": "未読通知のみテキスト"
+    },
+    "ft_site_name": {
+      "label": "サイト名"
+    },
+    "ft_site_description": {
+      "label": "サイト説明"
+    },
+    "ft_copyright_text": {
+      "label": "著作権表記"
+    },
+    "tt_auto_text": {
+      "label": "自動テキスト"
+    },
+    "tt_light_text": {
+      "label": "明るいテキスト"
+    },
+    "tt_dark_text": {
+      "label": "暗いテキスト"
+    },
+    "nc_title_text": {
+      "label": "タイトルテキスト"
+    },
+    "nc_empty_text": {
+      "label": "通知なしテキスト"
+    },
+    "nc_mark_all_read_text": {
+      "label": "すべて読了テキスト"
+    },
+    "nc_delete_all_text": {
+      "label": "すべて削除テキスト"
+    },
+    "nc_unread_only_text": {
+      "label": "未読通知のみテキスト"
+    },
+    "nc_unread_only": {
+      "label": "未読通知のみ表示"
+    },
+    "nc_dropdown_align": {
+      "label": "ドロップダウン並べ替え",
+      "left": "左",
+      "right": "右"
+    }
+  },
+  "component": {
+    "h1": "大見出し",
+    "h2": "見出し",
+    "h3": "中見出し",
+    "h4": "小見出し",
+    "p": "段落",
+    "span": "テキスト",
+    "a": "リンク",
+    "button": "ボタン",
+    "img": "画像",
+    "div": "領域",
+    "container": "コンテナ",
+    "flex": "横配置",
+    "grid": "グリッド配置",
+    "section_layout": "セクション",
+    "card": "カード",
+    "table": "表",
+    "hr": "区切り線",
+    "ul": "リスト",
+    "li": "リスト項目",
+    "nav": "ナビゲーション",
+    "three_column_layout": "3段レイアウト",
+    "product_card": "商品カード",
+    "image_gallery": "画像ギャラリー",
+    "pagination": "ページネーション",
+    "search_bar": "検索バー",
+    "avatar": "アバター",
+    "user_info": "ユーザー情報",
+    "html_content": "HTMLコンテンツ",
+    "html_editor": "HTML編集器",
+    "rich_text_editor": "リッチテキスト編集器",
+    "expandable_content": "展開コンテンツ",
+    "tab_navigation": "タブナビゲーション",
+    "quantity_selector": "数量セレクター",
+    "product_image_viewer": "商品画像ビューアー",
+    "file_uploader": "ファイルアップローダー",
+    "avatar_uploader": "アバターアップローダー",
+    "social_login_buttons": "ソーシャルログインボタン",
+    "post_reactions": "投稿リアクション",
+    "input": "入力フィールド",
+    "textarea": "複数行入力",
+    "select": "選択ボックス",
+    "checkbox": "チェックボックス",
+    "password_input": "パスワード入力",
+    "label": "ラベル",
+    "form": "フォーム",
+    "icon": "アイコン",
+    "td": "表セル",
+    "th": "表ヘッダーセル",
+    "header": "サイトヘッダー",
+    "footer": "サイトフッター",
+    "theme_toggle": "テーマ切り替え",
+    "notification_center": "通知センター"
+  },
+  "action": {
+    "go_to_page": {
+      "label": "別のページに移動",
+      "param_url": "移動先ページ"
+    },
+    "show_message": {
+      "label": "ガイドメッセージを表示",
+      "param_text": "メッセージ",
+      "param_tone": "種類",
+      "tone_success": "成功",
+      "tone_error": "エラー",
+      "tone_info": "案内"
+    },
+    "change_state": {
+      "label": "画面ステータスを変更",
+      "param_key": "ステータス名",
+      "param_value": "値"
+    },
+    "refresh_data": {
+      "label": "リストを更新",
+      "param_src": "対象データ"
+    },
+    "call_server_then": {
+      "label": "サーバーに送信して結果を処理",
+      "param_endpoint": "送信先",
+      "param_on_success": "成功時",
+      "param_on_error": "失敗時"
+    },
+    "set_theme": {
+      "label": "テーマを変更",
+      "param_target": "テーマ",
+      "target_auto": "自動",
+      "target_light": "明るく",
+      "target_dark": "暗く"
+    },
+    "save_preferred_currency": {
+      "label": "推奨通貨を保存",
+      "param_currency": "通貨"
+    },
+    "set_cart_option": {
+      "label": "カートオプションを変更",
+      "param_item_id": "商品ID",
+      "param_option_key": "オプション名",
+      "param_option_value": "オプション値"
+    },
+    "open_cart_delete_modal": {
+      "label": "カート削除確認を開く",
+      "param_item_id": "商品ID"
+    },
+    "open_cart_option_modal": {
+      "label": "カートオプション選択を開く",
+      "param_item_id": "商品ID"
+    },
+    "recalculate_cart": {
+      "label": "カート金額を再計算"
+    },
+    "get_display_price": {
+      "label": "表示価格を取得",
+      "param_currency": "通貨"
+    },
+    "init_theme": {
+      "label": "テーマをリセット",
+      "param_target": "テーマ",
+      "target_auto": "自動",
+      "target_light": "明るく",
+      "target_dark": "暗く"
+    },
+    "init_cart_key": {
+      "label": "カートキーをリセット"
+    },
+    "load_preferred_currency": {
+      "label": "推奨通貨を読み込む"
+    },
+    "get_cart_key": {
+      "label": "カートキーを取得"
+    },
+    "clear_cart_key": {
+      "label": "カートキーをクリア"
+    },
+    "save_to_storage": {
+      "label": "ブラウザに保存",
+      "param_key": "保存名",
+      "param_value": "保存値"
+    },
+    "load_from_storage": {
+      "label": "ブラウザから読み込む",
+      "param_key": "保存名",
+      "param_default": "デフォルト値"
+    },
+    "save_guest_order_token": {
+      "label": "非会員注文トークン保存",
+      "param_token": "注文トークン",
+      "param_order_number": "注文番号",
+      "param_expires_at": "有効期限"
+    }
+  },
+  "condition": {
+    "is_logged_in": "ログイン中の会員の場合",
+    "is_guest": "ログインしていない場合",
+    "is_admin": "管理者の場合",
+    "is_saving": "保存中の場合",
+    "not_saving": "保存中でない場合",
+    "has_changes": "変更がある場合",
+    "has_errors": "エラーがある場合",
+    "no_errors": "エラーがない場合",
+    "ds_has_data": "データがある場合",
+    "ds_empty": "データがない場合",
+    "ds_loading": "データを読込中の場合",
+    "ds_error": "データの読込に失敗した場合",
+    "field_equals": "特定の値と同じ場合",
+    "field_not_equals": "特定の値と異なる場合",
+    "state_equals": "画面ステータスが特定の値の場合",
+    "is_edit_mode": "編集画面の場合",
+    "is_create_mode": "新規作成画面の場合",
+    "query_equals": "URLパラメーターが特定の値の場合",
+    "field_has_error": "特定の入力欄にエラーがある場合",
+    "param_src": "データ",
+    "param_field": "フィールドパス",
+    "param_value": "値",
+    "param_state_key": "ステータスキー",
+    "param_query": "URLパラメーター名",
+    "value_truthy": "値がある場合",
+    "value_falsy": "値がない場合",
+    "list_non_empty": "リストに項目がある場合",
+    "list_empty": "リストが空の場合",
+    "num_gt": "数値が~より大きい場合",
+    "num_gte": "数値が~以上の場合",
+    "num_lt": "数値が~より小さい場合",
+    "num_lte": "数値が~以下の場合",
+    "value_is_true": "値が真(true)の場合",
+    "value_is_false": "値が偽(false)の場合",
+    "value_not_false": "値が偽(false)ではない場合",
+    "value_not_true": "値が真(true)ではない場合",
+    "value_defined": "値が定義されている場合",
+    "value_undefined": "値が定義されていない場合",
+    "value_not_null": "値がnullではない場合",
+    "value_is_null": "値がnullの場合",
+    "field_matches": "2つの値が同じ場合",
+    "field_differs": "2つの値が異なる場合",
+    "param_path": "ステータス/データパス",
+    "param_number": "基準値",
+    "param_field_a": "最初の値のパス",
+    "param_field_b": "2番目の値のパス"
+  },
+  "state": {
+    "login_default": "デフォルト",
+    "login_failed": "ログイン失敗",
+    "search_with_results": "検索結果あり",
+    "search_empty": "検索結果なし",
+    "notifications_with": "通知あり",
+    "notifications_empty": "通知なし",
+    "with_data": "データあり",
+    "empty_data": "データなし",
+    "in_stock": "在庫あり",
+    "out_of_stock": "品切れ",
+    "cart_with_items": "商品が追加されました",
+    "cart_empty": "カートが空です",
+    "read_normal": "一般投稿",
+    "read_secret_locked": "非公開投稿ロック",
+    "published": "公開",
+    "draft_preview": "下書きプレビュー",
+    "profile_password_entry": "パスワード確認",
+    "profile_actual_edit": "情報編集",
+    "profile_validation_failed": "検証失敗",
+    "forgot_default": "入力画面",
+    "forgot_success": "メール送信済み",
+    "reset_token_valid": "トークン正常",
+    "reset_token_error": "トークンエラー",
+    "reset_success": "リセット完了",
+    "register_default": "入力画面",
+    "register_validation_failed": "検証失敗",
+    "register_valid_input": "入力完了(一致)",
+    "challenge_text_code": "コード入力",
+    "challenge_link": "メールリンク",
+    "challenge_external": "外部認証",
+    "challenge_error": "認証失敗",
+    "change_password_form": "入力画面",
+    "change_password_success": "変更完了",
+    "wishlist_with_items": "お気に入り商品あり",
+    "wishlist_empty": "お気に入り商品なし",
+    "addresses_with": "配送先あり",
+    "addresses_empty": "配送先なし",
+    "user_active": "正常会員",
+    "user_withdrawn": "退会会員",
+    "user_posts_with": "作成記事あり",
+    "user_posts_empty": "作成記事なし",
+    "boards_with": "掲示板あり",
+    "boards_empty": "掲示板なし",
+    "board_create": "新規投稿",
+    "board_edit": "投稿編集",
+    "shop_access_denied": "アクセス制限",
+    "sold_out": "品切れ",
+    "suspended": "販売停止",
+    "coming_soon": "販売予定",
+    "cart_ordering": "注文処理中",
+    "checkout_normal": "正常決済",
+    "checkout_payment_error": "決済エラー",
+    "payment_card": "カード決済",
+    "payment_vbank": "仮想口座",
+    "payment_dbank": "銀行振込",
+    "reorder_pending": "再注文進行中",
+    "reorder_success_partial": "一部再注文",
+    "reorder_error": "再注文失敗",
+    "checkout_validation_failed": "入力検証に失敗しました",
+    "product_reviews_tab": "レビュータブ",
+    "product_qna_tab": "商品お問い合わせタブ",
+    "board_activity_my_posts": "私が書いた投稿",
+    "board_activity_my_comments": "私が書いたコメント",
+    "search_tab_posts": "投稿タブ",
+    "search_tab_products": "商品タブ",
+    "search_tab_pages": "ページタブ",
+    "checkout_summary_details": "金額詳細展開",
+    "cart_summary_details": "税金詳細展開",
+    "board_reply_with_quote": "返信を作成 (親投稿を引用)",
+    "address_modal_list": "配送先リスト",
+    "address_modal_form": "配送先を直接入力",
+    "order_show_default": "デフォルト",
+    "order_change_address_manual": "配送先変更（直接入力）",
+    "user_base_default": "デフォルト",
+    "mobile_menu_open": "モバイルメニュー展開",
+    "gdpr_cookie_banner_visible": "クッキーバナー表示",
+    "identity_challenge_inicis": "本人認証モーダル（イニシス）",
+    "guest_order_form_guest": "非会員 (閲覧フォーム)",
+    "guest_order_form_member": "会員 (マイページのご案内)"
+  },
+  "cell_border": {
+    "side_all": "すべて",
+    "side_top": "上",
+    "side_bottom": "下",
+    "side_left": "左",
+    "side_right": "右",
+    "width_none": "なし",
+    "width_thin": "薄い",
+    "width_medium": "通常",
+    "width_thick": "太い",
+    "color_gray": "グレー",
+    "color_gray_dark": "濃いグレー",
+    "color_dark": "黒",
+    "color_blue": "青",
+    "color_red": "赤"
+  },
+  "cell_fill": {
+    "color_white": "白",
+    "color_gray": "薄いグレー",
+    "color_gray_dark": "グレー",
+    "color_yellow": "黄",
+    "color_blue": "青",
+    "color_green": "緑",
+    "color_red": "赤"
+  },
+  "cell_padding": {
+    "step_none": "なし",
+    "step_narrow": "狭い",
+    "step_normal": "普通",
+    "step_wide": "広い"
+  },
+  "array_item": {
+    "tab": "タブ",
+    "provider": "プロバイダー"
+  },
+  "array_field": {
+    "label": "ラベル",
+    "id": "ID",
+    "icon": "アイコン",
+    "badge": "バッジ",
+    "disabled": "無効化",
+    "provider": "プロバイダー"
+  },
+  "data_prop": {
+    "data": "データ",
+    "chart_data": "チャートデータ",
+    "tree_data": "ツリーデータ",
+    "images": "画像",
+    "menu_items": "メニュー項目",
+    "items": "項目",
+    "filters": "フィルター",
+    "suggestions": "おすすめ検索キーワード",
+    "datasets": "データセット",
+    "tabs": "タブ",
+    "breadcrumb_items": "パス項目",
+    "available_locales": "利用可能言語",
+    "user": "ユーザー",
+    "current_page": "現在のページ",
+    "total_pages": "総ページ数",
+    "reactions": "反応",
+    "product": "商品",
+    "author": "作成者",
+    "value": "値",
+    "options": "選択肢",
+    "selected_tags": "選択されたタグ",
+    "selected_permissions": "選択された権限",
+    "header_user": "ログイン ユーザー",
+    "header_boards": "掲示板一覧",
+    "header_notifications": "通知一覧",
+    "header_available_locales": "利用可能言語",
+    "header_cart_count": "カート数量",
+    "header_notification_count": "通知数",
+    "footer_social_links": "ソーシャルリンク",
+    "footer_link_groups": "リンクグループ",
+    "notification_items": "通知一覧",
+    "notification_unread_count": "未読通知数"
+  },
+  "state_label": {
+    "current_user": "現在のユーザー",
+    "current_user_name": "現在のユーザー名",
+    "current_user_email": "現在のユーザーメールアドレス",
+    "current_user_id": "現在のユーザーID",
+    "current_user_is_admin": "管理者",
+    "site_name": "サイト名",
+    "query_q": "検索キーワード (URL)"
+  },
+  "data_source": {
+    "addresses": "配送先リスト",
+    "boardList": "掲示板リスト",
+    "boards": "掲示板",
+    "cart": "カート",
+    "cartItems": "カート商品",
+    "categories": "カテゴリーリスト",
+    "category": "カテゴリー",
+    "challenge": "本人認証リクエスト",
+    "checkoutData": "注文書データ",
+    "current_user": "現在のユーザー",
+    "form_data": "フォームデータ",
+    "form_meta": "フォームメタ",
+    "home_boards": "ホーム掲示板",
+    "myActivityStats": "アクティビティ統計",
+    "myComments": "マイコメント",
+    "myInquiries": "マイお問い合わせ",
+    "myPosts": "マイ投稿",
+    "navigation": "前/次投稿",
+    "newProducts": "新商品",
+    "notification_unread_count": "未読通知数",
+    "notifications": "通知リスト",
+    "order": "注文",
+    "orderData": "注文データ",
+    "orders": "注文リスト",
+    "page": "ページ",
+    "paymentSettings": "決済設定",
+    "popularPosts": "人気投稿",
+    "popularProducts": "人気商品",
+    "popular_boards": "人気掲示板",
+    "post": "投稿",
+    "postStats": "投稿統計",
+    "posts": "投稿リスト",
+    "privacyContent": "プライバシーポリシー内容",
+    "product": "商品",
+    "productDownloadableCoupons": "ダウンロード可能クーポン",
+    "products": "商品リスト",
+    "profile": "プロフィール",
+    "qna": "商品お問い合わせ",
+    "recentPosts": "最近の投稿",
+    "recentProducts": "最近閲覧した商品",
+    "recent_posts": "最近の投稿",
+    "refundReasons": "返金理由",
+    "reviews": "商品レビュー",
+    "saveShippingAddress": "配送先保存",
+    "searchResults": "検索結果",
+    "shippingSettings": "配送設定",
+    "stats": "統計",
+    "termsContent": "利用規約内容",
+    "tokenValidation": "トークン検証",
+    "user": "ユーザー",
+    "userAddresses": "ユーザー配送先",
+    "userNotifications": "ユーザー通知",
+    "userPosts": "ユーザー投稿",
+    "userProfile": "ユーザープロフィール",
+    "user_notification_ws": "通知（リアルタイム）",
+    "wishlist": "ウィッシュリスト",
+    "mileage_balance": "マイレージ残高",
+    "mileage_history": "マイレージ履歴",
+    "reviewSettings": "レビューポリシー設定"
+  },
+  "provider": {
+    "naver": "Naver",
+    "kakao": "Kakao"
+  },
+  "computed": {
+    "filter_default": {
+      "label": "デフォルト値を入力",
+      "param_local_path": "画面状態パス",
+      "param_query_key": "URLパラメータ名",
+      "param_fallback": "デフォルト値"
+    },
+    "options_from_api": {
+      "label": "データから選択肢を作成",
+      "param_source": "データ",
+      "param_filter": "条件",
+      "param_value_field": "値フィールド",
+      "param_label_field": "ラベルフィールド"
+    },
+    "first_of": {
+      "label": "最初に存在する値を選択",
+      "param_candidates": "候補値",
+      "param_fallback": "デフォルト値"
+    },
+    "group_items": {
+      "label": "アイテムを基準でグループ化",
+      "param_source": "データ",
+      "param_key_field": "基準フィールド",
+      "param_value_expr": "値の式"
+    }
+  },
+  "error": {
+    "show_error_page": {
+      "label": "エラー案内ページを表示",
+      "param_target": "表示位置"
+    },
+    "navigate": {
+      "label": "別のページに移動",
+      "param_path": "移動先ページ"
+    },
+    "toast": {
+      "label": "案内メッセージを表示",
+      "param_text": "メッセージ"
+    },
+    "open_modal": {
+      "label": "モーダルを開く",
+      "param_modal_id": "モーダルID"
+    },
+    "set_state": {
+      "label": "画面状態を変更",
+      "param_key": "状態名",
+      "param_value": "値",
+      "param_target": "対象",
+      "param_state": "ステータス値",
+      "param_merge": "マージ"
+    },
+    "sequence": {
+      "label": "複数の動作を順序どおりに実行",
+      "param_actions": "実行する動作"
+    },
+    "parallel": {
+      "label": "複数の動作を同時に実行",
+      "param_actions": "実行する動作"
+    }
+  },
+  "loading": {
+    "page_loading": "ローディングスピナー",
+    "page_skeleton": "スケルトンスクリーン"
   }
 }

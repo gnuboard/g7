@@ -223,7 +223,15 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
   "assets": {
     "css": ["dist/bundle.css"],
     "js": ["dist/bundle.js"]
-  }
+  },
+  "externals": [
+    {
+      "id": "fontawesome",
+      "type": "style",
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+      "preconnect": "https://cdnjs.cloudflare.com"
+    }
+  ]
 }
 ```
 
@@ -238,6 +246,39 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 | `license` | 라이선스 유형 (예: `"MIT"`) — API 리소스의 `license` 필드로 노출 |
 | `type` | "admin" 또는 "user" |
 | `locales` | 지원 언어 배열 (`config('app.supported_locales')`와 매칭) |
+
+### 외부 리소스 (externals)
+
+`externals`는 admin/user 템플릿에 공통 적용되는 선택 필드입니다. 최초 HTML 문서에 정적으로 필요한 외부 스타일, 웹폰트, 스크립트, 리소스 힌트를 선언합니다. `external_styles`는 사용하지 않습니다.
+
+| 속성 | 타입 | 필수 | 적용 type | 허용값/형식 | 렌더링/동작 |
+|---|---:|---:|---|---|---|
+| `id` | string | 권장 | all | 영문/숫자/`-`/`_` | HTML `id` 속성 |
+| `type` | string | 필수 | all | `style`, `webfont`, `script`, `preconnect`, `dns-prefetch`, `preload`, `modulepreload` | 출력 태그와 위치 결정 |
+| `url` | string | 필수 | all | `https://...` | link 계열은 `href`, script는 `src` |
+| `preconnect` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | `https://cdn.example.com` | 리소스보다 먼저 `<link rel="preconnect">` 출력, 중복 제거 |
+| `crossorigin` | boolean/string | 선택 | `style`, `webfont`, `script`, `preconnect`, `preload`, `modulepreload` | `true`, `anonymous`, `use-credentials` | `true`는 `anonymous`로 정규화 |
+| `integrity` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | SRI hash | HTML `integrity` |
+| `referrerpolicy` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | 표준 referrer policy | HTML `referrerpolicy` |
+| `media` | string | 선택 | `style`, `webfont` | CSS media query | stylesheet link의 `media` |
+| `position` | string | 선택 | `script` | `head`, `before-core`, `before-template`, `body-end` | script 삽입 위치, 기본 `before-template` |
+| `async` | boolean | 선택 | `script` | `true`, `false` | `async`; `defer`와 동시 사용 불가 |
+| `defer` | boolean | 선택 | `script` | `true`, `false` | `defer` |
+| `as` | string | `preload` 필수 | `preload` | `style`, `script`, `font`, `image`, `fetch` 등 | preload의 `as` |
+| `mimeType` | string | 선택 | `preload`, `modulepreload` | MIME type | HTML `type` |
+| `fetchpriority` | string | 선택 | `preload`, `modulepreload` | `high`, `low`, `auto` | HTML `fetchpriority` |
+
+| `type` | 출력 위치 | HTML 결과 |
+|---|---|---|
+| `style` | head | `<link rel="stylesheet" href="...">` |
+| `webfont` | head | `<link rel="stylesheet" href="...">` |
+| `script` | `position` 기준 | `<script src="..."></script>` |
+| `preconnect` | head 상단 | `<link rel="preconnect" href="...">` |
+| `dns-prefetch` | head 상단 | `<link rel="dns-prefetch" href="...">` |
+| `preload` | head | `<link rel="preload" href="..." as="...">` |
+| `modulepreload` | head | `<link rel="modulepreload" href="...">` |
+
+`externals`는 페이지 최초 진입에 항상 필요한 리소스만 선언합니다. 라우트별 조건부 스크립트나 액션 실행 중 동적 로딩은 layout `scripts`와 `loadScript` 책임입니다.
 
 ---
 

@@ -152,7 +152,7 @@ class SearchPostsListenerTest extends TestCase
     }
 
     /**
-     * formatPostResult()가 created_at(요일 포함 포맷)과 created_at_formatted(표시용) 필드를 반환하는지 확인
+     * formatPostResult()가 created_at(Y-m-d H:i:s 포맷)과 created_at_formatted(표시용) 필드를 반환하는지 확인
      */
     public function test_formatPostResult_includes_created_at_and_created_at_formatted(): void
     {
@@ -197,9 +197,9 @@ class SearchPostsListenerTest extends TestCase
 
         $item = $items[0];
 
-        // created_at: 요일 포함 전체 날짜 포맷 ("YYYY-MM-DD 요일명 HH:MM")
+        // created_at: 전체 날짜+시간 포맷 ("YYYY-MM-DD HH:MM:SS", 사용자 타임존)
         $this->assertArrayHasKey('created_at', $item);
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} [가-힣]+요일 \d{2}:\d{2}$/', $item['created_at']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $item['created_at']);
 
         // created_at_formatted: 표시용 포맷 (비어있지 않은 문자열)
         $this->assertArrayHasKey('created_at_formatted', $item);

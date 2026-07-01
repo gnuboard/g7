@@ -22,6 +22,7 @@
     "data_sources": [
         {
             "id": "stats",
+            "label_key": "$t:editor.data_source.stats",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/stats",
             "method": "GET",
@@ -38,6 +39,7 @@
         },
         {
             "id": "recent_posts",
+            "label_key": "$t:editor.data_source.recent_posts",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/posts/recent?limit=5",
             "method": "GET",
@@ -49,6 +51,7 @@
         },
         {
             "id": "popular_boards",
+            "label_key": "$t:editor.data_source.popular_boards",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/popular-boards?limit=4",
             "method": "GET",
@@ -60,6 +63,7 @@
         },
         {
             "id": "home_boards",
+            "label_key": "$t:editor.data_source.home_boards",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards?limit=3",
             "method": "GET",

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\ConcurrentModificationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Layout\StoreLayoutPreviewRequest;
 use App\Http\Requests\Layout\UpdateLayoutContentRequest;
@@ -26,8 +27,8 @@ class LayoutController extends AdminBaseController
     /**
      * 특정 템플릿의 모든 레이아웃 목록 조회
      *
-     * @param string $templateName 템플릿 identifier
-     * @return JsonResponse
+     * @param  string  $templateName  템플릿 identifier
+     * @return JsonResponse 레이아웃 목록 응답
      */
     public function index(string $templateName): JsonResponse
     {
@@ -39,18 +40,24 @@ class LayoutController extends AdminBaseController
 
         $layouts = $this->layoutService->getLayoutsByTemplateId($template->id);
 
-        return $this->success(
-            'common.success',
-            LayoutResource::collection($layouts)
+        // 레이아웃 이름 → 라우트 path 매핑 — 코드 편집기가 파일 선택 시 ?route= URL
+        // 동기화 / 위지윅에서 넘어온 ?route= 로 해당 파일 복원에 사용한다.
+        $routePathMap = $this->templateService->getLayoutRoutePathMap($templateName);
+
+        $collection = LayoutResource::collection($layouts);
+        $collection->collection->transform(
+            fn (LayoutResource $resource) => $resource->withRoutePathMap($routePathMap)
         );
+
+        return $this->success('common.success', $collection);
     }
 
     /**
      * 특정 레이아웃 상세 조회
      *
-     * @param string $templateName 템플릿 identifier
-     * @param string $name 레이아웃 이름
-     * @return JsonResponse
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string  $name  레이아웃 이름
+     * @return JsonResponse 레이아웃 상세 응답
      */
     public function show(string $templateName, string $name): JsonResponse
     {
@@ -75,10 +82,10 @@ class LayoutController extends AdminBaseController
     /**
      * 레이아웃 수정
      *
-     * @param UpdateLayoutContentRequest $request
-     * @param string $templateName 템플릿 identifier
-     * @param string $name 레이아웃 이름
-     * @return JsonResponse
+     * @param  UpdateLayoutContentRequest  $request  레이아웃 수정 요청
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string  $name  레이아웃 이름
+     * @return JsonResponse 수정된 레이아웃 응답
      */
     public function update(UpdateLayoutContentRequest $request, string $templateName, string $name): JsonResponse
     {
@@ -99,6 +106,20 @@ class LayoutController extends AdminBaseController
                 'common.success',
                 new LayoutResource($layout)
             );
+        } catch (ConcurrentModificationException $e) {
+            DB::rollBack();
+
+            return $this->error(
+                'exceptions.concurrent_modification',
+                409,
+                [
+                    'error' => 'concurrent_modification',
+                    'current_version' => $e->currentVersion,
+                    'your_version' => $e->expectedVersion,
+                    'resource' => $e->resource,
+                ],
+                ['resource' => $e->resource, 'current' => $e->currentVersion, 'expected' => $e->expectedVersion],
+            );
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -113,9 +134,9 @@ class LayoutController extends AdminBaseController
     /**
      * 레이아웃의 모든 버전 목록 조회
      *
-     * @param string $templateName 템플릿 identifier
-     * @param string $name 레이아웃 이름
-     * @return JsonResponse
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string  $name  레이아웃 이름
+     * @return JsonResponse 버전 목록 응답
      */
     public function versions(string $templateName, string $name): JsonResponse
     {
@@ -142,10 +163,10 @@ class LayoutController extends AdminBaseController
     /**
      * 특정 버전의 레이아웃 content 조회
      *
-     * @param string $templateName 템플릿 identifier
-     * @param string $name 레이아웃 이름
-     * @param int $version 버전 번호
-     * @return JsonResponse
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string  $name  레이아웃 이름
+     * @param  int  $version  버전 번호
+     * @return JsonResponse 버전 content 응답
      */
     public function showVersion(string $templateName, string $name, int $version): JsonResponse
     {
@@ -163,17 +184,18 @@ class LayoutController extends AdminBaseController
 
         return $this->success(
             'common.success',
-            new LayoutVersionResource($layoutVersion)
+            // 버전 비교 diff 용 — content 원본 전체(slots/extends 등 포함) 노출.
+            (new LayoutVersionResource($layoutVersion))->withFullContent()
         );
     }
 
     /**
      * 버전 복원
      *
-     * @param string $templateName 템플릿 identifier
-     * @param string $name 레이아웃 이름
-     * @param int $versionId 버전 ID
-     * @return JsonResponse
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string  $name  레이아웃 이름
+     * @param  int  $versionId  버전 ID
+     * @return JsonResponse 복원된 버전 응답
      */
     public function restoreVersion(string $templateName, string $name, int $versionId): JsonResponse
     {
@@ -200,10 +222,10 @@ class LayoutController extends AdminBaseController
      *
      * 편집 중인 레이아웃 content를 임시 저장하고 미리보기 URL을 반환합니다.
      *
-     * @param StoreLayoutPreviewRequest $request
-     * @param string $templateName 템플릿 identifier
-     * @param string $name 레이아웃 이름
-     * @return JsonResponse
+     * @param  StoreLayoutPreviewRequest  $request  미리보기 생성 요청
+     * @param  string  $templateName  템플릿 identifier
+     * @param  string  $name  레이아웃 이름
+     * @return JsonResponse 미리보기 토큰/URL 응답
      */
     public function storePreview(StoreLayoutPreviewRequest $request, string $templateName, string $name): JsonResponse
     {
@@ -225,7 +247,7 @@ class LayoutController extends AdminBaseController
                 'common.success',
                 [
                     'token' => $preview->token,
-                    'preview_url' => '/preview/' . $preview->token,
+                    'preview_url' => '/preview/'.$preview->token,
                     'expires_at' => $preview->expires_at->toIso8601String(),
                 ]
             );

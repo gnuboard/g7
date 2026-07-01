@@ -17,6 +17,7 @@ class ProductListResource extends BaseApiResource
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  요청
+     * @return array 상품 목록 리소스 배열 (다중 통화 가격 포함)
      */
     public function toArray(Request $request): array
     {
@@ -29,10 +30,10 @@ class ProductListResource extends BaseApiResource
             'thumbnail_url' => $this->getThumbnailUrl(),
 
             // 가격
-            'list_price' => $this->list_price,
-            'list_price_formatted' => number_format($this->list_price).'원',
-            'selling_price' => $this->selling_price,
-            'selling_price_formatted' => number_format($this->selling_price).'원',
+            'list_price' => $this->roundToBaseCurrency($this->list_price),
+            'list_price_formatted' => $this->formatBaseCurrency($this->list_price),
+            'selling_price' => $this->roundToBaseCurrency($this->selling_price),
+            'selling_price_formatted' => $this->formatBaseCurrency($this->selling_price),
             'discount_rate' => $this->getDiscountRate(),
 
             // 다중 통화 가격
@@ -130,8 +131,6 @@ class ProductListResource extends BaseApiResource
 
     /**
      * 소유자 필드명을 반환합니다.
-     *
-     * @return string|null
      */
     protected function ownerField(): ?string
     {

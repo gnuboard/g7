@@ -431,6 +431,65 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
+     * 본인인증 탭 — purpose id 에 점(.)이 포함된 목적별 프로바이더 매핑 저장 성공.
+     *
+     * 회귀 방지: KG이니시스 플러그인이 선언한 purpose id `inicis.adult_verification` 처럼
+     * 점을 포함하는 purpose 를 매핑하면, 프론트엔드 폼 바인딩이 dot-notation name
+     * (`identity.purpose_providers.inicis.adult_verification`) 을 중첩 객체로 풀어
+     * `purpose_providers.inicis = { adult_verification: '...' }` 형태로 전송한다.
+     * 백엔드 조회(IdentityVerificationManager::resolveForPurpose)는 config dot-path 라
+     * 이 중첩 구조가 정상이지만, validation rule 이 1단계 깊이만 string 으로 허용하면
+     * 중첩된 `inicis` 가 배열이 되어 422 ("문자열이어야 합니다.") 가 발생했던 사례.
+     * 환경설정 > 본인인증 > 목적별 프로바이더 저장이 전면 차단됐음.
+     */
+    public function test_store_saves_identity_purpose_providers_with_dotted_purpose_id(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'identity',
+            'identity' => [
+                'default_provider' => 'g7:core.mail',
+                'purpose_providers' => [
+                    'signup' => '',
+                    'password_reset' => null,
+                    // 점(.)을 포함한 purpose id → 폼 바인딩이 중첩 객체로 풀어 전송
+                    'inicis' => [
+                        'adult_verification' => 'inicis',
+                    ],
+                ],
+                'challenge_ttl_minutes' => 15,
+                'max_attempts' => 5,
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+    }
+
+    /**
+     * 본인인증 탭 — 점 포함 purpose 매핑 값이 max:100 을 초과하면 중첩 경로로 검증 실패.
+     *
+     * nested 허용으로 완화하되, 값 길이 제약(string|max:100)은 임의 깊이에서도 유지되어야 한다.
+     */
+    public function test_store_validates_nested_purpose_provider_value_length(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'identity',
+            'identity' => [
+                'purpose_providers' => [
+                    'inicis' => [
+                        'adult_verification' => str_repeat('x', 101), // max:100 초과
+                    ],
+                ],
+                'challenge_ttl_minutes' => 15,
+                'max_attempts' => 5,
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['identity.purpose_providers.inicis.adult_verification']);
+    }
+
+    /**
      * 본인인증 탭 — challenge_ttl_minutes 범위(1~1440) 검증.
      */
     public function test_store_validates_identity_challenge_ttl_range(): void
@@ -691,7 +750,7 @@ class SettingsControllerTest extends TestCase
      * 메모리 사용량은 디스크 사용량과 동일한 구조(total/used/free/percentage)로 반환된다.
      *
      * 회귀 테스트: memory_get_usage(true)는 PHP 프로세스 메모리만 반환하여
-     * 서버 물리 RAM과 무관한 값(6~12MB)이 노출되던 이슈(#298) 방지.
+     * 서버 물리 RAM과 무관한 값(6~12MB)이 노출되던 이슈 방지.
      */
     public function test_system_info_memory_usage_has_disk_like_structure(): void
     {
@@ -716,7 +775,7 @@ class SettingsControllerTest extends TestCase
      * 그대로 노출되지 않는다.
      *
      * 회귀 테스트: Windows 11/Server 2025에서 wmic 제거로 인해
-     * "operable program or batch file."가 그대로 노출되던 이슈(#298) 방지.
+     * "operable program or batch file."가 그대로 노출되던 이슈 방지.
      */
     public function test_system_info_cpu_info_is_not_shell_error_tail(): void
     {
@@ -735,7 +794,7 @@ class SettingsControllerTest extends TestCase
      * 두 번째 호출부터는 하드웨어 정보가 캐시에서 제공된다.
      *
      * 회귀 테스트: PowerShell(CIM) 호출이 수백ms ~ 수초 걸려 탭 전환
-     * UX 를 저해하던 이슈(#298) 방지. server_time 은 캐시 제외이므로
+     * UX 를 저해하던 이슈 방지. server_time 은 캐시 제외이므로
      * 매 호출마다 갱신됨도 함께 검증한다.
      */
     public function test_system_info_caches_hardware_payload_but_refreshes_server_time(): void
@@ -1162,7 +1221,7 @@ class SettingsControllerTest extends TestCase
      * site_logo가 Attachment 객체 배열로 전송되어도 검증 통과
      *
      * initLocal로 복사된 Attachment 객체가 폼 데이터에 포함되어
-     * 정수 검증 실패하는 버그 회귀 방지 (#225)
+     * 정수 검증 실패하는 버그 회귀 방지
      */
     public function test_store_general_accepts_site_logo_as_attachment_objects(): void
     {

@@ -15,57 +15,62 @@
       "type": "basic",
       "name": "Div",
       "if": "{{_global.deleteProduct?.canDelete}}",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "type": "basic",
-          "name": "P",
-          "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_question",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_question",
+              "props": {
+                "className": "text-body"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_data_notice",
+              "props": {
+                "className": "text-label-subtle"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "text": "- 이미지: {{_global.deleteProduct?.relatedData?.images ?? 0}}개",
+              "props": {
+                "className": "text-label-subtle"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "text": "- 옵션: {{_global.deleteProduct?.relatedData?.options ?? 0}}개",
+              "props": {
+                "className": "text-label-subtle"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "text": "- 추가옵션: {{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}개",
+              "props": {
+                "className": "text-label-subtle"
+              }
+            },
+            {
+              "type": "composite",
+              "name": "Alert",
+              "props": {
+                "type": "warning",
+                "message": "$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message",
+                "className": ""
+              }
+            }
+          ],
           "props": {
-            "className": "text-body"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_data_notice",
-          "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400 mt-2"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "text": "- 이미지: {{_global.deleteProduct?.relatedData?.images ?? 0}}개",
-          "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "text": "- 옵션: {{_global.deleteProduct?.relatedData?.options ?? 0}}개",
-          "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "text": "- 추가옵션: {{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}개",
-          "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400"
-          }
-        },
-        {
-          "type": "composite",
-          "name": "Alert",
-          "props": {
-            "type": "warning",
-            "message": "$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message",
-            "className": "mt-4"
           }
         }
       ]
@@ -90,7 +95,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {
@@ -120,7 +125,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}"
           },
           "actions": [
@@ -179,7 +184,7 @@
                       "handler": "toast",
                       "params": {
                         "type": "error",
-                        "message": "{{$error.message}}"
+                        "message": "{{error.message}}"
                       }
                     }
                   ]
@@ -194,7 +199,7 @@
               "if": "{{_global.isProductDeleting}}",
               "props": {
                 "name": "spinner",
-                "className": "w-4 h-4 animate-spin"
+                "className": "spinner-sm"
               }
             },
             {

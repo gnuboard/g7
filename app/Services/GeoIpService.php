@@ -63,6 +63,75 @@ class GeoIpService
     }
 
     /**
+     * IP 주소로부터 국가 코드(ISO 3166-1 alpha-2)를 조회합니다.
+     *
+     * getTimezoneByIp 미러: 동일한 MaxMind GeoLite2-City Reader 를 재사용한다.
+     * 비로그인 사용자의 기본 배송국가 추정 등에 사용된다(커머스 ShippingCountryResolver).
+     *
+     * @param  string  $ip  IP 주소
+     * @return string|null 국가 코드 (대문자 2자, 조회 실패 시 null)
+     */
+    public function getCountryByIp(string $ip): ?string
+    {
+        // GeoIP 비활성화 상태
+        if (! config('geoip.enabled', false)) {
+            return null;
+        }
+
+        // 캐시 확인 (g7_core_settings 우선, fallback config)
+        $cacheEnabled = (bool) g7_core_settings('cache.geoip_enabled', config('geoip.cache.enabled', true));
+        $cacheKey = 'geoip.country.'.$ip;
+
+        if ($cacheEnabled) {
+            $cached = $this->cache->get($cacheKey);
+
+            if ($cached !== null) {
+                // 빈 문자열은 이전 조회 실패를 의미 (음성 캐시)
+                return $cached === '' ? null : $cached;
+            }
+        }
+
+        // GeoIP 조회
+        $country = $this->lookupCountry($ip);
+
+        // 캐시 저장 (조회 실패 시에도 빈 문자열 저장하여 반복 조회 방지)
+        if ($cacheEnabled) {
+            $ttl = (int) g7_core_settings('cache.geoip_ttl', config('geoip.cache.ttl', 86400));
+            $this->cache->put($cacheKey, $country ?? '', $ttl);
+        }
+
+        return $country;
+    }
+
+    /**
+     * MaxMind DB에서 국가 코드를 조회합니다.
+     */
+    private function lookupCountry(string $ip): ?string
+    {
+        try {
+            $reader = $this->getReader();
+
+            if ($reader === null) {
+                return null;
+            }
+
+            $isoCode = $reader->city($ip)->country->isoCode;
+
+            return $isoCode !== null ? strtoupper($isoCode) : null;
+        } catch (AddressNotFoundException $e) {
+            // IP를 찾을 수 없음 (정상적인 케이스)
+            return null;
+        } catch (\Exception $e) {
+            Log::warning('GeoIP country lookup failed', [
+                'ip' => $ip,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * MaxMind DB에서 타임존을 조회합니다.
      */
     private function lookupTimezone(string $ip): ?string
@@ -121,6 +190,8 @@ class GeoIpService
 
     /**
      * GeoIP 데이터베이스가 사용 가능한지 확인합니다.
+     *
+     * @return bool GeoIP 활성화 및 DB 파일 존재 여부
      */
     public function isAvailable(): bool
     {

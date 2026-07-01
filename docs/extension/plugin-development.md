@@ -294,7 +294,10 @@ plugins/_bundled/sirsoft-payment/
 ├── plugin.json                  # 메타데이터 (이름, 버전, 설명 등 SSoT)
 ├── plugin.php                    # PluginInterface 구현 (루트)
 ├── LICENSE                      # 라이선스 전문 (MIT)
-├── composer.json                 # PSR-4 오토로딩 + 외부 패키지 의존성
+├── composer.json                 # PSR-4 오토로딩 + 외부 패키지 의존성 (Git 추적)
+├── composer.lock                 # Composer 락 파일 (Git 추적 — vendor-bundle.json 의 composer_lock_sha256 가 이 파일을 검증)
+├── vendor-bundle.json            # 번들 메타파일: SHA256, 패키지 목록 (Git 추적)
+├── vendor-bundle.zip             # 압축된 vendor 디렉토리 (Git 추적)
 ├── vendor/                      # Composer 의존성 (자동 생성, gitignore 대상)
 ├── upgrades/                    # 버전 업그레이드 스텝 (AbstractUpgradeStep 상속 — g7_version >= 7.0.0-beta.5 플러그인 의무)
 │   ├── Upgrade_1_1_0.php        # 1.1.0 버전 업그레이드 스텝 (extends AbstractUpgradeStep)
@@ -345,6 +348,54 @@ plugins/_bundled/sirsoft-payment/
 | `src/Listeners/` | 훅 이벤트 리스너 클래스 |
 | `src/Providers/` | 서비스 프로바이더 클래스 |
 | `tests/` | 테스트 파일 (Feature/Unit) |
+
+---
+
+## 서비스 프로바이더 작성
+
+모든 플러그인 ServiceProvider 는 `App\Extension\BasePluginServiceProvider` 를 상속한다. Laravel 기본 `ServiceProvider` 를 직접 상속하면 Repository / Storage / Cache 자동 바인딩과 다국어 로드를 직접 구현해야 하며, 글로벌 컨테이너 바인딩 누수 결함의 위험이 발생한다.
+
+### 표준 구조
+
+```php
+namespace Plugins\Vendor\Foo\Providers;
+
+use App\Extension\BasePluginServiceProvider;
+use Plugins\Vendor\Foo\Repositories\FooRepository;
+use Plugins\Vendor\Foo\Repositories\FooRepositoryInterface;
+use Plugins\Vendor\Foo\Services\FooService;
+
+class FooPluginServiceProvider extends BasePluginServiceProvider
+{
+    /** 플러그인 식별자 (manifest 와 일치) */
+    protected string $pluginIdentifier = 'vendor-foo';
+
+    /** Repository 인터페이스 ↔ 구현체 매핑 */
+    protected array $repositories = [
+        FooRepositoryInterface::class => FooRepository::class,
+    ];
+
+    /** CacheInterface 가 필요한 서비스 (contextual binding) */
+    protected array $cacheServices = [
+        FooService::class,
+    ];
+
+    /** StorageInterface 가 필요한 서비스 (contextual binding) */
+    protected array $storageServices = [
+        // FooFileService::class,
+    ];
+}
+```
+
+`register()` / `boot()` 오버라이드가 필요한 경우 `parent::register()` / `parent::boot()` 를 먼저 호출한 뒤 추가 로직을 작성한다.
+
+### 금지 사항
+
+- **글로벌 `CacheInterface` / `StorageInterface` 바인딩 재정의 금지** — `$this->app->singleton(CacheInterface::class, ...)` 또는 `app()->bind(StorageInterface::class, ...)` 는 코어/타 확장 도메인을 누수시킨다. audit 룰 `extension-no-global-cache-rebind` 가 자동 차단한다.
+- **인라인 contextual binding 복제 금지** — `$this->app->when([X::class])->needs(StorageInterface::class)->give(...)` 패턴을 직접 작성하지 말고 `$storageServices` 배열에 등록한다.
+- **Listener 의 동적 인스턴스 생성에서 `app(CacheInterface::class)` 직접 호출 금지** — `app()->makeWith(MyService::class, [...])` 로 컨테이너 해석에 위임해야 contextual binding 이 적용된다.
+
+상세: [cache-driver.md `## 확장에서 cache 바인딩`](cache-driver.md)
 
 ---
 

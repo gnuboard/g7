@@ -74,6 +74,14 @@ if (!defined('MIN_DISK_SPACE_MB')) {
     define('MIN_DISK_SPACE_MB', 500);
 }
 
+// DB 테이블 접두사 최대 길이.
+// MySQL identifier 한도(64자) 안에서 자동 생성 인덱스명이 안전하도록 제한한다.
+// 가장 긴 자동 생성 인덱스명(접두사 제외)이 58자이므로 58 + 6 = 64 로 정확히 한도에 맞는다.
+// 7자 이상 접두사는 일부 인덱스명이 65자가 되어 마이그레이션이 실패한다.
+if (!defined('MAX_DB_PREFIX_LENGTH')) {
+    define('MAX_DB_PREFIX_LENGTH', 6);
+}
+
 // 디렉토리 권한 설정 (8진수)
 // 업계 표준 755 (WordPress/Drupal/Joomla/Laravel 공통) — 실제 통과 기준은 is_writable() && is_readable()
 if (!defined('REQUIRED_DIRECTORY_PERMISSIONS')) {

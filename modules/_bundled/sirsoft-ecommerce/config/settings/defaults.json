@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "version": "1.2.0",
+    "version": "1.4.0",
     "description": "이커머스 모듈 환경설정",
-    "categories": ["basic_info", "language_currency", "order_settings", "shipping", "seo", "review_settings", "inquiry", "notifications"]
+    "categories": ["basic_info", "language_currency", "order_settings", "shipping", "seo", "review_settings", "inquiry", "notifications", "mileage"]
   },
   "defaults": {
     "basic_info": {
@@ -26,7 +26,6 @@
       "telecom_number": ""
     },
     "language_currency": {
-      "default_language": "ko",
       "default_currency": "KRW",
       "currencies": [
         {
@@ -35,11 +34,14 @@
             "ko": "KRW (원)",
             "en": "KRW (Won)"
           },
+          "symbol": "₩",
           "exchange_rate": null,
+          "base_unit": 1000,
           "rounding_unit": "1",
           "rounding_method": "floor",
           "decimal_places": 0,
-          "is_default": true
+          "is_default": true,
+          "locales": ["ko"]
         },
         {
           "code": "USD",
@@ -47,11 +49,14 @@
             "ko": "USD (달러)",
             "en": "USD (Dollar)"
           },
+          "symbol": "$",
           "exchange_rate": 0.85,
+          "base_unit": 1,
           "rounding_unit": "0.01",
           "rounding_method": "round",
           "decimal_places": 2,
-          "is_default": false
+          "is_default": false,
+          "locales": ["en"]
         },
         {
           "code": "JPY",
@@ -59,11 +64,14 @@
             "ko": "JPY (엔)",
             "en": "JPY (Yen)"
           },
+          "symbol": "¥",
           "exchange_rate": 115.00,
+          "base_unit": 100,
           "rounding_unit": "1",
           "rounding_method": "floor",
           "decimal_places": 0,
-          "is_default": false
+          "is_default": false,
+          "locales": ["en"]
         },
         {
           "code": "CNY",
@@ -71,11 +79,14 @@
             "ko": "CNY (위안)",
             "en": "CNY (Yuan)"
           },
+          "symbol": "元",
           "exchange_rate": 5.80,
+          "base_unit": 1,
           "rounding_unit": "0.01",
           "rounding_method": "round",
           "decimal_places": 2,
-          "is_default": false
+          "is_default": false,
+          "locales": ["en"]
         },
         {
           "code": "EUR",
@@ -83,11 +94,14 @@
             "ko": "EUR (유로)",
             "en": "EUR (Euro)"
           },
+          "symbol": "€",
           "exchange_rate": 0.78,
+          "base_unit": 1,
           "rounding_unit": "0.01",
           "rounding_method": "round",
           "decimal_places": 2,
-          "is_default": false
+          "is_default": false,
+          "locales": ["en"]
         }
       ]
     },
@@ -101,6 +115,7 @@
           "is_active": false,
           "min_order_amount": 0,
           "stock_deduction_timing": "payment_complete",
+          "mileage_deduction_timing": "payment_complete",
           "_cached_name": { "ko": "신용카드", "en": "Credit Card" },
           "_cached_description": { "ko": "신용카드로 안전하게 결제", "en": "Pay securely with credit card" },
           "_cached_icon": "credit-card",
@@ -113,6 +128,7 @@
           "is_active": false,
           "min_order_amount": 0,
           "stock_deduction_timing": "payment_complete",
+          "mileage_deduction_timing": "order_placed",
           "_cached_name": { "ko": "가상계좌", "en": "Virtual Account" },
           "_cached_description": { "ko": "가상계좌로 입금", "en": "Pay via virtual account" },
           "_cached_icon": "money-check",
@@ -125,6 +141,7 @@
           "is_active": true,
           "min_order_amount": 0,
           "stock_deduction_timing": "order_placed",
+          "mileage_deduction_timing": "order_placed",
           "_cached_name": { "ko": "무통장입금", "en": "Bank Transfer" },
           "_cached_description": { "ko": "지정 계좌로 직접 입금", "en": "Direct bank transfer" },
           "_cached_icon": "building-columns",
@@ -137,6 +154,7 @@
           "is_active": false,
           "min_order_amount": 0,
           "stock_deduction_timing": "payment_complete",
+          "mileage_deduction_timing": "payment_complete",
           "_cached_name": { "ko": "계좌이체", "en": "Account Transfer" },
           "_cached_description": { "ko": "실시간 계좌이체", "en": "Real-time bank transfer" },
           "_cached_icon": "building-columns",
@@ -149,6 +167,7 @@
           "is_active": false,
           "min_order_amount": 0,
           "stock_deduction_timing": "payment_complete",
+          "mileage_deduction_timing": "payment_complete",
           "_cached_name": { "ko": "휴대폰결제", "en": "Mobile Payment" },
           "_cached_description": { "ko": "휴대폰 소액결제", "en": "Mobile phone payment" },
           "_cached_icon": "mobile-screen-button",
@@ -161,6 +180,7 @@
           "is_active": false,
           "min_order_amount": 0,
           "stock_deduction_timing": "order_placed",
+          "mileage_deduction_timing": "payment_complete",
           "_cached_name": { "ko": "포인트결제", "en": "Points" },
           "_cached_description": { "ko": "적립 포인트로 결제", "en": "Pay with points" },
           "_cached_icon": "coins",
@@ -173,6 +193,7 @@
           "is_active": false,
           "min_order_amount": 0,
           "stock_deduction_timing": "order_placed",
+          "mileage_deduction_timing": "payment_complete",
           "_cached_name": { "ko": "예치금결제", "en": "Store Credit" },
           "_cached_description": { "ko": "예치금으로 결제", "en": "Pay with store credit" },
           "_cached_icon": "wallet",
@@ -185,6 +206,7 @@
           "is_active": false,
           "min_order_amount": 0,
           "stock_deduction_timing": "order_placed",
+          "mileage_deduction_timing": "payment_complete",
           "_cached_name": { "ko": "무료", "en": "Free" },
           "_cached_description": { "ko": "결제 없이 주문 완료", "en": "Order without payment" },
           "_cached_icon": "gift",
@@ -215,8 +237,6 @@
       ],
       "auto_cancel_expired": true,
       "auto_cancel_days": 3,
-      "vbank_due_days": 3,
-      "dbank_due_days": 7,
       "cart_expiry_days": 30,
       "stock_restore_on_cancel": true,
       "cancellable_statuses": ["payment_complete"],
@@ -269,6 +289,27 @@
         { "id": "mail", "is_active": true, "sort_order": 1 },
         { "id": "database", "is_active": true, "sort_order": 2 }
       ]
+    },
+    "mileage": {
+      "enabled": false,
+      "default_earn_rate": 1,
+      "earn_trigger": "confirmed",
+      "earn_delay_days": 0,
+      "currency_rules": [
+        {
+          "currency_code": "KRW",
+          "point_value": 1,
+          "min_use_amount": 1000,
+          "use_unit": 10,
+          "max_use_type": "fixed",
+          "max_use_percent": 30,
+          "max_use_value": 50000
+        }
+      ],
+      "expiry_enabled": true,
+      "expiry_days": 365,
+      "expiry_notification_enabled": true,
+      "expiry_notification_days_before": 7
     }
   },
   "frontend_schema": {
@@ -300,7 +341,6 @@
       "expose": true,
       "_comment": "currencies, default_currency만 admin 상품목록/폼에서 참조",
       "fields": {
-        "default_language": { "expose": false },
         "default_currency": { "expose": true },
         "currencies": { "expose": true }
       }
@@ -310,8 +350,17 @@
       "_comment": "프론트엔드에서 미참조 — 서버 사이드 전용"
     },
     "shipping": {
-      "expose": false,
-      "_comment": "프론트엔드에서 미참조 — 서버 사이드 전용"
+      "expose": true,
+      "_comment": "international_shipping_enabled, available_countries, default_country만 노출 (배송국가 설정 UI 게이트·헤더 셀렉터 옵션 소스)",
+      "fields": {
+        "international_shipping_enabled": { "expose": true },
+        "available_countries": { "expose": true },
+        "default_country": { "expose": true },
+        "free_shipping_threshold": { "expose": false },
+        "free_shipping_enabled": { "expose": false },
+        "address_validation_enabled": { "expose": false },
+        "address_api_provider": { "expose": false }
+      }
     },
     "seo": {
       "expose": false,

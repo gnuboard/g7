@@ -18,6 +18,11 @@ const logger = ((window as any).G7Core?.createLogger?.('Template:sirsoft-admin_b
   error: (...args: unknown[]) => console.error('[Template:sirsoft-admin_basic:IdentityLauncher]', ...args),
 };
 
+interface IdentityVerificationTarget {
+  email?: string;
+  phone?: string;
+}
+
 interface VerificationPayload {
   policy_key: string;
   purpose: string;
@@ -26,6 +31,8 @@ interface VerificationPayload {
   challenge_start_url?: string;
   redirect_url?: string;
   return_request?: { method: string; url: string; headers_echo?: string[] } | null;
+  /** 흐름이 apiCall identity_target 으로 선언한 인증 대상 — 코어 인터셉터가 병합해 전달. */
+  target?: IdentityVerificationTarget | null;
 }
 
 type VerificationResult =
@@ -40,15 +47,35 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/**
+ * 현재 앱 언어를 Accept-Language 헤더로 추출합니다 (있으면).
+ *
+ * challenge POST 는 ApiClient 를 우회하는 raw fetch 라, ApiClient 가 모든 요청에
+ * 부착하는 `Accept-Language: g7_locale`(ApiClient.ts) 을 여기서 동일하게 부착해야
+ * 서버 SetLocale 이 사용자 화면 언어로 IDV 메일을 렌더한다. 누락 시 challenge 요청이
+ * 브라우저 기본 언어로 전송되어 메일이 사용자 화면 언어와 달라진다.
+ */
+function getLocaleHeader(): Record<string, string> {
+  try {
+    const locale =
+      typeof window !== 'undefined' ? window.localStorage?.getItem('g7_locale') : null;
+    return locale ? { 'Accept-Language': locale } : {};
+  } catch {
+    return {};
+  }
+}
+
 interface ChallengeResponseData {
   id: string;
   expires_at: string;
   render_hint: string;
   public_payload?: Record<string, unknown>;
   redirect_url?: string;
+  /** 허용 최대 시도 횟수 — 0 은 무제한 (popup/SDK 형 provider). 코어 mail provider 는 환경설정값을 반영. */
+  max_attempts?: number;
 }
 
-async function startChallenge(payload: VerificationPayload, target: { email?: string } | null = null): Promise<ChallengeResponseData> {
+async function startChallenge(payload: VerificationPayload, target: IdentityVerificationTarget | null = null): Promise<ChallengeResponseData> {
   // admin 컨텍스트 — 일반적으로 로그인 상태(서버가 세션 기반으로 target 도출).
   // 단, target 이 명시되면(예: 재전송 동기화) 그것을 사용.
   const body: Record<string, unknown> = { purpose: payload.purpose };
@@ -62,6 +89,7 @@ async function startChallenge(payload: VerificationPayload, target: { email?: st
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...getLocaleHeader(),
       ...getAuthHeader(),
     },
     body: JSON.stringify(body),
@@ -80,10 +108,13 @@ async function startChallenge(payload: VerificationPayload, target: { email?: st
     render_hint: data.render_hint ?? payload.render_hint ?? 'text_code',
     public_payload: data.public_payload,
     redirect_url: data.redirect_url,
+    max_attempts: typeof data.max_attempts === 'number' ? data.max_attempts : undefined,
   };
 }
 
-async function sirsoftAdminBasicIdentityLauncher(payload: VerificationPayload): Promise<VerificationResult> {
+export async function sirsoftAdminBasicIdentityLauncher(
+  payload: VerificationPayload
+): Promise<VerificationResult> {
   const G7Core = (window as any).G7Core;
   const identity = G7Core?.identity;
 
@@ -96,9 +127,14 @@ async function sirsoftAdminBasicIdentityLauncher(payload: VerificationPayload): 
     return identity.redirectExternally(payload);
   }
 
+  // 흐름이 apiCall identity_target 으로 선언한 인증 대상 (있으면). admin 은 보통 서버 세션이
+  // target 을 도출하지만, 선언값이 오면 그대로 사용해 모달 재전송도 같은 target 을 공유.
+  const declaredTarget =
+    payload.target && (payload.target.email || payload.target.phone) ? payload.target : null;
+
   let challenge: ChallengeResponseData;
   try {
-    challenge = await startChallenge(payload);
+    challenge = await startChallenge(payload, declaredTarget);
   } catch (err) {
     logger.error('Challenge 시작 실패:', err);
     try {
@@ -129,6 +165,9 @@ async function sirsoftAdminBasicIdentityLauncher(payload: VerificationPayload): 
 
   const expiresMs = challenge.expires_at ? new Date(challenge.expires_at).getTime() : 0;
   const remainingSeconds = expiresMs > 0 ? Math.max(0, Math.floor((expiresMs - Date.now()) / 1000)) : 0;
+  // maxAttempts: 백엔드 응답값이 있으면 사용, 없으면 0(무제한 — popup/SDK 형 provider 의 기본).
+  // 코어 mail provider 응답에는 환경설정의 max_attempts 가 정확히 반영되므로 화면 카운트도 정합.
+  const maxAttempts = typeof challenge.max_attempts === 'number' ? challenge.max_attempts : 0;
 
   G7Core.state.set({
     identityChallenge: {
@@ -139,12 +178,12 @@ async function sirsoftAdminBasicIdentityLauncher(payload: VerificationPayload): 
       challenge_id: challenge.id,
       expires_at: challenge.expires_at,
       public_payload: challenge.public_payload ?? {},
-      // admin 은 일반적으로 서버 세션이 target 결정 — null 로 두면 모달 재전송도 동일 흐름.
-      target: null,
+      // 선언된 target 이 있으면 모달 재전송도 동일 target 공유. 없으면 null (서버 세션 도출).
+      target: declaredTarget,
       code: '',
       error: null,
       attempts: 0,
-      maxAttempts: 5,
+      maxAttempts,
       remainingSeconds,
       resendCooldown: 0,
     },

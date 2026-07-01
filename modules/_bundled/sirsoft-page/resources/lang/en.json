@@ -1,4 +1,12 @@
 {
+  "editor": {
+    "data_source": {
+      "page": "Page",
+      "pageData": "Page Data",
+      "pages": "Pages",
+      "versions": "Versions"
+    }
+  },
   "admin": {
     "$partial": "partial/en/admin.json"
   }

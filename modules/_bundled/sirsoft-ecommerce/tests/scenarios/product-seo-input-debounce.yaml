@@ -1,0 +1,45 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(SEO 다국어화)은
+#   field × mode × locale cross product 를 PHPUnit(applySeoSync 로케일별 미러/160자 절단,
+#   Request 다국어 검증, Resource 다국어 응답, ProductController copy 다국어)과 레이아웃 구조
+#   회귀 테스트(MultilingualInput 자동바인딩 + $localized 카운터/미리보기 + name/description 통째 미러)가
+#   커버하며 green. SEO 렌더 meta 우선/name 폴백은 show.json vars/og + seoStructuredDataMeta expr 로 반영.
+feature: 상품·카테고리 SEO 제목/설명 다국어화 + SEO 연동
+
+description: |
+  관리자 상품·카테고리 등록/수정 폼의 SEO 제목(meta_title)·SEO 설명(meta_description)을
+  평문 단일 문자열에서 다국어 JSON(name/description 과 동일 AsUnicodeJson)으로 전환한다.
+  폼은 MultilingualInput(tabs) 자동바인딩으로 언어별 입력을 받고, 검색로봇이 ?locale= 별로
+  접근하면 SEO 메타가 언어별로 분기된다. SEO 메타 우선순위는 사용자 입력 meta 우선,
+  비어있으면 상품명(name)/설명(description) 폴백.
+  (이전 SEO 입력 debounce 는 MultilingualInput 자동바인딩 내부 debounce 로 대체되어
+  keystroke 마다 setState 하지 않으므로 타이핑 지연도 함께 해소.)
+
+axes:
+  field:
+    - meta_title                 # SEO 제목 (MultilingualInput text)
+    - meta_description           # SEO 설명 (MultilingualInput textarea)
+  mode:
+    - sync_on                    # "상품명과 동일하게" ON → name/description 다국어 통째 미러
+    - sync_off                   # OFF → 커스텀 다국어 입력 보존
+  locale:
+    - ko                         # 기본 로케일
+    - en                         # 비기본 로케일 (분기 검증)
+
+effects:
+  - meta_columns_multilingual_json       # meta_title/meta_description 다국어 JSON 컬럼 전환(상품+카테고리)
+  - plain_backfilled_to_default_locale   # 기존 평문 → {ko: 값} 백필 (upgrade step)
+  - sync_on_mirrors_multilingual         # sync ON 시 name/description 다국어 통째 미러
+  - sync_off_preserves_multilingual      # sync OFF 시 커스텀 다국어 입력 보존
+  - description_truncated_per_locale_160 # 설명 sync 시 로케일별 독립 strip_tags + 160자 절단
+  - form_uses_multilingual_input         # 폼 SEO 입력이 MultilingualInput 자동바인딩
+  - counter_preview_localized            # 글자수 카운터·미리보기가 $localized 로 현재 로케일 추출
+  - seo_meta_prefers_meta_then_name      # SEO 렌더 meta 우선/name 폴백 (show.json + seoStructuredDataMeta)
+  - bot_meta_localized_per_locale        # 봇 접근 시 title/description 이 locale 별로 분기 출력
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceSeoSyncTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/EcommerceModuleSeoTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productFormLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/product-seo-input-debounce.spec.ts

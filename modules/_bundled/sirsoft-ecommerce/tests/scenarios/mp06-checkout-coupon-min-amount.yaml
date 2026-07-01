@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 본 기능은 백엔드 전용 변경(상품쿠폰 최소주문금액 검증)으로,
+#   PHPUnit Unit 테스트(OrderCalculationCouponValidationTest)가 적용 상품 소계 기준과
+#   전체 합계 기준을 조합 커버하며 green 이다.
+feature: 상품쿠폰 min_order_amount 적용 상품 소계 기준화 (U13b 문제1/MP06)
+
+description: |
+  상품 쿠폰(itemCoupons, optionId별 1:1 적용)의 최소 주문금액은 전체 합계가 아니라
+  적용 대상 옵션 소계 기준으로 검증한다. 주문/배송비 쿠폰은 기존 전체 합계 기준을 유지한다.
+
+axes:
+  coupon_type:
+    - product          # 상품 쿠폰(itemCoupons) → 적용 소계 기준
+    - order_level      # 주문/배송비 쿠폰 → 전체 합계 기준(하위호환)
+  min_amount:
+    - met              # 기준 충족 → 적용
+    - not_met          # 기준 미달 → min_amount 검증 오류
+  application_item:
+    - low_subtotal     # 적용 상품 소계가 작음(전체합계는 큼)
+    - high_subtotal    # 적용 상품 소계가 큼
+
+effects:
+  - product_coupon_min_amount_enforced_on_applicable_item   # 전체합계 충족·적용소계 미달 → 차단
+  - product_coupon_min_amount_passes_when_applicable_meets   # 적용소계 충족 → 적용
+  - order_level_coupon_min_amount_uses_total_subtotal        # 주문쿠폰은 전체합계 기준 유지
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/OrderCalculationCouponValidationTest.php

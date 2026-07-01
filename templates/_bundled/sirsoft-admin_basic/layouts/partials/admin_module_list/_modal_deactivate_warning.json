@@ -1,35 +1,33 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "모듈 비활성화 경고 모달"
+    "description": "모듈 비활성화 경고 모달",
+    "editor_label": "$t:admin.modal_label.admin_module_list.module_deactivate_warning_modal"
   },
   "id": "module_deactivate_warning_modal",
   "type": "composite",
   "name": "Modal",
   "props": {
     "title": "$t:admin.modules.modals.deactivate_warning_title",
-    "size": "small"
+    "size": "sm"
   },
   "children": [
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-3"
+            "className": "flex-start gap-3"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center"
+                "className": "flex-center flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full justify-center"
               },
               "children": [
                 {
@@ -73,16 +71,13 @@
               "type": "basic",
               "name": "P",
               "props": {
-                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                "className": "text-body font-medium mb-2"
               },
               "text": "$t:admin.modules.modals.affected_templates"
             },
             {
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-1"
-              },
               "children": [
                 {
                   "type": "basic",
@@ -92,7 +87,7 @@
                     "item_var": "template"
                   },
                   "props": {
-                    "className": "flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+                    "className": "flex-center gap-2 text-label"
                   },
                   "children": [
                     {
@@ -123,13 +118,15 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     },
     {
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-end gap-3 mt-6"
+        "className": "modal-footer-buttons"
       },
       "children": [
         {

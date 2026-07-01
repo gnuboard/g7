@@ -1,0 +1,88 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes(다중 라인 `- value` 리스트)를 null 로 읽어 expandCases 가 throw 한다
+#   (동일 한계로 다른 번들 시나리오 매니페스트도 audit:allow 처리됨). 본 기능은 실제로
+#   백엔드 Unit + 프론트 레이아웃 렌더링 + Playwright E2E 골격이 모두 존재하고,
+#   아래 effects ↔ test_files 의 docblock(@scenario/@effects)이 1:1 대응한다.
+feature: 주문 항목상태(option_status) 전이 정합화 (U22 / U19①)
+
+description: |
+  주문 옵션의 option_status 가 결제완료/취소/입금확인 등 모든 종단 경로에서
+  주문 상태(order_status)와 정합하게 전이되어, 구매확정·리뷰작성·마일리지 적립
+  연쇄가 정상 동작하도록 한다.
+
+  핵심 동작:
+    - 결제완료(PG/0원) → syncOptionStatuses(PAYMENT_COMPLETE) (기구현, 회귀 가드)
+    - 결제실패 failPayment → syncOptionStatuses(CANCELLED) (B1 신규)
+      · 이미 부분취소(CANCELLED/PARTIAL_CANCELLED)된 옵션은 syncExcludedValues 로 보존
+    - 무통장 입금확인 confirmManualDeposit → completePayment 위임 (B2 신규)
+      · 입금액 정확 일치(허용오차 1원)만 확정, 불일치 시 422
+    - 관리자 상태변경(update/bulkUpdateOptionStatus) → option_status 동기화 (기구현, 회귀 가드)
+    - can_confirm 은 option_status ∈ [shipping, delivered] 일 때만 true
+    - can_write_review 는 option_status === CONFIRMED 일 때만 true
+    - 리뷰작성 버튼은 데드라우트 navigate 가 아니라 인라인 모달(openModal) (F1)
+
+axes:
+  payment_method:
+    - dbank             # 무통장 — 입금확인 경로
+    - card_pg           # PG 카드 — completePayment 자동완료
+    - mileage_full      # 전액 마일리지(0원) — finalizeZeroAmountPayment
+  terminal_path:
+    - complete_payment        # completePayment(PG)
+    - fail_payment            # failPayment → CANCELLED (B1)
+    - manual_deposit_confirm  # confirmManualDeposit → completePayment 위임 (B2)
+    - admin_status_update     # OrderService::update → bulkUpdateOptionStatus
+    - bulk_update             # OrderService::bulkUpdate 일괄
+  option_mix:
+    - all_active          # 전 옵션 활성 — 전부 동기화
+    - has_partial_cancel  # 일부 옵션 부분취소 — 보존 대상 혼재
+  actor:
+    - member
+    - admin
+
+exclusions:
+  - { payment_method: card_pg, terminal_path: manual_deposit_confirm, reason: "무통장 전용 경로" }
+  - { payment_method: mileage_full, terminal_path: manual_deposit_confirm, reason: "0원 주문은 입금 불필요" }
+  - { payment_method: mileage_full, terminal_path: complete_payment, reason: "0원은 생성 시점 확정(finalize)" }
+  - { terminal_path: manual_deposit_confirm, actor: member, reason: "입금확인은 관리자 전용 액션" }
+  - { terminal_path: admin_status_update, actor: member, reason: "상태변경은 관리자 전용" }
+  - { terminal_path: bulk_update, actor: member, reason: "일괄변경은 관리자 전용" }
+
+effects:
+  # 백엔드 동기화 (PHPUnit Unit/Feature 커버)
+  - complete_payment_syncs_option_status_to_payment_complete
+  - fail_payment_syncs_option_status_to_cancelled                    # B1
+  - fail_payment_preserves_already_cancelled_options                 # B1 syncExcludedValues
+  - manual_deposit_confirm_syncs_option_status_via_complete_payment  # B2 위임
+  - manual_deposit_confirm_rejects_amount_mismatch_422               # B2 정확일치
+  - manual_deposit_confirm_records_depositor_name                    # B2 입금자명 기록
+  - deposit_button_visible_by_payment_status_not_order_status        # 입금확인 버튼 노출 = payment.payment_status(ready/waiting_deposit) 기준 (order_status 무관)
+  - create_order_payment_populates_started_at_buyer_vat_name_device  # 주문 생성 시 결제요청일시·구매자·부가세·결제명·디바이스 기록 (PG 콜백 없는 수단 포함)
+  - dbank_account_info_summarizes_bank_account                       # getAccountInfo dbank 분기 (계좌 요약 표시)
+  - manual_deposit_records_payment_only_without_order_transition     # markOrderComplete=false: 입금(payment)만 기록, 주문 상태 전이 없음
+  - manual_deposit_reconciles_payment_only_for_already_completed_order # order_status=결제완료/payment=미입금 불일치: payment 만 정합화(부수효과 미재실행)
+  - manual_deposit_rejects_when_payment_already_paid                 # payment 가 이미 PAID 면 입금확인 거부(422) / 서비스는 멱등
+  - zero_amount_order_syncs_option_status_on_create
+  - admin_status_update_syncs_option_status_excluding_cancelled
+  - cancelled_option_not_revived_by_sync                             # syncExcludedValues
+  # 연쇄 효과 (Resource/Service Unit 커버)
+  - can_confirm_true_only_for_shipping_or_delivered_status
+  - can_write_review_true_only_after_confirmed
+  - confirm_option_earns_mileage_via_order_option_after_confirm
+  # 프론트 (Vitest 레이아웃 렌더링 커버)
+  - review_button_opens_inline_modal_not_dead_route                  # F1
+  - review_button_visible_only_when_can_write_review                 # F1
+  # 브라우저 E2E (Playwright)
+  - member_sees_option_status_transition_on_order_detail
+  - member_can_open_review_modal_after_confirm
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/OrderPaymentResourceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ConfirmDepositControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderConfirmDeposit.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/orderReviewButton.test.tsx
+  - tests/Playwright/specs/order-option-status-review.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

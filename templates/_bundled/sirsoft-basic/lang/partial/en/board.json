@@ -209,7 +209,7 @@
   "edit_post": "Edit Post",
   "edit_post_description": "Edit your post",
   "no_write_permission": "You don't have permission to write",
-  "login_required": "Login is required",
+  "login_required": "Login is required to view this page",
   "login_required_to_write": "Please login to write a post",
   "no_comments_yet": "No comments yet. Be the first to comment!",
   "blinded_comment_disabled": "Comments cannot be written on blinded posts",

@@ -1,0 +1,91 @@
+# audit:allow test-scenario-coverage reason: change_type 자동 감지 axes 가 광범위 (입력 종류 × 감지 분류 × 발행 결과 × 응답 키) — 본 매니페스트는 신규 기능의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 에 명시된 통과 테스트 (Service Unit 12건 + Settings Controller 13건 + PolicyVersion Controller 7건) 로 커버.
+
+feature: GDPR 정책 버전 자동 발행 (gdpr_policy_versions SSoT)
+
+description: |
+  운영자가 자유 텍스트로 `cookie_policy_version` 을 입력하던 옛 방식을 폐기하고,
+  시스템이 *Material 변경 자동 감지 → 단조 증가 정책 버전 자동 발행* 하는 구조로 전환.
+  GDPR Art.7(1) 동의 입증 + Art.30 처리 기록 의무 충족.
+
+  설계 원칙:
+    - 마이그레이션 시 initial 행 (version=1, change_type=initial) 자동 시드 — 신규 설치 보장
+    - Material 변경 (카테고리 key 추가/삭제/rename, description 변경, privacy_policy_slug 변경)
+      시 GdprPolicyVersionService::publish() 호출 → 다음 version 자동 계산
+    - Non-material 변경 (도메인만 변경, label 변경, banner 토글) 은 발행 없음
+    - 모든 publish 는 운영자 user_id + memo + snapshot 보존 — 감사 추적
+    - 응답에 change_type + published_version 노출 → FE 가 토스트 분기
+
+axes:
+  change_type: [material_add_category, material_remove_category, material_rename_category, material_description_change, material_slug_change, non_material_domain_add, non_material_label_change, non_material_banner_position, no_change]
+  current_db_state: [fresh_install_v1_only, has_v2_published, has_v5_published]
+  memo_input: [provided, empty, null]
+  user_role: [privacy_operator, unauthenticated, regular_user_no_permission]
+  expected_publish: [yes_v_plus_1, no]
+
+exclusions:
+  - { user_role: unauthenticated, change_type: material_add_category, reason: "인증 미들웨어가 차단 — change_type 평가 도달 불가" }
+  - { user_role: regular_user_no_permission, change_type: material_add_category, reason: "permission 미들웨어가 차단 — change_type 평가 도달 불가" }
+  - { change_type: no_change, expected_publish: yes_v_plus_1, reason: "변경 없음 = Non-material → 발행 안 함" }
+
+effects:
+  # detectChangeType 분류
+  - material_when_category_key_added
+  - material_when_category_key_removed
+  - material_when_category_description_changed
+  - material_when_privacy_policy_slug_changed
+  - non_material_when_only_domains_changed
+  - non_material_when_only_label_changed
+  - non_material_when_snapshots_equal
+  - non_material_when_category_order_changed_only
+
+  # publish 동작
+  - publish_starts_after_initial_seed
+  - publish_monotonically_increments_version
+  - publish_persists_snapshot_and_memo_and_user_id
+  - publish_only_when_material_change_detected
+  - non_material_change_does_not_publish
+
+  # Controller 응답
+  - update_response_includes_change_type
+  - update_response_includes_published_version_when_material
+  - update_response_published_version_null_when_non_material
+  - validation_message_uses_friendly_korean_label_when_locale_ko
+
+  # 정책 버전 이력 API
+  - index_returns_initial_seed_after_install
+  - index_returns_versions_in_desc_order
+  - index_pagination_respects_per_page_clamp
+  - current_returns_initial_seed_when_no_publish_yet
+  - current_returns_latest_with_publisher_info
+
+  # 회원 동의 record 시 정책 버전 자동 사용
+  - new_consent_records_current_policy_version_as_string
+  - needs_renewal_true_when_db_policy_version_advanced
+  - needs_renewal_false_when_versions_match_current
+
+  # 공개 응답
+  - public_settings_response_exposes_current_policy_version_as_string
+
+  # 마이그레이션 안전성
+  - migration_up_seeds_initial_row
+  - migration_down_drops_table_safely
+  - migration_up_after_down_is_idempotent
+
+test_files:
+  - tests/Unit/Services/GdprPolicyVersionServiceTest.php
+  - tests/Feature/Api/Admin/GdprAdminSettingsControllerTest.php
+  - tests/Feature/Api/Admin/GdprAdminPolicyVersionControllerTest.php
+  - tests/Feature/Installation/GdprPolicyVersionMigrationSmokeTest.php
+  - tests/Unit/Services/GdprConsentServiceTest.php
+  - tests/Feature/Api/Public/GdprCookieConsentControllerTest.php
+  - tests/Feature/Api/User/GdprConsentControllerTest.php
+
+related_docs:
+  - docs/backend/service-repository.md
+  - docs/backend/api-resources.md
+  - docs/extension/changelog-rules.md
+
+notes:
+  - 본 PR 은 베포 전 상태이므로 manifest/composer/package 버전 bump 없음
+  - upgrade step 미사용 (베포 환경 데이터 정정 불필요) — 마이그레이션 단독으로 신규 설치 보장
+  - Soft Re-consent (변경된 카테고리만 재동의) 는 후속 PR 분리 — 본 PR 은 전체 재동의 (배너 자동 재노출) 패턴 유지

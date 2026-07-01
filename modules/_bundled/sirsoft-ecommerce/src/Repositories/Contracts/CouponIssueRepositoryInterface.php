@@ -13,6 +13,7 @@ interface CouponIssueRepositoryInterface
      * ID로 쿠폰 발급 조회
      *
      * @param  int  $id  쿠폰 발급 ID
+     * @return CouponIssue|null 쿠폰 발급 내역 (없으면 null)
      */
     public function findById(int $id): ?CouponIssue;
 
@@ -44,6 +45,7 @@ interface CouponIssueRepositoryInterface
      * @param  int  $userId  사용자 ID
      * @param  string|null  $status  필터 상태 (available, used, expired)
      * @param  int  $perPage  페이지당 항목 수
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator 쿠폰함 페이지네이터
      */
     public function getUserCoupons(int $userId, ?string $status = null, int $perPage = 10): \Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -75,6 +77,18 @@ interface CouponIssueRepositoryInterface
      * @return int 발급 횟수
      */
     public function getUserIssuedCountForCoupon(int $userId, int $couponId): int;
+
+    /**
+     * 특정 사용자가 특정 쿠폰을 사용 완료(used_at 세팅)한 횟수를 조회합니다.
+     *
+     * per_user_limit 주문 단계 검증의 "과거 사용"(축1) 기준입니다.
+     * 발급 횟수(getUserIssuedCountForCoupon)와 의미가 분리됩니다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int  $couponId  쿠폰 ID
+     * @return int 사용 완료 건수
+     */
+    public function getUserUsedCountForCoupon(int $userId, int $couponId): int;
 
     /**
      * 쿠폰 발급 레코드를 업데이트합니다.

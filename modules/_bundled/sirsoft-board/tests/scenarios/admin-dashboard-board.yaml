@@ -1,0 +1,68 @@
+# audit:allow test-scenario-coverage reason: |
+#   axes 의 cross product 27 case 는 표현용으로 폭이 넓지만 의미 있는 입력 조합은 5개 내외다.
+#   비즈니스 로직 effects (총 합계 / 변화율 분기 / 빈 상태 / 카운트 배지) 는 PHPUnit Unit
+#   (BoardDashboardServiceTest) + Feature (DashboardApiTest) 로 단언이 끝나고, 레이아웃
+#   구조 effects (슬롯 주입 / data_sources / 카드 4종 / iteration / 다국어) 는 Vitest 정적
+#   JSON 검증 (admin_dashboard_extension.test.tsx) 으로 가드된다. Playwright spec 은 skeleton
+#   (`test.describe.skip`) 상태로 fixture (모듈 활성/비활성 토글) 활성화 후 docblock 매핑을
+#   추가한다. 매니페스트는 그 시점까지 명세용으로 유지.
+feature: 관리자 대시보드 게시판 영역 모듈 주입
+
+description: |
+  관리자 대시보드(`admin_dashboard`)의 게시판 영역을 게시판 모듈이 layout extension 으로
+  스스로 채우는 구조. 템플릿은 `admin_dashboard_quick_menu`/`admin_dashboard_community`
+  두 빈 슬롯만 노출하고, 게시판 모듈이 활성일 때만 버튼·카드가 주입된다.
+
+  핵심 동작:
+    - 모듈 활성: quick_menu 슬롯에 게시글/신고 버튼 2개 + community 슬롯에 카드 4종(오늘 배지, 게시물 추세 그래프, 최신글, 미처리 신고) 주입
+    - 모듈 비활성: 두 슬롯 모두 default([]) 로 처리되어 게시판 흔적이 화면에서 사라짐
+    - 데이터 소스 4종: overview / post-graph / recent-posts / pending-reports — 모두 board_stats 집계 테이블 또는 인덱스만 조회 (원본 풀스캔 금지)
+    - 변화율: 직전 7일 데이터 부족 시 '—' 폴백 + 색상은 emerald(상승)/rose(하락)/slate(폴백)
+    - ExtensionBadge: community 슬롯 우상단에 sirsoft-board 모듈 배지
+
+axes:
+  module_state: [active, inactive]
+  data_state: [has_posts, no_posts, has_reports, no_reports, has_previous_week, no_previous_week]
+  user_role: [admin_with_dashboard_permission, admin_without_dashboard_permission, non_admin]
+
+exclusions:
+  - { module_state: inactive, data_state: has_posts, reason: "모듈 비활성 시 API 미호출 — 데이터 상태 무관" }
+  - { module_state: inactive, data_state: has_reports, reason: "동일" }
+  - { module_state: inactive, data_state: has_previous_week, reason: "동일" }
+
+effects:
+  - extension_badge_visible_when_module_active
+  - quick_menu_board_button_visible_when_module_active
+  - quick_menu_report_button_visible_when_module_active
+  - community_section_visible_when_module_active
+  - today_posts_badge_reflects_overview_api
+  - today_comments_badge_reflects_overview_api
+  - post_graph_chart_renders_7_days_from_post_graph_api
+  - total_posts_displays_sum_of_7_days
+  - total_comments_displays_sum_of_7_days
+  - posts_change_rate_emerald_when_positive
+  - posts_change_rate_rose_when_negative
+  - posts_change_rate_dash_when_previous_week_empty
+  - latest_posts_card_renders_recent_posts_api_items
+  - latest_posts_card_empty_state_when_no_posts
+  - latest_posts_card_excludes_replies_shows_only_root_posts
+  - pending_reports_card_renders_pending_reports_api_items
+  - pending_reports_card_empty_state_when_no_reports
+  - pending_reports_count_badge_shows_total
+  - pending_reports_card_shows_report_processing_status_badge_not_target_status
+  - pending_reports_status_badge_uses_same_color_mapping_as_reports_index_page
+  - post_graph_updated_at_caption_uses_board_date_format
+  - post_graph_updated_at_caption_hidden_when_no_aggregated_rows
+  - quick_menu_buttons_hidden_when_module_inactive
+  - community_section_hidden_when_module_inactive
+  - non_admin_blocked_from_dashboard
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/DashboardApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/AggregateBoardStatsCommandTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/BoardDashboardServiceTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/BoardStatRepositoryTest.php
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/dashboard-board-injection.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

@@ -355,6 +355,76 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
         });
     });
 
+    describe('상품 재고 자동 동기화', () => {
+        it('신규 등록 시 옵션 2개 생성하면 상품 재고가 옵션 재고 합계(2)로 동기화되어야 한다', () => {
+            // 색상 2개(빨강/파랑) → 옵션 2개, isCreate 면 옵션당 기본 재고 1
+            generateOptionsHandler(
+                { handler: 'sirsoft-ecommerce.generateOptions', params: { isCreate: true } },
+                mockContext
+            );
+
+            const options = mockLocalState.form.options;
+            expect(options.length).toBe(2);
+            expect(options[0].stock_quantity).toBe(1);
+            expect(options[1].stock_quantity).toBe(1);
+            // 원 상품 재고 = 옵션 재고 합계 = 2 (사용자 조작 없이 즉시 반영)
+            expect(mockLocalState.form.stock_quantity).toBe(2);
+        });
+
+        it('카테시안 곱(2×2=4) 옵션 생성 시 상품 재고가 합계(4)로 동기화되어야 한다', () => {
+            mockLocalState.ui.optionInputs = [
+                { name: { ko: '색상' }, values: [{ ko: '빨강' }, { ko: '파랑' }] },
+                { name: { ko: '사이즈' }, values: [{ ko: 'S' }, { ko: 'M' }] },
+            ];
+
+            generateOptionsHandler(
+                { handler: 'sirsoft-ecommerce.generateOptions', params: { isCreate: true } },
+                mockContext
+            );
+
+            const options = mockLocalState.form.options;
+            expect(options.length).toBe(4);
+            expect(mockLocalState.form.stock_quantity).toBe(4);
+        });
+
+        it('수정 모드(isCreate 미지정)에서는 옵션 기본 재고 0 → 상품 재고 0 으로 동기화되어야 한다', () => {
+            generateOptionsHandler(
+                { handler: 'sirsoft-ecommerce.generateOptions' },
+                mockContext
+            );
+
+            expect(mockLocalState.form.options.length).toBe(2);
+            expect(mockLocalState.form.stock_quantity).toBe(0);
+        });
+
+        it('기존 옵션 병합 시에도 상품 재고가 전체 옵션 합계로 동기화되어야 한다', () => {
+            // 기존 빨강(재고 10) + 신규 파랑(재고 1) → 합계 11
+            mockLocalState.form.options = [
+                {
+                    id: 1,
+                    option_code: 'OPT-001',
+                    option_name: { ko: '빨강', en: 'Red' },
+                    option_values: [{ key: { ko: '색상' }, value: { ko: '빨강' } }],
+                    list_price: 66000,
+                    selling_price: 53000,
+                    price_adjustment: 0,
+                    is_default: true,
+                    is_active: true,
+                    sku: 'SKU-001',
+                    stock_quantity: 10,
+                    safe_stock_quantity: 2,
+                },
+            ];
+
+            generateOptionsHandler(
+                { handler: 'sirsoft-ecommerce.generateOptions', params: { isCreate: true, skipConfirm: true } },
+                mockContext
+            );
+
+            expect(mockLocalState.form.stock_quantity).toBe(11);
+        });
+    });
+
     describe('필드명 호환성', () => {
         it('multi_currency_selling_price 필드명을 사용해야 한다 (multi_currency_prices 아님)', () => {
             generateOptionsHandler(

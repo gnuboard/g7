@@ -11,14 +11,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex items-center justify-between mb-4"
+                "className": "flex-between mb-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H2",
                     "props": {
-                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                        "className": "section-heading"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_settings"
                 },
@@ -28,7 +28,7 @@
                     "name": "Div",
                     "if": "{{(_computed.addableCountries ?? []).length > 0}}",
                     "props": {
-                        "className": "flex items-center gap-2"
+                        "className": "flex-center gap-2"
                     },
                     "children": [
                         {
@@ -123,7 +123,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-label-subtle"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.no_country_settings"
                 }

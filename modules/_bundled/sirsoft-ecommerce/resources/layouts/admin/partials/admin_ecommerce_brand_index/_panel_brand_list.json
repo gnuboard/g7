@@ -7,7 +7,7 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "col-span-1-lg bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col"
+    "className": "admin-card col-span-1-lg flex flex-col"
   },
   "children": [
     {
@@ -15,14 +15,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+        "className": "px-4 panel-header flex-between"
       },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-2"
+            "className": "flex-center gap-2"
           },
           "children": [
             {
@@ -37,7 +37,7 @@
               "type": "basic",
               "name": "H3",
               "props": {
-                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                "className": "text-heading"
               },
               "text": "$t:sirsoft-ecommerce.admin.brand.list.title"
             },
@@ -58,7 +58,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+        "className": "px-4 panel-header"
       },
       "children": [
         {
@@ -71,7 +71,9 @@
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "flex-1 min-w-0" },
+              "props": {
+                "className": "flex-1 min-w-0"
+              },
               "children": [
                 {
                   "type": "composite",
@@ -101,7 +103,9 @@
             {
               "type": "basic",
               "name": "Div",
-              "props": { "className": "shrink-0" },
+              "props": {
+                "className": "shrink-0"
+              },
               "children": [
                 {
                   "type": "basic",
@@ -150,112 +154,121 @@
       ]
     },
     {
-      "id": "sortable_brand_list",
-      "type": "composite",
-      "name": "SortableMenuList",
-      "if": "{{(brands?.data?.data?.length ?? 0) > 0}}",
-      "props": {
-        "items": "{{brands?.data?.data ?? []}}",
-        "selectedId": "{{_global.selectedBrandId}}",
-        "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto",
-        "itemClassName": "py-1 px-5 mb-1 rounded-lg border",
-        "itemSelectedClassName": "bg-blue-50 dark:bg-blue-900/30 border-blue-500",
-        "itemDefaultClassName": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
-        "enableDrag": false,
-        "toggleDisabled": "{{brands?.data?.abilities?.can_update !== true}}"
-      },
-      "lifecycle": {
-        "onMount": [
-          {
-            "type": "click",
-            "handler": "sirsoft-ecommerce.initBrandFromUrl"
-          }
-        ]
-      },
-      "actions": [
+      "type": "basic",
+      "name": "Div",
+      "children": [
         {
-          "event": "onSelect",
-          "type": "action",
-          "handler": "sequence",
+          "id": "sortable_brand_list",
+          "type": "composite",
+          "name": "SortableMenuList",
+          "if": "{{(brands?.data?.data?.length ?? 0) > 0}}",
+          "props": {
+            "items": "{{brands?.data?.data ?? []}}",
+            "selectedId": "{{_global.selectedBrandId}}",
+            "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto",
+            "itemClassName": "py-1 px-5 mb-1 rounded-lg border",
+            "itemSelectedClassName": "bg-blue-50 dark:bg-blue-900/30 border-blue-500",
+            "itemDefaultClassName": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+            "enableDrag": false,
+            "toggleDisabled": "{{brands?.data?.abilities?.can_update !== true}}"
+          },
+          "lifecycle": {
+            "onMount": [
+              {
+                "type": "click",
+                "handler": "sirsoft-ecommerce.initBrandFromUrl"
+              }
+            ]
+          },
           "actions": [
             {
-              "handler": "setState",
-              "params": {
-                "target": "global",
-                "selectedBrandId": "{{$args[0].id}}",
-                "selectedBrand": "{{$args[0]}}",
-                "panelMode": "view"
-              }
-            },
-            {
-              "handler": "replaceUrl",
-              "params": {
-                "query": { "id": "{{$args[0].id}}", "mode": "view" }
-              }
-            }
-          ]
-        },
-        {
-          "event": "onToggleStatus",
-          "type": "action",
-          "handler": "sequence",
-          "actions": [
-            {
-              "handler": "setState",
-              "params": {
-                "target": "global",
-                "isTogglingStatus": true
-              }
-            },
-            {
-              "handler": "apiCall",
-              "auth_required": true,
-              "target": "/api/modules/sirsoft-ecommerce/admin/brands/{{$args[0]}}/toggle-status",
-              "params": {
-                "method": "PATCH"
-              },
-              "onSuccess": [
+              "event": "onSelect",
+              "type": "action",
+              "handler": "sequence",
+              "actions": [
                 {
                   "handler": "setState",
                   "params": {
                     "target": "global",
-                    "isTogglingStatus": false
+                    "selectedBrandId": "{{$args[0].id}}",
+                    "selectedBrand": "{{$args[0]}}",
+                    "panelMode": "view"
                   }
                 },
                 {
-                  "handler": "toast",
+                  "handler": "replaceUrl",
                   "params": {
-                    "type": "success",
-                    "message": "$t:sirsoft-ecommerce.admin.brand.messages.status_changed"
-                  }
-                },
-                {
-                  "handler": "refetchDataSource",
-                  "params": {
-                    "dataSourceId": "brands"
+                    "query": {
+                      "id": "{{$args[0].id}}",
+                      "mode": "view"
+                    }
                   }
                 }
-              ],
-              "onError": [
+              ]
+            },
+            {
+              "event": "onToggleStatus",
+              "type": "action",
+              "handler": "sequence",
+              "actions": [
                 {
                   "handler": "setState",
                   "params": {
                     "target": "global",
-                    "isTogglingStatus": false
+                    "isTogglingStatus": true
                   }
                 },
                 {
-                  "handler": "toast",
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/modules/sirsoft-ecommerce/admin/brands/{{$args[0]}}/toggle-status",
                   "params": {
-                    "type": "error",
-                    "message": "{{error.message}}"
-                  }
-                },
-                {
-                  "handler": "refetchDataSource",
-                  "params": {
-                    "dataSourceId": "brands"
-                  }
+                    "method": "PATCH"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isTogglingStatus": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-ecommerce.admin.brand.messages.status_changed"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "brands"
+                      }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isTogglingStatus": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "brands"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -269,7 +282,7 @@
       "name": "Div",
       "if": "{{(brands?.data?.data?.length ?? 0) === 0}}",
       "props": {
-        "className": "flex-1 flex items-center justify-center gap-3 px-4"
+        "className": "flex-center flex-1 justify-center gap-3 px-4"
       },
       "children": [
         {
@@ -284,7 +297,7 @@
           "type": "basic",
           "name": "P",
           "props": {
-            "className": "text-sm text-gray-500 dark:text-gray-400"
+            "className": "text-label-subtle"
           },
           "text": "$t:sirsoft-ecommerce.admin.brand.list.empty"
         }

@@ -1,0 +1,52 @@
+feature: 게시글 상세 이전/다음 네비게이션 + 목록 복귀 상태 보존
+
+description: |
+  게시글 상세의 이전/다음 글 네비게이션과 목록 복귀 동작 정합 (이슈 #413 item 45, 47).
+
+  수정 이력:
+    - 45-1 (목록 복귀 상태 미보존): 결함 수정.
+      · 목록(category/search/page/del/filters)은 전부 URL 쿼리로 관리됨.
+      · 행 클릭 navigate 에 mergeQuery:true 추가 → 현재 목록 query 를 상세 URL 에 부착
+        (basic/card/gallery 3종 동일).
+      · 상세 '목록' 버튼 navigate 에 mergeQuery:true 추가 → 상세 URL 에 실린 목록 상태로 복귀.
+    - 45-2 / 47-1 (카테고리 필터 미적용): 결함 수정.
+      · PostRepository::getAdjacentPosts 는 $filters['category'] 를 이미 지원하나 컨트롤러가 미전달.
+      · PostController::navigation 이 현재 글의 실제 category 를 조회해 filters 에 전달.
+      · 미분류(category=null)면 when($category) 가 미적용 → 전체 원글 순회로 자연 처리.
+    - 47-2 (비밀글 제외 / applyPermissionScope 부재): 오류 아님 — 현행 유지.
+      · 비밀글은 제목·id만 노출(본문은 상세에서 차단)이 G7 정책. 후보 포함이 정상.
+      · 블라인드(status≠published)는 이미 제외. applyPermissionScope 는 비밀글 필터가 아님.
+    - 47-3 (첫/마지막 버튼 '비활성'): 오류 아님 — 현행 유지.
+      · prev/next null 이면 버튼 숨김(미렌더). disabled 보다 적절한 UX.
+    - 47-4 (답글 네비게이션 깨짐): 결함 수정.
+      · 후보 쿼리 whereNull(parent_id) 로 답글은 후보에서 제외되나, 컨트롤러가 현재 글의 답글 여부를
+        미검사 → 답글 상세에서 엉뚱한 원글로 이동.
+      · PostController::navigation 이 현재 글 parent_id != null 이면 {prev:null, next:null} 즉시 반환
+        → 답글 상세에서 버튼 미노출. 원글 인용 블록이 원글 이동 안내를 담당.
+
+axes:
+  # navigation 결과를 가르는 핵심 변별 축은 글 유형(post_kind).
+  # 카테고리 유무·목록 위치·비밀/블라인드 변종은 effects 와 개별 테스트 메서드로 커버한다.
+  post_kind: [original, reply, notice]   # 원글(정상 순회) / 답글(미노출) / 공지(미노출)
+
+effects:
+  - navigation_limited_to_same_category   # 47-1: 동일 카테고리 글만 prev/next
+  - navigation_uncategorized_traverses_all # 47-1: 미분류는 전체 원글 순회
+  - navigation_null_for_reply             # 47-4: 답글 상세는 prev/next null
+  - navigation_null_for_notice            # 공지 상세는 prev/next null (기존)
+  - navigation_secret_included            # 47-2: 비밀글 후보 포함 (기존 유지)
+  - navigation_blinded_excluded           # 47-2: 블라인드 제외 (기존 유지)
+  - navigation_boundary_null              # 47-3: 첫/마지막 글 prev/next null
+  - list_return_preserves_query           # 45-1: 행 클릭→상세→목록 복귀 시 query 보존
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostNavigationTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostNavigationApiTest.php
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-post-navigation-list-return.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-post-navigation.spec.ts
+
+validation:
+  note: |
+    백엔드 효과별 단언은 PostNavigationTest 가 category/reply/notice/secret/blinded/boundary 를 커버.
+    프론트 목록 복귀(mergeQuery)와 답글 버튼 미렌더는 board-post-navigation-list-return 레이아웃 테스트가 고정.
+    E2E 는 목록→상세→복귀 URL 보존, 동일 카테고리 이동, 답글 버튼 부재를 브라우저 수준에서 실측.

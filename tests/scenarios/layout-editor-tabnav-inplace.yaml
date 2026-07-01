@@ -1,0 +1,61 @@
+feature: 레이아웃 편집기 — 템플릿 캔버스 인플레이스 레퍼런스(registerCanvasOverlay) + P2 배열 capability
+
+description: |
+  두 산출물:
+
+  (1) 부록4-bis 템플릿 인플레이스 레퍼런스 — sirsoft-admin_basic 템플릿이 initTemplate 에서
+  직접 `G7Core.layoutEditor.registerCanvasOverlay('tabnav', TabNavInplaceOverlay)` 로 등록한
+  캔버스 오버레이가, TabNavigation(capability `canvasOverlay.kind:"tabnav"`) 선택 시 코어
+  EditorCanvasOverlay 에 의해 마운트된다. 탭은 자식 노드가 아니라 props.tabs 배열이라
+  data-editor-path 가 없으므로, TabNavigation 이 편집 모드에서 각 탭 버튼에
+  data-editor-item-path="<node>.props.tabs.<i>" 마커를 부여하고, 코어가 그 박스를 측정해
+  cellBoxes(path=props.tabs.<i>)로 오버레이에 주입한다. 오버레이는 +추가/✕삭제/◀▶이동을
+  그 좌표에 렌더하고, 모든 변형은 onPatchNode({...node, props:{...,tabs}}) 로 노드를 통째
+  교체한다(속성 패널 ArrayItemsEditor 와 동일 node.props.tabs 패치 경로 SSoT).
+
+  (2) P2 배열 capability — 번들 레이아웃 실사용례 전수 스캔(추측 금지) 결과, P2 후보 중
+  정적 리터럴 배열로 실제 사용되는 것은 BarChart(admin_dashboard.json 의 labels: string[])
+  뿐(나머지는 {{...}} 바인딩 또는 미사용). BarChart labels 에 array 노드 에디터(원시 string[]
+  primary 필드)를 부착. 원시 배열 add 를 위해 ArrayItemsEditor 가 원시 newItem(string/number)
+  골격을 지원하도록 보강(이전엔 newItem falsy → 객체 합성 회귀).
+
+axes:
+  unit: [overlay_register, inplace_add, inplace_remove, inplace_move, static_value_guard, item_path_marker, primitive_array_capability, taginput_family_options, iconselect_options_array]
+
+effects:
+  - template_registerCanvasOverlay_mounts_in_live_editor
+  - canvas_overlay_dispatched_kind_agnostic_by_capability_canvasoverlay_kind
+  - core_measures_data_editor_item_path_markers_into_cellboxes
+  - tabnavigation_emits_item_path_marker_only_in_editor_mode
+  - tabnav_header_shows_add_remove_move_affordances
+  - inplace_add_pushes_new_tab_to_node_props_tabs
+  - inplace_add_front_inserts_at_index_zero
+  - inplace_remove_drops_only_that_tab
+  - inplace_move_swaps_adjacent_with_boundary_guard
+  - inplace_new_tab_id_is_max_plus_one_no_collision
+  - inplace_patch_preserves_other_props_keys
+  - binding_or_non_array_or_unmeasured_tabs_renders_no_overlay
+  - barchart_labels_array_capability_static_literal_only
+  - array_editor_primitive_newitem_pushes_raw_value_not_object
+  - primitive_array_add_then_edit_keeps_raw_shape
+  - taginput_family_options_list_propcontrol_attached
+  - iconselect_options_array_nodeeditor_with_faicon_field
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/editor/__tests__/TabNavInplaceOverlay.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/layout-editor/__tests__/registerEditorWidgets.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TabNavigation.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/ArrayItemsEditor.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/adminPropControlCoverage.test.ts
+  - tests/Playwright/specs/layout-editor/tabnav-inplace.spec.ts
+
+validation:
+  note: |
+    Vitest 단위가 (a) 템플릿 registerCanvasOverlay('tabnav') 등록(레지스트리 유무/구코어 폴백),
+    (b) TabNavInplaceOverlay 어포던스 렌더 + add/remove/move + 정적값 가드 + 동일 props.tabs
+    패치 SSoT + 다른 props 보존, (c) TabNavigation 편집모드 data-editor-item-path 마커 emit/런타임
+    미emit, (d) ArrayItemsEditor 원시 newItem 골격 push 를 잠근다. 캔버스 인플레이스 마운트/측정
+    박스 좌표 배치는 jsdom getBoundingClientRect 한계로 단위 모사 불가 — Chrome MCP 매트릭스
+    (라이트/다크 × 데스크탑/태블릿/모바일 × 유저화면)로 실측한다. Playwright E2E(tabnav-inplace.spec)
+    는 라이브 편집기에서 템플릿 등록 오버레이 마운트(어포던스 노출)를 잠근다.
+  e2e_spec: tests/Playwright/specs/layout-editor/tabnav-inplace.spec.ts

@@ -19,7 +19,7 @@ enum PaymentStatusEnum: string
     /**
      * 다국어 라벨을 반환합니다.
      *
-     * @return string
+     * @return string 결제 상태의 현지화된 라벨
      */
     public function label(): string
     {
@@ -29,7 +29,7 @@ enum PaymentStatusEnum: string
     /**
      * 프론트엔드용 라벨 키를 반환합니다.
      *
-     * @return string
+     * @return string 결제 상태의 현지화된 라벨
      */
     public function getLabel(): string
     {
@@ -39,7 +39,7 @@ enum PaymentStatusEnum: string
     /**
      * 상태 뱃지 variant를 반환합니다.
      *
-     * @return string
+     * @return string 뱃지 색상 variant 키
      */
     public function variant(): string
     {
@@ -56,9 +56,23 @@ enum PaymentStatusEnum: string
     }
 
     /**
+     * 입금(결제)이 아직 완료되지 않아 입금확인 대상이 되는 상태인지 반환합니다.
+     *
+     * 무통장 입금확인 버튼 노출·처리 판정의 SSoT. 주문 상태(order_status)가 아닌
+     * 결제 레코드(payment) 자체의 상태로 판정해, order_status 가 다른 경로로 먼저
+     * 전이돼도 실제 미입금 결제는 입금확인할 수 있도록 한다.
+     *
+     * @return bool 결제대기(ready)·입금대기(waiting_deposit)면 true
+     */
+    public function isAwaitingDeposit(): bool
+    {
+        return in_array($this, [self::READY, self::WAITING_DEPOSIT], true);
+    }
+
+    /**
      * 모든 값 배열을 반환합니다.
      *
-     * @return array
+     * @return array 결제 상태 문자열 값 목록
      */
     public static function values(): array
     {
@@ -68,7 +82,7 @@ enum PaymentStatusEnum: string
     /**
      * 프론트엔드용 옵션 배열을 반환합니다.
      *
-     * @return array
+     * @return array value/label 쌍의 셀렉트 옵션 목록
      */
     public static function toSelectOptions(): array
     {

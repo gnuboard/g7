@@ -4,7 +4,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [0.1.0-beta.1] - 2026-05-11
+## [0.1.0] - 2026-07-01
+
+### Changed
+
+- 사이드바 메뉴 링크 텍스트 톤을 sirsoft-admin_basic 표준 시맨틱(.text-body) 과 정합 — 다른 관리자 화면과 같은 결로 통일.
 
 ### Added
 
@@ -14,3 +18,4 @@
 - `admin_dashboard` 레이아웃 (Hello G7 환영 카드)
 - 에러 레이아웃 6종 (401/403/404/500/503/maintenance)
 - 한국어/영어 다국어 지원
+- `externals` 외부 리소스 선언 예시 (Font Awesome 스타일시트)

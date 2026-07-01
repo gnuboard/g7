@@ -2,20 +2,25 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
+use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\DTO\ItemCalculation;
 use Modules\Sirsoft\Ecommerce\DTO\MultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
 use Modules\Sirsoft\Ecommerce\DTO\Summary;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
+use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -42,7 +47,10 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
             $this->currencyService,
             app(ProductOptionRepositoryInterface::class),
             app(CouponIssueRepositoryInterface::class),
-            app(ShippingPolicyRepositoryInterface::class)
+            app(ShippingPolicyRepositoryInterface::class),
+            app(EcommerceSettingsService::class),
+            app(ProductAdditionalOptionValueRepositoryInterface::class),
+            app(ShippingPolicyResolver::class)
         );
     }
 
@@ -51,7 +59,7 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
      */
     protected function setupTestCurrencySettings(): void
     {
-        $settingsPath = storage_path('app/modules/sirsoft-ecommerce/settings');
+        $settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         if (! is_dir($settingsPath)) {
             mkdir($settingsPath, 0755, true);
         }
@@ -94,7 +102,7 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
 
         // g7_module_settings() 는 Config::get('g7_settings.modules.{id}') 를 조회함.
         // 테스트 환경에서는 모듈이 활성화되어 있지 않아 Config 가 비어있으므로 수동 주입.
-        \Illuminate\Support\Facades\Config::set(
+        Config::set(
             'g7_settings.modules.sirsoft-ecommerce.language_currency',
             $settings
         );
@@ -103,7 +111,7 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
     protected function tearDown(): void
     {
         // 테스트 설정 파일 정리
-        $settingsFile = storage_path('app/modules/sirsoft-ecommerce/settings/language_currency.json');
+        $settingsFile = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/language_currency.json');
         if (file_exists($settingsFile)) {
             unlink($settingsFile);
         }
@@ -710,7 +718,7 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
         $product->update(['shipping_policy_id' => $policy->id]);
 
         // ShippingAddress for 제주도
-        $shippingAddress = new \Modules\Sirsoft\Ecommerce\DTO\ShippingAddress(zipcode: '63123');
+        $shippingAddress = new ShippingAddress(zipcode: '63123');
 
         $input = new CalculationInput(
             items: [

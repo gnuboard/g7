@@ -17,7 +17,7 @@
       "type": "basic",
       "name": "P",
       "props": {
-        "className": "text-sm text-gray-700 dark:text-gray-300"
+        "className": "text-body"
       },
       "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.message"
     },
@@ -25,7 +25,7 @@
       "type": "basic",
       "name": "P",
       "props": {
-        "className": "text-sm text-gray-700 dark:text-gray-300 mt-1"
+        "className": "text-body mt-1"
       },
       "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.sub_message"
     }

@@ -7,9 +7,11 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\SecretMode;
 use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
@@ -102,6 +104,10 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * 공지글 → 200 + 빈 값 (네비게이션 미제공)
+     *
+     * @scenario post_kind=notice
+     *
+     * @effects navigation_null_for_notice
      */
     public function test_returns_empty_for_notice_post(): void
     {
@@ -161,6 +167,10 @@ class PostNavigationTest extends ModuleTestCase
      * 목록과 동일 범위로 prev/next 를 실제로 반환해야 합니다.
      *
      * getAdjacentPosts 쿼리에 is_secret 필터가 없음을 실증적으로 검증합니다.
+     *
+     * @scenario post_kind=original
+     *
+     * @effects navigation_secret_included
      */
     public function test_secret_always_board_returns_real_prev_next(): void
     {
@@ -206,7 +216,7 @@ class PostNavigationTest extends ModuleTestCase
     {
         $postId = $this->insertPost(['title' => 'getPost 미호출 검증']);
 
-        $postService = $this->spy(\Modules\Sirsoft\Board\Services\PostService::class);
+        $postService = $this->spy(PostService::class);
 
         $response = $this->getJson("/api/modules/sirsoft-board/boards/{$this->boardSlug}/posts/{$postId}/navigation");
 
@@ -222,10 +232,12 @@ class PostNavigationTest extends ModuleTestCase
     {
         $postId = $this->insertPost(['title' => '예외 유도']);
 
-        \Illuminate\Support\Facades\Log::spy();
+        Log::spy();
 
-        $postService = $this->mock(\Modules\Sirsoft\Board\Services\PostService::class);
+        $postService = $this->mock(PostService::class);
         $postService->shouldReceive('isPostNotice')->once()->andReturn(false);
+        // 원글(parent_id null) 메타 → 답글 가드 통과 후 getAdjacentPosts 진입
+        $postService->shouldReceive('getPostNavigationMeta')->once()->andReturn(['category' => null, 'parent_id' => null]);
         $postService->shouldReceive('getAdjacentPosts')->once()->andThrow(
             new \RuntimeException('boom')
         );
@@ -237,7 +249,7 @@ class PostNavigationTest extends ModuleTestCase
             'data' => ['prev' => null, 'next' => null],
         ]);
 
-        \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
+        Log::shouldHaveReceived('warning')
             ->once()
             ->withArgs(function ($message, $context) use ($postId) {
                 return str_contains($message, 'Post navigation')
@@ -255,12 +267,12 @@ class PostNavigationTest extends ModuleTestCase
         $currentId = $this->insertPost(['title' => '현재', 'created_at' => now()->subMinutes(15)]);
         $this->insertPost(['title' => '최신', 'created_at' => now()->subMinutes(10)]);
 
-        \Illuminate\Support\Facades\Log::spy();
+        Log::spy();
 
         $response = $this->getJson("/api/modules/sirsoft-board/boards/{$this->boardSlug}/posts/{$currentId}/navigation");
 
         $response->assertStatus(200);
-        \Illuminate\Support\Facades\Log::shouldNotHaveReceived('warning');
+        Log::shouldNotHaveReceived('warning');
     }
 
     /**
@@ -340,6 +352,10 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * [G] published 가 아닌(블라인드 등) 글은 navigation 에 포함되면 안 됩니다.
+     *
+     * @scenario post_kind=original
+     *
+     * @effects navigation_blinded_excluded
      */
     public function test_non_published_posts_excluded_from_navigation(): void
     {
@@ -370,6 +386,10 @@ class PostNavigationTest extends ModuleTestCase
 
     /**
      * [J-1] 가장 오래된 글(DESC 정렬에서 next 방향 끝)은 next 가 null 이어야 합니다.
+     *
+     * @scenario post_kind=original
+     *
+     * @effects navigation_boundary_null
      */
     public function test_oldest_post_has_no_next(): void
     {
@@ -400,6 +420,90 @@ class PostNavigationTest extends ModuleTestCase
         $data = $response->json('data');
         $this->assertNull($data['prev'], 'DESC 정렬에서 가장 최신 글의 prev 는 null 이어야 합니다.');
         $this->assertNotNull($data['next']);
+    }
+
+    /**
+     * [47-1] 카테고리가 섞인 게시판에서 navigation 은 현재 글과 동일 카테고리 글만
+     * 이전/다음으로 반환해야 합니다. (다른 카테고리 글은 건너뜀)
+     *
+     * @scenario post_kind=original
+     *
+     * @effects navigation_limited_to_same_category
+     */
+    public function test_navigation_applies_current_post_category(): void
+    {
+        // created_at DESC 정렬. 카테고리를 번갈아 배치하여 '동일 카테고리만' 을 검증.
+        $freeOlder = $this->insertPost(['title' => '자유-이전', 'category' => '자유', 'created_at' => now()->subMinutes(50)]);
+        $this->insertPost(['title' => '질문-사이1', 'category' => '질문', 'created_at' => now()->subMinutes(40)]);
+        $current = $this->insertPost(['title' => '자유-현재', 'category' => '자유', 'created_at' => now()->subMinutes(30)]);
+        $this->insertPost(['title' => '질문-사이2', 'category' => '질문', 'created_at' => now()->subMinutes(20)]);
+        $freeNewer = $this->insertPost(['title' => '자유-최신', 'category' => '자유', 'created_at' => now()->subMinutes(10)]);
+
+        $response = $this->getJson("/api/modules/sirsoft-board/boards/{$this->boardSlug}/posts/{$current}/navigation");
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'data' => [
+                'prev' => ['id' => $freeNewer],  // DESC: 더 최신 자유글
+                'next' => ['id' => $freeOlder],  // DESC: 더 이전 자유글
+            ],
+        ]);
+    }
+
+    /**
+     * [47-1] 미분류(category=null) 글은 카테고리 필터 없이 전체 원글을 순회해야 합니다.
+     *
+     * @scenario post_kind=original
+     *
+     * @effects navigation_uncategorized_traverses_all
+     */
+    public function test_navigation_for_uncategorized_post_traverses_all(): void
+    {
+        $older = $this->insertPost(['title' => '이전(질문)', 'category' => '질문', 'created_at' => now()->subMinutes(30)]);
+        $current = $this->insertPost(['title' => '현재(미분류)', 'category' => null, 'created_at' => now()->subMinutes(20)]);
+        $newer = $this->insertPost(['title' => '최신(자유)', 'category' => '자유', 'created_at' => now()->subMinutes(10)]);
+
+        $response = $this->getJson("/api/modules/sirsoft-board/boards/{$this->boardSlug}/posts/{$current}/navigation");
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'data' => [
+                'prev' => ['id' => $newer],
+                'next' => ['id' => $older],
+            ],
+        ]);
+    }
+
+    /**
+     * [47-4] 답글(parent_id != null) 상세의 navigation 은 prev/next 모두 null 이어야 합니다.
+     *
+     * 답글은 원글 후보 쿼리(whereNull parent_id)에서 제외되므로, 답글 상세에서 이전/다음
+     * 버튼이 뜨면 자기 스레드와 무관한 원글로 이동하는 깨진 동작이 발생합니다.
+     *
+     * @scenario post_kind=reply
+     *
+     * @effects navigation_null_for_reply
+     */
+    public function test_navigation_returns_null_for_reply(): void
+    {
+        // 원글 3개 (정상 순회 가능한 상태)
+        $this->insertPost(['title' => '원글1', 'created_at' => now()->subMinutes(40)]);
+        $parentId = $this->insertPost(['title' => '원글2', 'created_at' => now()->subMinutes(30)]);
+        $this->insertPost(['title' => '원글3', 'created_at' => now()->subMinutes(20)]);
+
+        // 원글2 에 대한 답글
+        $replyId = $this->insertPost([
+            'title' => '답글',
+            'parent_id' => $parentId,
+            'created_at' => now()->subMinutes(10),
+        ]);
+
+        $response = $this->getJson("/api/modules/sirsoft-board/boards/{$this->boardSlug}/posts/{$replyId}/navigation");
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'data' => ['prev' => null, 'next' => null],
+        ]);
     }
 
     /**

@@ -71,6 +71,22 @@
           "text": "{{Object.entries(item.product_option?.option_values_localized ?? {}).map(([k, v]) => k + ': ' + v).join(', ')}}"
         },
         {
+          "comment": "선택된 추가옵션 (그룹명: 선택지명 +추가금) — 옵션 라인 바로 아래",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{item.additional_options?.length > 0}}",
+          "props": { "className": "mt-1 space-y-0.5" },
+          "iteration": { "source": "{{item.additional_options ?? []}}", "item_var": "addOpt" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "text": "{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
+            }
+          ]
+        },
+        {
           "comment": "배송정책 및 배송비",
           "type": "basic",
           "name": "Div",
@@ -117,6 +133,48 @@
           "name": "Div",
           "props": { "className": "mt-1" },
           "children": [
+            {
+              "comment": "정가 취소선 + 할인율 (할인 있을 때만, U4)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(item.product_option?.discount_rate ?? 0) > 0}}",
+              "props": { "className": "flex items-center gap-2" },
+              "children": [
+                {
+                  "comment": "정가 취소선 - 주 통화",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500 line-through" },
+                  "text": "{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.product_option?.list_price_formatted ?? ''}}"
+                },
+                {
+                  "comment": "할인율 칩",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs font-bold text-red-500" },
+                  "text": "{{item.product_option?.discount_rate}}%"
+                }
+              ]
+            },
+            {
+              "comment": "정가 취소선 - 보조 통화들 (할인 있을 때, 선택 통화 제외)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(item.product_option?.discount_rate ?? 0) > 0}}",
+              "props": { "className": "flex flex-wrap gap-x-2" },
+              "iteration": {
+                "source": "{{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                "item_var": "currency"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500 line-through" },
+                  "text": "{{currency[1]?.formatted}}"
+                }
+              ]
+            },
             {
               "comment": "주 통화",
               "type": "basic",
@@ -193,13 +251,21 @@
               "text": "$t:shop.cart.insufficient_stock"
             },
             {
+              "comment": "배송 불가 표시 (선택 배송국가로 배송 불가 — D1 layer 1)",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{item.is_shippable_to_selected_country === false}}",
+              "props": { "className": "text-sm font-medium text-red-600 dark:text-red-400" },
+              "text": "$t:shop.shippability.not_shippable"
+            },
+            {
               "comment": "옵션 변경 버튼",
               "type": "basic",
               "name": "Button",
               "if": "{{item.product_option}}",
               "props": { "className": "p-1 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer", "title": "$t:shop.cart.change_option" },
               "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "settings", "className": "w-5 h-5" } }
+                { "type": "basic", "name": "Icon", "size": "md", "props": { "name": "settings" } }
               ],
               "actions": [
                 {
@@ -230,7 +296,9 @@
                         "selectedQuantity": "{{item.quantity}}",
                         "selectedOptions": {},
                         "optionProduct": null,
-                        "matchedOption": null
+                        "matchedOption": null,
+                        "additionalSelections": "{{Object.fromEntries((item.additional_options ?? []).map(a => [a.additional_option_id, a.value_id]))}}",
+                        "additionalCustomTexts": "{{Object.fromEntries((item.additional_options ?? []).filter(a => (a.custom_text ?? '') !== '').map(a => [a.additional_option_id, a.custom_text]))}}"
                       }
                     },
                     {
@@ -281,7 +349,7 @@
               "name": "Button",
               "props": { "className": "p-1 text-gray-400 hover:text-red-500 transition-colors cursor-pointer" },
               "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "trash-can", "className": "w-5 h-5" } }
+                { "type": "basic", "name": "Icon", "size": "md", "props": { "name": "trash-can" } }
               ],
               "actions": [
                 {

@@ -1,0 +1,224 @@
+# audit:allow test-scenario-coverage reason: 페이지 설정은 편집기 모달(8탭 셸/제목 배너/SEO 값 칸/타겟 picker — dnd-kit·합성 이벤트·포털 모달 의존)이라 Playwright 자동화 부적합(text-inline-binding.yaml 동일 정책). 입력 조합·후속 효과 cross product 는 단위 RTL(PageSettingsModal/PageTitleBanner/DataChipValueInput 14 + computed-inheritance 등)이 전수 커버하고, 캔버스 라이브 반영·저장→DB 영속→새로고침 복원·실사용자화면 렌더는 Chrome MCP §공통 검증 매트릭스(L0~L7)로 라이브 실측. SEO 값 칸 키화 0·이중인코딩 0 은 tinker DB 실측이 SSoT.
+feature: 레이아웃 편집기 페이지 설정 모달 (8탭 셸 + 제목 배너 + 캔버스 dataKey/격리/타겟 picker + SEO 값 칸 표현식·칩 확대)
+phase: 8
+session: S10-1
+issue: 383
+axes:
+  # 셸 라우팅·고급 배지·진입점 (~2.2)
+  active_tab: [meta, seo, init, overlay, computed, state, error, data]
+  advanced_badge: [none, init_advanced_count, computed_advanced_count, total_summary]
+  entry_point: [toolbar_button, banner_settings_gear]
+  toolbar_state: [route_active, base_active, modal_active, extension_disabled, iteration_item_disabled, no_selection_disabled]
+  # 제목 배너 4상태 
+  banner_state: [title_plaintext_editable, title_i18n_key_editable, title_missing_fallback_readonly, title_expression_advanced_readonly]
+  banner_edit: [double_click_enter_commit, esc_cancel, plaintext_creates_key, existing_key_updates_value]
+  banner_mode_visibility: [route_visible, extension_hidden, iteration_item_hidden]
+  # 기본 정보 
+  meta_field: [title, description, icon, editor_label, permissions]
+  # 자동 계산 상속 
+  computed_authoring: [preset_9, custom_3step, advanced_preserve]
+  computed_inheritance: [parent_only, child_only, both_distinct_keys, same_key_route_override, three_level]
+  computed_inherit_op: [view_source_badge, edit_parent_override, revert_to_common, same_name_add, child_only_patch]
+  # 캔버스 dataKey/격리 
+  core_datakey: [static_value, binding_degraded, empty_removes_key, dot_path_allowed]
+  isolated_scope: [toggle_on_seeds_scopeid, toggle_off_removes, scopeid_search_candidate, scopeid_free_input, duplicate_notice]
+  # 타겟 picker 캔버스 pick 
+  target_picker: [manual_input, canvas_pick_request, canvas_pick_picked, canvas_pick_id_not_assigned_ignored, canvas_pick_cancel, request_id_mismatch_ignored, host_modal_minimize_restore]
+  # SEO extensions 결선
+  seo_extensions_supply: [fetch_to_availableExtensions, empty_degrade]
+  # 에러 처리 
+  error_handler_kind: [none, showErrorPage, navigate, openModal, toast, setState, sequence, parallel]
+  # 데이터 
+  data_readonly_section: [global_headers, scripts, empty_hint]
+  # SEO 값 칸 표현식/칩 확대 (표현식 분해 트리 → 값 전용 필드 일반화④)
+  # 키화 0(값 필드는 $t:custom.* 미생성) + 칩 시각화(데이터연결/설정참조 raw 코드 비노출)
+  seo_value_field: [og_image, tw_image, og_image_alt]            # 값 전용 칸(DataChipValueInput)
+  seo_text_field: [search_title, search_desc, og_title, og_desc] # 텍스트 칸(I18nTextField, 키화 유지)
+  seo_value_shape: [plain, data_binding, settings_ref, single_conditional, multi_segment, fallback]
+  seo_value_op: [type_plaintext, type_binding_focus_retained, blur_to_chip, fx_to_expression_tree, change_data, to_fallback]
+  # 모듈 자동값 → 연결 칩(역산출). 모듈 seoOgDefaultMeta/seoStructuredDataMeta 가
+  # 데이터 경로(expr)+라벨을 공급 → 자동값 행을 "상품 이름" 연결 칩으로 표시 + 다른 데이터로 교체.
+  seo_auto_chip_field: [og_image, og_image_alt, structured_name, structured_offers_price]  # 자동값 칩 대상
+  seo_auto_chip_op: [render_link_chip_with_label, replace_to_override, fallback_plaintext_when_no_meta]
+  # 자동 계산(computed)·로딩 화면(overlay)·SEO 보조
+  # 텍스트 칸도 "단순 데이터 연동" 가능하도록 DataChipValueInput/I18nTextField 로 승격. 값/경로 칸은
+  # 데이터 칩(키화 0), 사용자 표시 문구(spinner)는 다국어 키화. 식별자(id/키이름/숫자인덱스)는 평문.
+  chip_expand_field:
+    - computed_preset_param        # ComputedForm preset 파라미터(화면상태경로/주소파라미터/기본값)
+    - computed_sum_field           # CustomComputedBuilder 합산 필드
+    - computed_tooptions_field     # toOptions value/label 필드
+    - computed_nth_prop            # nth 속성(경로)
+    - computed_literal_value       # literal 값
+    - computed_firstof_fallback    # firstOf 기본값
+    - computed_condition_field     # 조건 필드
+    - computed_condition_value     # 조건 값
+    - overlay_spinner_text         # 로딩 화면 안내 문구(I18nTextField=다국어 키화)
+    - seo_og_site_name             # og.site_name/locale 등 textRow 7칸(DataChipValueInput)
+  chip_expand_value_shape: [plain, data_binding, single_conditional, settings_ref]
+  chip_expand_op: [type_plaintext_no_keyify, search_pick_data_chip, fx_to_expression_tree, keyify_for_display_text_only]
+exclusions:
+  - { active_tab: meta, advanced_badge: init_advanced_count, reason: "기본 정보 탭엔 미환원 항목 개념 없음" }
+  - { toolbar_state: extension_disabled, banner_mode_visibility: route_visible, reason: "extension 모드는 배너 미표시·버튼 비활성 동시" }
+  - { computed_inheritance: child_only, computed_inherit_op: revert_to_common, reason: "순수 자식 키는 되돌릴 부모 값 없음(route-override 만 되돌리기)" }
+  - { core_datakey: binding_degraded, meta_field: title, reason: "바인딩 디그레이드 dataKey 는 읽기전용 — 다른 meta 편집과 직교(중복 조합 배제)" }
+  - { target_picker: manual_input, seo_extensions_supply: fetch_to_availableExtensions, reason: "직접 입력 picker 는 SEO extensions 결선과 무관 축(직교 배제)" }
+  # SEO 값 칸 표현식 확대 — 값 칸/텍스트 칸은 컴포넌트 자체가 다름(상호 배제), op 는 칸 종류별로 제한
+  - { seo_value_field: og_image, seo_text_field: search_title, reason: "값 칸(DataChipValueInput)과 텍스트 칸(I18nTextField)은 서로 다른 컴포넌트 — 한 칸이 동시에 둘일 수 없음(상호 배제)" }
+  - { seo_value_op: fx_to_expression_tree, seo_value_field: og_image, reason: "fx(표현식으로 바꾸기) 토글은 텍스트 칸 전용 진입점 — 값 칸은 이미 표현식 1급(자동 분해), fx 버튼 비노출" }
+  - { seo_value_op: change_data, seo_value_shape: plain, reason: "데이터 바꾸기는 단일 바인딩 칩 상태에서만 노출 — 평문은 검색/표현식/기본값 어포던스만" }
+  - { seo_value_shape: settings_ref, seo_value_op: type_binding_focus_retained, reason: "설정참조는 데이터 검색이 아닌 직접 타이핑/붙여넣기 — focus 유지 회귀는 데이터 바인딩 입력 축에서 대표 검증" }
+  # 묶음③ 자동 칩 — fallback_plaintext op 는 메타 미선언 키 전용(라벨 칩 op 와 상호 배제)
+  - { seo_auto_chip_op: fallback_plaintext_when_no_meta, seo_auto_chip_field: structured_offers_price, reason: "메타 미선언 폴백은 임의 키에서 동일 — 대표 1축(og_image)에서만 검증(직교 중복 배제)" }
+  - { seo_auto_chip_op: replace_to_override, seo_auto_chip_field: structured_name, reason: "구조화 자동 블록은 OFF 미리보기(읽기전용 칩 표시)만 — '다른 데이터로 바꾸기'(override 진입)는 og 키 전용 어포던스" }
+  - { seo_auto_chip_op: replace_to_override, seo_auto_chip_field: structured_offers_price, reason: "구조화 자동 블록은 OFF 미리보기 읽기전용 — override 진입은 og 키 전용" }
+  # 전 입력칸 데이터 칩 확대 — 칸 종류별 키화 정책 상호 배제
+  - { chip_expand_op: keyify_for_display_text_only, chip_expand_field: computed_preset_param, reason: "다국어 키화는 사용자 표시 문구(spinner) 전용 — 자동 계산 값/경로 칸은 값 전용(키화 0)" }
+  - { chip_expand_op: keyify_for_display_text_only, chip_expand_field: computed_sum_field, reason: "동일 — computed 값/경로 칸은 키화 0" }
+  - { chip_expand_op: keyify_for_display_text_only, chip_expand_field: computed_tooptions_field, reason: "동일" }
+  - { chip_expand_op: keyify_for_display_text_only, chip_expand_field: computed_nth_prop, reason: "동일" }
+  - { chip_expand_op: keyify_for_display_text_only, chip_expand_field: computed_literal_value, reason: "동일" }
+  - { chip_expand_op: keyify_for_display_text_only, chip_expand_field: computed_firstof_fallback, reason: "동일" }
+  - { chip_expand_op: keyify_for_display_text_only, chip_expand_field: computed_condition_field, reason: "동일" }
+  - { chip_expand_op: keyify_for_display_text_only, chip_expand_field: computed_condition_value, reason: "동일" }
+  - { chip_expand_op: keyify_for_display_text_only, chip_expand_field: seo_og_site_name, reason: "og.site_name 은 값 전용(DataChipValueInput, 키화 0) — 키화는 spinner 전용" }
+  - { chip_expand_op: fx_to_expression_tree, chip_expand_value_shape: plain, reason: "fx(표현식 진입)는 표현식 가능 형태 전용 — 순수 평문은 검색/표현식 어포던스만" }
+  - { chip_expand_op: search_pick_data_chip, chip_expand_value_shape: settings_ref, reason: "설정참조는 직접 타이핑 — 데이터 검색 칩과 직교(대표 1형태에서 검증)" }
+effects:
+  # 셸 라우팅/배지
+  - shell_routes_eight_tabs_meta_seo_init_overlay_computed_state_error_data
+  - shell_tab_click_switches_active_panel
+  - shell_advanced_badge_counts_unreduced_init_and_computed_items
+  - shell_advanced_summary_sums_total_when_positive
+  - shell_no_save_button_patches_immediately_via_patchDocumentRaw
+  - shell_title_resolves_metaTitle_else_editorLabel_else_path
+  - shell_close_x_and_footer_call_onClose
+  # 진입점
+  - toolbar_page_settings_button_replaces_legacy_data_button
+  - toolbar_page_settings_active_only_route_base_modal_with_selectedRoute
+  - toolbar_page_settings_disabled_extension_and_iteration_item
+  - data_source_crud_absorbed_into_data_tab_no_loss
+  # 제목 배너
+  - banner_title_plaintext_editable_double_click_enter
+  - banner_plaintext_commit_creates_custom_key_and_substitutes_dollar_t
+  - banner_existing_key_commit_updates_locale_value_keeps_key
+  - banner_missing_title_falls_back_editor_label_then_path_readonly
+  - banner_expression_title_readonly_with_advanced_badge
+  - banner_hidden_in_extension_and_iteration_item_modes
+  - banner_settings_gear_opens_same_modal_as_toolbar
+  # 자동 계산 상속 (D-2a/D-2b)
+  - computed_source_map_distinguishes_route_override_from_route_and_base
+  - computed_route_override_shows_promoted_badge_overridden
+  - computed_route_override_revert_button_removes_child_definition_only
+  - computed_base_source_shows_shared_badge
+  - computed_pure_child_route_no_badge_no_revert
+  - computed_parent_edit_shows_override_notice
+  # 캔버스 dataKey
+  - core_datakey_widget_sanitizes_identifier_allows_dot_path
+  - core_datakey_binding_value_degrades_readonly
+  - core_datakey_empty_removes_node_key_via_nodeKey_apply
+  - core_datakey_registered_in_core_widgets
+  - capability_form_div_container_opt_in_datakey_both_templates
+  # 격리 영역
+  - isolated_scope_control_mounted_in_property_modal_props_tab
+  - isolated_scope_toggle_on_seeds_scopeid_off_removes_both_keys
+  - isolated_scopeid_candidates_built_from_layout_scopes_and_initIsolated
+  - isolated_scopeid_duplicate_shows_notice_allows_share
+  # 타겟 picker 캔버스 pick
+  - target_picker_manual_input_always_works
+  - target_picker_pick_request_event_fired_and_minimizes_host_modal
+  - target_picker_picked_event_same_request_id_calls_onChange_and_restores
+  - target_picker_cancelled_reply_no_onChange_restores_modal
+  - target_picker_request_id_mismatch_ignored
+  - canvas_overlay_receives_pick_request_returns_node_id_on_click
+  - canvas_overlay_pick_id_not_assigned_node_click_ignored
+  - canvas_overlay_pick_esc_cancels_with_banner
+  - canvas_overlay_pick_mode_does_not_alter_normal_selection_via_ref
+  # SEO extensions 결선 (D-4b)
+  - seo_extensions_fetched_and_passed_to_availableExtensions
+  # 후보 풀 공용 (D-1 prep)
+  - candidate_pools_shared_between_shell_and_canvas_overlay
+  - page_sample_context_derived_from_same_inputs_as_binding_candidates
+  # SEO 값 칸 표현식/칩 확대 (→ 값 전용 필드④)
+  - seo_value_field_uses_data_chip_value_input_not_i18n_text_field
+  - seo_value_field_creates_no_translation_key_on_plaintext_or_binding
+  - seo_value_plaintext_typing_focus_retained_no_mode_switch_until_blur
+  - seo_value_binding_blur_renders_link_chip_with_change_data_affordance
+  - seo_value_settings_ref_renders_link_chip_no_raw_code_exposed
+  - seo_value_single_conditional_decomposes_into_conditional_value_tree
+  - seo_value_multi_segment_renders_segmented_value_editor
+  - seo_value_leaf_input_recurses_data_chip_value_input_not_keyifying
+  - seo_value_persists_expression_verbatim_in_layout_content_no_double_encode
+  - seo_value_reloads_and_restores_as_chip_not_raw_text
+  - seo_text_field_keeps_i18n_keyification_regression_zero
+  - seo_text_field_fx_toggle_enters_expression_tree_static_conditional_fallback_data
+  # 묶음③ 모듈 자동값 → 연결 칩(역산출)
+  - module_declares_seo_default_meta_data_path_and_label_for_og_and_structured
+  - preview_response_carries_source_expr_and_label_on_module_sourced_rows
+  - seo_auto_value_renders_link_chip_with_label_not_resolved_plaintext
+  - seo_auto_value_replace_button_fills_source_expr_as_layout_override
+  - seo_auto_chip_falls_back_to_plaintext_when_module_declares_no_meta
+  - structured_auto_block_rows_render_link_chip_from_auto_meta
+  - meta_method_keys_are_subset_of_operational_declaration_keys
+  # 자동 계산/로딩/SEO 보조 칸
+  - computed_value_path_fields_use_data_chip_value_input_no_keyify
+  - computed_param_passes_binding_candidates_from_page_settings_modal
+  - computed_plaintext_and_path_input_preserved_regression_zero
+  - computed_nth_index_and_firstof_candidates_stay_plaintext_by_design
+  - overlay_spinner_text_uses_i18n_text_field_with_expression_tree_and_keyify
+  - seo_og_textrow_seven_fields_use_data_chip_value_input_inheritance_wrapper_kept
+  - seo_og_textrow_plaintext_and_binding_both_patch_no_keyify
+  # 설정 참조($*_settings:) raw 노출 + [✎수정] 모드 raw 노출 결함 수정
+  - settings_ref_core_module_plugin_render_as_link_chip_not_raw_in_all_chip_inputs
+  - i18n_text_field_renders_settings_ref_as_chip_with_edit_toggle_no_raw
+  - data_chip_value_edit_mode_uses_chip_editor_not_raw_input_with_done_button
+  - data_chip_value_single_binding_and_fallback_and_settings_edit_all_route_to_chip_editor
+  - seo_vars_editor_uses_data_chip_value_input_value_only_no_keyification
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/PageSettingsModal.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/PageTitleBanner.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/computed-inheritance.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ComputedForm.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/CoreDataKeyControl.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/ComponentTargetPicker.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls/IsolatedScopeControl.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/isolatedScopeUtils.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/coreProps.dataKey.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorToolbar.pageSettings.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/candidatePools.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/page-settings-roundtrip.test.tsx
+  - tests/Unit/Services/LayoutServiceMergeComputedTest.php
+  - tests/Feature/Api/Admin/PageSettingsEditorEndpointsTest.php
+  - tests/Feature/Api/Admin/LayoutControllerTopLevelPatchTest.php
+  # SEO 값 칸 표현식/칩 확대 (→ 값 전용 필드)
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/DataChipValueInput.test.tsx
+  # 자동 계산/로딩 화면 데이터칩 승격
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/CustomComputedBuilder.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/TransitionOverlayForm.test.tsx
+  # ($*_settings:) 칩 + [✎수정] 칩 편집기 + SeoVars 값전용 교체
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/inlineBindingUtils.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/prop-i18n-text-field.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/SeoVarsEditor.test.tsx
+  # 묶음③ 모듈 자동값 → 연결 칩(역산출)
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/SeoOgForm.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/SeoStructuredDataEditor.test.tsx
+  - tests/Feature/Seo/SeoOgPreviewServiceModuleMetaTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/EcommerceModuleSeoTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/BoardModuleSeoTest.php
+notes: |
+  S10-1 세션 D 통합 — 8탭 셸(PageSettingsModal) + 제목 배너(PageTitleBanner) + 진입점
+  (EditorToolbar ⚙페이지 설정, ⚙데이터 흡수) + computed route-override 승격배지/되돌리기 +
+  캔버스 dataKey(core-datakey 위젯)/격리 영역(IsolatedScopeControl)/타겟 picker pick 모드 +
+  SEO extensions 결선. 셸/배너/picker 는 prop 주도 RTL(Provider hook mock)로 라우팅·핸드셰이크
+  격리 검증. 캔버스 pick 핸드셰이크는 ComponentTargetPicker RTL 이 이벤트 계약(request/picked/
+  cancelled/requestId 짝)을 잠그고, EditorCanvasOverlay 수신측은 합성 클릭 의존이라 Chrome MCP
+ 매트릭스(별도 세션)로 라이브 실측. 백엔드 __computedSource 'route-override' 3값 구분은
+  LayoutServiceMergeComputedTest, extensions 키는 PageSettingsEditorEndpointsTest 가 SSoT.
+
+ S10-1 잔여 #1 — 표현식 분해 트리를 SEO 값 전용 칸으로 확대(④#5). 값 칸
+  (og.image/tw.image/og.image_alt)은 DataChipValueInput(키화 0, 데이터연결·설정참조는 칩 시각화,
+  단일 조건식→ConditionalValueEditor, 다조각→SegmentedValueEditor, leaf 는 DataChipValueInput 재귀
+  주입으로 키화 없이 분해). 텍스트 칸(검색 제목/설명·og/tw 제목·설명)은 I18nTextField 유지(평문→$t:custom
+  키화 회귀 0, fx 토글로 표현식 트리 진입). 라이브 회귀 1건 발견·수정: 빈 값 칸에 {{ 타이핑 순간
+  칩 모드 전환→입력칸 unmount→나머지 유실 → editing(focus) 가드 추가(포커스 중 평문 유지, blur 시만 전환),
+  회귀 테스트 ⑦. Chrome MCP 매트릭스 L0~L7 라이브 실측 + PUT 페이로드 meta.seo.og.image=
+  "{{users.data.thumbnail}}" 영속·DB content 이중인코딩 0·새로고침 칩 복원·custom_translations 0건 tinker 확인.

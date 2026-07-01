@@ -8,6 +8,7 @@
     "data_sources": [
         {
             "id": "memos",
+            "label_key": "$t:gnuboard7-hello_module.editor.data_source.memos",
             "type": "api",
             "endpoint": "/api/modules/gnuboard7-hello_module/memos",
             "method": "GET",
@@ -45,7 +46,7 @@
                         "type": "basic",
                         "name": "H1",
                         "props": {
-                            "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6"
+                            "className": "text-page-heading mb-6"
                         },
                         "text": "$t:gnuboard7-hello_module.user.memos.index.title"
                     },
@@ -74,7 +75,7 @@
                                         "type": "basic",
                                         "name": "H2",
                                         "props": {
-                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                            "className": "section-heading"
                                         },
                                         "text": "{{memo.title ?? ''}}"
                                     },

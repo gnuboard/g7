@@ -320,8 +320,22 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     // HTML 표준 속성이 아닌 것들을 필터링 (타입 안전성 개선)
     const { loadingactions, formdata, ...validProps } = props as typeof props & NonStandardProps;
 
+    // 레이아웃 편집기 표식/핸들러(data-editor-*, onMouseMove/Leave 등)는 시각적
+    // 루트(wrapper div)에 부착해야 캔버스 선택/드래그가 컴포넌트 전체를 잡는다.
+    // 내부 input 에만 spread 하면 선택 박스가 input 으로 한정되고 error/검증/토글이
+    // 선택 영역 밖이 된다.
+    const editorRootProps: Record<string, unknown> = {};
+    const inputRestProps: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(validProps as Record<string, unknown>)) {
+      if (k.startsWith('data-editor-') || k === 'onMouseMove' || k === 'onMouseLeave') {
+        editorRootProps[k] = v;
+      } else {
+        inputRestProps[k] = v;
+      }
+    }
+
     return (
-      <div className={`relative ${wrapperClassName}`}>
+      <div className={`relative ${wrapperClassName}`} {...editorRootProps}>
         {/* 입력 필드 wrapper */}
         <div className="relative">
           <input
@@ -334,7 +348,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             onKeyDown={handleKeyEvent}
             onKeyUp={handleKeyEvent}
             disabled={disabled}
-            {...validProps}
+            {...inputRestProps}
           />
 
           {/* 비밀번호 보기/숨기기 버튼 */}

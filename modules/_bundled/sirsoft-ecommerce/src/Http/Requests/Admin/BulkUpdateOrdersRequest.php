@@ -4,9 +4,11 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 
 /**
  * 주문 일괄 변경 요청
@@ -16,7 +18,7 @@ class BulkUpdateOrdersRequest extends FormRequest
     /**
      * 권한 확인
      *
-     * @return bool
+     * @return bool 권한 미들웨어에 위임하므로 항상 true
      */
     public function authorize(): bool
     {
@@ -26,7 +28,7 @@ class BulkUpdateOrdersRequest extends FormRequest
     /**
      * 유효성 검사 규칙
      *
-     * @return array
+     * @return array<string, mixed> 필드별 검증 규칙 배열
      */
     public function rules(): array
     {
@@ -44,8 +46,7 @@ class BulkUpdateOrdersRequest extends FormRequest
     /**
      * 추가 검증 로직
      *
-     * @param \Illuminate\Validation\Validator $validator
-     * @return void
+     * @param  Validator  $validator
      */
     public function withValidator($validator): void
     {
@@ -73,13 +74,40 @@ class BulkUpdateOrdersRequest extends FormRequest
                     $validator->errors()->add('tracking_number', __('sirsoft-ecommerce::validation.orders.tracking_number_required'));
                 }
             }
+
+            // 상태 일괄 전이 검증 (역방향/비연속 역행 차단, all-or-nothing)
+            // 대상 주문 중 1건이라도 비합법 전이면 422 → Service 미진입 → DB 무변경.
+            if ($status !== null) {
+                $target = OrderStatusEnum::tryFrom($status);
+                if ($target !== null) {
+                    $repo = app(OrderRepositoryInterface::class);
+                    $snapshots = $repo->getSnapshotsByIds($this->input('ids', []));
+                    $invalid = [];
+                    foreach ($snapshots as $snap) {
+                        $currentValue = $snap['order_status'] ?? null;
+                        $current = $currentValue !== null ? OrderStatusEnum::tryFrom(
+                            $currentValue instanceof OrderStatusEnum ? $currentValue->value : $currentValue
+                        ) : null;
+                        if ($current !== null && ! $current->canTransitionTo($target)) {
+                            $invalid[] = $current->label();
+                        }
+                    }
+                    if (! empty($invalid)) {
+                        $validator->errors()->add('order_status', __('sirsoft-ecommerce::validation.orders.status_transition.bulk_invalid', [
+                            'count' => count($invalid),
+                            'to' => $target->label(),
+                            'from' => implode(', ', array_values(array_unique($invalid))),
+                        ]));
+                    }
+                }
+            }
         });
     }
 
     /**
      * 검증 에러 메시지 정의
      *
-     * @return array
+     * @return array<string, string> 규칙별 다국어 에러 메시지 배열
      */
     public function messages(): array
     {

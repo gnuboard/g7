@@ -170,10 +170,17 @@ notification_definitions 레코드:
 
 알림 발송 리스너는 기본적으로 큐로 디스패치되며, 큐 워커는 별도 프로세스라 `Auth::user()`/`App::getLocale()`이 모두 리셋됩니다. 그러나 G7은 디스패치 시점의 컨텍스트를 자동 복원하므로 다음이 보장됩니다:
 
-- 발송 시점의 사용자 로케일이 자동 복원되어 다국어 메시지(메일 본문, 푸시 텍스트 등)가 원래 요청 언어로 정확히 발송
 - 알림 발송 로그(`NotificationLogListener`)의 행위자가 실제 트리거한 사용자로 정상 기록
 
 리스너 코드는 변경 불필요 — 평소처럼 `Auth::user()`, `__('...')` 호출하면 됩니다.
+
+#### 알림 언어는 수신자 기준
+
+알림 본문/제목의 렌더 언어는 요청자(트리거한 관리자/사용자)의 app locale 이 아니라 **수신자 본인 언어(`users.language`)** 로 결정됩니다. 관리자가 한국어 UI 에서 영어 사용자에게 주문 알림을 보내도, 그 알림은 수신자 언어로 렌더됩니다.
+
+- `User` 는 Laravel `HasLocalePreference` contract 를 구현하며, `preferredLocale()` 이 `users.language`(SSoT)를 반환합니다. 빈값/미지원 로케일이면 `config('app.locale')` 으로 폴백합니다 (요청자 locale 폴백 없음).
+- 비회원(`GuestNotifiable`)도 동일 contract 를 구현하며, 발송 트리거 시점에 저장된 로케일(예: 주문 시 `orderer_locale`)을 `guest_recipient.locale` 로 받아 `preferredLocale()` 이 반환합니다. 미저장 시 `app locale` 폴백.
+- 렌더 3지점(`GenericNotification::toMail`/`toArray`, `NotificationDispatcher::resolveRenderedContent`)은 `BaseNotification::resolveNotifiableLocale($notifiable)` 헬퍼로 수신자 선호 로케일을 우선 해석합니다. 알림 렌더에서 `$notifiable->locale` 을 직접 참조하지 않습니다 (해당 속성은 존재하지 않아 항상 폴백됨).
 
 > 자세한 동작은 [extension/hooks.md "사용자 컨텍스트 자동 복원"](../extension/hooks.md) 참조
 
@@ -190,10 +197,12 @@ notification_definitions 레코드:
 
 | type | 설명 | value | 예시 |
 |------|------|-------|------|
-| `trigger_user` | 이벤트 유발자 | - | 주문자, 가입자 |
+| `trigger_user` | 이벤트 유발자 (회원 User 또는 비회원 게스트) | - | 주문자, 가입자 |
 | `related_user` | 관련 사용자 | relation 키 | 문의 작성자 |
 | `role` | 역할 기반 | role identifier | admin, manager |
 | `specific_users` | 특정 사용자 | user UUID 배열 | ["uuid1", "uuid2"] |
+
+> `trigger_user` 는 회원/비회원을 동일 규칙으로 처리합니다. context 에 `trigger_user_id` 가 있으면 회원(User), 없고 표준 키 `guest_recipient` 가 있으면 비회원([비회원 발송](#비회원게스트-알림-발송) 참조)으로 해석됩니다.
 
 ### JSON 구조
 
@@ -285,9 +294,12 @@ return [
 | order_shipped | sirsoft-ecommerce.order.after_ship | mail, database |
 | order_completed | sirsoft-ecommerce.order.after_complete | mail, database |
 | order_cancelled | sirsoft-ecommerce.order.after_cancel | mail, database |
-| new_order_admin | sirsoft-ecommerce.order.after_create | mail, database |
+| order_pending_deposit | sirsoft-ecommerce.order.after_create | mail, database |
+| new_order_admin | sirsoft-ecommerce.order.after_admin_notify | mail, database |
 | inquiry_received | sirsoft-ecommerce.product_inquiry.after_create | mail, database |
 | inquiry_replied | sirsoft-ecommerce.product_inquiry.after_reply | mail, database |
+
+> `new_order_admin` 의 `order.after_admin_notify` 훅은 결제수단별로 발화 시점이 다르다. `OrderProcessingService` 가 무통장/비-PG/0원 주문은 주문 생성 시점에, 카드(PG) 주문은 결제완료(`completePayment`) 시점에 1회 발화한다. 카드 주문은 생성 시점이 `pending_order`(결제 전)라 그 시점 발송 시 결제 미완료/이탈 주문에 오발송된다. `order_pending_deposit` 는 무통장 한정으로 `EcommerceNotificationDataListener` 가 dbank 외 결제수단을 빈 결과로 게이팅한다.
 
 **발송 리스너**: `EcommerceNotificationListener` (방식 A — 직접 호출)
 
@@ -564,6 +576,73 @@ HookManager::addFilter(
 ```
 
 GenericNotification의 `__call()`이 `toFcm()` 호출을 `{hookPrefix}.notification.to_fcm` Filter 훅으로 위임합니다.
+
+---
+
+## 비회원(게스트) 알림 발송
+
+user_id 없는 비회원(주문자 이메일/이름만 보유)도 회원과 동일한 발송 경로로 알림(이메일)을 받습니다. 비회원을 위한 별도 발송 흐름을 만들지 않고, **1급 수신자 값 객체**로 승격하여 기존 파이프라인을 그대로 탑니다.
+
+### 핵심 구성
+
+| 구성 | 위치 | 역할 |
+|------|------|------|
+| `GuestNotifiable` | `app/Notifications/GuestNotifiable.php` | 비회원 1급 수신자. Laravel `Notifiable` 트레잇 + `HasLocalePreference` 구현 (User 와 동일 계약). email/name/locale 보유 |
+| `GuestRecipientInterface` | `app/Contracts/Notifications/GuestRecipientInterface.php` | 게스트 판별 코어 계약 (`isGuest()`). 게이트가 구체 타입(User) 검사 대신 이 계약 사용 |
+| 표준 context 키 `guest_recipient` | `{email, name, locale}` | resolver 의 `trigger_user` 규칙이 user_id 없을 때 이 키로 GuestNotifiable 생성 |
+
+### 수신자 해석 (NotificationRecipientResolver)
+
+`trigger_user` 규칙은 회원/비회원 분기 없이 동작합니다.
+
+```php
+// extract_data 필터에서 비회원 컨텍스트 제공
+'context' => [
+    'trigger_user_id' => null,                    // 비회원이므로 null
+    'guest_recipient' => [                         // 코어 표준 키
+        'email' => $ordererEmail,
+        'name' => $ordererName,
+        'locale' => $ordererLocale,               // 없으면 null → app locale 폴백
+    ],
+]
+```
+
+- `trigger_user_id` 가 있으면 User, 없고 `guest_recipient` 가 있으면 GuestNotifiable 을 수신자로 반환합니다.
+- 중복 제거 키는 네임스페이스 분리: 회원 `user:{id}` / 비회원 `guest:{이메일 해시}` — null-id 게스트가 하나로 뭉개지지 않습니다.
+- `exclude_trigger_user` 는 회원(user_id) 기준이라 게스트 수신자를 깨뜨리지 않습니다.
+
+### 채널별 비회원 발송 허용 (allow_guest)
+
+채널이 비회원 발송을 허용하는지는 `config/notification.php` 채널 메타의 `allow_guest` 로 선언합니다.
+
+```php
+['id' => 'mail',     ..., 'allow_guest' => true ],   // 비회원 가능
+['id' => 'database', ..., 'allow_guest' => false],   // 비회원 불가 (사이트내 알림)
+```
+
+- **미선언 채널은 기본 차단(false)** — 비회원 개인정보(이메일 등)가 의도치 않게 새 프로바이더로 노출되는 것을 막는 opt-in 정책입니다. (확장 단위 채널 활성 `isChannelEnabledForExtension` 의 "미선언=활성" 과 반대 방향)
+- 모듈/플러그인이 `core.notification.filter_available_channels` 훅으로 추가하는 신규 채널(SMS·알림톡·앱푸시 등)도 동일하게 `allow_guest` 를 명시해야 비회원 발송이 허용됩니다.
+- `NotificationChannelService::isChannelGuestAllowed($channelId)` 가 단일 진입점이며, `core.notification.channel_guest_allowed` 필터 훅으로 동적 재정의 가능합니다.
+
+### 게이트 적용 지점
+
+`GenericNotification::via()` 의 게이트 체인에 게스트 게이트가 합류합니다 (회원은 무영향).
+
+```text
+via()
+  ├→ [게스트 게이트] notifiable 이 게스트 + 채널 allow_guest=false → 제외(skipped)
+  ├→ isChannelEnabledForExtension (확장 채널 토글)
+  └→ ChannelReadinessChecker (채널 설정 완료)
+```
+
+게스트 + database → 게이트 제외 → 발송 안 됨. database 가 차단되므로 `notifications` morph 테이블에 null-id 행이 생기지 않습니다.
+
+### 발송 로깅
+
+비회원 발송도 기존 `notification_logs` 에 정상 기록됩니다 (`NotificationDispatcher::buildContext`).
+
+- 게스트는 `recipient_user_id = null` + `recipient_identifier = 이메일` 로 기록됩니다. 게스트의 합성 키(`guest:...`)는 정수 FK 컬럼에 넣지 않습니다.
+- 관리자 발송 이력 조회(`GET /api/admin/notification-logs?search={이메일}`)에서 `recipient_identifier` LIKE 검색으로 비회원 발송을 찾을 수 있습니다 (전체 접근 권한 기준).
 
 ### 채널 메타데이터 다국어 규칙
 

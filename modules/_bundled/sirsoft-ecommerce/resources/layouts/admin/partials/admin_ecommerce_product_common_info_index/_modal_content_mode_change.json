@@ -15,7 +15,7 @@
       "type": "basic",
       "name": "P",
       "props": {
-        "className": "text-sm text-gray-700 dark:text-gray-300"
+        "className": "text-body"
       },
       "text": "$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.message"
     }

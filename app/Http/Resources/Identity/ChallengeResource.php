@@ -34,6 +34,7 @@ class ChallengeResource extends BaseApiResource
             'redirect_url' => $c->redirectUrl,
             'expires_at' => $c->expiresAt->toIso8601String(),
             'public_payload' => $c->publicPayload,
+            'max_attempts' => $c->maxAttempts,
             ...$this->resourceMeta($request),
         ];
     }

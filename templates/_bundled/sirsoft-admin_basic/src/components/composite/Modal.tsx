@@ -188,20 +188,20 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <Div
-      className="fixed inset-0 flex items-center justify-center"
+      className="modal-wrapper"
       style={{ zIndex }}
       onClick={shouldCloseOnBackdrop ? onClose : undefined}
     >
       {/* Overlay */}
       <Div
-        className="absolute inset-0 bg-black/50"
+        className="modal-backdrop"
         aria-hidden="true"
       />
 
       {/* Modal Content */}
       <Div
         ref={modalRef}
-        className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-h-[90vh] overflow-hidden ${className}`}
+        className={`modal-container ${className}`}
         style={{ width, ...(style ? { ...style, zIndex: undefined } : {}) }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -210,14 +210,14 @@ export const Modal: React.FC<ModalProps> = ({
       >
         {/* Header */}
         {(title || titlePrefix || titleSuffix || showCloseButton) && (
-          <Div className="flex items-center justify-between p-4">
-            <Div className="flex items-center gap-2">
+          <Div className="modal-header-row">
+            <Div className="flex-center gap-sm">
               {/* titlePrefix: 타이틀 앞에 렌더링 */}
               {renderTitleComponents(titlePrefix, 'title-prefix')}
               {title && (
                 <Div
                   id="modal-title"
-                  className="text-lg font-semibold text-gray-900 dark:text-white"
+                  className="modal-title"
                 >
                   {title}
                 </Div>
@@ -228,11 +228,11 @@ export const Modal: React.FC<ModalProps> = ({
             {showCloseButton && (
               <Button
                 onClick={onClose}
-                className="ml-auto text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                className="modal-close-btn"
                 aria-label={t('common.close_modal')}
               >
                 <svg
-                  className="w-6 h-6"
+                  className="icon-lg"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -250,7 +250,7 @@ export const Modal: React.FC<ModalProps> = ({
         )}
 
         {/* Body */}
-        <Div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <Div className="modal-body-content">
           {children}
         </Div>
       </Div>

@@ -233,7 +233,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
                 'categories'             => $board->categories ?? [],
                 'use_file_upload'        => (bool) $board->use_file_upload,
                 'max_file_count'         => $board->max_file_count ?? 5,
-                'max_file_size'          => $board->max_file_size ?? 10485760,
+                'max_file_size'          => $board->max_file_size ?? 10,
                 'allowed_extensions'     => $board->allowed_extensions ?? [],
                 'min_title_length'       => $board->min_title_length ?? 2,
                 'max_title_length'       => $board->max_title_length ?? 200,

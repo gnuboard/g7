@@ -44,6 +44,44 @@ interface LayoutRepositoryInterface
     public function exists(int $templateId, string $name): bool;
 
     /**
+     * 특정 템플릿의 레이아웃 중 지정한 확장점(extension_point)을 정의한 것이 있는지 확인
+     *
+     * 레이아웃 content JSON 트리를 재귀 순회하여 `type: extension_point` 노드의
+     * `name` 이 일치하는지 검사합니다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $extensionPointName  확장점 이름
+     * @return bool 정의 존재 여부
+     */
+    public function hasExtensionPoint(int $templateId, string $extensionPointName): bool;
+
+    /**
+     * 지정 extension_point 를 포함하는 레이아웃 이름 목록을 반환합니다.
+     *
+     * 확장 편집 모드에서 extension_point 확장의 대표 호스트 레이아웃 선택(picker)용. 여러
+     * 레이아웃에 같은 확장점이 있으면 모두 반환한다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $extensionPointName  확장점 이름
+     * @return array<int, string> 호스트 레이아웃 이름 목록
+     */
+    public function findLayoutNamesWithExtensionPoint(int $templateId, string $extensionPointName): array;
+
+    /**
+     * 레이아웃 content 트리에 지정 노드 id 가 존재하는지 확인합니다.
+     *
+     * overlay 확장의 호스트 유효성 판정용 — overlay 는 `injections[].target_id` 위치에 주입되므로,
+     * 호스트 레이아웃에 그 id 노드가 없으면 실제로 주입되지 않는다(`applyExtensions` no-op).
+     * 노드 식별자는 `id` 또는 `props.id` 두 형태를 모두 검사한다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $layoutName  레이아웃 이름
+     * @param  string  $nodeId  찾을 노드 id
+     * @return bool 노드 id 존재 여부
+     */
+    public function layoutContainsNodeId(int $templateId, string $layoutName, string $nodeId): bool;
+
+    /**
      * extends를 가진 자식 레이아웃 조회
      *
      * @param  int  $templateId  템플릿 ID
@@ -60,6 +98,19 @@ interface LayoutRepositoryInterface
      * @return TemplateLayout 업데이트된 레이아웃 모델
      */
     public function update(int $id, array $data): TemplateLayout;
+
+    /**
+     * 레이아웃 content + lock_version 동시 갱신 (낙관적 잠금)
+     *
+     * Service 가 호출 직전에 expected_lock_version 검증을 마친 상태로,
+     * 본 메서드는 content 교체와 lock_version 증가를 한 번의 UPDATE 로 수행한다.
+     *
+     * @param  int  $id  레이아웃 ID
+     * @param  array  $content  전체 레이아웃 JSON content
+     * @param  int  $newLockVersion  새 lock_version 값 (currentVersion + 1)
+     * @return TemplateLayout 업데이트된 레이아웃 모델
+     */
+    public function updateContent(int $id, array $content, int $newLockVersion): TemplateLayout;
 
     /**
      * 특정 레이아웃의 모든 버전 조회

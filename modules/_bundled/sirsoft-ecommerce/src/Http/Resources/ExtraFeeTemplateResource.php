@@ -4,17 +4,20 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 
 /**
  * 추가배송비 템플릿 리소스
  */
 class ExtraFeeTemplateResource extends BaseApiResource
 {
+    use HasMultiCurrencyPrices;
+
     /**
-     * 리소스를 배열로 변환
+     * 리소스를 배열로 변환합니다.
      *
-     * @param Request $request 요청
-     * @return array
+     * @param  Request  $request  요청
+     * @return array<string, mixed> 추가배송비 템플릿 리소스 배열
      */
     public function toArray(Request $request): array
     {
@@ -23,8 +26,8 @@ class ExtraFeeTemplateResource extends BaseApiResource
 
             // 우편번호 및 배송비
             'zipcode' => $this->zipcode,
-            'fee' => (float) $this->fee,
-            'fee_formatted' => number_format($this->fee).'원',
+            'fee' => $this->roundToBaseCurrency($this->fee),
+            'fee_formatted' => $this->formatBaseCurrency($this->fee),
 
             // 지역 정보
             'region' => $this->region,

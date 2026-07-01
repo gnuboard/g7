@@ -2,10 +2,11 @@
 
 namespace App\Http\Requests\Admin\Identity;
 
+use App\Contracts\Repositories\IdentityMessageDefinitionRepositoryInterface;
+use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\IdentityMessageDefinition;
-use App\Models\IdentityPolicy;
 use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Closure;
@@ -100,9 +101,9 @@ class StoreIdentityMessageDefinitionRequest extends FormRequest
                 return;
             }
 
-            $exists = IdentityPolicy::where('key', $value)
-                ->where('source_type', 'admin')
-                ->exists();
+            // Service-Repository 패턴: Model facade 직접 호출 금지 → Repository Interface 경유.
+            $exists = app(IdentityPolicyRepositoryInterface::class)
+                ->existsByKeyAndSourceType($value, 'admin');
 
             if (! $exists) {
                 $fail(__('validation.identity_message.scope_value_not_admin_policy'));
@@ -125,12 +126,11 @@ class StoreIdentityMessageDefinitionRequest extends FormRequest
                 return;
             }
 
-            $exists = IdentityMessageDefinition::where('provider_id', $providerId)
-                ->where('scope_type', $scopeType)
-                ->where('scope_value', $value)
-                ->exists();
+            // Service-Repository 패턴: Model facade 직접 호출 금지 → Repository Interface 경유.
+            $existing = app(IdentityMessageDefinitionRepositoryInterface::class)
+                ->findByScope($providerId, $scopeType, $value);
 
-            if ($exists) {
+            if ($existing !== null) {
                 $fail(__('validation.identity_message.definition_already_exists'));
             }
         };

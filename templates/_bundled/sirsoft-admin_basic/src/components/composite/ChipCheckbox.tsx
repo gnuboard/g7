@@ -4,6 +4,7 @@ import { Label } from '../basic/Label';
 import { Input } from '../basic/Input';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import type { EditorAttrs } from '../../types';
 
 /**
  * hex 색상 문자열을 RGB 객체로 변환
@@ -30,6 +31,12 @@ export interface ChipCheckboxProps {
   className?: string;
   style?: React.CSSProperties;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -90,6 +97,8 @@ export const ChipCheckbox: React.FC<ChipCheckboxProps> = ({
   className = '',
   style,
   onChange,
+  id,
+  editorAttrs,
 }) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
@@ -122,6 +131,7 @@ export const ChipCheckbox: React.FC<ChipCheckboxProps> = ({
         style={{ ...computedStyle, ...style }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        id={id} {...editorAttrs}
       >
         <Input
           type="checkbox"
@@ -165,6 +175,7 @@ export const ChipCheckbox: React.FC<ChipCheckboxProps> = ({
     <Label
       className={`${baseStyles} ${currentStyles} ${className}`}
       style={style}
+      id={id} {...editorAttrs}
     >
       <Input
         type="checkbox"

@@ -1,0 +1,168 @@
+# audit:allow test-scenario-coverage reason: 본 시나리오는 #7(S8-1 백엔드 + S8-2 프론트) 동적 다국어 키 인프라 + 편집기 인라인 편집 + S8-2 후속(좀비 키 자동 감지 + 관리 모달) 회귀 가드. axis cross-product 는 Feature/Unit/Vitest 테스트(test_files)가 cover. E2E axis 는 Playwright spec(inline-edit-i18n.spec.ts / orphan-translation-manager.spec.ts)의 @scenario/@effects docblock 과 매칭. effects 는 키 자동생성·낙관적 잠금·런타임 병합·캐시 무효화·인라인 편집·로케일 전환·서식 툴바·번역 탭·좀비 감지·일괄 삭제 카테고리별로 enumerate.
+
+feature: 템플릿 커스텀 다국어 키 + 편집기 인라인 편집 (template_custom_translations)
+
+description: |
+  레이아웃 편집기 인라인 편집에서 평문을 `$t:custom.{layout}.{seq}` 동적 키로
+ 전환할 때 사용하는 백엔드 인프라 + 그 위의 프론트 UI(S8-2:
+  로케일 전환 토글 + 더블클릭 인라인 편집 + 서식 툴바 + 속성 모달 번역 탭).
+
+  핵심 동작:
+    - 키 자동 생성 `custom.{layoutKey}.{seq}` — 레이아웃명 정규화(board/list→board_list),
+      레이아웃 단위 단조 증가 seq, unique(template_id, translation_key) 위반 시 seq 재시도
+    - 신규 키 생성 시 모든 활성 로케일(supported_locales)에 입력값 폴백 시드
+    - 낙관적 잠금 — update 경로에 expected_lock_version 필수, 불일치 시 409 Conflict,
+      성공 시 lock_version 1 증가
+    - 런타임 병합 — MergeCustomTranslations 리스너가 template.language.merge 필터에
+      언어팩(priority 10) 다음(priority 20)으로 등록, 활성 키를 점 경로로 덮어씀
+    - 캐시 무효화 — CRUD 시 ext.cache_version bump → serveLanguage 캐시 stale
+    - HasUserOverrides — 언어팩 재설치 시 유저가 수정한 로케일 값만 보존
+
+axes:
+  operation: [index, store, update, destroy]
+  locale: [ko, en]
+  layout_name: [single_segment, slashed, empty_fallback]
+  seq_state: [first_key, incremented, after_existing_rows, unique_collision_retry]
+  lock_version_match: [match, stale_conflict, missing_field]
+  status: [active, orphaned]
+  permission: [has_edit, no_edit, unauthenticated]
+  template_ownership: [own_template, other_template]
+  merge_priority: [no_languagepack_key, overrides_languagepack_key]
+  locale_value_presence: [has_locale, fallback_to_fallback_locale]
+  # 프론트 — 편집기 인라인 편집 입력 축
+  source_state: [plain_text, custom_key_existing, binding_expression, data_bound]
+  inline_action: [save_on_enter, save_on_blur, cancel_on_escape]
+  toolbar_button: [fontWeight, fontStyle, textDecoration, textAlign, fontSize, textColor]
+  componentCapability_declared: [yes_full_styleControls, yes_partial, no]
+  content_locale: [single_locale, multi_locale]
+  # 좀비(고아) 키 자동 감지 + 관리 모달
+  orphan_trigger: [reference_removed, node_deleted, reference_restored, still_referenced]
+  bulk_destroy_scope: [single_select, multi_select, purge_all_orphaned, cross_template_filtered]
+  manager_filter: [all, active, orphaned]
+
+exclusions:
+  - { operation: index, lock_version_match: stale_conflict, reason: "index 는 잠금 무관" }
+  - { operation: destroy, lock_version_match: missing_field, reason: "destroy 는 expected_lock_version 미요구" }
+  - { operation: store, lock_version_match: stale_conflict, reason: "store 는 신규 생성 — lock_version 항상 0 시작" }
+  - { source_state: binding_expression, inline_action: save_on_enter, reason: "바인딩 식 텍스트는 인라인 편집 비활성 — 입력 불가" }
+  - { source_state: data_bound, inline_action: save_on_enter, reason: "iteration 데이터 결정 노드는 인라인 편집 비활성" }
+  - { componentCapability_declared: no, toolbar_button: fontWeight, reason: "styleControls 미선언 → 서식 툴바 버튼 부재 — 클릭 불가" }
+
+effects:
+  - store_generates_translation_key_custom_layout_seq
+  - store_normalizes_slashed_layout_name_to_underscore
+  - store_empty_layout_name_falls_back_to_layout_namespace
+  - store_increments_seq_per_layout
+  - store_seq_isolated_between_layouts
+  - store_seq_continues_after_existing_rows
+  - store_retries_seq_on_unique_violation
+  - store_seeds_all_active_locales_with_input_value
+  - store_initial_lock_version_is_zero
+  - store_returns_201_with_resource
+  - store_validation_fails_when_value_missing
+  - index_returns_keys_for_template
+  - index_filters_by_layout_name
+  - index_filters_by_status
+  - update_changes_values_and_increments_lock_version
+  - update_returns_409_on_lock_version_conflict
+  - update_does_not_mutate_row_on_conflict
+  - update_concurrent_edit_one_succeeds_one_conflicts
+  - update_validation_fails_when_expected_lock_version_missing
+  - update_rejects_key_belonging_to_other_template
+  - update_preserves_user_overrides_tracking
+  - destroy_removes_key
+  - destroy_rejects_key_belonging_to_other_template
+  - crud_bumps_extension_cache_version
+  - merge_custom_key_into_language_tree_by_dot_path
+  - merge_resolves_locale_value
+  - merge_overrides_existing_languagepack_value_via_higher_priority
+  - merge_excludes_orphaned_keys
+  - merge_missing_locale_falls_back_to_fallback_locale
+  - serve_language_response_includes_active_custom_key_end_to_end
+  - serve_language_cache_invalidation_serves_fresh_keys_on_new_version
+  - serve_language_stale_cache_version_serves_old_snapshot
+  - permission_store_forbidden_without_edit
+  - permission_index_unauthenticated_returns_401
+  # 프론트 — 편집기 인라인 편집 효과
+  - inline_edit_double_click_activates_contenteditable_for_text_nodes
+  - inline_edit_disabled_for_data_bound_iteration_nodes
+  - inline_edit_disabled_for_binding_expression_text
+  - inline_edit_plain_text_generates_custom_key_via_post_endpoint
+  - inline_edit_replaces_comp_text_with_t_custom_key
+  - inline_edit_existing_key_updates_only_current_locale_value
+  - inline_edit_enter_commits_blur_commits_escape_cancels
+  - locale_switcher_lists_supported_locales_plus_active_language_packs
+  - locale_switcher_changes_only_canvas_content_locale_not_chrome
+  - chrome_locale_remains_admin_ui_locale_independent_of_content_locale
+  - inline_toolbar_buttons_filtered_by_componentCapability_styleControls
+  - inline_toolbar_applies_formatting_to_entire_text_component_not_substring
+  - inline_toolbar_omits_list_table_image_buttons
+  - inline_toolbar_calls_same_recipe_engine_as_property_modal_style_tab
+  - translation_field_displays_all_active_locales_in_modal
+  - translation_field_marks_missing_translations_grey
+  - translation_field_bulk_save_preserves_other_locales_with_lock_version
+  - translation_field_non_custom_key_shows_not_a_key_notice
+  - editor_i18n_tracker_records_locale_switch_and_inline_edit_with_hash_only
+  # 프론트 (S8-2 Chrome 검수 결함 수정)
+  - inline_edit_existing_t_key_is_editable_as_new_custom_key
+  - inline_edit_real_mouse_double_click_forwarded_by_dnd_handle
+  - canvas_renders_custom_key_value_not_raw_key_after_server_lang_refetch
+  - merge_custom_translations_degrades_gracefully_when_table_missing
+  # 프론트 (S8-2 서식 툴바 선택형 + 미러 + 즉시반영 + 번역 바로가기 + 색 폴백)
+  - inline_toolbar_toggle_controls_bold_italic_underline_toggle_on_off
+  - inline_toolbar_select_controls_size_align_color_open_popover_not_cycle
+  - inline_toolbar_color_popover_shows_swatch_and_label_options
+  - inline_edit_overlay_mirror_uses_raw_dom_path_not_parsed_join
+  - inline_edit_overlay_mirror_follows_node_class_via_mutation_observer
+  - inline_edit_overlay_classtoken_color_not_masked_by_inline_fallback
+  - inline_edit_commit_optimistically_reflects_new_value_before_server_roundtrip
+  - inline_edit_hint_badge_opens_property_modal_translation_tab
+  - property_modal_initial_tab_applies_on_first_open_only
+  # 좀비(고아) 키 자동 감지 + 관리 모달
+  - save_marks_unreferenced_custom_key_as_orphaned
+  - save_restores_orphaned_key_to_active_when_reference_returns
+  - save_keeps_referenced_key_active
+  - orphan_detection_isolated_by_layout_name
+  - orphan_detection_listener_runs_sync_on_after_update
+  - orphan_detection_uses_repository_not_direct_db
+  - scanner_collects_custom_keys_from_text_props_and_expressions
+  - scanner_excludes_non_custom_t_keys_and_dedups
+  - manager_lists_custom_keys_for_layout_with_bearer_header
+  - manager_filters_by_status_all_active_orphaned
+  - manager_shows_orphaned_badge
+  - manager_edits_locale_values_via_put_with_lock_version
+  - manager_handles_409_conflict
+  - manager_deletes_single_key
+  - manager_bulk_deletes_selected_keys
+  - manager_purges_all_orphaned_keys
+  - bulk_destroy_filters_cross_template_ids
+  - bulk_destroy_forbidden_without_edit_permission
+  - bulk_destroy_validation_fails_when_ids_missing
+  - bulk_destroy_bumps_extension_cache_version_once
+  - toolbar_translations_button_disabled_without_selected_route
+  - toolbar_translations_button_opens_manager_modal
+  - manager_shows_persisted_status_and_live_canvas_usage_badges_both
+  - manager_live_usage_scans_current_canvas_via_collectReferencedCustomKeys
+  - manager_locale_label_shows_language_name_plus_identifier
+  - manager_translation_input_is_textarea_auto_grows_with_content
+
+test_files:
+  - tests/Feature/Api/Admin/TemplateCustomTranslationControllerTest.php
+  - tests/Unit/Services/TemplateCustomTranslationServiceTest.php
+  - tests/Feature/Listeners/MergeCustomTranslationsTest.php
+  - tests/Feature/Listeners/MarkOrphanedCustomTranslationsTest.php
+  - tests/Unit/Services/CustomTranslationUsageScannerTest.php
+  - tests/Feature/Migrations/TemplateCustomTranslationsMigrationTest.php
+  - tests/Feature/Api/Public/PublicTemplateLanguageMergeTest.php
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useInlineEdit.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InlineTextEditor.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InlineTextToolbar.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/LocaleSwitcher.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/property-controls/TranslationField.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/inline-edit-roundtrip.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PropertyEditorModal.test.tsx
+  - resources/js/core/template-engine/__tests__/TranslationEngine.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/CustomTranslationManager.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorToolbar.translations.test.tsx
+  - tests/Playwright/specs/layout-editor/inline-edit-i18n.spec.ts
+  - tests/Playwright/specs/layout-editor/orphan-translation-manager.spec.ts

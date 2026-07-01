@@ -7,7 +7,6 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "space-y-3"
   },
   "sortable": {
     "source": "{{_local.form?.order_settings?.payment_methods ?? []}}",
@@ -53,7 +52,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-              "className": "flex items-center gap-3 flex-1 min-w-0"
+              "className": "flex-center gap-3 flex-1 min-w-0"
             },
             "children": [
               {
@@ -79,7 +78,7 @@
                 "name": "Icon",
                 "props": {
                   "name": "{{$method._cached_icon ?? 'circle-question'}}",
-                  "className": "text-lg text-gray-600 dark:text-gray-400"
+                  "className": "text-secondary text-lg"
                 }
               },
               {
@@ -88,7 +87,7 @@
                 "props": {
                   "className": "font-medium text-gray-900 dark:text-gray-100 truncate"
                 },
-                "text": "{{$localized($method._cached_name) || $method.id}}"
+                "text": "{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}"
               },
               {
                 "type": "basic",
@@ -105,7 +104,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-              "className": "flex items-center gap-2"
+              "className": "flex-center gap-2"
             },
             "children": [
               {
@@ -174,7 +173,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-              "className": "space-y-3"
+              "className": "row-stack"
             },
             "children": [
               {
@@ -219,7 +218,7 @@
                     "name": "Span",
                     "if": "{{!['point','deposit','free','dbank'].includes($method.id) && (_local.form?.available_pg_providers ?? []).length === 0}}",
                     "props": {
-                      "className": "text-xs text-gray-400 dark:text-gray-500 italic"
+                      "className": "text-hint italic"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed"
                   },
@@ -228,7 +227,7 @@
                     "name": "Span",
                     "if": "{{['point','deposit','free','dbank'].includes($method.id)}}",
                     "props": {
-                      "className": "text-xs text-gray-400 dark:text-gray-500"
+                      "className": "text-hint"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required"
                   }
@@ -298,6 +297,62 @@
                     "props": {
                       "className": "form-label"
                     },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Select",
+                    "props": {
+                      "value": "{{$method.mileage_deduction_timing ?? 'payment_complete'}}",
+                      "className": "w-full",
+                      "options": [
+                        {
+                          "value": "order_placed",
+                          "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed"
+                        },
+                        {
+                          "value": "payment_complete",
+                          "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete"
+                        }
+                      ],
+                      "disabled": "{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}"
+                    },
+                    "actions": [
+                      {
+                        "type": "change",
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, mileage_deduction_timing: $event.target.value} : m)}}",
+                          "hasChanges": true
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{!(_local.form?.mileage?.enabled)}}",
+                    "props": {
+                      "className": "form-hint text-amber-600 dark:text-amber-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing_disabled_hint"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "form-group"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                      "className": "form-label"
+                    },
                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount"
                   },
                   {
@@ -307,7 +362,7 @@
                       "type": "number",
                       "value": "{{$method.min_order_amount ?? 0}}",
                       "min": 0,
-                      "className": "input w-full",
+                      "className": "input",
                       "disabled": "{{_computed.isReadOnly}}"
                     },
                     "actions": [

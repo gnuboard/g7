@@ -6,6 +6,7 @@
   "data_sources": [
     {
       "id": "user",
+      "label_key": "$t:editor.data_source.user",
       "type": "api",
       "endpoint": "/api/me",
       "method": "GET",

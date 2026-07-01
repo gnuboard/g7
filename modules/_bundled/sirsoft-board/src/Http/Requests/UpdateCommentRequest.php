@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 
 /**
  * 댓글 수정 요청 폼 검증
@@ -15,6 +16,8 @@ class UpdateCommentRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * @return bool 권한 검증 결과 (권한 체크는 미들웨어 위임, 항상 true)
      */
     public function authorize(): bool
     {
@@ -38,12 +41,16 @@ class UpdateCommentRequest extends FormRequest
         // 비회원 여부 확인 (request()->user()를 사용해야 PermissionMiddleware에서 설정한 사용자를 인식)
         $isGuest = ! $this->user();
 
+        // 금지 키워드 목록 가져오기 (게시글과 동일하게 게시판 설정 기준)
+        $blockedKeywords = $board->blocked_keywords ?? [];
+
         $rules = [
             'content' => [
                 'required',
                 'string',
                 'min:'.($board->min_comment_length ?? 2),
                 'max:'.($board->max_comment_length ?? 1000),
+                new BlockedKeywordsRule($blockedKeywords),
             ],
             'is_secret' => ['boolean'],
             'status' => ['nullable', 'string', Rule::in(PostStatus::values())],

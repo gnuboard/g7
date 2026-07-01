@@ -104,6 +104,7 @@ boost.json
 cypress/
 cypress.config.js
 .env.testing
+.claude/settings.local.json
 
 # ===== 보안: 민감 파일 방어 패턴 =====
 *.pem
@@ -121,4 +122,14 @@ id_ed25519
 *.sqlite
 *.db
 
+# NHN KCP 결제플러그인 PG 공개키는 예외 처리
+!plugins/_bundled/*/bin/pub.key
+
 .claude/tmp/
+
+# ===== Playwright E2E =====
+tests/Playwright/.auth/
+playwright-report/
+test-results/
+# Playwright MCP 세션 아티팩트(스냅샷/콘솔 로그) — 커밋 대상 아님
+.playwright-mcp/

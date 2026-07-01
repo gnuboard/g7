@@ -987,7 +987,7 @@
             const result = await response.json();
 
             if (result.success) {
-                // Write DB 기존 테이블 감지: 인라인 상세 카드로 표시 (이슈 #244 대응)
+                // Write DB 기존 테이블 감지: 인라인 상세 카드로 표시
                 // 요구사항: 모달 대신 페이지 본문에 즉시 노출, 백업 동의 체크박스로
                 // 다음 단계 진행 여부 제어. 실제 삭제는 Step 5의 db_cleanup task에서 수행.
                 let existingCardHtml = '';
@@ -1149,7 +1149,7 @@
             write: false,
             read: false
         },
-        // 기존 DB 테이블 감지 시 삭제 동의 추적 (이슈 #244)
+        // 기존 DB 테이블 감지 시 삭제 동의 추적
         dbCleanup: {
             required: false,    // Write DB 테스트 결과 기존 테이블 감지 여부
             consented: false,   // 사용자가 백업 완료 + 삭제 동의 체크 여부
@@ -1448,6 +1448,15 @@
             // 영문 소문자, 숫자, 언더스코어만 허용
             if (!/^[a-z][a-z0-9_]*$/.test(value)) {
                 showFieldError(field, getLangMessage('validation_alpha_num_underscore').replace(':field', getLangMessage('fields.db_prefix')));
+                return false;
+            }
+            // 접두사 길이 제한 — 길면 자동 생성 인덱스명이 DB 한도(64자)를 초과한다.
+            // 서버 MAX_DB_PREFIX_LENGTH 와 동일한 값을 유지한다.
+            var maxPrefixLength = field.maxLength && field.maxLength > 0 ? field.maxLength : 6;
+            if (value.length > maxPrefixLength) {
+                showFieldError(field, getLangMessage('error_db_prefix_too_long')
+                    .replace(':max', maxPrefixLength)
+                    .replace(':current', value.length));
                 return false;
             }
         }
@@ -2978,7 +2987,7 @@
     }
 
     /**
-     * 기존 DB 테이블 경고 모달 표시 (이슈 #244 대응).
+     * 기존 DB 테이블 경고 모달 표시.
      *
      * DB 테스트 배지를 클릭하면 호출되며, 사용자에게 백업 안내 + 강제 진행 옵션을 제공합니다.
      * "기존 테이블 모두 삭제 후 설치"를 선택하면 sessionStorage에 existing_db_action=drop_tables 저장.

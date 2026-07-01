@@ -402,8 +402,8 @@ describe('추가 폼 Validation 에러 표시', () => {
                 s.text?.includes('validation.code_required')
         );
         expect(errorSpan).toBeDefined();
-        expect(errorSpan.props?.className).toContain('text-red-500');
-        expect(errorSpan.props?.className).toContain('text-xs');
+        // .form-error CSS 시맨틱이 text-red-500 + text-xs + dark variant 를 흡수.
+        expect(errorSpan.props?.className).toContain('form-error');
     });
 
     it('이름 MultilingualInput에 error prop이 carrierFormErrors.name_ko 기반으로 설정된다', () => {
@@ -717,8 +717,8 @@ describe('테이블 행 Validation 에러 표시', () => {
                 s.if?.includes('.code')
         );
         expect(errorSpan).toBeDefined();
-        expect(errorSpan.props?.className).toContain('text-red-500');
-        expect(errorSpan.props?.className).toContain('text-xs');
+        // .form-error CSS 시맨틱이 text-red-500 + text-xs + dark variant 를 흡수.
+        expect(errorSpan.props?.className).toContain('form-error');
     });
 
     it('이름 MultilingualInput에 _local.errors 기반 error prop이 설정된다', () => {
@@ -754,7 +754,8 @@ describe('테이블 행 Validation 에러 표시', () => {
                 s.if?.includes('tracking_url')
         );
         expect(errorSpan).toBeDefined();
-        expect(errorSpan.props?.className).toContain('text-red-500');
+        // .form-error CSS 시맨틱이 text-red-500 + text-xs + dark variant 를 흡수.
+        expect(errorSpan.props?.className).toContain('form-error');
     });
 });
 
@@ -916,18 +917,17 @@ describe('다크모드', () => {
 describe('입력 필드 스타일', () => {
     const allNodes = flattenAll(carrierSection);
 
-    it('추가 폼 Input에 input 기본 클래스와 w-full 클래스가 적용되어 있다', () => {
+    it('추가 폼 Input에 input 기본 시맨틱이 적용되어 있다 — w-full 은 .input 자산이 흡수', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const addFormInputs = inputs.filter(
             (i: any) => i.props?.value?.includes('carrierForm?.')
         );
         for (const input of addFormInputs) {
             expect(input.props?.className).toContain('input');
-            expect(input.props?.className).toContain('w-full');
         }
     });
 
-    it('테이블 행 Input에 input 기본 클래스와 w-full 클래스가 적용되어 있다', () => {
+    it('테이블 행 Input에 input 기본 시맨틱이 적용되어 있다 — w-full 은 .input 자산이 흡수', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const tableInputs = inputs.filter(
             (i: any) =>
@@ -938,7 +938,6 @@ describe('입력 필드 스타일', () => {
         expect(tableInputs.length).toBeGreaterThan(0);
         for (const input of tableInputs) {
             expect(input.props?.className).toContain('input');
-            expect(input.props?.className).toContain('w-full');
         }
     });
 
@@ -1057,8 +1056,8 @@ describe('택배사 카드 뷰 루트 구조', () => {
         expect((carrierCards as any).meta?.is_partial).toBe(true);
     });
 
-    it('루트에 space-y-3 클래스가 적용되어 있다', () => {
-        expect(carrierCards.props?.className).toContain('space-y-3');
+    it('루트에 className 이 정의되지 않는다 — partial root 의 spacing 은 부모 레이아웃/카드 자체 책임', () => {
+        expect(carrierCards.props?.className).toBeUndefined();
     });
 
     it('카드 iteration이 테이블과 동일한 source를 사용한다', () => {
@@ -1275,8 +1274,8 @@ describe('택배사 카드 validation 에러', () => {
                 s.if?.includes('.code')
         );
         expect(errorSpan).toBeDefined();
-        expect(errorSpan.props?.className).toContain('text-red-500');
-        expect(errorSpan.props?.className).toContain('text-xs');
+        // .form-error CSS 시맨틱이 text-red-500 + text-xs + dark variant 를 흡수.
+        expect(errorSpan.props?.className).toContain('form-error');
     });
 
     it('이름 MultilingualInput에 _local.errors 기반 error prop이 설정된다', () => {
@@ -1316,7 +1315,8 @@ describe('택배사 카드 validation 에러', () => {
                 s.if?.includes('tracking_url')
         );
         expect(errorSpan).toBeDefined();
-        expect(errorSpan.props?.className).toContain('text-red-500');
+        // .form-error CSS 시맨틱이 text-red-500 + text-xs + dark variant 를 흡수.
+        expect(errorSpan.props?.className).toContain('form-error');
     });
 });
 
@@ -1388,8 +1388,9 @@ describe('택배사 카드 다국어/다크모드', () => {
         expect(json).toContain('text-tertiary');
     });
 
-    it('에러 표시에 text-red-500 클래스가 사용된다', () => {
+    it('에러 표시에 form-error 시맨틱이 사용된다', () => {
         const json = JSON.stringify(carrierCards);
-        expect(json).toContain('text-red-500');
+        // .form-error CSS 시맨틱이 text-red-500 + text-xs + mt-1 + block + dark variant 를 흡수.
+        expect(json).toContain('form-error');
     });
 });

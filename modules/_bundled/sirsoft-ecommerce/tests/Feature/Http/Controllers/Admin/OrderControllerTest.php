@@ -2,7 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Admin;
 
+use App\Extension\HookManager;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderAddressFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
@@ -11,9 +13,9 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -79,7 +81,7 @@ class OrderControllerTest extends ModuleTestCase
 
         // When: 최근 7일 필터링
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-ecommerce/admin/orders?' . http_build_query([
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/orders?'.http_build_query([
                 'start_date' => now()->subDays(7)->toDateString(),
                 'end_date' => now()->toDateString(),
             ]));
@@ -164,10 +166,10 @@ class OrderControllerTest extends ModuleTestCase
     public function test_index_filters_by_shipping_type(): void
     {
         // Given: 배송유형 DB 데이터 생성 (검증 통과용)
-        \Modules\Sirsoft\Ecommerce\Models\ShippingType::firstOrCreate(['code' => 'parcel'], [
+        ShippingType::firstOrCreate(['code' => 'parcel'], [
             'name' => ['ko' => '택배', 'en' => 'Parcel'], 'category' => 'domestic', 'is_active' => true, 'sort_order' => 1,
         ]);
-        \Modules\Sirsoft\Ecommerce\Models\ShippingType::firstOrCreate(['code' => 'pickup'], [
+        ShippingType::firstOrCreate(['code' => 'pickup'], [
             'name' => ['ko' => '매장수령', 'en' => 'Store Pickup'], 'category' => 'domestic', 'is_active' => true, 'sort_order' => 5,
         ]);
 
@@ -233,6 +235,41 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertArrayHasKey('is_first_order', $data);
         $this->assertEquals('pc', $data['order_device']);
         $this->assertTrue($data['is_first_order']);
+    }
+
+    public function test_index_serializes_array_product_option_name_without_error(): void
+    {
+        // Given: 다국어(array) product_option_name 을 가진 옵션이 포함된 주문
+        // (운영에서 OrderListResource:78 의 reset($firstOption->product_option_name) 가
+        //  overloaded 속성을 참조로 수정하려다 ErrorException 을 던져 500 발생한 회귀)
+        // 현재 로케일(en) 키가 없는 옵션 → line 78 의 reset() fallback 경로로 진입
+        app()->setLocale('en');
+        $order = OrderFactory::new()->create();
+        OrderOptionFactory::new()->forOrder($order)->create([
+            'product_option_name' => ['ko' => '레드 / L'],
+        ]);
+
+        // 운영 환경처럼 E_NOTICE("Indirect modification of overloaded property") 를
+        // ErrorException 으로 승격시켜 회귀를 결정적으로 재현
+        $previous = set_error_handler(function (int $severity, string $message, string $file, int $line): bool {
+            if (! (error_reporting() & $severity)) {
+                return false;
+            }
+            throw new \ErrorException($message, 0, $severity, $file, $line);
+        });
+
+        try {
+            // When: 주문 목록 조회
+            $response = $this->actingAs($this->adminUser)
+                ->getJson('/api/modules/sirsoft-ecommerce/admin/orders');
+        } finally {
+            set_error_handler($previous);
+        }
+
+        // Then: 500 없이 정상 응답 + 현재 로케일 옵션명 직렬화
+        $response->assertOk();
+        $firstOption = $response->json('data.data.0.first_option');
+        $this->assertSame('레드 / L', $firstOption['product_option_name']);
     }
 
     public function test_index_requires_authentication(): void
@@ -414,6 +451,140 @@ class OrderControllerTest extends ModuleTestCase
     }
 
     // ========================================
+    // update() 상태 전이 규칙 (A30)
+    // ========================================
+
+    /**
+     * 단건 역방향 전이(구매확정 → 결제완료)는 422 로 차단되고 DB 가 무변경이어야 한다.
+     *
+     * @scenario transition_path=single_update, from_status=confirmed, to_status=payment_complete, classification=reverse_not_whitelisted
+     *
+     * @effects single_reverse_transition_blocked_and_db_unchanged
+     */
+    public function test_update_blocks_reverse_status_transition(): void
+    {
+        $order = OrderFactory::new()->create(['order_status' => OrderStatusEnum::CONFIRMED]);
+        $adminWithEditPermission = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+
+        $response = $this->actingAs($adminWithEditPermission)
+            ->patchJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}", [
+                'order_status' => 'payment_complete',
+                'recipient_name' => '홍길동',
+                'recipient_phone' => '010-1234-5678',
+                'recipient_zipcode' => '12345',
+                'recipient_address' => '서울특별시 강남구 테헤란로 123',
+                'recipient_detail_address' => '101동 202호',
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['order_status']);
+        // DB 무변경
+        $this->assertEquals(OrderStatusEnum::CONFIRMED, $order->fresh()->order_status);
+    }
+
+    /**
+     * 단건 역방향 차단 시 상태 전이 알림 훅(after_status_change)이 미발화여야 한다.
+     *
+     * @scenario transition_path=single_update, from_status=confirmed, to_status=payment_complete, verify_stage=hook_fired
+     *
+     * @effects blocked_transition_does_not_fire_status_change_hook
+     */
+    public function test_blocked_transition_does_not_fire_status_change_hook(): void
+    {
+        $order = OrderFactory::new()->create(['order_status' => OrderStatusEnum::CONFIRMED]);
+        $adminWithEditPermission = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+
+        $fired = [];
+        $cb = function ($o, $prev = null, $current = null) use (&$fired) {
+            $fired[] = $current;
+        };
+        HookManager::addAction('sirsoft-ecommerce.order.after_status_change', $cb, 1);
+
+        try {
+            $response = $this->actingAs($adminWithEditPermission)
+                ->patchJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}", [
+                    'order_status' => 'payment_complete',
+                    'recipient_name' => '홍길동',
+                    'recipient_phone' => '010-1234-5678',
+                    'recipient_zipcode' => '12345',
+                    'recipient_address' => '서울특별시 강남구 테헤란로 123',
+                    'recipient_detail_address' => '101동 202호',
+                ]);
+        } finally {
+            HookManager::removeAction('sirsoft-ecommerce.order.after_status_change', $cb);
+        }
+
+        $response->assertUnprocessable();
+        // 차단되었으므로 DB 미반영 → 전이 알림 훅 미발화
+        $this->assertSame([], $fired, '차단된 전이는 after_status_change 를 발화하지 않아야 함');
+        $this->assertEquals(OrderStatusEnum::CONFIRMED, $order->fresh()->order_status);
+    }
+
+    /**
+     * 단건 forward 점프(결제완료 → 배송중, 중간 단계 건너뛰기)는 허용되어야 한다.
+     *
+     * @scenario transition_path=single_update, from_status=payment_complete, to_status=shipping, classification=forward_jump
+     *
+     * @effects single_forward_jump_allowed
+     */
+    public function test_update_allows_forward_jump_transition(): void
+    {
+        $order = OrderFactory::new()->create(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
+        $carrier = ShippingCarrier::firstOrCreate(
+            ['code' => 'fwd_jump_carrier'],
+            ['name' => json_encode(['ko' => '점프 택배사', 'en' => 'Jump Carrier']), 'type' => 'domestic', 'is_active' => true]
+        );
+        $adminWithEditPermission = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+
+        $response = $this->actingAs($adminWithEditPermission)
+            ->patchJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}", [
+                'order_status' => 'shipping',
+                'carrier_id' => $carrier->id,
+                'tracking_number' => 'FWD-JUMP-001',
+                'recipient_name' => '홍길동',
+                'recipient_phone' => '010-1234-5678',
+                'recipient_zipcode' => '12345',
+                'recipient_address' => '서울특별시 강남구 테헤란로 123',
+                'recipient_detail_address' => '101동 202호',
+            ]);
+
+        $response->assertOk();
+        $this->assertEquals(OrderStatusEnum::SHIPPING, $order->fresh()->order_status);
+    }
+
+    /**
+     * 단건 self-transition(동일 상태)은 통과(no-op)되어야 한다.
+     *
+     * @scenario transition_path=single_update, from_status=shipping, to_status=shipping, classification=self
+     *
+     * @effects single_self_transition_allowed
+     */
+    public function test_update_allows_self_transition(): void
+    {
+        $carrier = ShippingCarrier::firstOrCreate(
+            ['code' => 'self_carrier'],
+            ['name' => json_encode(['ko' => '셀프 택배사', 'en' => 'Self Carrier']), 'type' => 'domestic', 'is_active' => true]
+        );
+        $order = OrderFactory::new()->create(['order_status' => OrderStatusEnum::SHIPPING]);
+        $adminWithEditPermission = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+
+        $response = $this->actingAs($adminWithEditPermission)
+            ->patchJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}", [
+                'order_status' => 'shipping',
+                'carrier_id' => $carrier->id,
+                'tracking_number' => 'SELF-001',
+                'recipient_name' => '홍길동',
+                'recipient_phone' => '010-1234-5678',
+                'recipient_zipcode' => '12345',
+                'recipient_address' => '서울특별시 강남구 테헤란로 123',
+                'recipient_detail_address' => '101동 202호',
+            ]);
+
+        $response->assertOk();
+        $this->assertEquals(OrderStatusEnum::SHIPPING, $order->fresh()->order_status);
+    }
+
+    // ========================================
     // bulkUpdate() 테스트
     // ========================================
 
@@ -551,6 +722,37 @@ class OrderControllerTest extends ModuleTestCase
         // Then: 422 Validation Error
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['ids']);
+    }
+
+    /**
+     * 주문 일괄 변경: forward 가능 2건 + 역방향 위반 1건 혼합 시 전체 422 + 3건 모두 미변경(all-or-nothing).
+     *
+     * @scenario transition_path=bulk_update, mix=2_forward_1_reverse, to_status=payment_complete, classification=all_or_nothing
+     *
+     * @effects bulk_update_all_or_nothing_blocks_and_db_unchanged
+     */
+    public function test_bulk_update_blocks_all_when_one_reverse_transition(): void
+    {
+        // forward 가능 2건(주문대기 → 결제완료) + 역방향 위반 1건(구매확정 → 결제완료)
+        $ok1 = OrderFactory::new()->create(['order_status' => OrderStatusEnum::PENDING_PAYMENT]);
+        $ok2 = OrderFactory::new()->create(['order_status' => OrderStatusEnum::PENDING_PAYMENT]);
+        $violator = OrderFactory::new()->create(['order_status' => OrderStatusEnum::CONFIRMED]);
+        $adminWithEditPermission = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+
+        $response = $this->actingAs($adminWithEditPermission)
+            ->patchJson('/api/modules/sirsoft-ecommerce/admin/orders/bulk', [
+                'ids' => [$ok1->id, $ok2->id, $violator->id],
+                'order_status' => 'payment_complete',
+            ]);
+
+        // Then: 전체 422 + 위반 현재상태 라벨 포함
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['order_status']);
+
+        // all-or-nothing: 정상 2건도 미변경
+        $this->assertEquals(OrderStatusEnum::PENDING_PAYMENT, $ok1->fresh()->order_status);
+        $this->assertEquals(OrderStatusEnum::PENDING_PAYMENT, $ok2->fresh()->order_status);
+        $this->assertEquals(OrderStatusEnum::CONFIRMED, $violator->fresh()->order_status);
     }
 
     // ========================================
@@ -702,5 +904,221 @@ class OrderControllerTest extends ModuleTestCase
 
         // Then: 401 Unauthorized
         $response->assertUnauthorized();
+    }
+
+    // ========================================
+    // 회원/비회원 구분 필터 (member_type)
+    // ========================================
+
+    public function test_index_filters_member_orders(): void
+    {
+        // Given: 회원 주문 2건, 비회원 주문 3건
+        $member = User::factory()->create();
+        OrderFactory::new()->count(2)->forUser($member)->create();
+        OrderFactory::new()->count(3)->forGuest()->create();
+
+        // When: member_type=member 필터
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/orders?member_type=member');
+
+        // Then: 회원 주문 2건만 반환 (user_id 모두 존재)
+        $response->assertOk();
+        $data = $response->json('data.data');
+        $this->assertCount(2, $data);
+    }
+
+    public function test_index_filters_guest_orders(): void
+    {
+        // Given: 회원 주문 2건, 비회원 주문 3건
+        $member = User::factory()->create();
+        OrderFactory::new()->count(2)->forUser($member)->create();
+        OrderFactory::new()->count(3)->forGuest()->create();
+
+        // When: member_type=guest 필터
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/orders?member_type=guest');
+
+        // Then: 비회원 주문 3건만 반환
+        $response->assertOk();
+        $data = $response->json('data.data');
+        $this->assertCount(3, $data);
+    }
+
+    public function test_index_rejects_invalid_member_type(): void
+    {
+        // When: 허용되지 않은 member_type 값
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/orders?member_type=invalid');
+
+        // Then: 422 Validation Error
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['member_type']);
+    }
+
+    // ========================================
+    // 비회원 조회 비밀번호 재설정
+    // ========================================
+
+    public function test_reset_guest_lookup_password_succeeds_for_guest_order(): void
+    {
+        // Given: 조회 비밀번호 hash 가 설정된 비회원 주문, update 권한 관리자
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $order = OrderFactory::new()->forGuest()->create();
+        $oldHash = $order->guest_lookup_password_hash;
+
+        // When: 새 비밀번호로 재설정
+        $response = $this->actingAs($admin)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/reset-guest-lookup-password", [
+                'guest_lookup_password' => 'newpass1',
+                'guest_lookup_password_confirmation' => 'newpass1',
+            ]);
+
+        // Then: 성공 + hash 변경 + 평문은 응답에 미노출
+        $response->assertOk();
+        $order->refresh();
+        $this->assertNotSame($oldHash, $order->guest_lookup_password_hash);
+        $this->assertTrue(Hash::check('newpass1', $order->guest_lookup_password_hash));
+        // 기존 비밀번호(guest12)로는 더 이상 조회 불가
+        $this->assertFalse(Hash::check('guest1234', $order->guest_lookup_password_hash));
+        $this->assertStringNotContainsString('newpass1', $response->getContent());
+    }
+
+    public function test_reset_guest_lookup_password_rejected_for_member_order(): void
+    {
+        // Given: 회원 주문, update 권한 관리자
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $member = User::factory()->create();
+        $order = OrderFactory::new()->forUser($member)->create();
+
+        // When: 회원 주문에 재설정 시도
+        $response = $this->actingAs($admin)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/reset-guest-lookup-password", [
+                'guest_lookup_password' => 'newpass1',
+                'guest_lookup_password_confirmation' => 'newpass1',
+            ]);
+
+        // Then: 422 거부
+        $response->assertStatus(422);
+    }
+
+    public function test_reset_guest_lookup_password_validates_min_length(): void
+    {
+        // Given: 비회원 주문, update 권한 관리자
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $order = OrderFactory::new()->forGuest()->create();
+
+        // When: 8자 미만 비밀번호 (G7 회원가입 정책 min:8 과 일치)
+        $response = $this->actingAs($admin)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/reset-guest-lookup-password", [
+                'guest_lookup_password' => 'abc12',
+                'guest_lookup_password_confirmation' => 'abc12',
+            ]);
+
+        // Then: 422 Validation Error (min)
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['guest_lookup_password']);
+    }
+
+    public function test_reset_guest_lookup_password_allows_letters_only(): void
+    {
+        // Given: 비회원 주문, update 권한 관리자
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $order = OrderFactory::new()->forGuest()->create();
+
+        // When: 영문만 8자 이상 (숫자 없음) — 정책상 허용
+        $response = $this->actingAs($admin)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/reset-guest-lookup-password", [
+                'guest_lookup_password' => 'abcdefgh',
+                'guest_lookup_password_confirmation' => 'abcdefgh',
+            ]);
+
+        // Then: 성공 (영문+숫자 강제 없음)
+        $response->assertOk();
+    }
+
+    public function test_reset_guest_lookup_password_requires_authentication(): void
+    {
+        // Given: 비회원 주문
+        $order = OrderFactory::new()->forGuest()->create();
+
+        // When: 인증 없이 재설정 시도
+        $response = $this->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/reset-guest-lookup-password", [
+            'guest_lookup_password' => 'newpass1',
+            'guest_lookup_password_confirmation' => 'newpass1',
+        ]);
+
+        // Then: 401 Unauthorized
+        $response->assertUnauthorized();
+    }
+
+    /**
+     * 관리자가 비회원 조회 비밀번호를 재설정하면 기존 verify 토큰이 즉시 무효화된다.
+     *
+     * GuestOrderAuthService 의 HMAC 입력에 비밀번호 해시 suffix 가 포함되어 있어
+     * 비밀번호 변경 시 토큰 서명이 자동으로 불일치하는 stateless revocation 이 동작한다.
+     * 이 invariant 가 회귀되면 (캐싱 추가/HMAC 입력 순서 변경 등) 본 테스트가 실패한다.
+     */
+    public function test_admin_password_reset_invalidates_existing_guest_token(): void
+    {
+        // Given: 비회원 주문 + shippingAddress (verify 의 전화번호 매칭에 필요)
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        $phone = '010-1234-5678';
+        $oldPassword = 'guest1234'; // 정책 min:8 통과
+        $order = OrderFactory::new()
+            ->forGuest()
+            ->state(['guest_lookup_password_hash' => Hash::make($oldPassword)])
+            ->create();
+        OrderAddressFactory::new()->forOrder($order)->create([
+            'address_type' => 'shipping',
+            'orderer_phone' => $phone,
+        ]);
+
+        // 기존 비밀번호로 verify 통과 → 토큰 발급
+        $verify = $this->postJson('/api/modules/sirsoft-ecommerce/guest/orders/verify', [
+            'order_number' => $order->order_number,
+            'orderer_phone' => $phone,
+            'guest_lookup_password' => $oldPassword,
+        ]);
+        $verify->assertStatus(200);
+        $existingToken = $verify->json('data.guest_order_token');
+
+        // 발급된 토큰으로 상세 조회 성공 (baseline)
+        $this->getJson(
+            "/api/modules/sirsoft-ecommerce/user/orders/{$order->order_number}",
+            ['X-Guest-Order-Token' => $existingToken]
+        )->assertStatus(200);
+
+        // When: 관리자가 새 비밀번호로 재설정
+        $resetResponse = $this->actingAs($admin)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/reset-guest-lookup-password", [
+                'guest_lookup_password' => 'newpass1',
+                'guest_lookup_password_confirmation' => 'newpass1',
+            ]);
+        $resetResponse->assertOk();
+
+        // 후속 비회원 호출에서 admin 세션이 이어지지 않도록 인증 상태 리셋
+        // (테스트 인스턴스의 actingAs 가 후속 요청까지 유효해 user/orders/{N} 가 회원 분기로 빠지면
+        //  baseline 200 검증이 404 redirect_to /mypage/orders 로 잘못 평가됨)
+        // Sanctum RequestGuard 는 logout() 미지원 → forgetGuards() 로 모든 guard 해제.
+        app('auth')->forgetGuards();
+
+        // Then: 기존 토큰으로 상세 조회 시 404 (자동 무효화 — stateless revocation)
+        $this->getJson(
+            "/api/modules/sirsoft-ecommerce/user/orders/{$order->order_number}",
+            ['X-Guest-Order-Token' => $existingToken]
+        )->assertStatus(404);
+
+        // Then(보강): 새 비밀번호로는 verify + 상세 조회 모두 성공
+        $newVerify = $this->postJson('/api/modules/sirsoft-ecommerce/guest/orders/verify', [
+            'order_number' => $order->order_number,
+            'orderer_phone' => $phone,
+            'guest_lookup_password' => 'newpass1',
+        ]);
+        $newVerify->assertStatus(200);
+
+        $this->getJson(
+            "/api/modules/sirsoft-ecommerce/user/orders/{$order->order_number}",
+            ['X-Guest-Order-Token' => $newVerify->json('data.guest_order_token')]
+        )->assertStatus(200);
     }
 }

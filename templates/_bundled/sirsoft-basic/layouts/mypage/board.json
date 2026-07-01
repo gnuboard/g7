@@ -15,7 +15,7 @@
   "computed": {
     "currentTab": "board"
   },
-  "global_state": {
+  "initGlobal": {
     "boardActivitySubTab": "my-posts",
     "myPostsPage": 1,
     "myPostsBoard": "",
@@ -29,6 +29,7 @@
   "data_sources": [
     {
       "id": "myActivityStats",
+      "label_key": "$t:editor.data_source.myActivityStats",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/me/activity-stats",
       "method": "GET",
@@ -39,6 +40,7 @@
     },
     {
       "id": "myPosts",
+      "label_key": "$t:editor.data_source.myPosts",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/me/board-activities?page={{_global.myPostsPage ?? 1}}&board_slug={{_global.myPostsBoard ?? ''}}&search={{_global.myPostsSearch ?? ''}}&sort={{_global.myPostsSort ?? 'latest'}}&activity_type=authored&per_page=10",
       "method": "GET",
@@ -50,6 +52,7 @@
     },
     {
       "id": "myComments",
+      "label_key": "$t:editor.data_source.myComments",
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/me/my-comments?page={{_global.myCommentsPage ?? 1}}&board_slug={{_global.myCommentsBoard ?? ''}}&search={{_global.myCommentsSearch ?? ''}}&sort={{_global.myCommentsSort ?? 'latest'}}&per_page=10",
       "method": "GET",

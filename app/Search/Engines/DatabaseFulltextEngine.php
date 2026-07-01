@@ -30,8 +30,7 @@ class DatabaseFulltextEngine extends Engine
      *
      * MySQL FULLTEXT는 테이블 자체가 인덱스 소스이므로 no-op.
      *
-     * @param \Illuminate\Database\Eloquent\Collection $models 모델 컬렉션
-     * @return void
+     * @param  Collection  $models  모델 컬렉션
      */
     public function update($models): void
     {
@@ -43,8 +42,7 @@ class DatabaseFulltextEngine extends Engine
      *
      * MySQL FULLTEXT는 테이블 자체가 인덱스 소스이므로 no-op.
      *
-     * @param \Illuminate\Database\Eloquent\Collection $models 모델 컬렉션
-     * @return void
+     * @param  Collection  $models  모델 컬렉션
      */
     public function delete($models): void
     {
@@ -54,7 +52,7 @@ class DatabaseFulltextEngine extends Engine
     /**
      * FULLTEXT 검색을 수행합니다.
      *
-     * @param Builder $builder Scout 빌더
+     * @param  Builder  $builder  Scout 빌더
      * @return array{query: \Illuminate\Database\Eloquent\Builder, total: int}
      */
     public function search(Builder $builder): array
@@ -65,9 +63,9 @@ class DatabaseFulltextEngine extends Engine
     /**
      * 페이지네이션 적용 FULLTEXT 검색을 수행합니다.
      *
-     * @param Builder $builder Scout 빌더
-     * @param int $perPage 페이지당 결과 수
-     * @param int $page 페이지 번호
+     * @param  Builder  $builder  Scout 빌더
+     * @param  int  $perPage  페이지당 결과 수
+     * @param  int  $page  페이지 번호
      * @return array{query: \Illuminate\Database\Eloquent\Builder, total: int}
      */
     public function paginate(Builder $builder, $perPage, $page): array
@@ -78,8 +76,7 @@ class DatabaseFulltextEngine extends Engine
     /**
      * 검색 결과에서 모델 ID를 추출합니다.
      *
-     * @param array $results 검색 결과
-     * @return \Illuminate\Support\Collection
+     * @param  array  $results  검색 결과
      */
     public function mapIds($results): \Illuminate\Support\Collection
     {
@@ -94,10 +91,9 @@ class DatabaseFulltextEngine extends Engine
     /**
      * 검색 결과를 모델 인스턴스로 매핑합니다.
      *
-     * @param Builder $builder Scout 빌더
-     * @param array $results 검색 결과
-     * @param Model $model 기준 모델
-     * @return Collection
+     * @param  Builder  $builder  Scout 빌더
+     * @param  array  $results  검색 결과
+     * @param  Model  $model  기준 모델
      */
     public function map(Builder $builder, $results, $model): Collection
     {
@@ -112,10 +108,9 @@ class DatabaseFulltextEngine extends Engine
     /**
      * 검색 결과를 LazyCollection으로 매핑합니다.
      *
-     * @param Builder $builder Scout 빌더
-     * @param array $results 검색 결과
-     * @param Model $model 기준 모델
-     * @return LazyCollection
+     * @param  Builder  $builder  Scout 빌더
+     * @param  array  $results  검색 결과
+     * @param  Model  $model  기준 모델
      */
     public function lazyMap(Builder $builder, $results, $model): LazyCollection
     {
@@ -130,8 +125,7 @@ class DatabaseFulltextEngine extends Engine
     /**
      * 검색 결과의 전체 건수를 반환합니다.
      *
-     * @param array $results 검색 결과
-     * @return int
+     * @param  array  $results  검색 결과
      */
     public function getTotalCount($results): int
     {
@@ -143,8 +137,7 @@ class DatabaseFulltextEngine extends Engine
      *
      * MySQL FULLTEXT는 테이블 자체가 인덱스 소스이므로 no-op.
      *
-     * @param Model $model 모델
-     * @return void
+     * @param  Model  $model  모델
      */
     public function flush($model): void
     {
@@ -156,9 +149,8 @@ class DatabaseFulltextEngine extends Engine
      *
      * MySQL FULLTEXT는 마이그레이션에서 인덱스를 관리하므로 no-op.
      *
-     * @param string $name 인덱스명
-     * @param array $options 옵션
-     * @return void
+     * @param  string  $name  인덱스명
+     * @param  array  $options  옵션
      */
     public function createIndex($name, array $options = []): void
     {
@@ -170,8 +162,7 @@ class DatabaseFulltextEngine extends Engine
      *
      * MySQL FULLTEXT는 마이그레이션에서 인덱스를 관리하므로 no-op.
      *
-     * @param string $name 인덱스명
-     * @return void
+     * @param  string  $name  인덱스명
      */
     public function deleteIndex($name): void
     {
@@ -242,15 +233,44 @@ class DatabaseFulltextEngine extends Engine
     }
 
     /**
+     * FULLTEXT BOOLEAN MODE 검색어에서 연산자 문자를 제거하고 안전한 구문으로 변환합니다.
+     *
+     * BOOLEAN MODE 연산자(+, -, <, >, (, ), ~, *, ", @)는 잘못된 구문일 때
+     * MySQL 파싱 오류(ER_PARSE_ERROR)를 유발하므로, 사용자 입력을 일반 검색어로만
+     * 취급하도록 연산자를 제거하고 남은 토큰을 따옴표 구문으로 묶습니다.
+     *
+     * @param  string  $keyword  원본 검색어
+     * @return string 안전하게 정제된 BOOLEAN MODE 검색식 (정제 결과가 없으면 빈 문자열)
+     */
+    public static function sanitizeBooleanModeKeyword(string $keyword): string
+    {
+        // 1. BOOLEAN MODE 연산자 + 제어성 문자를 공백으로 치환
+        //    연산자 집합: + - < > ( ) ~ * " @  (백슬래시 미포함 — Windows 경로 가드 규율과 무관하나 일관)
+        $cleaned = preg_replace('/[+\-<>()~*"@]/u', ' ', $keyword);
+        // 제어문자 제거
+        $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $cleaned);
+
+        // 2. 토큰 분리 (연속 공백 정규화)
+        $tokens = preg_split('/\s+/u', trim($cleaned), -1, PREG_SPLIT_NO_EMPTY);
+
+        // 3. 빈 문자열 방어
+        if (empty($tokens)) {
+            return '';
+        }
+
+        // 4. 각 토큰을 따옴표 phrase로 묶어 공백 결합 (따옴표는 1단계에서 제거됨 → 균형 깨질 위험 없음)
+        return implode(' ', array_map(fn ($t) => '"'.$t.'"', $tokens));
+    }
+
+    /**
      * 관계 검색 등 Scout 직접 사용이 불가한 곳에서 FULLTEXT 검색 조건을 추가합니다.
      *
      * DBMS별로 MATCH...AGAINST 또는 LIKE fallback을 자동 적용합니다.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query Eloquent 쿼리 빌더
-     * @param string $column 검색 대상 컬럼명
-     * @param string $keyword 검색어
-     * @param string $boolean 조건 결합 방식 ('and' 또는 'or')
-     * @return void
+     * @param  \Illuminate\Database\Eloquent\Builder  $query  Eloquent 쿼리 빌더
+     * @param  string  $column  검색 대상 컬럼명
+     * @param  string  $keyword  검색어
+     * @param  string  $boolean  조건 결합 방식 ('and' 또는 'or')
      */
     public static function whereFulltext(
         \Illuminate\Database\Eloquent\Builder $query,
@@ -259,8 +279,16 @@ class DatabaseFulltextEngine extends Engine
         string $boolean = 'and'
     ): void {
         if (static::supportsFulltext()) {
+            $ftKeyword = static::sanitizeBooleanModeKeyword($keyword);
+            if ($ftKeyword === '') {
+                // 정제 결과 없음 → 항상 false 조건으로 빈 결과 (void 반환 계약 유지)
+                $falseMethod = $boolean === 'or' ? 'orWhereRaw' : 'whereRaw';
+                $query->$falseMethod('1 = 0');
+
+                return;
+            }
             $method = $boolean === 'or' ? 'orWhereRaw' : 'whereRaw';
-            $query->$method("MATCH(`{$column}`) AGAINST(? IN BOOLEAN MODE)", [$keyword]);
+            $query->$method("MATCH(`{$column}`) AGAINST(? IN BOOLEAN MODE)", [$ftKeyword]);
         } else {
             $method = $boolean === 'or' ? 'orWhere' : 'where';
             $query->$method($column, 'LIKE', "%{$keyword}%");
@@ -273,10 +301,9 @@ class DatabaseFulltextEngine extends Engine
      * FULLTEXT 미지원 DBMS에서는 스킵합니다.
      * MySQL에서는 ngram 파서를, MariaDB에서는 기본 파서를 사용합니다.
      *
-     * @param string $table 테이블명 (prefix 제외)
-     * @param string $indexName 인덱스명
-     * @param string|array $columns 대상 컬럼 (단일 또는 복수)
-     * @return void
+     * @param  string  $table  테이블명 (prefix 제외)
+     * @param  string  $indexName  인덱스명
+     * @param  string|array  $columns  대상 컬럼 (단일 또는 복수)
      */
     public static function addFulltextIndex(string $table, string $indexName, string|array $columns): void
     {
@@ -290,7 +317,7 @@ class DatabaseFulltextEngine extends Engine
 
         DB::statement(
             "ALTER TABLE `{$prefix}{$table}` "
-            . "ADD FULLTEXT INDEX `{$indexName}` (`{$columnList}`){$parserClause}"
+            ."ADD FULLTEXT INDEX `{$indexName}` (`{$columnList}`){$parserClause}"
         );
     }
 
@@ -299,9 +326,9 @@ class DatabaseFulltextEngine extends Engine
      *
      * DBMS별로 MATCH...AGAINST 또는 LIKE fallback을 자동 적용합니다.
      *
-     * @param Builder $builder Scout 빌더
-     * @param int|null $perPage 페이지당 결과 수
-     * @param int|null $page 페이지 번호
+     * @param  Builder  $builder  Scout 빌더
+     * @param  int|null  $perPage  페이지당 결과 수
+     * @param  int|null  $page  페이지 번호
      * @return array{query: \Illuminate\Database\Eloquent\Builder, total: int}
      */
     protected function performSearch(Builder $builder, ?int $perPage = null, ?int $page = null): array
@@ -341,17 +368,27 @@ class DatabaseFulltextEngine extends Engine
 
         // prefix 포함 테이블명 (selectRaw에서 사용)
         $prefix = DB::getTablePrefix();
-        $qualifiedTable = $prefix . $model->getTable();
+        $qualifiedTable = $prefix.$model->getTable();
 
         if ($useFulltext) {
+            // BOOLEAN MODE 연산자/제어문자 정제 (특수문자 입력 시 ER_PARSE_ERROR → 500 방지)
+            $ftKeyword = static::sanitizeBooleanModeKeyword($keyword);
+            if ($ftKeyword === '') {
+                // 연산자만 입력 → 500 대신 빈 결과 (빈 검색어와 동일 반환 형태)
+                return [
+                    'query' => null,
+                    'total' => 0,
+                ];
+            }
+
             // MATCH...AGAINST WHERE 조건 생성 (MySQL, MariaDB)
             $matchClauses = [];
             $bindings = [];
             foreach ($columns as $column) {
                 $matchClauses[] = "MATCH(`{$column}`) AGAINST(? IN BOOLEAN MODE)";
-                $bindings[] = $keyword;
+                $bindings[] = $ftKeyword;
             }
-            $query->whereRaw('(' . implode(' OR ', $matchClauses) . ')', $bindings);
+            $query->whereRaw('('.implode(' OR ', $matchClauses).')', $bindings);
 
             // 가중치 기반 스코어 계산 SELECT
             $scoreExpressions = [];
@@ -359,10 +396,10 @@ class DatabaseFulltextEngine extends Engine
             foreach ($columns as $column) {
                 $weight = $weights[$column] ?? 1.0;
                 $scoreExpressions[] = "MATCH(`{$column}`) AGAINST(? IN BOOLEAN MODE) * {$weight}";
-                $scoreBindings[] = $keyword;
+                $scoreBindings[] = $ftKeyword;
             }
-            $scoreRaw = '(' . implode(' + ', $scoreExpressions) . ') as _ft_score';
-            $query->selectRaw($qualifiedTable . '.*, ' . $scoreRaw, $scoreBindings);
+            $scoreRaw = '('.implode(' + ', $scoreExpressions).') as _ft_score';
+            $query->selectRaw($qualifiedTable.'.*, '.$scoreRaw, $scoreBindings);
         } else {
             // LIKE fallback (PostgreSQL, SQLite 등)
             $query->where(function ($q) use ($columns, $keyword) {
@@ -372,7 +409,7 @@ class DatabaseFulltextEngine extends Engine
             });
 
             // 스코어 고정 0 (관련성 순위 불가)
-            $query->selectRaw($qualifiedTable . '.*, 0 as _ft_score');
+            $query->selectRaw($qualifiedTable.'.*, 0 as _ft_score');
         }
 
         // Scout Builder 콜백 적용 (추가 where 조건 등)

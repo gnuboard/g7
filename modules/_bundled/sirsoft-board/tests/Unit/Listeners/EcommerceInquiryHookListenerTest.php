@@ -42,7 +42,7 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
             'secret_mode' => 'disabled',
             'use_file_upload' => true,
             'max_file_count' => 5,
-            'max_file_size' => 10485760,
+            'max_file_size' => 10,
             'allowed_extensions' => [],
             'min_title_length' => 2,
             'max_title_length' => 200,

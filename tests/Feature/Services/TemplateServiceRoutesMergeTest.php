@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Services;
 
+use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\ModuleManagerInterface;
+use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
+use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use App\Repositories\TemplateRepository;
@@ -57,7 +60,8 @@ class TemplateServiceRoutesMergeTest extends TestCase
             $this->templateRepository,
             $this->templateManager,
             $this->moduleManager,
-            $this->pluginManager
+            $this->pluginManager,
+            app(LayoutVersionRepositoryInterface::class)
         );
     }
 
@@ -105,6 +109,51 @@ class TemplateServiceRoutesMergeTest extends TestCase
     }
 
     #[Test]
+    public function get_layout_route_path_map_maps_layout_name_to_route_path(): void
+    {
+        // Given: 활성화된 user 템플릿 (실제 routes.json 보유)
+        Template::factory()->create([
+            'identifier' => 'sirsoft-basic',
+            'type' => 'user',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+        $this->templateManager->method('getTemplateInfo')->willReturn([
+            'identifier' => 'sirsoft-basic',
+            'type' => 'user',
+        ]);
+        $this->moduleManager->method('getActiveModules')->willReturn([]);
+
+        // When: 레이아웃 → path 매핑 조회
+        $map = $this->templateService->getLayoutRoutePathMap('sirsoft-basic');
+
+        // Then: 정적 라우트는 path 로 매핑, base/partial(라우트 없음)은 제외
+        $this->assertSame('/', $map['home'] ?? null);
+        $this->assertSame('/login', $map['auth/login'] ?? null);
+        $this->assertArrayNotHasKey('_user_base', $map, 'base 레이아웃은 라우트가 없어 매핑에서 제외');
+    }
+
+    #[Test]
+    public function get_layout_route_path_map_returns_empty_for_template_without_routes(): void
+    {
+        // Given: routes.json 없는 템플릿
+        Template::factory()->create([
+            'identifier' => 'no-routes-template',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+        $this->templateManager->method('getTemplateInfo')->willReturn([
+            'identifier' => 'no-routes-template',
+            'type' => 'admin',
+        ]);
+
+        // When: 매핑 조회
+        $map = $this->templateService->getLayoutRoutePathMap('no-routes-template');
+
+        // Then: 빈 배열 (route_path 는 모두 null 로 직렬화됨)
+        $this->assertSame([], $map);
+    }
+
+    #[Test]
     public function module_routes_data_is_merged_with_template_routes(): void
     {
         // Given: 활성화된 템플릿 생성
@@ -121,7 +170,7 @@ class TemplateServiceRoutesMergeTest extends TestCase
         ]);
 
         // Module Manager Mock 설정
-        $mockModule = $this->createMock(\App\Contracts\Extension\ModuleInterface::class);
+        $mockModule = $this->createMock(ModuleInterface::class);
         $mockModule->method('getIdentifier')->willReturn('sirsoft-board');
         $this->moduleManager->method('getActiveModules')->willReturn([
             'sirsoft-board' => $mockModule,
@@ -195,7 +244,7 @@ class TemplateServiceRoutesMergeTest extends TestCase
         ]);
 
         // Module Manager Mock
-        $mockModule = $this->createMock(\App\Contracts\Extension\ModuleInterface::class);
+        $mockModule = $this->createMock(ModuleInterface::class);
         $mockModule->method('getIdentifier')->willReturn('sirsoft-board');
         $this->moduleManager->method('getActiveModules')->willReturn([
             'sirsoft-board' => $mockModule,
@@ -256,11 +305,11 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->moduleManager->method('getActiveModules')->willReturn([]);
 
         // Plugin Mock: 설정이 있는 플러그인 2개
-        $pluginA = $this->createMock(\App\Contracts\Extension\PluginInterface::class);
+        $pluginA = $this->createMock(PluginInterface::class);
         $pluginA->method('getIdentifier')->willReturn('sirsoft-tosspayments');
         $pluginA->method('hasSettings')->willReturn(true);
 
-        $pluginB = $this->createMock(\App\Contracts\Extension\PluginInterface::class);
+        $pluginB = $this->createMock(PluginInterface::class);
         $pluginB->method('getIdentifier')->willReturn('sirsoft-daum_postcode');
         $pluginB->method('hasSettings')->willReturn(true);
 
@@ -318,7 +367,7 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->moduleManager->method('getActiveModules')->willReturn([]);
 
         // Plugin Mock: 설정이 없는 플러그인
-        $plugin = $this->createMock(\App\Contracts\Extension\PluginInterface::class);
+        $plugin = $this->createMock(PluginInterface::class);
         $plugin->method('getIdentifier')->willReturn('sirsoft-no-settings');
         $plugin->method('hasSettings')->willReturn(false);
 
@@ -357,11 +406,11 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->moduleManager->method('getActiveModules')->willReturn([]);
 
         // Plugin Mock: 설정이 있는 플러그인 2개
-        $pluginA = $this->createMock(\App\Contracts\Extension\PluginInterface::class);
+        $pluginA = $this->createMock(PluginInterface::class);
         $pluginA->method('getIdentifier')->willReturn('sirsoft-tosspayments');
         $pluginA->method('hasSettings')->willReturn(true);
 
-        $pluginB = $this->createMock(\App\Contracts\Extension\PluginInterface::class);
+        $pluginB = $this->createMock(PluginInterface::class);
         $pluginB->method('getIdentifier')->willReturn('sirsoft-daum_postcode');
         $pluginB->method('hasSettings')->willReturn(true);
 
@@ -377,11 +426,11 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->assertTrue($result['success']);
         $routes = $result['data']['routes'];
 
+        // layout 을 가진 settings 페이지만 대상 — `/settings/language-packs` 같은
+        // redirect 라우트(layout 키 없음)는 플러그인 레이아웃 격리 검증 대상이 아니다.
         $settingsRoutes = array_filter($routes, function ($route) {
-            return str_contains($route['path'], '/settings');
+            return str_contains($route['path'], '/settings') && isset($route['layout']);
         });
-
-        $layouts = array_map(fn ($route) => $route['layout'], array_values($settingsRoutes));
 
         // 토스페이먼츠 경로에 토스페이먼츠 레이아웃이 매핑되어야 함
         foreach ($settingsRoutes as $route) {

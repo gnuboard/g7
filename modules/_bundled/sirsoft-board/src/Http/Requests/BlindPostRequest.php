@@ -11,6 +11,8 @@ class BlindPostRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * @return bool 권한 보유 여부
      */
     public function authorize(): bool
     {
@@ -25,7 +27,7 @@ class BlindPostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['nullable', 'string'],
+            'reason' => ['nullable', 'string', 'max:1000'],
         ];
     }
 

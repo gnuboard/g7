@@ -120,23 +120,26 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
     describe('리뷰설정 카드 구조', () => {
         const card = tab.children[0];
 
-        it('card 클래스를 가져야 한다', () => {
-            expect(card.props.className).toBe('card');
+        it('admin-card 클래스를 가져야 한다', () => {
+            expect(card.props.className).toBe('admin-card');
         });
 
-        it('카드 헤더에 제목이 있어야 한다', () => {
-            const header = card.children[0];
-            expect(header.props.className).toBe('card-header');
-            const titleEl = header.children.find((c: any) => c.name === 'H3');
+        it('카드 제목이 직계 자식이어야 한다 (admin-card > card-title 평탄화)', () => {
+            const titleEl = card.children.find(
+                (c: any) => c.name === 'H3' && typeof c?.props?.className === 'string' &&
+                    /\bcard-title\b/.test(c.props.className)
+            );
             expect(titleEl).toBeDefined();
             expect(titleEl.text).toBe(
                 '$t:sirsoft-ecommerce.admin.settings.review_settings.title',
             );
         });
 
-        it('카드 헤더에 설명이 있어야 한다', () => {
-            const header = card.children[0];
-            const descEl = header.children.find((c: any) => c.name === 'P');
+        it('카드 설명이 직계 자식 .card-description Div 여야 한다', () => {
+            const descEl = card.children.find(
+                (c: any) => c.name === 'Div' && typeof c?.props?.className === 'string' &&
+                    /\bcard-description\b/.test(c.props.className)
+            );
             expect(descEl).toBeDefined();
             expect(descEl.text).toBe(
                 '$t:sirsoft-ecommerce.admin.settings.review_settings.description',
@@ -146,9 +149,9 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
 
     describe('write_deadline_days 설정 항목', () => {
         const card = tab.children[0];
-        // 설정 항목 영역: card.children[1] (space-y-4 Div)
+        // 설정 항목 영역: card.children[2] (row-stack Div, 평탄화 후 card-title + card-description 다음)
         // 첫 번째 항목 (write_deadline_days): children[0]
-        const settingsArea = card.children[1];
+        const settingsArea = card.children[2];
         const writeDeadlineSection = settingsArea.children[0];
 
         it('레이블 텍스트가 다국어 키를 사용해야 한다', () => {
@@ -217,7 +220,7 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
 
     describe('max_images 설정 항목', () => {
         const card = tab.children[0];
-        const settingsArea = card.children[1];
+        const settingsArea = card.children[2];
         // 구분선(Div, index 1) 다음 max_images 항목(index 2)
         const maxImagesSection = settingsArea.children[2];
 
@@ -257,7 +260,7 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
 
     describe('max_image_size_mb 설정 항목', () => {
         const card = tab.children[0];
-        const settingsArea = card.children[1];
+        const settingsArea = card.children[2];
         // 구분선(index 3) 다음 max_image_size_mb 항목(index 4)
         const maxSizeSection = settingsArea.children[4];
 

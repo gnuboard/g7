@@ -106,9 +106,12 @@ export function savePreferredCurrencyHandler(
 }
 
 /**
- * 유효한 통화 코드인지 확인합니다.
+ * 유효한 통화 코드 형식인지 확인합니다.
+ *
+ * 관리자가 추가/삭제하는 통화를 하드코딩 목록이 막지 않도록(A1-⑥), 고정 화이트리스트가 아니라
+ * ISO 4217 형식(영문 대문자 3자리)으로 검증한다. 실제 노출 통화 제한은 셀렉터가 표시하는
+ * _global.availableCurrencies(is_default || exchange_rate>0)가 담당한다.
  */
 function isValidCurrency(code: string): boolean {
-  const validCurrencies = ['KRW', 'USD', 'JPY', 'CNY', 'EUR'];
-  return validCurrencies.includes(code);
+  return typeof code === 'string' && /^[A-Z]{3}$/.test(code);
 }

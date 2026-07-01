@@ -1,0 +1,32 @@
+{
+  "comment": "admin 베이스 레이아웃이 의존하는 _global.* baseline. 관리자 분기용 currentUser.is_admin: true + 권한. `$`-prefixed 키($locale/$locales)는 PreviewCanvas 가 렌더 컨텍스트 최상위로 끌어올리는 엔진 전역 샘플(런타임 createGlobalVariables 와 동일 위치) — 로그인 화면 등 로케일 선택 드롭다운(`{{$locales}}`) 미리보기용.",
+  "$locale": "ko",
+  "$locales": ["ko", "en"],
+  "currentUser": {
+    "uuid": "sample-uuid-admin",
+    "id": 1,
+    "name": "샘플 관리자",
+    "nickname": "샘플 관리자",
+    "email": "admin@example.com",
+    "avatar": null,
+    "avatar_url": null,
+    "is_admin": true,
+    "roles": [
+      "super_admin"
+    ],
+    "permissions": [
+      "core.*"
+    ]
+  },
+  "settings": {
+    "general": {
+      "site_name": "샘플 사이트",
+      "site_description": "편집 모드 미리보기 — 실제 사이트 설정은 운영 환경에서 적용됩니다.",
+      "site_logo_url": null
+    },
+    "site_name": "샘플 사이트"
+  },
+  "site": {
+    "name": "샘플 사이트"
+  }
+}

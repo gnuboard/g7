@@ -167,6 +167,8 @@
     "add_to_cart": "カートに追加",
     "buy_now": "今すぐ購入",
     "sold_out": "品切れ",
+    "sold_out_suffix": "(品切れ)",
+    "sold_out_option": "品切れのオプションです。",
     "select_option": "オプションを選択",
     "quantity": "数量",
     "total_price": "商品合計金額",
@@ -290,7 +292,10 @@
     "unavailable_message": "上記の商品は現在購入できません。購入可能な商品のみご注文ください。",
     "not_on_sale": "販売中止",
     "sold_out": "品切れ",
-    "go_to_cart": "カートに移動"
+    "go_to_cart": "カートに移動",
+    "max_qty_item": "最大購入数量は{{limit}}個です。(リクエスト: {{requested}}個)",
+    "min_qty_item": "最小購入数量は{{limit}}個です。(リクエスト: {{requested}}個)",
+    "restricted_item": "購入権限のない商品です。"
   },
   "checkout": {
     "title": "注文書作成",
@@ -450,7 +455,17 @@
     "payment_amount_mismatch": "決済金額が一致しません。もう一度注文してください。",
     "payment_order_not_found": "注文が見つかりません。",
     "payment_generic_error": "決済処理中にエラーが発生しました。もう一度お試しください。",
-    "coupon_download_btn": "クーポンダウンロード"
+    "coupon_download_btn": "クーポンダウンロード",
+    "guest_lookup_section": "非会員注文照会",
+    "guest_lookup_hint": "注文後の照会時に使用するパスワードです。8文字以上を入力してください。",
+    "guest_lookup_password": "照会パスワード",
+    "guest_lookup_password_placeholder": "照会用パスワード（8文字以上）",
+    "guest_lookup_password_confirmation": "パスワード確認",
+    "guest_lookup_password_confirmation_placeholder": "パスワードを再度入力してください",
+    "guest_token_issue_failed": "非会員照会認証準備に失敗しました。注文照会時に携帯電話とパスワードで再度ご確認ください。",
+    "coupon_already_used": "他の商品に既に適用されています",
+    "coupon_not_applied": "一部のクーポンを適用できないため除外されました。最小注文金額·使用回数·重複使用の条件を確認してください。",
+    "shipping_country": "配送国家"
   },
   "order_complete": {
     "page_title": "注文完了",
@@ -504,7 +519,16 @@
     "free": "無料",
     "save_shipping_address": "この配送先を保存する",
     "address_saved": "配送先が保存されました。",
-    "address_save_failed": "配送先の保存に失敗しました。"
+    "address_save_failed": "配送先の保存に失敗しました。",
+    "guest_lookup_link": "別の注文を照会する",
+    "guest_token_expired": "認証が期限切れになりました。注文番号·携帯電話·パスワードで再度照会してください。",
+    "order_not_found": "注文が見つかりません。",
+    "guest_notice_title": "非会員注文のご案内",
+    "guest_notice_lookup": "注文番号·携帯電話·照会パスワードで【注文照会】メニューから再度ご確認いただけます。",
+    "guest_notice_save": "注文番号を紛失しないよう別途保管してください。",
+    "points_used": "マイレージ使用",
+    "points_earning": "積立予定マイレージ",
+    "guest_email_sent": "注文確認のお知らせをご入力いただいたメールアドレスに送信いたしました。メールが表示されない場合は、迷惑メールフォルダをご確認ください。"
   },
   "coupon_download": {
     "modal_title": "クーポンダウンロード",
@@ -535,5 +559,56 @@
     "go_shopping": "ショッピングへ",
     "add_to_cart": "カートに追加",
     "remove": "削除"
+  },
+  "reorder": {
+    "title": "再注文",
+    "processing": "カートに商品を追加中です…",
+    "partial_title": "一部の商品を追加しました",
+    "partial_message": "以下の商品はカートに追加できませんでした。残りは正常に追加されました。",
+    "go_cart": "カートに移動",
+    "back_to_orders": "注文履歴に戻る",
+    "error_title": "再注文に失敗しました",
+    "failed": "再注文に失敗しました。"
+  },
+  "guest_order_show": {
+    "page_title": "非会員注文詳細",
+    "back_to_lookup": "注文照会に戻る"
+  },
+  "guest_order_form": {
+    "page_title": "非会員注文照会",
+    "page_description": "非会員で決済された注文を注文番号、携帯電話、照会パスワードで照会することができます。",
+    "title": "非会員注文照会",
+    "subtitle": "注文番号と決済時に入力した携帯電話·照会パスワードで本人確認後、注文を照会します。",
+    "order_number": "注文番号",
+    "order_number_placeholder": "例：G20260526-12345",
+    "order_number_hint": "決済完了時に受け取った注文番号をそのまま入力してください。",
+    "orderer_phone": "携帯電話番号",
+    "orderer_phone_placeholder": "例：010-1234-5678 または 01012345678",
+    "orderer_phone_hint": "ハイフン(-)の入力有無と関係なく認識されます。",
+    "password": "照会パスワード",
+    "password_placeholder": "決済時に設定した照会パスワード",
+    "password_hint": "注文時に直接設定した照会用パスワードです。",
+    "submit": "注文照会",
+    "submitting": "照会中...",
+    "actions_notice": "照会後、注文キャンセルが可能で、配送前であれば配送先の変更が可能です。",
+    "notice": "セキュリティのため、注文ごとに本人確認が必要です。決済直後30分間は同じブラウザで自動的に表示され、その他は上記情報を再度入力してください。",
+    "not_found": "注文が見つかりません。入力情報を再度確認してください。",
+    "member_redirect_toast": "会員注文はマイページの注文履歴で確認してください。",
+    "nav_link": "注文照会",
+    "login_screen_hint": "非会員で決済されましたか？",
+    "login_screen_link": "非会員注文照会"
+  },
+  "additional_options_amount": "追加オプション金額",
+  "additional_option_placeholder": "選択してください",
+  "additional_option_required": "必須の追加オプションを選択してください。",
+  "additional_option_custom_text_label": "直接入力",
+  "additional_option_custom_text_placeholder": "直接入力してください",
+  "additional_option_custom_text_required": "直接入力追加オプションの内容を入力してください。",
+  "shippability": {
+    "not_shippable": "選択した配送国家への配送ができない商品です。",
+    "not_shippable_short": "配送不可",
+    "blocks_order": "配送不可商品が含まれているため注文できません。該当商品を削除するか、配送国家を変更してください。",
+    "shippable_to": "{country} 配送可能",
+    "shipping_fee_summary": "{country} 配送料：{fee}"
   }
 }

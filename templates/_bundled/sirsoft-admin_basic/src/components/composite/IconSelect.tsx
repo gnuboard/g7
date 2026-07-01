@@ -4,6 +4,7 @@ import { Button } from '../basic/Button';
 import { Input } from '../basic/Input';
 import { Icon } from '../basic/Icon';
 import { Span } from '../basic/Span';
+import type { EditorAttrs } from '../../types';
 
 export interface IconOption {
   value: string;
@@ -21,9 +22,17 @@ export interface IconSelectProps {
   className?: string;
   disabled?: boolean;
   name?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
-const defaultIconOptions: IconOption[] = [
+// export — editor-spec componentCapabilities 의 IconSelect.nodeEditor.params.defaultItems 와
+// 동기화 가드 테스트가 대조한다.
+export const defaultIconOptions: IconOption[] = [
   { value: 'LayoutDashboard', label: 'LayoutDashboard', faIcon: 'tachometer-alt' },
   { value: 'Settings', label: 'Settings', faIcon: 'cog' },
   { value: 'Menu', label: 'Menu', faIcon: 'bars' },
@@ -60,6 +69,8 @@ export const IconSelect: React.FC<IconSelectProps> = ({
   className = '',
   disabled = false,
   name,
+  id,
+  editorAttrs,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,7 +115,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
   };
 
   return (
-    <Div ref={dropdownRef} className={`relative ${className}`}>
+    <Div ref={dropdownRef} className={`relative ${className}`} id={id} {...editorAttrs}>
       <Button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}

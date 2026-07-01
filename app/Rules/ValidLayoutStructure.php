@@ -172,8 +172,13 @@ class ValidLayoutStructure implements ValidationRule
             return false;
         }
 
-        // type 필드 검증
-        if (! in_array($component['type'], ['basic', 'composite', 'layout'])) {
+        // type 필드 검증 — basic/composite/layout 외에 extension_point 도 정상 노드 타입이다.
+        // extension_point 노드(예: `user_global_overlay`, `identity_provider_ui:provider`)는
+        // 호스트 레이아웃에 선언되는 확장 주입 지점으로, type="extension_point" + name(슬롯명) +
+        // default/children 구조를 가진다. 이를 허용하지 않으면 extension_point 를 포함한 레이아웃
+        // (`_user_base` 등)을 편집기에서 저장할 수 없다(`components[N].children[0].type`
+        // 422). ValidLayoutExtensionStructure 가 이미 동일하게 extension_point 를 예외 허용한다.
+        if (! in_array($component['type'], ['basic', 'composite', 'layout', 'extension_point'], true)) {
             $fail(__('validation.layout.component_type_invalid', ['index' => $index]));
 
             return false;

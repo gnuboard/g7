@@ -1,0 +1,33 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
+#   UserCouponService 의 categories scope 무조건 통과를 실제 카테고리 교집합 매칭으로 교체
+#   (공통 헬퍼 추출)한 것을 PHPUnit 이 coupon_scope × product_categories × coupon_type
+#   cross product 로 커버하며 green.
+feature: 카테고리 쿠폰 적용가능 판정 — 카테고리 외 상품 차단 (A17③)
+
+description: |
+  target_scope=categories 쿠폰의 적용가능 판정이 무조건 통과(true)하던 결함을 실제 매칭으로
+  교체. 상품 카테고리가 include 카테고리와 교집합이 있고 exclude 와 교집합이 없을 때만 적용.
+  상품 카테고리가 없거나 매칭 안 되면 false. scope=all 은 항상 적용(회귀 보존).
+
+axes:
+  coupon_scope:
+    - categories
+    - all
+  product_categories:
+    - match     # include 와 교집합
+    - no_match  # 교집합 없음 → false
+    - none      # 상품 카테고리 없음 → false
+  coupon_type:
+    - include
+    - exclude   # exclude 교집합 시 false
+
+effects:
+  - applicable_only_when_category_intersects_include_and_not_exclude
+  - scope_all_always_applicable      # scope=all → 항상 true(회귀)
+  - no_match_returns_false           # 카테고리 외 상품 → 미적용
+  - exclude_intersect_returns_false  # exclude 교집합 → 미적용
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/User/CouponCategoryApplicabilityTest.php

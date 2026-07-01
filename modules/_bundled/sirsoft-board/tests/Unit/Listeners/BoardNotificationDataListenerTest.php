@@ -538,6 +538,95 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->assertEmptyResult($result);
     }
 
+    /**
+     * 게시글 작성자가 notify_post_complete를 끄면 post_action에서 빈 결과를 반환합니다 (#413 10-2).
+     *
+     * 회귀: 기존엔 게이트가 없어 OFF여도 발송 데이터가 생성됨.
+     */
+    #[Test]
+    public function test_post_action_게시글작성자_알림OFF_빈결과(): void
+    {
+        $admin = $this->createMockUser(1, '관리자');
+        $postAuthor = $this->createMockUser(10, '게시글작성자');
+
+        Auth::shouldReceive('id')->andReturn(1);
+        Auth::shouldReceive('user')->andReturn($admin);
+
+        $post = $this->createMockPost(100, '테스트 게시글', 10, $postAuthor);
+        $post->trigger_type = null; // 직권 처리
+
+        $board = $this->createMockBoard('test-board', true);
+        $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
+
+        // 작성자(10) 알림 설정: notify_post_complete = false
+        $settings = new UserNotificationSetting(['notify_post_complete' => false]);
+        $this->userNotificationSettingService->shouldReceive('getByUserId')->with(10)->andReturn($settings);
+
+        $result = $this->listener->extractData([], 'post_action', [$post, 'test-board']);
+
+        $this->assertEmptyResult($result);
+    }
+
+    /**
+     * 댓글 작성자가 notify_post_complete를 끄면 post_action에서 빈 결과를 반환합니다 (#413 10-2).
+     */
+    #[Test]
+    public function test_post_action_댓글작성자_알림OFF_빈결과(): void
+    {
+        $admin = $this->createMockUser(1, '관리자');
+        $commentAuthor = $this->createMockUser(10, '댓글작성자');
+
+        Auth::shouldReceive('id')->andReturn(1);
+        Auth::shouldReceive('user')->andReturn($admin);
+
+        $comment = $this->createMockComment([
+            'id' => 1,
+            'post_id' => 100,
+            'user_id' => 10,
+            'user' => $commentAuthor,
+            'trigger_type' => null,
+        ]);
+
+        $post = $this->createMockPost(100, '테스트 게시글', 20);
+        $board = $this->createMockBoard('test-board', true);
+        $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
+        $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($post);
+
+        // 댓글 작성자(10) 알림 설정: notify_post_complete = false
+        $settings = new UserNotificationSetting(['notify_post_complete' => false]);
+        $this->userNotificationSettingService->shouldReceive('getByUserId')->with(10)->andReturn($settings);
+
+        $result = $this->listener->extractData([], 'post_action', [$comment, 'test-board']);
+
+        $this->assertEmptyResult($result);
+    }
+
+    /**
+     * 알림 설정 레코드가 없으면 post_action에서 빈 결과를 반환합니다 (#413 10-2, 형제 알림과 일관).
+     */
+    #[Test]
+    public function test_post_action_설정레코드없음_빈결과(): void
+    {
+        $admin = $this->createMockUser(1, '관리자');
+        $postAuthor = $this->createMockUser(10, '게시글작성자');
+
+        Auth::shouldReceive('id')->andReturn(1);
+        Auth::shouldReceive('user')->andReturn($admin);
+
+        $post = $this->createMockPost(100, '테스트 게시글', 10, $postAuthor);
+        $post->trigger_type = null;
+
+        $board = $this->createMockBoard('test-board', true);
+        $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
+
+        // 설정 레코드 없음 → 기본값 미수신
+        $this->userNotificationSettingService->shouldReceive('getByUserId')->with(10)->andReturn(null);
+
+        $result = $this->listener->extractData([], 'post_action', [$post, 'test-board']);
+
+        $this->assertEmptyResult($result);
+    }
+
     // ── report_action ──
 
     /**

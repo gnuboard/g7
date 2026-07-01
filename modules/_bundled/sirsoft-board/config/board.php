@@ -121,19 +121,19 @@ return [
         'min_title_length_min' => 0,
         'min_title_length_max' => 200,
         'max_title_length_min' => 1,
-        'max_title_length_max' => 200,
+        'max_title_length_max' => 1000,
 
         // 내용 길이 제한 (LONGTEXT)
         'min_content_length_min' => 0,
         'min_content_length_max' => 10000,
         'max_content_length_min' => 1,
-        'max_content_length_max' => 50000,
+        'max_content_length_max' => 100000,
 
         // 댓글 길이 제한 (TEXT)
         'min_comment_length_min' => 0,
         'min_comment_length_max' => 1000,
         'max_comment_length_min' => 1,
-        'max_comment_length_max' => 1000,
+        'max_comment_length_max' => 10000,
 
         // 파일 업로드 제한 (MB 단위)
         'max_file_size_min' => 1,

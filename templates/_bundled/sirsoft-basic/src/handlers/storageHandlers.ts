@@ -13,6 +13,9 @@
 
 const CART_KEY_STORAGE_NAME = 'g7_cart_key';
 const CART_KEY_API_ENDPOINT = '/api/modules/sirsoft-ecommerce/cart/key';
+const GUEST_ORDER_TOKEN_STORAGE_NAME = 'g7_guest_order_token';
+const GUEST_ORDER_NUMBER_STORAGE_NAME = 'g7_guest_order_number';
+const GUEST_ORDER_EXPIRES_AT_STORAGE_NAME = 'g7_guest_order_expires_at';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Handler:Storage')) ?? {
@@ -248,4 +251,158 @@ export function loadFromStorageHandler(
   } catch {
     return defaultValue || null;
   }
+}
+
+/**
+ * sessionStorage 의 비회원 주문 토큰을 모두 삭제합니다 (내부 헬퍼).
+ *
+ * 토큰/주문번호/만료시각 3개 키를 함께 비웁니다.
+ */
+function clearGuestOrderTokenInternal(): void {
+  try {
+    sessionStorage.removeItem(GUEST_ORDER_TOKEN_STORAGE_NAME);
+    sessionStorage.removeItem(GUEST_ORDER_NUMBER_STORAGE_NAME);
+    sessionStorage.removeItem(GUEST_ORDER_EXPIRES_AT_STORAGE_NAME);
+  } catch {
+    // sessionStorage 접근 불가 시 무시
+  }
+}
+
+/**
+ * 비회원 주문 조회 토큰 초기화 (init_actions 전용)
+ *
+ * sessionStorage 의 g7_guest_order_token 을 읽어 `_global.guestOrderToken` 에 설정한다.
+ * 표준 loadFromSessionStorage 핸들러는 `context.setState`(React 컴포넌트 state)를 호출해
+ * `_local` 에만 영향을 주므로, `_global` 에 토큰을 설정하려면 `G7Core.state.set` 직접 호출이 필요하다.
+ * `initCartKey` 와 동일한 패턴.
+ *
+ * 동작:
+ * 1. sessionStorage 에서 토큰/만료시각 로드 (탭 종료 시 자동 소실 — 공유 PC 안전)
+ * 2. 만료된 토큰은 자동 폐기 (3개 키 모두 제거)
+ * 3. `_global.guestOrderToken` 에 토큰 또는 null 설정
+ * 4. `_user_base.globalHeaders` 의 `X-Guest-Order-Token: {{_global.guestOrderToken}}` 패턴이
+ *    토큰 있을 때만 `guest/orders/*` 호출에 헤더 자동 주입 (엔진이 null/빈값 자동 제외)
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function initGuestOrderTokenHandler(
+  _action?: any,
+  _context?: any
+): void {
+  let token: string | null = null;
+  let expiresAt: string | null = null;
+  try {
+    token = sessionStorage.getItem(GUEST_ORDER_TOKEN_STORAGE_NAME);
+    expiresAt = sessionStorage.getItem(GUEST_ORDER_EXPIRES_AT_STORAGE_NAME);
+  } catch {
+    // sessionStorage 접근 불가 시 무시
+  }
+
+  // 만료된 토큰 자동 폐기 (백엔드도 동일 시각 기준으로 거부하지만 로컬에서 미리 정리)
+  // expiresAt 이 invalid 포맷이면 getTime() 이 NaN → NaN <= now 비교가 false 라
+  // 만료 인식이 안 되는 회귀를 방어한다. invalid 토큰도 명시적으로 폐기.
+  let expired = false;
+  if (token) {
+    const expiryTs = expiresAt ? new Date(expiresAt).getTime() : NaN;
+    if (isNaN(expiryTs) || expiryTs <= Date.now()) {
+      clearGuestOrderTokenInternal();
+      token = null;
+      expired = true;
+    }
+  }
+
+  if (token) {
+    // sessionStorage 에 유효 토큰이 있으면 그 값으로 _global 동기화 (새로고침/재방문 경로)
+    setGlobalState({ guestOrderToken: token });
+    logger.log('Guest order token loaded from sessionStorage');
+    return;
+  }
+
+  // sessionStorage 에 토큰이 없을 때, 직전 단계(verify onSuccess saveGuestOrderToken)가
+  // 이미 _global.guestOrderToken 에 동기 set 해 둔 in-memory 토큰을 보존한다.
+  // 조회 폼 verify→상세 SPA 전이에서 sessionStorage 쓰기가 제때 반영되지 않거나
+  // (브라우저/프라이버시 모드) 비활성인 환경에서도, navigate 로 살아남은 _global 토큰으로
+  // 상세 데이터소스가 X-Guest-Order-Token 을 주입할 수 있게 한다.
+  // 단, 만료로 명시 폐기된 경우(expired)는 in-memory 토큰도 비운다.
+  if (!expired) {
+    const G7Core = (window as any).G7Core;
+    const existing = G7Core?.state?.get?.('_global')?.guestOrderToken;
+    if (typeof existing === 'string' && existing !== '') {
+      logger.log('Guest order token preserved from in-memory _global (sessionStorage empty)');
+      return;
+    }
+  }
+
+  setGlobalState({ guestOrderToken: null });
+  logger.log('No guest order token (visitor not authenticated)');
+}
+
+// 표시 통화(preferredCurrency) 초기화 핸들러는 이커머스 모듈로 이전되었다
+// (modules/_bundled/sirsoft-ecommerce/resources/js/handlers/initPreferredCurrency.ts).
+// "통화 = 커머스 책임" 원칙 — 레이아웃은 `sirsoft-ecommerce.initPreferredCurrency` 로 호출한다.
+
+/**
+ * 비회원 주문 토큰을 sessionStorage 에 저장하고 _global 에 동기 set 합니다.
+ *
+ * 토큰/주문번호/만료시각 3개 키를 함께 저장하며, _global.guestOrderToken 도 즉시 갱신해
+ * 직후 호출되는 navigate 의 globalHeaders 자동 주입이 동작하도록 한다.
+ *
+ * @param action params.token, params.orderNumber, params.expiresAt 필수
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function saveGuestOrderTokenHandler(
+  action?: any,
+  _context?: any
+): void {
+  const { token, orderNumber, expiresAt } = action?.params || {};
+  if (!token || !orderNumber || !expiresAt) {
+    logger.warn('saveGuestOrderToken: token, orderNumber, expiresAt are required');
+    return;
+  }
+  try {
+    sessionStorage.setItem(GUEST_ORDER_TOKEN_STORAGE_NAME, token);
+    sessionStorage.setItem(GUEST_ORDER_NUMBER_STORAGE_NAME, orderNumber);
+    sessionStorage.setItem(GUEST_ORDER_EXPIRES_AT_STORAGE_NAME, expiresAt);
+  } catch {
+    // sessionStorage 접근 불가 시 무시 (private 모드 등) — _global 만 set 되어 현재 페이지는 동작
+  }
+  setGlobalState({ guestOrderToken: token });
+}
+
+/**
+ * 비회원 주문 토큰을 sessionStorage 에서 삭제하고 _global 도 비웁니다.
+ *
+ * 비회원 주문 취소/구매확정/명시적 로그아웃 등 토큰 무효화 시점에서 호출.
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function clearGuestOrderTokenHandler(
+  _action?: any,
+  _context?: any
+): void {
+  clearGuestOrderTokenInternal();
+  setGlobalState({ guestOrderToken: null });
+}
+
+/**
+ * 비회원 주문 조회 폼(guest_order_form) 진입 시 sessionStorage 의 비회원 주문 토큰을 초기화한다.
+ *
+ * 비회원 주문 조회 폼은 매번 새로 본인 확인을 거치는 게 표준 패턴(eBay/Best Buy/카페24/
+ * 11번가/G마켓 등). 결제 직후 자동 verify 로 받은 토큰은 완료/상세 화면에서는 유효하지만,
+ * 사용자가 헤더 '비회원 주문 조회' 메뉴 등을 통해 조회 폼에 도달했을 때는 의도가
+ * "다시 조회" 이므로 토큰을 비워 폼이 정상 노출되도록 한다.
+ *
+ * 만료된 토큰도 같은 경로로 자연스럽게 정리된다.
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function clearGuestTokenOnEntryHandler(
+  _action?: any,
+  _context?: any
+): void {
+  clearGuestOrderTokenInternal();
+  setGlobalState({ guestOrderToken: null });
 }

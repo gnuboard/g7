@@ -10,7 +10,8 @@
     "shipping": "配送設定",
     "review_settings": "レビュー設定",
     "notification_definitions": "通知設定",
-    "identity_policies": "本人認証ポリシー"
+    "identity_policies": "本人認証ポリシー",
+    "mileage": "マイレージ"
   },
   "save_success": "設定が保存されました。",
   "save_error": "設定の保存に失敗しました。",
@@ -115,7 +116,15 @@
         "title": "通貨を編集"
       },
       "edit": "編集",
-      "duplicate_currency_error": "既に登録された通貨コードです。"
+      "duplicate_currency_error": "既に登録された通貨コードです。",
+      "locales": "使用言語",
+      "locales_placeholder": "言語選択",
+      "locales_hint": "会員登録時にブラウザの言語がこの通貨の言語と一致する場合、その通貨がデフォルトの決済通貨として指定されます。",
+      "currency_symbol": "記号",
+      "symbol_placeholder": "₩",
+      "base_unit": "基準単位",
+      "base_unit_equals": "単位 =",
+      "base_unit_hint": "この通貨が基本通貨の場合、為替レート入力の基準となる単位です。(例: 円 = 1,000 / ドル = 1)"
     }
   },
   "order_settings": {
@@ -140,7 +149,9 @@
       "pg_use_default": "デフォルトPG",
       "pg_not_required": "PG不要",
       "pg_not_installed": "PG未インストール",
-      "pg_select_first": "PG社をまず選択してください"
+      "pg_select_first": "PG社をまず選択してください",
+      "mileage_deduction_timing": "マイレージ差し引き時点",
+      "mileage_deduction_timing_disabled_hint": "マイレージ使用がオフになっているため、差し引き時点が適用されません。"
     },
     "bank_accounts": {
       "title": "無通帳口座番号設定",
@@ -450,7 +461,8 @@
       "order_cancelled": "注文キャンセル",
       "new_order_admin": "新規注文(管理者)",
       "inquiry_received": "商品問い合わせ受け取り(管理者)",
-      "inquiry_replied": "商品問い合わせ回答"
+      "inquiry_replied": "商品問い合わせ回答",
+      "mileage_expiring_soon": "マイレージ失効予定"
     },
     "btn_search": "検索",
     "btn_reset_filter": "初期化",
@@ -515,6 +527,8 @@
       "module": "モジュール",
       "plugin": "プラグイン",
       "admin": "管理者"
-    }
-  }
+    },
+    "policy_form_editor_label": "本人認証ポリシーの追加/編集"
+  },
+  "save_pending_currency": "追加中の通貨を先に確定（チェックボタン）するか、キャンセルしてから保存してください。"
 }

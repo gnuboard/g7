@@ -50,6 +50,7 @@
     "data_sources": [
         {
             "id": "language_packs",
+            "label_key": "$t:editor.data_source.language_packs",
             "type": "api",
             "endpoint": "/api/admin/language-packs",
             "method": "GET",
@@ -75,6 +76,7 @@
         },
         {
             "id": "language_pack_detail",
+            "label_key": "$t:editor.data_source.language_pack_detail",
             "type": "api",
             "endpoint": "/api/admin/language-packs/{{_local.detailId}}",
             "method": "GET",
@@ -84,6 +86,7 @@
         },
         {
             "id": "language_pack_changelog",
+            "label_key": "$t:editor.data_source.language_pack_changelog",
             "type": "api",
             "endpoint": "/api/admin/language-packs/{{_local.detailId}}/changelog",
             "method": "GET",
@@ -108,7 +111,7 @@
                 "id": "lang_pack_page_wrapper",
                 "type": "basic",
                 "name": "Div",
-                "props": { "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900" },
+                "props": { "className": "admin-page-content-responsive-fluid" },
                 "children": [
                     {
                         "type": "basic",

@@ -11,8 +11,8 @@
 |----------|---------|----------|
 | [백엔드](backend/) | 32개 | 정상 |
 | [프론트엔드](frontend/) | 51개 | 정상 |
-| [확장 시스템](extension/) | 30개 | 정상 |
-| 공통 | 19개 | 정상 |
+| [확장 시스템](extension/) | 31개 | 정상 |
+| 공통 | 20개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
 <!-- AUTO-GENERATED-END: docs-readme-stats -->
@@ -206,12 +206,13 @@
 | [handlers.md](frontend/handlers.md) | sirsoft-basic 핸들러 |
 | [layouts.md](frontend/layouts.md) | sirsoft-basic 레이아웃 |
 
-### 확장 시스템 (30개)
+### 확장 시스템 (31개)
 
 | 문서 | 제목 |
 |------|------|
 | [cache-driver.md](extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) |
 | [changelog-rules.md](extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) |
+| [editor-spec.md](extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) |
 | [extension-manager.md](extension/extension-manager.md) | ExtensionManager (확장 관리자) |
 | [extension-update-system.md](extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) |
 | [hooks.md](extension/hooks.md) | 훅 시스템 (Hook System) |
@@ -241,7 +242,7 @@
 | [upgrade-step-guide.md](extension/upgrade-step-guide.md) | 업그레이드 스텝 작성 가이드 (Upgrade Step Guide) |
 | [vendor-bundle.md](extension/vendor-bundle.md) | Vendor 번들 시스템 (Vendor Bundle System) |
 
-### 공통 (19개)
+### 공통 (20개)
 
 | 문서 | 제목 |
 |------|------|
@@ -264,6 +265,7 @@
 | [requirements.md](requirements.md) | 그누보드7 시스템 요구사항 (System Requirements) |
 | [SECURITY.md](SECURITY.md) | 그누보드7 템플릿 엔진 보안 가이드 |
 | [testing-guide.md](testing-guide.md) | 그누보드7 테스트 가이드 |
+| [e2e-testing.md](testing/e2e-testing.md) | 그누보드7 Playwright E2E 테스트 가이드 |
 
 ### AI 도구
 

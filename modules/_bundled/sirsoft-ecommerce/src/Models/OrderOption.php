@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
+use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 
@@ -24,7 +25,7 @@ class OrderOption extends Model
      * @var array<string, array>
      */
     public static array $activityLogFields = [
-        'option_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.option_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum::class],
+        'option_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.option_status', 'type' => 'enum', 'enum' => OrderStatusEnum::class],
         'quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.quantity', 'type' => 'number'],
         'cancelled_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.cancelled_quantity', 'type' => 'number'],
     ];
@@ -58,6 +59,7 @@ class OrderOption extends Model
         'subtotal_weight',
         'subtotal_volume',
         'unit_price',
+        'additional_options_total',
         'subtotal_price',
         'subtotal_discount_amount',
         'product_coupon_discount_amount',
@@ -72,18 +74,22 @@ class OrderOption extends Model
         'subtotal_earned_points_amount',
         'product_snapshot',
         'option_snapshot',
+        'additional_options_snapshot',
         'promotions_applied_snapshot',
         'confirmed_at',
+        'delivered_at',
         'external_option_id',
         'external_meta',
         // 다중 통화 컬럼 (JSON)
         'mc_unit_price',
+        'mc_additional_options_total',
         'mc_subtotal_price',
         'mc_product_coupon_discount_amount',
         'mc_order_coupon_discount_amount',
         'mc_coupon_discount_amount',
         'mc_code_discount_amount',
         'mc_subtotal_points_used_amount',
+        'mc_subtotal_earned_points_amount',
         'mc_subtotal_deposit_used_amount',
         'mc_subtotal_tax_amount',
         'mc_subtotal_tax_free_amount',
@@ -98,6 +104,7 @@ class OrderOption extends Model
         'subtotal_weight' => 'decimal:3',
         'subtotal_volume' => 'decimal:3',
         'unit_price' => 'decimal:2',
+        'additional_options_total' => 'decimal:2',
         'subtotal_price' => 'decimal:2',
         'subtotal_discount_amount' => 'decimal:2',
         'product_coupon_discount_amount' => 'decimal:2',
@@ -116,20 +123,24 @@ class OrderOption extends Model
         'option_value' => 'array',
         'product_snapshot' => 'array',
         'option_snapshot' => 'array',
+        'additional_options_snapshot' => 'array',
         'promotions_applied_snapshot' => 'array',
         'external_meta' => 'array',
         'confirmed_at' => 'datetime',
+        'delivered_at' => 'datetime',
         'option_status' => OrderStatusEnum::class,
         'is_stock_deducted' => 'boolean',
         'source_type' => OrderOptionSourceTypeEnum::class,
         // 다중 통화 컬럼 (JSON)
         'mc_unit_price' => 'array',
+        'mc_additional_options_total' => 'array',
         'mc_subtotal_price' => 'array',
         'mc_product_coupon_discount_amount' => 'array',
         'mc_order_coupon_discount_amount' => 'array',
         'mc_coupon_discount_amount' => 'array',
         'mc_code_discount_amount' => 'array',
         'mc_subtotal_points_used_amount' => 'array',
+        'mc_subtotal_earned_points_amount' => 'array',
         'mc_subtotal_deposit_used_amount' => 'array',
         'mc_subtotal_tax_amount' => 'array',
         'mc_subtotal_tax_free_amount' => 'array',
@@ -271,5 +282,19 @@ class OrderOption extends Model
     public function review(): HasOne
     {
         return $this->hasOne(ProductReview::class, 'order_option_id');
+    }
+
+    /**
+     * 구매 적립 마일리지 거래 관계
+     *
+     * 이 주문옵션에 대해 실제 발행된 구매 적립(purchase_earn) 거래입니다.
+     * FK 없이 order_option_id 컬럼만 참조하며, 적립예정액의 실제 적립 여부 판정에 사용됩니다.
+     *
+     * @return HasMany 구매 적립 거래와의 관계
+     */
+    public function purchaseEarnTransactions(): HasMany
+    {
+        return $this->hasMany(MileageTransaction::class, 'order_option_id')
+            ->where('type', MileageTransactionTypeEnum::PURCHASE_EARN->value);
     }
 }

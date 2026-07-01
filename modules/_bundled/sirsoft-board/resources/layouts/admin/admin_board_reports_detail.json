@@ -29,6 +29,7 @@
     "data_sources": [
         {
             "id": "report_detail",
+            "label_key": "$t:sirsoft-board.editor.data_source.report_detail",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/admin/reports/{{route.id}}",
             "method": "GET",
@@ -52,6 +53,7 @@
         },
         {
             "id": "reporters_list",
+            "label_key": "$t:sirsoft-board.editor.data_source.reporters_list",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/admin/reports/{{route.id}}/reporters",
             "method": "GET",
@@ -71,12 +73,12 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                    "className": "admin-page-content-fluid"
                 },
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                            "className": "admin-page-content-fluid-compact"
                         }
                     }
                 },
@@ -95,7 +97,7 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
-                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    "className": "btn-icon"
                                 },
                                 "actions": [
                                     {
@@ -123,7 +125,7 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
-                                    "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                    "className": "flex-center gap-2 btn btn-secondary"
                                 },
                                 "actions": [
                                     {
@@ -167,6 +169,9 @@
     },
     "modals": [
         {
+            "meta": {
+                "editor_label": "$t:sirsoft-board.admin.reports.modals.status_action_editor_label"
+            },
             "id": "status_action_modal",
             "type": "composite",
             "name": "Modal",
@@ -195,7 +200,7 @@
                             "name": "Div",
                             "if": "{{_global.actionType === 'rejected' && report_detail.data?.target_status === 'blinded'}}",
                             "props": {
-                                "className": "mb-4 flex items-center gap-2 p-2.5 bg-orange-50 dark:bg-orange-900/20 rounded-md"
+                                "className": "mb-4 flex-center gap-2 p-2.5 bg-orange-50 dark:bg-orange-900/20 rounded-md"
                             },
                             "children": [
                                 {
@@ -220,7 +225,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                "className": "form-label"
                             },
                             "text": "$t:sirsoft-board.admin.reports.modals.reason_label"
                         },
@@ -228,7 +233,7 @@
                             "type": "basic",
                             "name": "Textarea",
                             "props": {
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
                                 "rows": 4,
                                 "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
                                 "value": "{{_global.actionReason || ''}}"
@@ -250,7 +255,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3 mt-6"
+                        "className": "modal-footer-buttons"
                     },
                     "children": [
                         {

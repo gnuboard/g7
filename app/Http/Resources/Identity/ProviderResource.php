@@ -44,6 +44,7 @@ class ProviderResource extends BaseApiResource
             'id' => $p->getId(),
             'label' => $p->getLabel(),
             'channels' => $p->getChannels(),
+            'channel_labels' => $p->getChannelLabels(),
             'render_hint' => $p->getRenderHint(),
             'is_available' => $p->isAvailable(),
             ...$this->resourceMeta($request),

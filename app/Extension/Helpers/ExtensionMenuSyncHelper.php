@@ -126,7 +126,17 @@ class ExtensionMenuSyncHelper
             $updateData['url'] = $newAttributes['url'] ?? null;
         }
 
-        $this->menuRepository->update($existing, $updateData);
+        // user_overrides 자동 마킹 비활성화 — 시스템 sync 컨텍스트는 사용자 변경이 아님.
+        // HasUserOverrides::bootHasUserOverrides 의 updating 이벤트 hook 이 'seeding' 플래그를
+        // 보고 자동 마킹을 건너뛴다. 미설정 시 동일한 module.php 정의값을 적용해도 icon/name/order
+        // 등 trackable 필드가 dirty 로 잡혀 user_overrides 에 자동 추가되어, 이후 sync 가 차단되는
+        // 결함이 발생한다.
+        app()->instance('user_overrides.seeding', true);
+        try {
+            $this->menuRepository->update($existing, $updateData);
+        } finally {
+            app()->forgetInstance('user_overrides.seeding');
+        }
 
         return $existing->fresh();
     }

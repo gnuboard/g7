@@ -40,7 +40,7 @@ class SeoRenderer implements SeoRendererInterface
      * 요청 URL에 매핑된 SEO HTML 을 렌더링합니다.
      *
      * @param  Request  $request  유입된 HTTP 요청
-     * @return string|null  렌더된 HTML, SEO 비활성/매핑 없음/예외 발생 시 null
+     * @return string|null 렌더된 HTML, SEO 비활성/매핑 없음/예외 발생 시 null
      */
     public function render(Request $request): ?string
     {
@@ -143,6 +143,72 @@ class SeoRenderer implements SeoRendererInterface
             $computed = $this->resolveComputed($computedDefs, $context);
             $context['_computed'] = $computed;
             $context['$computed'] = $computed;
+        }
+
+        // 6.5. 레이아웃명을 request attribute로 저장 (SeoMiddleware에서 putWithLayout에 사용)
+        $request->attributes->set('seo_layout_name', $layoutName);
+
+        // SeoMiddleware가 setLocale() 전에 저장한 기본 로케일 사용
+        // (setLocale()이 config('app.locale')을 변경하므로 request attribute로 전달)
+        $defaultLocale = $request->attributes->get('seo_default_locale', config('app.locale'));
+
+        // 해석된 컨텍스트로 공통 렌더 파이프라인 위임 (운영/편집기 미리보기 동일 경로).
+        return $this->renderFromResolved(
+            $mergedLayout,
+            $routeParams,
+            $url,
+            $locale,
+            $templateIdentifier,
+            $layoutName,
+            $moduleIdentifier,
+            $pluginIdentifier,
+            $context,
+            $defaultLocale,
+        );
+    }
+
+    /**
+     * 이미 해석된 컨텍스트로 SEO HTML 을 렌더링합니다.
+     *
+     * render(Request) 가 URL 매핑·data_sources fetch·_global/_local/computed 해석까지
+     * 마친 뒤 호출하는 공통 파이프라인(번역 로드 → htmlMapper 설정 → vars/_seo →
+     * meta cascade·훅 → bodyHtml → seo.blade 조립). 편집기 봇 미리보기는 실 fetch
+     * 대신 샘플 컨텍스트를 시드해 이 메서드를 직접 호출, 운영과 byte 동등한 HTML 을 얻는다.
+     *
+     * @param  array  $mergedLayout  병합된 레이아웃 JSON (meta.seo/components/computed 포함)
+     * @param  array  $routeParams  라우트 파라미터
+     * @param  string  $url  요청 URL 경로 (canonical/hreflang 생성)
+     * @param  string  $locale  렌더 로케일
+     * @param  string  $templateIdentifier  편집/렌더 대상 템플릿 식별자
+     * @param  string  $layoutName  레이아웃명
+     * @param  string|null  $moduleId  소속 모듈 식별자
+     * @param  string|null  $pluginId  소속 플러그인 식별자
+     * @param  array  $context  해석된 데이터 컨텍스트 (route/query/_global/_local/_computed 포함)
+     * @param  string|null  $defaultLocale  canonical 기본 로케일 (null 이면 config('app.locale'))
+     * @param  bool  $seoOnly  true 면 SEO 메타 HTML 만 렌더(bodyHtml 생략 — 편집기 미리보기용)
+     * @return string|null 렌더링된 HTML
+     */
+    public function renderFromResolved(
+        array $mergedLayout,
+        array $routeParams,
+        string $url,
+        string $locale,
+        string $templateIdentifier,
+        string $layoutName,
+        ?string $moduleId,
+        ?string $pluginId,
+        array $context,
+        ?string $defaultLocale = null,
+        bool $seoOnly = false,
+    ): ?string {
+        $moduleIdentifier = $moduleId;
+        $pluginIdentifier = $pluginId;
+        $seoConfig = $mergedLayout['meta']['seo'] ?? [];
+
+        // SEO 비활성(meta.seo 없음 또는 enabled=false) → null (render() 단계3 게이트와 동일).
+        // render() 는 이미 통과 후 호출하므로 무영향, 편집기 봇 미리보기는 이 게이트로 enabled=false→null.
+        if (! $seoConfig || ! ($seoConfig['enabled'] ?? false)) {
+            return null;
         }
 
         // 5.5. 템플릿 번역 데이터 로드 ($t: 키 해석용) + 파이프 로케일 설정
@@ -350,13 +416,12 @@ class SeoRenderer implements SeoRendererInterface
             $meta['jsonLd'] = $this->metaResolver->renderStructuredJson($meta['structured_data']);
         }
 
-        // 6.5. 레이아웃명을 request attribute로 저장 (SeoMiddleware에서 putWithLayout에 사용)
-        $request->attributes->set('seo_layout_name', $layoutName);
-
         // 7. ComponentHtmlMapper로 components → HTML 변환
+        // seoOnly(봇 미리보기)면 body 컴포넌트 마크업은 SEO 설정 산출물이 아니므로
+        // 계산 자체를 생략한다(SEO 전용 블레이드는 bodyHtml 미사용).
         $bodyHtml = '';
         $components = $mergedLayout['components'] ?? [];
-        if (! empty($components)) {
+        if (! $seoOnly && ! empty($components)) {
             try {
                 $bodyHtml = $this->htmlMapper->render($components, $context, $this->evaluator);
             } catch (\Throwable $e) {
@@ -368,9 +433,9 @@ class SeoRenderer implements SeoRendererInterface
         }
 
         // 8. seo.blade.php로 최종 HTML 조립
-        // SeoMiddleware가 setLocale() 전에 저장한 기본 로케일 사용
-        // (setLocale()이 config('app.locale')을 변경하므로 request attribute로 전달)
-        $defaultLocale = $request->attributes->get('seo_default_locale', config('app.locale'));
+        // render(Request) 가 seo_default_locale request attribute 에서 추출해 전달(편집기
+        // 미리보기는 null → config('app.locale') 폴백).
+        $defaultLocale = $defaultLocale ?? config('app.locale');
         $canonicalUrl = $locale === $defaultLocale
             ? url($url)
             : url($url).'?locale='.$locale;
@@ -414,7 +479,36 @@ class SeoRenderer implements SeoRendererInterface
             'pluginIdentifier' => $pluginIdentifier,
         ]);
 
-        return View::make('seo', $viewData)->render();
+        // seoOnly 면 SEO 설정 산출물만 담은 전용 블레이드로 렌더한다(body/CSS/시스템 기본
+        // 메타는 SEO 설정 산출물이 아니라 미포함). 운영은 종전 seo 블레이드(완성 HTML) 그대로.
+        if (! $seoOnly) {
+            return View::make('seo', $viewData)->render();
+        }
+
+        // 봇 미리보기 표시용 정돈 — Blade 의 @if/문자열 연결로 생기는 빈 줄·과도 들여쓰기를 정리해
+        // 읽기 좋게 만든다("모양이 예쁘지 않다"). 산출물 자체는 불변, 표시 공백만 다듬는다.
+        return $this->tidyPreviewHtml(View::make('seo-preview', $viewData)->render());
+    }
+
+    /**
+     * 봇 미리보기 HTML 을 JSON 직렬화 안전하게 정화합니다(산출물 그대로 표시).
+     *
+     * 산출물(seo-preview 블레이드 출력)을 거의 그대로 내보내되, JsonResponse 직렬화가 깨지지 않도록
+     * 유효하지 않은 UTF-8 바이트만 제거한다(Malformed UTF-8 → Server Error 방지). 들여쓰기·줄바꿈
+     * 정돈(코드 편집기 수준 포맷)은 산출물 생성부에서 다룰 후속 작업 — 여기서 후가공하지 않는다.
+     *
+     * @param  string  $html  seo-preview 블레이드 렌더 결과
+     * @return string 정화된 HTML
+     */
+    private function tidyPreviewHtml(string $html): string
+    {
+        // 유효 UTF-8 보장 — 깨진 바이트 제거(JSON 직렬화 안전). 산출물 내용은 그대로 둔다.
+        $clean = @iconv('UTF-8', 'UTF-8//IGNORE', $html);
+        if ($clean === false || ! is_string($clean)) {
+            $clean = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
+        }
+
+        return $clean;
     }
 
     /**
@@ -680,8 +774,11 @@ class SeoRenderer implements SeoRendererInterface
             $global['settings'] = [];
         }
 
-        // 코어 설정에서 사이트 기본 정보 주입 (structured_data 등에서 참조)
-        $global['site_name'] = g7_core_settings('general.site_name', '');
+        // 코어 설정에서 사이트 기본 정보 주입 (structured_data 등에서 참조).
+        // site_name 이 다국어 JSON array 일 수 있으므로 resolveLocalizedValue 로 현재 로케일
+        // string 을 추출한다 (공개#49 — OG 경로와 동일 처리. JSON-LD WebSite.name·모듈 title 의
+        // {{_global.site_name}}/{site_name} 치환이 array 로 깨지던 비일관성 해소).
+        $global['site_name'] = $this->resolveLocalizedValue(g7_core_settings('general.site_name', ''));
         $global['site_url'] = g7_core_settings('general.site_url', url('/'));
 
         // modules: 모듈별 설정 (config에서 로드)
@@ -1091,6 +1188,7 @@ class SeoRenderer implements SeoRendererInterface
         foreach ($additions as $key => $value) {
             if ($key === 'extra' && is_array($value)) {
                 $base['extra'] = array_merge((array) ($base['extra'] ?? []), $value);
+
                 continue;
             }
             if ($value === null || $value === '') {
@@ -1118,13 +1216,13 @@ class SeoRenderer implements SeoRendererInterface
      *
      * @param  array  $target  채울 대상 (레이아웃 결과)
      * @param  array  $source  fallback 소스 (모듈 declaration)
-     * @return array
      */
     private function fillEmptyKeys(array $target, array $source): array
     {
         foreach ($source as $key => $value) {
             if ($key === 'extra' && is_array($value)) {
                 $target['extra'] = array_merge($value, (array) ($target['extra'] ?? []));
+
                 continue;
             }
             $current = $target[$key] ?? null;

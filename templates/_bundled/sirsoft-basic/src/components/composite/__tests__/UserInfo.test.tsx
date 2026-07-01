@@ -422,3 +422,55 @@ describe('UserInfo 드롭다운 위치 (fixed 배치)', () => {
     expect(screen.queryByTestId('author-dropdown-menu')).not.toBeInTheDocument();
   });
 });
+
+// #1 회귀: UserInfo 의 비회원/탈퇴 분기 렌더가
+// editorAttrs(data-editor-*) 와 id 를 루트에 전달해야 한다. 누락 시 레이아웃 편집기에서
+// isGuest/isWithdrawn 상태의 UserInfo 가 캔버스에서 선택·편집 불가(데이터 결정 노드처럼
+// data-editor-name 미부착). 회원 분기는 이미 전달하므로 세 분기 모두 패리티를 보장한다.
+describe('UserInfo 편집기 패스스루 (editorAttrs/id) — 전 분기 패리티', () => {
+  const editorAttrs = {
+    'data-editor-id': 'auto_UserInfo_test',
+    'data-editor-name': 'UserInfo',
+    'data-editor-type': 'composite',
+    'data-editor-path': '3',
+  } as Record<string, string>;
+
+  it('비회원 분기 루트에 editorAttrs 와 id 가 전달되어야 함', () => {
+    const { container } = render(
+      <UserInfo name="익명" isGuest id="ui-guest" editorAttrs={editorAttrs} />
+    );
+    const node = container.querySelector('[data-editor-name="UserInfo"]');
+    expect(node).not.toBeNull();
+    expect(node).toHaveAttribute('data-editor-path', '3');
+    expect(node).toHaveAttribute('id', 'ui-guest');
+  });
+
+  it('탈퇴 회원 분기 루트에 editorAttrs 와 id 가 전달되어야 함', () => {
+    const { container } = render(
+      <UserInfo
+        author={{ id: 1, uuid: 'u1', name: '탈퇴자', status: 'withdrawn' }}
+        isWithdrawn
+        id="ui-withdrawn"
+        editorAttrs={editorAttrs}
+      />
+    );
+    const node = container.querySelector('[data-editor-name="UserInfo"]');
+    expect(node).not.toBeNull();
+    expect(node).toHaveAttribute('data-editor-path', '3');
+    expect(node).toHaveAttribute('id', 'ui-withdrawn');
+  });
+
+  it('회원 분기 루트에도 editorAttrs 와 id 가 전달되어야 함 (패리티 기준)', () => {
+    const { container } = render(
+      <UserInfo
+        author={{ id: 1, uuid: 'u1', name: '홍길동' }}
+        id="ui-member"
+        editorAttrs={editorAttrs}
+      />
+    );
+    const node = container.querySelector('[data-editor-name="UserInfo"]');
+    expect(node).not.toBeNull();
+    expect(node).toHaveAttribute('data-editor-path', '3');
+    expect(node).toHaveAttribute('id', 'ui-member');
+  });
+});

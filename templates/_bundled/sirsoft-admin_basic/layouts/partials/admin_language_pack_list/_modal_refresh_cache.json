@@ -1,20 +1,21 @@
 {
     "meta": {
         "is_partial": true,
-        "description": "언어팩 캐시 갱신 확인 모달 — registry / translator / template 캐시 무효화"
+        "description": "언어팩 캐시 갱신 확인 모달 — registry / translator / template 캐시 무효화",
+        "editor_label": "$t:admin.modal_label.admin_language_pack_list.language_pack_refresh_cache_modal"
     },
     "id": "language_pack_refresh_cache_modal",
     "type": "composite",
     "name": "Modal",
     "props": {
         "title": "$t:admin.language_packs.modal.refresh_cache.title",
-        "size": "small"
+        "size": "sm"
     },
     "children": [
         {
             "type": "basic",
             "name": "P",
-            "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+            "props": { "className": "text-body" },
             "text": "$t:admin.language_packs.modal.refresh_cache.body"
         },
         {

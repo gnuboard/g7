@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * 워커 동시 실행 방지 lock/heartbeat 가드 회귀 테스트
  *
- * 시나리오 B (이슈 #319 race condition 본질 차단):
+ * 시나리오 B (race condition 본질 차단):
  * - 환경 (예: mod_fcgid + FcgidOutputBufferSize 미설정) 에서 SSE 가 client 까지
  *   도달 못해 사용자가 폴링으로 풀백. 그 사이 SSE 워커는 백그라운드 진행.
  * - 새 폴링 워커가 진입하면 두 워커가 동일 인스톨러 state + DB 를 동시 조작.
@@ -23,18 +23,36 @@ use PHPUnit\Framework\TestCase;
  */
 class WorkerLockGuardTest extends TestCase
 {
-    private string $tempBase;
-    private string $stateFile;
+    private string $tempBase = '';
+    private string $stateFile = '';
+    private string $skipReason = '';
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->tempBase = sys_get_temp_dir() . '/g7-worker-lock-test-' . bin2hex(random_bytes(4));
-        mkdir($this->tempBase . '/storage', 0755, true);
+        // 안전 가드: 본 테스트는 BASE_PATH/storage/installer-state.json 을 write/unlink 한다.
+        // BASE_PATH 는 PHP 상수라 한 프로세스에서 단 한 번만 정의되며, 다른 Installer 테스트가
+        // 먼저 프로젝트 루트로 박으면 본 테스트가 실제 운영 installer-state.json 을 파괴하게 된다.
+        // BASE_PATH 가 시스템 temp 하위가 아니면 skip 한다.
+        $tempPrefix = realpath(sys_get_temp_dir()) ?: sys_get_temp_dir();
 
-        if (! defined('BASE_PATH')) {
+        if (defined('BASE_PATH')) {
+            $resolved = realpath((string) BASE_PATH) ?: (string) BASE_PATH;
+            if (strpos($resolved, $tempPrefix) !== 0) {
+                $this->skipReason = 'BASE_PATH (' . $resolved . ') 가 시스템 temp 하위가 아님 — '
+                    . '다른 Installer 테스트의 BASE_PATH 정의가 선행됨. 실제 installer-state.json 파괴 방지를 위해 skip. '
+                    . '격리 실행: php vendor/bin/phpunit --filter=WorkerLockGuardTest';
+                $this->markTestSkipped($this->skipReason);
+            }
+            $this->tempBase = (string) BASE_PATH;
+        } else {
+            $this->tempBase = sys_get_temp_dir() . '/g7-worker-lock-test-' . bin2hex(random_bytes(4));
             define('BASE_PATH', $this->tempBase);
+        }
+
+        if (! is_dir($this->tempBase . '/storage')) {
+            @mkdir($this->tempBase . '/storage', 0755, true);
         }
 
         $this->stateFile = BASE_PATH . '/storage/installer-state.json';
@@ -46,11 +64,10 @@ class WorkerLockGuardTest extends TestCase
 
     protected function tearDown(): void
     {
-        // $this->stateFile 은 setUp 시점의 BASE_PATH 로 이미 결정되어 있으므로
-        // 그 경로를 그대로 정리. 이전 코드는 BASE_PATH 가 self::tempBase 와 다를 때
-        // (다른 테스트가 먼저 바인딩한 경우) 정리를 skip 하여 사용자 작업 디렉토리에
-        // 잔여물을 남겼다.
-        @unlink($this->stateFile);
+        // skip 상태(= BASE_PATH 가 실 루트)면 파괴적 정리를 절대 수행하지 않는다.
+        if ($this->skipReason === '' && $this->stateFile !== '') {
+            @unlink($this->stateFile);
+        }
         parent::tearDown();
     }
 

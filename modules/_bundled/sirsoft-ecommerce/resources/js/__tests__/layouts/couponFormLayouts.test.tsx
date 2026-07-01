@@ -84,6 +84,28 @@ function findAllByName(node: any, name: string, results: any[] = []): any[] {
     return results;
 }
 
+/**
+ * 카드 본문의 필드 컨테이너(FormField 들을 직접 자식으로 갖는 Div)를 찾는다.
+ * 시맨틱화 회귀 검출용: 이 컨테이너에 row-stack 이 있어야 필드 사이
+ * 세로 여백(divide-y + py-2)이 적용된다. 불필요한 빈 Div 중첩이 끼면
+ * row-stack 이 손자에 도달하지 못해 간격이 사라진다.
+ */
+function findFieldContainer(partial: any): any {
+    const queue: any[] = [partial];
+    while (queue.length) {
+        const node = queue.shift();
+        if (
+            node?.name === 'Div' &&
+            Array.isArray(node.children) &&
+            node.children.some((c: any) => c?.name === 'FormField' || c?.id?.startsWith?.('field_'))
+        ) {
+            return node;
+        }
+        if (Array.isArray(node?.children)) queue.push(...node.children);
+    }
+    return null;
+}
+
 // ===== 메인 레이아웃 =====
 
 describe('couponFormLayouts', () => {
@@ -298,6 +320,21 @@ describe('couponFormLayouts', () => {
             expect(radioGroup.props.options[0].value).toBe('manual');
         });
 
+        it('직접발급 안내 박스: 아이콘 세로 중앙 정렬', () => {
+            // 한 줄짜리 안내문이므로 컨테이너는 items-center 여야 아이콘이
+            // 텍스트 정중앙에 온다. items-start + mt-0.5 (상단 정렬용 보정)
+            // 패턴은 아이콘이 텍스트보다 위로 떠 보이는 회귀였다.
+            const guide = findById(basicInfoPartial, 'direct_issue_guide');
+            expect(guide).toBeDefined();
+            expect(guide.props.className).toContain('items-center');
+            expect(guide.props.className).not.toContain('items-start');
+
+            const icon = findByName(guide, 'Icon');
+            expect(icon).toBeDefined();
+            // 상단 정렬용 margin-top 보정이 남아 있으면 안 된다.
+            expect(icon.props.className).not.toContain('mt-0.5');
+        });
+
         it('쿠폰명 필드: MultilingualInput 사용', () => {
             const field = findById(basicInfoPartial, 'field_coupon_name');
             expect(field).toBeDefined();
@@ -343,12 +380,13 @@ describe('couponFormLayouts', () => {
             expect(select.props.options).toHaveLength(2);
         });
 
-        it('혜택금액 Input: 비율 선택 시 min=1, max=100 동적 제약', () => {
+        it('혜택금액 Input: min 은 정적 1 (A14 — 정액/정률 모두 1 이상), max 는 정률 100 동적 제약', () => {
             const field = findById(benefitSettingsPartial, 'field_benefit_amount');
             const input = findByName(field, 'Input');
 
-            // min/max가 discount_type에 따라 동적으로 설정
-            expect(input.props.min).toContain('rate');
+            // A14: min 은 정액/정률 모두 1 로 고정 (서버 min:1 정합, 정액 0 미사용)
+            expect(input.props.min).toBe(1);
+            // max 는 정률일 때만 100 (정액은 상한 없음 → undefined)
             expect(input.props.max).toContain('rate');
             expect(input.props.max).toContain('100');
         });
@@ -588,7 +626,9 @@ describe('couponFormLayouts', () => {
             expect(apiAction.params.query.per_page).toBe(10);
             expect(apiAction.params.query.page).toBe(1);
             expect(apiAction.params.query.search_field).toContain('productSearchField');
-            expect(apiAction.params.query.keyword).toContain('productSearchKeyword');
+            // A16②: 백엔드 계약(search_keyword) 과 일치 — 구버그 keyword 키 미사용
+            expect(apiAction.params.query.keyword).toBeUndefined();
+            expect(apiAction.params.query.search_keyword).toContain('productSearchKeyword');
         });
 
         it('상품 검색 onSuccess: response 변수 사용 ($response 미사용)', () => {
@@ -656,9 +696,10 @@ describe('couponFormLayouts', () => {
             expect(trueCase.actions[0].handler).toBe('setState');
             expect(trueCase.actions[0].params.productSearchIsLoadingMore).toBe(true);
 
-            // 2. scrollIntoView
+            // 2. scrollIntoView — 로딩 인디케이터를 컨테이너 안에서 보이게 스크롤 (의도된 UX)
             expect(trueCase.actions[1].handler).toBe('scrollIntoView');
             expect(trueCase.actions[1].params.selector).toBe('#product_search_loading');
+            expect(trueCase.actions[1].params.scrollContainer).toBe('#product_search_results_scroll');
 
             // 3. apiCall with onSuccess + onError
             expect(trueCase.actions[2].handler).toBe('apiCall');
@@ -918,5 +959,36 @@ describe('couponFormLayouts', () => {
             const validTypeRadio = findByName(validTypeField, 'RadioGroup');
             expect(validTypeRadio.props.options.map((o: any) => o.value)).toEqual(['period', 'days_from_issue']);
         });
+    });
+
+    // ===== 카드 본문 필드 간격 회귀 =====
+
+    describe('카드 본문 필드 세로 간격', () => {
+        // [라벨, partial, 본문 row 항목 수].
+        // 카드 본문은 구분선 없이 여백만(space-y-5, 20px) — row-stack
+        // (divide-y + py-2) 은 구분선이 생기고 간격도 좁아 회귀였다.
+        // 기본 정보는 7개: 적용대상/발급방법/발급조건(자동)/발급조건(수동)/직접발급안내/쿠폰명/쿠폰설명
+        // (직접발급 안내 Div 는 issue_method===direct 일 때만 노출되는 조건부 직계 자식)
+        const cases: Array<[string, any, number]> = [
+            ['기본 정보', basicInfoPartial, 7],
+            ['혜택 설정', benefitSettingsPartial, 4],
+            ['발급 설정', issueSettingsPartial, 3],
+            ['사용 조건', usageConditionsPartial, 4],
+        ];
+
+        it.each(cases)(
+            '%s: 본문 항목을 직접 감싸는 컨테이너가 space-y-5 (구분선 없는 여백)',
+            (_label, partial, expectedRowCount) => {
+                const container = findFieldContainer(partial);
+                expect(container).not.toBeNull();
+                // 여백 전용 클래스여야 함 — 구분선(divide) 들어가는 row-stack 금지
+                expect(container.props?.className).toContain('space-y-5');
+                expect(container.props?.className).not.toContain('row-stack');
+                // 본문 항목들이 손자가 아닌 직계 자식이어야 한다.
+                // 빈 Div 1개로 감싸는 회귀가 있으면 직계 자식 수가 1로 떨어진다.
+                expect(container.children.length).toBe(expectedRowCount);
+                expect(container.children.length).toBeGreaterThan(1);
+            },
+        );
     });
 });

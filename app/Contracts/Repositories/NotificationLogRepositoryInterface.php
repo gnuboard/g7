@@ -4,10 +4,19 @@ namespace App\Contracts\Repositories;
 
 use App\Models\NotificationLog;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface NotificationLogRepositoryInterface
 {
+    /**
+     * 최근 발송된 알림 로그를 발송 시각 최신순으로 조회합니다 (대시보드 최근 알림).
+     *
+     * @param  int  $limit  조회 건수
+     * @return Collection<int, NotificationLog> 최근 알림 로그 컬렉션
+     */
+    public function getRecent(int $limit): Collection;
+
     /**
      * ID로 알림 로그 조회.
      */

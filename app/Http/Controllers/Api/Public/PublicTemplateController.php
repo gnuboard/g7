@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Enums\ExtensionStatus;
+use App\Extension\Helpers\EditorSpecAssembler;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Public\Template\ServeTemplateAssetRequest;
+use App\Models\TemplateLayoutAttachment;
+use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -17,7 +20,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class PublicTemplateController extends PublicBaseController
 {
     public function __construct(
-        private TemplateService $templateService
+        private TemplateService $templateService,
+        private TemplateLayoutAttachmentService $layoutAttachmentService,
     ) {
         parent::__construct();
     }
@@ -26,6 +30,7 @@ class PublicTemplateController extends PublicBaseController
      * 템플릿 라우트 정보 조회 (활성화된 모듈의 routes 포함)
      *
      * @param  string  $identifier  템플릿 식별자 (vendor-name 형식)
+     * @return JsonResponse 라우트 정보 응답
      */
     public function getRoutes(string $identifier): JsonResponse
     {
@@ -82,6 +87,11 @@ class PublicTemplateController extends PublicBaseController
 
     /**
      * 템플릿 정적 파일 서빙
+     *
+     * @param  ServeTemplateAssetRequest  $request  요청 (FormRequest 검증)
+     * @param  string  $identifier  템플릿 식별자
+     * @param  string  $path  요청 경로
+     * @return BinaryFileResponse|JsonResponse|Response 파일 응답 또는 에러
      */
     public function serveAsset(ServeTemplateAssetRequest $request, string $identifier, string $path): BinaryFileResponse|JsonResponse|Response
     {
@@ -110,6 +120,7 @@ class PublicTemplateController extends PublicBaseController
      * 컴포넌트 정의 파일 서빙
      *
      * @param  string  $identifier  템플릿 식별자
+     * @return JsonResponse 컴포넌트 정의 응답
      */
     public function serveComponents(string $identifier): JsonResponse
     {
@@ -140,6 +151,7 @@ class PublicTemplateController extends PublicBaseController
      * error_config 등 템플릿 메타데이터를 프론트엔드에 제공합니다.
      *
      * @param  string  $identifier  템플릿 식별자
+     * @return JsonResponse 템플릿 설정 응답
      */
     public function serveConfig(string $identifier): JsonResponse
     {
@@ -207,6 +219,7 @@ class PublicTemplateController extends PublicBaseController
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $locale  로케일 (ko, en 등)
+     * @return JsonResponse 다국어 데이터 응답
      */
     public function serveLanguage(string $identifier, string $locale): JsonResponse
     {
@@ -261,5 +274,69 @@ class PublicTemplateController extends PublicBaseController
 
         // 성공 응답 (JSON 데이터 직접 반환, 래핑 없음)
         return $this->cachedJsonResponse($languageData['data'], 3600);
+    }
+
+    /**
+     * 편집기 스펙 조회 — 템플릿 editor-spec.json 파일 반환
+     *
+     * Phase 3 S5a-1 에서 `nesting` 블록이 추가되었다. 본 엔드포인트는
+     * 활성 디렉토리 → _bundled 폴백 순으로 editor-spec.json 을 읽어 반환한다.
+     * 파일 미존재 시 spec=null 로 폴백 (편집기는 spec 미제공 안내).
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return JsonResponse 편집기 스펙 응답
+     */
+    public function serveEditorSpec(string $identifier): JsonResponse
+    {
+        $this->logApiUsage('templates.editor_spec', ['identifier' => $identifier]);
+
+        // 분할 editor-spec.json 은 manifest + `$include` 블록으로 구성된다.
+        // 활성 디렉토리만 기준으로 합본한 단일 spec 을 반환한다(_bundled 폴백 없음).
+        // 합본 결과는 분할 전 단일 파일과 동일 형태(프론트엔드 로더 무영향).
+        // 미분할 파일은 원본 반환(하위 호환), 미존재 시 null.
+        $spec = EditorSpecAssembler::assemble(
+            base_path("templates/{$identifier}/editor-spec.json")
+        );
+
+        $message = $spec === null
+            ? __('templates.messages.editor_spec_empty')
+            : __('templates.messages.editor_spec_retrieved');
+
+        return $this->success(
+            $message,
+            [
+                'identifier' => $identifier,
+                'spec' => $spec,
+            ]
+        );
+    }
+
+    /**
+     * 레이아웃 첨부 이미지 파일 서빙.
+     *
+     * 발행된 배경 이미지는 일반 사이트 방문자에게도 로드되어야 하므로 인증 불필요한
+     * 공개 엔드포인트로 둔다. 첨부는 비공개 `attachments` 디스크에 저장되므로 직접
+     * 공개 URL 이 없어, 본 라우트가 파일을 캐싱 헤더와 함께 인라인 스트림한다.
+     * 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  TemplateLayoutAttachment  $attachment  라우트 모델 바인딩된 첨부
+     * @return BinaryFileResponse|Response|JsonResponse 파일 응답 또는 404
+     */
+    public function serveFile(string $identifier, TemplateLayoutAttachment $attachment): BinaryFileResponse|Response|JsonResponse
+    {
+        $filePath = $this->layoutAttachmentService->getServableFilePath($identifier, $attachment);
+
+        if ($filePath === null) {
+            return $this->notFound('templates.layout_attachments.errors.not_found');
+        }
+
+        // 이미지/일반 파일 모두 캐싱 헤더와 함께 인라인 응답 (레이아웃 캐시 TTL, 기본 24시간).
+        // PublicAttachmentController 의 이미지 서빙과 동일한 fileResponse(ETag/Cache-Control) 사용.
+        return $this->fileResponse(
+            $filePath,
+            $attachment->mime_type,
+            (int) g7_core_settings('cache.layout_ttl', 86400)
+        );
     }
 }

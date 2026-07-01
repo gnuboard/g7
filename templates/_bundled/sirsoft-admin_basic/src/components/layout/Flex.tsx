@@ -1,5 +1,6 @@
 import React from 'react';
 import { Div } from '../basic/Div';
+import type { EditorAttrs } from '../../types';
 
 export interface FlexProps {
   /**
@@ -56,6 +57,15 @@ export interface FlexProps {
    * 클릭 이벤트 핸들러
    */
   onClick?: () => void;
+
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -90,6 +100,8 @@ export const Flex: React.FC<FlexProps> = ({
   className = '',
   style,
   onClick,
+  id,
+  editorAttrs,
 }) => {
   // Tailwind CSS 클래스 생성
   const classes: string[] = ['flex'];
@@ -159,7 +171,7 @@ export const Flex: React.FC<FlexProps> = ({
   }
 
   return (
-    <Div className={classes.join(' ')} style={style} onClick={onClick}>
+    <Div className={classes.join(' ')} style={style} onClick={onClick} id={id} {...editorAttrs}>
       {children}
     </Div>
   );

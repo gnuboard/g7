@@ -63,7 +63,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        "className": "text-table-header px-4 py-3 text-left"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.depositor_name"
                     },
@@ -71,7 +71,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        "className": "text-table-header px-4 py-3 text-right"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.amount"
                     },
@@ -79,7 +79,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        "className": "text-table-header px-4 py-3 text-left"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.bank_account"
                     },
@@ -87,7 +87,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        "className": "text-table-header px-4 py-3 text-left"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.deposit_time"
                     },
@@ -95,7 +95,7 @@
                       "type": "basic",
                       "name": "Th",
                       "props": {
-                        "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        "className": "text-table-header px-4 py-3 text-left"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number"
                     }
@@ -107,7 +107,7 @@
               "type": "basic",
               "name": "Tbody",
               "props": {
-                "className": "bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700"
+                "className": "divider-list bg-white dark:bg-gray-900"
               },
               "children": [
                 {
@@ -200,7 +200,7 @@
                               "props": {
                                 "type": "text",
                                 "value": "ORD20251118-0003",
-                                "className": "input w-full pr-8"
+                                "className": "input pr-8"
                               }
                             },
                             {
@@ -227,7 +227,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center justify-between text-sm"
+                            "className": "flex-between text-sm"
                           },
                           "children": [
                             {
@@ -271,7 +271,7 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "props": {
-                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                    "className": "text-required"
                                   },
                                   "text": "\\250,000"
                                 },
@@ -388,7 +388,7 @@
                           "props": {
                             "type": "text",
                             "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
-                            "className": "input w-full"
+                            "className": "input"
                           }
                         }
                       ]
@@ -410,9 +410,6 @@
               "id": "mobile_card_list",
               "type": "basic",
               "name": "Div",
-              "props": {
-                "className": "space-y-4"
-              },
               "children": [
                 {
                   "id": "mobile_card_1",
@@ -426,7 +423,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center justify-between mb-2"
+                        "className": "flex-between mb-2"
                       },
                       "children": [
                         {
@@ -468,7 +465,7 @@
                           "props": {
                             "type": "text",
                             "value": "ORD20251118-0003",
-                            "className": "input w-full pr-8"
+                            "className": "input pr-8"
                           }
                         },
                         {
@@ -495,7 +492,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center justify-between text-sm mb-2"
+                        "className": "flex-between text-sm mb-2"
                       },
                       "children": [
                         {
@@ -580,7 +577,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center justify-between mb-2"
+                        "className": "flex-between mb-2"
                       },
                       "children": [
                         {
@@ -615,7 +612,7 @@
                       "props": {
                         "type": "text",
                         "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
-                        "className": "input w-full"
+                        "className": "input"
                       }
                     }
                   ]

@@ -1,5 +1,5 @@
 {
-    "meta": { "is_partial": true, "description": "코어 업데이트 확인 결과 모달" },
+    "meta": { "is_partial": true, "description": "코어 업데이트 확인 결과 모달", "editor_label": "$t:admin.modal_label.admin_settings.core_update_result_modal" },
     "id": "core_update_result_modal",
     "type": "composite",
     "name": "Modal",
@@ -11,24 +11,24 @@
         {
             "type": "basic",
             "name": "Div",
-            "props": { "className": "space-y-4" },
+            "props": { "className": "row-stack" },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700" },
+                    "props": { "className": "flex-between border-b border-gray-100 dark:border-gray-700" },
                     "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.current_version" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{$parent._local.coreUpdateInfo?.current_version ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-label" }, "text": "$t:admin.settings.info.current_version" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-heading" }, "text": "{{$parent._local.coreUpdateInfo?.current_version ?? '-'}}" }
                     ]
                 },
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700" },
+                    "props": { "className": "flex-between border-b border-gray-100 dark:border-gray-700" },
                     "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.latest_version" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{$parent._local.coreUpdateInfo?.latest_version ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-label" }, "text": "$t:admin.settings.info.latest_version" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-heading" }, "text": "{{$parent._local.coreUpdateInfo?.latest_version ?? '-'}}" }
                     ]
                 },
                 {
@@ -36,17 +36,17 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{$parent._local.coreUpdateInfo?.update_available}}",
-                    "props": { "className": "mt-4 space-y-3" },
+                    "props": { "className": "space-y-3" },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3" },
+                            "props": { "className": "alert-success" },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "props": { "className": "text-sm text-green-700 dark:text-green-300" },
+                                    "props": { "className": "text-success-soft" },
                                     "text": "$t:admin.settings.info.update_available_message"
                                 }
                             ]
@@ -131,14 +131,14 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{!$parent._local.coreUpdateInfo?.update_available}}",
-                    "props": { "className": "mt-4" },
+                    "props": { "className": "" },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3" },
+                            "props": { "className": "alert-info" },
                             "children": [
-                                { "type": "basic", "name": "P", "props": { "className": "text-sm text-blue-700 dark:text-blue-300" }, "text": "$t:admin.settings.info.no_update_message" }
+                                { "type": "basic", "name": "P", "props": { "className": "text-info-soft" }, "text": "$t:admin.settings.info.no_update_message" }
                             ]
                         }
                     ]

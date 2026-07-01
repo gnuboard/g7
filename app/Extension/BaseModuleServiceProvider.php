@@ -2,71 +2,57 @@
 
 namespace App\Extension;
 
+use App\Contracts\Extension\CacheableExtensionInterface;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\StorageInterface;
-use Illuminate\Support\ServiceProvider;
-use ReflectionClass;
+use App\Extension\Cache\ModuleCacheDriver;
+use App\Extension\Storage\ModuleStorageDriver;
 
 /**
- * 모듈 서비스 프로바이더 베이스 클래스
+ * 모듈 서비스 프로바이더 베이스 클래스.
  *
- * 모든 모듈의 ServiceProvider가 상속받는 추상 클래스입니다.
- * 공통 기능을 자동화하여 코드 중복을 제거하고 일관성을 확보합니다.
+ * 공통 자동 바인딩 로직은 AbstractExtensionServiceProvider 가 보유하며,
+ * 본 클래스는 ModuleManager 를 통한 확장 해석만 담당합니다. 기존 자식
+ * 클래스는 `$moduleIdentifier` 속성을 그대로 사용할 수 있으며, 부모의
+ * `$extensionIdentifier` 에 자동 미러링됩니다.
  */
-abstract class BaseModuleServiceProvider extends ServiceProvider
+abstract class BaseModuleServiceProvider extends AbstractExtensionServiceProvider
 {
     /**
-     * 모듈 식별자 (자식 클래스에서 반드시 정의)
+     * 모듈 식별자 (하위 호환 alias).
      *
-     * @var string
+     * 기존 자식 클래스가 이 속성으로 지정한 값을 부모의
+     * `$extensionIdentifier` 로 미러링합니다.
      */
     protected string $moduleIdentifier;
 
     /**
-     * StorageInterface가 필요한 서비스 클래스 목록
+     * 모듈 인스턴스를 해석합니다.
      *
-     * 이 배열에 정의된 서비스들은 자동으로 StorageInterface가 주입됩니다.
+     * 정상 경로: ModuleManager 가 활성 모듈 인스턴스를 반환합니다.
      *
-     * @var array<int, class-string>
+     * Fallback: 테스트 격리 / 모듈 디스커버리 이전 시점에서는 ModuleCacheDriver /
+     * ModuleStorageDriver 를 식별자만으로 직접 생성한 어댑터를 반환합니다.
      */
-    protected array $storageServices = [];
+    protected function resolveExtension(): CacheableExtensionInterface
+    {
+        $module = $this->app->make(ModuleManager::class)
+            ->getModule($this->extensionIdentifier);
 
-    /**
-     * CacheInterface가 필요한 서비스 클래스 목록
-     *
-     * 이 배열에 정의된 서비스들은 자동으로 CacheInterface가 주입됩니다.
-     *
-     * @var array<int, class-string>
-     */
-    protected array $cacheServices = [];
+        if ($module !== null) {
+            return $module;
+        }
 
-    /**
-     * Repository 인터페이스와 구현체 매핑
-     *
-     * @var array<class-string, class-string>
-     */
-    protected array $repositories = [];
-
-    /**
-     * ServiceProvider 파일이 위치한 디렉토리 경로 (캐시)
-     *
-     * @var string|null
-     */
-    private ?string $providerPath = null;
+        return new InlineModuleExtensionAdapter($this->extensionIdentifier);
+    }
 
     /**
      * Register services.
      */
     public function register(): void
     {
-        // Repository 바인딩
-        $this->registerRepositories();
-
-        // StorageInterface 바인딩
-        $this->registerStorageBindings();
-
-        // CacheInterface 바인딩
-        $this->registerCacheBindings();
+        $this->ensureIdentifierAlias();
+        parent::register();
     }
 
     /**
@@ -74,110 +60,83 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // 마이그레이션 자동 로드
-        $this->loadModuleMigrations();
-
-        // 다국어 자동 로드
-        $this->loadModuleTranslations();
+        $this->ensureIdentifierAlias();
+        parent::boot();
     }
 
     /**
-     * Repository 인터페이스를 구현체에 바인딩합니다.
+     * `$moduleIdentifier` 값을 부모의 `$extensionIdentifier` 로 미러링합니다.
      */
-    protected function registerRepositories(): void
+    private function ensureIdentifierAlias(): void
     {
-        foreach ($this->repositories as $interface => $implementation) {
-            $this->app->bind($interface, $implementation);
+        if (isset($this->moduleIdentifier) && ! isset($this->extensionIdentifier)) {
+            $this->extensionIdentifier = $this->moduleIdentifier;
         }
     }
 
     /**
-     * StorageInterface를 필요로 하는 서비스에 자동 바인딩합니다.
-     *
-     * 각 서비스의 생성자에서 StorageInterface를 주입받으면,
-     * 해당 모듈의 Storage 인스턴스가 자동으로 주입됩니다.
-     */
-    protected function registerStorageBindings(): void
-    {
-        if (empty($this->storageServices)) {
-            return;
-        }
-
-        $this->app->when($this->storageServices)
-            ->needs(StorageInterface::class)
-            ->give(function () {
-                return $this->app->make(ModuleManager::class)
-                    ->getModule($this->moduleIdentifier)
-                    ->getStorage();
-            });
-    }
-
-    /**
-     * CacheInterface를 필요로 하는 서비스에 자동 바인딩합니다.
-     *
-     * 각 서비스의 생성자에서 CacheInterface를 주입받으면,
-     * 해당 모듈의 Cache 인스턴스가 자동으로 주입됩니다.
-     */
-    protected function registerCacheBindings(): void
-    {
-        if (empty($this->cacheServices)) {
-            return;
-        }
-
-        $this->app->when($this->cacheServices)
-            ->needs(CacheInterface::class)
-            ->give(function () {
-                return $this->app->make(ModuleManager::class)
-                    ->getModule($this->moduleIdentifier)
-                    ->getCache();
-            });
-    }
-
-    /**
-     * ServiceProvider 파일의 디렉토리 경로 반환
-     *
-     * ReflectionClass를 사용하여 자식 클래스의 실제 경로를 반환합니다.
-     * __DIR__은 베이스 클래스 경로를 반환하므로 사용할 수 없습니다.
-     *
-     * @return string ServiceProvider 디렉토리 경로 (예: modules/vendor-module/src/Providers)
-     */
-    protected function getProviderPath(): string
-    {
-        if ($this->providerPath === null) {
-            $reflection = new ReflectionClass($this);
-            $this->providerPath = dirname($reflection->getFileName());
-        }
-
-        return $this->providerPath;
-    }
-
-    /**
-     * 모듈의 마이그레이션 파일을 로드합니다.
-     *
-     * 기본 경로: {module}/database/migrations
-     * 자식 클래스는 {module}/src/Providers에 위치해야 합니다.
-     *
-     * 참고: 모듈 마이그레이션은 php artisan migrate와 분리됩니다.
-     * module:install, module:activate 명령어에서 ModuleManager::runMigrations()로 실행됩니다.
+     * @deprecated 7.0.0-beta.7 부모 `loadExtensionMigrations()` 사용 권장.
      */
     protected function loadModuleMigrations(): void
     {
-        // 모듈 마이그레이션은 loadMigrationsFrom()으로 등록하지 않음
-        // 대신 ModuleManager::runMigrations()에서 별도로 실행됨
+        $this->loadExtensionMigrations();
     }
 
     /**
-     * 모듈의 다국어 파일을 로드합니다.
-     *
-     * 기본 경로: {module}/src/lang
-     * 자식 클래스는 {module}/src/Providers에 위치해야 합니다.
+     * @deprecated 7.0.0-beta.7 부모 `loadExtensionTranslations()` 사용 권장.
      */
     protected function loadModuleTranslations(): void
     {
-        $langPath = $this->getProviderPath().'/../lang';
+        $this->loadExtensionTranslations();
+    }
+}
 
-        if (is_dir($langPath)) {
-            $this->loadTranslationsFrom($langPath, $this->moduleIdentifier);
-        }
+/**
+ * ModuleManager 가 식별자 매핑을 보유하지 않는 컨텍스트에서 사용되는 어댑터.
+ *
+ * AbstractModule::getCache() / getStorage() 와 동일한 키 prefix·디스크 정책을
+ * 따르도록 ModuleCacheDriver / ModuleStorageDriver 를 직접 생성합니다.
+ *
+ * @internal BaseModuleServiceProvider 의 fallback 전용.
+ */
+final class InlineModuleExtensionAdapter implements CacheableExtensionInterface
+{
+    private ?CacheInterface $cache = null;
+
+    private ?StorageInterface $storage = null;
+
+    /**
+     * @param  string  $identifier  모듈 식별자 (vendor-module)
+     */
+    public function __construct(private readonly string $identifier) {}
+
+    /**
+     * 모듈 식별자를 반환합니다.
+     *
+     * @return string 모듈 식별자
+     */
+    public function getIdentifier(): string
+    {
+        return $this->identifier;
+    }
+
+    /**
+     * 모듈 도메인 캐시 드라이버를 반환합니다.
+     *
+     * @return CacheInterface ModuleCacheDriver 인스턴스
+     */
+    public function getCache(): CacheInterface
+    {
+        return $this->cache ??= new ModuleCacheDriver($this->identifier);
+    }
+
+    /**
+     * 모듈 도메인 스토리지 드라이버를 반환합니다.
+     *
+     * @return StorageInterface ModuleStorageDriver 인스턴스
+     */
+    public function getStorage(): StorageInterface
+    {
+        return $this->storage ??= new ModuleStorageDriver($this->identifier);
     }
 }

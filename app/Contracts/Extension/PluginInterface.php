@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Extension;
 
-interface PluginInterface
+interface PluginInterface extends CacheableExtensionInterface
 {
     /**
      * 플러그인의 고유 식별자를 반환합니다 (vendor-plugin 형식).

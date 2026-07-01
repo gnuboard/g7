@@ -1,3 +1,4 @@
+// e2e:allow 외형 시맨틱 통일 시범 작업 — 동작 변화 없음. 패턴 확정 후 다음 사이클에 E2E spec 일괄 작성 예정.
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Input } from '../basic/Input';
 import { Textarea } from '../basic/Textarea';
@@ -5,6 +6,7 @@ import { Button } from '../basic/Button';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
+import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -93,6 +95,12 @@ export interface MultilingualInputProps {
   showCodeOnMobile?: boolean;
   /** 에러 메시지 (입력 필드에 적색 테두리 표시) */
   error?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -118,6 +126,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   name = 'multilingual_input',
   showCodeOnMobile = false,
   error,
+  id,
+  editorAttrs,
 }) => {
 
   // 에러 상태 여부
@@ -356,10 +366,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
   // 입력 필드 렌더링 (라벨 위에 표시) - Pill Badge 스타일
   const renderInputFieldWithTopLabel = useCallback((localeCode: string, showAddButton: boolean = false) => {
-    const errorBorderClass = hasError
-      ? 'border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500'
-      : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500';
-    const inputClassName = `w-full px-3 py-2 border ${errorBorderClass} rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2`;
+    const inputSemanticClassName = hasError ? 'input input-error' : 'input';
+    const textareaSemanticClassName = hasError ? 'textarea input-error' : 'textarea';
     const isDefault = localeCode === actualDefaultLocale;
     const localizedPlaceholder = `${placeholder}${placeholder ? ' (' : ''}${getLocaleName(localeCode)}${placeholder ? ')' : ''}`;
 
@@ -405,7 +413,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             disabled={disabled}
             maxLength={maxLength}
             rows={rows}
-            className={`${inputClassName} resize-vertical`}
+            className={`${textareaSemanticClassName} resize-vertical`}
           />
         ) : (
           <Input
@@ -417,7 +425,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             required={required && isDefault}
             disabled={disabled}
             maxLength={maxLength}
-            className={inputClassName}
+            className={inputSemanticClassName}
           />
         )}
       </Div>
@@ -426,10 +434,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
   // 입력 필드 렌더링 (라벨 없음 버전 - tabs용)
   const renderInputField = useCallback((localeCode: string) => {
-    const errorBorderClass = hasError
-      ? 'border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500'
-      : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500';
-    const inputClassName = `w-full px-3 py-2 border ${errorBorderClass} rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2`;
+    const inputSemanticClassName = hasError ? 'input input-error' : 'input';
+    const textareaSemanticClassName = hasError ? 'textarea input-error' : 'textarea';
     const localizedPlaceholder = `${placeholder}${placeholder ? ' (' : ''}${getLocaleName(localeCode)}${placeholder ? ')' : ''}`;
 
     return (
@@ -444,7 +450,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             disabled={disabled}
             maxLength={maxLength}
             rows={rows}
-            className={`${inputClassName} resize-vertical`}
+            className={`${textareaSemanticClassName} resize-vertical`}
           />
         ) : (
           <Input
@@ -456,12 +462,12 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             required={required && localeCode === actualDefaultLocale}
             disabled={disabled}
             maxLength={maxLength}
-            className={inputClassName}
+            className={inputSemanticClassName}
           />
         )}
       </Div>
     );
-  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName]);
+  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName, hasError]);
 
   // Inline 레이아웃 렌더링
   const renderInlineLayout = () => (
@@ -553,9 +559,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
   // Compact 레이아웃 렌더링 - 언어 선택과 입력 필드가 한 줄에 배치
   const renderCompactLayout = () => {
-    const errorBorderClass = hasError
-      ? 'border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500'
-      : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500';
+    const inputSemanticClassName = hasError ? 'input input-error' : 'input';
+    const textareaSemanticClassName = hasError ? 'textarea input-error' : 'textarea';
 
     return (
       <Div className={className}>
@@ -596,7 +601,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 disabled={disabled}
                 maxLength={maxLength}
                 rows={rows}
-                className={`w-full px-2 py-1.5 border ${errorBorderClass} rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm`}
+                className={textareaSemanticClassName}
               />
             ) : (
               <Input
@@ -608,7 +613,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 required={required && currentLocale === actualDefaultLocale}
                 disabled={disabled}
                 maxLength={maxLength}
-                className={`w-full px-2 py-1.5 border ${errorBorderClass} rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm`}
+                className={inputSemanticClassName}
               />
             )}
           </Div>
@@ -619,7 +624,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
   // 레이아웃에 따라 렌더링
   return (
-    <Div className={disabled ? 'opacity-50 cursor-not-allowed' : undefined}>
+    <Div className={disabled ? 'opacity-50 cursor-not-allowed' : undefined} id={id} {...editorAttrs}>
       {layout === 'compact' ? renderCompactLayout() : layout === 'tabs' ? renderTabsLayout() : renderInlineLayout()}
       {/* 에러 메시지 표시 */}
       {hasError && error && (

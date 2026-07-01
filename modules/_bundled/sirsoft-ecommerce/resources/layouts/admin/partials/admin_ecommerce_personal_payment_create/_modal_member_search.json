@@ -43,23 +43,20 @@
       "id": "member_search_results",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-2"
-      },
       "children": [
         {
           "id": "member_item_1",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+            "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -83,7 +80,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -127,14 +124,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+            "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -158,7 +155,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -202,14 +199,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+            "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -233,7 +230,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -277,14 +274,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+            "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -308,7 +305,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -352,14 +349,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+            "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -383,7 +380,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "className": "flex-center gap-2"
                   },
                   "children": [
                     {
@@ -422,7 +419,9 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     }
   ]
 }

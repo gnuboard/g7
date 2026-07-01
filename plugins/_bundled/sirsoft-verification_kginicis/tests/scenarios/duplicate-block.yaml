@@ -1,0 +1,133 @@
+# audit:allow test-scenario-coverage reason: 동일인 중복 가입 차단 + binding 검증 (D′−1) 시나리오 매트릭스 SSoT.
+
+feature: KG이니시스 동일인 중복 가입 차단 + self IDV binding 검증
+
+description: |
+  본질적 결함 — 본인인증을 통과한 사람이 다른 이메일로 재가입할 수 있는 결함 — 해결.
+  코어 무수정 원칙 유지. 본 plugin 안에서 두 자리에서 차단:
+
+  1. 가입 차단 listener (AssertNoDuplicateInicisIdentity)
+     - 훅: core.auth.before_register (priority 20)
+     - 코어 priority 10 listener (AssertIdentityVerifiedBeforeRegister) 가 token 검증 + consume 한 직후
+     - log.metadata.di_hash/ci_hash 회수 → inicis_identity_records 매칭 검색 → IdentityDuplicateException
+
+  2. self IDV binding 검증 (InicisIdentityProvider::verify 내부 분기)
+     - verify() 가 log.user_id 가 있는 경우 (로그인된 사용자의 self IDV 흐름)
+     - record.di_hash (또는 settings duplicate_field=ci 일 때 ci_hash) 와 verify 결과의 hash 비교
+     - 불일치 시 VerificationResult::failure(IDENTITY_BINDING_MISMATCH) + log.status=failed
+     - token 미발급 → 후속 흐름 자동 차단 (password_reset / contact_change / password_change / withdraw 등 모든 self IDV 정책 커버)
+
+  운영자 설정 (settings):
+    - duplicate_block_enabled (기본 true) — 가입 차단 listener 비활성화 가능 (가족 휴대폰 공유 / B2B)
+    - duplicate_field (기본 'di') — DI / CI 식별 키 선택
+
+  race condition 정책:
+    - listener 가 1차 차단. UNIQUE 제약은 두지 않음 — duplicate_block_enabled=false (가족계정/B2B) 시
+      한 사람이 여러 user 로 정상 가입할 수 있어야 하므로 같은 hash 의 다중 row 공존을 허용한다.
+
+axes:
+  flow:
+    - register                         # core.auth.before_register 훅 발화 (가입 시도)
+    - self_idv_verify                  # InicisIdentityProvider::verify() 직접 호출 (self IDV 흐름)
+
+  duplicate_block_enabled:
+    - true                             # 가입 차단 활성 (기본)
+    - false                            # 운영자가 비활성화 (가족계정/B2B)
+
+  duplicate_field:
+    - di                               # DI hash 기준 (기본, 가맹점 종속)
+    - ci                               # CI hash 기준 (전기관 공통)
+
+  existing_record_state:
+    - none                             # 매칭 record 없음 (신규 가입 또는 IDV 미가입자)
+    - same_hash_other_user             # 다른 user 가 같은 hash 보유 (동일인 재가입 시도)
+    - same_user_match                  # 같은 user 의 record 와 hash 일치 (본인의 self IDV 재인증)
+    - same_user_mismatch               # 같은 user 의 record 와 hash 불일치 (타인 휴대폰 hijacking)
+    - null_hash                        # record.di_hash IS NULL (외국인 또는 hash 미등록)
+    - ci2_fallback_match               # CI mode 에서 record.ci_hash 불일치하지만 record.ci2_hash 일치 (통신사 변경)
+
+  verify_hash_state:
+    - di_set                           # input.userDi 값 있음 → di_hash 생성됨
+    - di_empty                         # input.userDi 빈값 (외국인)
+    - ci_set                           # input.userCi 값 있음
+    - ci_empty                         # input.userCi 빈값
+
+  log_provider_id:
+    - inicis                           # 본 plugin 책임 영역
+    - other                            # 다른 provider (mail 등)
+
+  log_user_id:
+    - null                             # 게스트 가입 흐름
+    - present                          # 로그인된 self IDV 흐름
+
+effects:
+  # 가입 차단 listener (Listener 1)
+  - register_blocks_when_di_hash_matches_other_user
+  - register_blocks_when_ci_hash_matches_other_user_under_ci_mode
+  - register_passes_when_duplicate_block_disabled_via_settings
+  - register_passes_when_log_provider_id_is_other
+  - register_passes_when_di_hash_is_null_foreigner_case
+  - register_passes_when_no_matching_record_exists
+  - register_passes_when_verification_token_missing_in_data
+  - register_blocks_even_after_core_listener_consumed_token
+
+  # provider verify() binding 검증 (D′−1)
+  - verify_succeeds_when_log_user_id_is_null_guest_signup
+  - verify_succeeds_when_user_has_no_existing_record_permissive
+  - verify_succeeds_when_record_di_hash_matches
+  - verify_fails_with_binding_mismatch_when_di_hash_differs
+  - verify_succeeds_for_foreigner_with_null_di
+  - verify_fails_with_binding_mismatch_in_ci_mode_when_ci_hash_differs
+  - verify_succeeds_in_ci_mode_when_ci2_hash_fallback_matches
+  - verify_failure_updates_log_status_to_failed
+  - verify_failure_does_not_issue_verification_token
+
+  # 후속 효과 — token 미발급으로 자동 차단되는 모든 정책
+  - failed_verify_prevents_password_reset_flow_from_proceeding   # 코어 password_reset 정책 (verified log 없음)
+  - failed_verify_prevents_contact_change_flow_from_proceeding   # 코어 contact_change 정책
+  - failed_verify_prevents_password_change_flow_from_proceeding  # route scope 정책도 자동 커버
+  - failed_verify_prevents_withdraw_flow_from_proceeding         # route scope 정책도 자동 커버
+
+  # 가족계정/B2B 시나리오 — settings OFF 시 같은 hash 가 여러 user record 로 공존
+  - off_mode_allows_multiple_records_with_same_di_hash
+  - off_mode_self_idv_binding_still_blocks_third_party_hijacking
+
+design_rationale: |
+  - 정책 시스템 (identity_policies) 은 "verify 했는가?" 만 답하는 시스템이고
+    "이미 가입한 사람인가? / 본인인가?" 는 의미가 다른 도메인 검증이므로 plugin 책임.
+    신규 정책 추가 / 기존 정책 수정 없음.
+
+  - 가입 차단 listener 의 priority 는 20 — 코어 AssertIdentityVerifiedBeforeRegister (priority 10) 가
+    token 검증 + consume 한 직후. consumed_at 무관 조회는 본 plugin 의 LogQueryRepository 가 수행
+    (코어 findVerifiedForToken 은 consumed_at IS NULL 필터를 가짐).
+
+  - self IDV binding 검증은 listener 자리가 아닌 provider verify() 내부에서 처리 (D′−1).
+    이유: after_verify 훅 시점 throw 는 verify 가 이미 완료된 상태라 차단 불가.
+    verify() 자체가 failure 반환 → token 미발급 → 후속 모든 정책 흐름 (password_reset / contact_change /
+    password_change / withdraw) 자동 차단. route scope 정책 2개도 코어 변경 없이 커버.
+
+  - IDV 미가입자 (record 없음) 통과 정책 — 본 plugin 도입 이전 가입자의 운영 충격 회피.
+    신규 가입자는 가입 시점에 record 생성되므로 시간 흐를수록 자연 수렴.
+
+  - 외국인 (userDi 빈값) 통과 정책 — KG이니시스가 외국인 본인확인 시 DI 발급 못 하는 케이스 대응.
+    PO 결정에 따라 향후 차단 정책 전환 가능 (별도 이슈).
+
+  - PII 미노출 — IdentityDuplicateException / verify failure 메시지에 이메일/이름 절대 포함하지 않음.
+    heads-up 공격 방어. i18n 키로만 처리.
+
+scope:
+  in_scope:
+    - 가입 차단 listener (core.auth.before_register, priority 20)
+    - provider verify() 내부 binding 검증 분기
+    - settings duplicate_block_enabled 토글
+    - inicis_identity_records 비-UNIQUE 인덱스 (di_hash / ci_hash) — 조회 성능용
+    - 규정 문서 보강 (외부 IDV provider 공통 책임 명문화)
+
+  out_of_scope:
+    - 외국인 차단 정책 (현재 통과, 향후 결정)
+    - 본 plugin 도입 이전 가입자 IDV 백필 캠페인
+    - 코어 password_reset 훅에 verification_token 전달 추가 (별도 결함, 본 작업 무관)
+
+test_files:
+  - tests/Feature/Listeners/AssertNoDuplicateInicisIdentityTest.php
+  - tests/Feature/Identity/InicisIdentityProviderBindingTest.php

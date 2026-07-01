@@ -51,6 +51,24 @@ class Module extends AbstractModule
     }
 
     /**
+     * 모듈 스케줄 목록 반환
+     *
+     * 대시보드 게시물 현황 집계를 매시간 실행합니다.
+     *
+     * @return array<int, array<string, string>> 스케줄 정의 목록
+     */
+    public function getSchedules(): array
+    {
+        return [
+            [
+                'command' => 'sirsoft-board:aggregate-stats',
+                'schedule' => 'hourly',
+                'description' => '대시보드 게시물 현황 집계',
+            ],
+        ];
+    }
+
+    /**
      * 모듈 권한 목록 반환 (계층형 구조, 다국어 지원)
      *
      * 구조: 모듈(1레벨) → 카테고리(2레벨) → 개별 권한(3레벨)
@@ -560,6 +578,50 @@ class Module extends AbstractModule
         }
 
         return $schema;
+    }
+
+    /**
+     * OG 기본값 키별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
+     *
+     * seoOgDefaults() 가 resolve 해 반환하는 평문값이 **어느 게시글 데이터에서 왔는지**를 편집기
+     * [검색엔진] 탭이 "대표 이미지"·"게시글 제목" 같은 연결 칩으로 보여주고 교체할 수 있도록,
+     * 키별 데이터 경로(표현식)와 사용자용 라벨을 제공합니다. 단순 1:1 경로 키만 선언합니다.
+     *
+     * @param  string  $pageType  페이지 타입
+     * @return array<string, array{expr: string, label: array<string, string>}> 키별 데이터 경로 메타
+     */
+    public function seoOgDefaultMeta(string $pageType): array
+    {
+        // label 은 번역 키 — 번들 언어팩(ja 등)이 같은 키를 번역하면 추가 언어에 자동 대응(편집기가 __() 해석).
+        if ($pageType === 'post') {
+            return [
+                'image' => ['expr' => '{{post.data.thumbnail}}', 'label' => 'sirsoft-board::seo.auto_value.post_image'],
+                'image_alt' => ['expr' => '{{post.data.subject}}', 'label' => 'sirsoft-board::seo.auto_value.post_title'],
+            ];
+        }
+
+        return [];
+    }
+
+    /**
+     * 구조화 데이터 속성별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
+     *
+     * seoStructuredData() 의 Article 스키마를 점 경로 키로 평탄화한 기준으로 선언합니다. 파생값
+     * (description=strip_tags·datePublished·author.* 등)은 단순 경로가 아니라 제외합니다(평문 폴백).
+     *
+     * @param  string  $pageType  페이지 타입
+     * @return array<string, array{expr: string, label: array<string, string>}> 점 경로 키별 데이터 경로 메타
+     */
+    public function seoStructuredDataMeta(string $pageType): array
+    {
+        if ($pageType !== 'post') {
+            return [];
+        }
+
+        return [
+            'headline' => ['expr' => '{{post.data.subject}}', 'label' => 'sirsoft-board::seo.auto_value.post_title'],
+            'image' => ['expr' => '{{post.data.thumbnail}}', 'label' => 'sirsoft-board::seo.auto_value.post_image'],
+        ];
     }
 
     /**

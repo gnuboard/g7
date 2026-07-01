@@ -5,13 +5,15 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
+use Modules\Sirsoft\Ecommerce\Exceptions\ReviewNotWritableException;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
 
 /**
@@ -28,12 +30,14 @@ class ProductReviewService
      * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문 옵션 리포지토리
      * @param  StorageInterface  $storage  모듈 스토리지 드라이버
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
+     * @param  ProductReviewImageRepositoryInterface  $imageRepository  리뷰 이미지 리포지토리
      */
     public function __construct(
         protected ProductReviewRepositoryInterface $repository,
         protected OrderOptionRepositoryInterface $orderOptionRepository,
         protected StorageInterface $storage,
-        protected EcommerceSettingsService $settingsService
+        protected EcommerceSettingsService $settingsService,
+        protected ProductReviewImageRepositoryInterface $imageRepository
     ) {}
 
     /**
@@ -41,7 +45,7 @@ class ProductReviewService
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 개수
-     * @return LengthAwarePaginator
+     * @return LengthAwarePaginator 페이지네이션된 리뷰 목록
      */
     public function getAdminList(array $filters, int $perPage = 20): LengthAwarePaginator
     {
@@ -94,7 +98,7 @@ class ProductReviewService
 
         // 작성 기간 확인
         $deadlineDays = (int) $this->settingsService->getSetting(
-            'review.write_deadline_days',
+            'review_settings.write_deadline_days',
             config('ecommerce.review.write_deadline_days', 90)
         );
 
@@ -119,16 +123,16 @@ class ProductReviewService
      *
      * @param  int  $userId  작성자 ID
      * @param  array  $data  리뷰 데이터
-     * @return ProductReview
+     * @return ProductReview 생성된 리뷰 모델
+     *
+     * @throws ReviewNotWritableException 작성 자격이 없는 경우
      */
     public function createReview(int $userId, array $data): ProductReview
     {
         // canWrite 사전 검증
         $eligibility = $this->canWrite($userId, $data['order_option_id']);
         if (! $eligibility['can_write']) {
-            throw new \RuntimeException(
-                __('sirsoft-ecommerce::messages.reviews.cannot_write', ['reason' => $eligibility['reason']])
-            );
+            throw new ReviewNotWritableException((string) $eligibility['reason']);
         }
 
         // option_snapshot: 주문 옵션에서 복사
@@ -164,7 +168,7 @@ class ProductReviewService
      *
      * @param  ProductReview  $review  리뷰 모델
      * @param  string  $status  변경할 상태값
-     * @return ProductReview
+     * @return ProductReview 변경된 리뷰 모델
      */
     public function updateStatus(ProductReview $review, string $status): ProductReview
     {
@@ -177,7 +181,7 @@ class ProductReviewService
      * @param  ProductReview  $review  리뷰 모델
      * @param  int  $adminId  답변 관리자 ID
      * @param  array  $data  답변 데이터
-     * @return ProductReview
+     * @return ProductReview 답변이 반영된 리뷰 모델
      */
     public function saveReply(ProductReview $review, int $adminId, array $data): ProductReview
     {
@@ -196,7 +200,7 @@ class ProductReviewService
      * 판매자 답변 삭제
      *
      * @param  ProductReview  $review  리뷰 모델
-     * @return ProductReview
+     * @return ProductReview 답변이 삭제된 리뷰 모델
      */
     public function deleteReply(ProductReview $review): ProductReview
     {
@@ -213,7 +217,7 @@ class ProductReviewService
      * 리뷰 삭제 (이미지 파일 포함)
      *
      * @param  ProductReview  $review  리뷰 모델 (images 관계 로드됨)
-     * @return bool
+     * @return bool 삭제 성공 여부
      */
     public function deleteReview(ProductReview $review): bool
     {
@@ -281,11 +285,11 @@ class ProductReviewService
             // 이미지 레코드 일괄 삭제 (명시적, CASCADE 의존 금지)
             $reviewImageIds = $reviews->flatMap(fn ($r) => $r->images->pluck('id'))->all();
             if (! empty($reviewImageIds)) {
-                \Modules\Sirsoft\Ecommerce\Models\ProductReviewImage::whereIn('id', $reviewImageIds)->delete();
+                $this->imageRepository->deleteByIds($reviewImageIds);
             }
 
             // 리뷰 일괄 소프트 삭제
-            $count = ProductReview::whereIn('id', $ids)->delete();
+            $count = $this->repository->bulkSoftDeleteByIds($ids);
 
             HookManager::doAction('sirsoft-ecommerce.product-review.after_bulk_delete', $ids, $snapshots);
 

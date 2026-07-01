@@ -224,4 +224,33 @@ describe('CategoryTree', () => {
 
     expect(container.firstElementChild).toHaveClass('custom-class');
   });
+
+  // 편집기 선택 결함 회귀 가드.
+  // 빈 데이터(data=[])일 때 빈 상태 분기가 id/editorAttrs 를 부착하지 않아 편집기에서
+  // 선택 불가하던 결함을 정정했다. 모든 렌더 분기(빈 상태 + 데이터 있음)에 패리티.
+  describe('빈 상태 분기 editorAttrs/id passthrough', () => {
+    const editorAttrs = {
+      'data-editor-name': 'CategoryTree',
+      'data-editor-path': '1.children.0',
+    } as Record<string, unknown>;
+
+    it('빈 데이터 분기 루트에 id/editorAttrs 가 도달함', () => {
+      const { container } = render(
+        <CategoryTree data={[]} id="cat-empty" editorAttrs={editorAttrs} />
+      );
+      const root = container.querySelector('[data-editor-name="CategoryTree"]');
+      expect(root).toBeTruthy();
+      expect(root).toHaveAttribute('id', 'cat-empty');
+      expect(root).toHaveAttribute('data-editor-path', '1.children.0');
+    });
+
+    it('데이터 있음 분기 루트에도 id/editorAttrs 가 도달함', () => {
+      const { container } = render(
+        <CategoryTree data={mockTreeData} id="cat-full" editorAttrs={editorAttrs} />
+      );
+      const root = container.querySelector('[data-editor-name="CategoryTree"]');
+      expect(root).toBeTruthy();
+      expect(root).toHaveAttribute('id', 'cat-full');
+    });
+  });
 });

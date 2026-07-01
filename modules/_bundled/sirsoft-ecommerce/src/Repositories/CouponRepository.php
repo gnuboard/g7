@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
@@ -43,45 +44,29 @@ class CouponRepository implements CouponRepositoryInterface
             $keyword = $filters['search_keyword'];
             $searchField = $filters['search_field'] ?? 'all';
 
-            // FULLTEXT 대상 필드인 경우 Scout 사용
-            if (in_array($searchField, ['all', 'name', 'description'])) {
-                return Coupon::search($keyword)
-                    ->query(function ($q) use ($filters, $keyword, $searchField, $with, $perPage) {
-                        // 권한 스코프 필터링
-                        PermissionHelper::applyPermissionScope($q, 'sirsoft-ecommerce.promotion-coupon.read');
+            // all → FULLTEXT(name+description) + creator 보조필드 union (Scout queryCallback total
+            // 재계산 시 orWhereHas('creator') 가 MATCH 절 없이 재적용되어 total=0 이 되는 결함 회피)
+            if ($searchField === 'all') {
+                $ftIds = Coupon::search($keyword)->keys()->all();
 
-                        // 발급내역 카운트 추가
-                        $q->withCount('issues');
-
-                        // 필터 적용
-                        $this->applyCouponFilters($q, $filters);
-
-                        // FULLTEXT 외 필드 OR 조건 (created_by — all인 경우)
-                        if ($searchField === 'all') {
-                            $q->orWhereHas('creator', function ($creatorQuery) use ($keyword) {
-                                $creatorQuery->where('name', 'like', "%{$keyword}%")
-                                    ->orWhere('email', 'like', "%{$keyword}%");
-                            });
-                        }
-
-                        // 정렬
-                        $sortBy = $filters['sort_by'] ?? 'created_at';
-                        $sortOrder = $filters['sort_order'] ?? 'desc';
-                        $q->orderBy($sortBy, $sortOrder)->orderBy('id', $sortOrder);
-
-                        // Eager loading
-                        if (! empty($with)) {
-                            $q->with($with);
-                        }
-
-                        // 기본 관계 로드
-                        $q->with(['creator:id,uuid,name,email']);
+                $auxIds = $this->model->newQuery()
+                    ->whereHas('creator', function ($creatorQuery) use ($keyword) {
+                        $creatorQuery->where('name', 'like', "%{$keyword}%")
+                            ->orWhere('email', 'like', "%{$keyword}%");
                     })
-                    ->paginate($perPage);
-            }
+                    ->pluck('id')
+                    ->all();
 
-            // FULLTEXT 미대상 필드 (created_by) → LIKE 직접
-            if ($searchField === 'created_by') {
+                $matchedIds = array_values(array_unique([...$ftIds, ...$auxIds]));
+
+                // 매칭 ID 로 조건 한정 (빈 매칭은 존재하지 않는 ID 로 빈 결과 → total=0 이 정상)
+                $query->whereIn('id', $matchedIds ?: [0]);
+            } elseif ($searchField === 'name') {
+                // 컬럼 한정 검색 — Scout(FULLTEXT)는 컬럼 한정 미지원이므로 단일컬럼 LIKE
+                $query->where('name', 'like', "%{$keyword}%");
+            } elseif ($searchField === 'description') {
+                $query->where('description', 'like', "%{$keyword}%");
+            } elseif ($searchField === 'created_by') {
                 $query->whereHas('creator', function ($creatorQuery) use ($keyword) {
                     $creatorQuery->where('name', 'like', "%{$keyword}%")
                         ->orWhere('email', 'like', "%{$keyword}%");
@@ -89,6 +74,21 @@ class CouponRepository implements CouponRepositoryInterface
             }
         }
 
+        return $this->finalizeListQuery($query, $filters, $with, $perPage);
+    }
+
+    /**
+     * 목록 쿼리의 정렬·eager loading 을 적용하고 페이지네이션 결과를 반환합니다.
+     *
+     * 검색 분기별로 중복되던 정렬/eager/paginate 를 단일 진입점으로 모았습니다.
+     *
+     * @param  Builder  $query  적용 대상 쿼리(권한/필터/검색 조건이 이미 적용된 상태)
+     * @param  array  $filters  정렬 필터(sort_by/sort_order)
+     * @param  array  $with  추가 eager loading 관계
+     * @param  int  $perPage  페이지당 항목 수
+     */
+    private function finalizeListQuery(Builder $query, array $filters, array $with, int $perPage): LengthAwarePaginator
+    {
         // 정렬
         $sortBy = $filters['sort_by'] ?? 'created_at';
         $sortOrder = $filters['sort_order'] ?? 'desc';
@@ -181,8 +181,8 @@ class CouponRepository implements CouponRepositoryInterface
         // 기본 정렬: 발급일 최신순
         $query->orderBy('issued_at', 'desc')->orderBy('id', 'desc');
 
-        // 관계 로드
-        $query->with(['user:id,uuid,name']);
+        // 관계 로드 (사용처 주문번호 표시를 위해 order 도 로드)
+        $query->with(['user:id,uuid,name', 'order:id,order_number']);
 
         return $query->paginate($perPage);
     }
@@ -193,6 +193,17 @@ class CouponRepository implements CouponRepositoryInterface
     public function incrementIssuedCount(int $couponId, int $count = 1): void
     {
         $this->model->where('id', $couponId)->increment('issued_count', $count);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function decrementIssuedCount(int $couponId, int $count = 1): void
+    {
+        // 음수 방지: 현재 발급 수량을 초과해 감소하지 않도록 GREATEST(0, ...) 처리
+        $this->model->where('id', $couponId)
+            ->where('issued_count', '>=', $count)
+            ->decrement('issued_count', $count);
     }
 
     /**
@@ -255,9 +266,8 @@ class CouponRepository implements CouponRepositoryInterface
     /**
      * 쿠폰 필터 조건을 쿼리에 적용합니다.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query Eloquent 쿼리 빌더
-     * @param array $filters 필터 배열
-     * @return void
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 배열
      */
     private function applyCouponFilters($query, array $filters): void
     {
@@ -333,12 +343,12 @@ class CouponRepository implements CouponRepositoryInterface
      * ID 목록으로 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  ID 목록
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection ID 를 키로 하는 쿠폰 컬렉션
      */
-    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection
+    public function findByIdsKeyed(array $ids): Collection
     {
         if (empty($ids)) {
-            return new \Illuminate\Database\Eloquent\Collection();
+            return new Collection;
         }
 
         return Coupon::whereIn('id', $ids)->get()->keyBy('id');

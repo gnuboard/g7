@@ -13,6 +13,7 @@
   "action": {
     "edit": "수정",
     "delete": "삭제",
+    "direct_issue": "직접 발급",
     "edit_search": "검색 편집",
     "search": "검색",
     "reset": "초기화",
@@ -177,15 +178,37 @@
         "status": "상태",
         "member_info": "회원정보",
         "usage_status": "사용여부",
-        "used_at": "사용일시"
+        "used_at": "사용일시",
+        "used_order": "사용 주문",
+        "actions": "관리"
       },
       "action": {
-        "filter_by_user": "이 회원으로 필터"
+        "filter_by_user": "이 회원으로 필터",
+        "cancel_issue": "발급취소"
       },
       "status": {
         "used": "사용완료",
         "unused": "미사용"
       }
+    },
+    "cancel_issue": {
+      "title": "발급을 취소하시겠습니까?",
+      "message": "{{name}} 회원에게 발급된 쿠폰을 취소합니다.",
+      "warning": "취소된 발급은 복구할 수 없으며, 미사용 상태의 발급만 취소할 수 있습니다.",
+      "confirm_btn": "발급취소",
+      "failed": "발급 취소에 실패했습니다."
+    },
+    "direct_issue": {
+      "title": "쿠폰 직접 발급",
+      "subtitle": "‘{{name}}’ 쿠폰을 지정한 회원에게 즉시 발급합니다.",
+      "search_placeholder": "회원 이름 또는 이메일로 검색",
+      "search_btn": "검색",
+      "search_failed": "회원 검색에 실패했습니다.",
+      "add": "추가",
+      "added": "추가됨",
+      "selected": "선택된 회원 {{count}}명",
+      "issue_btn": "발급",
+      "issue_failed": "쿠폰 발급에 실패했습니다."
     }
   },
   "messages": {
@@ -327,7 +350,8 @@
       "unit_days": "일간 유효",
       "unit_quantity": "장",
       "per_user": "회원당",
-      "unit_times": "회"
+      "unit_times": "회",
+      "direct_issue_guide": "직접발급 쿠폰은 등록 후 쿠폰 목록에서 해당 쿠폰의 [직접발급] 버튼을 눌러 특정 회원에게 발급할 수 있습니다."
     },
     "search": {
       "products": "상품 검색",

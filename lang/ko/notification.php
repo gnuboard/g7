@@ -17,6 +17,7 @@ return [
     // 채널 발송 건너뛰기
     'channel_skipped_no_template' => ':channel 채널에 :type 타입의 활성 템플릿이 없어 발송을 건너뛰었습니다.',
     'channel_disabled_by_extension' => '확장 환경설정에서 해당 채널이 비활성화되어 있어 발송을 건너뛰었습니다.',
+    'channel_guest_not_allowed' => '해당 채널은 비회원 발송을 허용하지 않아 발송을 건너뛰었습니다.',
 
     // 알림 템플릿
     'template_updated' => '알림 템플릿이 수정되었습니다.',

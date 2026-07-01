@@ -1,0 +1,410 @@
+{
+  "version": "1.0.0",
+  "layout_name": "admin_ecommerce_mileage_transaction_index",
+  "permissions": [
+    "sirsoft-ecommerce.mileage.read"
+  ],
+  "extends": "_admin_base",
+  "meta": {
+    "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.title",
+    "description": "$t:sirsoft-ecommerce.admin.mileage_transactions.description"
+  },
+  "state": {
+    "filter": {
+      "searchField": "member",
+      "searchKeyword": "",
+      "type": "",
+      "currency": "",
+      "startDate": "",
+      "endDate": "",
+      "dateQuick": ""
+    },
+    "selectedItems": [],
+    "expandedRows": [],
+    "linkedTransactions": {},
+    "batchAction": "",
+    "manualModalOpen": false,
+    "extendModalOpen": false,
+    "manual": {
+      "action": "earn",
+      "amount": "",
+      "currency": "KRW",
+      "reason": "",
+      "useDefaultExpiry": true,
+      "expiresAt": ""
+    },
+    "extendDays": 30,
+    "memberSearchKeyword": "",
+    "memberSearchResults": [],
+    "selectedMember": null
+  },
+  "transition_overlay": {
+    "wait_for": [
+      "transactions"
+    ]
+  },
+  "data_sources": [
+    {
+      "id": "transactions",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "params": {
+        "page": "{{query.page || 1}}",
+        "per_page": "{{query.per_page || 20}}",
+        "sort": "{{query.sort || 'created_at_desc'}}",
+        "search_field": "{{query.search_field || 'member'}}",
+        "search_keyword": "{{query.search_keyword || ''}}",
+        "type": "{{query.type || ''}}",
+        "currency": "{{query.currency || ''}}",
+        "start_date": "{{query.start_date || ''}}",
+        "end_date": "{{query.end_date || ''}}"
+      },
+      "errorHandling": {
+        "403": {
+          "handler": "showErrorPage",
+          "params": {
+            "target": "content"
+          }
+        },
+        "default": {
+          "handler": "showErrorPage",
+          "params": {
+            "target": "content"
+          }
+        }
+      },
+      "fallback": {
+        "data": {
+          "data": [],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 0
+          }
+        }
+      }
+    }
+  ],
+  "init_actions": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "filter": {
+          "searchField": "{{query.search_field || 'member'}}",
+          "searchKeyword": "{{query.search_keyword || ''}}",
+          "type": "{{query.type || ''}}",
+          "currency": "{{query.currency || ''}}",
+          "startDate": "{{query.start_date || ''}}",
+          "endDate": "{{query.end_date || ''}}",
+          "dateQuick": ""
+        }
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "id": "mileage_transactions_content",
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+        },
+        "children": [
+          {
+            "id": "page_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "page-header"
+            },
+            "children": [
+              {
+                "id": "page_header_left",
+                "type": "basic",
+                "name": "Div",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "H1",
+                    "props": {
+                      "className": "page-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.title"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                      "className": "page-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.description"
+                  }
+                ]
+              },
+              {
+                "id": "page_header_actions",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "page-actions"
+                },
+                "children": [
+              {
+                "id": "manual_action_button",
+                "type": "basic",
+                "name": "Button",
+                "props": {
+                  "type": "button",
+                  "disabled": "{{transactions?.data?.abilities?.can_manage !== true}}",
+                  "className": "btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                },
+                "actions": [
+                  {
+                    "type": "click",
+                    "handler": "sequence",
+                    "params": {
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "mileageManual": {
+                              "selectedMember": null,
+                              "memberSearchKeyword": "",
+                              "memberSearchResults": [],
+                              "action": "earn",
+                              "amount": "",
+                              "currency": "KRW",
+                              "reason": "",
+                              "useDefaultExpiry": true,
+                              "expiresAt": ""
+                            }
+                          }
+                        },
+                        {
+                          "handler": "openModal",
+                          "target": "modal_manual_transaction"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "plus",
+                      "size": "sm"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.manual_action"
+                  }
+                ]
+              }
+                ]
+              }
+            ]
+          },
+          {
+            "partial": "partials/admin_ecommerce_mileage_transaction_index/_filters.json"
+          },
+          {
+            "id": "bulk_action_bar",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Span",
+                "props": {
+                  "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}"
+              },
+              {
+                "id": "bulk_extend_button",
+                "type": "basic",
+                "name": "Button",
+                "props": {
+                  "type": "button",
+                  "disabled": "{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}",
+                  "className": "px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                },
+                "actions": [
+                  {
+                    "type": "click",
+                    "handler": "sequence",
+                    "params": {
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "mileageExtend": {
+                              "days": 30,
+                              "lotIds": "{{_local.selectedItems ?? []}}",
+                              "userId": "{{((transactions?.data?.data ?? []).find(t => (_local.selectedItems ?? []).includes(t.id)) ?? {}).user_uuid}}"
+                            }
+                          }
+                        },
+                        {
+                          "handler": "openModal",
+                          "target": "modal_extend_expiry"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.extend_expiry"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "table_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "flex flex-wrap items-center justify-between gap-4 mb-4"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Span",
+                "props": {
+                  "className": "text-primary font-bold"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}"
+              },
+              {
+                "id": "table_header_controls",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "flex items-center gap-3"
+                },
+                "children": [
+              {
+                "id": "sort_select",
+                "type": "composite",
+                "name": "Select",
+                "props": {
+                  "className": "w-40 text-sm",
+                  "value": "{{query.sort || 'created_at_desc'}}",
+                  "options": [
+                    {
+                      "value": "created_at_desc",
+                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_desc"
+                    },
+                    {
+                      "value": "amount_desc",
+                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_desc"
+                    },
+                    {
+                      "value": "amount_asc",
+                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_asc"
+                    }
+                  ]
+                },
+                "actions": [
+                  {
+                    "type": "change",
+                    "handler": "navigate",
+                    "params": {
+                      "path": "/admin/ecommerce/mileage-transactions",
+                      "replace": true,
+                      "mergeQuery": true,
+                      "query": {
+                        "sort": "{{$event.target.value}}",
+                        "page": 1
+                      },
+                      "transition_overlay_target": "mileage_transactions_datagrid__body"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "per_page_select",
+                "type": "composite",
+                "name": "Select",
+                "props": {
+                  "className": "w-32 text-sm",
+                  "value": "{{query.per_page || '20'}}",
+                  "options": [
+                    {
+                      "value": "10",
+                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.10"
+                    },
+                    {
+                      "value": "20",
+                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.20"
+                    },
+                    {
+                      "value": "50",
+                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.50"
+                    },
+                    {
+                      "value": "100",
+                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.100"
+                    }
+                  ]
+                },
+                "actions": [
+                  {
+                    "type": "change",
+                    "handler": "navigate",
+                    "params": {
+                      "path": "/admin/ecommerce/mileage-transactions",
+                      "replace": true,
+                      "mergeQuery": true,
+                      "query": {
+                        "per_page": "{{$event.target.value}}",
+                        "page": 1
+                      },
+                      "transition_overlay_target": "mileage_transactions_datagrid__body"
+                    }
+                  }
+                ]
+              }
+                ]
+              }
+            ]
+          },
+          {
+            "partial": "partials/admin_ecommerce_mileage_transaction_index/_transactions_table.json"
+          }
+        ]
+      }
+    ]
+  },
+  "modals": [
+    {
+      "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.json"
+    },
+    {
+      "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.json"
+    },
+    {
+      "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.json"
+    }
+  ]
+}

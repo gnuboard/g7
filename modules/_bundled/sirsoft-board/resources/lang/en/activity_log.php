@@ -35,6 +35,7 @@ return [
         // Attachments
         'board_attachment_upload' => 'Attachment uploaded (Post: :post_id)',
         'board_attachment_delete' => 'Attachment deleted (Post: :post_id)',
+        'board_attachment_download' => 'Attachment downloaded (Post: :post_id)',
         'board_attachment_reorder' => 'Attachment order changed (Post: :post_id)',
 
         // Report management (Admin)
@@ -49,5 +50,6 @@ return [
         // Board settings
         'board_settings_index' => 'Board settings viewed',
         'board_settings_bulk_apply' => 'Board settings bulk applied',
+        'board_settings_bulk_apply_aborted' => 'Board settings bulk apply aborted (full rollback, failed board: :failed_board_name, :failed_at/:total)',
     ],
 ];

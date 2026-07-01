@@ -1,5 +1,6 @@
 {
   "meta": {
+    "editor_label": "$t:user.modal_label.mypage_orders.modal_confirm_purchase",
     "is_partial": true,
     "description": "구매확정 모달 - 상품 정보 + 적립 포인트 + 경고 문구 + 확인/취소 버튼"
   },

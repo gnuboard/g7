@@ -1,5 +1,6 @@
 import React from 'react';
 import { Section as BaseSection } from '../basic/Section';
+import type { EditorAttrs } from '../../types';
 
 export interface SectionLayoutProps {
   /**
@@ -66,6 +67,15 @@ export interface SectionLayoutProps {
    * 클릭 이벤트 핸들러
    */
   onClick?: () => void;
+
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /**
+   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
+   */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -95,7 +105,7 @@ export const SectionLayout: React.FC<SectionLayoutProps> = ({
   title,
   subtitle,
   children,
-  padding = 'md',
+  padding = 'none',
   background = 'none',
   maxWidth,
   centered = false,
@@ -105,19 +115,24 @@ export const SectionLayout: React.FC<SectionLayoutProps> = ({
   className = '',
   style,
   onClick,
+  id,
+  editorAttrs,
 }) => {
   // Tailwind CSS 클래스 생성
   const classes: string[] = [];
 
-  // 패딩
+  // 패딩 — 'none' 은 클래스 자체를 추가하지 않음 (호출처 className 자산이 padding 책임).
+  // p-0 토큰을 prepend 하면 호출처 admin-card 자산 등의 padding 을 의도치 않게 무력화하므로 제거.
   const paddingMap: Record<string, string> = {
-    none: 'p-0',
+    none: '',
     sm: 'p-2',
     md: 'p-4',
     lg: 'p-6',
     xl: 'p-8',
-  }; 
-  classes.push(paddingMap[padding]);
+  };
+  if (paddingMap[padding]) {
+    classes.push(paddingMap[padding]);
+  }
 
   // 배경색
   const backgroundMap: Record<string, string> = {
@@ -180,7 +195,7 @@ export const SectionLayout: React.FC<SectionLayoutProps> = ({
   }
 
   return (
-    <BaseSection className={classes.join(' ')} style={style} onClick={onClick}>
+    <BaseSection className={classes.join(' ')} style={style} onClick={onClick} id={id} {...editorAttrs}>
       {/* 제목 영역 */}
       {(title || subtitle) && (
         <div className="mb-4">

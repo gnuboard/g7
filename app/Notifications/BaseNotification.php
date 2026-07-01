@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -51,5 +52,24 @@ abstract class BaseNotification extends Notification
             $this->getNotificationType(),
             $notifiable
         );
+    }
+
+    /**
+     * 알림 렌더에 사용할 수신자 로케일을 해석합니다.
+     *
+     * 사용자 언어 SSoT(users.language)를 따르는 HasLocalePreference 수신자는
+     * preferredLocale() 값을 우선합니다. contract 미구현 수신자나 빈 선호값은
+     * 현재 app locale 로 폴백합니다.
+     *
+     * @param  object  $notifiable  알림 수신자
+     * @return string 해석된 로케일
+     */
+    public static function resolveNotifiableLocale(object $notifiable): string
+    {
+        $preferred = $notifiable instanceof HasLocalePreference
+            ? $notifiable->preferredLocale()
+            : null;
+
+        return $preferred ?? app()->getLocale();
     }
 }

@@ -1,5 +1,20 @@
 import { default as React } from 'react';
 /**
+ * 슬롯에 주입된 컴포넌트의 root id 를 컨테이너 id 로 스코프해 고유화한다.
+ *
+ * 같은 슬롯 컴포넌트가 여러 SlotContainer(예: 헤더 데스크톱/모바일)에서 렌더되면 주입
+ * 컴포넌트의 정적 root id 가 컨테이너마다 같은 값으로 중복 출력되어 HTML id 유일성을
+ * 위반한다. 컨테이너 고유 id 가 있고 컴포넌트가 root id 를 가지면 `{id}__{containerId}`
+ * 로 스코프한다. 둘 중 하나라도 없으면 원본 그대로(무영향).
+ *
+ * @param componentDef 주입 컴포넌트 정의
+ * @param containerId 이 SlotContainer 의 DOM id (없으면 스코프 안 함)
+ * @returns 스코프된(또는 원본) 컴포넌트 정의
+ */
+export declare function scopeSlotChildDef<T extends {
+    id?: unknown;
+}>(componentDef: T, containerId: string | undefined): T;
+/**
  * SlotContainer Props
  */
 export interface SlotContainerProps {

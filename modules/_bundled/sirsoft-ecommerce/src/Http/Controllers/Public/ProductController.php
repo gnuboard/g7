@@ -32,7 +32,7 @@ class ProductController extends PublicBaseController
      * 전시상태가 visible이고, 판매상태가 on_sale 또는 coming_soon인 상품만 반환합니다.
      * 정렬: latest(최신순), sales(판매순), price_asc(가격낮은순), price_desc(가격높은순)
      *
-     * @param Request $request 요청 데이터
+     * @param  Request  $request  요청 데이터
      * @return JsonResponse 상품 목록을 포함한 JSON 응답
      */
     public function index(PublicProductListRequest $request): JsonResponse
@@ -68,7 +68,7 @@ class ProductController extends PublicBaseController
      *
      * 최근 30일 판매량 기준으로 정렬합니다.
      *
-     * @param Request $request 요청 데이터
+     * @param  Request  $request  요청 데이터
      * @return JsonResponse 인기 상품 목록을 포함한 JSON 응답
      */
     public function popular(PublicProductPopularRequest $request): JsonResponse
@@ -98,7 +98,7 @@ class ProductController extends PublicBaseController
      *
      * 최신 등록순으로 정렬합니다.
      *
-     * @param Request $request 요청 데이터
+     * @param  Request  $request  요청 데이터
      * @return JsonResponse 신상품 목록을 포함한 JSON 응답
      */
     public function new(PublicProductNewRequest $request): JsonResponse
@@ -128,7 +128,7 @@ class ProductController extends PublicBaseController
      *
      * 클라이언트가 전달한 상품 ID 목록으로 조회합니다.
      *
-     * @param Request $request 요청 데이터 (ids: 쉼표 구분 상품 ID)
+     * @param  Request  $request  요청 데이터 (ids: 쉼표 구분 상품 ID)
      * @return JsonResponse 상품 목록을 포함한 JSON 응답
      */
     public function recent(PublicProductRecentRequest $request): JsonResponse
@@ -168,7 +168,7 @@ class ProductController extends PublicBaseController
      *
      * 전시상태가 visible인 상품만 조회할 수 있습니다.
      *
-     * @param int $id 상품 ID
+     * @param  int  $id  상품 ID
      * @return JsonResponse 상품 상세 정보를 포함한 JSON 응답
      */
     public function show(int $id): JsonResponse
@@ -194,6 +194,7 @@ class ProductController extends PublicBaseController
                 'brand',
                 'activeLabelAssignments.label',
                 'additionalOptions',
+                'additionalOptions.activeValues',
                 'currentUserWishlist',
             ]);
 

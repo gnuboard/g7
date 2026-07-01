@@ -64,7 +64,8 @@
     "addresses_title": "配送先管理",
     "notifications_title": "通知",
     "board_title": "掲示板アクティビティ",
-    "inquiries_title": "商品問い合わせ履歴"
+    "inquiries_title": "商品問い合わせ履歴",
+    "mileage_title": "マイレージ"
   },
   "identity": {
     "challenge": {
@@ -88,5 +89,88 @@
       "manual_redirect": "手動で移動する",
       "error_generic": "認証に失敗しました。もう一度お試しください"
     }
+  },
+  "home": {
+    "page_title": "ホーム"
+  },
+  "auth": {
+    "login_title": "ログイン",
+    "register_title": "会員登録",
+    "forgot_password_title": "パスワード忘却",
+    "reset_password_title": "パスワード再設定"
+  },
+  "board": {
+    "boards_title": "掲示板一覧",
+    "popular_title": "人気投稿",
+    "list_title": "掲示板",
+    "show_title": "投稿",
+    "write_title": "投稿作成",
+    "edit_title": "投稿編集"
+  },
+  "shop": {
+    "list_title": "商品一覧",
+    "show_title": "商品詳細",
+    "category_title": "カテゴリー",
+    "cart_title": "カート",
+    "checkout_title": "注文書作成",
+    "order_complete_title": "注文完了",
+    "guest_order_form_title": "非会員注文照会",
+    "guest_order_show_title": "非会員注文詳細"
+  },
+  "search": {
+    "page_title": "検索"
+  },
+  "errors": {
+    "not_found_title": "404 — ページが見つかりません",
+    "forbidden_title": "403 — アクセスが禁止されています",
+    "server_error_title": "500 — サーバーエラー"
+  },
+  "modal_label": {
+    "auth": {
+      "privacyModal": "プライバシーポリシー",
+      "termsModal": "利用規約"
+    },
+    "shop_detail": {
+      "coupon_download_confirm_modal": "クーポンダウンロード確認",
+      "inquiry_delete_modal": "商品問い合わせ削除確認",
+      "login_required_modal": "ログイン必須案内",
+      "qna_reply_modal": "商品問い合わせ回答",
+      "qna_write_modal": "商品問い合わせ作成",
+      "review_image_modal": "レビュー画像表示",
+      "cart_added_modal": "カート追加完了"
+    },
+    "board_form": {
+      "password_verify_modal": "パスワード確認"
+    },
+    "board_show": {
+      "board_delete_modal": "投稿・コメント削除",
+      "board_report_modal": "投稿・コメント通報",
+      "board_guest_password_modal": "非会員パスワード確認"
+    },
+    "mypage_addresses": {
+      "addressModal": "配送先登録·編集",
+      "confirmDeleteAddressModal": "配送先削除確認",
+      "confirmOverwriteModal": "配送先上書き確認"
+    },
+    "shop": {
+      "addressManageModal": "配送先管理",
+      "cart_delete_confirm_modal": "カート削除確認",
+      "cart_option_change_modal": "カートオプション変更",
+      "cart_unavailable_modal": "購入不可商品案内",
+      "coupon_download_modal": "クーポンダウンロード",
+      "exclusiveCouponConfirm": "重複不可クーポン適用確認",
+      "tempOrderNotFoundModal": "注文情報なし案内"
+    },
+    "mypage_orders": {
+      "modal_cancel_order": "注文キャンセル",
+      "changeAddressModal": "配送先変更",
+      "modal_confirm_purchase": "購入確定",
+      "modal_write_review": "レビュー作成"
+    },
+    "mypage_profile": {
+      "withdrawModal": "会員退会確認"
+    },
+    "identity_challenge_modal": "本人認証",
+    "notification_delete_all_confirm_modal": "通知全削除確認"
   }
 }

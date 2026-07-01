@@ -8,12 +8,12 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.0.0--beta.7-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.0.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/status-Open%20Beta-orange" alt="Status"></a>
+  <a href="#"><img src="https://img.shields.io/badge/status-Stable-brightgreen" alt="Status"></a>
 </p>
 
 ---
@@ -45,12 +45,12 @@ Laravel과 React를 기반으로, 보안부터 아키텍처까지 처음부터 �
 | **모듈 아키텍처** | 모듈 + 플러그인 + 템플릿 3중 확장 구조. 코어 수정 없이 독립적 모듈(게시판, 커머스 등) 개발이 가능합니다. Hook 기반 기능 주입으로 Service-Repository 패턴의 명확한 계층 분리를 유지합니다 |
 | **언어팩 시스템** | 새 언어를 코어 수정 없이 ZIP 또는 GitHub URL 로 설치할 수 있습니다. 일본어 등 공식 번들 언어팩을 즉시 사용할 수 있고, 운영자가 직접 수정한 라벨은 언어팩이 덮어쓰지 않도록 sub-key 단위로 보존합니다. 모듈/플러그인/템플릿 단위로 별도 적용 가능 |
 | **현지화** | 백엔드부터 프론트엔드까지 일관된 다국어 개발 환경을 제공합니다. 활성 언어팩이 알림 채널 라벨, Provider/Registry 페이로드, 환경설정 카탈로그(결제수단·통화·배송 가능 국가)까지 자동 보강되며, 모듈/플러그인이 자기 도메인 라벨을 자기 영역에서 자기설명하도록 활동 로그·메시지 영역도 분리되어 있습니다 |
-| **해외 결제** | 로컬 비즈니스를 넘어 글로벌 커머스로 도약하기 위한 기반을 제공합니다 `정식버전에서 지원예정` |
+| **해외 결제** | 로컬 비즈니스를 넘어 글로벌 커머스로 도약하기 위한 기반을 제공합니다. 결제 연동은 동일한 Extension Point 패턴으로 붙일 수 있으며, 해외 결제 수단은 별도 플러그인으로 제공됩니다 |
 | **권한 제어** | 역할별 메뉴와 기능, 데이터 범위까지 제어할 수 있습니다. 역할(Role) + 권한(Permission) + 스코프(Scope) 3단계 접근 제어로 조직 구조에 맞는 유연한 접근 관리를 제공합니다 |
 | **본인인증 (IDV)** | 회원가입·비밀번호 재설정·민감 작업 등 모든 본인인증 시점을 라우트/훅 단위 선언형 정책으로 통합 관리합니다. 코어가 메일 프로바이더를 기본 내장하고, 외부 KCP·이니시스·SMS·PortOne·Stripe Identity 등은 동일한 Provider 계약으로 붙일 수 있는 확장점을 제공합니다. 서버가 HTTP 428 응답을 반환하면 프론트엔드 인터셉터가 자동으로 인증 모달을 띄우고 인증 성공 시 원 요청을 재실행합니다 |
 | **보안** | 입력값 자동 검증과 토큰 기반 인증을 제공합니다. 설계부터 보안을 고려한 다층 방어 구조(CSRF/XSS/SQL Injection), 로그인 시도 제한·계정 잠금(HTTP 423) 실제 구현, 설치 완료 후 인스톨러 엔드포인트 자동 차단(HTTP 410) 까지 다층 방어를 구성합니다 |
 | **유연한 화면 구성** | 화면 구조를 정의하면 즉시 반영할 수 있습니다. 프론트엔드 인프라 없이 JSON 선언만으로 웹앱 수준의 동적 화면 구현이 가능합니다 |
-| **레이아웃 편집기** | 위지윅 기반 레이아웃 편집 기능으로 화면 블록을 직접 배치하고 수정 결과를 바로 확인할 수 있습니다 `정식버전에서 지원예정` |
+| **레이아웃 편집기** | 위지윅 기반 레이아웃 편집 기능으로 화면 블록을 직접 배치하고 수정 결과를 바로 확인할 수 있습니다 |
 | **검증된 기반** | Laravel + React 기반을 제공합니다. 글로벌 기업이 채택한 기술 스택으로 높은 확장성과 유연한 UI 구현이 가능합니다 |
 | **공통 캐시 시스템** | `CacheInterface` 와 코어/모듈/플러그인 3종 드라이버로 키 접두사(`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`) 를 자동 격리합니다. 태그 기반 자동 무효화와 `g7_core_settings('cache.*_ttl')` 중앙 관리로 하드코딩 없이 운영할 수 있습니다 |
 | **알림 시스템** | 알림 정의(Definition) × 템플릿(Template) × 수신자(Recipients) 3계층 구조로 메일/DB/실시간 브로드캐스트(Reverb) 다채널 독립 발송을 지원합니다. 작성자·역할·특정 사용자·권한 보유자 단위 타겟팅과 훅 기반 발송으로 모듈이 자체 알림을 자유롭게 등록할 수 있습니다 |
@@ -100,15 +100,12 @@ Gnuboard7
 
 그누보드7의 템플릿 엔진은 **JSON으로 UI 구조를 선언**하면, 엔진이 이를 해석하여 React 컴포넌트로 렌더링합니다.
 
-#### 현재 지원
+#### 제공 기능
 
 - JSON 선언만으로 React 기반 UI 구성 — React 전문 지식 없이도 화면 개발 가능
 - 모듈/플러그인이 프론트엔드 빌드 없이 JSON만으로 UI를 동적으로 주입/확장
 - 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
-
-#### 지원 예정
-
-- UI가 코드가 아닌 데이터(JSON)로 정의되는 구조를 활용하여, **드래그 앤 드롭 방식의 비주얼 에디터**를 통해 비개발자도 화면을 직접 구성할 수 있도록 지원할 계획입니다
+- UI가 코드가 아닌 데이터(JSON)로 정의되는 구조를 활용한 **위지윅 레이아웃 편집기** — 비개발자도 화면 블록을 직접 배치·편집하고 결과를 바로 확인할 수 있습니다
 
 ```mermaid
 flowchart TB
@@ -385,11 +382,12 @@ cp .env.example .env
 
 | 플러그인 | 설명 |
 |---------|------|
-| **sirsoft-tosspayments** | 토스페이먼츠 결제 연동 |
-| **sirsoft-verification** | 본인인증 |
+| **sirsoft-pay_kginicis** | KG이니시스 결제 연동 |
+| **sirsoft-verification_kginicis** | KG이니시스 본인인증 |
 | **sirsoft-daum_postcode** | 다음 우편번호 검색 |
 | **sirsoft-marketing** | 마케팅 도구 |
 | **sirsoft-ckeditor5** | CKEditor 5 에디터 |
+| **sirsoft-gdpr** | 개인정보 보호(GDPR) |
 
 ### 템플릿
 
@@ -409,8 +407,11 @@ cp .env.example .env
 | **g7-module-sirsoft-ecommerce-ja** | 이커머스 모듈 일본어 |
 | **g7-module-sirsoft-page-ja** | 페이지 모듈 일본어 |
 | **g7-plugin-sirsoft-ckeditor5-ja** | CKEditor5 플러그인 일본어 |
+| **g7-plugin-sirsoft-daum_postcode-ja** | 다음 우편번호 플러그인 일본어 |
+| **g7-plugin-sirsoft-gdpr-ja** | 개인정보 보호(GDPR) 플러그인 일본어 |
 | **g7-plugin-sirsoft-marketing-ja** | 마케팅 플러그인 일본어 |
-| **g7-plugin-sirsoft-tosspayments-ja** | 토스페이먼츠 플러그인 일본어 |
+| **g7-plugin-sirsoft-pay_kginicis-ja** | KG이니시스 결제 플러그인 일본어 |
+| **g7-plugin-sirsoft-verification_kginicis-ja** | KG이니시스 본인인증 플러그인 일본어 |
 | **g7-template-sirsoft-admin_basic-ja** | 관리자 기본 템플릿 일본어 |
 | **g7-template-sirsoft-basic-ja** | 사용자 기본 템플릿 일본어 |
 
@@ -435,8 +436,8 @@ cp .env.example .env
 
 | 모델 | 설명 | 상태 |
 |------|------|------|
-| **커뮤니티** | 게시판, 댓글, 회원 관리 | Beta |
-| **커머스** | 상품 등록, 주문, 결제, 배송 관리 | Beta |
+| **커뮤니티** | 게시판, 댓글, 회원 관리 | 정식 |
+| **커머스** | 상품 등록, 주문, 결제, 배송 관리 | 정식 |
 
 ---
 

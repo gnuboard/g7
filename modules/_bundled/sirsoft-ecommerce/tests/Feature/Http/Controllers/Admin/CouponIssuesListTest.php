@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * CouponController::issues() Feature 테스트
  *
  * 쿠폰 발급 내역 조회 API 엔드포인트 테스트
- * Issue #74: CouponIssuesListRequest의 Rule::exists(User::class, 'id') 검증
+* CouponIssuesListRequest의 Rule::exists(User::class, 'id') 검증
  */
 class CouponIssuesListTest extends ModuleTestCase
 {
@@ -158,6 +158,56 @@ class CouponIssuesListTest extends ModuleTestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['per_page']);
+    }
+
+    /**
+     * 발급 내역 응답에 사용처·취소가능·사용여부 필드가 노출되는지 검증
+     *
+     * 미사용(available) 발급 건은 is_cancellable=true, is_used=false, order_number=null.
+     */
+    public function test_issues_response_exposes_usage_and_cancellable_fields(): void
+    {
+        $coupon = $this->createCoupon();
+        $user = $this->createUser();
+        $this->createCouponIssue($coupon, $user, [
+            'status' => CouponIssueRecordStatus::AVAILABLE->value,
+            'expired_at' => now()->addMonth(),
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson("/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{$coupon->id}/issues");
+
+        $response->assertStatus(200);
+
+        $row = $response->json('data.data.0');
+        $this->assertArrayHasKey('order_number', $row);
+        $this->assertArrayHasKey('is_cancellable', $row);
+        $this->assertArrayHasKey('is_used', $row);
+        $this->assertNull($row['order_number']);
+        $this->assertTrue($row['is_cancellable']);
+        $this->assertFalse($row['is_used']);
+    }
+
+    /**
+     * 사용완료(used) 발급 건은 is_cancellable=false, is_used=true
+     */
+    public function test_used_issue_is_not_cancellable(): void
+    {
+        $coupon = $this->createCoupon();
+        $user = $this->createUser();
+        $this->createCouponIssue($coupon, $user, [
+            'status' => CouponIssueRecordStatus::USED->value,
+            'used_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson("/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{$coupon->id}/issues");
+
+        $response->assertStatus(200);
+
+        $row = $response->json('data.data.0');
+        $this->assertFalse($row['is_cancellable']);
+        $this->assertTrue($row['is_used']);
     }
 
     // ────────────────────────────────────────────────────────

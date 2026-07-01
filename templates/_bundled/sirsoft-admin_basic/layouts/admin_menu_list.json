@@ -39,6 +39,7 @@
     "data_sources": [
         {
             "id": "menus",
+            "label_key": "$t:editor.data_source.menus",
             "type": "api",
             "endpoint": "/api/admin/menus",
             "method": "GET",
@@ -54,6 +55,7 @@
         },
         {
             "id": "modules",
+            "label_key": "$t:editor.data_source.modules",
             "type": "api",
             "endpoint": "/api/admin/modules",
             "method": "GET",
@@ -71,6 +73,7 @@
         },
         {
             "id": "roles",
+            "label_key": "$t:editor.data_source.roles",
             "type": "api",
             "endpoint": "/api/admin/roles/active",
             "method": "GET",
@@ -88,7 +91,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -101,12 +104,31 @@
                         },
                         "children": [
                             {
+                                "id": "refresh_button",
+                                "type": "composite",
+                                "name": "IconButton",
+                                "props": {
+                                    "iconName": "refresh",
+                                    "variant": "outline",
+                                    "size": "md"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "menus"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
                                 "id": "add_menu_button",
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
                                     "disabled": "{{menus?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
                                 "actions": [
                                     {
@@ -141,7 +163,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "plus",
-                                            "size": "lg"
+                                            "size": "md"
                                         }
                                     },
                                     {

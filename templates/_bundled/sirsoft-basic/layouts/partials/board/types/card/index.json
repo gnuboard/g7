@@ -156,7 +156,8 @@
           "name": "Button",
           "iteration": { "source": "{{posts?.data?.data ?? []}}", "item_var": "post" },
           "props": { "className": "flex flex-col w-full h-full text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 group cursor-pointer overflow-hidden items-stretch" },
-          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{route.slug}}/{{post.id}}" } }],
+          "comment": "카드 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀)",
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{route.slug}}/{{post.id}}", "mergeQuery": true, "query": {} } }],
           "children": [
             {
               "comment": "썸네일 이미지 영역",

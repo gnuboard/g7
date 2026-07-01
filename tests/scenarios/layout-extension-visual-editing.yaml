@@ -1,0 +1,82 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 시각 편집 UI 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 케이스(프론트 단위/레이아웃 렌더 + 백엔드 Feature + Playwright E2E)로 커버. axes/effects 결합은 docblock 마킹 없이도 통과 케이스로 회귀 보장(layout-extension-editing.yaml 선례 동일 전략).
+
+feature: 별도 편집 모드 + 확장 주입 레이아웃 조각 시각 편집
+
+description: |
+  Phase 1 에서 editMode 값·진입/이탈 액션 골격만 도입됐던 4개 별도 편집 모드
+  (base/modal/extension/iteration_item)의 캔버스 단독 렌더 + 저장 격리를 완성하고,
+  확장 주입 레이아웃 조각(extension_point/overlay)을 일반 레이아웃과 동등하게 시각
+  편집하는 UI 를 추가한다.
+
+  본 매니페스트는 시각 편집 UI 만 다룬다. 백엔드 저장/버전/복구/미리보기/수정감지/
+  --layout-strategy=keep 보존은 layout-extension-editing.yaml 의 회귀 가드로 커버된다
+  (Phase 7 백엔드는 with_source_meta 메타 부여 + host_layouts 응답만 추가).
+
+  핵심:
+    - base/modal/extension/iteration_item 진입 시 캔버스가 해당 편집 단위만 단독 렌더.
+    - modal/iteration 저장은 호스트 레이아웃의 해당 조각만 패치(나머지 content 보존).
+    - extension 저장은 layout-extensions API(확장 행, 버전 적재, 수정 감지 보존).
+    - 라우트/base 편집 중 확장 출처 노드는 잠금 + "확장 편집" 진입 어포던스(경로 B).
+    - inject_props 호스트 노드는 속성 모달 "확장이 주입한 속성" 섹션에서 편집, 확장 행 교차 저장.
+    - 별도 편집 모드 진입 시 URL ?edit= 직렬화(pushState) + 새로고침/뒤로가기 복원.
+
+axes:
+  edit_mode: [route, base, modal, extension, iteration_item]
+  extension_type: [extension_point, overlay]
+  overlay_position: [append_child, prepend_child, append, prepend, replace, inject_props]
+  host_layout_count: [single_host, multiple_hosts_requires_picker]
+  modal_form: [inline_id_modal, partial_ref_modal]
+  lock_propagation: [host_locked_in_route, other_extension_locked, current_extension_editable]
+  inject_props_save_target: [extension_row_correctly]
+  url_sync: [enter_pushes_edit_query, refresh_restores_mode, back_exits_mode]
+  followup_action: [save, save_then_version, nested_iteration_then_exit_returns_mode]
+
+exclusions:
+  - { extension_type: overlay, host_layout_count: multiple_hosts_requires_picker, reason: "overlay host 는 target_layout 으로 확정 — picker 무관" }
+  - { edit_mode: route, overlay_position: inject_props, reason: "inject_props 편집은 호스트 노드 속성 모달(route/base) 진입이지만 저장은 확장 — overlay_position 축은 extension 모드 컴포넌트 주입 대상" }
+  - { modal_form: partial_ref_modal, followup_action: save, reason: "partial 참조 모달은 partial 파일이 SSoT — 일반 레이아웃(파셜)로 편집/저장, modal 모달 그룹 저장 격리 대상 아님" }
+
+effects:
+  - route_tree_renders_base_modal_extension_groups
+  - extension_group_renders_source_subgroups_with_badges
+  - base_edit_loads_and_renders_base_layout_standalone
+  - base_edit_saves_to_base_layout_row
+  - modal_edit_renders_modal_open_standalone_no_dim
+  - modal_edit_saves_only_modals_index_preserving_host_body
+  - modal_edit_forces_isopen_true_for_display_and_restores_binding_on_save
+  - extension_edit_loads_via_layout_extensions_api
+  - extension_edit_extension_point_uses_content_components_tree
+  - extension_edit_overlay_uses_injection_components_trees
+  - extension_edit_saves_via_put_layout_extensions_id
+  - extension_show_returns_host_layouts_candidates
+  - extension_point_multiple_hosts_signals_needs_host_picker
+  - route_edit_locks_extension_originated_nodes
+  - extension_originated_node_blackbox_no_internal_handles
+  - route_canvas_extension_lock_shows_edit_extension_affordance
+  - iteration_item_renders_item_template_standalone
+  - iteration_item_saves_only_source_node_children_preserving_iteration
+  - iteration_item_exit_returns_to_prior_edit_mode_when_nested
+  - inject_props_host_node_property_modal_shows_origin_section
+  - inject_props_change_cross_saves_to_extension_row_not_host_layout
+  - inject_props_meta_masked_on_host_layout_save
+  - applyextensions_with_source_meta_tags_extension_nodes_and_injected_props
+  - selection_tracker_emits_source_extension_id
+  - document_tracker_emits_save_target_layout_extension
+  - enter_edit_mode_pushes_edit_query_to_url
+  - refresh_with_edit_query_restores_edit_mode
+  - back_button_exits_edit_mode_to_route
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useRouteTree.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useLayoutDocument.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useExtensionDocument.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorMode.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorUrlSync.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/layoutTreeUtils.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/injectedPropsCrossSave.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useElementSelection.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/LayoutEditorReducer.iterationItem.test.ts
+  - tests/Feature/Api/Admin/LayoutExtensionControllerTest.php
+  - tests/Feature/Api/Admin/AdminTemplateAssetControllerTest.php
+  - tests/Unit/Services/LayoutExtensionServiceTest.php
+  - tests/Playwright/specs/layout-editor/separate-edit-modes.spec.ts

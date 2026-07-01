@@ -1,0 +1,90 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 신규 기능 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트(Unit + Feature)로 커버.
+
+feature: 레이아웃 확장(Layout Extension) 편집 / 버전관리 / 미리보기
+
+description: |
+  모듈·플러그인이 레이아웃에 주입하는 레이아웃 확장(extension_point / overlay)을
+  관리자가 일반 레이아웃과 동등한 수준으로 편집·버전관리·복구·미리보기할 수 있도록
+  하는 인프라.
+
+  배경:
+    - 기존에는 template_layout_extensions 를 조회·수정하는 admin API 자체가 없었고,
+      버전 이력 테이블도 없었으며, 모듈 업데이트 시 무조건 덮어쓰기였다.
+    - 신규 테이블 template_layout_extension_versions + original_content_hash 컬럼으로
+      버전 이력 + 사용자 수정 감지를 도입.
+    - registerExtension 에 preserveModified 전략 추가 — 모듈/플러그인 업데이트 시
+      --layout-strategy=keep 이면 관리자가 편집한 확장을 보존(skipped).
+    - 버전 저장/복원/diff 는 CalculatesJsonContentDiff trait 으로 일반 레이아웃과 공유.
+    - 미리보기는 편집 중인 확장 content 를 대표 레이아웃에 메모리상 치환 후 렌더.
+
+axes:
+  extension_type: [extension_point, overlay]
+  source_type: [module, plugin]
+  selected_node_kind: [layout, extension]
+  layout_strategy: [overwrite, keep]
+  user_modified: [unmodified, modified]
+  permission: [has_edit, no_edit]
+  template_match: [same_template, other_template]
+  preview_layout_provided: [provided, omitted]
+
+exclusions:
+  - { extension_type: overlay, preview_layout_provided: omitted, reason: "overlay 는 target_name 이 대표 레이아웃이므로 preview_layout 생략 가능" }
+  - { layout_strategy: overwrite, user_modified: unmodified, reason: "overwrite 는 수정 여부와 무관하게 덮어쓰기" }
+  - { selected_node_kind: layout, extension_type: extension_point, reason: "일반 레이아웃 노드는 확장 타입 축과 무관" }
+  - { permission: no_edit, user_modified: modified, reason: "권한 없으면 편집 자체 불가 — 수정 상태 진입 불가" }
+
+effects:
+  - update_extension_persists_content
+  - update_extension_creates_two_versions_prev_and_current
+  - update_extension_keeps_original_content_hash_unchanged
+  - extension_version_auto_increments
+  - extension_versions_isolated_by_extension_id
+  - restore_extension_version_restores_content_and_creates_new_version
+  - calculate_changes_detects_added_removed_modified_via_shared_trait
+  - register_extension_creates_with_original_content_hash
+  - register_extension_preserve_modified_skips_user_edited_returns_skipped
+  - register_extension_preserve_modified_overwrites_unmodified_and_refreshes_hash
+  - register_extension_overwrite_strategy_replaces_content_unconditionally
+  - has_modified_extensions_detects_hash_mismatch
+  - get_modified_extensions_by_source_filters_per_source
+  - module_update_keep_strategy_threads_preserve_modified_to_register
+  - module_update_overwrite_strategy_warns_modified_extensions
+  - index_returns_source_grouped_extensions
+  - index_attaches_source_label_to_each_extension
+  - index_excludes_extensions_hidden_by_template_override
+  - resolve_overrides_drops_module_plugin_extension_when_template_overrides_it
+  - resolved_by_template_id_returns_all_when_no_override
+  - index_groups_override_rows_under_override_target_source
+  - index_marks_override_rows_with_is_override_flag
+  - mobile_selector_includes_both_layouts_and_extensions
+  - mobile_selector_change_branches_layout_vs_extension_by_value_prefix
+  - show_returns_404_for_extension_of_other_template
+  - update_rejects_invalid_structure_with_422
+  - update_forbidden_without_edit_permission_403
+  - extension_point_xor_target_layout_enforced_by_valid_layout_extension_structure
+  - store_preview_returns_token_for_overlay_without_preview_layout
+  - store_preview_requires_preview_layout_for_extension_point_422
+  - extension_preview_substitutes_edited_content_into_representative_layout
+  - layout_version_repository_behavior_unchanged_after_trait_extraction
+  - invalidate_extension_cache_overlay_clears_dependent_layouts
+  - invalidate_extension_cache_bumps_ext_cache_version
+
+test_files:
+  - tests/Feature/Api/Admin/LayoutExtensionControllerTest.php
+  - tests/Unit/Repositories/LayoutExtensionRepositoryTest.php
+  - tests/Unit/Repositories/LayoutExtensionVersionRepositoryTest.php
+  - tests/Unit/Repositories/LayoutVersionRepositoryTest.php
+  - tests/Unit/Services/LayoutExtensionServiceEditingTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit.test.tsx
+
+rules_layer_coverage:
+  - rule: repository-interface-injection
+    coverage: LayoutExtensionService 는 LayoutExtensionRepositoryInterface / LayoutExtensionVersionRepositoryInterface 만 주입
+  - rule: service-direct-data-access
+    coverage: 버전 저장/조회/복원은 모두 Repository 위임 — Service 에서 Model 직접 쿼리는 hasModifiedExtensions/getModifiedExtensionsBySource 의 읽기 전용 스캔만 (mutation 없음)
+  - rule: layout-extension-version-table-fk
+    coverage: template_layout_extension_versions 마이그레이션이 extension_id FK + cascadeOnDelete + unique(extension_id, version)
+  - rule: layout-extension-register-preserve-modified
+    coverage: 모듈/플러그인 업데이트 경로(refreshExtensionLayoutExtensions)가 registerExtension 에 preserveModified 인자 명시
+  - rule: i18n-throw-hardcoded-korean
+    coverage: 검증 메시지는 validation.layout_extension.* 다국어 키 사용

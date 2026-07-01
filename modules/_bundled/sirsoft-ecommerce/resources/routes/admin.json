@@ -66,12 +66,12 @@
       }
     },
     {
-      "path": "*/admin/ecommerce/mileage-deposit-settings",
-      "layout": "admin_ecommerce_mileage_deposit_settings",
+      "path": "*/admin/ecommerce/mileage-transactions",
+      "layout": "admin_ecommerce_mileage_transaction_index",
       "auth_required": true,
-      "permission": "sirsoft-ecommerce.mileage-deposit-settings.read",
+      "permission": "sirsoft-ecommerce.mileage.read",
       "meta": {
-        "title": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.title"
+        "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.title"
       }
     },
     {
@@ -126,7 +126,7 @@
       "auth_required": true,
       "permission": "sirsoft-ecommerce.product-notice.read",
       "meta": {
-        "title": "$t:sirsoft-ecommerce.admin.product_notice.title"
+        "title": "$t:sirsoft-ecommerce.admin.product_notice_template.title"
       }
     },
     {
@@ -271,7 +271,10 @@
     },
     {
       "path": "*/admin/ecommerce/product-create",
-      "redirect": "/admin/ecommerce/products/create"
+      "redirect": "/admin/ecommerce/products/create",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.product.title_create"
+      }
     }
   ]
 }

@@ -30,10 +30,14 @@ return [
 
     'disks' => [
 
+        // serve => false: Laravel 이 자동 생성하는 GET/PUT /storage/{path} 라우트를 노출하지
+        // 않는다 (공개#52). 이 디스크들을 HTTP 로 직접 서빙하는 정상 흐름이 G7 에 없어
+        // (업로드는 전부 /api/.../attachments + StorageInterface, 확장 에셋은 public/build),
+        // 인증·권한 검사 없는 임의 경로 파일 쓰기(PUT) 입구를 닫는다. 디스크 자체는 그대로 동작.
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            'serve' => false,
             'throw' => true,
             'report' => false,
         ],
@@ -41,7 +45,7 @@ return [
         'modules' => [
             'driver' => 'local',
             'root' => storage_path('app/modules'),
-            'serve' => true,
+            'serve' => false,
             'throw' => true,
             'report' => false,
         ],
@@ -49,7 +53,7 @@ return [
         'plugins' => [
             'driver' => 'local',
             'root' => storage_path('app/plugins'),
-            'serve' => true,
+            'serve' => false,
             'throw' => true,
             'report' => false,
         ],

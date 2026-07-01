@@ -7,6 +7,7 @@ import { Input } from '../basic/Input';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { HtmlContent } from './HtmlContent';
+import type { EditorAttrs } from '../../types';
 
 // G7Core 참조
 const G7Core = () => (window as any).G7Core;
@@ -136,6 +137,13 @@ export interface HtmlEditorProps {
    * 읽기 전용 모드
    */
   readOnly?: boolean;
+
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -187,6 +195,8 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
   name = 'content',
   htmlFieldName = 'content_mode',
   readOnly = false,
+  id,
+  editorAttrs,
 }) => {
   // 지원 언어 목록
   const supportedLocales = useMemo(() => getSupportedLocales(), []);
@@ -324,7 +334,7 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
   );
 
   return (
-    <Div className={`space-y-2 ${className}`}>
+    <Div className={`space-y-2 ${className}`} id={id} {...editorAttrs}>
       {/* 라벨 및 HTML 모드 토글 */}
       <Div className="flex items-center justify-between">
         {label && (

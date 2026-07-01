@@ -5,6 +5,7 @@ import { A } from '../basic/A';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import type { EditorAttrs } from '../../types';
 
 export interface BreadcrumbItem {
   label: string;
@@ -19,6 +20,12 @@ export interface BreadcrumbProps {
   homeHref?: string;
   maxItems?: number;
   className?: string;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -52,6 +59,8 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   homeHref = '/',
   maxItems,
   className = '',
+  id,
+  editorAttrs,
 }) => {
   // Home 아이템 생성
   const homeItem: BreadcrumbItem = {
@@ -77,6 +86,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
     <Nav
       className={`flex items-center space-x-2 text-sm ${className}`}
       aria-label="Breadcrumb"
+      id={id} {...editorAttrs}
     >
       <Div className="flex items-center space-x-2">
         {displayItems.map((item, index) => {

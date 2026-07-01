@@ -1,0 +1,587 @@
+{
+    "extension_point": "user_global_overlay",
+    "mode": "append",
+    "data_sources": [
+        {
+            "id": "gdprPublicSettings",
+            "label_key": "$t:sirsoft-gdpr.editor.data_source.gdprPublicSettings",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-gdpr/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": false
+        },
+        {
+            "comment": "현재 방문자(회원/게스트)의 쿠키 동의 완료 여부 — 새로고침 후에도 배너 재출력 방지용. 동의 저장 후 refetch. auth_mode:optional 로 토큰 있으면 회원 상태, 없으면 게스트 상태로 조회 (서버 라우트 optional.sanctum 와 짝).",
+            "id": "gdprMyConsent",
+            "label_key": "$t:sirsoft-gdpr.editor.data_source.gdprMyConsent",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-gdpr/consent/cookie/status",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional"
+        }
+    ],
+    "components": [
+        {
+            "id": "gdpr_cookie_banner",
+            "type": "basic",
+            "name": "Div",
+            "comment": "GDPR 쿠키 동의 배너 (W-1) — banner_enabled 토글 기반. 환경설정은 모달 대신 배너 내부 인라인 펼침으로 처리. 동의 완료 여부는 gdprMyConsent (서버) 가 우선이며, 사용자 클릭 직후 즉시 사라지도록 _global.gdprBannerDismissed 도 함께 검사",
+            "if": "{{gdprPublicSettings?.data?.banner_enabled === true && gdprMyConsent?.data?.has_consented !== true && _global.gdprBannerDismissed !== true}}",
+            "props": {
+                "className": "fixed z-50 {{(gdprPublicSettings?.data?.banner_position === 'bottom_left_popup') ? 'bottom-4 left-4 max-w-md rounded-lg' : ((gdprPublicSettings?.data?.banner_position === 'bottom_right_popup') ? 'bottom-4 right-4 max-w-md rounded-lg' : ((gdprPublicSettings?.data?.banner_position === 'centered_modal') ? 'top-1/2 -translate-y-1/2 inset-x-4 mx-auto max-w-md rounded-lg' : 'bottom-4 left-4 right-4 rounded-lg'))}} bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "px-4 py-4 sm:px-6 sm:py-4"
+                    },
+                    "children": [
+                        {
+                            "comment": "=== 상단: 안내 메시지 (위) + 버튼 3종 (아래, 우측 정렬) + 운영 주체 푸터 라인 (최하단) ===",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "cookie-bite",
+                                                        "size": "sm",
+                                                        "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "H3",
+                                                    "props": {
+                                                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "$t:sirsoft-gdpr.banner.title"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-1 text-xs text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-gdpr.banner.description"
+                                        },
+                                        {
+                                            "comment": "A-6 — needs_renewal=true 일 때 재출현 사유 + 거부 시 결과 안내 (Art.5 투명성). 정책 본문 링크는 기존 banner.policy_link 가 needs_renewal 시 라벨 변경 + 강조 처리 (중복 링크 방지). 다크모드 가독성: solid 색 사용 (불투명도 회피).",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{gdprMyConsent?.data?.needs_renewal === true}}",
+                                            "props": {
+                                                "className": "mt-2 px-2 py-1 text-xs text-amber-900 dark:text-amber-100 bg-amber-100 dark:bg-amber-800 border border-amber-300 dark:border-amber-600 rounded space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "text": "$t:sirsoft-gdpr.banner.re_appear_reason|version={{gdprMyConsent?.data?.current_policy_version ?? '?'}}"
+                                                },
+                                                {
+                                                    "comment": "거부 시 결과 안내 — 일반 동의 거부 안내 표현 (글로벌 CMP 패턴). cookie wall 우려 회피하면서도 사용자가 *어떤 기능이 영향받는지* 인지하도록.",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": { "className": "text-amber-800 dark:text-amber-200" },
+                                                    "text": "$t:sirsoft-gdpr.banner.consent_required_hint"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "개인정보처리방침 — 동의 결정 컨텍스트 보존 위해 새 탭으로 오픈 (rel=noopener,noreferrer). needs_renewal=true 시 라벨이 '변경된 정책 본문 보기' 로 바뀌고 amber 톤으로 강조됨 (중복 링크 방지 — 사유 박스 내부 별도 링크 미사용).",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{gdprPublicSettings?.data?.privacy_policy_available === true}}",
+                                            "props": {
+                                                "href": "/page/{{gdprPublicSettings?.data?.privacy_policy_slug ?? ''}}",
+                                                "target": "_blank",
+                                                "rel": "noopener noreferrer",
+                                                "className": "{{gdprMyConsent?.data?.needs_renewal === true ? 'inline-flex items-center gap-1 mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300 underline hover:no-underline' : 'inline-flex items-center gap-1 mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline'}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{gdprMyConsent?.data?.needs_renewal === true ? '$t:sirsoft-gdpr.banner.view_policy_label' : '$t:sirsoft-gdpr.banner.policy_link'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "arrow-up-right-from-square",
+                                                        "size": "xs",
+                                                        "className": "opacity-70"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-wrap items-center justify-end gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "환경설정 토글 — 배너 내부 인라인 펼침 영역을 열고 닫음",
+                                            "id": "gdpr_preferences_toggle_button",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "gdprPreferencesOpen": "{{!_global.gdprPreferencesOpen}}"
+                                                    }
+                                                }
+                                            ],
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-gdpr.banner.preferences"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "필수만 사용 — required 카테고리만 true 로 저장 후 배너 닫기. gdprBannerSubmittingAction 식별자(string)로 어느 버튼이 진행 중인지 추적 — 클릭한 버튼만 스피너 + 라벨 변경, 다른 버튼은 disabled + 원래 라벨 유지 (어느 버튼을 눌렀는지 시각적 인지 가능)",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "disabled": "{{!!_global.gdprBannerSubmittingAction}}",
+                                                "className": "px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        { "handler": "setState", "params": { "target": "global", "gdprBannerSubmittingAction": "reject_all" } },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "auth_mode": "optional",
+                                                            "target": "/api/plugins/sirsoft-gdpr/consent/cookie",
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": "{{{ consents: (gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, ['cookie_' + c.key]: c.required === true }), {}), source: 'banner' }}}"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "gdprBannerSubmittingAction": null,
+                                                                        "gdprBannerDismissed": true,
+                                                                        "gdprPreferencesOpen": false,
+                                                                        "gdprConsent": "{{(gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, [c.key]: c.required === true }), {})}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": { "dataSourceId": "gdprMyConsent" }
+                                                                },
+                                                                {
+                                                                    "comment": "자동 차단 엔진 동의 메모리 캐시 갱신 + rescan",
+                                                                    "handler": "sirsoft-gdpr.syncConsent"
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "$t:sirsoft-gdpr.consent.granted"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                { "handler": "setState", "params": { "target": "global", "gdprBannerSubmittingAction": null } },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error?.message ?? 'Error'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "children": [
+                                                { "type": "basic", "name": "Icon", "if": "{{_global.gdprBannerSubmittingAction === 'reject_all'}}", "props": { "name": "spinner", "size": "sm", "spin": true, "className": "mr-1" } },
+                                                { "type": "basic", "name": "Span", "if": "{{_global.gdprBannerSubmittingAction !== 'reject_all'}}", "text": "$t:sirsoft-gdpr.banner.reject_all" },
+                                                { "type": "basic", "name": "Span", "if": "{{_global.gdprBannerSubmittingAction === 'reject_all'}}", "text": "$t:sirsoft-gdpr.consent.granting" }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "현재 동의 갱신 (회원) — needs_renewal=true 한정. 회원은 status 테이블에 동의가 영속되므로 renew-all 로 활성 동의의 policy_version 만 신정책으로 bump (사용자 의사 변경 없음, Art.7(3) 자유 변경권 + Recital 32 명확한 긍정 행위 부합). 위치: 환경설정/필수만 사용 다음, 모두 동의 앞.",
+                                            "id": "gdpr_keep_consent_button",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{gdprMyConsent?.data?.is_member === true && gdprMyConsent?.data?.needs_renewal === true}}",
+                                            "props": {
+                                                "type": "button",
+                                                "disabled": "{{!!_global.gdprBannerSubmittingAction}}",
+                                                "className": "px-4 py-2 text-sm font-medium text-white bg-amber-600 dark:bg-amber-700 rounded hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        { "handler": "setState", "params": { "target": "global", "gdprBannerSubmittingAction": "renew_consent" } },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "auth_required": true,
+                                                            "target": "/api/plugins/sirsoft-gdpr/consent/renew-all",
+                                                            "params": { "method": "POST" },
+                                                            "onSuccess": [
+                                                                { "handler": "setState", "params": { "target": "global", "gdprBannerSubmittingAction": null, "gdprBannerDismissed": true } },
+                                                                { "handler": "refetchDataSource", "params": { "dataSourceId": "gdprMyConsent" } },
+                                                                { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-gdpr.mypage.privacy.renew_all_success|renewed={{response?.data?.renewed ?? 0}}" } }
+                                                            ],
+                                                            "onError": [
+                                                                { "handler": "setState", "params": { "target": "global", "gdprBannerSubmittingAction": null } },
+                                                                { "handler": "toast", "params": { "type": "error", "message": "{{error?.message ?? 'Error'}}" } }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "children": [
+                                                { "type": "basic", "name": "Icon", "if": "{{_global.gdprBannerSubmittingAction === 'renew_consent'}}", "props": { "name": "spinner", "size": "sm", "spin": true, "className": "mr-1" } },
+                                                { "type": "basic", "name": "Span", "if": "{{_global.gdprBannerSubmittingAction !== 'renew_consent'}}", "text": "$t:sirsoft-gdpr.banner.btn_renew_consent" },
+                                                { "type": "basic", "name": "Span", "if": "{{_global.gdprBannerSubmittingAction === 'renew_consent'}}", "text": "$t:sirsoft-gdpr.consent.renewing" }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "모두 동의 — 모든 카테고리 true 로 저장 후 배너 닫기. 회원 + needs_renewal=true 일 때만 미노출 (이전 철회 의사 덮어쓰기 회피 — 옆 keep_consent 버튼이 활성 동의만 갱신). 게스트는 needs_renewal 여부와 무관하게 항상 노출.",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{!(gdprMyConsent?.data?.is_member === true && gdprMyConsent?.data?.needs_renewal === true)}}",
+                                            "props": {
+                                                "type": "button",
+                                                "disabled": "{{!!_global.gdprBannerSubmittingAction}}",
+                                                "className": "px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        { "handler": "setState", "params": { "target": "global", "gdprBannerSubmittingAction": "accept_all" } },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "auth_mode": "optional",
+                                                            "target": "/api/plugins/sirsoft-gdpr/consent/cookie",
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": "{{{ consents: (gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, ['cookie_' + c.key]: true }), {}), source: 'banner' }}}"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "gdprBannerSubmittingAction": null,
+                                                                        "gdprBannerDismissed": true,
+                                                                        "gdprPreferencesOpen": false,
+                                                                        "gdprConsent": "{{(gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, [c.key]: true }), {})}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": { "dataSourceId": "gdprMyConsent" }
+                                                                },
+                                                                {
+                                                                    "comment": "자동 차단 엔진 동의 메모리 캐시 갱신 + rescan",
+                                                                    "handler": "sirsoft-gdpr.syncConsent"
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "$t:sirsoft-gdpr.consent.granted"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                { "handler": "setState", "params": { "target": "global", "gdprBannerSubmittingAction": null } },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error?.message ?? 'Error'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "children": [
+                                                { "type": "basic", "name": "Icon", "if": "{{_global.gdprBannerSubmittingAction === 'accept_all'}}", "props": { "name": "spinner", "size": "sm", "spin": true, "className": "mr-1" } },
+                                                { "type": "basic", "name": "Span", "if": "{{_global.gdprBannerSubmittingAction !== 'accept_all'}}", "text": "$t:sirsoft-gdpr.banner.accept_all" },
+                                                { "type": "basic", "name": "Span", "if": "{{_global.gdprBannerSubmittingAction === 'accept_all'}}", "text": "$t:sirsoft-gdpr.consent.granting" }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "운영 주체 + 데이터 저장 위치 푸터 라인 — EDPB Guidelines 05/2020 'controller identity must be apparent from the first information layer' 충족 + GDPR Art.13(1)(f) 저장 위치 고지. 3-case 분기로 자연어 한 줄 표현: (1) 둘 다 / (2) 운영자만 / (3) 저장위치만. 둘 다 비면 라인 전체 숨김 (어색한 빈 라벨 회피).",
+                            "id": "gdpr_banner_operator_footer",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!gdprPublicSettings?.data?.legal_entity_name || !!gdprPublicSettings?.data?.data_storage_location}}",
+                            "props": {
+                                "className": "mt-3 pt-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!gdprPublicSettings?.data?.legal_entity_name && !!gdprPublicSettings?.data?.data_storage_location}}",
+                                    "text": "$t:sirsoft-gdpr.banner.operator_and_storage_line|entity={{gdprPublicSettings?.data?.legal_entity_name ?? ''}}|location={{gdprPublicSettings?.data?.data_storage_location ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!gdprPublicSettings?.data?.legal_entity_name && !gdprPublicSettings?.data?.data_storage_location}}",
+                                    "text": "$t:sirsoft-gdpr.banner.operator_only_line|entity={{gdprPublicSettings?.data?.legal_entity_name ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!gdprPublicSettings?.data?.legal_entity_name && !!gdprPublicSettings?.data?.data_storage_location}}",
+                                    "text": "$t:sirsoft-gdpr.banner.storage_only_line|location={{gdprPublicSettings?.data?.data_storage_location ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "=== 하단: 환경설정 인라인 펼침 영역 (preferences_toggle_button 으로 토글) ===",
+                            "id": "gdpr_preferences_panel",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.gdprPreferencesOpen === true}}",
+                            "props": {
+                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-gdpr.banner.preferences_description"
+                                },
+                                {
+                                    "comment": "카테고리 토글 목록",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-700"
+                                    },
+                                    "iteration": {
+                                        "source": "gdprPublicSettings?.data?.cookie_categories ?? []",
+                                        "item_var": "category",
+                                        "index_var": "categoryIdx"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-start justify-between gap-3 px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-1 min-w-0"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex items-center gap-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-xs font-semibold text-gray-900 dark:text-white"
+                                                                    },
+                                                                    "text": "{{category?.label?.ko ?? category?.label?.en ?? category?.key ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{category?.required === true}}",
+                                                                    "props": {
+                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                                                    },
+                                                                    "text": "$t:sirsoft-gdpr.banner.category_required_badge"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "comment": "카테고리 description — 사용자 친화 한 줄 (시더의 user_info 표현 사용. 이전 자세히 보기 펼침 영역과 중복되어 펼침 영역 통째 제거)",
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{!!category?.description?.ko || !!category?.description?.en}}",
+                                                            "props": {
+                                                                "className": "mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{category?.description?.ko ?? category?.description?.en ?? ''}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Checkbox",
+                                                    "props": {
+                                                        "checked": "{{(_global.gdprConsent ?? {})[category?.key] === true || category?.required === true}}",
+                                                        "disabled": "{{category?.required === true}}",
+                                                        "className": "h-5 w-5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "gdprConsent": "{{{ ...(_global.gdprConsent ?? {}), [category?.key]: $event.target.checked }}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "저장 버튼 — 현재 _global.gdprConsent 그대로 저장 후 배너 닫기",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-end"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "disabled": "{{!!_global.gdprBannerSubmittingAction}}",
+                                                "className": "px-4 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        { "handler": "setState", "params": { "target": "global", "gdprBannerSubmittingAction": "save_selection" } },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "auth_mode": "optional",
+                                                            "target": "/api/plugins/sirsoft-gdpr/consent/cookie",
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": "{{{ consents: (gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, ['cookie_' + c.key]: ((_global.gdprConsent ?? {})[c.key] === true) || c.required === true }), {}), source: 'banner' }}}"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "gdprBannerSubmittingAction": null,
+                                                                        "gdprBannerDismissed": true,
+                                                                        "gdprPreferencesOpen": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": { "dataSourceId": "gdprMyConsent" }
+                                                                },
+                                                                {
+                                                                    "comment": "자동 차단 엔진 동의 메모리 캐시 갱신 + rescan",
+                                                                    "handler": "sirsoft-gdpr.syncConsent"
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "$t:sirsoft-gdpr.consent.granted"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                { "handler": "setState", "params": { "target": "global", "gdprBannerSubmittingAction": null } },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error?.message ?? 'Error'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "children": [
+                                                { "type": "basic", "name": "Icon", "if": "{{_global.gdprBannerSubmittingAction === 'save_selection'}}", "props": { "name": "spinner", "size": "xs", "spin": true, "className": "mr-1" } },
+                                                { "type": "basic", "name": "Span", "if": "{{_global.gdprBannerSubmittingAction !== 'save_selection'}}", "text": "$t:sirsoft-gdpr.banner.save" },
+                                                { "type": "basic", "name": "Span", "if": "{{_global.gdprBannerSubmittingAction === 'save_selection'}}", "text": "$t:sirsoft-gdpr.consent.granting" }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "priority": 50
+}

@@ -23,6 +23,7 @@ final class VerificationChallenge
      * @param  string|null  $redirectUrl  external_redirect 일 때 이동할 외부 URL
      * @param  array  $publicPayload  프론트에 내려줄 공개 페이로드 (민감정보 제외)
      * @param  array  $metadata  서버 내부 참조용 데이터
+     * @param  int  $maxAttempts  허용 최대 시도 횟수 (0 = 무제한, popup/SDK 형 provider 가 사용)
      */
     public function __construct(
         public readonly string $id,
@@ -35,6 +36,7 @@ final class VerificationChallenge
         public readonly ?string $redirectUrl = null,
         public readonly array $publicPayload = [],
         public readonly array $metadata = [],
+        public readonly int $maxAttempts = 0,
     ) {}
 
     /**
@@ -53,6 +55,7 @@ final class VerificationChallenge
             'redirect_url' => $this->redirectUrl,
             'expires_at' => $this->expiresAt->toIso8601String(),
             'public_payload' => $this->publicPayload,
+            'max_attempts' => $this->maxAttempts,
         ];
     }
 }

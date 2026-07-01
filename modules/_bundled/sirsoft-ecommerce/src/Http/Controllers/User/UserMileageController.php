@@ -7,7 +7,9 @@ use App\Http\Controllers\Api\Base\AuthBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserMileageHistoryRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserMileageMaxUsableRequest;
+use Modules\Sirsoft\Ecommerce\Http\Resources\MileageTransactionCollection;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 
 /**
@@ -49,7 +51,7 @@ class UserMileageController extends AuthBaseController
     /**
      * 체크아웃에서 사용 가능한 최대 마일리지 조회
      *
-     * @param Request $request 요청 데이터
+     * @param  Request  $request  요청 데이터
      * @return JsonResponse 사용 가능한 최대 마일리지를 포함한 JSON 응답
      */
     public function maxUsable(UserMileageMaxUsableRequest $request): JsonResponse
@@ -74,5 +76,30 @@ class UserMileageController extends AuthBaseController
                 500
             );
         }
+    }
+
+    /**
+     * 마이페이지 마일리지 내역 조회 (4분류 필터)
+     *
+     * @param  Request  $request  요청 (category, per_page)
+     * @return JsonResponse 마일리지 내역
+     */
+    public function history(UserMileageHistoryRequest $request): JsonResponse
+    {
+        $this->logApiUsage('user.mileage.history');
+
+        $userId = Auth::id();
+        $validated = $request->validated();
+        $filters = [
+            'category' => $validated['category'] ?? null,
+            'currency' => $validated['currency'] ?? null,
+        ];
+        $perPage = (int) ($validated['per_page'] ?? 20);
+
+        $transactions = $this->userMileageService->paginateUserHistory($userId, $filters, $perPage);
+
+        return ResponseHelper::success('sirsoft-ecommerce::messages.mileage.list_retrieved', [
+            'transactions' => new MileageTransactionCollection($transactions),
+        ]);
     }
 }

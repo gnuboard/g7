@@ -5,7 +5,7 @@ import { Img } from '../basic/Img';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
-import { LanguageSelector } from './LanguageSelector';
+import type { EditorAttrs } from '../../types';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:UserProfile')) ?? {
@@ -46,6 +46,18 @@ export interface UserProfileProps {
   logoutEndpoint?: string;
   /** 로그아웃 후 리다이렉션 경로 (기본값: /admin/login) */
   redirectPath?: string;
+  /** Chevron 아이콘 표시 여부 (기본값: true) */
+  showChevron?: boolean;
+  /** 드롭다운 열림 방향 (기본값: 'up') */
+  dropdownDirection?: 'up' | 'down';
+  /** 드롭다운만 표시 (버튼 영역 숨김, 외부 요소 클릭 트리거용) */
+  dropdownOnly?: boolean;
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -72,13 +84,18 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   user = { name: '', email: '' },
   profileText = 'Profile Settings',
   logoutText = 'Logout',
-  languageText = 'Language',
-  availableLocales = ['ko', 'en'],
+  // languageText / availableLocales: 언어가 헤더로 일원화되어 드롭다운에서 제거됨.
+  // props 는 인터페이스에 유지(하위호환)하되 본문에서 사용하지 않으므로 destructure 생략.
   onProfileClick,
   onLogoutClick,
   className = '',
   logoutEndpoint = '/api/admin/auth/logout',
   redirectPath = '/admin/login',
+  showChevron = true,
+  dropdownDirection = 'up',
+  dropdownOnly = false,
+  id,
+  editorAttrs,
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -174,34 +191,42 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   };
 
   return (
-    <Div ref={profileRef} className={`relative ${className}`}>
+    <Div ref={profileRef} className={dropdownOnly ? `absolute inset-0 ${className}` : `relative ${className}`} id={id} {...editorAttrs}>
       <Button
         onClick={() => setShowProfileMenu(!showProfileMenu)}
-        className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors w-full"
+        className={dropdownOnly
+          ? "w-full h-full opacity-0 cursor-pointer"
+          : "flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors w-full"}
       >
-        {user.avatar ? (
-          <Img
-            src={user.avatar}
-            alt={user.name}
-            className="w-8 h-8 rounded-full object-cover"
-          />
-        ) : (
-          <Div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-            <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </Div>
+        {!dropdownOnly && (
+          <>
+            {user.avatar ? (
+              <Img
+                src={user.avatar}
+                alt={user.name}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              <Div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </Div>
+            )}
+            <Div className="flex-1 text-left">
+              <Div className="font-semibold text-gray-900 dark:text-white text-sm">{user.name}</Div>
+              {user.role && (
+                <Div className="text-gray-500 dark:text-gray-400 text-xs">{user.role}</Div>
+              )}
+            </Div>
+            {showChevron && (
+              <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            )}
+          </>
         )}
-        <Div className="flex-1 text-left">
-          <Div className="font-semibold text-gray-900 dark:text-white text-sm">{user.name}</Div>
-          {user.role && (
-            <Div className="text-gray-500 dark:text-gray-400 text-xs">{user.role}</Div>
-          )}
-        </Div>
-        <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-600 dark:text-gray-400" />
       </Button>
 
       {/* 프로필 드롭다운 */}
       {showProfileMenu && (
-        <Div className="absolute bottom-full left-0 mb-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+        <Div className={`absolute ${dropdownDirection === 'down' ? 'top-full mt-2' : 'bottom-full mb-2'} ${dropdownOnly ? 'right-0 w-72' : 'left-0 w-full'} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50`}>
           <Div
             className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             onClick={() => {
@@ -215,17 +240,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             <Div className="font-semibold text-gray-900 dark:text-white">{user.name}</Div>
             <Div className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</Div>
           </Div>
-          {/* 언어 선택 섹션 */}
-          {availableLocales.length > 1 && (
-            <Div className="border-b border-gray-200 dark:border-gray-700">
-              <LanguageSelector
-                availableLocales={availableLocales}
-                languageText={languageText}
-                inline
-                onLanguageChange={() => setShowProfileMenu(false)}
-              />
-            </Div>
-          )}
+          {/* 언어 선택은 헤더 독립 버튼으로 일원화(드롭다운에서 제거) — 유저 템플릿 패리티(H-T7).
+              languageText/availableLocales props 는 하위호환을 위해 유지하되 더 이상 사용하지 않는다. */}
           <Div className="py-2">
             <Button
               onClick={() => {

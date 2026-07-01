@@ -40,6 +40,7 @@ class TemplateLayout extends Model
         'updated_by',
         'original_content_hash',
         'original_content_size',
+        'lock_version',
     ];
 
     /**
@@ -52,6 +53,7 @@ class TemplateLayout extends Model
         return [
             'content' => 'array',
             'source_type' => LayoutSourceType::class,
+            'lock_version' => 'integer',
         ];
     }
 

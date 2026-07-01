@@ -103,7 +103,7 @@ return [
     |
     */
 
-    'supported_timezones' => \DateTimeZone::listIdentifiers(),
+    'supported_timezones' => DateTimeZone::listIdentifiers(),
 
     /*
     |--------------------------------------------------------------------------
@@ -231,7 +231,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.0.0-beta.7'),
+    'version' => env('APP_VERSION', '7.0.0'),
 
     /*
     |--------------------------------------------------------------------------
@@ -270,18 +270,18 @@ return [
         'github_url' => env('G7_UPDATE_GITHUB_URL', 'https://github.com/gnuboard/g7'),
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
-        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vitest.config.ts,tsconfig.json,phpunit.xml,.editorconfig,.gitattributes,.gitignore,README.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
+        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,.editorconfig,.gitattributes,.gitignore,README.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
         'excludes' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_EXCLUDES', 'node_modules,.git,bootstrap/cache')))),
         // applyUpdate 의 "신규 최상위 항목 자동 발견" 폴백이 절대 덮어쓰면 안 되는 경로 목록.
         // 런타임 데이터(`storage`), 로컬 환경(`.env*`), 별도 파이프라인 산출물(`vendor`),
-        // 개발 도구 메타(`.git`, `.claude`, `.serena` 등) 를 보호한다.
+        // 개발 도구 메타(`.git`, `.claude`, `.codex`, `.agents`, `.serena` 등) 를 보호한다.
         // 부모 프로세스의 stale `targets` 가 신버전 신규 디렉토리를 인식하지 못해
         // 자동 발견이 트리거될 때만 참조된다 (정상 경로의 targets 는 항상 처리됨).
         // modules,plugins,templates,lang-packs 부모 디렉토리도 보호 대상에 포함.
         // targets 에 `{modules,plugins,templates,lang-packs}/_bundled` 가 명시되어 정상 흐름에서는
         // 처리되므로 영향 없음. 자동 발견 폴백이 부모 디렉토리 단위로 base 를 통째로 복사해
         // 활성 서브디렉토리(예: templates/sirsoft-basic) 를 잘못 삭제하는 회귀(#347) 차단용 방어 깊이.
-        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs')))),
+        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs')))),
         'backup_only' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_BACKUP_ONLY', 'vendor')))),
         'backup_extra' => ['storage/app/settings'],
         // 업데이트 종료 시 base_path() 소유자/그룹 기준으로 소유권을 재귀 복원할 경로 목록.
@@ -302,10 +302,17 @@ return [
         // step 이 sudo 컨텍스트에서 만들 수 있는 파일은 `SettingsMigrator::writeJsonFile`
         // 가 부모 디렉토리 owner/group 을 상속하여 별도 처리.
         //
+        // `storage/app/{extension_backups,core_backups}`: 확장/코어 업데이트·롤백이 생성·소비·
+        // 삭제하는 **임시 산출물**(사용자 데이터 아님). 쓰는 주체가 php-fpm(www-data) 이므로
+        // chown 대상에 포함한다 — sudo update 가 root 로 백업을 만들면 이후 www-data 가
+        // 그 안에 mkdir 못 해 `module:update` 가 "mkdir(): Permission denied" 로 실패한다.
+        // 백업 내부 모듈 storage 에 `.preserve-ownership` 마커가 있으면 그 서브트리만
+        // 자동 skip 되어 부작용 없음.
+        //
         // 환경변수 `G7_UPDATE_RESTORE_OWNERSHIP` 로 공유 호스팅 등 축소 필요 시 재정의 가능.
         'restore_ownership' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP',
-            'storage/logs,storage/framework,storage/app/core_pending,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending'
+            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending'
         )))),
         // 7.0.0-beta.3+: 그룹 쓰기 권한 비대칭 정상화 대상.
         // sudo root 로 실행된 업데이트가 umask 022 로 신규 생성한 하위 디렉토리/파일이
@@ -321,6 +328,9 @@ return [
         // 재귀 검증 의도와는 다른 책임이다.
         //  - storage/logs, storage/framework/{cache,sessions,views}: 캐시·세션·로그
         //  - storage/app/core_pending: 코어 업데이트 _pending 영역
+        //  - storage/app/extension_backups, storage/app/core_backups: 확장/코어 업데이트·롤백의
+        //    임시 백업 산출물 — php-fpm 이 mkdir/쓰기 하므로 g+w 정상화 필요 (sudo update 후
+        //    root g-w 로 남으면 www-data 의 백업 디렉토리 생성이 mkdir Permission denied 로 실패)
         //  - bootstrap/cache: Laravel 설정·라우트 캐시
         //  - vendor: composer/sudo 가 root 로 재생성한 후 일반 권한 사용자/php-fpm 이 후속 작업
         //  - modules, plugins, templates: 확장 설치/업데이트/제거 시 php-fpm 이 디렉토리 조작
@@ -333,7 +343,7 @@ return [
         // 자동 정상화되므로 상위 루트만 지정하면 충분. 환경변수로 재정의 가능.
         'restore_ownership_group_writable' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE',
-            'storage/logs,storage/framework,storage/app/core_pending,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending'
+            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending'
         )))),
 
         // spawn 자식 프로세스 실패 시 동작 모드.

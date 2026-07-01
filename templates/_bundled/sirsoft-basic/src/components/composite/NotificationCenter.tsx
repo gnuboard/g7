@@ -5,6 +5,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Input } from '../basic/Input';
+import type { EditorAttrs } from '../../types';
 
 /**
  * 알림 아이템 인터페이스
@@ -61,6 +62,10 @@ export interface NotificationCenterProps {
   /** 드롭다운 정렬 방향 — "right"(기본): 우측 정렬되어 좌측으로 확장 / "left": 좌측 정렬되어 우측으로 확장 */
   dropdownAlign?: 'left' | 'right';
   className?: string;
+  /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID) */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -102,6 +107,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   onUnreadOnlyToggle,
   dropdownAlign = 'right',
   className = '',
+  id,
+  editorAttrs,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -277,7 +284,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   }, [showNotifications, dropdownAlign, notifications.length]);
 
   return (
-    <Div ref={notificationRef} className={`relative ${className}`}>
+    <Div ref={notificationRef} className={`relative ${className}`} id={id} {...editorAttrs}>
       <Button
         onClick={handleToggle}
         className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer"

@@ -3,6 +3,7 @@ import { Div } from '../basic/Div';
 import { P } from '../basic/P';
 import { ActionMenuItem } from './ActionMenu';
 import { Pagination } from './Pagination';
+import type { EditorAttrs } from '../../types';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:CardGrid')) ?? {
@@ -102,6 +103,13 @@ export interface CardGridProps {
   showSkeleton?: boolean;              // 스켈레톤 표시 여부 (기본값: true)
   skeletonCount?: number;              // 스켈레톤 개수 (기본값: gridColumns)
   skeletonCellChildren?: CardGridCellChild[];  // 커스텀 스켈레톤 정의
+
+  /**
+   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
+   */
+  id?: string;
+  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -422,6 +430,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
   showSkeleton = true,
   skeletonCount,
   skeletonCellChildren,
+  id,
+  editorAttrs,
 }) => {
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedEmptyMessage = emptyMessage ?? t('common.no_data');
@@ -535,7 +545,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     const effectiveSkeletonCount = skeletonCount ?? gridColumns;
 
     return (
-      <Div className={`grid ${gridClasses} gap-${gap} ${className}`} style={style}>
+      <Div className={`grid ${gridClasses} gap-${gap} ${className}`} style={style} id={id} {...editorAttrs}>
         {Array.from({ length: effectiveSkeletonCount }).map((_, index) => (
           <Div
             key={`skeleton-${index}`}
@@ -551,7 +561,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   // 빈 데이터 상태
   if (paginatedData.length === 0) {
     return (
-      <Div className={className} style={style}>
+      <Div className={className} style={style} id={id} {...editorAttrs}>
         <Div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-12">
           <P className="text-center text-gray-600 dark:text-gray-400">
             {resolvedEmptyMessage}
@@ -567,7 +577,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     (alwaysShowPagination || effectiveTotalPages > 1);
 
   return (
-    <Div className={className} style={style}>
+    <Div className={className} style={style} id={id} {...editorAttrs}>
       {/* 카드 그리드 */}
       <Div className={`grid ${gridClasses} gap-${gap}`}>
         {paginatedData.map((row, index) => (

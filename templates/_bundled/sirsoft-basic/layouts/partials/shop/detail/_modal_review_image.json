@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "리뷰 이미지 미리보기 모달 (슬라이더 + 리뷰 정보)"
+    "description": "리뷰 이미지 미리보기 모달 (슬라이더 + 리뷰 정보)",
+    "editor_label": "$t:user.modal_label.shop_detail.review_image_modal"
   },
   "id": "review_image_modal",
   "type": "composite",

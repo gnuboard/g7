@@ -90,4 +90,22 @@ class DashboardController extends AdminBaseController
             return $this->error('dashboard.alerts_failed', 500, $e->getMessage());
         }
     }
+
+    /**
+     * 최근 발송된 알림 이력을 조회합니다.
+     *
+     * 대시보드 "최근 알림" 카드에 표시할 최근 알림 발송 이력을 반환합니다.
+     *
+     * @return JsonResponse 최근 알림 이력을 포함한 JSON 응답
+     */
+    public function recentNotifications(): JsonResponse
+    {
+        try {
+            $notifications = $this->dashboardService->getRecentNotificationLogs();
+
+            return $this->success('dashboard.recent_notifications_loaded', $notifications);
+        } catch (\Exception $e) {
+            return $this->error('dashboard.recent_notifications_failed', 500, $e->getMessage());
+        }
+    }
 }

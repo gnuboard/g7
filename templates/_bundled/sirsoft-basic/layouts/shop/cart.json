@@ -28,6 +28,7 @@
     "data_sources": [
         {
             "id": "cartItems",
+            "label_key": "$t:editor.data_source.cartItems",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/cart/query",
             "method": "POST",

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 use Modules\Sirsoft\Board\Rules\CommentValidationRule;
 use Modules\Sirsoft\Board\Rules\CooldownRule;
 
@@ -18,6 +19,8 @@ class StoreCommentRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * @return bool 권한 검증 결과 (권한 체크는 미들웨어 위임, 항상 true)
      */
     public function authorize(): bool
     {
@@ -28,8 +31,6 @@ class StoreCommentRequest extends FormRequest
      * 검증 전 데이터 준비
      *
      * route 파라미터를 검증 데이터에 merge합니다.
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -59,12 +60,16 @@ class StoreCommentRequest extends FormRequest
         $spamSecurity = g7_module_settings('sirsoft-board', 'spam_security', []);
         $commentCooldown = (int) ($spamSecurity['comment_cooldown_seconds'] ?? 0);
 
+        // 금지 키워드 목록 가져오기 (게시글과 동일하게 게시판 설정 기준)
+        $blockedKeywords = $board->blocked_keywords ?? [];
+
         $rules = [
             'content' => [
                 'required',
                 'string',
                 'min:'.($board->min_comment_length ?? 2),
                 'max:'.($board->max_comment_length ?? 1000),
+                new BlockedKeywordsRule($blockedKeywords),
                 new CooldownRule('comment', $commentCooldown, $slug),
             ],
             'post_id' => ['bail', 'required', 'integer', new CommentValidationRule($slug, 'post')],
@@ -124,7 +129,9 @@ class StoreCommentRequest extends FormRequest
     /**
      * 검증 통과 후 비밀번호를 해싱합니다.
      *
-     * @return array<string, mixed>
+     * @param  string|null  $key  반환할 특정 검증 값의 키 (null 이면 전체)
+     * @param  mixed  $default  키가 없을 때 반환할 기본값
+     * @return array<string, mixed>|mixed 검증된 데이터 (키 지정 시 해당 값)
      */
     public function validated($key = null, $default = null): mixed
     {

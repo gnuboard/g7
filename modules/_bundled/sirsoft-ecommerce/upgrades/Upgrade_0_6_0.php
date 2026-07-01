@@ -6,6 +6,7 @@ use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
+use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 
 /**
  * v0.6.0 업그레이드 스텝
@@ -52,7 +53,7 @@ class Upgrade_0_6_0 implements UpgradeStepInterface
         }
 
         // NULL 값 레코드 검출
-        $nullCount = \Modules\Sirsoft\Ecommerce\Models\UserAddress::whereNull('name')
+        $nullCount = UserAddress::whereNull('name')
             ->orWhere('name', '')
             ->count();
 

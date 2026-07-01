@@ -6,9 +6,6 @@
   "id": "carrier_cards_container",
   "type": "basic",
   "name": "Div",
-  "props": {
-    "className": "space-y-3"
-  },
   "children": [
     {
       "id": "carrier_card",
@@ -20,7 +17,7 @@
         "index_var": "$cIdx"
       },
       "props": {
-        "className": "excel-card"
+        "className": "excel-card mb-3"
       },
       "children": [
         {
@@ -34,7 +31,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 min-w-0"
+                "className": "flex-center gap-2 min-w-0"
               },
               "children": [
                 {
@@ -68,7 +65,7 @@
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center gap-2 shrink-0"
+                "className": "flex-center gap-2 shrink-0"
               },
               "children": [
                 {
@@ -155,7 +152,7 @@
                     "type": "text",
                     "value": "{{$carrier.code ?? ''}}",
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
-                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code'] ? 'input input-error w-full font-mono' : 'input w-full font-mono'}}",
+                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code'] ? 'input input-error font-mono' : 'input font-mono'}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   },
                   "actions": [
@@ -175,7 +172,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']}}",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']?.[0] ?? ''}}"
                 }
@@ -289,7 +286,7 @@
                     "type": "text",
                     "value": "{{$carrier.tracking_url ?? ''}}",
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
-                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url'] ? 'input input-error w-full' : 'input w-full'}}",
+                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url'] ? 'input input-error' : 'input'}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   },
                   "actions": [
@@ -309,7 +306,7 @@
                   "name": "Span",
                   "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']}}",
                   "props": {
-                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                    "className": "form-error"
                   },
                   "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']?.[0] ?? ''}}"
                 }

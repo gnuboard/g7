@@ -4,14 +4,19 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\User;
 
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\MapsAddressBookFields;
 
 /**
  * 사용자 배송지 수정 요청
  */
 class UpdateUserAddressRequest extends FormRequest
 {
+    use MapsAddressBookFields;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * @return bool 항상 true (권한은 미들웨어 체인이 담당)
      */
     public function authorize(): bool
     {
@@ -20,8 +25,6 @@ class UpdateUserAddressRequest extends FormRequest
 
     /**
      * 요청 데이터 전처리
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -36,7 +39,7 @@ class UpdateUserAddressRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array
+     * @return array 주소록 수정 검증 규칙
      */
     public function rules(): array
     {
@@ -76,7 +79,7 @@ class UpdateUserAddressRequest extends FormRequest
     /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array
+     * @return array 필드별 다국어 검증 메시지
      */
     public function messages(): array
     {

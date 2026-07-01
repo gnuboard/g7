@@ -37,10 +37,12 @@ export { Nav, type NavProps } from './Nav';
 export { Section, type SectionProps } from './Section';
 export { Svg, type SvgProps } from './Svg';
 export { Icon, type IconProps } from './Icon';
+export { UnifiedIcon, type UnifiedIconProps, type UnifiedIconSize } from './UnifiedIcon';
 export { Code, type CodeProps } from './Code';
 export { Pre, type PreProps } from './Pre';
 export { Fragment, type FragmentProps } from './Fragment';
 export { Hr, type HrProps } from './Hr';
+export { I, type IProps } from './I';
 
 // Icon 타입 정의 (enum 및 타입)
 export { IconName, type IconStyle, type IconSize } from './IconTypes';

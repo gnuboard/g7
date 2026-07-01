@@ -15,7 +15,8 @@ use PHPUnit\Framework\TestCase;
  */
 class InstallerRuntimeHelperTest extends TestCase
 {
-    private string $tempBase;
+    private string $tempBase = '';
+    private string $skipReason = '';
 
     protected function setUp(): void
     {
@@ -23,10 +24,28 @@ class InstallerRuntimeHelperTest extends TestCase
 
         // 격리된 BASE_PATH — 운영 환경 storage/installer 와 충돌 방지
         $this->tempBase = sys_get_temp_dir() . '/g7-installer-runtime-test-' . bin2hex(random_bytes(4));
-        mkdir($this->tempBase . '/storage/installer', 0755, true);
 
-        if (! defined('BASE_PATH')) {
+        // 안전 가드: INSTALLER_RUNTIME_PATH(= BASE_PATH/storage/installer/runtime.php) 는
+        // PHP 상수라 한 프로세스에서 단 한 번만 정의된다. 다른 Installer 테스트가 먼저
+        // 프로젝트 루트로 BASE_PATH 를 박으면 tearDown 의 @unlink 가 실제 운영 runtime.php
+        // (DB 자격증명/APP_KEY 임시 보관 파일)를 삭제하게 된다. temp 하위가 아니면 skip.
+        $tempPrefix = realpath(sys_get_temp_dir()) ?: sys_get_temp_dir();
+
+        if (defined('BASE_PATH')) {
+            $resolved = realpath((string) BASE_PATH) ?: (string) BASE_PATH;
+            if (strpos($resolved, $tempPrefix) !== 0) {
+                $this->skipReason = 'BASE_PATH (' . $resolved . ') 가 시스템 temp 하위가 아님 — '
+                    . '다른 Installer 테스트의 BASE_PATH 정의가 선행됨. 실제 storage/installer/runtime.php '
+                    . '파괴 방지를 위해 skip. 격리 실행: php vendor/bin/phpunit --filter=InstallerRuntimeHelperTest';
+                $this->markTestSkipped($this->skipReason);
+            }
+            $this->tempBase = (string) BASE_PATH;
+        } else {
             define('BASE_PATH', $this->tempBase);
+        }
+
+        if (! is_dir($this->tempBase . '/storage/installer')) {
+            @mkdir($this->tempBase . '/storage/installer', 0755, true);
         }
 
         // INSTALLER_RUNTIME_PATH 는 BASE_PATH 기반으로 한 번만 정의되므로,
@@ -38,9 +57,8 @@ class InstallerRuntimeHelperTest extends TestCase
 
     protected function tearDown(): void
     {
-        // INSTALLER_RUNTIME_PATH 는 첫 정의된 BASE_PATH 에 묶여있으므로
-        // 그 파일만 정리하고, 임시 디렉토리는 시스템 temp cleaner 에 위임
-        if (defined('INSTALLER_RUNTIME_PATH') && is_file(INSTALLER_RUNTIME_PATH)) {
+        // skip 상태(= BASE_PATH 가 실 루트)면 파괴적 정리를 절대 수행하지 않는다.
+        if ($this->skipReason === '' && defined('INSTALLER_RUNTIME_PATH') && is_file(INSTALLER_RUNTIME_PATH)) {
             @unlink(INSTALLER_RUNTIME_PATH);
         }
 

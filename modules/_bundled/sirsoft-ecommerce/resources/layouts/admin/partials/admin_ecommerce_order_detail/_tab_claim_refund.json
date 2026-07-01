@@ -12,7 +12,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4"
+        "className": "md:flex-row md:items-center md:justify-between mb-4"
       },
       "children": [
         {
@@ -42,14 +42,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center gap-3"
+            "className": "flex-center gap-3"
           },
           "children": [
             {
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.sort.label:"
             },
@@ -82,7 +82,7 @@
               "type": "basic",
               "name": "Span",
               "props": {
-                "className": "text-sm text-gray-500 dark:text-gray-400"
+                "className": "text-label-subtle"
               },
               "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.per_page:"
             },
@@ -117,7 +117,7 @@
       "responsive": {
         "portable": {
           "props": {
-            "className": "space-y-4"
+            "className": "row-stack"
           },
           "children": [
             {
@@ -156,7 +156,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                        "className": "block text-tertiary"
                       },
                       "text": "ORD-2025-001238"
                     },
@@ -164,7 +164,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
+                        "className": "block form-hint"
                       },
                       "text": "2025-01-23 11:10:20"
                     },
@@ -232,7 +232,7 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-tertiary"
                               },
                               "text": "SKU-77889"
                             },
@@ -240,7 +240,7 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-tertiary"
                               },
                               "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.product.size: 11인치"
                             }
@@ -265,7 +265,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                            "className": "block text-tertiary mb-1"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_price:"
                         },
@@ -287,7 +287,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                            "className": "block text-tertiary mb-1"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity:"
                         },
@@ -309,7 +309,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                            "className": "block text-tertiary mb-1"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.expected_refund:"
                         },
@@ -331,7 +331,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                            "className": "block text-tertiary mb-1"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_refund:"
                         },
@@ -358,7 +358,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center gap-2 mb-2"
+                        "className": "flex-center gap-2 mb-2"
                       },
                       "children": [
                         {
@@ -383,7 +383,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-400"
+                        "className": "bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-label"
                       },
                       "text": "다른 제품을 구매하고 싶어서 환불 신청합니다."
                     }
@@ -427,7 +427,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                        "className": "block text-tertiary"
                       },
                       "text": "ORD-2025-001237"
                     },
@@ -435,7 +435,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
+                        "className": "block form-hint"
                       },
                       "text": "2025-01-22 16:20:45"
                     },
@@ -503,7 +503,7 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-tertiary"
                               },
                               "text": "SKU-44556"
                             },
@@ -511,7 +511,7 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-tertiary"
                               },
                               "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.product.color: 블랙"
                             }
@@ -536,7 +536,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                            "className": "block text-tertiary mb-1"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_price:"
                         },
@@ -558,7 +558,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                            "className": "block text-tertiary mb-1"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity:"
                         },
@@ -580,7 +580,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                            "className": "block text-tertiary mb-1"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.expected_refund:"
                         },
@@ -602,7 +602,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                            "className": "block text-tertiary mb-1"
                           },
                           "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_refund:"
                         },
@@ -629,7 +629,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "flex items-center gap-2 mb-2"
+                        "className": "flex-center gap-2 mb-2"
                       },
                       "children": [
                         {
@@ -668,7 +668,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                            "className": "text-label"
                           },
                           "text": "주문한 블랙이 아니라 화이트 색상이 배송되었습니다. 사진에서 확인 가능합니다."
                         }
@@ -777,7 +777,7 @@
                       "type": "basic",
                       "name": "Td",
                       "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                        "className": "text-heading"
                       },
                       "text": "2025-01-23 11:10:20"
                     },
@@ -798,7 +798,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400"
+                            "className": "block text-tertiary"
                           },
                           "text": "ORD-2025-001238"
                         }
@@ -812,7 +812,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-start gap-3"
+                            "className": "flex-start gap-3"
                           },
                           "children": [
                             {
@@ -830,7 +830,7 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "font-bold text-sm text-gray-900 dark:text-white"
+                                    "className": "text-primary font-bold text-sm"
                                   },
                                   "text": "태블릿 케이스"
                                 },
@@ -838,7 +838,7 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "text-tertiary"
                                   },
                                   "text": "SKU-77889"
                                 },
@@ -846,7 +846,7 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "text-tertiary"
                                   },
                                   "text": "사이즈: 11인치"
                                 }
@@ -867,7 +867,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "font-bold text-gray-900 dark:text-white"
+                            "className": "text-primary font-bold"
                           },
                           "text": "25,000원"
                         },
@@ -875,7 +875,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "예상: 22,500원"
                         },
@@ -883,7 +883,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "실환불: 22,500원"
                         }
@@ -900,7 +900,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "font-bold text-gray-900 dark:text-white"
+                            "className": "text-primary font-bold"
                           },
                           "text": "1"
                         },
@@ -908,7 +908,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "(주문: 1)"
                         }
@@ -918,7 +918,7 @@
                       "type": "basic",
                       "name": "Td",
                       "props": {
-                        "className": "font-medium text-gray-900 dark:text-white"
+                        "className": "text-primary font-medium"
                       },
                       "text": "직접 환불"
                     },
@@ -944,7 +944,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-2 mb-2"
+                            "className": "flex-center gap-2 mb-2"
                           },
                           "children": [
                             {
@@ -959,7 +959,7 @@
                               "type": "basic",
                               "name": "Span",
                               "props": {
-                                "className": "font-bold text-sm text-gray-900 dark:text-white"
+                                "className": "text-primary font-bold text-sm"
                               },
                               "text": "단순변심"
                             }
@@ -969,7 +969,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-400"
+                            "className": "bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-label"
                           },
                           "text": "다른 제품을 구매하고 싶어서 환불 신청합니다."
                         }
@@ -985,7 +985,7 @@
                       "type": "basic",
                       "name": "Td",
                       "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                        "className": "text-heading"
                       },
                       "text": "2025-01-22 16:20:45"
                     },
@@ -1006,7 +1006,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400"
+                            "className": "block text-tertiary"
                           },
                           "text": "ORD-2025-001237"
                         }
@@ -1020,7 +1020,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-start gap-3"
+                            "className": "flex-start gap-3"
                           },
                           "children": [
                             {
@@ -1038,7 +1038,7 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "font-bold text-sm text-gray-900 dark:text-white"
+                                    "className": "text-primary font-bold text-sm"
                                   },
                                   "text": "무선 충전기"
                                 },
@@ -1046,7 +1046,7 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "text-tertiary"
                                   },
                                   "text": "SKU-44556"
                                 },
@@ -1054,7 +1054,7 @@
                                   "type": "basic",
                                   "name": "Div",
                                   "props": {
-                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "text-tertiary"
                                   },
                                   "text": "색상: 블랙"
                                 }
@@ -1075,7 +1075,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "font-bold text-gray-900 dark:text-white"
+                            "className": "text-primary font-bold"
                           },
                           "text": "35,000원"
                         },
@@ -1083,7 +1083,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "예상: 35,000원"
                         },
@@ -1091,7 +1091,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "실환불: 35,000원"
                         }
@@ -1108,7 +1108,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "font-bold text-gray-900 dark:text-white"
+                            "className": "text-primary font-bold"
                           },
                           "text": "1"
                         },
@@ -1116,7 +1116,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "text-tertiary"
                           },
                           "text": "(주문: 1)"
                         }
@@ -1126,7 +1126,7 @@
                       "type": "basic",
                       "name": "Td",
                       "props": {
-                        "className": "font-medium text-gray-900 dark:text-white"
+                        "className": "text-primary font-medium"
                       },
                       "text": "예치금"
                     },
@@ -1152,7 +1152,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-2 mb-2"
+                            "className": "flex-center gap-2 mb-2"
                           },
                           "children": [
                             {
@@ -1167,7 +1167,7 @@
                               "type": "basic",
                               "name": "Span",
                               "props": {
-                                "className": "font-bold text-sm text-gray-900 dark:text-white"
+                                "className": "text-primary font-bold text-sm"
                               },
                               "text": "색상 다름"
                             }
@@ -1191,7 +1191,7 @@
                               "type": "basic",
                               "name": "Div",
                               "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                "className": "text-label"
                               },
                               "text": "주문한 블랙이 아니라 화이트 색상이 배송되었습니다. 사진에서 확인 가능합니다."
                             }
@@ -1212,7 +1212,7 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex justify-center items-center gap-2 mt-6"
+        "className": "flex-center justify-center gap-2 mt-6"
       },
       "children": [
         {
@@ -1220,7 +1220,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "w-8 h-8 flex items-center justify-center text-gray-400 dark:text-gray-500"
+            "className": "flex-center w-8 h-8 justify-center text-gray-400 dark:text-gray-500"
           },
           "text": "«"
         },
@@ -1229,7 +1229,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "w-8 h-8 flex items-center justify-center text-gray-400 dark:text-gray-500"
+            "className": "flex-center w-8 h-8 justify-center text-gray-400 dark:text-gray-500"
           },
           "text": "‹"
         },
@@ -1237,7 +1237,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "w-8 h-8 flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-800"
+            "className": "flex-center text-primary w-8 h-8 justify-center border border-gray-200 dark:border-gray-700 rounded font-bold bg-white dark:bg-gray-800"
           },
           "text": "1"
         },
@@ -1246,7 +1246,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "w-8 h-8 flex items-center justify-center text-gray-400 dark:text-gray-500"
+            "className": "flex-center w-8 h-8 justify-center text-gray-400 dark:text-gray-500"
           },
           "text": "›"
         },
@@ -1255,7 +1255,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "w-8 h-8 flex items-center justify-center text-gray-400 dark:text-gray-500"
+            "className": "flex-center w-8 h-8 justify-center text-gray-400 dark:text-gray-500"
           },
           "text": "»"
         }

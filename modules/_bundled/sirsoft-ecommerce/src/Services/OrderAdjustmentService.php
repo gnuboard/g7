@@ -2,19 +2,19 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
+use Modules\Sirsoft\Ecommerce\DTO\ItemCalculation;
 use Modules\Sirsoft\Ecommerce\DTO\OrderAdjustment;
-use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
+use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
-use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 
 /**
  * 주문 변경 금액 계산 서비스
@@ -173,6 +173,18 @@ class OrderAdjustmentService
         $originalCoupons = $this->extractCouponDetails($order->promotions_applied_snapshot ?? []);
         $recalculatedCoupons = $this->extractCouponDetails($recalcResult->promotions?->toArray() ?? []);
 
+        // 18. 스냅샷 각 줄을 base 통화로 포맷(취소 모달 primary 표기 = base 통화 기호 고정)
+        $originalSnapshot = $this->enrichSnapshotWithBaseFormat($originalSnapshot, $order->currency_snapshot);
+        $recalculatedSnapshot = $this->enrichSnapshotWithBaseFormat($recalculatedSnapshot, $order->currency_snapshot);
+
+        // 19. 환불 총액/잔액 base 포맷 + 결제 통화 병기
+        $refundFormatted = $this->buildRefundFormatted([
+            'refund_total' => max(0, $refundAmount) + $refundPointsAmount,
+            'refund_amount' => max(0, $refundAmount),
+            'remaining_pg_balance' => $remainingPgBalance,
+            'remaining_points_balance' => $remainingPointsBalance,
+        ], $order->currency_snapshot);
+
         return new AdjustmentResult(
             refundAmount: $refundAmount,
             refundPointsAmount: $refundPointsAmount,
@@ -200,6 +212,7 @@ class OrderAdjustmentService
             mcRecalculatedSnapshot: $mcRecalculatedSnapshot,
             originalCoupons: $originalCoupons,
             recalculatedCoupons: $recalculatedCoupons,
+            refundFormatted: $refundFormatted,
         );
     }
 
@@ -243,6 +256,12 @@ class OrderAdjustmentService
             'total_paid_amount' => (float) $order->total_paid_amount,
             'total_points_used_amount' => (float) $order->total_points_used_amount,
             'total_deposit_used_amount' => (float) $order->total_deposit_used_amount,
+            // 실결제 발생 신호(취소 차단 게이트 SSoT) — payment_status === PAID 가 1차 신호(운영자 강제
+            // order_status 변경에 오염 안 됨), 보조로 실사용 금액 합(결제+포인트+예치금) > 0.
+            'has_actual_payment' => (bool) $order->payment?->isPaid()
+                || ((float) $order->total_paid_amount
+                    + (float) $order->total_points_used_amount
+                    + (float) $order->total_deposit_used_amount) > 0.01,
             'total_tax_amount' => (float) $order->total_tax_amount,
             'total_tax_free_amount' => (float) $order->total_tax_free_amount,
             'total_vat_amount' => (float) $order->total_vat_amount,
@@ -343,6 +362,7 @@ class OrderAdjustmentService
                 'quantity' => $remainingQty,
                 'product_snapshot' => $option->product_snapshot,
                 'option_snapshot' => $option->option_snapshot,
+                'additional_options_snapshot' => $option->additional_options_snapshot,
             ]);
         }
 
@@ -521,6 +541,39 @@ class OrderAdjustmentService
         // 쿠폰 상세 (전체취소 시 취소 후는 빈 배열)
         $originalCoupons = $this->extractCouponDetails($order->promotions_applied_snapshot ?? []);
 
+        // 환불 총액/잔액 base 포맷 + 결제 통화 병기
+        $refundFormatted = $this->buildRefundFormatted([
+            'refund_total' => max(0, $refundAmount) + $refundPointsAmount,
+            'refund_amount' => max(0, $refundAmount),
+            'remaining_pg_balance' => $remainingPgBalance,
+            'remaining_points_balance' => $remainingPointsBalance,
+        ], $currencySnapshot);
+
+        // 스냅샷 각 줄을 base 통화로 포맷(취소 모달 primary 표기 = base 통화 기호 고정)
+        $originalSnapshot = $this->enrichSnapshotWithBaseFormat($originalSnapshot, $currencySnapshot);
+        $zeroRecalculatedSnapshot = $this->enrichSnapshotWithBaseFormat([
+            'total_amount' => 0,
+            'subtotal_amount' => 0,
+            'total_list_price_amount' => 0,
+            'total_discount_amount' => 0,
+            'total_coupon_discount_amount' => 0,
+            'total_product_coupon_discount_amount' => 0,
+            'total_order_coupon_discount_amount' => 0,
+            'total_code_discount_amount' => 0,
+            'total_shipping_amount' => 0,
+            'base_shipping_amount' => 0,
+            'extra_shipping_amount' => 0,
+            'shipping_discount_amount' => 0,
+            'total_paid_amount' => 0,
+            'total_points_used_amount' => 0,
+            'total_deposit_used_amount' => 0,
+            'total_tax_amount' => 0,
+            'total_tax_free_amount' => 0,
+            'total_vat_amount' => 0,
+            'total_earned_points_amount' => 0,
+            'item_count' => 0,
+        ], $currencySnapshot);
+
         return new AdjustmentResult(
             refundAmount: $refundAmount,
             refundPointsAmount: $refundPointsAmount,
@@ -542,28 +595,7 @@ class OrderAdjustmentService
             optionUpdates: [],
             shippingUpdates: [],
             originalSnapshot: $originalSnapshot,
-            recalculatedSnapshot: [
-                'total_amount' => 0,
-                'subtotal_amount' => 0,
-                'total_list_price_amount' => 0,
-                'total_discount_amount' => 0,
-                'total_coupon_discount_amount' => 0,
-                'total_product_coupon_discount_amount' => 0,
-                'total_order_coupon_discount_amount' => 0,
-                'total_code_discount_amount' => 0,
-                'total_shipping_amount' => 0,
-                'base_shipping_amount' => 0,
-                'extra_shipping_amount' => 0,
-                'shipping_discount_amount' => 0,
-                'total_paid_amount' => 0,
-                'total_points_used_amount' => 0,
-                'total_deposit_used_amount' => 0,
-                'total_tax_amount' => 0,
-                'total_tax_free_amount' => 0,
-                'total_vat_amount' => 0,
-                'total_earned_points_amount' => 0,
-                'item_count' => 0,
-            ],
+            recalculatedSnapshot: $zeroRecalculatedSnapshot,
             restoredCouponIssueIds: $restoredCouponIds,
             refundPriority: $refundPriority,
             remainingPgBalance: $remainingPgBalance,
@@ -577,13 +609,14 @@ class OrderAdjustmentService
             mcRecalculatedSnapshot: $zeroMcSnapshot,
             originalCoupons: $originalCoupons,
             recalculatedCoupons: [],
+            refundFormatted: $refundFormatted,
         );
     }
 
     /**
      * 재계산 결과 스냅샷을 캡처합니다.
      *
-     * @param  \Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult  $result  재계산 결과
+     * @param  OrderCalculationResult  $result  재계산 결과
      * @return array 스냅샷
      */
     private function captureRecalcSnapshot($result): array
@@ -624,12 +657,15 @@ class OrderAdjustmentService
      *
      * @param  Order  $order  주문
      * @param  array  $excludedMap  제외 맵
-     * @param  \Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult  $recalcResult  재계산 결과
+     * @param  OrderCalculationResult  $recalcResult  재계산 결과
      * @return array [order_option_id => update_data]
      */
     private function buildOptionUpdates(Order $order, array $excludedMap, $recalcResult): array
     {
         $updates = [];
+
+        // 부분취소 재계산 시 옵션 레벨 다통화(mc_) 컬럼도 재산출 (PO 확정)
+        $currencySnapshot = $order->currency_snapshot;
 
         // 재계산 결과에서 옵션별 금액 반영
         foreach ($recalcResult->items as $item) {
@@ -648,10 +684,17 @@ class OrderAdjustmentService
                         'coupon_discount_amount' => (float) $item->productCouponDiscountAmount,
                         'code_discount_amount' => (float) $item->codeDiscountAmount,
                         'subtotal_points_used_amount' => (float) $item->pointsUsedShare,
+                        // 부분취소 후 잔여 옵션의 예상 적립액 재안분 저장 (취소 상품 몫 제외 — §6.3)
+                        'subtotal_earned_points_amount' => (float) $item->pointsEarning,
                         'subtotal_tax_amount' => (float) $item->taxableAmount,
                         'subtotal_tax_free_amount' => (float) $item->taxFreeAmount,
                         'promotions_applied_snapshot' => $item->appliedPromotions?->toArray(),
                     ];
+
+                    // 다통화 컬럼 재산출 (사용/적립 비대칭 해소 — 기존 mc_subtotal_points_used 도 함께 갱신)
+                    if ($currencySnapshot) {
+                        $updates[$option->id] += $this->buildOptionMultiCurrencyUpdates($item, $currencySnapshot);
+                    }
                 }
             }
         }
@@ -660,10 +703,41 @@ class OrderAdjustmentService
     }
 
     /**
+     * 부분취소 재계산된 옵션 금액의 다통화(mc_) 컬럼을 산출합니다.
+     *
+     * 신규 주문 경로(OrderProcessingService::buildOptionMultiCurrency)와 동일한 키 집합을
+     * 사용하여, 부분취소 후 옵션 레벨 mc_ 컬럼이 재안분값과 정합되도록 한다.
+     *
+     * @param  ItemCalculation  $item  재계산된 옵션 항목
+     * @param  array  $currencySnapshot  주문 통화 스냅샷
+     * @return array<string, array<string, int|float>> mc_ 컬럼 갱신값
+     */
+    private function buildOptionMultiCurrencyUpdates($item, array $currencySnapshot): array
+    {
+        $convert = fn (int|float $amount): array => $this->currencyService->convertToMultiCurrencyWithSnapshot(
+            (int) $amount,
+            $currencySnapshot
+        );
+
+        return [
+            'mc_subtotal_price' => $convert($item->subtotal ?? 0),
+            'mc_product_coupon_discount_amount' => $convert($item->productCouponDiscountAmount ?? 0),
+            'mc_order_coupon_discount_amount' => $convert($item->orderCouponDiscountShare ?? 0),
+            'mc_coupon_discount_amount' => $convert($item->productCouponDiscountAmount ?? 0),
+            'mc_code_discount_amount' => $convert($item->codeDiscountAmount ?? 0),
+            'mc_subtotal_points_used_amount' => $convert($item->pointsUsedShare ?? 0),
+            'mc_subtotal_earned_points_amount' => $convert($item->pointsEarning ?? 0),
+            'mc_subtotal_tax_amount' => $convert($item->taxableAmount ?? 0),
+            'mc_subtotal_tax_free_amount' => $convert($item->taxFreeAmount ?? 0),
+            'mc_final_amount' => $convert($item->finalAmount ?? 0),
+        ];
+    }
+
+    /**
      * 배송비 업데이트 정보를 생성합니다.
      *
      * @param  Order  $order  주문
-     * @param  \Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult  $recalcResult  재계산 결과
+     * @param  OrderCalculationResult  $recalcResult  재계산 결과
      * @return array [order_shipping_id => update_data]
      */
     private function buildShippingUpdates(Order $order, $recalcResult): array
@@ -686,7 +760,7 @@ class OrderAdjustmentService
     /**
      * 주문 테이블 업데이트 정보를 생성합니다.
      *
-     * @param  \Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult  $recalcResult  재계산 결과
+     * @param  OrderCalculationResult  $recalcResult  재계산 결과
      * @return array 업데이트 데이터
      */
     private function buildOrderUpdates($recalcResult): array
@@ -787,7 +861,6 @@ class OrderAdjustmentService
      * 쿠폰 사용 상태를 원래대로 복원합니다.
      *
      * @param  array  $originalStates  원래 상태 배열
-     * @return void
      */
     private function restoreCouponUsage(array $originalStates): void
     {
@@ -806,7 +879,7 @@ class OrderAdjustmentService
      * 부분취소로 최소주문금액 미달 시 해당 쿠폰을 복원 대상으로 반환합니다.
      *
      * @param  Order  $order  주문
-     * @param  \Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult  $recalcResult  재계산 결과
+     * @param  OrderCalculationResult  $recalcResult  재계산 결과
      * @return array 복원 대상 쿠폰 발급 ID 배열
      */
     private function detectRestoredCoupons(Order $order, $recalcResult): array
@@ -981,6 +1054,75 @@ class OrderAdjustmentService
         }
 
         return $details;
+    }
+
+    /**
+     * 취소 비교 스냅샷의 각 금액 줄을 주문 시점 기준 통화(base_currency)로 포맷해 동반 키를 추가합니다.
+     *
+     * 취소 모달의 "주문금액 비교"는 모든 줄을 base 통화 기호로 표기해야 하므로(운영자가 이후 기본 통화를
+     * 바꿔도 과거 주문 표기는 불변), raw base 숫자에 더해 base 통화 포맷 문자열을 `formatted` 하위 맵으로
+     * 함께 제공한다. 결제 통화 환산 병기는 mc_*_formatted(실결제/정가/소계)로 별도 제공된다.
+     *
+     * @param  array  $snapshot  금액 스냅샷(captureOrderSnapshot/captureRecalcSnapshot 형식)
+     * @param  array|null  $currencySnapshot  주문 시점 통화 스냅샷
+     * @return array base_currency + formatted 동반 키가 추가된 스냅샷
+     */
+    private function enrichSnapshotWithBaseFormat(array $snapshot, ?array $currencySnapshot): array
+    {
+        $baseCurrency = $currencySnapshot['base_currency'] ?? $this->currencyService->getDefaultCurrency();
+
+        $formatted = [];
+        foreach ($snapshot as $key => $value) {
+            if (is_numeric($value)) {
+                $formatted[$key] = $this->currencyService->formatPrice((float) $value, $baseCurrency);
+            }
+        }
+
+        $snapshot['base_currency'] = $baseCurrency;
+        $snapshot['formatted'] = $formatted;
+
+        return $snapshot;
+    }
+
+    /**
+     * 환불 총액·잔액을 base 통화 포맷 + 결제 통화 포함 다통화 포맷으로 구성합니다.
+     *
+     * 취소 모달의 "환불 예정액/잔여 잔액"은 base 통화 기호로 primary 표기하고, base≠결제 통화일 때
+     * 결제 통화 환산액을 병기해야 한다. base 포맷은 formatPrice, 다통화는 스냅샷 환율 변환을 사용한다.
+     *
+     * @param  array<string, float>  $amounts  필드명 → base 통화 금액
+     * @param  array|null  $currencySnapshot  주문 시점 통화 스냅샷
+     * @return array{base_currency: string, base: array<string,string>, mc: array<string,array<string,string>>}
+     */
+    private function buildRefundFormatted(array $amounts, ?array $currencySnapshot): array
+    {
+        $baseCurrency = $currencySnapshot['base_currency'] ?? $this->currencyService->getDefaultCurrency();
+
+        $base = [];
+        foreach ($amounts as $field => $value) {
+            $base[$field] = $this->currencyService->formatPrice((float) $value, $baseCurrency);
+        }
+
+        $mc = [];
+        if ($currencySnapshot) {
+            $converted = $this->currencyService->convertMultipleAmountsWithSnapshot($amounts, $currencySnapshot);
+            foreach ($converted as $code => $fields) {
+                if ($code === $baseCurrency || ! is_array($fields)) {
+                    continue;
+                }
+                foreach ($amounts as $field => $value) {
+                    if (isset($fields[$field.'_formatted'])) {
+                        $mc[$field][$code] = $fields[$field.'_formatted'];
+                    }
+                }
+            }
+        }
+
+        return [
+            'base_currency' => $baseCurrency,
+            'base' => $base,
+            'mc' => $mc,
+        ];
     }
 
     /**

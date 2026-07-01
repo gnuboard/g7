@@ -55,6 +55,8 @@ class Summary
 
     /**
      * 총 할인금액을 계산합니다.
+     *
+     * @return int 총 할인금액
      */
     public function calculateTotalDiscount(): int
     {
@@ -83,6 +85,8 @@ class Summary
 
     /**
      * 최종 지불금액을 계산합니다.
+     *
+     * @return int 최종 지불금액
      */
     public function calculateFinalAmount(): int
     {
@@ -91,6 +95,8 @@ class Summary
 
     /**
      * 배열로 변환합니다.
+     *
+     * @return array<string, mixed> 직렬화된 합계 배열
      */
     public function toArray(): array
     {
@@ -120,7 +126,11 @@ class Summary
             'total_mileage' => $this->pointsEarning,
             'mileage_formatted' => number_format($this->pointsEarning).'P',
             'points_used' => $this->pointsUsed,
+            // 마일리지 사용액(차감) 포맷 — 다른 금액과 동일한 통화 포맷 (요약/결제완료 화면이 바인딩).
+            // 마일리지는 base_currency 단일 정산이므로 multi_currency 변환 없이 루트 키로만 제공.
+            'points_used_formatted' => ecommerce_format_price($this->pointsUsed),
             'payment_amount' => $this->paymentAmount,
+            'payment_amount_formatted' => ecommerce_format_price($this->paymentAmount),
             'final_amount' => $this->finalAmount,
             'final_amount_formatted' => ecommerce_format_price($this->finalAmount),
             // 하위 호환 (deprecated)
@@ -149,6 +159,7 @@ class Summary
      * 배열에서 DTO를 생성합니다.
      *
      * @param  array  $data  배열 데이터
+     * @return self 생성된 Summary DTO
      */
     public static function fromArray(array $data): self
     {

@@ -7,7 +7,7 @@
   "type": "basic",
   "name": "Div",
   "props": {
-    "className": "card mt-6"
+    "className": "admin-card mt-6"
   },
   "children": [
     {
@@ -63,9 +63,6 @@
       "id": "claim_sections_wrapper",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-8"
-      },
       "children": [
         {
           "id": "refund_section",
@@ -82,7 +79,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "border-t border-gray-200 dark:border-gray-700 pt-8"
+            "className": "border-t border-gray-200 dark:border-gray-700"
           },
           "children": [
             {
@@ -95,7 +92,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "border-t border-gray-200 dark:border-gray-700 pt-8"
+            "className": "border-t border-gray-200 dark:border-gray-700"
           },
           "children": [
             {
@@ -103,7 +100,9 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+      }
     }
   ]
 }

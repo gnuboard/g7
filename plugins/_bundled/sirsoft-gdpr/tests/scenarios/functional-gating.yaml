@@ -1,0 +1,116 @@
+# audit:allow test-scenario-coverage reason: Phase 2 단순화 후 functional 게이팅은 4영역(클라이언트 storage / 클라이언트 cookie / 서버 미들웨어 / cleanup) × 3축(consent / user_initiated / cookie_state) cross product 로 축소됨. registered 축 제거로 cross product 가 작아져 등록된 PHPUnit 16 + Vitest 36 = 52 케이스로 모든 axes 의 핵심 조합과 후속 효과 체인을 커버.
+
+feature: GDPR functional 카테고리 1st-party 게이팅 (Phase 2 단순화)
+
+description: |
+  EDPB Guidelines 2/2023 §16 (사전 차단) + Guidelines 05/2020 §117 (철회 즉시 파기) 충족을 위해
+  functional 카테고리에 4영역 게이팅을 적용한다.
+
+  단순화 배경 (Phase 2 → Phase 2 단순화):
+    초기 Phase 2 는 운영자가 admin UI 에서 functional storage/cookie 를 "등록 표" 에 추가하면
+    그 키만 게이팅 대상이 되도록 설계했으나, 이는 GDPR 원칙 ("strictly necessary 외 비-필수는
+    동의 전 차단") 과 충돌하여 등록 표를 제거하고 4단계 단순화 규칙으로 통합:
+
+      1. strictly necessary allowlist (코드 상수) → 통과
+      2. functional 동의 → 통과
+      3. user-initiated 면제 (WP29 §3.6, 항상 활성) → 통과
+      4. 그 외 → 차단
+
+  영역:
+    1. 클라이언트 storageInterceptor — Storage.prototype.setItem 가로채기
+    2. 클라이언트 cookieInterceptor — Document.prototype.cookie setter 가로채기
+    3. 서버 CookieConsentMiddleware — 응답 Set-Cookie 헤더에서 allowlist 외 모든 cookie 제거
+    4. functionalCleaner — 동의 철회 또는 부팅 시 미동의면 allowlist 외 모든 storage/cookie 즉시 파기
+
+  cleared cookie (Max-Age=0 / expires 과거) 는 위 모든 영역에서 항상 통과 — EDPB §117 와 §16
+  가 충돌하지 않도록 함.
+
+axes:
+  area: [storage_interceptor, cookie_interceptor, server_middleware, cleaner]
+  consent: [functional_granted, functional_denied]
+  user_initiated: [recent_interaction, no_interaction]
+  necessary: [in_allowlist, not_in_allowlist]
+  cookie_state: [normal, cleared]
+  storage_kind: [localStorage, sessionStorage]
+
+exclusions:
+  - { area: storage_interceptor, cookie_state: any, reason: "storage 영역엔 cookie_state 축 미적용" }
+  - { area: cleaner, consent: functional_granted, reason: "cleaner 는 동의 철회 또는 부팅 시 미동의 상태에서만 호출 — 동의 시점엔 호출되지 않음" }
+  - { area: server_middleware, user_initiated: any, reason: "서버 미들웨어는 user-interaction 컨텍스트 부재 — 클라이언트 인터셉터가 담당" }
+  - { necessary: in_allowlist, consent: any, user_initiated: any, reason: "strictly necessary 는 모든 조건 무관 항상 통과" }
+  - { cookie_state: cleared, consent: any, user_initiated: any, necessary: any, reason: "파기 cookie 는 모든 조건 무관 항상 통과 (§117 충돌 회피)" }
+
+effects:
+  # storageInterceptor (영역 1)
+  - storage_necessary_always_passes
+  - storage_prefix_match_passes
+  - storage_consented_passes_all_keys
+  - storage_denied_user_initiated_passes
+  - storage_denied_no_interaction_blocks
+  - storage_update_config_applies_consent_change
+  - storage_uninstall_restores_original_setItem
+  - storage_is_storage_allowed_pure_evaluation
+
+  # cookieInterceptor (영역 2)
+  - cookie_necessary_xsrf_always_passes
+  - cookie_consented_passes_all_names
+  - cookie_denied_user_initiated_passes
+  - cookie_denied_no_interaction_blocks
+  - cookie_malformed_string_blocked
+  - cookie_cleared_always_passes_max_age_zero
+  - cookie_update_config_applies_consent_change
+  - cookie_uninstall_restores_original_setter
+  - cookie_is_cookie_allowed_pure_evaluation
+
+  # CookieConsentMiddleware (영역 3, 서버)
+  - middleware_removes_all_non_allowlist_cookies_on_decline
+  - middleware_passes_all_cookies_on_consent
+  - middleware_preserves_strictly_necessary_cookies
+  - middleware_passes_cleared_cookies_even_without_consent
+  - middleware_full_pass_under_consent
+
+  # GdprCookieConsentController::store (등록 표 제거로 cookie 추가 발송 없음)
+  - controller_does_not_dispatch_extra_cookies_on_functional_decline
+
+  # functionalCleaner (영역 4)
+  - cleaner_clears_non_allowlist_localStorage_keys
+  - cleaner_clears_non_allowlist_sessionStorage_keys
+  - cleaner_preserves_necessary_storage_keys
+  - cleaner_preserves_prefix_match_keys
+  - cleaner_clears_non_allowlist_cookies
+  - cleaner_preserves_necessary_cookies
+  - cleaner_combined_storage_plus_cookie_purge
+  - cleaner_empty_state_silent
+  - cleaner_custom_allowlist_option_extends_protection
+
+  # userInitiatedTracker (공통 의존성)
+  - tracker_install_idempotent
+  - tracker_isTrusted_only_updates_timestamp
+  - tracker_within_threshold_returns_true
+  - tracker_beyond_threshold_returns_false
+  - tracker_boundary_value_inclusive
+  - tracker_uninstall_clears_timestamp
+
+  # Settings 응답 노출 (Phase 2 단순화 — 등록 표 응답 제거)
+  - public_settings_does_not_expose_phase2_registration_fields
+  - admin_settings_does_not_expose_phase2_registration_fields
+
+test_files:
+  # PHPUnit (백엔드)
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Http/Middleware/CookieConsentMiddlewareTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Public/GdprCookieConsentControllerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Public/GdprSettingsControllerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Admin/GdprAdminSettingsControllerTest.php
+
+  # Vitest (프론트엔드)
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/userInitiatedTracker.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/storageInterceptor.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/cookieInterceptor.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/functionalCleaner.test.ts
+
+limitations:
+  - "strictly necessary allowlist 는 코드 상수 (운영자 미수정). 추가 시 본 플러그인 소스 수정 + PR 필요. 코어/번들 확장이 신규 1st-party 키 도입 시 allowlist 갱신 의무."
+  - "인터셉터는 신규 쓰기만 차단. 인터셉터 install 이전에 동기 실행된 쓰기는 잡지 못함 — 부팅 시점 cleaner 가 보완."
+  - "user-initiated 면제 (WP29 §3.6) 의 500ms 임계값은 휴리스틱 — 일반 SPA 의 click → setState → effect → localStorage 체인 커버 목적."
+  - "외부 추적 도메인 (Crisp 등) 의 자동 차단은 별도 영역 — 본 시나리오는 1st-party storage 만 다룸 (blocker-domains.yaml / preblocker.yaml 참조)."
+  - "JavaScript 비활성화 환경에선 클라이언트 인터셉터 / cleaner 모두 동작 불가 — 서버 미들웨어가 부분적 보완 (응답 Set-Cookie 단계 차단)."

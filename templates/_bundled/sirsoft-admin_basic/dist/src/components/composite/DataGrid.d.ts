@@ -1,4 +1,5 @@
 import { default as React } from 'react';
+import { EditorAttrs } from '../../types';
 import { IconName } from '../basic/IconTypes';
 import { ActionMenuItem } from './ActionMenu';
 export interface DataGridCellChild {
@@ -231,7 +232,7 @@ export interface DataGridProps {
     /**
      * 서브 행 셀의 CSS 클래스 (선택적)
      *
-     * @default "px-6 py-2 bg-gray-50 dark:bg-gray-750"
+     * @default "px-6 py-2 bg-gray-50 dark:bg-gray-900"
      */
     subRowClassName?: string;
     /**
@@ -269,6 +270,8 @@ export interface DataGridProps {
      * 미지정 시 footerCells를 key-value 형태로 자동 렌더링합니다.
      */
     footerCardChildren?: DataGridCellChild[];
+    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
+    editorAttrs?: EditorAttrs;
 }
 /**
  * DataGrid 집합 컴포넌트

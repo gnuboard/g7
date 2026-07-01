@@ -1,0 +1,32 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다. 본 기능은 백엔드 전용 변경
+#   (만료 임시주문 예외 타입화 + catch 로깅)으로, PHPUnit Feature 테스트가
+#   ko/en 로케일과 진입점을 커버하며 green 이다.
+feature: 만료 임시주문 404 + catch 로깅 (U14/MP06)
+
+description: |
+  만료/미존재 임시주문 접근 시 i18n 문자열 매칭 대신 TempOrderNotFoundException
+  타입 분기로 404 를 반환한다(ko/en 무관). 모든 변형 catch 에 진단 로깅을 추가하고,
+  주문 확정 경로의 쿠폰 검증 오류는 422 로 하드 차단한다.
+
+axes:
+  temp_order:
+    - exists           # 정상 → 200
+    - expired_missing  # 만료/미존재 → 404
+  locale:
+    - ko               # 한국어 메시지
+    - en               # 영어 메시지(번역문 매칭 회귀 방지)
+  entry:
+    - update           # PUT checkout
+    - store            # POST checkout (cart_empty)
+    - destroy          # DELETE checkout
+    - extend           # POST extend
+
+effects:
+  - expired_temp_order_returns_404         # 만료 → 404 (ko/en 양쪽)
+  - update_failure_logged                  # update catch 로깅
+  - order_confirm_validation_errors_block_422  # 확정 시 쿠폰 위반 → 422
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/CheckoutControllerTest.php

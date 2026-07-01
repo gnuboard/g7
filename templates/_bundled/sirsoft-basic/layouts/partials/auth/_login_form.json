@@ -147,6 +147,10 @@
           "onSuccess": [
             { "handler": "setState", "params": { "target": "global", "currentUser": "{{response.user}}" } },
             { "handler": "setState", "params": { "target": "global", "isLoggingIn": false } },
+            {
+              "_comment": "로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용.",
+              "handler": "clearGuestOrderToken"
+            },
             { "handler": "toast", "params": { "type": "success", "message": "$t:auth.login_success" } },
             { "handler": "navigate", "params": { "path": "{{query.redirect ?? '/'}}" } }
           ],

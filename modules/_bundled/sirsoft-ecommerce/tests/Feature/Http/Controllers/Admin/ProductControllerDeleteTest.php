@@ -230,6 +230,27 @@ class ProductControllerDeleteTest extends ModuleTestCase
     }
 
     /**
+     * 주문 이력이 있는 상품 삭제 시 409 Conflict + 사유 메시지 (A37 결함①)
+     */
+    public function test_destroy_returns_409_for_product_with_order_history(): void
+    {
+        // Given: 주문 이력이 있는 상품
+        $user = $this->createAdminUser(['sirsoft-ecommerce.products.delete']);
+        $product = Product::factory()->create();
+        OrderOption::factory()->count(2)->create(['product_id' => $product->id]);
+
+        // When: destroy API 호출
+        $response = $this->actingAs($user)
+            ->deleteJson("/api/modules/sirsoft-ecommerce/admin/products/{$product->id}");
+
+        // Then: 409 Conflict + 주문 이력 사유(개수 치환) + 상품 보존
+        $response->assertStatus(409);
+        $response->assertJsonPath('success', false);
+        $response->assertJsonPath('message', fn ($m) => is_string($m) && str_contains($m, '2'));
+        $this->assertDatabaseHas('ecommerce_products', ['id' => $product->id]);
+    }
+
+    /**
      * 권한 없는 사용자는 삭제 불가
      */
     public function test_destroy_requires_delete_permission(): void

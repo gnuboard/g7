@@ -7,42 +7,30 @@
   "type": "basic",
   "name": "Div",
   "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'shipping'}}",
-  "props": {
-    "className": "mt-6 space-y-6"
-  },
   "children": [
     {
       "id": "shipping_basic_card",
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "card"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.title"
+        },
+        {
+          "type": "basic",
           "name": "Div",
           "props": {
-            "className": "card-header"
+            "className": "card-description"
           },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "card-title"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.title"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "card-description"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.description"
-            }
-          ]
+          "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.description"
         },
         {
           "type": "basic",
@@ -60,7 +48,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                    "className": "form-label mb-1.5"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.default_country"
                 },
@@ -96,7 +84,7 @@
                   "type": "basic",
                   "name": "Label",
                   "props": {
-                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                    "className": "form-label mb-1.5"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.international_shipping"
                 },
@@ -104,7 +92,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-3"
+                    "className": "flex-center gap-3"
                   },
                   "children": [
                     {
@@ -167,7 +155,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                        "className": "text-label"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.international_shipping_description"
                     }
@@ -184,14 +172,14 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "card"
+        "className": "admin-card"
       },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "card-header flex items-center justify-between"
+            "className": "card-header flex-between"
           },
           "children": [
             {
@@ -208,7 +196,7 @@
                 },
                 {
                   "type": "basic",
-                  "name": "P",
+                  "name": "Div",
                   "props": {
                     "className": "card-description"
                   },
@@ -223,7 +211,7 @@
               "if": "{{!_local.isAddingCountry && (_local.form?.shipping?.international_shipping_enabled ?? false)}}",
               "props": {
                 "type": "button",
-                "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                 "disabled": "{{_computed.isReadOnly}}"
               },
               "actions": [
@@ -289,7 +277,7 @@
                       "type": "basic",
                       "name": "Label",
                       "props": {
-                        "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                        "className": "text-tertiary block font-medium mb-1"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_code"
                     },
@@ -324,7 +312,7 @@
                       "type": "basic",
                       "name": "Label",
                       "props": {
-                        "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                        "className": "text-tertiary block font-medium mb-1"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_name_ko"
                     },
@@ -358,7 +346,7 @@
                       "type": "basic",
                       "name": "Label",
                       "props": {
-                        "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                        "className": "text-tertiary block font-medium mb-1"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_name_en"
                     },
@@ -430,7 +418,7 @@
                       "name": "Button",
                       "props": {
                         "type": "button",
-                        "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_computed.isReadOnly}}"
                       },
                       "actions": [
@@ -466,5 +454,6 @@
     {
       "partial": "_shipping_carrier_section.json"
     }
-  ]
+  ],
+  "props": {}
 }

@@ -87,7 +87,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -114,7 +114,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                            "className": "text-label-subtle mt-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.description"
                                     }
@@ -704,7 +704,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex items-center gap-2"
+                                                                    "className": "flex-center gap-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -770,7 +770,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex items-center gap-2"
+                                                                    "className": "flex-center gap-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1124,7 +1124,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex items-center gap-2 pt-2"
+                                                            "className": "flex-center gap-2 pt-2"
                                                         },
                                                         "children": [
                                                             {
@@ -1153,7 +1153,7 @@
                                                                 "name": "Label",
                                                                 "props": {
                                                                     "for": "combinable",
-                                                                    "className": "text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                                                    "className": "text-body cursor-pointer"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.combinable"
                                                             }

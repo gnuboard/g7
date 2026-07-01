@@ -29,6 +29,17 @@ interface AttachmentRepositoryInterface
     public function findByHash(string $slug, string $hash): ?Attachment;
 
     /**
+     * 첨부파일이 속한 게시글이 삭제(soft delete) 상태인지 확인합니다.
+     *
+     * 게시글이 없거나(임시 업로드 등) 게시판을 찾을 수 없으면 false 를 반환합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return bool 소속 게시글이 삭제 상태인지 여부
+     */
+    public function isPostDeleted(string $slug, int $postId): bool;
+
+    /**
      * 여러 ID로 첨부파일 조회 (order 정렬)
      *
      * @param  string  $slug  게시판 슬러그
@@ -141,4 +152,37 @@ interface AttachmentRepositoryInterface
      * @return int 삭제된 첨부파일 수
      */
     public function softDeleteByBoardId(int $boardId): int;
+
+    /**
+     * 게시글 ID 기준으로 살아있는 첨부를 cascade 로 일괄 소프트 삭제합니다.
+     *
+     * 게시글 삭제 연쇄로 지워졌음을 trigger_type='cascade' 로 마킹합니다.
+     * 이미 삭제된 첨부(사용자 직접 삭제 등)는 영향을 받지 않습니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return int 삭제된 첨부 수
+     */
+    public function softDeleteByPostId(string $slug, int $postId): int;
+
+    /**
+     * 게시글 ID 기준으로 cascade 로 지워진 첨부만 복원합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return int 복원된 첨부 수
+     */
+    public function restoreCascadedByPostId(string $slug, int $postId): int;
+
+    /**
+     * 게시판 ID 기준으로 첨부파일을 일괄 영구 삭제합니다.
+     *
+     * 게시판 영구 삭제(deleteBoard) 시 사용합니다. 소프트 삭제와 달리
+     * deleted_at 마킹이 아니라 레코드를 물리적으로 제거합니다.
+     * (물리 파일은 BoardService::deleteAttachmentFiles 가 별도로 삭제)
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 삭제된 첨부파일 수
+     */
+    public function forceDeleteByBoardId(int $boardId): int;
 }

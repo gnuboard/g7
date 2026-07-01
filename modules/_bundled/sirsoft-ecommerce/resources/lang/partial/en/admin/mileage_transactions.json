@@ -1,0 +1,152 @@
+{
+  "title": "Mileage History",
+  "description": "View member mileage transactions and grant/deduct manually.",
+  "manual_action": "Manual Grant/Deduct",
+  "search": {
+    "field": "Search Field",
+    "field_member": "Member Name",
+    "field_member_id": "Member ID",
+    "field_email": "Email",
+    "field_order": "Order Number",
+    "keyword_placeholder": "Enter keyword",
+    "submit": "Search",
+    "reset": "Reset"
+  },
+  "filter": {
+    "label_search": "Search",
+    "label_type": "Type",
+    "label_currency": "Currency",
+    "label_date": "Period",
+    "type": "Type",
+    "type_all": "All",
+    "type_earn": "Earn",
+    "type_use": "Use",
+    "type_expire": "Expire",
+    "type_adjust": "Adjust",
+    "currency": "Currency",
+    "currency_all": "All",
+    "period": "Period",
+    "period_week": "1 Week",
+    "period_month": "1 Month",
+    "period_3months": "3 Months",
+    "period_all": "All",
+    "start_date": "Start Date",
+    "end_date": "End Date"
+  },
+  "table": {
+    "total_count": "Total {{count}}"
+  },
+  "sort": {
+    "label": "Sort",
+    "created_at_desc": "Newest",
+    "amount_desc": "Amount High",
+    "amount_asc": "Amount Low"
+  },
+  "per_page": {
+    "10": "10 / page",
+    "20": "20 / page",
+    "50": "50 / page",
+    "100": "100 / page"
+  },
+  "column": {
+    "datetime": "Date",
+    "member": "Member",
+    "type": "Type",
+    "amount": "Amount",
+    "remaining": "Remaining",
+    "expiry": "Expiry",
+    "order": "Order",
+    "granted_by": "Granted By",
+    "actions": "Actions"
+  },
+  "cell": {
+    "system": "System",
+    "view_member": "Member Info",
+    "search_member": "Search by this member",
+    "view_admin": "Admin Info",
+    "expired": "Fully Expired",
+    "partial_expired": "Partially Expired",
+    "expired_amount": "{{amount}} expired",
+    "unlimited": "Unlimited",
+    "none": "-"
+  },
+  "row_action": {
+    "expand": "View Detail",
+    "linked": "Linked Transactions",
+    "edit": "Edit Reason/Expiry"
+  },
+  "linked": {
+    "title": "Linked Transactions",
+    "consumed_lots": "Consumed Earn Lots",
+    "source_order": "Referenced Source Transaction",
+    "empty": "No linked transactions",
+    "consumed_amount": "consumed"
+  },
+  "bulk": {
+    "selected": "{{count}} selected",
+    "extend_expiry": "Extend Expiry",
+    "apply": "Apply"
+  },
+  "modal_manual": {
+    "title": "Manual Grant/Deduct",
+    "member_search": "Member Search",
+    "member_search_placeholder": "Search by name or email",
+    "current_balance": "Current Balance",
+    "action": "Action",
+    "action_earn": "Grant",
+    "action_deduct": "Deduct",
+    "amount": "Amount",
+    "currency": "Currency",
+    "exceed_warning": "Exceeds balance {{balance}} (cannot proceed)",
+    "expiry": "Expiry",
+    "expiry_policy": "Follow Policy",
+    "expiry_custom": "Custom Date",
+    "expiry_unlimited": "Unlimited",
+    "expiry_future_only": "Only future dates allowed.",
+    "reason": "Reason",
+    "reason_placeholder": "Enter the reason for grant/deduct",
+    "submit_earn": "Grant",
+    "submit_deduct": "Deduct",
+    "submitting": "Processing...",
+    "confirm": "Have you confirmed the member, amount and action?",
+    "select_member_first": "Please select a member first.",
+    "no_results": "No results found.",
+    "validation_error": "Please check your input.",
+    "field_user_id": "Target member",
+    "field_amount": "Amount",
+    "field_memo": "Reason"
+  },
+  "modal_extend": {
+    "title": "Extend Expiry",
+    "days": "Extension Days",
+    "days_suffix": "day(s)",
+    "submit": "Extend",
+    "submitting": "Processing...",
+    "selected_lots": "Extend expiry for {{count}} selected grant lot(s).",
+    "validation_error": "Please check your input.",
+    "field_days": "Extension days"
+  },
+  "modal_edit": {
+    "title": "Edit Earning Reason/Expiry",
+    "info_member": "Member",
+    "info_amount": "Amount",
+    "info_type": "Type",
+    "info_earned_at": "Earned At",
+    "reason": "Reason",
+    "reason_placeholder": "Enter an admin memo",
+    "expiry": "Expiry",
+    "expiry_date": "Expiry Date",
+    "expiry_locked": "Expiry cannot be changed for already-expired or fully-used earnings.",
+    "readonly_hint": "Greyed-out fields cannot be changed.",
+    "submit": "Save",
+    "submitting": "Saving...",
+    "validation_error": "Please check your input."
+  },
+  "message": {
+    "manual_success": "Processed successfully.",
+    "extend_success": "Expiry extended.",
+    "edit_success": "Earning updated.",
+    "empty": "No mileage transactions."
+  },
+  "cancel": "Cancel"
+}

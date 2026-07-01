@@ -1,10 +1,11 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "할인/쿠폰 적용 섹션 - 쿠폰 선택 및 할인코드 입력 (PC/모바일 반응형)"
+    "description": "할인/쿠폰 적용 섹션 - 쿠폰 선택 및 할인코드 입력 (PC/모바일 반응형). 카드 전체가 회원 전용 — 비회원은 쿠폰(회원 발급) 미지원이며 할인코드 시스템도 백엔드 미구현 상태"
   },
   "type": "basic",
   "name": "Div",
+  "if": "{{_global.currentUser?.uuid}}",
   "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" },
   "responsive": {
     "portable": {
@@ -16,10 +17,10 @@
       "comment": "섹션 헤더",
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
+      "props": { "className": "flex-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
       "responsive": {
         "portable": {
-          "props": { "className": "flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
+          "props": { "className": "flex-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
         }
       },
       "children": [
@@ -29,7 +30,7 @@
           "name": "Div",
           "props": { "className": "flex items-center gap-2" },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "tag", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" } },
+            { "type": "basic", "name": "Icon", "props": { "name": "tag", "className": "text-gray-700 dark:text-gray-300", "size": "md" } },
             {
               "type": "basic",
               "name": "H2",
@@ -166,7 +167,7 @@
               "props": {
                 "value": "{{coupon.id}}"
               },
-              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + coupon.benefit_formatted + ')'}}"
+              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? coupon.benefit_formatted) + ')'}}"
             }
           ],
           "actions": [
@@ -214,8 +215,8 @@
           "if": "{{_local.checkout?.order_coupon_issue_id && (checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}",
           "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "className": "w-4 h-4" } },
-            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}" }
+            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "size": "sm" } },
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.order_coupon_discount_formatted ?? checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}" }
           ]
         }
       ]
@@ -281,7 +282,7 @@
               "props": {
                 "value": "{{coupon.id}}"
               },
-              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + coupon.benefit_formatted + ')'}}"
+              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? coupon.benefit_formatted) + ')'}}"
             }
           ],
           "actions": [
@@ -329,8 +330,8 @@
           "if": "{{_local.checkout?.shipping_coupon_issue_id && (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}",
           "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "className": "w-4 h-4" } },
-            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}" }
+            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "size": "sm" } },
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}" }
           ]
         }
       ]
@@ -439,8 +440,8 @@
           "if": "{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}",
           "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "className": "w-4 h-4" } },
-            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.code_discount_formatted}}" }
+            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "size": "sm" } },
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.code_discount_formatted ?? checkoutData.data.calculation?.summary?.code_discount_formatted}}" }
           ]
         }
       ]

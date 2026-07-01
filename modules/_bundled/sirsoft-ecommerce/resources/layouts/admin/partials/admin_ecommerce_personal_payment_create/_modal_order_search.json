@@ -143,23 +143,20 @@
       "id": "order_search_results",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "space-y-2"
-      },
       "children": [
         {
           "id": "order_item_1",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
+            "className": "flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -183,7 +180,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 mb-1"
+                    "className": "flex-center gap-2 mb-1"
                   },
                   "children": [
                     {
@@ -243,14 +240,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
+            "className": "flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -274,7 +271,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 mb-1"
+                    "className": "flex-center gap-2 mb-1"
                   },
                   "children": [
                     {
@@ -334,14 +331,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
+            "className": "flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -365,7 +362,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 mb-1"
+                    "className": "flex-center gap-2 mb-1"
                   },
                   "children": [
                     {
@@ -425,14 +422,14 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
+            "className": "flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0"
+                "className": "flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0"
               },
               "children": [
                 {
@@ -456,7 +453,7 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-2 mb-1"
+                    "className": "flex-center gap-2 mb-1"
                   },
                   "children": [
                     {
@@ -511,7 +508,10 @@
             }
           ]
         }
-      ]
+      ],
+      "props": {
+        "className": "card-stack"
+      }
     }
   ]
 }

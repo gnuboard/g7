@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * CouponActivityLogListener 테스트
@@ -30,7 +31,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         parent::setUp();
         $this->app->instance('request', Request::create('/api/admin/sirsoft-ecommerce/test'));
         $this->listener = app(CouponActivityLogListener::class);
-        $this->logChannel = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $this->logChannel = Mockery::mock(LoggerInterface::class);
         Log::shouldReceive('channel')
             ->with('activity')
             ->andReturn($this->logChannel);
@@ -41,15 +42,17 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     // getSubscribedHooks
     // ═══════════════════════════════════════════
 
-    public function test_getSubscribedHooks_returns_all_hooks(): void
+    public function test_get_subscribed_hooks_returns_all_hooks(): void
     {
         $hooks = CouponActivityLogListener::getSubscribedHooks();
 
-        $this->assertCount(4, $hooks);
+        $this->assertCount(6, $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_create', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_update', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_delete', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_bulk_status', $hooks);
+        $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_direct_issue', $hooks);
+        $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_issue_cancel', $hooks);
         $this->assertArrayNotHasKey('sirsoft-ecommerce.coupon.before_update', $hooks);
         $this->assertArrayNotHasKey('sirsoft-ecommerce.coupon.before_bulk_status', $hooks);
     }
@@ -58,7 +61,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     // 이벤트 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleAfterCreate_logs_activity(): void
+    public function test_handle_after_create_logs_activity(): void
     {
         $coupon = $this->createCouponMock(10, 'Summer Sale');
 
@@ -77,7 +80,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAfterCreate($coupon, ['name' => 'Summer Sale']);
     }
 
-    public function test_handleAfterUpdate_logs_activity_with_changes(): void
+    public function test_handle_after_update_logs_activity_with_changes(): void
     {
         $coupon = $this->createCouponMock(10, 'Summer Sale Updated');
 
@@ -98,7 +101,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAfterUpdate($coupon, ['name' => 'Summer Sale Updated'], $snapshot);
     }
 
-    public function test_handleAfterUpdate_without_snapshot(): void
+    public function test_handle_after_update_without_snapshot(): void
     {
         $coupon = $this->createCouponMock(99, 'No Snapshot');
 
@@ -113,7 +116,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAfterUpdate($coupon, ['name' => 'No Snapshot']);
     }
 
-    public function test_handleAfterDelete_logs_activity(): void
+    public function test_handle_after_delete_logs_activity(): void
     {
         $couponId = 15;
 
@@ -131,7 +134,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->listener->handleAfterDelete($couponId);
     }
 
-    public function test_handleAfterBulkStatus_logs_activity_with_backed_enum(): void
+    public function test_handle_after_bulk_status_logs_activity_with_backed_enum(): void
     {
         $coupons = collect([
             Coupon::create(['name' => ['ko' => '쿠폰A', 'en' => 'CouponA'], 'discount_type' => CouponDiscountType::FIXED, 'discount_value' => 1000, 'target_type' => CouponTargetType::PRODUCT_AMOUNT]),
@@ -160,7 +163,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
         $this->assertCount(3, $loggedActions);
     }
 
-    public function test_handleAfterBulkStatus_logs_activity_with_non_backed_enum(): void
+    public function test_handle_after_bulk_status_logs_activity_with_non_backed_enum(): void
     {
         $coupons = collect([
             Coupon::create(['name' => ['ko' => '쿠폰D', 'en' => 'CouponD'], 'discount_type' => CouponDiscountType::FIXED, 'discount_value' => 1000, 'target_type' => CouponTargetType::PRODUCT_AMOUNT]),
@@ -191,7 +194,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     // 에러 핸들링 테스트
     // ═══════════════════════════════════════════
 
-    public function test_logActivity_catches_exception_and_logs_error(): void
+    public function test_log_activity_catches_exception_and_logs_error(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()

@@ -623,3 +623,25 @@ xl:items-start xl:items-end xl:items-center
 2xl:px-0 2xl:px-4 2xl:px-6 2xl:px-8 2xl:px-12 2xl:px-16
 2xl:py-0 2xl:py-4 2xl:py-6 2xl:py-8 2xl:py-12 2xl:py-16
 2xl:gap-0 2xl:gap-4 2xl:gap-6 2xl:gap-8 2xl:gap-12 2xl:gap-16
+
+/*
+ * 레이아웃 편집기 다크 모드 classToken
+ * 편집기 [스타일] 탭 다크 세부탭이 editor-spec.json 의 classToken 컨트롤 토큰에 dark: prefix 를
+ * 붙여 적용한다(정렬/방향/줄바꿈/정렬·아이템 정렬/글자크기·굵기·자간·행간). 그 클래스가 빌드 CSS 에
+ * 없으면(레이아웃 JSON 에서 미사용 시 Tailwind 가 생성 안 함) 다크에서 화면에 반영되지 않으므로
+ * 여기서 보장한다. 토큰 목록의 SSoT 는 editor-spec.json — 컨트롤 토큰 변경 시 함께 갱신.
+ */
+dark:block dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap
+dark:font-bold dark:font-normal dark:font-semibold
+dark:items-center dark:items-end dark:items-start dark:items-stretch
+dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start
+dark:leading-normal dark:leading-relaxed dark:leading-tight
+dark:self-center dark:self-end dark:self-start dark:self-stretch
+dark:text-2xl dark:text-3xl dark:text-base dark:text-center dark:text-left dark:text-lg dark:text-right dark:text-sm dark:text-xl dark:text-xs
+dark:tracking-normal dark:tracking-tight dark:tracking-wide
+/* 편집기 색상 컨트롤 프리셋 — textColor/backgroundColor classToken 프리셋의 dark: 변형 */
+dark:text-gray-900 dark:text-gray-700 dark:text-gray-500 dark:text-white dark:text-blue-600 dark:text-red-600 dark:text-green-600
+dark:bg-white dark:bg-gray-50 dark:bg-gray-100 dark:bg-gray-800 dark:bg-gray-900 dark:bg-blue-600 dark:bg-red-600
+/* (라이트+다크) — editor-spec classToken/scale 도출 */
+bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap font-bold font-normal font-semibold italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start leading-normal leading-relaxed leading-tight opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl text-2xl text-3xl text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs tracking-normal tracking-tight tracking-wide underline whitespace-normal whitespace-nowrap whitespace-pre-wrap
+dark:bg-blue-600 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-800 dark:bg-gray-900 dark:bg-red-600 dark:bg-white dark:block dark:border dark:border-0 dark:border-blue-600 dark:border-dashed dark:border-dotted dark:border-gray-300 dark:border-gray-500 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-red-600 dark:border-solid dark:border-white dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:font-bold dark:font-normal dark:font-semibold dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:leading-normal dark:leading-relaxed dark:leading-tight dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-3xl dark:text-base dark:text-blue-600 dark:text-center dark:text-gray-500 dark:text-gray-700 dark:text-gray-900 dark:text-green-600 dark:text-justify dark:text-left dark:text-lg dark:text-red-600 dark:text-right dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:tracking-normal dark:tracking-tight dark:tracking-wide dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap

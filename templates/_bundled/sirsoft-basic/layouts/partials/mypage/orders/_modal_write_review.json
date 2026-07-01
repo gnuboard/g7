@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "리뷰 작성 모달 - 상품 정보 + 별점 + 리뷰 내용 + 이미지 첨부"
+    "description": "리뷰 작성 모달 - 상품 정보 + 별점 + 리뷰 내용 + 이미지 첨부",
+    "editor_label": "$t:user.modal_label.mypage_orders.modal_write_review"
   },
   "type": "composite",
   "name": "Modal",
@@ -85,7 +86,7 @@
                     "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                   },
                   "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 1 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
                 },
                 {
                   "type": "basic",
@@ -95,7 +96,7 @@
                     "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                   },
                   "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 2 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
                 },
                 {
                   "type": "basic",
@@ -105,7 +106,7 @@
                     "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                   },
                   "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 3 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
                 },
                 {
                   "type": "basic",
@@ -115,7 +116,7 @@
                     "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                   },
                   "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 4 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
                 },
                 {
                   "type": "basic",
@@ -125,7 +126,7 @@
                     "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
                   },
                   "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 5 } }],
-                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "size": "lg" } }]
                 }
               ]
             }
@@ -185,15 +186,16 @@
           ]
         },
         {
-          "comment": "이미지 첨부",
+          "comment": "이미지 첨부 (리뷰 정책 max_images=0 이면 숨김)",
           "type": "basic",
           "name": "Div",
+          "if": "{{(reviewSettings?.data?.review_settings?.max_images ?? 5) > 0}}",
           "children": [
             {
               "type": "basic",
               "name": "Label",
               "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
-              "text": "$t:mypage.order_detail.review_modal.image_label"
+              "text": "$t:mypage.order_detail.review_modal.image_label|count={{reviewSettings?.data?.review_settings?.max_images ?? 5}}"
             },
             {
               "type": "composite",
@@ -201,8 +203,8 @@
               "props": {
                 "autoUpload": false,
                 "accept": ".jpg,.jpeg,.png,.gif,.webp",
-                "maxFiles": 5,
-                "maxSize": 10
+                "maxFiles": "{{reviewSettings?.data?.review_settings?.max_images ?? 5}}",
+                "maxSize": "{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}"
               },
               "actions": [
                 {
@@ -227,7 +229,7 @@
             {
               "type": "basic",
               "name": "Icon",
-              "props": { "name": "circle-exclamation", "className": "w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" }
+              "props": { "name": "circle-exclamation", "className": "text-red-600 dark:text-red-400 flex-shrink-0", "size": "sm" }
             },
             {
               "type": "basic",
@@ -264,7 +266,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
                 "disabled": "{{_local.isSubmittingReview === true}}"
               },
               "actions": [

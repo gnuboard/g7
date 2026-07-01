@@ -332,10 +332,14 @@ class PostService
     /**
      * 게시글을 삭제합니다 (상태를 deleted로 변경).
      *
-     * 그누보드7 규정: DB CASCADE 금지 → 첨부파일/댓글 명시적 삭제
-     * ① 첨부파일 물리 파일 + DB 소프트 삭제
-     * ② 댓글 소프트 삭제
-     * ③ 게시글 상태 변경 + 소프트 삭제
+     * 그누보드7 규정: DB CASCADE 금지 → 하위 데이터 명시적 연쇄 삭제
+     * ① 게시글 상태 변경(deleted) + 소프트 삭제
+     * ② 살아있는 댓글을 cascade 로 소프트 삭제 (trigger_type='cascade')
+     * ③ 살아있는 첨부를 cascade 로 소프트 삭제 (trigger_type='cascade')
+     *
+     * 이미 사용자가 직접 삭제한 댓글/첨부(trigger_type='user' 등)는 영향을 받지 않으며,
+     * 게시글 복원 시 cascade 로 지워진 항목만 선택 복원됩니다.
+     * 위 3단계는 단일 트랜잭션으로 묶여 부분 실패 시 전체 롤백됩니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
@@ -358,9 +362,20 @@ class PostService
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('delete', null);
 
-        // 상태 변경 (deleted로 변경하고 소프트 삭제)
-        $deletedPost = $this->postRepository->updateStatus($slug, $id, 'deleted', $actionLog, $triggerType);
-        $deletedPost->delete();
+        // 게시글 + 하위 데이터(댓글/첨부) 연쇄 소프트 삭제를 단일 트랜잭션으로 처리
+        $deletedPost = DB::transaction(function () use ($slug, $id, $actionLog, $triggerType) {
+            // ① 상태 변경 (deleted로 변경하고 소프트 삭제)
+            $deletedPost = $this->postRepository->updateStatus($slug, $id, 'deleted', $actionLog, $triggerType);
+            $deletedPost->delete();
+
+            // ② 댓글 cascade 소프트 삭제 (사용자가 이미 삭제한 항목은 미영향)
+            $this->commentRepository->softDeleteByPostId($slug, $id);
+
+            // ③ 첨부 cascade 소프트 삭제 (사용자가 이미 삭제한 항목은 미영향)
+            $this->attachmentRepository->softDeleteByPostId($slug, $id);
+
+            return $deletedPost;
+        });
 
         // 훅: after_delete ($options 전달 — skip_notification 등 수신 리스너에서 활용)
         HookManager::doAction('sirsoft-board.post.after_delete', $deletedPost, $slug, $options);
@@ -411,10 +426,15 @@ class PostService
     /**
      * 블라인드 또는 삭제된 게시글을 복원합니다.
      *
+     * 게시글 삭제 연쇄(cascade)로 함께 지워졌던 댓글/첨부만 선택적으로 복원합니다.
+     * 사용자가 직접 삭제한 항목(trigger_type='user' 등)은 복원되지 않습니다.
+     * 게시글 복원과 하위 데이터 복원은 단일 트랜잭션으로 묶입니다.
+     *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
      * @param  string|null  $reason  복원 사유
      * @param  string|null  $triggerType  트리거 유형 (admin, report 등)
+     * @return Post 복원된 게시글
      *
      * @throws ModelNotFoundException
      */
@@ -436,8 +456,19 @@ class PostService
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('restore', $reason);
 
-        // 상태 변경 (published로 복원)
-        $restoredPost = $this->postRepository->updateStatus($slug, $id, 'published', $actionLog, $triggerType);
+        // 게시글 + cascade 로 지워진 하위 데이터 복원을 단일 트랜잭션으로 처리
+        $restoredPost = DB::transaction(function () use ($slug, $id, $actionLog, $triggerType) {
+            // ① 상태 변경 (published로 복원 — updateStatus 가 게시글 deleted_at 까지 복원)
+            $restoredPost = $this->postRepository->updateStatus($slug, $id, 'published', $actionLog, $triggerType);
+
+            // ② cascade 로 지워진 댓글만 선택 복원
+            $this->commentRepository->restoreCascadedByPostId($slug, $id);
+
+            // ③ cascade 로 지워진 첨부만 선택 복원
+            $this->attachmentRepository->restoreCascadedByPostId($slug, $id);
+
+            return $restoredPost;
+        });
 
         // 훅: after_restore
         HookManager::doAction('sirsoft-board.post.after_restore', $restoredPost, $slug);
@@ -522,6 +553,21 @@ class PostService
     public function isPostNotice(string $slug, int $id, int $boardId): ?bool
     {
         return $this->postRepository->isNotice($id, $boardId);
+    }
+
+    /**
+     * navigation 판별에 필요한 게시글 메타(카테고리·부모 ID)를 경량 조회합니다.
+     *
+     * 이전/다음 글의 카테고리 필터(47-1)와 답글 제외(47-4) 판단에 사용합니다.
+     * 권한/스코프 체크를 수행하지 않으므로 navigation 메타 판별용으로만 사용해야 합니다.
+     *
+     * @param  int  $id  게시글 ID
+     * @param  int  $boardId  게시판 ID
+     * @return array{category: string|null, parent_id: int|null}|null 메타 또는 미존재 시 null
+     */
+    public function getPostNavigationMeta(int $id, int $boardId): ?array
+    {
+        return $this->postRepository->getNavigationMeta($id, $boardId);
     }
 
     /**

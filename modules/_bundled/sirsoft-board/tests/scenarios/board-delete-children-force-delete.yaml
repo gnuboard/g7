@@ -1,0 +1,50 @@
+feature: 게시판 삭제 시 하위 데이터 영구 삭제 + 첨부 물리파일 삭제
+
+description: |
+  이슈 #413 item 77 — 게시판을 영구 삭제(forceDelete)할 때 소속 게시글·댓글·첨부
+  DB 레코드가 soft delete 로 남아 접근 불가한 고아 데이터가 되고, 첨부 물리 파일도
+  실제로 삭제되지 않던 문제를 수정한다.
+
+  근본 원인 (2겹):
+    · BoardService::deleteBoard() 가 자식(게시글·댓글·첨부)을 softDeleteByBoardId 로
+      soft delete → 게시판은 forceDelete 되는데 자식 DB 레코드만 trashed 로 잔존.
+    · 첨부 물리 파일 미삭제 (2가지가 겹침):
+        (a) deleteAttachmentFiles 가 StorageInterface 를 app() 서비스 로케이터로
+            해석했으나, BoardService 는 $storageServices 컨텍스트 바인딩 대상이 아니어서
+            resolve 실패 → try/catch 가 예외를 삼켜 warning 만 남기고 통과.
+        (b) 저장 경로는 slug 기준({slug}/...)인데 삭제는 board_id 기준 디렉토리를
+            지우려 해 경로 불일치로 아무 파일도 안 지워짐.
+
+  조치 (PO 결정 B안):
+    · Repository 3종(Post/Comment/Attachment)에 forceDeleteByBoardId 신설
+      (기존 softDeleteByBoardId 의 delete → forceDelete). 인터페이스 + 구현.
+    · BoardService::deleteBoard() 의 자식 정리를 force 로 교체.
+    · StorageInterface 를 BoardService 생성자 주입으로 전환
+      (BoardServiceProvider::$storageServices 에 BoardService 추가) → resolve 정상화.
+    · deleteAttachmentFiles 를 slug 기준으로 수정 → 최종/임시 첨부 디렉토리 일괄 삭제.
+
+  신고(Report) 보존 (수정 없음):
+    · boards_reports.board_id 는 nullable + nullOnDelete 로 설계 → 게시판 삭제 시
+      신고 레코드는 보존되고 board_id 만 NULL. 감사/운영 기록 보존 의도. ReportLog 동일.
+
+# axis 의미:
+#   하위 데이터 종류별로 삭제/보존 효과가 갈리므로 child_type 을 핵심 축으로 둔다.
+#   존재 여부(있음/없음)는 effects 와 개별 테스트 메서드로 커버한다.
+axes:
+  child_type: [post, comment, attachment, report]
+
+effects:
+  # DB 영구 삭제 (force)
+  - post_records_force_deleted
+  - comment_records_force_deleted
+  - attachment_records_force_deleted
+  - board_itself_force_deleted
+  # 첨부 물리 파일 삭제 (slug 경로)
+  - attachment_physical_files_removed
+  - other_board_files_not_affected
+  # 신고 보존
+  - reports_preserved_with_null_board_id
+
+test_files:
+  # 77 — 백엔드 삭제 정책 (DB force + 물리파일 + 신고 보존)
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardDeletionTest.php

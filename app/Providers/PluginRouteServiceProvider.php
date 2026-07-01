@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Extension\ExtensionManager;
+use App\Extension\Testing\ExtensionTestAllowlist;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -59,10 +60,16 @@ class PluginRouteServiceProvider extends ServiceProvider
         }
 
         $plugins = File::directories($pluginsPath);
+        $allowlistActive = ExtensionTestAllowlist::isActive();
 
         foreach ($plugins as $plugin) {
             $pluginName = basename($plugin);
             $pluginFile = $plugin.'/plugin.php';
+
+            // 테스트 환경 확장 격리: allowlist 밖 플러그인의 라우트 등록 차단
+            if ($allowlistActive && ! ExtensionTestAllowlist::isAllowed('plugin', $pluginName)) {
+                continue;
+            }
 
             // 플러그인 파일이 존재하는지 확인
             if (! File::exists($pluginFile)) {

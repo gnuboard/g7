@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\Sequence;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * 주문 취소 컨트롤러 Feature 테스트
@@ -35,7 +36,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
         $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
 
         // 이전 테스트에서 저장된 환경설정 파일 제거 (RefreshDatabase 는 storage 롤백 안 함)
-        $settingsDir = storage_path('app/modules/sirsoft-ecommerce/settings');
+        $settingsDir = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         if (is_dir($settingsDir)) {
             foreach (glob($settingsDir.'/*.json') as $file) {
                 @unlink($file);
@@ -952,10 +953,9 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * @test
-     *
      * reason 없이 전체취소 요청 시 422 검증 에러를 반환한다.
      */
+    #[Test]
     public function cancel_order_requires_reason(): void
     {
         // Given: 결제 완료 주문

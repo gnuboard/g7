@@ -6,7 +6,12 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartOperationException;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
+use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\BulkAddToCartRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\ChangeCartOptionRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\DeleteAllCartItemsRequest;
@@ -17,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Public\MergeGuestCartRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\UpdateCartQuantityRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CartItemResource;
 use Modules\Sirsoft\Ecommerce\Services\CartService;
+use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyResolver;
 
 /**
  * 장바구니 컨트롤러
@@ -96,6 +102,9 @@ class CartController extends PublicBaseController
                 'item_ids' => $result->items->pluck('id')->values()->toArray(),
                 'item_count' => $result->count(),
                 'calculation' => $result->calculation->toArray(),
+                // 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 주문 전체 차단 플래그 (D1 — layer 1)
+                'has_unshippable_items' => $this->hasUnshippableItems($result->items),
+                'selected_shipping_country' => ResolveShippingCountry::getCountry(),
             ]);
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
@@ -141,7 +150,15 @@ class CartController extends PublicBaseController
                 ),
                 'cart_count' => $result['cart_count'],
             ], 201);
+        } catch (CartUnavailableException $e) {
+            // 판매불가/재고/구매수량 한도 위반 — generic 500 이 아닌 사유별 422 매핑
+            return $this->cartUnavailableResponse($e);
+        } catch (CartOperationException $e) {
+            // 항목없음/권한없음/옵션없음 — 사유별 404/403/422 매핑
+            return $this->cartOperationResponse($e);
         } catch (Exception $e) {
+            Log::error('cart.store failed', ['error' => $e->getMessage()]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.add_failed',
@@ -194,7 +211,15 @@ class CartController extends PublicBaseController
                 'item_count' => $result->count(),
                 'calculation' => $result->calculation->toArray(),
             ]);
+        } catch (CartUnavailableException $e) {
+            // 판매불가/재고/구매수량 한도 위반 — generic 500 이 아닌 사유별 422 매핑
+            return $this->cartUnavailableResponse($e);
+        } catch (CartOperationException $e) {
+            // 항목없음/권한없음/옵션없음 — 사유별 404/403/422 매핑
+            return $this->cartOperationResponse($e);
         } catch (Exception $e) {
+            Log::error('cart.update_quantity failed', ['error' => $e->getMessage()]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.update_failed',
@@ -224,13 +249,22 @@ class CartController extends PublicBaseController
                 $validated['product_option_id'],
                 $validated['quantity'],
                 $userId,
-                $cartKey
+                $cartKey,
+                $validated['additional_option_selections'] ?? null
             );
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.option_changed', [
                 'item' => new CartItemResource($cart->load(['product', 'productOption'])),
             ]);
+        } catch (CartUnavailableException $e) {
+            // 판매불가/재고/구매수량 한도 위반 — generic 500 이 아닌 사유별 422 매핑
+            return $this->cartUnavailableResponse($e);
+        } catch (CartOperationException $e) {
+            // 항목없음/권한없음/옵션없음/타상품옵션 — 사유별 404/403/422 매핑
+            return $this->cartOperationResponse($e);
         } catch (Exception $e) {
+            Log::error('cart.change_option failed', ['error' => $e->getMessage()]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.update_failed',
@@ -257,7 +291,12 @@ class CartController extends PublicBaseController
             $this->cartService->deleteItem($id, $userId, $cartKey);
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.deleted');
+        } catch (CartOperationException $e) {
+            // 없는 항목(404)/타인 항목(403) 삭제 시도 — generic 500 이 아닌 사유별 4xx
+            return $this->cartOperationResponse($e);
         } catch (Exception $e) {
+            Log::error('cart.destroy failed', ['error' => $e->getMessage()]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.delete_failed',
@@ -286,10 +325,16 @@ class CartController extends PublicBaseController
                 $cartKey
             );
 
-            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.deleted_multiple', [
-                'deleted_count' => $deletedCount,
-            ]);
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.cart.deleted_multiple',
+                ['deleted_count' => $deletedCount],
+                200,
+                ['deleted_count' => $deletedCount],
+            );
         } catch (Exception $e) {
+            Log::error('cart.destroy_multiple failed', ['error' => $e->getMessage()]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.delete_failed',
@@ -314,10 +359,16 @@ class CartController extends PublicBaseController
 
             $deletedCount = $this->cartService->deleteAll($userId, $cartKey);
 
-            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.deleted_all', [
-                'deleted_count' => $deletedCount,
-            ]);
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.cart.deleted_all',
+                ['deleted_count' => $deletedCount],
+                200,
+                ['deleted_count' => $deletedCount],
+            );
         } catch (Exception $e) {
+            Log::error('cart.destroy_all failed', ['error' => $e->getMessage()]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.delete_failed',
@@ -346,6 +397,8 @@ class CartController extends PublicBaseController
                 'merged_count' => $mergedCount,
             ]);
         } catch (Exception $e) {
+            Log::error('cart.merge failed', ['error' => $e->getMessage()]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.merge_failed',
@@ -380,6 +433,82 @@ class CartController extends PublicBaseController
                 500
             );
         }
+    }
+
+    /**
+     * 구매불가 예외를 4xx(422) 응답으로 변환합니다.
+     *
+     * 담기/수량변경/옵션변경 시 판매상태·구매수량 위반 예외를 generic 500 이 아닌
+     * 사유별 4xx 로 매핑합니다. (재고/판매상태/구매대상제한/구매수량 한도)
+     *
+     * @param  CartUnavailableException  $e  구매불가 예외
+     * @return JsonResponse 422 에러 응답
+     */
+    protected function cartUnavailableResponse(CartUnavailableException $e): JsonResponse
+    {
+        $messageKey = $e->hasRestrictionIssue()
+            ? 'exceptions.purchase_not_allowed'
+            : 'exceptions.cart_unavailable';
+
+        return ResponseHelper::moduleError(
+            'sirsoft-ecommerce',
+            $messageKey,
+            422,
+            [
+                'code' => 'cart_unavailable',
+                'message' => $e->getUserMessage(),
+                'unavailable_items' => $e->getUnavailableItems(),
+                'has_stock_issue' => $e->hasStockIssue(),
+                'has_status_issue' => $e->hasStatusIssue(),
+                'has_restriction_issue' => $e->hasRestrictionIssue(),
+                'has_min_qty_issue' => $e->hasMinQtyIssue(),
+                'has_max_qty_issue' => $e->hasMaxQtyIssue(),
+            ]
+        );
+    }
+
+    /**
+     * 장바구니 단건 조작 예외를 사유별 4xx 응답으로 변환합니다.
+     *
+     * 항목없음/권한없음/옵션없음/타상품옵션 조작 예외를 generic 500 이 아닌
+     * 사유별 404/403/422 로 매핑합니다. (MP07 §1-c — U9 전면 정비)
+     *
+     * @param  CartOperationException  $e  장바구니 조작 예외
+     * @return JsonResponse 사유별 4xx 에러 응답
+     */
+    protected function cartOperationResponse(CartOperationException $e): JsonResponse
+    {
+        return ResponseHelper::moduleError(
+            'sirsoft-ecommerce',
+            $e->getMessageKey(),
+            $e->getStatusCode(),
+            ['code' => $e->getReason()]
+        );
+    }
+
+    /**
+     * 선택된 배송국가로 배송 불가한 상품이 카트에 1개라도 있는지 판정합니다. (D1 — layer 1)
+     *
+     * @param  Collection  $items  카트 아이템 컬렉션
+     * @return bool 배송 불가 상품이 1개 이상이면 true (주문 전체 차단)
+     */
+    protected function hasUnshippableItems($items): bool
+    {
+        $country = ResolveShippingCountry::getCountry();
+        $resolver = app(ShippingPolicyResolver::class);
+
+        foreach ($items as $item) {
+            $product = $item->relationLoaded('product') ? $item->product : $item->product;
+            if ($product === null) {
+                continue;
+            }
+
+            if (! $resolver->isShippableToCountry($product, $country)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

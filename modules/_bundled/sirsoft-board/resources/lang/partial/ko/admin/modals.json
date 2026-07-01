@@ -2,7 +2,9 @@
   "copy": {
     "title": "게시판 복사",
     "message": "'{{name}}' 게시판을 복사하시겠습니까?",
-    "info": "※ 게시판 설정만 복사되며, 게시글은 복사되지 않습니다.",
+    "info_copied": "설정·권한·관리자 명단이 함께 복사됩니다.",
+    "info_excluded": "게시글·댓글은 복사되지 않습니다.",
+    "info_slug": "저장 전 폼에서 새 슬러그를 확인하세요.",
     "new_slug_label": "새 슬러그",
     "new_slug_placeholder": "예: notice-copy",
     "confirm": "복사"
@@ -10,7 +12,7 @@
   "delete": {
     "title": "게시판 삭제",
     "confirm": "'{{name}}' 게시판을 삭제하시겠습니까?",
-    "with_posts_info": "이 게시판에는 {{posts_count}}개의 게시글과 댓글이 있습니다.",
+    "with_posts_info": "이 게시판에는 {{posts_count}}개의 게시글이 있습니다. 삭제 시 게시글에 달린 댓글과 첨부파일(업로드된 원본 파일 포함)도 함께 삭제됩니다.",
     "no_posts_info": "이 게시판에는 게시글이 없습니다.",
     "force_delete_label_with_posts": "영구 삭제 (게시글, 댓글, 첨부파일 모두 삭제)",
     "force_delete_label_no_posts": "영구 삭제 (데이터베이스 테이블도 삭제)",

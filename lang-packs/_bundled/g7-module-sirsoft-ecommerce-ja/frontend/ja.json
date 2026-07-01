@@ -68,6 +68,39 @@
     },
     "shipping_policy": {
       "$partial": "partial/admin/shipping_policy.json"
+    },
+    "mileage_settings": {
+      "$partial": "partial/admin/mileage_settings.json"
+    },
+    "mileage_transactions": {
+      "$partial": "partial/admin/mileage_transactions.json"
+    },
+    "user_mileage": {
+      "tab_label": "マイレージ",
+      "title": "マイレージ",
+      "available": "利用可能",
+      "pending": "積立予定",
+      "total_earned": "累積積立",
+      "expiring_soon": "失効予定",
+      "view_history": "この会員の履歴を表示",
+      "disabled_notice": "マイレージ機能が無効化されています。環境設定で有効化できます。"
+    },
+    "dashboard": {
+      "$partial": "partial/admin/dashboard.json"
+    },
+    "user_currency": {
+      "title": "決済通貨",
+      "description": "この会員の注文·決済時に使用する通貨を指定します。",
+      "save_button": "保存",
+      "saved": "会員決済通貨が変更されました。",
+      "save_failed": "会員決済通貨の変更に失敗しました。"
+    },
+    "user_shipping_country": {
+      "title": "配送国",
+      "description": "この会員の基本配送国を指定します。",
+      "save_button": "保存",
+      "saved": "会員の配送国が変更されました。",
+      "save_failed": "会員の配送国の変更に失敗しました。"
     }
   },
   "user": {
@@ -96,5 +129,71 @@
   },
   "shop": {
     "$partial": "partial/shop.json"
+  },
+  "editor": {
+    "data_source": {
+      "active_carriers": "有効配送業者",
+      "activity_logs": "アクティビティログ",
+      "availableChannels": "利用可能チャネル",
+      "brands": "ブランド一覧",
+      "carriers": "配送業者一覧",
+      "categories": "カテゴリー一覧",
+      "commonInfos": "共通情報一覧",
+      "common_infos": "共通情報一覧",
+      "copy_source": "コピー元",
+      "coupon": "クーポン",
+      "couponIssues": "クーポン発行履歴",
+      "coupons": "クーポン一覧",
+      "ecommerceIdentityPolicies": "ショッピングモール本人認証ポリシー",
+      "ecommerceIdentityPurposes": "ショッピングモール本人認証目的",
+      "ecommerceNotificationDefinitions": "ショッピングモール通知定義",
+      "ecommerce_settings": "ショッピングモール設定",
+      "extra_fee_templates": "追加配送料金テンプレート",
+      "identityProviders": "本人認証プロバイダー",
+      "notice_templates": "商品情報表示テンプレート",
+      "order": "注文",
+      "order_logs": "注文ログ",
+      "orders": "注文一覧",
+      "policy": "配送ポリシー",
+      "presets": "プリセット一覧",
+      "product": "商品",
+      "product_labels": "商品ラベル",
+      "products": "商品一覧",
+      "refundReasons": "返金理由",
+      "reviews": "商品レビュー",
+      "roles": "ロール一覧",
+      "seoStats": "SEO統計",
+      "settings": "設定",
+      "shipping_policies": "配送ポリシー一覧",
+      "templates": "テンプレート一覧"
+    },
+    "action": {
+      "request_pg_payment": {
+        "label": "決済開始",
+        "param_handler": "決済ハンドラー",
+        "param_data": "決済データ"
+      }
+    },
+    "action_chip": {
+      "response_pg_handler": "決済ハンドラー(レスポンス)",
+      "response_pg_data": "決済データ(レスポンス)"
+    }
+  },
+  "user_mileage": {
+    "title": "私のマイレージ",
+    "available": "利用可能",
+    "expiring_soon": "失効予定 {{amount}} P",
+    "view_history": "マイレージ履歴",
+    "disabled_notice": "マイレージ機能が無効化されています。"
+  },
+  "auth": {
+    "register_currency": {
+      "label": "決済通貨",
+      "hint": "注文·決済時に使用する通貨です。登録後、マイ情報で変更できます。"
+    },
+    "register_shipping_country": {
+      "label": "配送国",
+      "hint": "基本配送国です。登録後、マイ情報で変更できます。"
+    }
   }
 }

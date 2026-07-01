@@ -2,12 +2,15 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Extension\Traits\ClearsTemplateCaches;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
 class BuildCoreCommand extends Command
 {
+    use ClearsTemplateCaches;
+
     /**
      * The name and signature of the console command.
      */
@@ -99,6 +102,7 @@ class BuildCoreCommand extends Command
         if ($result === Command::SUCCESS && ! $watchMode) {
             $this->info('✅ 코어 빌드 완료 (템플릿 엔진)');
             $this->showEngineBuildResults($projectPath);
+            $this->incrementExtensionCacheVersion();
         }
 
         return $result;
@@ -130,6 +134,7 @@ class BuildCoreCommand extends Command
         if ($result === Command::SUCCESS && ! $watchMode) {
             $this->info('✅ 코어 빌드 완료 (전체)');
             $this->showFullBuildResults($projectPath);
+            $this->incrementExtensionCacheVersion();
         }
 
         return $result;
@@ -155,17 +160,6 @@ class BuildCoreCommand extends Command
         if (file_exists($engineFile)) {
             $fileSize = number_format(filesize($engineFile) / 1024, 2);
             $this->line("   - template-engine.min.js ({$fileSize} KB)");
-        }
-
-        // lang 파일 확인
-        $langPath = $corePath.'/lang';
-        if (is_dir($langPath)) {
-            $langFiles = glob($langPath.'/*.json');
-            foreach ($langFiles as $langFile) {
-                $fileName = 'lang/'.basename($langFile);
-                $fileSize = number_format(filesize($langFile) / 1024, 2);
-                $this->line("   - {$fileName} ({$fileSize} KB)");
-            }
         }
     }
 

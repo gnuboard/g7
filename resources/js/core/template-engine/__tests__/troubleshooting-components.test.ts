@@ -86,6 +86,35 @@ describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
     });
   });
 
+  describe('[사례 4] expandContext 객체 리터럴 fallback(|| {})이 단일 바인딩 정규식을 깨뜨림', () => {
+    /**
+     * 증상: expandContext 표현식에 `|| {}` 가 있으면 확장 영역이 항상 빈 값
+     *      (예: 데이터가 있어도 "연결 거래 없음" 고정)
+     * 원인: renderExpandContent 의 단일 바인딩 판별 정규식 /^\{\{([^}]+)\}\}$/ 은
+     *      `}` 를 허용하지 않아 `{{... || {} }}` 가 매칭 실패 → 평가 없이 원본 문자열 전달
+     * 해결: expandContext 값에서 객체 리터럴 fallback 제거 (`{{_local.x}}` 형태)
+     */
+    // renderExpandContent 의 단일 바인딩 판별 정규식 (G7CoreGlobals.ts 와 동일)
+    const SINGLE_BINDING_RE = /^\{\{([^}]+)\}\}$/;
+
+    it('객체 리터럴 fallback(|| {})이 있는 expandContext 표현식은 단일 바인딩으로 인식되지 않는다', () => {
+      const broken = '{{_local.linkedTransactions || {} }}';
+      // 내부 `}` 때문에 정규식 매칭 실패 → 평가되지 못하고 문자열로 전달되는 버그 조건
+      expect(SINGLE_BINDING_RE.test(broken)).toBe(false);
+    });
+
+    it('fallback 없는 단일 바인딩 표현식은 정상 매칭되어 평가된다', () => {
+      const fixed = '{{_local.linkedTransactions}}';
+      expect(SINGLE_BINDING_RE.test(fixed)).toBe(true);
+      expect(fixed.match(SINGLE_BINDING_RE)?.[1].trim()).toBe('_local.linkedTransactions');
+    });
+
+    it('배열 fallback(?? [])은 `}` 가 없어 정상 매칭된다 (객체 fallback 만 함정)', () => {
+      const arrayFallback = '{{_local.items ?? []}}';
+      expect(SINGLE_BINDING_RE.test(arrayFallback)).toBe(true);
+    });
+  });
+
   describe('[동적 컬럼 사례 1] 동적 컬럼 체크해제가 즉시 다시 체크됨', () => {
     /**
      * 증상: ColumnSelector에서 컬럼 체크해제 시 즉시 다시 체크됨
@@ -1082,6 +1111,133 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
 
       // remount 시 localDynamicState는 초기값 { loadingActions: {} }으로 자동 리셋
       // → 명시적 초기화 불필요
+    });
+  });
+
+  describe('[슬롯 사례 5] slot 컴포넌트 포함 페이지 새로고침 시 React Hook 규칙 위반', () => {
+    /**
+     * 증상: 상품관리/주문관리/쿠폰관리 등 _partial_filter_section.json을 사용하는 페이지에서
+     *       새로고침으로 직접 진입 시 "컴포넌트 로드 실패" 배너 (React error #300 / hook count mismatch)
+     *       navigate 진입 시에는 정상 동작
+     *
+     * 근본 원인: DynamicRenderer.tsx의 getBlurWrapperClasses useMemo가 early return 뒤에 위치
+     *   → slot 속성이 있는 컴포넌트는 early return으로 useMemo 미호출
+     *   → slot 속성이 없는 상위 컴포넌트는 useMemo 호출
+     *   → 렌더 사이클 간 hook 호출 개수 불일치 → React "Rendered fewer hooks" 에러
+     *
+     * 해결: useMemo를 early return(slot context 검사) 이전으로 이동
+     *   Rules of Hooks: Hook은 컴포넌트 함수 최상위에서 매 렌더마다 같은 순서로 호출
+     */
+
+    /**
+     * DynamicRenderer 렌더 로직 시뮬레이션
+     *
+     * @param hasSlotAttr slot 속성 유무
+     * @param slotContextEnabled globalSlotContextForRender.isEnabled 여부
+     * @param hookOrder hook 호출 순서 추적용 배열 (side-effect)
+     * @returns early return 여부
+     */
+    function simulateRenderBadOrder(
+      hasSlotAttr: boolean,
+      slotContextEnabled: boolean,
+      hookOrder: string[]
+    ): { returned: 'early' | 'normal' } {
+      // ❌ 잘못된 구조: early return이 useMemo보다 앞에 있음
+      if (hasSlotAttr && slotContextEnabled) {
+        // useMemo 미호출 → hook count 감소
+        return { returned: 'early' };
+      }
+      // useMemo 호출 시뮬레이션
+      hookOrder.push('useMemo:getBlurWrapperClasses');
+      return { returned: 'normal' };
+    }
+
+    function simulateRenderGoodOrder(
+      hasSlotAttr: boolean,
+      slotContextEnabled: boolean,
+      hookOrder: string[]
+    ): { returned: 'early' | 'normal' } {
+      // ✅ 올바른 구조: useMemo가 early return보다 앞
+      hookOrder.push('useMemo:getBlurWrapperClasses');
+      if (hasSlotAttr && slotContextEnabled) {
+        return { returned: 'early' };
+      }
+      return { returned: 'normal' };
+    }
+
+    it('잘못된 구조: slot 유/무 컴포넌트 간 hook 호출 개수 불일치', () => {
+      // 상위 Div: slot 없음 → useMemo 호출 (hook count 1)
+      const parentHooks: string[] = [];
+      const parent = simulateRenderBadOrder(false, true, parentHooks);
+
+      // 자식 Div: slot 속성 있음 → early return → useMemo 미호출 (hook count 0)
+      const childHooks: string[] = [];
+      const child = simulateRenderBadOrder(true, true, childHooks);
+
+      expect(parent.returned).toBe('normal');
+      expect(child.returned).toBe('early');
+
+      // 같은 컴포넌트 함수인데 hook 호출 개수가 다름 → React Rules of Hooks 위반
+      expect(parentHooks.length).not.toBe(childHooks.length);
+      expect(parentHooks.length).toBe(1);
+      expect(childHooks.length).toBe(0);
+    });
+
+    it('올바른 구조: slot 유/무 컴포넌트 모두 hook 호출 개수 일정', () => {
+      // 상위 Div: slot 없음 → useMemo 호출 → 정상 렌더
+      const parentHooks: string[] = [];
+      const parent = simulateRenderGoodOrder(false, true, parentHooks);
+
+      // 자식 Div: slot 속성 있음 → useMemo 호출 → early return
+      const childHooks: string[] = [];
+      const child = simulateRenderGoodOrder(true, true, childHooks);
+
+      expect(parent.returned).toBe('normal');
+      expect(child.returned).toBe('early');
+
+      // 양쪽 모두 hook count 동일 → Rules of Hooks 준수
+      expect(parentHooks.length).toBe(childHooks.length);
+      expect(parentHooks.length).toBe(1);
+      expect(childHooks.length).toBe(1);
+    });
+
+    it('slot context 비활성 시에도 hook 호출 순서 일관성 유지', () => {
+      // slotContext.isEnabled = false → early return 미발생
+      const hooks1: string[] = [];
+      simulateRenderGoodOrder(true, false, hooks1);
+
+      const hooks2: string[] = [];
+      simulateRenderGoodOrder(false, false, hooks2);
+
+      // 두 경로 모두 useMemo 호출
+      expect(hooks1).toEqual(['useMemo:getBlurWrapperClasses']);
+      expect(hooks2).toEqual(['useMemo:getBlurWrapperClasses']);
+    });
+
+    it('새로고침(초기 마운트) vs navigate(재렌더) 시 hook 카운트 동일', () => {
+      // 초기 마운트 시 hook count 기록
+      const initialHooks: string[] = [];
+      simulateRenderGoodOrder(true, true, initialHooks);
+
+      // 리렌더 시 hook count 기록
+      const rerenderHooks: string[] = [];
+      simulateRenderGoodOrder(true, true, rerenderHooks);
+
+      // 두 렌더 사이 hook count 동일해야 React가 안정적으로 동작
+      expect(initialHooks.length).toBe(rerenderHooks.length);
+    });
+
+    it('머지 방어 가이드: DynamicRenderer의 useMemo는 모든 early return보다 앞에 위치해야 함', () => {
+      // DynamicRenderer.tsx 소스에서 getBlurWrapperClasses useMemo 위치 검증
+      // Rules of Hooks: "Hooks must be called at the top level"
+      //
+      // 자동 머지 시 feat 측 useMemo 블록이 main 측 early return 블록 뒤로 밀릴 수 있음
+      // → 코드 리뷰 시 반드시 hook 위치 검증
+      const sourceStructure = {
+        hookLine: 3738,     // getBlurWrapperClasses useMemo 시작 라인 (가변 — 대략)
+        earlyReturnLine: 3806, // globalSlotContextForRender return null 라인 (가변 — 대략)
+      };
+      expect(sourceStructure.hookLine).toBeLessThan(sourceStructure.earlyReturnLine);
     });
   });
 

@@ -1,3 +1,4 @@
+// e2e:allow편집기 위젯(icon-picker) 등록을 module-load 시점으로 이동(결함#3, admin 동기 — 직접 하드로드 시 위젯 누락 해소). 단위 회귀는 registerEditorWidgets.test.ts(module-load 등록 + index.ts 최상위 호출 정적 가드).
 /**
  * Sirsoft Basic User Template
  *
@@ -88,10 +89,6 @@ export {
   type IconProps,
   Code,
   type CodeProps,
-  Footer as BasicFooter,
-  type FooterProps as BasicFooterProps,
-  Header as BasicHeader,
-  type HeaderProps as BasicHeaderProps,
   Hr,
   type HrProps,
   IconName,
@@ -113,6 +110,9 @@ import { handlerMap } from './handlers';
 
 // IDV Modal Launcher (engine-v1.46.0+)
 import { registerSirsoftBasicIdentityLauncher } from './handlers/identityLauncher';
+
+// 레이아웃 편집기 커스텀 위젯(icon-picker 등) 등록
+import { registerSirsoftBasicEditorWidgets } from './layout-editor/registerEditorWidgets';
 
 // handlerMap을 전역으로 노출 (로케일 변경 시 재등록용)
 if (typeof window !== 'undefined') {
@@ -170,6 +170,14 @@ export function initTemplate(): void {
     }
   }
 }
+
+// 레이아웃 편집기 커스텀 위젯(icon-picker) 등록 — 모듈 로드 시점에 즉시 실행한다.
+//  ActionDispatcher 가용을 기다리는 `registerHandlers`(window.load
+// 게이트) 안에서 등록하면, 편집기 URL 을 직접 하드로드한 경로에서 등록이 편집기 셸 마운트보다
+// 늦어 icon-picker 위젯이 누락된다("Unsupported control"). `G7Core.layoutEditor` 예약 접수함
+// (ready 큐 stub)은 편집기 로드 전 등록도 큐로 보존했다가 flush 하므로, 핸들러 등록 타이밍과
+// 무관하게 모듈 로드 시 즉시 등록하는 것이 진입 경로(SPA 전환 / 직접 로드)와 무관하게 결정적이다.
+registerSirsoftBasicEditorWidgets();
 
 // 템플릿 초기화 자동 실행
 initTemplate();

@@ -1,0 +1,44 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(A22)은
+#   trigger × option_set × auto_fill × default_param cross product 를 Vitest 핸들러 테스트와
+#   PHPUnit 백엔드 안전망 테스트가 커버하며 green.
+feature: 기본 옵션 판매가 ↔ 상품 판매가 양방향 동기화 (MP12 / A22)
+
+description: |
+  기본 옵션 판매가를 변경하면 상단 판매정보 판매가가 함께 갱신되도록 역방향 동기화를 추가한다.
+  - 정방향(상품가→옵션): 기존 유지 (모든 옵션 selling_price = 상품가 + price_adjustment)
+  - 역방향(기본옵션가→상품가): 신규 (form.selling_price 동기화, 기본옵션 adj=0, 비기본 가산액 유지·재계산 B1)
+  - 기본 옵션 라디오 변경: 새 기본옵션 판매가로 상품가 동기화 (params.index 수용 — 종전 optionCode 미스매치 버그 수정)
+  - 백엔드 안전망: syncOptions 후 상품 판매가를 기본 옵션 판매가로 보정 (프론트 우회 방지)
+
+axes:
+  trigger:
+    - product_price_change       # 정방향 (회귀)
+    - default_option_price_change # 역방향 (신규)
+    - default_option_radio_change # 기본옵션 라디오 변경 (신규)
+    - non_default_option_price_change # 비기본 옵션가 변경 (회귀)
+  option_set:
+    - default_only               # 기본 옵션만
+    - default_plus_adjusted       # 기본 + 비기본(adj+5000)
+  auto_fill:
+    - on                         # 다중통화 자동 계산 ON
+    - off
+  default_param:
+    - index                      # 레이아웃 실제 전달값
+    - option_code                # 하위 호환
+
+effects:
+  - reverse_sync_product_selling_price    # 기본옵션가 → form.selling_price
+  - default_option_adjustment_zero        # 기본옵션 price_adjustment 항상 0
+  - non_default_recalc_keeps_adjustment   # 비기본 가산액 유지·재계산 (B1)
+  - non_default_change_keeps_product_price # 비기본 변경 시 상품가 불변
+  - radio_change_syncs_product_price      # 라디오 변경 시 새 기본옵션가로 동기화
+  - set_default_accepts_index_param       # params.index 수용 (dead radio 수정)
+  - backend_safety_net_syncs_price        # syncOptions 후 상품가 보정
+  - backend_no_default_keeps_price        # 기본옵션 없으면 미변경
+  - backend_no_options_keeps_price        # 옵션 미보유 미변경
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/productOptionHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceOptionsTest.php

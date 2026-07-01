@@ -230,7 +230,7 @@
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex items-center justify-between mb-4"
+            "className": "flex-between mb-4"
           },
           "children": [
             {
@@ -264,14 +264,14 @@
               "name": "Div",
               "iteration": "{{_local.selectedItem?.download_history ?? []}}",
               "props": {
-                "className": "flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                "className": "admin-card mb-3"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "flex items-center gap-3"
+                    "className": "flex-center gap-3"
                   },
                   "children": [
                     {
@@ -321,7 +321,7 @@
                           "type": "basic",
                           "name": "Div",
                           "props": {
-                            "className": "flex items-center gap-1 text-tertiary"
+                            "className": "flex-center gap-1 text-tertiary"
                           },
                           "children": [
                             {
@@ -345,11 +345,17 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-secondary font-medium"
-                  },
-                  "text": "#{{item.sequence}}"
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary font-medium"
+                      },
+                      "text": "#{{item.sequence}}"
+                    }
+                  ]
                 }
               ]
             }

@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\ExtraFeeTemplate;
 use Modules\Sirsoft\Ecommerce\Models\ProductCommonInfo;
@@ -57,6 +59,12 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.brand.after_delete' => ['method' => 'handleBrandAfterDelete', 'priority' => 20],
             'sirsoft-ecommerce.brand.after_toggle_status' => ['method' => 'handleBrandAfterToggleStatus', 'priority' => 20],
 
+            // ─── 회원 결제 통화 (A3) ───
+            'sirsoft-ecommerce.admin.user_currency.changed' => ['method' => 'handleUserCurrencyChanged', 'priority' => 20],
+
+            // ─── 회원 배송국가 (MP08 후속) ───
+            'sirsoft-ecommerce.admin.user_shipping_country.changed' => ['method' => 'handleUserShippingCountryChanged', 'priority' => 20],
+
             // ─── ProductLabel ───
             'sirsoft-ecommerce.label.after_create' => ['method' => 'handleLabelAfterCreate', 'priority' => 20],
             'sirsoft-ecommerce.label.after_update' => ['method' => 'handleLabelAfterUpdate', 'priority' => 20],
@@ -73,6 +81,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.product-notice-template.after_update' => ['method' => 'handleNoticeTemplateAfterUpdate', 'priority' => 20],
             'sirsoft-ecommerce.product-notice-template.after_delete' => ['method' => 'handleNoticeTemplateAfterDelete', 'priority' => 20],
             'sirsoft-ecommerce.product-notice-template.after_copy' => ['method' => 'handleNoticeTemplateAfterCopy', 'priority' => 20],
+            'sirsoft-ecommerce.product-notice-template.after_toggle_active' => ['method' => 'handleNoticeTemplateAfterToggleActive', 'priority' => 20],
 
             // ─── ExtraFeeTemplate ───
             'sirsoft-ecommerce.extra_fee_template.after_create' => ['method' => 'handleExtraFeeAfterCreate', 'priority' => 20],
@@ -107,14 +116,16 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.product-review.after_create' => ['method' => 'handleReviewAfterCreate', 'priority' => 20],
             'sirsoft-ecommerce.product-review.after_delete' => ['method' => 'handleReviewAfterDelete', 'priority' => 20],
             'sirsoft-ecommerce.product-review.after_bulk_delete' => ['method' => 'handleReviewAfterBulkDelete', 'priority' => 20],
+
+            // ─── Settings ───
+            'sirsoft-ecommerce.settings.after_save' => ['method' => 'handleSettingsAfterSave', 'priority' => 20],
         ];
     }
 
     /**
      * 훅 이벤트 처리 (기본 핸들러)
      *
-     * @param mixed ...$args 훅에서 전달된 인수들
-     * @return void
+     * @param  mixed  ...$args  훅에서 전달된 인수들
      */
     public function handle(...$args): void
     {
@@ -128,9 +139,52 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 브랜드 생성 후 로그 기록
      *
-     * @param Brand $brand 생성된 브랜드
-     * @param array $data 생성 데이터
-     * @return void
+     * @param  Brand  $brand  생성된 브랜드
+     * @param  array  $data  생성 데이터
+     */
+    /**
+     * 관리자의 회원 결제 통화 변경 후 로그 기록 (A3)
+     *
+     * @param  User  $user  대상 회원
+     * @param  array  $data  변경 정보 (previous_currency, new_currency)
+     */
+    public function handleUserCurrencyChanged($user, array $data): void
+    {
+        $this->logActivity('user_currency.change', [
+            'loggable' => $user,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.user_currency_change',
+            'description_params' => ['user_id' => $user->id],
+            'properties' => [
+                'previous_currency' => $data['previous_currency'] ?? null,
+                'new_currency' => $data['new_currency'] ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * 관리자의 회원 배송국가 변경 후 로그 기록 (MP08 후속)
+     *
+     * @param  User  $user  대상 회원
+     * @param  array  $data  변경 정보 (previous_country, new_country)
+     */
+    public function handleUserShippingCountryChanged($user, array $data): void
+    {
+        $this->logActivity('user_shipping_country.change', [
+            'loggable' => $user,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.user_shipping_country_change',
+            'description_params' => ['user_id' => $user->id],
+            'properties' => [
+                'previous_country' => $data['previous_country'] ?? null,
+                'new_country' => $data['new_country'] ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * 브랜드 생성 후 로그 기록
+     *
+     * @param  Brand  $brand  생성된 브랜드
+     * @param  array  $data  생성 데이터
      */
     public function handleBrandAfterCreate(Brand $brand, array $data): void
     {
@@ -146,10 +200,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 브랜드 수정 후 로그 기록
      *
-     * @param Brand $brand 수정된 브랜드
-     * @param array $data 수정 데이터
-     * @param array|null $snapshot 수정 전 스냅샷 (Service에서 전달)
-     * @return void
+     * @param  Brand  $brand  수정된 브랜드
+     * @param  array  $data  수정 데이터
+     * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
      */
     public function handleBrandAfterUpdate(Brand $brand, array $data, ?array $snapshot = null): void
     {
@@ -167,8 +220,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 브랜드 삭제 후 로그 기록
      *
-     * @param int $brandId 삭제된 브랜드 ID
-     * @return void
+     * @param  int  $brandId  삭제된 브랜드 ID
      */
     public function handleBrandAfterDelete(int $brandId): void
     {
@@ -183,8 +235,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 브랜드 상태 전환 후 로그 기록
      *
-     * @param Brand $brand 브랜드
-     * @return void
+     * @param  Brand  $brand  브랜드
      */
     public function handleBrandAfterToggleStatus(Brand $brand): void
     {
@@ -203,9 +254,8 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 라벨 생성 후 로그 기록
      *
-     * @param ProductLabel $label 생성된 라벨
-     * @param array $data 생성 데이터
-     * @return void
+     * @param  ProductLabel  $label  생성된 라벨
+     * @param  array  $data  생성 데이터
      */
     public function handleLabelAfterCreate(ProductLabel $label, array $data): void
     {
@@ -221,10 +271,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 라벨 수정 후 로그 기록
      *
-     * @param ProductLabel $label 수정된 라벨
-     * @param array $data 수정 데이터
-     * @param array|null $snapshot 수정 전 스냅샷 (Service에서 전달)
-     * @return void
+     * @param  ProductLabel  $label  수정된 라벨
+     * @param  array  $data  수정 데이터
+     * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
      */
     public function handleLabelAfterUpdate(ProductLabel $label, array $data, ?array $snapshot = null): void
     {
@@ -242,8 +291,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 라벨 삭제 후 로그 기록
      *
-     * @param int $labelId 삭제된 라벨 ID
-     * @return void
+     * @param  int  $labelId  삭제된 라벨 ID
      */
     public function handleLabelAfterDelete(int $labelId): void
     {
@@ -258,8 +306,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 라벨 상태 전환 후 로그 기록
      *
-     * @param ProductLabel $label 라벨
-     * @return void
+     * @param  ProductLabel  $label  라벨
      */
     public function handleLabelAfterToggleStatus(ProductLabel $label): void
     {
@@ -278,9 +325,8 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 공통정보 생성 후 로그 기록
      *
-     * @param ProductCommonInfo $commonInfo 생성된 공통정보
-     * @param array $data 생성 데이터
-     * @return void
+     * @param  ProductCommonInfo  $commonInfo  생성된 공통정보
+     * @param  array  $data  생성 데이터
      */
     public function handleCommonInfoAfterCreate(ProductCommonInfo $commonInfo, array $data): void
     {
@@ -296,10 +342,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 공통정보 수정 후 로그 기록
      *
-     * @param ProductCommonInfo $commonInfo 수정된 공통정보
-     * @param array $data 수정 데이터
-     * @param array|null $snapshot 수정 전 스냅샷 (Service에서 전달)
-     * @return void
+     * @param  ProductCommonInfo  $commonInfo  수정된 공통정보
+     * @param  array  $data  수정 데이터
+     * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
      */
     public function handleCommonInfoAfterUpdate(ProductCommonInfo $commonInfo, array $data, ?array $snapshot = null): void
     {
@@ -317,8 +362,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 공통정보 삭제 후 로그 기록
      *
-     * @param int $commonInfoId 삭제된 공통정보 ID
-     * @return void
+     * @param  int  $commonInfoId  삭제된 공통정보 ID
      */
     public function handleCommonInfoAfterDelete(int $commonInfoId): void
     {
@@ -337,9 +381,8 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 고시정보 템플릿 생성 후 로그 기록
      *
-     * @param ProductNoticeTemplate $template 생성된 템플릿
-     * @param array $data 생성 데이터
-     * @return void
+     * @param  ProductNoticeTemplate  $template  생성된 템플릿
+     * @param  array  $data  생성 데이터
      */
     public function handleNoticeTemplateAfterCreate(ProductNoticeTemplate $template, array $data): void
     {
@@ -355,10 +398,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 고시정보 템플릿 수정 후 로그 기록
      *
-     * @param ProductNoticeTemplate $template 수정된 템플릿
-     * @param array $data 수정 데이터
-     * @param array|null $snapshot 수정 전 스냅샷 (Service에서 전달)
-     * @return void
+     * @param  ProductNoticeTemplate  $template  수정된 템플릿
+     * @param  array  $data  수정 데이터
+     * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
      */
     public function handleNoticeTemplateAfterUpdate(ProductNoticeTemplate $template, array $data, ?array $snapshot = null): void
     {
@@ -376,8 +418,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 고시정보 템플릿 삭제 후 로그 기록
      *
-     * @param int $templateId 삭제된 템플릿 ID
-     * @return void
+     * @param  int  $templateId  삭제된 템플릿 ID
      */
     public function handleNoticeTemplateAfterDelete(int $templateId): void
     {
@@ -392,9 +433,8 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 고시정보 템플릿 복사 후 로그 기록
      *
-     * @param ProductNoticeTemplate $copied 복사된 템플릿
-     * @param ProductNoticeTemplate $original 원본 템플릿
-     * @return void
+     * @param  ProductNoticeTemplate  $copied  복사된 템플릿
+     * @param  ProductNoticeTemplate  $original  원본 템플릿
      */
     public function handleNoticeTemplateAfterCopy(ProductNoticeTemplate $copied, ProductNoticeTemplate $original): void
     {
@@ -410,6 +450,37 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
         ]);
     }
 
+    /**
+     * 상품 고시정보 템플릿 활성 상태 변경 후 로그 기록
+     *
+     * @param  ProductNoticeTemplate  $template  토글된 템플릿
+     */
+    public function handleNoticeTemplateAfterToggleActive(ProductNoticeTemplate $template): void
+    {
+        $this->logActivity('product_notice_template.toggle_active', [
+
+            'loggable' => $template,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.product_notice_template_toggle_active',
+            'description_params' => ['template_id' => $template->id],
+            'properties' => [
+                'is_active' => $template->is_active,
+            ],
+        ]);
+    }
+
+    /**
+     * 이커머스 설정 저장 후 로그 기록
+     *
+     * @param  array  $categories  저장된 설정 카테고리 키 목록 (order_settings/review_settings 등)
+     */
+    public function handleSettingsAfterSave(array $categories): void
+    {
+        $this->logActivity('ecommerce_settings.update', [
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.ecommerce_settings_update',
+            'description_params' => ['categories' => implode(', ', $categories)],
+        ]);
+    }
+
     // ═══════════════════════════════════════════
     // ExtraFeeTemplate 핸들러
     // ═══════════════════════════════════════════
@@ -417,8 +488,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 추가비용 템플릿 생성 후 로그 기록
      *
-     * @param ExtraFeeTemplate $template 생성된 추가비용 템플릿
-     * @return void
+     * @param  ExtraFeeTemplate  $template  생성된 추가비용 템플릿
      */
     public function handleExtraFeeAfterCreate(ExtraFeeTemplate $template): void
     {
@@ -434,9 +504,8 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 추가비용 템플릿 수정 후 로그 기록
      *
-     * @param ExtraFeeTemplate $template 수정된 추가비용 템플릿
-     * @param array|null $snapshot 수정 전 스냅샷 (Service에서 전달)
-     * @return void
+     * @param  ExtraFeeTemplate  $template  수정된 추가비용 템플릿
+     * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
      */
     public function handleExtraFeeAfterUpdate(ExtraFeeTemplate $template, ?array $snapshot = null): void
     {
@@ -454,8 +523,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 추가비용 템플릿 삭제 후 로그 기록
      *
-     * @param int $templateId 삭제된 추가비용 템플릿 ID
-     * @return void
+     * @param  int  $templateId  삭제된 추가비용 템플릿 ID
      */
     public function handleExtraFeeAfterDelete(int $templateId): void
     {
@@ -470,8 +538,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 추가비용 템플릿 활성화 전환 후 로그 기록
      *
-     * @param ExtraFeeTemplate $template 추가비용 템플릿
-     * @return void
+     * @param  ExtraFeeTemplate  $template  추가비용 템플릿
      */
     public function handleExtraFeeAfterToggleActive(ExtraFeeTemplate $template): void
     {
@@ -486,10 +553,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 추가비용 템플릿 일괄 삭제 후 로그 기록
      *
-     * @param array $ids 대상 ID 목록
-     * @param int $count 삭제된 수
-     * @param array $snapshots 삭제 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @return void
+     * @param  array  $ids  대상 ID 목록
+     * @param  int  $count  삭제된 수
+     * @param  array  $snapshots  삭제 전 스냅샷 맵 (id => snapshot, Service에서 전달)
      */
     public function handleExtraFeeAfterBulkDelete(array $ids, int $count, array $snapshots = []): void
     {
@@ -512,11 +578,10 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 추가비용 템플릿 일괄 활성화 전환 후 로그 기록
      *
-     * @param array $ids 대상 ID 목록
-     * @param bool $isActive 변경된 활성 상태
-     * @param int $count 변경된 수
-     * @param array $snapshots 변경 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @return void
+     * @param  array  $ids  대상 ID 목록
+     * @param  bool  $isActive  변경된 활성 상태
+     * @param  int  $count  변경된 수
+     * @param  array  $snapshots  변경 전 스냅샷 맵 (id => snapshot, Service에서 전달)
      */
     public function handleExtraFeeAfterBulkToggleActive(array $ids, bool $isActive, int $count, array $snapshots = []): void
     {
@@ -547,10 +612,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 추가비용 템플릿 일괄 등록 후 로그 기록 (per-item)
      *
-     * @param array $items 등록 데이터 배열
-     * @param int $count 등록된 수
-     * @param \Illuminate\Database\Eloquent\Collection|null $createdTemplates 생성된 모델 컬렉션
-     * @return void
+     * @param  array  $items  등록 데이터 배열
+     * @param  int  $count  등록된 수
+     * @param  Collection|null  $createdTemplates  생성된 모델 컬렉션
      */
     public function handleExtraFeeAfterBulkCreate(array $items, int $count, $createdTemplates = null): void
     {
@@ -585,10 +649,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 배송정책 일괄 삭제 후 로그 기록
      *
-     * @param array $ids 대상 ID 목록
-     * @param int $count 삭제된 수
-     * @param array $snapshots 삭제 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @return void
+     * @param  array  $ids  대상 ID 목록
+     * @param  int  $count  삭제된 수
+     * @param  array  $snapshots  삭제 전 스냅샷 맵 (id => snapshot, Service에서 전달)
      */
     public function handleShippingPolicyAfterBulkDelete(array $ids, int $count, array $snapshots = []): void
     {
@@ -611,11 +674,10 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 배송정책 일괄 활성화 전환 후 로그 기록
      *
-     * @param array $ids 대상 ID 목록
-     * @param bool $isActive 변경된 활성 상태
-     * @param int $count 변경된 수
-     * @param array $snapshots 변경 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @return void
+     * @param  array  $ids  대상 ID 목록
+     * @param  bool  $isActive  변경된 활성 상태
+     * @param  int  $count  변경된 수
+     * @param  array  $snapshots  변경 전 스냅샷 맵 (id => snapshot, Service에서 전달)
      */
     public function handleShippingPolicyAfterBulkToggleActive(array $ids, bool $isActive, int $count, array $snapshots = []): void
     {
@@ -650,9 +712,8 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 배송사 생성 후 로그 기록
      *
-     * @param ShippingCarrier $carrier 생성된 배송사
-     * @param array $data 생성 데이터
-     * @return void
+     * @param  ShippingCarrier  $carrier  생성된 배송사
+     * @param  array  $data  생성 데이터
      */
     public function handleCarrierAfterCreate(ShippingCarrier $carrier, array $data): void
     {
@@ -668,10 +729,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 배송사 수정 후 로그 기록
      *
-     * @param ShippingCarrier $carrier 수정된 배송사
-     * @param array $data 수정 데이터
-     * @param array|null $snapshot 수정 전 스냅샷 (Service에서 전달)
-     * @return void
+     * @param  ShippingCarrier  $carrier  수정된 배송사
+     * @param  array  $data  수정 데이터
+     * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
      */
     public function handleCarrierAfterUpdate(ShippingCarrier $carrier, array $data, ?array $snapshot = null): void
     {
@@ -689,8 +749,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 배송사 삭제 후 로그 기록
      *
-     * @param int $carrierId 삭제된 배송사 ID
-     * @return void
+     * @param  int  $carrierId  삭제된 배송사 ID
      */
     public function handleCarrierAfterDelete(int $carrierId): void
     {
@@ -705,8 +764,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 배송사 상태 전환 후 로그 기록
      *
-     * @param ShippingCarrier $carrier 배송사
-     * @return void
+     * @param  ShippingCarrier  $carrier  배송사
      */
     public function handleCarrierAfterToggleStatus(ShippingCarrier $carrier): void
     {
@@ -725,8 +783,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 이미지 업로드 후 로그 기록
      *
-     * @param ProductImage $image 업로드된 상품 이미지
-     * @return void
+     * @param  ProductImage  $image  업로드된 상품 이미지
      */
     public function handleImageAfterUpload(ProductImage $image): void
     {
@@ -741,8 +798,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 이미지 삭제 후 로그 기록
      *
-     * @param ProductImage $image 삭제된 상품 이미지
-     * @return void
+     * @param  ProductImage  $image  삭제된 상품 이미지
      */
     public function handleImageAfterDelete(ProductImage $image): void
     {
@@ -757,8 +813,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 이미지 정렬 변경 후 로그 기록
      *
-     * @param array $orders 정렬 순서 배열
-     * @return void
+     * @param  array  $orders  정렬 순서 배열
      */
     public function handleImageAfterReorder(array $orders): void
     {
@@ -776,10 +831,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 옵션 일괄 가격 수정 후 로그 기록
      *
-     * @param array $optionIds 대상 옵션 ID 목록
-     * @param int $updatedCount 수정된 수
-     * @param array $snapshots 수정 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @return void
+     * @param  array  $optionIds  대상 옵션 ID 목록
+     * @param  int  $updatedCount  수정된 수
+     * @param  array  $snapshots  수정 전 스냅샷 맵 (id => snapshot, Service에서 전달)
      */
     public function handleOptionAfterBulkPriceUpdate(array $optionIds, int $updatedCount, array $snapshots = []): void
     {
@@ -789,10 +843,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 옵션 일괄 재고 수정 후 로그 기록
      *
-     * @param array $optionIds 대상 옵션 ID 목록
-     * @param int $updatedCount 수정된 수
-     * @param array $snapshots 수정 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @return void
+     * @param  array  $optionIds  대상 옵션 ID 목록
+     * @param  int  $updatedCount  수정된 수
+     * @param  array  $snapshots  수정 전 스냅샷 맵 (id => snapshot, Service에서 전달)
      */
     public function handleOptionAfterBulkStockUpdate(array $optionIds, int $updatedCount, array $snapshots = []): void
     {
@@ -802,10 +855,9 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 옵션 통합 일괄 수정 후 로그 기록
      *
-     * @param array $result 업데이트 결과 (options_updated)
-     * @param array $data 원본 요청 데이터
-     * @param array $snapshots 수정 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @return void
+     * @param  array  $result  업데이트 결과 (options_updated)
+     * @param  array  $data  원본 요청 데이터
+     * @param  array  $snapshots  수정 전 스냅샷 맵 (id => snapshot, Service에서 전달)
      */
     public function handleOptionAfterBulkUpdate(array $result, array $data, array $snapshots = []): void
     {
@@ -831,11 +883,10 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      *
      * 벌크 작업 시 옵션 건별로 loggable을 지정하여 개별 로그를 생성합니다.
      *
-     * @param array $optionIds 대상 옵션 ID 목록
-     * @param array $snapshots 수정 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @param string $action 액션명 (예: 'product_option.bulk_update')
-     * @param string $descriptionKeySuffix 번역 키 접미사 (예: 'product_option_bulk_update')
-     * @return void
+     * @param  array  $optionIds  대상 옵션 ID 목록
+     * @param  array  $snapshots  수정 전 스냅샷 맵 (id => snapshot, Service에서 전달)
+     * @param  string  $action  액션명 (예: 'product_option.bulk_update')
+     * @param  string  $descriptionKeySuffix  번역 키 접미사 (예: 'product_option_bulk_update')
      */
     private function logPerOptionChanges(array $optionIds, array $snapshots, string $action, string $descriptionKeySuffix): void
     {
@@ -868,8 +919,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 리뷰 생성 후 로그 기록
      *
-     * @param ProductReview $review 생성된 리뷰
-     * @return void
+     * @param  ProductReview  $review  생성된 리뷰
      */
     public function handleReviewAfterCreate(ProductReview $review): void
     {
@@ -884,8 +934,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 리뷰 삭제 후 로그 기록
      *
-     * @param ProductReview $review 삭제된 리뷰
-     * @return void
+     * @param  ProductReview  $review  삭제된 리뷰
      */
     public function handleReviewAfterDelete(ProductReview $review): void
     {
@@ -900,9 +949,8 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     /**
      * 상품 리뷰 일괄 삭제 후 로그 기록
      *
-     * @param array $ids 대상 리뷰 ID 목록
-     * @param array $snapshots 삭제 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @return void
+     * @param  array  $ids  대상 리뷰 ID 목록
+     * @param  array  $snapshots  삭제 전 스냅샷 맵 (id => snapshot, Service에서 전달)
      */
     public function handleReviewAfterBulkDelete(array $ids, array $snapshots = []): void
     {
@@ -926,31 +974,4 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     // 공통 헬퍼
     // ═══════════════════════════════════════════
 
-    /**
-     * 범용 Bulk 변경 감지 (스냅샷 대비 현재 DB 상태)
-     *
-     * @param string $modelClass 모델 클래스명
-     * @param array $ids 대상 ID 목록
-     * @param array $snapshots 변경 전 스냅샷 맵 (id => snapshot, Service에서 전달)
-     * @return array 엔티티별 변경 내역
-     */
-    private function detectBulkChanges(string $modelClass, array $ids, array $snapshots): array
-    {
-        $allChanges = [];
-        $models = $modelClass::whereIn('id', $ids)->get()->keyBy('id');
-
-        foreach ($ids as $id) {
-            $snapshot = $snapshots[$id] ?? null;
-            $model = $models->get($id);
-
-            if ($snapshot && $model) {
-                $changes = ChangeDetector::detect($model, $snapshot);
-                if ($changes) {
-                    $allChanges[$id] = $changes;
-                }
-            }
-        }
-
-        return $allChanges;
-    }
 }

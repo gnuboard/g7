@@ -22,5 +22,11 @@
   },
   "extensions": {
     "$partial": "partial/en/extensions.json"
+  },
+  "layout_editor": {
+    "$partial": "partial/en/layout_editor.json"
+  },
+  "editor": {
+    "$partial": "partial/en/editor.json"
   }
 }

@@ -33,6 +33,7 @@
     "data_sources": [
         {
             "id": "identityProviders",
+            "label_key": "$t:editor.data_source.identityProviders",
             "type": "api",
             "endpoint": "/api/admin/identity/providers",
             "method": "GET",
@@ -45,6 +46,7 @@
         },
         {
             "id": "identityPurposes",
+            "label_key": "$t:editor.data_source.identityPurposes",
             "type": "api",
             "endpoint": "/api/identity/purposes",
             "method": "GET",
@@ -56,6 +58,7 @@
         },
         {
             "id": "identityLogs",
+            "label_key": "$t:editor.data_source.identityLogs",
             "type": "api",
             "endpoint": "/api/admin/identity/logs",
             "method": "GET",
@@ -66,10 +69,10 @@
                 "page": "{{query.page || 1}}",
                 "per_page": "{{query.per_page || 20}}",
                 "provider_id": "{{query.provider_id}}",
-                "purposes": "{{query.purposes}}",
-                "statuses": "{{query.statuses}}",
-                "channels": "{{query.channels}}",
-                "origin_types": "{{query.origin_types}}",
+                "purposes": "{{query['purposes[]']}}",
+                "statuses": "{{query['statuses[]']}}",
+                "channels": "{{query['channels[]']}}",
+                "origin_types": "{{query['origin_types[]']}}",
                 "source_type": "{{query.source_type}}",
                 "source_identifier": "{{query.source_identifier}}",
                 "date_from": "{{query.date_from}}",
@@ -112,15 +115,15 @@
                 "filter": {
                     "searchType": "{{query.search_type || 'auto'}}",
                     "search": "{{query.search || ''}}",
-                    "statuses": "{{Array.isArray(query.statuses) ? query.statuses : (query.statuses ? [query.statuses] : (query.status ? [query.status] : []))}}",
-                    "purposes": "{{Array.isArray(query.purposes) ? query.purposes : (query.purposes ? [query.purposes] : (query.purpose ? [query.purpose] : []))}}",
-                    "channels": "{{Array.isArray(query.channels) ? query.channels : (query.channels ? [query.channels] : [])}}",
-                    "originTypes": "{{Array.isArray(query.origin_types) ? query.origin_types : (query.origin_types ? [query.origin_types] : [])}}",
+                    "statuses": "{{Array.isArray(query['statuses[]']) ? query['statuses[]'] : (query['statuses[]'] ? [query['statuses[]']] : (query.status ? [query.status] : []))}}",
+                    "purposes": "{{Array.isArray(query['purposes[]']) ? query['purposes[]'] : (query['purposes[]'] ? [query['purposes[]']] : (query.purpose ? [query.purpose] : []))}}",
+                    "channels": "{{Array.isArray(query['channels[]']) ? query['channels[]'] : (query['channels[]'] ? [query['channels[]']] : [])}}",
+                    "originTypes": "{{Array.isArray(query['origin_types[]']) ? query['origin_types[]'] : (query['origin_types[]'] ? [query['origin_types[]']] : [])}}",
                     "dateFrom": "{{query.date_from || ''}}",
                     "dateTo": "{{query.date_to || ''}}",
                     "sourceType": "{{query.source_type || ''}}",
                     "sourceIdentifier": "{{query.source_identifier || ''}}",
-                    "advancedOpen": "{{!!(query.source_type || query.source_identifier || query.origin_types)}}"
+                    "advancedOpen": "{{!!(query.source_type || query.source_identifier || query['origin_types[]'])}}"
                 }
             }
         }
@@ -158,7 +161,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -166,7 +169,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex items-center justify-between mb-6"
+                            "className": "flex-between mb-6"
                         },
                         "children": [
                             {
@@ -185,7 +188,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                            "className": "text-label-subtle mt-1"
                                         },
                                         "text": "$t:admin.identity.logs.page_description"
                                     }
@@ -195,7 +198,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-2"
+                                    "className": "flex-center gap-2"
                                 },
                                 "children": [
                                     {
@@ -204,7 +207,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors",
+                                            "className": "btn-icon",
                                             "title": "$t:admin.identity.logs.refresh"
                                         },
                                         "actions": [
@@ -222,7 +225,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-solid fa-arrows-rotate",
-                                                    "className": "w-5 h-5"
+                                                    "size": "lg"
                                                 }
                                             }
                                         ]
@@ -234,7 +237,7 @@
                                         "if": "{{identityLogs?.data?.abilities?.can_purge === true}}",
                                         "props": {
                                             "type": "button",
-                                            "className": "px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors whitespace-nowrap"
+                                            "className": "btn btn-danger whitespace-nowrap"
                                         },
                                         "actions": [
                                             {
@@ -257,82 +260,51 @@
                     },
                     {
                         "id": "provider_tabs",
-                        "type": "basic",
-                        "name": "Div",
+                        "type": "composite",
+                        "name": "TabNavigation",
                         "props": {
-                            "className": "border-b border-gray-200 dark:border-gray-700 mb-6"
+                            "tabs": "{{[{id: '', label: '$t:admin.identity.logs.tab_all'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon})))}}",
+                            "activeTabId": "{{query.provider_id ?? ''}}",
+                            "variant": "default",
+                            "className": "sticky-tab-nav mb-6"
                         },
-                        "children": [
+                        "actions": [
                             {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": "flex gap-1 -mb-px overflow-x-auto"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "{{!query.provider_id ? 'px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 whitespace-nowrap' : 'px-4 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap'}}"
-                                        },
-                                        "text": "$t:admin.identity.logs.tab_all",
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/identity/logs",
-                                                    "replace": true,
-                                                    "query": []
+                                "event": "onTabChange",
+                                "type": "change",
+                                "handler": "sequence",
+                                "params": {
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter": {
+                                                    "searchType": "auto",
+                                                    "search": "",
+                                                    "statuses": [],
+                                                    "purposes": [],
+                                                    "channels": [],
+                                                    "originTypes": [],
+                                                    "dateFrom": "",
+                                                    "dateTo": "",
+                                                    "sourceType": "",
+                                                    "sourceIdentifier": "",
+                                                    "advancedOpen": false
                                                 }
                                             }
-                                        ]
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "iteration": {
-                                            "source": "{{identityProviders?.data ?? []}}",
-                                            "item_var": "pv"
                                         },
-                                        "props": {
-                                            "type": "button",
-                                            "className": "{{query.provider_id === pv.id ? 'px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 whitespace-nowrap' : 'px-4 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap'}}"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "props": {
-                                                    "name": "{{pv.icon ?? 'fas fa-shield-halved'}}",
-                                                    "className": "mr-2"
-                                                }
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "{{pv.label ?? pv.id}}"
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/identity/logs",
+                                                "replace": true,
+                                                "query": "{{$args[0] ? {provider_id: $args[0], page: 1} : []}}",
+                                                "transition_overlay_target": "identity_log_datagrid__body"
                                             }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/identity/logs",
-                                                    "replace": true,
-                                                    "query": {
-                                                        "provider_id": "{{pv.id}}",
-                                                        "page": 1
-                                                    },
-                                                    "transition_overlay_target": "identity_log_datagrid__body"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
+                                        }
+                                    ]
+                                }
                             }
                         ]
                     },
@@ -352,21 +324,21 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center justify-between gap-3 mb-4"
+                                    "className": "flex-between flex-wrap gap-3 mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-3"
+                                            "className": "flex-center gap-3"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                                                    "className": "text-label"
                                                 },
                                                 "text": "$t:admin.identity.logs.total_count|count={{identityLogs?.data?.pagination?.total || 0}}"
                                             }
@@ -376,7 +348,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-3"
+                                            "className": "flex-center gap-3"
                                         },
                                         "children": [
                                             {

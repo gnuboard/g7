@@ -1,5 +1,6 @@
 {
   "all": "All",
+  "view_all": "View All",
   "loading": "Loading...",
   "saving": "Saving...",
   "error": "An error occurred.",
@@ -18,6 +19,7 @@
   "required": "Required",
   "cancel": "Cancel",
   "delete": "Delete",
+  "list": "List",
   "deleting": "Deleting...",
   "processing": "Processing...",
   "confirm": "Confirm",

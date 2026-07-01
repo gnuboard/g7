@@ -1,0 +1,66 @@
+feature: 레이아웃 편집기 액션 편집 · flex 편집 · 표시 조건
+phase: 5
+session: S7
+issue: 383
+axes:
+  event_kind: [onClick, onHover, onComponentEvent, lifecycle_onMount, lifecycle_onUnmount]
+  action_recipe: [goToPage, showMessage, changeState, refreshData, callServerThen, openModal_lazy_id, custom_extension_recipe]
+  followup_chain: [none, single_success, single_error, success_and_error_both, nested_multi_step]
+  flex_role: [container, item, auto_div_detected_as_flex, auto_div_detected_as_block]
+  flex_direction: [row, column]
+  flex_wrap: [no_wrap, wrap]
+  flex_justify: [start, center, end, between, around]
+  flex_align: [start, center, end, stretch]
+  item_grow: [fixed, fill, ratio]
+  condition_category: [A_preset, B_datasource, C_array, D_field, E_state, F_route, G_form, H_ability]
+  condition_combinator: [single, and, or, mixed_and_or]
+  condition_param_kind: [no_param, ds_id, state_key, field_name, value_literal, ability_key]
+  click_in_edit_mode_should_be_intercepted: [yes_navigate, yes_a_href, no_static]
+exclusions:
+  - { action_recipe: openModal_lazy_id, followup_chain: nested_multi_step,
+      reason: "openModal 은 onSuccess/onError 체인 의미 없음 — 즉시 모달 오픈" }
+  - { flex_role: item, flex_direction: row,
+      reason: "item 편집은 부모 컨테이너 컨텍스트에서만 — 방향 축 무관" }
+  - { condition_category: A_preset, condition_param_kind: ds_id,
+      reason: "A 프리셋은 파라미터 없음" }
+effects:
+  - action_recipe_build_emits_correct_handler_name_and_top_level_target
+  - action_recipe_top_level_onSuccess_onError_keys_not_in_params
+  - action_recipe_handler_name_follows_claude_md_critical_rules
+  - action_recipe_navigate_uses_navigate_not_nav
+  - action_recipe_apiCall_target_outside_params_to_avoid_resolvedTarget_undefined
+  - action_recipe_refetchDataSource_uses_dataSourceId_key_not_id
+  - action_recipe_toast_handler_not_showToast
+  - action_recipe_setState_target_top_level_not_in_params
+  - nested_action_list_widget_assembles_recursive_actions
+  - action_recipe_does_not_expose_handler_jargon_to_user
+  - action_recipe_reverse_matches_existing_action_to_recipe
+  - flex_container_classToken_emits_per_spec_apply_type
+  - flex_auto_detection_uses_computed_style_not_classname
+  - flex_auto_detection_works_across_tailwind_bootstrap_native_css
+  - flex_item_align_self_emits_correct_recipe
+  - flex_item_order_property_set
+  - flex_make_box_button_when_not_rendered_as_flex
+  - condition_recipe_substitutes_params_into_expr_template
+  - condition_recipe_wraps_entire_combined_expression_in_single_braces
+  - condition_builder_does_not_emit_nested_interpolation_braces
+  - condition_recipe_uses_optional_chaining_for_null_safety
+  - condition_recipe_array_length_uses_length_nullish_zero_fallback
+  - condition_synthesized_expr_evaluates_via_condition_evaluator
+  - condition_builder_reverse_matches_single_preset
+  - condition_builder_preserves_advanced_handwritten_expr
+  - spec_undeclared_event_hides_action_slot
+  - condition_param_widget_dispatches_via_widget_registry
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/actionRecipeEngine.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/conditionRecipeEngine.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/flexModel.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/s7-property-controls.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/condition-toggle-render.test.tsx
+e2e_files:
+  - tests/Playwright/specs/layout-editor/action-flex-condition.spec.ts
+notes: |
+  액션/조건 레시피 적용기는 Pure Logic DataProvider (친화 입력 → 핸들러/식 JSON).
+  ActionRecipeEditor/ConditionBuilder/FlexEditor 는 Component RTL.
+  합성 if 식의 실제 평가는 condition-toggle-render (ConditionEvaluator 라운드트립).
+  Chrome MCP drag 비호환(dnd-kit) 으로 캔버스 클릭 가로채기 axis 는 코드경로+RTL 로 대체.
