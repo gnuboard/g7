@@ -683,7 +683,7 @@ class OrderCancellationService
         }
         // 부분취소는 별도 주문 상태(partial_cancelled)를 두지 않는다 — 옵션은 이미 CANCELLED 로 전이됐고,
         // 주문 상태는 아래 syncParentOrderStatus 가 "취소 제외 잔여 활성 옵션" 기준으로 파생 결정한다.
-        // (잔여 옵션이 모두 취소된 경우 syncParentOrderStatus 가 CANCELLED 로 전이.) — PO 2026-06-22
+        // (잔여 옵션이 모두 취소된 경우 syncParentOrderStatus 가 CANCELLED 로 전이.) — 2026-06-22
 
         $order->update($updateData);
 

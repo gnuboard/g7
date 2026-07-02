@@ -1,6 +1,6 @@
 /**
  * @file coupon-download-modal.test.tsx
- * @description U10 — 쿠폰 다운로드 모달 무한스크롤 회귀 테스트 (MP10 §9, PO 재설계)
+ * @description U10 — 쿠폰 다운로드 모달 무한스크롤 회귀 테스트 (MP10 §9, 재설계)
  *
  * 검증 항목 (최종 무한스크롤 설계 기준):
  * - last_page 기반 버튼식 페이지네이션 블록(이전/다음/카운터) 미렌더

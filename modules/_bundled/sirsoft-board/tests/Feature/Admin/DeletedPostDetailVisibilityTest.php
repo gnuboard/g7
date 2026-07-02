@@ -21,7 +21,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *   증상2 — cascade 로 함께 숨겨진 댓글이 user 선삭제 댓글과 동일하게
  *           "삭제된 댓글입니다" 로 마스킹됨 (cascade/user 구분 신호 부재)
  *
- * 정책(PO 확정):
+ * 정책(확정):
  *   - 첨부: 관리 권한자에게는 댓글과 동일하게 cascade 삭제분도 노출
  *   - cascade 댓글: 관리 권한자에게는 마스킹 없이 원문 노출 (is_cascade_deleted 신호 제공)
  *   - user 선삭제분: 기존대로 마스킹 유지

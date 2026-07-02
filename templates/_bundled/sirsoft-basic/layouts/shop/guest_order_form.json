@@ -95,7 +95,7 @@
                     "props": { "className": "space-y-4" },
                     "children": [
                       {
-                        "comment": "인라인 에러 박스 — 인증 실패 시 toast 대신 폼 상단에 통일 메시지 노출 (PO UX 결정). 실패 사유는 구분하지 않고 단일 boolean 플래그로 표시 (보안 정책).",
+                        "comment": "인라인 에러 박스 — 인증 실패 시 toast 대신 폼 상단에 통일 메시지 노출 (UX 결정). 실패 사유는 구분하지 않고 단일 boolean 플래그로 표시 (보안 정책).",
                         "type": "basic",
                         "name": "Div",
                         "if": "{{_local.lookupError}}",
@@ -296,7 +296,7 @@
                             ],
                             "onError": [
                               {
-                                "comment": "보안 정책 — 실패 사유(주문 없음/비밀번호 오류/잠금)를 구분하지 않고 단일 boolean 플래그로 통일. 폼 상단 인라인 에러 박스가 lookupError 가 true 일 때 노출된다 (toast 대신 페이지 내 메시지 박스 — PO UX 결정).",
+                                "comment": "보안 정책 — 실패 사유(주문 없음/비밀번호 오류/잠금)를 구분하지 않고 단일 boolean 플래그로 통일. 폼 상단 인라인 에러 박스가 lookupError 가 true 일 때 노출된다 (toast 대신 페이지 내 메시지 박스 — UX 결정).",
                                 "handler": "setState",
                                 "params": { "target": "local", "isSubmitting": false, "errors": "{{error.errors ?? null}}", "lookupError": true }
                               }

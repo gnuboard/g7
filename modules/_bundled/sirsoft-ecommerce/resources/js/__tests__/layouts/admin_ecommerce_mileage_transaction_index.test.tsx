@@ -406,7 +406,7 @@ describe('DataGrid (_transactions_table.json)', () => {
     expect(edit).toBeTruthy();
     // 비적립계 또는 권한없음이면 비활성 — Resource 가 can_edit = can_manage && isEarning 으로 계산
     expect(edit.disabledField).toBe('abilities.can_edit');
-    // 원장 불변: 삭제 액션은 존재하지 않는다 (PO 확정)
+    // 원장 불변: 삭제 액션은 존재하지 않는다 (정책 확정)
     const ids = grid.props.rowActions.map((a: any) => a.id);
     expect(ids).not.toContain('delete');
     expect(ids).not.toContain('manual');

@@ -136,7 +136,7 @@ editor-spec.json 이 커지면(코어 admin 템플릿은 단일 파일 18,000줄
 
 ### actionRecipes — 친화 명칭 → 핸들러 JSON
 
-`params`(친화 입력란) + `build`(핸들러 JSON 생성 틀)로 구성한다. `build` 값의 `{{paramKey}}`(중괄호 2개)가 입력값으로 치환된다. `onSuccess`/`onError` 가 `{{key}}` 이고 그 파라미터가 `action-list` 면 치환 결과는 중첩 액션 **배열**이 된다. 핸들러명/파라미터 키는 사용자에게 노출하지 않는다 — 사용자는 `label` 친화 명칭만 본다. `build.handler` 는 CLAUDE.md CRITICAL RULES 의 올바른 핸들러(`navigate`/`apiCall`/`setState`/...)를 쓴다. `comment` 키는 레시피가 아닌 작성자 메모다.
+`params`(친화 입력란) + `build`(핸들러 JSON 생성 틀)로 구성한다. `build` 값의 `{{paramKey}}`(중괄호 2개)가 입력값으로 치환된다. `onSuccess`/`onError` 가 `{{key}}` 이고 그 파라미터가 `action-list` 면 치환 결과는 중첩 액션 **배열**이 된다. 핸들러명/파라미터 키는 사용자에게 노출하지 않는다 — 사용자는 `label` 친화 명칭만 본다. `build.handler` 는 코어 핸들러 규칙의 올바른 핸들러(`navigate`/`apiCall`/`setState`/...)를 쓴다. `comment` 키는 레시피가 아닌 작성자 메모다.
 
 `build.handler` 는 리터럴 핸들러명 대신 `{{paramKey}}` **placeholder** 도 가능하다 — 호출할 핸들러를 응답값 등 데이터로 결정하는 provider-agnostic 액션(예: ecommerce 모듈 `requestPgPayment` "결제 진입" — 핸들러를 `{{response.data.pg_payment_handler}}` 데이터 칩으로 연결)에 쓴다. 결제 같은 **도메인 동작은 코어가 아니라 그 도메인 확장(모듈/플러그인/템플릿)이 자기 editor-spec `actionRecipes` 에 소유**한다 — 코어는 PG/도메인을 모른다. 확장 레시피는 로더가 `__source` 메타를 붙여 〔확장식별자〕 배지·'extension' 그룹으로 자동 분류한다. 라벨은 그 확장의 lang 네임스페이스를 명시한다(예: `$t:sirsoft-ecommerce.editor.action.request_pg_payment.label`).
 

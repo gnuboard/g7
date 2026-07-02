@@ -265,7 +265,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         // 카드는 Pending/Review 신고만 표시한다 (ReportRepository::getPendingAcrossBoards).
         // 배지는 신고 대상(게시글/댓글)의 상태가 아니라 신고 건 자체의 처리상태(status)를 보여준다.
         // 색상은 신고현황 페이지(admin_board_reports_index 의 status 컬럼) 와 동일한 매핑을 사용한다.
-        // PO 시각 검증 피드백: "대상 상태가 아닌 처리상태가 보여져야 한다" + "처리상태는 게시판 신고현황과 동일한 색상으로".
+        // 시각 검증 피드백: "대상 상태가 아닌 처리상태가 보여져야 한다" + "처리상태는 게시판 신고현황과 동일한 색상으로".
         const statusBadge = findById(communityExt as any, 'report_status_badge');
         expect(statusBadge).not.toBeNull();
         expect(statusBadge.if).toBe('{{!!report?.status_label}}');

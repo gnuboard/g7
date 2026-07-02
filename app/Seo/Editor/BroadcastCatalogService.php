@@ -11,7 +11,7 @@ use App\Contracts\Extension\PluginManagerInterface;
  * 데이터소스 종류=websocket 편집 시 채널을 "구독 가능한 목록 기준 검색 드롭다운"으로
  * 제시하기 위해, "지금 이 설치본에서 구독 가능한 채널"을 런타임 수집한다. 코어/확장이
  * `getChannels()` 오버라이드로 등록한 채널명을 출처(core/module/plugin)와 함께 모은다
- * (CLAUDE.md 채널 프리픽스 규약 — 코어 `core.*`, 모듈 `module.{id}.*`, 플러그인
+ * (코어 채널 프리픽스 규약 — 코어 `core.*`, 모듈 `module.{id}.*`, 플러그인
  * `plugin.{id}.*`).
  *
  * 이벤트는 `HookManager::broadcast($channel, $eventName, $payload)` 호출 시점에 이름이

@@ -3,7 +3,7 @@
  * @description 게시판 목록/검색 미리보기 비밀글·블라인드 차단 게이트 회귀 (이슈 #413-37)
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
- * 정책(PO 확정): 목록/검색 미리보기(content_preview)는 비밀글·블라인드 글에서
+ * 정책(확정): 목록/검색 미리보기(content_preview)는 비밀글·블라인드 글에서
  *   권한과 무관하게 빈 문자열로 차단된다. 백엔드(PostResource::toListArray ->
  *   getMaskedContentPreviewForList)가 빈 문자열을 응답하면, 미리보기 노드의 if 가
  *   content_preview 존재(truthy)에 의존하므로 자동으로 미렌더된다.

@@ -762,7 +762,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-permission-candidates');
         // 편집기 프리뷰 전용 CSS — 다크 셀렉터를 프리뷰 마커(.g7le-preview-dark)로 치환해 서빙
-        // PO admin 의 html.dark 조상과 독립적으로 프리뷰 라이트/다크 격리.
+        // 관리자 admin 의 html.dark 조상과 독립적으로 프리뷰 라이트/다크 격리.
         Route::get('{identifier}/editor/components.css', [AdminTemplateAssetController::class, 'serveEditorCss'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-css');

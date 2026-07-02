@@ -1201,7 +1201,7 @@ export function testShippingApiHandler(
     G7Core.state.set?.({ apiTestLoading: true, apiTestResult: null });
 
     // apiCall 구조: URL 은 액션 top-level target, method/body 는 params,
-    // onSuccess/onError 도 top-level (CLAUDE.md apiCall 규약). 백엔드 test-api-call
+    // onSuccess/onError 도 top-level (코어 apiCall 규약). 백엔드 test-api-call
     // 엔드포인트가 사용자가 입력한 설정으로 외부 API 를 대신 호출하고 결과를 서빙한다.
     G7Core.dispatch({
         handler: 'apiCall',

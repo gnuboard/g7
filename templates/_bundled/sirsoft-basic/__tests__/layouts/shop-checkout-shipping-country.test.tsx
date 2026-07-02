@@ -8,7 +8,7 @@
  *     A2) checkoutData GET 이 country_code 를 서버에 전달하지 않아 서버가 KR 폴백
  *     A3) 배송국가 Select 변경 시 PUT /checkout(재계산) 호출이 없어 국가만 바뀌고 배송비 그대로
  *
- * 설계 원칙(PO 확정): 주문서에서 선택한 배송국가가 SSoT.
+ * 설계 원칙(확정): 주문서에서 선택한 배송국가가 SSoT.
  *   헤더는 "기본값" 만 제공(_global.preferredShippingCountry), 진입 후엔 주문서 Select 가 우선.
  *   우편번호는 국가 결정과 무관 — 도서산간/주별 세부 차등에만 관여.
  */

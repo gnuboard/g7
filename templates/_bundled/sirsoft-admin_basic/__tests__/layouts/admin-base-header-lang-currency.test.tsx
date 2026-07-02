@@ -2,7 +2,7 @@
  * @file admin-base-header-lang-currency.test.tsx
  * @description 관리자 헤더 언어·통화 선택기 패리티 회귀 테스트
  *
- * 배경(PO 검수 지적):
+ * 배경(검수 지적):
  * - 관리자 데스크톱 언어 버튼이 globe 아이콘만 표시하고 현재 선택 언어를 안 보여줌(유저는 코드 표시).
  *   → LanguageSelector 에 showCode 도입, _admin_base 가 showCode:true 로 사용.
  * - 관리자 모바일 헤더에 언어·통화 버튼이 둘 다 없음(데스크톱에만 존재).

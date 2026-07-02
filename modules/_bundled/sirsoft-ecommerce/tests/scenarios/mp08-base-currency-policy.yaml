@@ -2,7 +2,7 @@
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
 #   base 통화 정책 axis 는 PHPUnit(OrderProcessingService/buildCurrencySnapshot/OrderAdjustmentService/
 #   StoreEcommerceSettingsRequest)·Playwright 가 커버하며 green 이다.
-feature: base 통화 정책 + 변경 가드 + 결제/통지/부분환불 base 기준 (A2 — PO 신규)
+feature: base 통화 정책 + 변경 가드 + 결제/통지/부분환불 base 기준 (A2 — 신규)
 
 description: |
   기본통화 = 모든 금액 테이블의 base(진실값). 비-base 선택 시 base 정수 × 스냅샷 환율로 PG 청구·통지·환불.

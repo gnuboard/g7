@@ -8,7 +8,7 @@
  *
  * 근본 원인 / 수정:
  *  - 증상2: onSuccess 에 post 데이터소스 refetch 누락 → refetchDataSource(post) 추가
- *  - 증상1: onError 에 closeModal 누락 → "모달 닫고 토스트"(PO 결정) 로 보강
+ *  - 증상1: onError 에 closeModal 누락 → "모달 닫고 토스트"(설계 결정) 로 보강
  *
  * 신고 모달은 게시글/댓글 공용 1파일이므로 이 단언이 양쪽을 모두 커버한다.
  */
@@ -99,7 +99,7 @@ describe('신고 모달 제출 피드백 (이슈 #413-60)', () => {
       expect(toast?.params?.type).toBe('error');
     });
 
-    it('onError 에 closeModal 이 있어야 한다 (PO 결정: 실패 시 모달 닫고 토스트)', () => {
+    it('onError 에 closeModal 이 있어야 한다 (설계 결정: 실패 시 모달 닫고 토스트)', () => {
       const close = onError.find((a) => a.handler === 'closeModal');
       expect(close).toBeDefined();
     });

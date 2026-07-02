@@ -1,7 +1,7 @@
 /**
  * conditionRecipeEngine.test.ts — 친화 조건 → if 식 합성 DataProvider
  *
- * CLAUDE.md `if` 규칙 회귀 가드:
+ * 코어 `if` 규칙 회귀 가드:
  *  - 최종 결과 전체가 단일 `{{ }}` 한 쌍 — 중첩 보간 `{{ {{x}} }}` 미발생.
  *  - 옵셔널 체이닝(`?.`) / 배열 길이 `(arr?.length ?? 0)` 형태 보존.
  *  - 로그인 판정 경로 보존(임의 식 금지).
@@ -65,7 +65,7 @@ describe('buildClauseExpr — {paramKey} 치환', () => {
   });
 });
 
-describe('combineConditions — 단일 {{ }} 합성 (CLAUDE.md if 규칙)', () => {
+describe('combineConditions — 단일 {{ }} 합성 (코어 if 규칙)', () => {
   it('단일 조건 → {{ 식 }}', () => {
     const r = combineConditions([{ operator: 'isLoggedIn', params: {} }], 'and', ops);
     expect(r).toBe('{{ _global?.currentUser?.uuid }}');

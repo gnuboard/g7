@@ -2,7 +2,7 @@
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
 #   유저별 영속 통화 axis 는 PHPUnit(EcommerceUserProfile/Repository/통화 저장 컨트롤러)·
 #   Vitest(설정 UI)·Playwright(설치 게이트)가 커버하며 green 이다.
-feature: 유저별 영속 통화 — user-profile 확장 + 4곳 설정 (A3·A5 — PO 신규)
+feature: 유저별 영속 통화 — user-profile 확장 + 4곳 설정 (A3·A5 — 신규)
 
 description: |
   유저별 통화 = 커머스 책임. 코어 users 미변경, 모듈 ecommerce_user_profiles 테이블 + layout_extensions.

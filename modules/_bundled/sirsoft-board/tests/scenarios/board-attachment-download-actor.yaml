@@ -17,7 +17,7 @@ description: |
         (composite/ImageGallery.tsx 의 downloadAuthenticatedFile 과 동일 패턴).
       · 레이아웃 카드 3곳 전환: 사용자 _post_attachments(권한 분기 보존),
         관리자 _post_card_content / _reply_card_content(무분기) 의 <A href> → Div + click 핸들러.
-    - PO 정책 확정:
+    - 정책 확정:
       · 범위 = 게시판만 3곳 (페이지 첨부는 별도). 비회원 = NULL 유지(현행). 성공 토스트 없음.
       · 서버(라우트/컨트롤러/서비스) 무변경 — optional.sanctum 유지가 비회원 NULL 정책과 정합.
 

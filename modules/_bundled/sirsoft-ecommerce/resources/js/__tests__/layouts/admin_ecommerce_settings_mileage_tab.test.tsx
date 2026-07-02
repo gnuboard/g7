@@ -3,7 +3,7 @@
  *
  * @description
  * - 마일리지 설정은 이커머스 환경설정(admin_ecommerce_settings.json)의 서브탭으로 통합됨
- *   (별도 독립 화면 아님 — PO 합의사항)
+ *   (별도 독립 화면 아님 — 합의사항)
  * - 환경설정 메인: mileage 탭 등록 + 탭 콘텐츠 partial(_tab_mileage.json) 참조 + 탭 if 가드
  * - 탭 콘텐츠 partial 5종(탭/기본/통화테이블/통화카드/유효기간/소멸알림) 구조 검증
  * - 카드 4종(기본/통화/유효기간/소멸알림), 토글 3종, 적립시점 기본=구매확정
@@ -180,7 +180,7 @@ describe('마일리지 탭 콘텐츠 (_tab_mileage.json)', () => {
   });
 
   it('마일리지 내역 보기 버튼이 기본 설정 카드 헤더에 있고 내역 화면으로 이동한다', () => {
-    // 공간 절약 위해 별도 헤더 행 대신 기본 설정 카드 우측 상단으로 이동 (PO 요청)
+    // 공간 절약 위해 별도 헤더 행 대신 기본 설정 카드 우측 상단으로 이동 (요청)
     const btn = findById(basicCard, 'view_transactions_button');
     expect(btn, '내역 보기 버튼이 기본 설정 카드에 없다').toBeTruthy();
     expect(btn.actions[0].handler).toBe('navigate');

@@ -295,7 +295,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
      * 노출하여 사용자가 어느 필드를 의미하는지 인지하기 어려움. FormRequest::attributes() 메서드로
      * 각 필드에 lang 의 사용자 친화 라벨을 매핑하여 메시지 안에 노출되도록 함.
      *
-     * 검토 #10d — PO 가 사용자에게 영문 키 노출이 부적절하다는 피드백 후 추가.
+     * 검토 #10d — 사용자에게 영문 키 노출이 부적절하다는 피드백 후 추가.
      */
     public function test_update_validation_messages_use_friendly_attribute_names(): void
     {

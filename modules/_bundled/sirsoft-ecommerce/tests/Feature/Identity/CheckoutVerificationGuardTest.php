@@ -164,7 +164,7 @@ class CheckoutVerificationGuardTest extends ModuleTestCase
      *
      * 기존 G1(훅 발화)·코어 가드(enforce 예외)·리스너 구독 테스트는 각 조각만 따로 검증한다.
      * 이 테스트는 그 셋이 실제 HTTP 흐름에서 연결되어 최종적으로 428 이 나오는지를 통합 검증한다.
-     * (PO 검수: 조각 테스트는 green 인데 실제로 본인인증이 발동하지 않던 결함의 회귀 가드)
+     * (검수: 조각 테스트는 green 인데 실제로 본인인증이 발동하지 않던 결함의 회귀 가드)
      *
      * @scenario policy=checkout, enabled=on, actor=member, verified_state=unverified, path=http_order_create
      *

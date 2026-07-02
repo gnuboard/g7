@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 웹소켓 토글 전 계층 SSoT 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버. Chrome MCP 라이브 axis 는 PO 환경 실측.
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 웹소켓 토글 전 계층 SSoT 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버. Chrome MCP 라이브 axis 는 실환경 실측.
 
 feature: websocket_enabled 토글 전 계층 단일 SSoT 가드 (공개#50)
 
@@ -32,7 +32,7 @@ effects:
   - channel_auth_returns_401_when_unauthenticated
   - channel_auth_passes_toggle_guard_when_on_and_authenticated
   - websocket_manager_skips_initialize_when_appkey_empty
-  - front_no_wss_connection_attempt_when_toggle_off  # Chrome MCP 라이브 실측 (PO 환경)
+  - front_no_wss_connection_attempt_when_toggle_off  # Chrome MCP 라이브 실측 (실환경)
 
 test_files:
   - tests/Unit/Providers/SettingsServiceProviderWebsocketConfigTest.php

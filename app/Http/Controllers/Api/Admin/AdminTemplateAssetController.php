@@ -187,7 +187,7 @@ class AdminTemplateAssetController extends AdminBaseController
     /**
      * 편집기 프리뷰 전용 CSS 서빙 — 다크 셀렉터를 프리뷰 마커로 치환.
      *
-     * PO admin 환경이 다크 테마면 `<html class="dark">` 가 조상으로 남아, 프리뷰
+     * 관리자 admin 환경이 다크 테마면 `<html class="dark">` 가 조상으로 남아, 프리뷰
      * 프레임에서 `.dark` 를 빼도(라이트 토글) Tailwind `.dark &` 가 활성돼 프리뷰가
      * 라이트로 격리되지 않는다. 이를 해소하기 위해, 편집기 진입 시에만 components.css 의
      * 다크 조상 셀렉터(`.dark`)를 프리뷰 전용 마커(`.g7le-preview-dark`)로 치환해 서빙한다.

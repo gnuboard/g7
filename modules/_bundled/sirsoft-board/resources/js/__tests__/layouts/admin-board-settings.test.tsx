@@ -968,7 +968,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
     it('admin-card 안 4 섹션 description 이 .card-description 시맨틱이고 card-title 의 직계 sibling 이다 (#408)', () => {
         // _tab_report_policy.json 의 4 섹션 (자동 숨김, abuse_prevention, permissions, notification)
         // description 이 stack 안에 묻혀있으면 .card-title:has(+ .card-description) 셀렉터 불발 →
-        // card-title 의 하단 여백이 의도(mb-1)와 다르게 mb-6 으로 적용됨 (PO 보고 #408)
+        // card-title 의 하단 여백이 의도(mb-1)와 다르게 mb-6 으로 적용됨 (보고 #408)
         //
         // 기대: admin-card 직계 자식 순서가 [card-title, card-description, stack, ...] 이고,
         //       card-description 의 className 에 'card-description' 시맨틱 자산이 포함되어야 함.
@@ -1045,7 +1045,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
     });
 
     it('board layout 의 모든 .card-description 은 Div 태그여야 한다 — Span/P 금지 (#408)', () => {
-        // PO 표준: span.card-description / p.card-description 는 잘못된 시맨틱 HTML
+        // 표준: span.card-description / p.card-description 는 잘못된 시맨틱 HTML
         //          → div.card-description 만 허용.
         const layouts: Array<[string, any]> = [
             ['mainLayout', mainLayout],

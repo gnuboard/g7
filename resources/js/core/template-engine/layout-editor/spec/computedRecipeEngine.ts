@@ -16,7 +16,7 @@
  *      evaluateExpression` 을 그대로 호출한다(운영 렌더와 동일 식 해석 경로,
  * [[feedback_editor_sample_verify_computed_body_not_just_state]]).
  *
- * 모든 생성 출력은 **`{{ 식 }}` 한 쌍**이다(CLAUDE.md `if`/computed 규칙 — 중첩 보간
+ * 모든 생성 출력은 **`{{ 식 }}` 한 쌍**이다(코어 `if`/computed 규칙 — 중첩 보간
  * `{{ {{x}} }}` 미발생). 매칭/역해석은 식 원문을 변경하지 않는다(인식만).
  *
  * @since engine-v1.50.0

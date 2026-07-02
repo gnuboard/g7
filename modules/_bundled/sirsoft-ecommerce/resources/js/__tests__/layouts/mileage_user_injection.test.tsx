@@ -102,7 +102,7 @@ describe('마이페이지 프로필 내 마일리지 카드 주입 (mypage-profi
   it('사용자 화면(마이페이지) 카드는 ExtensionBadge 를 사용하지 않는다 (회귀 차단)', () => {
     // ExtensionBadge 는 관리자 템플릿(sirsoft-admin_basic)에만 존재하는 컴포넌트로,
     // 사용자 템플릿(sirsoft-basic)에는 미등록이라 사용자 화면에 주입 시 "컴포넌트를 찾을 수 없습니다" 렌더 실패.
-    // PO 정책: 사용자 화면에서 ExtensionBadge 사용 금지.
+    // 정책: 사용자 화면에서 ExtensionBadge 사용 금지.
     const json = jsonOf(mypageCard);
     expect(json).not.toContain('ExtensionBadge');
   });

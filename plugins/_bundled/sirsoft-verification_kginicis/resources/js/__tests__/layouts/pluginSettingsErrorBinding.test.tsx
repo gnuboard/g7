@@ -5,7 +5,7 @@
  * 배경: onError 의 errors 바인딩이 `{{$error.errors}}` ($ 접두사) 였을 때 ActionDispatcher
  * 컨텍스트 변수명과 불일치하여 _local.errors 가 null 로 남고, validation_error 박스가
  * 렌더되지 않는 silent failure 회귀가 발생했다. 올바른 컨텍스트 변수명은 `{{error.errors}}`.
- * (CLAUDE.md 데이터 바인딩 규칙: onSuccess/onError 컨텍스트는 $ 접두사 없음)
+ * (코어 데이터 바인딩 규칙: onSuccess/onError 컨텍스트는 $ 접두사 없음)
  */
 
 import { describe, it, expect } from 'vitest';

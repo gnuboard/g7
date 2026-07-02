@@ -367,7 +367,7 @@ class OrderResourceFieldsTest extends ModuleTestCase
 
     /**
      * OrderResource 의 is_partially_cancelled 파생 플래그가 "취소 옵션 ∧ 잔여 활성 옵션" 일 때만 true 인지 확인.
-     * (부분취소는 별도 order_status 가 아니라 파생 플래그로 표시 — PO 2026-06-22.)
+     * (부분취소는 별도 order_status 가 아니라 파생 플래그로 표시 — 2026-06-22.)
      */
     public function test_order_resource_exposes_is_partially_cancelled_flag(): void
     {

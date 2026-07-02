@@ -46,7 +46,7 @@ export interface InlineBindingScalarPickerProps {
    */
   defaultOpen?: boolean;
   /**
-   * 펼침 시 검색창+결과를 **부유 드롭다운**(공용 `FloatingDropdown`)으로 띄울지 (PO
+   * 펼침 시 검색창+결과를 **부유 드롭다운**(공용 `FloatingDropdown`)으로 띄울지 (검수
    * "돋보기 누르면 화면 50% 차지 — 부유 상태로 떠야" 2026-06-13 / "데이터 선택기가 부착된 모든 UI 를
    * 동일하게 부유 처리" 2026-06-14). **기본 true** — 어느 진입점이든 펼치면 토글 기준으로 떠서 행/패널을
    * 밀어내지 않는다(좁은 조건 행·데이터 조각·[속성]탭 폼 공통). 종전엔 기본 false(인라인)였으나, 새

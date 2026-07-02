@@ -526,7 +526,7 @@ class Order extends Model
      *
      * 부분취소는 별도 주문 상태(partial_cancelled)가 아니라 "취소된 옵션이 있으면서
      * 잔여 활성 옵션도 존재"하는 파생 상태다. 주문 상태(order_status)는 잔여 활성 옵션 기준으로
-     * 결정되고, "일부가 취소되었다"는 사실은 이 플래그로 노출한다 (PO 2026-06-22, partial_cancelled 제거).
+     * 결정되고, "일부가 취소되었다"는 사실은 이 플래그로 노출한다 (2026-06-22, partial_cancelled 제거).
      *
      * @return bool 일부 옵션만 취소된 주문이면 true
      */

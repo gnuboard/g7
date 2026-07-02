@@ -18,7 +18,7 @@ use Tests\TestCase;
  *   덮어쓰지 않아야 한다. 그렇지 않으면 운영 PC 의 settings 값(debug=false) 때문에 PHPUnit / E2E 인프라
  *   (PlaywrightIssueToken 등) 가 의도치 않게 차단된다.
  *
- * 회귀 컨텍스트: 이슈 #238 Playwright 도입 작업 중 PO 환경(APP_ENV=production, debug.json mode=false) 에서
+ * 회귀 컨텍스트: 이슈 #238 Playwright 도입 작업 중 운영 환경(APP_ENV=production, debug.json mode=false) 에서
  * --env=testing 으로 artisan 명령을 실행해도 SettingsServiceProvider 가 settings JSON 의 mode=false 로
  * config('app.debug') 를 false 로 덮어쓰는 문제가 발견됨.
  */

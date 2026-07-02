@@ -5,7 +5,7 @@ G7 코어의 Playwright (TypeScript) 기반 결정론적 E2E 인프라.
 ## 빠른 시작
 
 ```powershell
-# PowerShell (PO 환경)
+# PowerShell (개발 환경)
 $env:PLAYWRIGHT_BASE_URL='https://g7.dev'
 npm run test:e2e            # 전체 spec
 npm run test:e2e:smoke      # @smoke 태그 (homepage / login / admin-dashboard 3건)
@@ -24,9 +24,9 @@ PLAYWRIGHT_BASE_URL=https://g7.dev npx playwright test
 
 1. **`PLAYWRIGHT_BASE_URL` 환경변수** — CI / 명시적 오버라이드 (최우선)
 2. **`.env` 의 `APP_URL`** — 단 `http://localhost` 류는 fallback 부적합 (Apache vhost 미경유)
-3. **그 외** — 명시 에러 (PO 가 의도적으로 base URL 을 지정하지 않으면 spec 미실행)
+3. **그 외** — 명시 에러 (의도적으로 base URL 을 지정하지 않으면 spec 미실행)
 
-도메인이 가변(개발자/CI/PO 환경별 다름)이므로 fallback 하드코딩 금지.
+도메인이 가변(개발자/CI/운영 환경별 다름)이므로 fallback 하드코딩 금지.
 
 ## 디렉토리 구조
 
@@ -141,7 +141,7 @@ await page.route('https://api.tosspayments.com/v1/payments/confirm', route => ro
 ```
 
 분기별(성공/실패/취소/금액 불일치/중복) 가맹점 측 처리(주문 상태 전환, 재고 차감, 알림 발송) 정확성 검증.
-실 카드 결제 자동화는 권장하지 않음 — PO 수동 검증.
+실 카드 결제 자동화는 권장하지 않음 — 수동 검증.
 
 ## 회귀 / Flaky 처리
 

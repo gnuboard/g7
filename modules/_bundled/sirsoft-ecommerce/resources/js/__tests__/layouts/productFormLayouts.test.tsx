@@ -258,7 +258,7 @@ describe('productFormLayouts', () => {
          *       "Failed to execute action: navigate" 오류 토스트가 추가로 발생하고
          *       목록 페이지로 이동하지 않음 (성공 토스트 + 오류 토스트 2건 동시 노출).
          * 원인: onSuccess 시퀀스의 navigate 핸들러가 params.url 로 경로를 전달했으나,
-         *       G7 navigate 핸들러는 params.path 만 인식한다 (CLAUDE.md "navigate path 필수").
+         *       G7 navigate 핸들러는 params.path 만 인식한다 (코어 규정: navigate path 필수).
          *       url 키는 무시되어 finalPath=undefined → navigate throw → 오류 토스트.
          *       동일 모듈의 다른 navigate(주문 상세/브랜드 목록 등)는 모두 path 사용.
          * 해결: onSuccess navigate 의 params.url → params.path 로 정정.
@@ -527,7 +527,7 @@ describe('productFormLayouts', () => {
                 findNodeById(otherInfoPartial, 'field_max_purchase_qty'),
             ]);
             // $event.target.value 는 허용하되, parseInt($event)/Number($event) 같은
-            // 이벤트 객체 직접 숫자화 패턴은 금지 (CLAUDE.md 데이터 바인딩 규정)
+            // 이벤트 객체 직접 숫자화 패턴은 금지 (코어 데이터 바인딩 규정)
             expect(serialized).not.toMatch(/parseInt\(\$event\)/);
             expect(serialized).not.toMatch(/Number\(\$event\)/);
         });

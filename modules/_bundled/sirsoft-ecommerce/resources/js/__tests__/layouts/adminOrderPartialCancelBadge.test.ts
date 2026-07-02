@@ -4,7 +4,7 @@
  * 배경:
  * - partial_cancelled 주문상태 제거 후, 일부 취소 사실은 파생 플래그 is_partially_cancelled 로 표시한다.
  * - DataGrid order_status 컬럼 cellChildren 에 StatusBadge + 보조 배지를 평면 형제로 두면
- *   목록 셀과 모바일 카드(responsiveBreakpoint)에서 한 줄로 나란히 떠 깨진다(PO 발견).
+ *   목록 셀과 모바일 카드(responsiveBreakpoint)에서 한 줄로 나란히 떠 깨진다(검수 발견).
  *   → 둘을 flex-col 묶음 Div 로 감싸 상태 배지 아래(두 줄)에 보조 배지를 배치한다.
  *   DataGrid 는 동일 columns 정의를 목록·카드 양쪽에 재사용하므로 한 곳 수정으로 둘 다 적용된다.
  *

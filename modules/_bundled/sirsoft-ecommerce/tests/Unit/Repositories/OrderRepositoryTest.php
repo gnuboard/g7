@@ -482,7 +482,7 @@ class OrderRepositoryTest extends ModuleTestCase
     }
 
     /**
-     * 주문대기(pending_order)는 통계에서 숨김 유지된다 (PO 확정, listHiddenValues).
+     * 주문대기(pending_order)는 통계에서 숨김 유지된다 (정책 확정, listHiddenValues).
      */
     public function test_user_statistics_hides_pending_order(): void
     {

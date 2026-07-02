@@ -183,7 +183,7 @@ class BoardDashboardServiceTest extends ModuleTestCase
         // FormatsBoardDate 표준형 규칙:
         //   - 24시간 이상 차이: 올해는 'MM-DD', 작년 이전은 'YY-MM-DD'
         // 캡션이 게시판 날짜 표시 규칙과 일관되어야 한다는 회귀 가드.
-        // (게시글 created_at 표시와 동일 컨벤션 — PO 시각 검증 피드백)
+        // (게시글 created_at 표시와 동일 컨벤션 — 시각 검증 피드백)
         $today = CarbonImmutable::today();
         // 어제 자정에 마지막 스케줄러가 돈 상황을 시뮬레이션
         $yesterdayBoundary = $today->subDay()->setTime(0, 0, 0);
@@ -223,7 +223,7 @@ class BoardDashboardServiceTest extends ModuleTestCase
     public function test_get_recent_posts_excludes_replies(): void
     {
         // 대시보드 "최신 게시글" 카드는 본문 글만 보여줘야 한다 (답글 Re: 제외).
-        // PO 시각 검증 피드백: "최신 게시글이 최신순으로 안 나오는 것 같다" — 원인은 답글이 섞여 표시된 것.
+        // 시각 검증 피드백: "최신 게시글이 최신순으로 안 나오는 것 같다" — 원인은 답글이 섞여 표시된 것.
         // PostRepository::getRecentAcrossBoards 가 whereNull('parent_id') 누락했던 회귀 가드.
         $parent = $this->makePost('원글');
         $reply = $this->makePost('Re: 원글');

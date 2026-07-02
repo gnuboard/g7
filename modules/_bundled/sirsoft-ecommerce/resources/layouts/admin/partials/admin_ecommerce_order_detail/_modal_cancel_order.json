@@ -421,7 +421,7 @@
           ]
         },
         {
-          "comment": "환불 우선순위 라디오 — PG 환불 가능(requires_pg_cancellation)일 때 노출한다. 포인트 사용분이 없으면(total_points_used_amount=0) PG↔포인트 배분 순서가 무의미하므로 노출은 하되 선택 불가(disabled)로 둔다 (A28, PO 2026-06-22).",
+          "comment": "환불 우선순위 라디오 — PG 환불 가능(requires_pg_cancellation)일 때 노출한다. 포인트 사용분이 없으면(total_points_used_amount=0) PG↔포인트 배분 순서가 무의미하므로 노출은 하되 선택 불가(disabled)로 둔다 (A28, 2026-06-22).",
           "type": "basic",
           "name": "Div",
           "if": "{{order.data?.payment?.requires_pg_cancellation === true}}",

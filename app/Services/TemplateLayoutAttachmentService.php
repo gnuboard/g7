@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  * 레이아웃 편집 중 업로드되는 파일(배경 이미지 등)의 업로드·조회·삭제를 처리한다.
  * 파일 저장은 코어 StorageInterface(CoreStorageDriver)를 통해서만 수행하고,
  * 저장 위치(disk/path)와 메타데이터를 template_layout_attachments 에 기록한다.
- * (Storage::disk() 직접 호출 금지 — CLAUDE.md 스토리지 규칙)
+ * (Storage::disk() 직접 호출 금지 — 코어 스토리지 규칙)
  */
 class TemplateLayoutAttachmentService
 {
@@ -114,7 +114,7 @@ class TemplateLayoutAttachmentService
      * 첨부 파일을 삭제합니다 — 스토리지 파일 실삭제 후 DB 행 삭제.
      *
      * DB CASCADE 에 의존하지 않고 스토리지 파일을 명시적으로 삭제한다
-     * (CLAUDE.md "DB CASCADE 의존 삭제 금지" — 파일 정리 보장).
+     * (코어 규정: DB CASCADE 의존 삭제 금지 — 파일 정리 보장).
      *
      * @param  TemplateLayoutAttachment  $attachment  삭제할 첨부 파일
      * @return bool 삭제 성공 여부

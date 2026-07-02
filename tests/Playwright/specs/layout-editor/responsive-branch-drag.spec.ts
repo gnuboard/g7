@@ -13,7 +13,7 @@
  *    헤드리스에서 안정 검증 가능. 따라서 본 spec 은 **분기 안에 드롭 슬롯이 생성되는지**
  *    (결함① 의 직접 회귀 가드)를 렌더 계층에서 검증한다.
  *  - 드롭 commit(moveNode) + undo 는 헤드리스 합성 입력에서 collision 미해소로 no-op —
- *  단위(`responsiveBranchPath.test.ts` moveNode 분기 정렬)와 실브라우저(Chrome MCP PO
+ *  단위(`responsiveBranchPath.test.ts` moveNode 분기 정렬)와 실브라우저(Chrome MCP
  *    검수)로 검증한다(feedback_chrome_mcp_dnd_kit_incompatible).
  *
  * @scenario responsive_branch_edit drag_drop

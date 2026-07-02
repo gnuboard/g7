@@ -16,7 +16,7 @@ description: |
         canViewBlindedContent(관리자 OR 작성자 본인) 게이트 추가, 권한 없으면 null
       · CommentResource::getFilteredContent — 동일 결함 → 동일 게이트 추가
       · PostResource::toListArray — 블라인드 글 content_preview 를 빈 문자열로 차단
-    - PO 정책 확정 (일반 관례): 원문 = 관리자 + 작성자 본인. 안내/사유/제목은 전원 노출.
+    - 정책 확정 (일반 관례): 원문 = 관리자 + 작성자 본인. 안내/사유/제목은 전원 노출.
     - 비밀글(canViewSecretContent)과 달리 비밀번호 검증·posts.read-secret 은 인정하지 않음
       (블라인드는 운영 제재이므로 비밀번호로 해제되지 않음).
 

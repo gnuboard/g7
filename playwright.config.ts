@@ -1,7 +1,7 @@
 /**
  * Playwright 코어 E2E 설정 (G7 코어 영역)
  *
- * 위치 규약 (CLAUDE.md 코어/확장 분리 원칙):
+ * 위치 규약 (코어/확장 분리 원칙):
  * - 코어 spec : tests/Playwright/specs/
  * - 모듈 spec : modules/_bundled/{id}/tests/Playwright/specs/ (모듈 자체 config)
  * - 플러그인 : plugins/_bundled/{id}/tests/Playwright/specs/ (플러그인 자체 config)

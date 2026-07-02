@@ -5,7 +5,7 @@ description: |
   정리되지 않아, 게시글만 trashed 되고 댓글·첨부는 살아남아 목록/상세에서 고아로
   노출되던 문제를 수정한다. 동시에 게시글 복원 시 cascade 로 지워진 항목만 선택
   복원하여, 삭제 이전에 사용자가 직접 지운 항목이 게시글 복원과 함께 부활하는
-  문제(PO 우려)를 차단한다.
+  문제(우려)를 차단한다.
 
   근본 원인:
     · PostService::deletePost() 가 게시글 자신만 soft delete 하고 댓글·첨부는
@@ -14,7 +14,7 @@ description: |
     · 첨부 테이블(board_attachments)에는 cascade 와 사용자 삭제를 구분할
       trigger_type 컬럼 자체가 없었다.
 
-  조치 (PO 결정 방법1: 연쇄 soft delete + cascade 플래그 기반 선별 복원):
+  조치 (결정 방법1: 연쇄 soft delete + cascade 플래그 기반 선별 복원):
     · board_comments.trigger_type enum 에 'cascade' 추가 (마이그레이션).
     · board_attachments 에 trigger_type enum 컬럼 신설 (+ board_id/post_id/trigger_type
       복합 인덱스).

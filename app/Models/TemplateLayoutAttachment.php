@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * 레이아웃 편집 중 업로드되는 파일(배경 이미지 등)을 표현한다. 파일 자체는
  * 코어 StorageInterface 로 저장되고 본 모델은 저장 위치(disk/path)와 메타데이터를
  * 보관한다. 템플릿 삭제 시 행은 cascadeOnDelete 로 삭제되나, 스토리지 파일
- * 실삭제는 Service 가 명시적으로 수행한다(CLAUDE.md "DB CASCADE 의존 삭제 금지").
+ * 실삭제는 Service 가 명시적으로 수행한다(코어 규정: DB CASCADE 의존 삭제 금지).
  *
  * @property int $id 첨부 파일 ID
  * @property int $template_id 소속 템플릿 ID

@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInt
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * UserMileageCleanupListener 테스트 (회원 탈퇴/삭제 시 마일리지 정리 — PO 확정 #8)
+ * UserMileageCleanupListener 테스트 (회원 탈퇴/삭제 시 마일리지 정리 — 정책 확정 #8)
  */
 class UserMileageCleanupListenerTest extends ModuleTestCase
 {

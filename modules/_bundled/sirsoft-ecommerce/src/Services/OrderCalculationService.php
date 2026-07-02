@@ -118,7 +118,7 @@ class OrderCalculationService
         // 쿠폰 조합 가능 여부 검증 (is_combinable) — 전체 슬롯 통합 1회 (A15/MP06)
         // 슬롯별 독립 검증은 "상품별(false) 1개 + 주문(true) 1개" 같은 슬롯 교차 조합을
         // 각 슬롯 count=1 이라 놓친다. 적용 대상 전체 쿠폰을 한 집합으로 모아 1회 검증한다.
-        // 스냅샷 모드(환불 재계산)에서도 동일 검증한다(PO 2026-06-19 확정).
+        // 스냅샷 모드(환불 재계산)에서도 동일 검증한다(2026-06-19 확정).
         $allAppliedCoupons = $this->collectAllCouponsForCombination($coupons, $itemCouponIssues);
         $combinationViolations = $this->findNonCombinableViolations($allAppliedCoupons);
         foreach ($combinationViolations as $violationIssue) {
@@ -874,7 +874,7 @@ class OrderCalculationService
 
             // 마일리지 기능 비활성 시 주문 시점 적립 "계산" 자체를 수행하지 않는다 (전부 0).
             // mileage_value/mileage_type 은 상품 옵션(상품 등록 당시) 속성이므로,
-            // 전역 OFF 면 상품옵션 명시 적립률·기본 적립률 모두 계산 대상에서 제외된다 (PO 확정).
+            // 전역 OFF 면 상품옵션 명시 적립률·기본 적립률 모두 계산 대상에서 제외된다 (정책 확정).
             if (! (bool) $this->settingsService->getSetting('mileage.enabled', false)) {
                 $pointsPerItem[$optionId] = 0;
 

@@ -155,7 +155,7 @@ export function removeBindingSegment(text: string, bindingIndex: number): string
  * - 원문이 공백으로 끝나면 그대로 이어 붙이고, 아니면 공백 1개로 구분(`"안녕 {{이름}}"`).
  *
  * 표현식은 부록6 `buildBindingExpression` 으로 shape 안전 형태를 만든다(데이터 미도착 시
- * 런타임 에러 방지 — CLAUDE.md fallback 필수).
+ * 런타임 에러 방지 — 코어 fallback 필수).
  *
  * @param text 원문
  * @param sourceId 소스 식별자(data_source id 또는 상태 scope)

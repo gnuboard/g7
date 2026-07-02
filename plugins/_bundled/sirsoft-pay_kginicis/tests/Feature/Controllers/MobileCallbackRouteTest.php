@@ -9,7 +9,7 @@ class MobileCallbackRouteTest extends PluginTestCase
     /**
      * KG 이니시스 모바일 표준결제는 P_NEXT_URL 로 POST 콜백을 보낸다.
      * 라우트가 GET 만 허용하면 405 Method Not Allowed 회귀가 발생한다.
-     * 가상계좌 결제 시 PO 운영 검증으로 발견된 회귀.
+     * 가상계좌 결제 시 운영 검증으로 발견된 회귀.
      */
     public function test_mobile_callback_route_accepts_post(): void
     {

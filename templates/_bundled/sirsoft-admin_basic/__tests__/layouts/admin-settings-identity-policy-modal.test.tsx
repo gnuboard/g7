@@ -144,7 +144,7 @@ describe('환경설정 > 본인인증 정책 모달 회귀 테스트 (옵션 K)'
      *   disabled 미부여(편집 가능). 안내 문구도 "키·시점·위치만 변경 불가" 로 정합.
      *
      * 배경: 과거 purpose/applies_to 까지 잠겼던 것은 "선언형 readonly" 원칙의 과확장이었으며,
-     * 인증 목적은 어떤 정책이든 운영자가 자유 부여 가능해야 한다(PO).
+     * 인증 목적은 어떤 정책이든 운영자가 자유 부여 가능해야 한다.
      */
     const LOCK_PREDICATE = "!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'";
 

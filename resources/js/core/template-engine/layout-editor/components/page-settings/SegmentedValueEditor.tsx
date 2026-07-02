@@ -311,7 +311,7 @@ function DataSegmentPicker({
         candidates={candidates}
         t={t}
         onSelect={(c) => {
-          // shape 안전 바인딩(`{{src?.path ?? ''}}`) — 데이터 미도착 시 런타임 에러 방지(CLAUDE.md
+          // shape 안전 바인딩(`{{src?.path ?? ''}}`) — 데이터 미도착 시 런타임 에러 방지(코어
           // fallback 필수). buildBindingExpression 이 scalar 폴백(`?? ''`)을 붙인다.
           onPick(buildBindingExpression(c.sourceId, c.path, 'scalar'));
         }}

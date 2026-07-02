@@ -603,7 +603,7 @@ class OrderOptionService
      *
      * 부분취소는 별도 주문 상태가 아니라 "취소 옵션 + 잔여 활성 옵션 공존" 파생 상태다.
      * 따라서 주문 상태는 항상 잔여 활성 옵션 기준으로 결정하고, 부분취소 여부는
-     * Order::isPartiallyCancelled() 파생 플래그로 노출한다 (PO 2026-06-22, partial_cancelled 제거).
+     * Order::isPartiallyCancelled() 파생 플래그로 노출한다 (2026-06-22, partial_cancelled 제거).
      *
      * @param  int  $orderId  동기화할 주문 ID
      */

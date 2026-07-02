@@ -339,7 +339,7 @@ enum OrderStatusEnum: string
      * - 취소(CANCELLED) 진입은 이 목록에 포함하지 않는다(canTransitionTo 가 별도 통과 처리).
      * - 현재 상태가 CANCELLED 면 판매 반영 상태(salesEligibleStatuses)로만 복원 허용
      *   (취소된 주문/옵션을 다시 판매 진행 상태로 되살리는 reactivation 운영 기능 — 재고 재차감 동반.
-     *    결제 전 상태(pending_order/pending_payment)로의 복원은 차단. PO 2026-06-23).
+     *    결제 전 상태(pending_order/pending_payment)로의 복원은 차단. 2026-06-23).
      *
      * @return array<self>
      */

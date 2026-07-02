@@ -98,7 +98,7 @@ effects:
   - guest_order_form_hidden_for_logged_in_member  # 후속 보완 — 회원에게 폼 노출 차단 (redirect 발화 전 깜빡 입력 방지)
   - guest_order_form_clears_session_token_on_entry_for_standard_form_visibility  # 후속 보완 — 자동 redirect 대신 토큰 초기화. eBay/Best Buy/카페24/11번가/G마켓 표준 패턴 정합
   - header_and_mobile_nav_order_lookup_routes_via_login_redirect_param  # 후속 보완 — '주문조회' 클릭 시 /login?redirect=/mypage/orders 진입. 회원/비회원 단일 진입점, 로그아웃된 회원 막다른 길 차단
-  - guest_order_form_failure_shows_inline_error_box_instead_of_toast  # 후속 보완 — 통일 not_found 메시지를 toast 대신 폼 상단 인라인 박스로 노출. PO UX 결정. 재시도 시 자동 초기화
+  - guest_order_form_failure_shows_inline_error_box_instead_of_toast  # 후속 보완 — 통일 not_found 메시지를 toast 대신 폼 상단 인라인 박스로 노출. UX 결정. 재시도 시 자동 초기화
   # 진입 동선 (단계 5 그룹 D)
   - header_lookup_link_visible_only_when_no_currentUser
   - mobile_nav_lookup_link_visible_only_when_no_currentUser
@@ -214,4 +214,4 @@ notes: |
   검증 + Playwright E2E spec 으로 회귀 가드한다.
 
   axes 중 `e2e_browser` 는 단일(chromium) 로 시작하며, Firefox/WebKit 확장은 그룹 D 완료 후
-  PO 결정에 따라.
+  결정에 따라.

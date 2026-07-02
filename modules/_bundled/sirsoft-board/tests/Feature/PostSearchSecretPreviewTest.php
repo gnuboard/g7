@@ -16,7 +16,7 @@ use PHPUnit\Framework\Attributes\Test;
  *
  * 게시판 내부 검색은 별도 엔드포인트가 아니라 목록 조회(index)에 search 필터를 얹은 것이다.
  * 비밀글(is_secret)·블라인드(status=blinded) 게시글은 목록/검색 응답에서 본문 요약이
- * 권한과 무관하게 빈 문자열로 차단되어야 한다 (PO 확정: 목록 미리보기는 권한자도 숨김).
+ * 권한과 무관하게 빈 문자열로 차단되어야 한다 (확정 정책: 목록 미리보기는 권한자도 숨김).
  *
  * 제목은 현행 유지(노출), 차단 대상은 content_preview 뿐.
  * 상세 본문(content) 권한자 노출은 기존 정책(PostBlindedAccessControlTest)이 보장 — 본 테스트 범위 밖.
@@ -237,7 +237,7 @@ class PostSearchSecretPreviewTest extends BoardTestCase
 
     /**
      * 비밀글 미리보기는 작성자 본인에게도 목록에서는 차단된다(빈 문자열).
-     * (PO 확정: 목록 미리보기는 권한자도 숨김 — 본문은 상세에서만 노출)
+     * (확정 정책: 목록 미리보기는 권한자도 숨김 — 본문은 상세에서만 노출)
      *
      * @scenario viewer=author
      *

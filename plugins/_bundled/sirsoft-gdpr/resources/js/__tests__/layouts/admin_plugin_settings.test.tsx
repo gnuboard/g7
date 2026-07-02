@@ -490,7 +490,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             const modalText = JSON.stringify(publishModal);
 
             it('발행 버튼은 isPublishing 동안 spinner + "발행 중..." 라벨 노출 + 양쪽 버튼 disabled', () => {
-                // PO 피드백: 이전엔 closeModal 이 apiCall 앞에 있어 클릭 즉시 모달이 닫혀 사용자가
+                // 피드백: 이전엔 closeModal 이 apiCall 앞에 있어 클릭 즉시 모달이 닫혀 사용자가
                 // 발행 진행 상태를 알 수 없었음. _local.isPublishing 플래그로 발행 중 시각 피드백 +
                 // 양쪽 버튼 disabled (취소 버튼도 발행 중엔 막아 도중 닫힘 방지).
                 // JSON.stringify 기본 출력은 공백 없는 형식 (콜론 뒤 공백 없음).
@@ -516,7 +516,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             });
         });
 
-        it('정책 버전 가이드는 카드 hint 영역에 2줄 P 로 통합된다 (PO 피드백: 토글/박스 제거)', () => {
+        it('정책 버전 가이드는 카드 hint 영역에 2줄 P 로 통합된다 (피드백: 토글/박스 제거)', () => {
             const box = findById(root, 'policy_version_guide_box');
             expect(box).not.toBeNull();
             const serialized = JSON.stringify(box);
@@ -666,7 +666,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             expect(layoutJson).toContain('partials/_shared/_policy_version_snapshot_modal.json');
         });
 
-        it('현재 버전 v배지 옆에 본문 보기 Button 이 노출된다 (PO 피드백 — 평문 + 명시 액션 분리)', () => {
+        it('현재 버전 v배지 옆에 본문 보기 Button 이 노출된다 (피드백 — 평문 + 명시 액션 분리)', () => {
             // v배지는 평문 Span (text 'v...' 으로 항상 표시), 본문 보기 Button 은 if 분기 + sequence
             expect(layoutJson).toContain('"text":"v{{gdprPolicyVersionCurrent?.data?.data?.version ?? \'?\'}}"');
             expect(layoutJson).toContain('"if":"{{gdprPolicyVersionCurrent?.data?.data?.version}}"');
@@ -683,7 +683,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             expect(layoutJson).toContain('"viewingPolicyVersion":"{{row?.version}}"');
         });
 
-        it('policy_version_guide_box wrapper 는 라벨 + hint 2줄 구조의 단순 Div (PO 피드백: 토글/박스 제거)', () => {
+        it('policy_version_guide_box wrapper 는 라벨 + hint 2줄 구조의 단순 Div (피드백: 토글/박스 제거)', () => {
             const box = findById(root, 'policy_version_guide_box');
             expect(box).not.toBeNull();
             // wrapper 는 className 없음 (라벨 + hint 두 줄을 단순 그룹핑)

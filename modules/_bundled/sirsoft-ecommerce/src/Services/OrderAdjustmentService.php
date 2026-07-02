@@ -664,7 +664,7 @@ class OrderAdjustmentService
     {
         $updates = [];
 
-        // 부분취소 재계산 시 옵션 레벨 다통화(mc_) 컬럼도 재산출 (PO 확정)
+        // 부분취소 재계산 시 옵션 레벨 다통화(mc_) 컬럼도 재산출 (정책 확정)
         $currencySnapshot = $order->currency_snapshot;
 
         // 재계산 결과에서 옵션별 금액 반영
