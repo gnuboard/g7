@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Settings\RegenerateAppKeyRequest;
+use App\Http\Requests\Settings\RestoreSettingsRequest;
 use App\Http\Requests\Settings\SaveSettingsRequest;
 use App\Http\Requests\Settings\TestDriverConnectionRequest;
 use App\Http\Requests\Settings\TestMailRequest;
@@ -13,7 +14,7 @@ use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
 use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -137,7 +138,9 @@ class SettingsController extends AdminBaseController
             $systemInfo = $this->settingsService->getSystemInfo();
 
             return $this->success('common.success', $systemInfo);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::error('시스템 정보 조회 실패', ['error' => $e->getMessage()]);
+
             return $this->error('common.error_occurred', 500, $e->getMessage());
         }
     }
@@ -264,16 +267,13 @@ class SettingsController extends AdminBaseController
     /**
      * 백업에서 설정을 복원합니다.
      *
+     * @param  RestoreSettingsRequest  $request  복원 요청 데이터 (백업 경로)
      * @return JsonResponse 복원 결과 JSON 응답
      */
-    public function restore(Request $request): JsonResponse
+    public function restore(RestoreSettingsRequest $request): JsonResponse
     {
         try {
-            $backupPath = $request->input('backup_path');
-
-            if (empty($backupPath)) {
-                return $this->error('settings.backup_path_required', 422);
-            }
+            $backupPath = $request->validated('backup_path');
 
             $result = $this->settingsService->restoreSettings($backupPath);
 

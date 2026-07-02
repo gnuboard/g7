@@ -42,6 +42,12 @@
                 activeModules: @json($activeModulesMeta ?? []),
                 activePlugins: @json($activePluginsMeta ?? []),
                 appConfig: @json($appConfig ?? []),
+                // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
+                // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
+                // 미빌드 상태 대비 file_exists 가드.
+                coreEditorAsset: '{{ asset('build/core/layout-editor.min.js') }}?v={{ file_exists(public_path('build/core/layout-editor.min.js')) ? filemtime(public_path('build/core/layout-editor.min.js')) : 0 }}',
+                // DevTools lazy 번들 URL — 디버그 모드에서만 런타임 <script> 주입으로 로드.
+                coreDevToolsAsset: '{{ asset('build/core/devtools.min.js') }}?v={{ file_exists(public_path('build/core/devtools.min.js')) ? filemtime(public_path('build/core/devtools.min.js')) : 0 }}',
                 // 확장(코어/모듈/플러그인) 캐시 버전 SSoT — install/activate/deactivate/update 시 bump.
                 // 클라이언트 fetch (`?v=`) 가 이 값을 동반해야 백엔드 `template.routes.{id}.v{N}`
                 // 키가 새 버전으로 전환되어 routes.json/lang 변경이 즉시 가시화된다.

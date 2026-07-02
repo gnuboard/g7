@@ -3,12 +3,14 @@
 namespace Tests\Feature\Api\Admin;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Models\Attachment;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -732,6 +734,10 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 시스템 정보 응답 구조 검증
+     *
+     * @scenario probe_item=cpu_info,probe_outcome=success,auth_state=authenticated_with_permission
+     *
+     * @effects all_probes_success_returns_full_payload
      */
     public function test_system_info_returns_correct_structure(): void
     {
@@ -1364,5 +1370,211 @@ class SettingsControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
+    }
+
+    // ========================================================================
+    // 시스템 정보 probe 실패 격리 테스트 — gnuboard/g7#59
+    // (구조/캐시/정상값은 위 systemInfo 테스트가 이미 커버. 여기서는 호스팅
+    //  disable_functions/open_basedir 로 probe 가 실패해도 전체 200 을 유지하는지 검증)
+    // ========================================================================
+
+    /**
+     * 인증 없이 시스템 정보 조회 시 401 반환 (probe 실행 전 인증 가드 차단)
+     *
+     * @scenario probe_item=cpu_info,probe_outcome=success,auth_state=unauthenticated
+     *
+     * @effects unauthenticated_returns_401
+     */
+    public function test_system_info_returns_401_without_authentication(): void
+    {
+        $response = $this->getJson('/api/admin/settings/system-info');
+
+        $response->assertStatus(401);
+    }
+
+    /**
+     * read 권한 없이 시스템 정보 조회 시 403 반환 (probe 실행 전 권한 가드 차단)
+     *
+     * @scenario probe_item=cpu_info,probe_outcome=success,auth_state=authenticated_without_permission
+     *
+     * @effects without_permission_returns_403
+     */
+    public function test_system_info_returns_403_without_permission(): void
+    {
+        $user = User::factory()->create();
+        $adminRole = Role::firstOrCreate(
+            ['identifier' => 'admin'],
+            [
+                'name' => json_encode(['ko' => '관리자', 'en' => 'Administrator']),
+                'description' => json_encode(['ko' => '시스템 관리자', 'en' => 'System Administrator']),
+                'extension_type' => ExtensionOwnerType::Core,
+                'extension_identifier' => 'core',
+                'is_active' => true,
+            ]
+        );
+
+        $readPermission = Permission::where('identifier', 'core.settings.read')->first();
+        if ($adminRole && $readPermission) {
+            $adminRole->permissions()->detach($readPermission->id);
+        }
+
+        $user->roles()->attach($adminRole->id, [
+            'assigned_at' => now(),
+            'assigned_by' => null,
+        ]);
+
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$token,
+            'Accept' => 'application/json',
+        ])->getJson('/api/admin/settings/system-info');
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * probe 실패 격리(핵심 회귀 #59): 개별 항목 수집이 예외/Error 를 던져도
+     * API 전체는 500 이 아니라 200 을 반환하고, 실패 항목만 'unknown' 폴백으로 채운다.
+     *
+     * disable_functions/open_basedir 호스팅에서 php_uname·shell_exec·disk_*_space 가
+     * Error 를 던지는 상황을 getCpuInfo() 로 시뮬레이션한다. safeSystemProbe 가 이를
+     * 격리하지 못하면 buildSystemInfo → getSystemInfo → 컨트롤러로 전파되어 500 이 난다.
+     *
+     * @scenario probe_item=cpu_info,probe_outcome=throws_error,auth_state=authenticated_with_permission
+     *
+     * @effects failing_probe_isolated_and_api_returns_200
+     * @effects failed_item_filled_with_unknown_fallback
+     */
+    public function test_system_info_isolates_failing_probe_and_returns_200(): void
+    {
+        // 캐시된 정상 페이로드가 있으면 buildSystemInfo 가 재실행되지 않으므로 먼저 비운다.
+        $cache = $this->app->make(CacheInterface::class);
+        $cache->forget('settings.system_info.'.app()->getLocale());
+
+        $service = new class($this->app) extends SettingsService
+        {
+            public function __construct($app)
+            {
+                parent::__construct(
+                    $app->make(ConfigRepositoryInterface::class),
+                    $app->make(AttachmentRepositoryInterface::class),
+                    $app->make(CacheInterface::class),
+                );
+            }
+
+            protected function getCpuInfo(): string
+            {
+                throw new \Error('Call to undefined function shell_exec() (disable_functions)');
+            }
+        };
+        $this->app->instance(SettingsService::class, $service);
+
+        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
+
+        // 실패한 cpu_info 만 unknown 폴백, 나머지 항목은 정상 수집되어 전체 200 유지.
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'cpu_info' => __('common.unknown'),
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'memory_usage' => ['total', 'used', 'free', 'percentage'],
+                    'disk_usage' => ['total', 'used', 'free', 'percentage'],
+                    'php_extensions' => ['required', 'optional'],
+                    'server_time',
+                ],
+            ]);
+    }
+
+    /**
+     * 사용량 조회 실패 시 폴백 배열 구조 검증: unknownUsage 는 total/used/free 를
+     * 'unknown' 으로, percentage 를 0 으로 채워 memory_usage·disk_usage 형식을 유지한다.
+     *
+     * @scenario probe_item=memory_usage,probe_outcome=throws_error,auth_state=authenticated_with_permission
+     *
+     * @effects usage_array_fallback_keeps_total_used_free_unknown_and_percentage_zero
+     */
+    public function test_unknown_usage_fallback_keeps_usage_array_shape(): void
+    {
+        $service = $this->app->make(SettingsService::class);
+
+        $ref = new \ReflectionMethod($service, 'unknownUsage');
+        $ref->setAccessible(true);
+
+        $fallback = $ref->invoke($service);
+
+        $this->assertSame(
+            ['total', 'used', 'free', 'percentage'],
+            array_keys($fallback)
+        );
+        $this->assertSame(__('common.unknown'), $fallback['total']);
+        $this->assertSame(__('common.unknown'), $fallback['used']);
+        $this->assertSame(__('common.unknown'), $fallback['free']);
+        $this->assertSame(0, $fallback['percentage']);
+    }
+
+    /**
+     * safeSystemProbe 단위 검증: 콜백이 \Error 를 던지면 전파하지 않고 폴백을 반환한다.
+     */
+    public function test_safe_system_probe_returns_fallback_on_error(): void
+    {
+        $service = $this->app->make(SettingsService::class);
+
+        $ref = new \ReflectionMethod($service, 'safeSystemProbe');
+        $ref->setAccessible(true);
+
+        $result = $ref->invoke($service, 'cpu_info', function () {
+            throw new \Error('disable_functions');
+        }, 'FALLBACK');
+
+        $this->assertSame('FALLBACK', $result);
+    }
+
+    // ========================================================================
+    // 설정 복원 (restore) 검증 — RestoreSettingsRequest 이전 회귀
+    // ========================================================================
+
+    /**
+     * 인증 없이 설정 복원 요청 시 401 반환
+     */
+    public function test_restore_returns_401_without_authentication(): void
+    {
+        $response = $this->postJson('/api/admin/settings/restore', ['backup_path' => 'foo']);
+
+        $response->assertStatus(401);
+    }
+
+    /**
+     * update 권한 없이 설정 복원 요청 시 403 반환
+     */
+    public function test_restore_returns_403_without_update_permission(): void
+    {
+        $user = $this->createAdminUser(['core.settings.read']);
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$token,
+            'Accept' => 'application/json',
+        ])->postJson('/api/admin/settings/restore', ['backup_path' => 'foo']);
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * backup_path 누락 시 FormRequest 검증으로 422 반환
+     *
+     * 회귀: 검증을 컨트롤러 내 empty() 체크에서 RestoreSettingsRequest 로 이전한 뒤에도
+     * 백업 경로 미입력이 422 로 차단되는지 확인한다.
+     */
+    public function test_restore_returns_422_when_backup_path_missing(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings/restore', []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['backup_path']);
     }
 }

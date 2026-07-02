@@ -221,7 +221,7 @@ export function buildAction(
   // required param 의 sole-binding 토큰이 미입력으로 떨어지면 build 틀의 토큰을 복원한다. 이런 recipe
   // (결제 진입)는 matchAction 의 구조 fingerprint(placeholderRecipeStructureMatches)가 params 의
   // 토큰 존재에 의존하므로, 핸들러 필드를 임의 데이터 칩으로 바꾸고 다른 required 값을 비워둬도 친화
-  // 카드가 [고급]으로 강등되지 않게 토큰을 유지한다(PO 제보 회귀). 일반 recipe(리터럴 핸들러,
+  // 카드가 [고급]으로 강등되지 않게 토큰을 유지한다(제보 회귀). 일반 recipe(리터럴 핸들러,
   // apiCall 등)는 미입력 required 를 그대로 떨궈 깔끔한 JSON 정책을 지킨다 — 그쪽은 핸들러 일치만으로
   // 매칭되므로 토큰 보존이 필요 없다.
   if (recipe.build.handler.includes('{{')) {

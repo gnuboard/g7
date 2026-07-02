@@ -21,6 +21,10 @@ return [
     'backup_success' => 'Database backup started successfully.',
     'backup_failed' => 'Failed to start database backup.',
     'backup_error' => 'An error occurred while backing up database.',
+    'backup_path_required' => 'Please enter a backup path.',
+    'restore_success' => 'Settings restored successfully.',
+    'restore_failed' => 'Failed to restore settings.',
+    'restore_error' => 'An error occurred while restoring settings.',
     'save_individual_failed' => 'Settings save failed: :error',
 
     // App key related messages

@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * `FilePermissionHelper::copyDirectory` / `removeOrphanItems` 의 symlink 보존 동작 회귀 가드.
  *
- * 회귀 시나리오 (이슈 #28 + 본 계획 §1):
+ * 회귀 시나리오 (gnuboard/g7#28):
  *   - 코어 자동 롤백 시 `public/storage` symlink 가 target 디렉토리 내용으로 추적 복사되어
  *     symlink 가 일반 디렉토리로 변질 → 운영자가 `storage:link` 재실행 필요
  *   - `removeOrphanItems` 가 source 부재 symlink 를 디렉토리로 인식하여 target 의 모든 파일을
@@ -133,5 +133,79 @@ class FilePermissionHelperSymlinkTest extends TestCase
 
         $this->assertSame('hi', File::get($dest.'/file.txt'));
         $this->assertSame('world', File::get($dest.'/sub/nested.txt'));
+    }
+
+    /**
+     * Windows JUNCTION (`mklink /J`) 는 PHP 의 `SplFileInfo::isLink()` / `isDir()` 이
+     * 모두 false 를 반환하는 reparse point 다. `php artisan storage:link` 가 Windows 에서
+     * 생성하는 `public/storage` 가 이 형태이며, 이를 파일로 오판하면 `copyFile` 이
+     * 디렉토리를 `copy()` 에 넘겨 `copy(): The first argument ... cannot be a directory` 로
+     * 코어 업데이트가 실패한다 (회귀 가드).
+     *
+     * junction 은 Windows 전용이므로 비-Windows 환경에서는 skip.
+     */
+    #[Test]
+    public function copyDirectory_는_windows_junction_을_파일로_오판하지_않고_보존합니다(): void
+    {
+        if (PHP_OS_FAMILY !== 'Windows') {
+            $this->markTestSkipped('junction 은 Windows 전용 (mklink /J)');
+        }
+
+        $source = $this->tempRoot.'/src';
+        $dest = $this->tempRoot.'/dst';
+        $linkTarget = $this->tempRoot.'/link_target';
+
+        File::ensureDirectoryExists($source);
+        File::ensureDirectoryExists($linkTarget);
+        File::put($linkTarget.'/inside.txt', 'junction 대상 안 파일');
+
+        $junctionPath = $source.'/storage';
+        // mklink /J 는 관리자 권한 없이 생성 가능 (심볼릭 링크와 달리 SeCreateSymbolicLink 불필요)
+        exec('cmd /c mklink /J '.escapeshellarg($junctionPath).' '.escapeshellarg($linkTarget).' 2>&1', $out, $code);
+        if ($code !== 0 || ! is_dir($junctionPath)) {
+            $this->markTestSkipped('junction 생성 실패: '.implode("\n", $out));
+        }
+
+        // 사전 조건: PHP 가 junction 을 link/dir 어느 쪽으로도 인식하지 못함을 확인
+        $this->assertFalse(is_link($junctionPath), 'junction 은 is_link() 가 false (전제)');
+
+        // copyFile 이 디렉토리를 받아 던지던 예외 없이 완료되어야 한다
+        FilePermissionHelper::copyDirectory($source, $dest);
+
+        // junction 은 dest 에도 junction 으로 보존되어 target 내용에 접근 가능해야 한다
+        $this->assertTrue(is_dir($dest.'/storage'), 'dest 의 storage 는 디렉토리(junction)로 접근 가능해야 한다');
+        $this->assertFileExists($dest.'/storage/inside.txt', 'junction 통과 시 target 파일 접근 가능');
+    }
+
+    /**
+     * removeOrphanItems 가 source 부재 junction 을 재귀 삭제(target 내용 삭제)하지 않고
+     * 링크 자체만 제거하는지 검증 (junction 은 isDir() 이 false 라 별도 rmdir 경로 필요).
+     */
+    #[Test]
+    public function removeOrphanItems_는_source_부재_junction_을_target_추적_없이_링크만_제거합니다(): void
+    {
+        if (PHP_OS_FAMILY !== 'Windows') {
+            $this->markTestSkipped('junction 은 Windows 전용 (mklink /J)');
+        }
+
+        $source = $this->tempRoot.'/src';
+        $dest = $this->tempRoot.'/dst';
+        $linkTarget = $this->tempRoot.'/link_target';
+
+        File::ensureDirectoryExists($source);
+        File::ensureDirectoryExists($dest);
+        File::ensureDirectoryExists($linkTarget);
+        File::put($linkTarget.'/precious.txt', '중요한 파일');
+
+        // dest 에만 존재하는 junction (source 에는 없음)
+        exec('cmd /c mklink /J '.escapeshellarg($dest.'/orphan_link').' '.escapeshellarg($linkTarget).' 2>&1', $out, $code);
+        if ($code !== 0 || ! is_dir($dest.'/orphan_link')) {
+            $this->markTestSkipped('junction 생성 실패: '.implode("\n", $out));
+        }
+
+        FilePermissionHelper::copyDirectory($source, $dest, null, [], '', true);
+
+        $this->assertDirectoryDoesNotExist($dest.'/orphan_link', 'orphan junction 은 제거되어야 한다');
+        $this->assertFileExists($linkTarget.'/precious.txt', 'junction target 의 파일은 보존되어야 한다 (재귀 삭제 사고 차단)');
     }
 }

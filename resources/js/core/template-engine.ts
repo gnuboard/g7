@@ -24,12 +24,15 @@ import { DataSourceManager } from './template-engine/DataSourceManager';
 import { ModalDataSourceWrapper } from './template-engine/ModalDataSourceWrapper';
 import { ParentContextProvider } from './template-engine/ParentContextProvider';
 import { TemplateNotFoundError } from './template-engine/TemplateEngineError';
+import { ErrorDisplay } from './template-engine/ErrorDisplay';
 import { TemplateApp, initTemplateApp } from './TemplateApp';
 import { createLogger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7CoreGlobals';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
-import { LayoutEditorChrome } from './template-engine/layout-editor/LayoutEditorChrome';
+// LayoutEditorChrome 은 정적 import 하지 않는다 — 편집기는 별도 lazy 번들
+// (layout-editor.min.js)로 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
+// @since engine-v1.51.0
 
 const logger = createLogger('TemplateEngine');
 
@@ -369,6 +372,85 @@ async function initTemplateEngine(options: InitOptions): Promise<void> {
 }
 
 /**
+ * 편집기 lazy 번들(layout-editor.min.js) 로드 후 LayoutEditorChrome 컴포넌트 반환.
+ *
+ * @since engine-v1.51.0
+ *
+ * 편집기는 메인 코어 번들에서 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
+ * 이미 로드돼 있으면 즉시 반환(멱등), 아니면 `<script>` 를 1회 주입하고 로드 완료를 대기한다.
+ * 동시 다중 호출은 in-flight promise 로 병합해 중복 주입을 막는다.
+ *
+ * @returns LayoutEditorChrome React 컴포넌트
+ * @throws {Error} 스크립트 로드 실패 또는 컴포넌트 미노출 시
+ */
+let layoutEditorLoadPromise: Promise<any> | null = null;
+
+function loadLayoutEditorBundle(): Promise<any> {
+  const g7 = (window as any).G7Core;
+
+  // 이미 로드됨 — 즉시 반환 (멱등)
+  if (g7?.__LayoutEditorChrome) {
+    return Promise.resolve(g7.__LayoutEditorChrome);
+  }
+
+  // 진행 중인 로드가 있으면 재사용 (중복 주입 방지)
+  if (layoutEditorLoadPromise) {
+    return layoutEditorLoadPromise;
+  }
+
+  layoutEditorLoadPromise = new Promise((resolve, reject) => {
+    // 번들 URL — blade 가 주입한 버전 포함 URL 우선, 폴백은 표준 경로
+    const src =
+      (window as any).G7Config?.coreEditorAsset || '/build/core/layout-editor.min.js';
+    const scriptId = 'g7-layout-editor-bundle';
+
+    // 이미 주입된 <script> 재사용
+    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+
+    const onReady = () => {
+      const chrome = (window as any).G7Core?.__LayoutEditorChrome;
+      if (chrome) {
+        resolve(chrome);
+      } else {
+        reject(new Error('편집기 번들 로드됨 — 그러나 __LayoutEditorChrome 미노출'));
+      }
+    };
+
+    // 편집기 엔트리가 컴포넌트 노출 직후 호출할 준비 완료 콜백 (onload fallback 병행)
+    (window as any).G7Core = (window as any).G7Core || {};
+    (window as any).G7Core.__onChromeReady = onReady;
+
+    if (existing) {
+      // 주입돼 있으나 아직 실행 전 — load 이벤트 대기
+      existing.addEventListener('load', onReady, { once: true });
+      existing.addEventListener(
+        'error',
+        () => reject(new Error(`편집기 번들 로드 실패: ${src}`)),
+        { once: true }
+      );
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = src;
+    script.async = false; // 로드 순서 보존 (메인 번들 이후)
+    script.addEventListener('load', onReady, { once: true });
+    script.addEventListener(
+      'error',
+      () => {
+        layoutEditorLoadPromise = null; // 재시도 가능하도록 초기화
+        reject(new Error(`편집기 번들 로드 실패: ${src}`));
+      },
+      { once: true }
+    );
+    document.head.appendChild(script);
+  });
+
+  return layoutEditorLoadPromise;
+}
+
+/**
  * 템플릿 렌더링
  *
  * 레이아웃 JSON을 기반으로 React 컴포넌트를 렌더링합니다.
@@ -429,6 +511,28 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
       const editorMode = checkLayoutEditorMode(window.location.pathname);
       if (editorMode) {
         logger.log('레이아웃 편집기 모드 진입', editorMode);
+
+        // 편집기 lazy 번들 로드 (layout-editor.min.js) — 진입 시에만 로드
+        let LayoutEditorChrome: any;
+        try {
+          LayoutEditorChrome = await loadLayoutEditorBundle();
+        } catch (loadError) {
+          logger.error('레이아웃 편집기 번들 로드 실패', loadError);
+          // 컨테이너에 직접 에러 화면 렌더 (CSS 의존성 없는 인라인 스타일)
+          ErrorDisplay.render(options.containerId, {
+            title: '레이아웃 편집기 로드 실패',
+            message:
+              loadError instanceof Error
+                ? loadError.message
+                : '편집기 번들을 불러오지 못했습니다.',
+            icon: 'fas fa-triangle-exclamation',
+            showStack: false,
+            showReloadButton: true,
+            debug: debugMode,
+          });
+          return;
+        }
+
         const chrome = React.createElement(LayoutEditorChrome, {
           templateIdentifier: editorMode.templateIdentifier,
           initialLocale: state.locale,
@@ -923,6 +1027,8 @@ export {
   getActionDispatcher,
   LayoutLoader,
   DataSourceManager,
+  // @since engine-v1.51.0 편집기 lazy 번들 로더 (테스트/진단용 노출)
+  loadLayoutEditorBundle,
 };
 
 export type {

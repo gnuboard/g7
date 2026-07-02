@@ -53,15 +53,25 @@ class FilePermissionHelper
 
             $destPath = $destination.DIRECTORY_SEPARATOR.$itemName;
 
-            // symlink 자체 보존: target 추적 없이 동일 symlink 재생성.
+            // symlink / Windows junction 자체 보존: target 추적 없이 동일 링크 재생성.
             // SplFileInfo::isDir() 가 symlink 를 추적하므로 검사 순서가 isDir() 보다 먼저여야 한다.
-            // 미적용 시 `public/storage` 등 symlink 가 target 디렉토리 내용으로 복사되어 백업/복원 양쪽에서 손상.
-            if ($item->isLink()) {
-                if (static::copySymlink($item->getPathname(), $destPath)) {
+            // 미적용 시 `public/storage` 등 링크가 target 디렉토리 내용으로 복사되어 백업/복원 양쪽에서 손상.
+            //
+            // Windows JUNCTION(`mklink /J`)은 reparse point 지만 PHP `isLink()`/`isDir()` 이 모두
+            // false 를 반환한다(`storage:link` 가 Windows 에서 생성하는 형태). isLink() 만 검사하면
+            // junction 이 파일로 오판되어 copyFile → `copy(디렉토리)` 로 코어 업데이트가 실패한다.
+            // isReparsePoint() 로 junction 도 이 분기에 포함시킨다.
+            if ($item->isLink() || static::isReparsePoint($item->getPathname())) {
+                if (static::copyLink($item->getPathname(), $destPath)) {
                     continue;
                 }
                 // 복원 실패 (Windows SeCreateSymbolicLink 권한 부족 등) — 일반 복사로 fall-through.
+                // 단, junction 은 isDir() 이 false 라 아래 else 분기의 copyFile 로 새어 파일 복사가
+                // 다시 실패하므로, fall-through 대신 skip 하여 손상 없이 넘어간다.
                 // 운영자가 추후 `php artisan storage:link` 수동 실행으로 회복 가능.
+                if (! $item->isLink()) {
+                    continue;
+                }
             }
 
             if ($item->isDir()) {
@@ -79,25 +89,63 @@ class FilePermissionHelper
     }
 
     /**
-     * symlink 자체를 보존 복사합니다 (target 미추적).
+     * 경로가 Windows JUNCTION 등 PHP `isLink()` 가 인식하지 못하는 reparse point 인지 판정합니다.
      *
-     * 기존 dest 가 symlink 또는 파일이면 unlink, 디렉토리면 deleteDirectory 후 symlink 재생성.
-     * readlink / symlink 실패 시 false 반환 — 호출자가 일반 복사로 fall-through.
+     * Windows JUNCTION(`mklink /J`)은 디렉토리 reparse point 로, `is_link()` / `is_file()` /
+     * `is_dir()` 이 **모두** false 를 반환한다(그러나 경로 항목으로는 존재하며 `readlink()` 로
+     * target 을 얻을 수 있다). `php artisan storage:link` 가 Windows 에서 생성하는
+     * `public/storage` 가 이 형태다.
      *
-     * Windows 환경에서 PHP `symlink()` 는 `SeCreateSymbolicLink` 권한이 필요하며 일반 사용자는
-     * 권한이 없을 가능성이 높다. 실패 시 warning 로그 후 false 반환하여 호출자가 일반 복사로
-     * fall-through 하도록 한다. 운영자는 업그레이드 후 `php artisan storage:link` 등 수동
-     * 명령으로 symlink 를 회복할 수 있다.
+     * 주의: Windows 의 `readlink()` 는 일반 파일/디렉토리에도 자기 경로를 반환하므로 junction
+     * 판별 기준이 될 수 없다. 따라서 "존재하는 경로인데 link/file/dir 어디에도 해당하지 않음"
+     * 을 판정 기준으로 삼는다. 여기에 추가로 `readlink()` 성공(!== false)을 요구해 존재하지
+     * 않는 경로를 배제한다.
      *
-     * @param  string  $source  소스 symlink 경로
-     * @param  string  $destination  대상 symlink 경로
-     * @return bool symlink 복원 성공 여부 (false 면 호출자가 일반 복사로 폴백)
+     * 일반 symlink(`is_link()` true)는 호출부가 별도로 처리하므로 여기서는 false 를 반환한다.
+     * junction 은 Windows 전용이므로 비-Windows 에서는 항상 false.
+     *
+     * @param  string  $path  검사할 경로
+     * @return bool junction 등 isLink() 미인식 reparse point 여부
      */
-    protected static function copySymlink(string $source, string $destination): bool
+    protected static function isReparsePoint(string $path): bool
+    {
+        if (PHP_OS_FAMILY !== 'Windows') {
+            return false;
+        }
+
+        // 일반 symlink / 파일 / 디렉토리는 각 검사가 true → junction 아님.
+        if (is_link($path) || is_file($path) || is_dir($path)) {
+            return false;
+        }
+
+        // 위 셋에 모두 해당하지 않으면서 readlink 가 target 을 반환하면 junction(reparse point).
+        return @readlink($path) !== false;
+    }
+
+    /**
+     * symlink 또는 Windows junction 자체를 보존 복사합니다 (target 미추적).
+     *
+     * 기존 dest 가 symlink 또는 파일이면 unlink, 디렉토리면 deleteDirectory 후 링크 재생성.
+     * readlink 실패 시 false 반환 — 호출자가 일반 복사로 fall-through.
+     *
+     * 재생성 전략:
+     * - 일반 symlink: `symlink()`
+     * - target 이 디렉토리인 경우(Windows junction 포함): `symlink()` 실패 시 `mklink /J` 로 폴백.
+     *   Windows 에서 PHP `symlink()` 는 `SeCreateSymbolicLink` 권한이 필요하지만 junction 은
+     *   권한 없이 생성 가능하므로, junction 복원의 실질 경로가 된다.
+     *
+     * 모든 재생성 시도 실패 시 warning 로그 후 false 반환. 운영자는 업그레이드 후
+     * `php artisan storage:link` 등 수동 명령으로 링크를 회복할 수 있다.
+     *
+     * @param  string  $source  소스 링크(symlink/junction) 경로
+     * @param  string  $destination  대상 링크 경로
+     * @return bool 링크 복원 성공 여부 (false 면 호출자가 일반 복사로 폴백)
+     */
+    protected static function copyLink(string $source, string $destination): bool
     {
         $target = @readlink($source);
         if ($target === false) {
-            Log::warning('copySymlink: readlink 실패 — 일반 복사로 폴백', ['source' => $source]);
+            Log::warning('copyLink: readlink 실패 — 일반 복사로 폴백', ['source' => $source]);
 
             return false;
         }
@@ -109,17 +157,29 @@ class FilePermissionHelper
             File::deleteDirectory($destination);
         }
 
-        if (! @symlink($target, $destination)) {
-            Log::warning('copySymlink: symlink 생성 실패 — 일반 복사로 폴백', [
-                'source' => $source,
-                'destination' => $destination,
-                'target' => $target,
-            ]);
-
-            return false;
+        if (@symlink($target, $destination)) {
+            return true;
         }
 
-        return true;
+        // symlink 실패 + target 이 디렉토리 → Windows junction 으로 폴백 재생성.
+        if (PHP_OS_FAMILY === 'Windows' && is_dir($target)) {
+            exec(
+                'cmd /c mklink /J '.escapeshellarg($destination).' '.escapeshellarg($target).' 2>&1',
+                $out,
+                $code
+            );
+            if ($code === 0 && is_dir($destination)) {
+                return true;
+            }
+        }
+
+        Log::warning('copyLink: 링크 생성 실패 — 일반 복사로 폴백', [
+            'source' => $source,
+            'destination' => $destination,
+            'target' => $target,
+        ]);
+
+        return false;
     }
 
     /**
@@ -157,11 +217,19 @@ class FilePermissionHelper
 
             // 소스에 존재하지 않는 항목만 삭제
             if (! File::exists($srcPath) && ! File::isDirectory($srcPath)) {
-                // symlink 는 항상 unlink — File::deleteDirectory 는 is_dir() 추적 검사 후
-                // 재귀 삭제하므로 symlink-to-dir 인 경우 target 의 모든 파일을 삭제하는 사고
-                // 발생 가능. is_link() 가 isDir() 보다 먼저 평가되어야 한다.
+                // symlink / Windows junction 은 링크 자체만 제거 — File::deleteDirectory 는 is_dir()
+                // 추적 검사 후 재귀 삭제하므로 link-to-dir 인 경우 target 의 모든 파일을 삭제하는
+                // 사고 발생 가능. 링크 검사가 isDir() 보다 먼저 평가되어야 한다.
+                //
+                // junction 은 is_link() 가 false 지만 isReparsePoint() 가 감지한다. junction 링크
+                // 제거는 파일 대상 unlink 가 아닌 rmdir() 로 수행해야 target 내용을 보존한다.
                 if (is_link($destItem->getPathname())) {
                     @unlink($destItem->getPathname());
+                } elseif (static::isReparsePoint($destItem->getPathname())) {
+                    // junction: rmdir 로 링크만 제거 (target 미추적). 폴백으로 unlink 시도.
+                    if (! @rmdir($destItem->getPathname())) {
+                        @unlink($destItem->getPathname());
+                    }
                 } elseif ($destItem->isDir()) {
                     File::deleteDirectory($destItem->getPathname());
                 } else {

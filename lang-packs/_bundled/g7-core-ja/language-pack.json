@@ -12,7 +12,7 @@
         "en": "G7 core Japanese language pack (bundled)",
         "ja": "G7 コア 日本語 言語パック(バンドル)"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "scope": "core",
     "target_identifier": null,

@@ -5,6 +5,30 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.52.0] - 2026-07-02
+
+### Changed
+
+#### DevTools 번들 분리 (디버그 전용 코드 초기 로드 제거)
+
+- 개발자 진단도구(DevTools)의 디버그 전용 무거운 모듈(패널 UI/진단엔진/서버커넥터/스타일추적기)을 메인 코어 번들에서 분리해 별도 `devtools.min.js` 로 빌드한다. `initDevToolsAPI()` 가 디버그 모드(`isEnabled()`)일 때만 런타임 `<script>` 주입으로 로드한다. 디버그 꺼진 일반 사용자는 이 코드를 받지 않는다. 편집기 분리(engine-v1.51.0)와 합쳐 초기 접속 gzip payload 458KB → 221KB (약 52% 감소).
+- `G7CoreGlobals.ts` — `DiagnosticEngine`/`ServerConnector`/`StyleTracker`/`DevToolsPanel` 정적 import 제거. `initDevToolsAPI()` 는 디버그 OFF 시 최소 API 만 노출(번들 미로드), ON 시 `loadDevToolsBundle()`(신규)로 `window.G7Core.__devtools` 를 지연 로드한 뒤 진단/서버덤프/패널을 활성화. `G7DevToolsCore`(추적 코어, 디버그 무관 항상 필요)는 메인 번들에 상주하며 `G7Core.__runtime` 으로 공유.
+- `devtools-entry.ts` + `vite.config.devtools.js`(신규) — DevTools 번들 엔트리/빌드. React external → `window.React` 단일 인스턴스, `G7DevToolsCore` 는 shim(`devtools/__runtime-shims/`)으로 메인 번들과 공유(재번들 0바이트, 싱글톤 동일성).
+- `core:build` — 엔진 + 편집기 + DevTools 3개 번들 순차 빌드. `--watch` 는 3개 `vite build --watch` 병렬.
+
+## [engine-v1.51.0] - 2026-07-02
+
+### Changed
+
+#### 레이아웃 편집기 번들 분리 (초기 접속 payload 축소)
+
+- 코어 번들(`template-engine.min.js`)에서 레이아웃 편집기 코드를 분리해 별도 `layout-editor.min.js` 로 빌드한다. 편집기는 `/admin/layout-editor/*` 진입 시에만 런타임 `<script>` 주입으로 지연 로드된다. 일반 페이지 초기 접속 gzip payload 458KB → 261KB (약 43% 감소).
+- `template-engine.ts` — `LayoutEditorChrome` 정적 import 제거. `renderTemplate()` 편집기 분기가 `loadLayoutEditorBundle()`(신규)로 번들을 지연 주입한 뒤 `window.G7Core.__LayoutEditorChrome` 를 기존과 동일한 provider 트리(Translation/Transition/Responsive/Slot) 안에서 렌더한다. 로드 실패 시 인라인 에러 화면 폴백. `checkLayoutEditorMode`(dep-free URL 파서)는 코어에 유지.
+- `G7CoreGlobals.ts` — `initCoreRuntimeExports()`(신규)가 코어 런타임 표면(DynamicRenderer/엔진 싱글톤/컨텍스트/Logger/AuthManager)을 `window.G7Core.__runtime` 으로 노출. 편집기 번들은 빌드 시 alias-shim(`layout-editor/__runtime-shims/`)으로 이 전역을 빌려 써 코어 런타임을 0바이트 중복으로 재사용하고 싱글톤/React Context 동일성을 보장한다.
+- `layout-editor-entry.ts` + `vite.config.editor.js`(신규) — 편집기 번들 엔트리/빌드 설정. React/ReactDOM/`react/jsx-runtime` 은 external → `window.React` 등 단일 인스턴스 재사용(자체 React 사본 미포함). 코어 런타임은 커스텀 `resolveId` 플러그인으로 shim 치환.
+- `core:build`(`BuildCoreCommand.php`) — 엔진 번들 + 편집기 번들을 순차 빌드. `--watch` 는 양 번들을 `vite build --watch` 로 병렬 감시.
+- 기존 편집기 확장점 stub/큐 핸드셰이크(`initLayoutEditorStub` → `exposeLayoutEditorGlobals`, engine-v1.50.0)가 번들 경계를 넘어 그대로 동작(편집기 로드 시 큐 flush).
+
 ## [engine-v1.50.0] - 2026-06-29
 
 ### Added

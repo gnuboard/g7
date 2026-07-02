@@ -12,7 +12,7 @@ use Tests\TestCase;
 /**
  * `spawn_failure_mode` + `[STEPS_EXECUTED]` 신호 + stale 메모리 가드 회귀 테스트 (§2/§2.1/§6).
  *
- * 회귀 시나리오 (이슈 #28):
+ * 회귀 시나리오 (gnuboard/g7#28):
  *   - spawn 자식 실패 → in-process fallback 진입 → 부모 메모리 stale → upgrade step
  *     안에서 신규 메서드 호출 fatal (예: `Call to undefined method ensureWritableDirectories()`)
  *
@@ -96,31 +96,107 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
     }
 
     #[Test]
-    public function spawn_자식_silent_skip_시_abort_모드는_throw_한다(): void
+    public function spawn_자식_범위내_스텝_파일이_없어_0건이면_정상_통과한다(): void
     {
         if (! function_exists('proc_open')) {
             $this->markTestSkipped('proc_open 미지원 환경');
         }
 
-        // upgrade 파일 없이 호출 → 자식은 [STEPS_EXECUTED] count=0 발행 + exit=0
-        // from < to 인 상태에서 0건 실행은 비정상 → mode=abort 시 throw
+        // upgrade 파일 없이 호출 → 자식은 [STEPS_EXECUTED] executed=0, discovered=0 발행 + exit=0
+        // "범위 내 스텝 파일 자체가 없음" 은 정상 상황 (예: 스텝 불필요 릴리즈).
+        // discovered=0 이면 fail-fast 를 발동하지 않고 정상 통과해야 한다 (케이스 B).
         config(['app.update.spawn_failure_mode' => 'abort']);
 
         $command = $this->makeCommandWithDummyIo();
         $method = new \ReflectionMethod(CoreUpdateCommand::class, 'spawnUpgradeStepsProcess');
         $method->setAccessible(true);
 
+        $logs = [];
+        $log = function (string $msg) use (&$logs): void {
+            $logs[] = $msg;
+        };
+
+        // 실 스텝 파일이 존재하지 않는 버전 범위 (9.9.8 → 9.9.9)
+        $result = $method->invoke($command, '9.9.8', '9.9.9', true, $log);
+
+        $this->assertTrue($result, '범위 내 스텝 파일이 없어 0건이면 정상 통과(true)여야 한다');
+        $allLogs = implode("\n", $logs);
+        $this->assertStringContainsString('실행할 스텝 없음', $allLogs, '스텝 부재 정상 통과 로그');
+    }
+
+    #[Test]
+    public function spawn_자식_범위내_스텝이_있는데_0건_실행이면_abort_throw_한다(): void
+    {
+        // 범위 내에 스텝 파일이 실제로 존재(discovered>0)하는데 executed=0 인 경우 —
+        // 이전 버전 자식이 신규 스텝을 놓치고 silent skip 한 gnuboard/g7#28 케이스 (케이스 A).
+        // 이 경우에만 fail-fast 를 발동해야 한다.
+        //
+        // 재현: 스텝 파일은 존재하나 자식의 runUpgradeSteps 가 executed 를 0 으로 보고하도록,
+        // discovered 는 세되 onStep 은 호출하지 않는 상황을 자식 프로세스 안에서 만들 수 없으므로,
+        // 부모 가드 로직(handleSpawnExit)을 직접 호출해 discovered>0 && executed=0 분기를 검증한다.
+        config(['app.update.spawn_failure_mode' => 'abort']);
+
+        $command = $this->makeCommandWithDummyIo();
+        $method = new \ReflectionMethod(CoreUpdateCommand::class, 'handleSpawnExit');
+        $method->setAccessible(true);
+
         try {
-            $method->invoke($command, '9.9.8', '9.9.9', true, fn () => null);
-            $this->fail('step 0건 실행 시 mode=abort 에서 throw 되어야 한다');
+            // exitCode=0, handoffPayload=null, stepsExecuted=0, stepsDiscovered=5
+            $method->invoke($command, 0, null, 0, 5, '9.9.8', '9.9.9', fn () => null);
+            $this->fail('discovered>0 && executed=0 이면 mode=abort 에서 throw 되어야 한다');
         } catch (UpgradeHandoffException $e) {
             $this->assertStringContainsString('step 0건 실행', $e->reason);
+            $this->assertStringContainsString('발견 5건', $e->reason);
             $this->assertSame('9.9.8', $e->afterVersion);
         }
     }
 
     #[Test]
-    public function spawn_자식_silent_skip_시_fallback_모드는_false_반환한다(): void
+    public function handleSpawnExit_executed_0_discovered_0_이면_from_lt_to_여도_정상_통과한다(): void
+    {
+        // 케이스 B — 범위 내 스텝 파일 부재. from<to 여도 실패 아님 (스텝 불필요 릴리즈).
+        // proc_open 불필요한 순수 판정 로직 단위 검증.
+        config(['app.update.spawn_failure_mode' => 'abort']);
+
+        $command = $this->makeCommandWithDummyIo();
+        $method = new \ReflectionMethod(CoreUpdateCommand::class, 'handleSpawnExit');
+        $method->setAccessible(true);
+
+        $logs = [];
+        $log = function (string $msg) use (&$logs): void {
+            $logs[] = $msg;
+        };
+
+        // exitCode=0, handoffPayload=null, stepsExecuted=0, stepsDiscovered=0
+        $result = $method->invoke($command, 0, null, 0, 0, '7.0.0', '7.0.1', $log);
+
+        $this->assertTrue($result, 'discovered=0 이면 abort 모드에서도 정상 통과(true)');
+        $this->assertStringContainsString('실행할 스텝 없음', implode("\n", $logs));
+    }
+
+    #[Test]
+    public function handleSpawnExit_구버전_자식_discovered_null_은_레거시_fail_fast_판정을_유지한다(): void
+    {
+        // discovered 필드를 모르는 구버전 자식 — executed=0 + discovered=null + from<to.
+        // 신버전 부모는 이 케이스를 기존(레거시) fail-fast 로 판정해야 한다 (안전 우선).
+        config(['app.update.spawn_failure_mode' => 'abort']);
+
+        $command = $this->makeCommandWithDummyIo();
+        $method = new \ReflectionMethod(CoreUpdateCommand::class, 'handleSpawnExit');
+        $method->setAccessible(true);
+
+        try {
+            // stepsExecuted=0, stepsDiscovered=null (구버전 자식)
+            $method->invoke($command, 0, null, 0, null, '7.0.0', '7.0.1', fn () => null);
+            $this->fail('discovered=null + executed=0 + from<to 는 레거시 fail-fast 여야 한다');
+        } catch (UpgradeHandoffException $e) {
+            $this->assertStringContainsString('step 0건 실행', $e->reason);
+            $this->assertStringNotContainsString('발견', $e->reason, 'discovered 미상이므로 발견 건수 표기 없음');
+        }
+    }
+
+    #[Test]
+    public function spawn_자식_범위내_스텝_파일이_없어_0건이면_fallback_모드도_정상_통과한다(): void
     {
         if (! function_exists('proc_open')) {
             $this->markTestSkipped('proc_open 미지원 환경');
@@ -134,7 +210,7 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
 
         $result = $method->invoke($command, '9.9.8', '9.9.9', true, fn () => null);
 
-        $this->assertFalse($result, 'mode=fallback 에서 step 0건 실행은 false 반환');
+        $this->assertTrue($result, '스텝 파일 부재(discovered=0)는 fallback 모드에서도 정상 통과(true)');
     }
 
     #[Test]
