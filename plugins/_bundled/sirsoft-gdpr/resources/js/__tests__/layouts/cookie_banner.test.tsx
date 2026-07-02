@@ -84,13 +84,13 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             // 1. ResponseHelper::success($msg, $data) 응답은 데이터소스에서 그대로 보존되므로 단일 객체 응답은 `<id>.data.<key>` 한 단계 경로.
             //    과거 통합본에서 `?.data?.data?` 두 단계로 작성되어 항상 undefined → if false → 배너 미출력 사고.
             // 2. _global.gdprBannerDismissed 만으로는 새로고침 시 휘발 — 서버 조회 (gdprMyConsent.has_consented) 가 우선이며 클릭 직후 즉시 사라지는 효과만 글로벌 상태가 보장.
-            // 3. needs_renewal=true 일 때도 배너만 노출 (모달 폐기 — PO 결정 모달/배너 중복 제거). 배너 본문에 사유 안내 + 회원 한정 "현 상태 유지" 액션 통합.
+            // 3. needs_renewal=true 일 때도 배너만 노출 (모달 폐기 — 결정 모달/배너 중복 제거). 배너 본문에 사유 안내 + 회원 한정 "현 상태 유지" 액션 통합.
             expect(banner?.if).toBe(
                 '{{gdprPublicSettings?.data?.banner_enabled === true && gdprMyConsent?.data?.has_consented !== true && _global.gdprBannerDismissed !== true}}'
             );
         });
 
-        it('needs_renewal 강제 모달 (gdpr_needs_renewal_modal) 이 더 이상 존재하지 않는다 (PO 결정 — 배너 통합)', () => {
+        it('needs_renewal 강제 모달 (gdpr_needs_renewal_modal) 이 더 이상 존재하지 않는다 (결정 — 배너 통합)', () => {
             // 모달 폐기 회귀 가드: 모달과 배너의 시각적 중복 + UX 혼란 + dark pattern 회피 위해
             // 모달 통째 제거하고 배너에 사유 안내 + 회원 한정 "현 상태 유지" 액션 통합.
             const modal = findById(root, 'gdpr_needs_renewal_modal');
@@ -114,7 +114,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(json).toContain('|renewed=');
         });
 
-        it('게스트 전용 갱신 버튼 (gdpr_keep_consent_button_guest) 은 더 이상 존재하지 않는다 (PO 결정 — 게스트는 status 미사용 + history 기반이라 이전 의사 자동 복원 인프라 부재 → "모두 동의" 그대로 사용)', () => {
+        it('게스트 전용 갱신 버튼 (gdpr_keep_consent_button_guest) 은 더 이상 존재하지 않는다 (결정 — 게스트는 status 미사용 + history 기반이라 이전 의사 자동 복원 인프라 부재 → "모두 동의" 그대로 사용)', () => {
             const guestBtn = findById(root, 'gdpr_keep_consent_button_guest');
             expect(guestBtn).toBeNull();
         });
@@ -143,12 +143,12 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
 
         it('기본(bottom_bar) 위치는 풀폭 팝업 카드 (bottom-4 left-4 right-4 rounded-lg)', () => {
             // 회귀 가드: 이전엔 화면 하단에 딱 붙는 띠(bottom-0)였지만,
-            // PO 결정으로 화면에서 살짝 떠 있는 풀폭 카드 형태로 변경됨.
+            // 설계 결정으로 화면에서 살짝 떠 있는 풀폭 카드 형태로 변경됨.
             expect(className).toContain('bottom-4 left-4 right-4 rounded-lg');
         });
 
         it('top_bar 분기는 제거되어 있다', () => {
-            // 회귀 가드: PO 결정으로 banner_position 옵션에서 top_bar 제거됨.
+            // 회귀 가드: 설계 결정으로 banner_position 옵션에서 top_bar 제거됨.
             expect(className).not.toContain("'top_bar'");
         });
 
@@ -170,9 +170,9 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             }
         });
 
-        it('centered_modal 에서 dim 오버레이를 사용하지 않는다 (PO 의도: 다른 팝업과 동일 외형)', () => {
+        it('centered_modal 에서 dim 오버레이를 사용하지 않는다 (의도: 다른 팝업과 동일 외형)', () => {
             // 회귀 가드: 이전 구현은 외곽에 bg-black/40 dim 을 깔았으나 자식 박스가 dim 위에 떠야 하는
-            // 구조 — 외곽이 bg-white 와 함께 정의되어 dim 의도가 깨졌었다. PO 가 dim 강제 모달이 아닌
+            // 구조 — 외곽이 bg-white 와 함께 정의되어 dim 의도가 깨졌었다. dim 강제 모달이 아닌
             // 단순 중앙 배치만 원하므로 dim 클래스 자체를 제거.
             expect(className).not.toContain('bg-black/40');
             expect(className).not.toContain('bg-black/50');
@@ -280,7 +280,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         });
 
         it('배너 4버튼은 gdprBannerSubmittingAction 식별자 패턴으로 클릭한 버튼만 spinner + 다른 버튼은 원래 라벨 유지', () => {
-            // 회귀 가드: PO 피드백 — 단일 boolean 플래그면 모든 버튼이 "동의 중..." 으로 동시 변경되어
+            // 회귀 가드: 피드백 — 단일 boolean 플래그면 모든 버튼이 "동의 중..." 으로 동시 변경되어
             // 어느 버튼을 클릭했는지 시각적으로 알 수 없음. 식별자 string 으로 변경하여 클릭한 버튼만
             // 스피너 + 라벨 변경, 다른 버튼은 disabled + 원래 라벨 유지.
             // 4 action 식별자: accept_all / reject_all / save_selection / renew_consent
@@ -365,7 +365,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         });
 
         it('"자세히 보기" 토글 + 펼침 영역이 통째로 제거되었다 (카테고리 description 한 줄로 일원화)', () => {
-            // PO 결정: 펼침 영역의 user_info description 이 카테고리 카드 자체의 description 과
+            // 설계 결정: 펼침 영역의 user_info description 이 카테고리 카드 자체의 description 과
             // 의미상 중복 → "자세히 보기" 토글 자체를 없애고, 카테고리 description 을 사용자 친화
             // 표현으로 갈아끼움 (시더 plugin.php / CookieCategoryService 의 기본값 갱신).
             expect(text).not.toContain('banner.category_details_expand');
@@ -398,7 +398,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     });
 
     describe('카테고리 카드 — 임의값 회귀 가드 (#14 글씨 키우기)', () => {
-        // PO 결정: 카테고리 카드 자체의 보조 텍스트 (필수 배지, 카테고리 설명) 도 너무 작아
+        // 설계 결정: 카테고리 카드 자체의 보조 텍스트 (필수 배지, 카테고리 설명) 도 너무 작아
         // 가독성 저하. 임의값 text-[10px] 11건을 모두 표준 text-xs 로 통일.
         it('cookie_banner.json 전체에서 text-[10px] 임의값이 사용되지 않는다', () => {
             const fullText = serializeForSearch(extension);

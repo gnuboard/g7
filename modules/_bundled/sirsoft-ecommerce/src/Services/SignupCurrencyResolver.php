@@ -7,7 +7,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
  *
  * 유저 locale 을 환경설정의 통화별 언어(currencies[].locales) 매핑과 대조해 부여 통화를 결정한다.
  *
- * 매칭 우선순위(D-SIGNUP, PO 확정):
+ * 매칭 우선순위(D-SIGNUP, 정책 확정):
  *   1) locale 이 매칭되는 통화가 1개 → 그 통화
  *   2) 여러 통화에 중복 매칭 → 매칭된 통화 중 is_default 통화 우선
  *   3) 매칭 없음/모호 → is_default 통화 → 그래도 없으면 default_currency 폴백

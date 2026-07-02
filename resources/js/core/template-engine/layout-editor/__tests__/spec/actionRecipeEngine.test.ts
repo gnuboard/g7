@@ -1,7 +1,7 @@
 /**
  * actionRecipeEngine.test.ts — 친화 액션 레시피 → 핸들러 JSON DataProvider
  *
- * CLAUDE.md "CRITICAL RULES — API/핸들러 호출" 전수 회귀 가드 포함:
+ * 코어 핸들러 규칙(API/핸들러 호출) 전수 회귀 가드 포함:
  *  - apiCall(api 아님)/navigate(nav 아님)/setState+target/toast(showToast 아님)/
  *    refetchDataSource.dataSourceId(id 아님).
  *  - apiCall 의 target/onSuccess/onError 는 액션 top-level.
@@ -70,7 +70,7 @@ describe('normalizeActionRecipes', () => {
   });
 });
 
-describe('buildAction — CLAUDE.md 핸들러 규칙 준수', () => {
+describe('buildAction — 코어 핸들러 규칙 준수', () => {
   const recipes = normalizeActionRecipes(RECIPES);
   const byId = (id: string) => recipes.find((r) => r.id === id)!;
 

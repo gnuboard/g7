@@ -277,7 +277,7 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     expect(clear, 'clearGuestTokenOnEntry 누락 — 토큰 보유자에게는 자동 진입되어 폼 노출 안 됨, 다른 주문 조회 불가').toBeDefined();
   });
 
-  it('onError 는 _local.lookupError boolean 플래그만 set 해야 한다 (toast 가 아닌 페이지 내 인라인 에러 박스로 통일 메시지 노출 — PO UX 결정 + 보안 정책 실패 사유 비노출)', () => {
+  it('onError 는 _local.lookupError boolean 플래그만 set 해야 한다 (toast 가 아닌 페이지 내 인라인 에러 박스로 통일 메시지 노출 — UX 결정 + 보안 정책 실패 사유 비노출)', () => {
     const verifyCall = findNode(
       guestFormJson,
       (n) => n.handler === 'apiCall' && n.target?.endsWith('/guest/orders/verify')
@@ -314,7 +314,7 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     expect(resetAction, 'submit 시작 시 lookupError 초기화 누락 — 이전 실패 박스가 그대로 노출됨').toBeDefined();
   });
 
-  it('회원 로그인 사용자가 실수로 진입한 경우 lifecycle.onMount 가 toast + /mypage/orders 로 navigate 해야 한다 (PO UX 결정 — 회원은 본 페이지에서 회원 주문 조회 불가)', () => {
+  it('회원 로그인 사용자가 실수로 진입한 경우 lifecycle.onMount 가 toast + /mypage/orders 로 navigate 해야 한다 (UX 결정 — 회원은 본 페이지에서 회원 주문 조회 불가)', () => {
     const memberGuardBlock = findNode(
       guestFormJson,
       (n) => n.if === '{{_global?.currentUser?.uuid}}' && findNode(n, (m: any) => m.lifecycle?.onMount)

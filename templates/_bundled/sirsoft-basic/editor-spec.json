@@ -5,7 +5,7 @@
   "description": "레이아웃 편집기 스펙 — Phase 3 (nesting + componentPalette 블록).  controls/componentCapabilities/actionRecipes 등은 Phase 4/5 에서 추가.",
   "styleSystem": "tailwind",
   "darkMode": {
-    "comment": "Tailwind 다크는 조상.dark 클래스. 편집기 프리뷰는 PO admin 의 html.dark 조상과 독립적으로 라이트/다크를 보여줘야 하므로, 코어 CSS 서빙 API 가 편집기용 CSS 의.dark 셀렉터를 프리뷰 전용 마커(.g7le-preview-dark)로 치환해 서빙한다. 사용자 페이지 CSS 는 원본 그대로.",
+    "comment": "Tailwind 다크는 조상.dark 클래스. 편집기 프리뷰는 관리자 admin 의 html.dark 조상과 독립적으로 라이트/다크를 보여줘야 하므로, 코어 CSS 서빙 API 가 편집기용 CSS 의.dark 셀렉터를 프리뷰 전용 마커(.g7le-preview-dark)로 치환해 서빙한다. 사용자 페이지 CSS 는 원본 그대로.",
     "strategy": "ancestor-class",
     "ancestorSelector": ".dark",
     "previewIsolation": {

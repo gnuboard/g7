@@ -9,7 +9,7 @@
  *
  * 가드 항목:
  *  1. 신규 6개 admin composite 가 nesting.draggable 등재 + capability 보유.
- *  2. 그 6개 tsx 가 editorAttrs 를 시각 루트에 spread (선택/클릭 가능 — PO 가 직접
+ *  2. 그 6개 tsx 가 editorAttrs 를 시각 루트에 spread (선택/클릭 가능 — 검수자가 직접
  *     발견한 AdminSidebar/AdminFooter 선택 불가 결함의 회귀 가드).
  *  3. SectionHeader 가 componentPalette 에 등재 (팔레트 추가 가능).
  *  4. ecommerce editor-spec 에 신규 admin 화면 5개 states 그룹 등록 (상태 토글 노출).
@@ -83,7 +83,7 @@ describe('편집기 갭 보강 — 신규 admin composite 편집 가능성', () 
 
 describe('편집기 갭 보강 — editorAttrs 시각 루트 spread (선택/클릭 가능)', () => {
   // base 골격/위젯이 편집기 주입 editorAttrs 를 시각 루트에 흘려야 클릭이 그 노드에 닿는다.
-  // (PO 가 base 편집 모드에서 AdminSidebar/AdminFooter 클릭 시 부모 Div 만 선택되던 결함)
+  // (검수자가 base 편집 모드에서 AdminSidebar/AdminFooter 클릭 시 부모 Div 만 선택되던 결함)
   const FILES: Record<string, string> = {
     AdminSidebar: `${ADMIN}/src/components/composite/AdminSidebar.tsx`,
     AdminFooter: `${ADMIN}/src/components/composite/AdminFooter.tsx`,

@@ -349,7 +349,7 @@ export interface ParsedBinding {
   optional?: boolean;
   /**
    * 원본의 널 병합 폴백 식 — `?? []` 의 `[]`, `?? ''` 의 `''` 등(있으면). 재기입 시 동일
-   * 폴백을 유지해 데이터 미도착 시 런타임 에러를 막는다(CLAUDE.md fallback 필수 규칙).
+   * 폴백을 유지해 데이터 미도착 시 런타임 에러를 막는다(코어 fallback 필수 규칙).
    */
   fallback?: string;
   /**
@@ -515,7 +515,7 @@ export function parseBindingExpression(value: unknown): ParsedBinding | null {
  * 검색 피커에서 후보를 선택하면 그 후보의 `expression`(단순 형태)을 그대로 쓰지 않고,
  * shape 에 맞는 안전 형태로 다시 만든다 — `?.` 체이닝 + shape 별 폴백(array `?? []`,
  * scalar `?? ''`). 이렇게 해야 데이터 미도착 시 런타임 에러(`undefined.map`/`.length`)를
- * 막는다(CLAUDE.md "fallback 필수" 규칙).
+ * 막는다(코어 "fallback 필수" 규칙).
  *
  * SEO 단일-경로 추출 함수(`$localized`)로 래핑된 바인딩을 다시 쓸 때는 `localeFn` 을 넘긴다.
  * `$localized(<src>.<path>)` 형태로 만들고 폴백/옵셔널 체이닝은 붙이지 않는다 — `$localized` 는

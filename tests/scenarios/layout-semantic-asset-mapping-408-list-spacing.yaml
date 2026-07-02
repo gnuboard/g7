@@ -3,7 +3,7 @@
 feature: 어드민 목록 화면의 list_info 헤더 + iteration admin-card 시각 여백 정합 (#408 보강)
 
 description: |
-  이슈 #408 후속 — PO 가 어드민 알림 정의 화면에서 두 가지 시각 여백 부족을 지적:
+  이슈 #408 후속 — 검수자가 어드민 알림 정의 화면에서 두 가지 시각 여백 부족을 지적:
     1. 카운트 + 페이지당 셀렉트 묶음 (list_info 헤더) 의 위/아래 여백 없음
     2. iteration 으로 반복되는 admin-card 의 하단 margin 이 자산 default mb-6
        (1.5rem) 으로 너무 큼

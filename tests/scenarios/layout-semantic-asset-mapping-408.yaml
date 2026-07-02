@@ -3,7 +3,7 @@
 feature: 게시판/이커머스 어드민 페이지 root wrapper 시맨틱 자산 매핑 (#408 보강)
 
 description: |
-  이슈 #408 §2-1 PO 매핑 결정 적용 — board/ec admin 레이아웃의 페이지 root wrapper
+  이슈 #408 §2-1 매핑 결정 적용 — board/ec admin 레이아웃의 페이지 root wrapper
   raw className 잔존분을 admin_basic 시맨틱 자산으로 정합.
 
   결정 요약:

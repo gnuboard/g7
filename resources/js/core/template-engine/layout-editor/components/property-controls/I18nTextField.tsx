@@ -829,7 +829,7 @@ function PlainInsertDataButton({
   return (
     <div data-testid={`${testidPrefix}-plus-data`} style={{ display: 'inline-block' }}>
       {/* `+` 버튼은 항상 자리 유지(피커가 열려도 플로우 폭 불변). 피커는 공용 FloatingDropdown 으로
- 버튼 아래 띄우되 위치 자동 보정(flip/clamp)으로 좁은 입력 행 어디서든 잘리지 않는다(PO
+ 버튼 아래 띄우되 위치 자동 보정(flip/clamp)으로 좁은 입력 행 어디서든 잘리지 않는다(검수
           2026-06-13 — 하드코딩 right:0 으로 좌측 쏠려 가려지던 결함 → 범용 위치 보정으로 통일). */}
       <button
         ref={plusRef}
@@ -861,7 +861,7 @@ function PlainInsertDataButton({
 }
 
 /**
- * 표현식 접힌 미리보기 — 읽기전용 한 줄(키 해석·데이터 칩) + [수정] 버튼 (PO
+ * 표현식 접힌 미리보기 — 읽기전용 한 줄(키 해석·데이터 칩) + [수정] 버튼 (검수
  * "기본 접힌 미리보기 + [수정]" 2026-06-13). 진입 시 정보 과다 방지 — [수정] 클릭 시 분해 빌더 펼침.
  *
  * 미리보기 = `previewSegments`("한 값만 해석" — 조건은 참 분기 + ⋯, 키는 해석, 바인딩은 칩).

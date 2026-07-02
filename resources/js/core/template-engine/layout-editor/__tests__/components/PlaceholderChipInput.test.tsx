@@ -273,7 +273,7 @@ describe('insertChipInValue — 커서 위치 자리표시 삽입', () => {
   });
 });
 
-describe('타이핑 안전성 — 비제어 평문(글자 뒤섞임 결함 회귀, PO)', () => {
+describe('타이핑 안전성 — 비제어 평문(글자 뒤섞임 결함 회귀)', () => {
   it('평문 타이핑(연속 입력) 시 평문 span 을 React 가 덮어쓰지 않는다(비제어)', () => {
     // 결함 재현 방지: controlled 였다면 onChange→value 갱신→리렌더로 span textContent 가
     // 매 입력마다 재설정되어 커서가 튀고 글자 순서가 깨졌다("하나둘"→"퉁둘낭나한하").

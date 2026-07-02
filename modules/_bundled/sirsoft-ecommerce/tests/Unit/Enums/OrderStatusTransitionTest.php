@@ -134,7 +134,7 @@ class OrderStatusTransitionTest extends ModuleTestCase
 
     /**
      * 취소 → 판매 반영 상태 복원(reactivation)은 허용, 결제 전 상태 복귀는 차단됨을 명시 단언합니다.
-     * (취소 주문/옵션을 다시 판매 진행 상태로 되살리는 운영 기능 — 재고 재차감 동반. PO 2026-06-23)
+     * (취소 주문/옵션을 다시 판매 진행 상태로 되살리는 운영 기능 — 재고 재차감 동반. 2026-06-23)
      */
     public function test_cancelled_reactivation_to_sales_status_allowed_but_pre_payment_blocked(): void
     {

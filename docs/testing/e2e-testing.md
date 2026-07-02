@@ -219,7 +219,7 @@ test('unauthenticated_401 × no_token', async ({ page }) => {
 
 `audit-branch.cjs` 의 `test-scenario-coverage` 룰이 매니페스트 axes ↔ docblock 매칭을 자동 검증.
 
-## §8. 회귀 테스트 4단계 (CLAUDE.md 의무 절차 준수)
+## §8. 회귀 테스트 4단계
 
 버그 수정 시 다음 4단계를 스킵 불가:
 
@@ -236,7 +236,7 @@ E2E spec 작성 중 발견한 무관 에러는 같은 세션에서 처리:
 
 - **테스트 stale** (logic 정상, 테스트가 오래됨) → 테스트 수정
 - **로직 회귀** (테스트 정상, 로직이 의도와 어긋남) → 코드 수정
-- **데이터 구조 불일치** (양쪽 모두 오래됨) → PO 보고 + 보류
+- **데이터 구조 불일치** (양쪽 모두 오래됨) → 보고 + 보류
 
 상세: `testing-guide.md` "무관 에러 처리 분기".
 

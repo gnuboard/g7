@@ -2,7 +2,7 @@
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
 #   가입 통화 부여 axis 는 PHPUnit(AssignDefaultCurrencyOnRegisterListener/StoreEcommerceSettingsRequest
 #   locales 검증)·Vitest(통화별 언어 Tag UI)가 커버하며 green 이다.
-feature: 가입 시 locale 기반 통화 부여 + 통화별 언어 다중 매핑 (A4 — PO 신규)
+feature: 가입 시 locale 기반 통화 부여 + 통화별 언어 다중 매핑 (A4 — 신규)
 
 description: |
   가입/회원생성 시 브라우저/locale 기반 기본통화 부여(환경설정>언어/통화의 통화별 언어 Tag 매핑 기준).

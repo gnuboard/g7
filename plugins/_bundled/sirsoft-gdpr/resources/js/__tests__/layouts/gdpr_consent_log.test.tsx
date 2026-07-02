@@ -192,7 +192,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
 
     /**
      * 작업 2 (B-3 옵션 X) — policy_version 컬럼이 평문 Span + 본문 보기 Button 분리.
-     * PO 피드백: v배지 클릭만으로는 직관성 부족 — 평문 + 명시 버튼 패턴으로 변경.
+     * 피드백: v배지 클릭만으로는 직관성 부족 — 평문 + 명시 버튼 패턴으로 변경.
      */
     describe('작업 2: policy_version 컬럼 → 평문 + 본문 보기 Button', () => {
         const layoutJson = JSON.stringify(layout);

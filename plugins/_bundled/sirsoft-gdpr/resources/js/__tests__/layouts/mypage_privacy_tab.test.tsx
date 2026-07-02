@@ -79,7 +79,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         });
 
         it('카드 헤더(타이틀 + 구분선) 다음 형제 위치에 배치 (헤더 내부 X)', () => {
-            // PO UX 결정: 메타 라인은 H2 타이틀 + 구분선 다음에 자연어 문장으로 노출.
+            // UX 결정: 메타 라인은 H2 타이틀 + 구분선 다음에 자연어 문장으로 노출.
             // 헤더 내부(border-b 위)에 두면 타이틀과 같은 영역으로 보여 시각적 혼잡 → 헤더 외부로 분리.
             const header = findById(card ?? null, 'gdpr_card_header');
             const headerChildren = (header?.children ?? []) as AnyNode[];
@@ -129,7 +129,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         });
 
         it('가운데 점(·) 구분자 미사용 (자연어 한 줄 패턴이라 구분자 불필요)', () => {
-            // 회귀 가드: 이전 디자인은 가로 인라인 + · 구분자였으나, PO 결정으로 자연어 한 줄로 재설계.
+            // 회귀 가드: 이전 디자인은 가로 인라인 + · 구분자였으나, 설계 결정으로 자연어 한 줄로 재설계.
             const children = (meta?.children ?? []) as AnyNode[];
             const separator = children.find((c) => String(c.text ?? '') === '·');
             expect(separator).toBeUndefined();
@@ -223,7 +223,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         const modal = (root.modals ?? []).find((m) => m.id === 'revoke_confirm_modal');
 
         it('모달 본문에 raw key (cookie_functional 등) 대신 사용자 친화 description 노출', () => {
-            // PO 피드백 — raw key 는 사용자에게 무의미하여 모달 본문에서 제거.
+            // 피드백 — raw key 는 사용자에게 무의미하여 모달 본문에서 제거.
             // 라벨 + description 2줄 구조로 변경됨.
             const modal = (root.modals ?? []).find((m) => m.id === 'revoke_confirm_modal');
             const text = serializeForSearch(modal);
@@ -329,7 +329,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
     });
 
     describe('정책 갱신 amber 안내 박스 (마이페이지 카드 내 needs_renewal 안내)', () => {
-        // PO 결정 — 마이페이지 카드 안에 amber 박스 (gdpr_needs_renewal_banner) 유지.
+        // 설계 결정 — 마이페이지 카드 안에 amber 박스 (gdpr_needs_renewal_banner) 유지.
         // 조건: gdprMeConsents.data.needs_renewal === true 일 때만 노출.
         // 본문: 현 정책 버전 안내 (#23 informed consent) + 필수 쿠키 면제 hint
         // 액션: 「전체 항목 다시 동의」 (POST /consent/renew-all)

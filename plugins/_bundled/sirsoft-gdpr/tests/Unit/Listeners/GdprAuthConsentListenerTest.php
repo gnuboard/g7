@@ -75,7 +75,7 @@ class GdprAuthConsentListenerTest extends PluginTestCase
      *
      * 실제 훅 체인: HookManager::doAction('core.auth.record_consents', User, array, string $agreedAt, string $ip)
      * 를 발화했을 때 listener 가 TypeError 없이 받고 폼 동의를 status 에 반영해야 함.
-     * 회귀 발견 시점: 2026-05-08 PO 가입 시 Argument #3 ($agreedAt) must be of type Carbon\Carbon, string given.
+     * 회귀 발견 시점: 2026-05-08 관리자 가입 시 Argument #3 ($agreedAt) must be of type Carbon\Carbon, string given.
      *
      * @return void
      */
@@ -139,7 +139,7 @@ class GdprAuthConsentListenerTest extends PluginTestCase
      * Listener 메서드는 현재 HTTP 요청 컨텍스트 (`request()->ip()`) + Carbon 인스턴스에
      * 의존한다. HookListenerRegistrar 의 기본 동작은 큐 디스패치인데, 큐 잡은 별도 컨텍스트라
      * 쿠키 소실 + Carbon → string 직렬화 mismatch 발생 → 폼 동의 기록 실패
-     * (실제 회귀 — 2026-05-08 PO 가입 시도 시 발견).
+     * (실제 회귀 — 2026-05-08 관리자 가입 시도 시 발견).
      */
     public function test_subscribed_hook_forces_sync_to_preserve_request_context(): void
     {

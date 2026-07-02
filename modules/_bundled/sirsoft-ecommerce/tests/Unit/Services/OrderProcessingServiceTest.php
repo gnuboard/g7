@@ -1208,7 +1208,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
     }
 
     /**
-     * PO 검증 4조합: base/order 통화 전 경우의 수.
+     * 검증 4조합: base/order 통화 전 경우의 수.
      *
      * @return array<string, array{0:string,1:string,2:float,3:array,4:int}>
      */

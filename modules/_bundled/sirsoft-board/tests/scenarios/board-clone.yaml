@@ -13,7 +13,7 @@ description: |
         identifier 는 stripBoardScopeRoles 로 제거 (attachRoles 의 전역 whereIn 으로 인한 교차 누수 차단)
       · 새 게시판 manager/step 역할은 생성 시 injectBoardRolesToPermissions 가 자동 주입
       · 비-스코프 역할(member 등) 은 그대로 보존
-    - PO 정책 확정: 복제는 원본 manager/step 명단을 승계 (순수 생성 모드는 본인 단독)
+    - 정책 확정: 복제는 원본 manager/step 명단을 승계 (순수 생성 모드는 본인 단독)
     - role 조회 로직은 BoardResource::getBoardRoleData 를 public static 으로 공유 (SSoT)
 
 axes:

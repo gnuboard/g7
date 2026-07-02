@@ -15,7 +15,7 @@ description: |
         (b) 저장 경로는 slug 기준({slug}/...)인데 삭제는 board_id 기준 디렉토리를
             지우려 해 경로 불일치로 아무 파일도 안 지워짐.
 
-  조치 (PO 결정 B안):
+  조치 (결정 B안):
     · Repository 3종(Post/Comment/Attachment)에 forceDeleteByBoardId 신설
       (기존 softDeleteByBoardId 의 delete → forceDelete). 인터페이스 + 구현.
     · BoardService::deleteBoard() 의 자식 정리를 force 로 교체.

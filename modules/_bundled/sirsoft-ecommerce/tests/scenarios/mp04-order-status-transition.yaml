@@ -17,7 +17,7 @@ description: |
       (SHIPPING_HOLD↔PREPARING, SHIPPING→{SHIPPING_READY,PREPARING}, DELIVERED→SHIPPING)만 추가 허용.
     - CONFIRMED 되돌림 전부 금지.
     - CANCELLED 발 전이는 판매 반영 상태(salesEligibleStatuses)로의 복원(reactivation)만 허용
-      (재고 재차감 동반 운영 기능, PO 2026-06-23). 결제 전 상태(pending_order/pending_payment) 복귀는 차단.
+      (재고 재차감 동반 운영 기능, 2026-06-23). 결제 전 상태(pending_order/pending_payment) 복귀는 차단.
     - 취소(CANCELLED) 진입은 게이트가 통과 처리(OrderCancellationService 전담, 이중 관리 방지).
     - 3경로 모두 FormRequest withValidator 1차 차단(422 + 다국어) + Service 진입부 2차 도메인 불변식 가드.
     - 일괄은 all-or-nothing: 1건이라도 위반이면 전체 422, DB 무변경.

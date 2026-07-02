@@ -7,12 +7,12 @@ use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 
 /**
- * 회원 탈퇴/삭제 시 마일리지 데이터 정리 리스너 (PO 확정 #8)
+ * 회원 탈퇴/삭제 시 마일리지 데이터 정리 리스너 (정책 확정 #8)
  *
  * 코어 UserService 의 탈퇴(before_withdraw)·삭제(before_delete) 훅을 구독해,
  * 활성 lot 을 expired 거래로 소멸 기록(감사 흐름 보존)한 뒤 원장·잔액 캐시 행을 명시 삭제합니다.
  * 탈퇴는 soft 상태 변경이라 cascadeOnDelete 가 발화하지 않으므로 명시 정리가 필수입니다
- * (CLAUDE.md "DB CASCADE 의존 삭제 금지"). cascade 는 삭제 경로의 안전망으로만 둡니다.
+ * (코어 규정: DB CASCADE 의존 삭제 금지). cascade 는 삭제 경로의 안전망으로만 둡니다.
  */
 class UserMileageCleanupListener implements HookListenerInterface
 {

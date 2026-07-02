@@ -18,7 +18,7 @@ axes:
   layout_dir: [bundled, active]
 
 exclusions:
-  - { locale: ja, layout_dir: active, reason: "ja 증분은 ANTHROPIC_API_KEY 필요 — 환경 제약, PO 후속" }
+  - { locale: ja, layout_dir: active, reason: "ja 증분은 번역 API 키 필요 — 환경 제약, 후속" }
 
 effects:
   - hardcoded_korean_text_removed_from_layout
@@ -27,7 +27,7 @@ effects:
   - en_partial_defines_bulk_status_change
   - translation_engine_resolves_key_for_ko_and_en
   - active_dir_reflects_keyed_layout_and_lang
-  - ja_bundle_increment_pending_api_key  # 환경 제약 (PO ANTHROPIC_API_KEY)
+  - ja_bundle_increment_pending_api_key  # 환경 제약 (번역 API 키)
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-list-bulk-status-i18n.test.tsx

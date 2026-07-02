@@ -16,7 +16,7 @@ description: |
       고아 자식의 조상 체인을 따라 누락된 삭제 부모를 일괄 IN 조회(N+1 회피)로
       tombstone 노드 복구. 자식 없는 삭제 부모는 고아 자식이 없어 자연 제외.
     · countDescendants() 보정 — tombstone(삭제) 댓글은 "답글 N" 집계 모수에서 제외
-      (트리 노드로는 유지, 살아있는 자손은 계속 카운트). PO 확정.
+      (트리 노드로는 유지, 살아있는 자손은 계속 카운트). 확정 정책.
     · content 권한·표시(tombstone 안내 + 관리자 원문 토글)는 #413-50 기구현 재사용.
     · withTrashed=true(manager del_cmt 토글) 경로는 이미 전체 노출 → 고아 복구 비적용.
 

@@ -5,7 +5,7 @@
  * 배경:
  * - partial_cancelled 주문상태 제거 후, 일부 취소 사실은 파생 플래그 is_partially_cancelled 로 표시한다.
  * - 목록(_list.json) 헤더 행은 flex justify-between [좌: 날짜/주문번호] vs [우: 상태 배지] 구조다.
- *   보조 배지를 헤더 행의 3번째 형제로 넣으면 justify-between 이 3개를 분산시켜 레이아웃이 깨진다(PO 발견).
+ *   보조 배지를 헤더 행의 3번째 형제로 넣으면 justify-between 이 3개를 분산시켜 레이아웃이 깨진다(검수 중 발견).
  *   → 상태 배지와 보조 배지를 하나의 세로 묶음(flex-col items-end) Div 로 감싸 "결제완료" 아래에 배치한다.
  *
  * 회귀 차단:

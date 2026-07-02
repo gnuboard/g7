@@ -19,7 +19,7 @@
  *   2. core.users.read 권한 토큰 fixture (issueToken).
  *   3. test.describe.skip → test.describe (data-testid 추가 없이 #search_input id 로 접근 가능).
  *
- * 단위 테스트가 가드 로직을 잠그고 있어, 본 라이브 spec 은 PO 환경에서의 최종 확증용이다.
+ * 단위 테스트가 가드 로직을 잠그고 있어, 본 라이브 spec 은 실환경에서의 최종 확증용이다.
  */
 import { test, expect, issueToken, authenticatePage } from '../fixtures/auth';
 

@@ -110,7 +110,7 @@ design_rationale: |
     신규 가입자는 가입 시점에 record 생성되므로 시간 흐를수록 자연 수렴.
 
   - 외국인 (userDi 빈값) 통과 정책 — KG이니시스가 외국인 본인확인 시 DI 발급 못 하는 케이스 대응.
-    PO 결정에 따라 향후 차단 정책 전환 가능 (별도 이슈).
+    정책 결정에 따라 향후 차단 정책 전환 가능 (별도 이슈).
 
   - PII 미노출 — IdentityDuplicateException / verify failure 메시지에 이메일/이름 절대 포함하지 않음.
     heads-up 공격 방어. i18n 키로만 처리.

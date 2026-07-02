@@ -3,7 +3,7 @@
  *
  * 본 회차에서 추가한 두 가지 회귀 차단 포인트:
  *  1. 모달 헤더 제목/설명에 `purpose === 'inicis.adult_verification'` 분기 두 쌍 존재
- *  2. if 표현식이 CLAUDE.md 규정 (`{{식}}` 한 쌍 안에 비교 식 전체) 부합
+ *  2. if 표현식이 코어 규정 (`{{식}}` 한 쌍 안에 비교 식 전체) 부합
  *
  * 레이아웃 JSON 파일을 직접 읽어 구조를 단언하는 가벼운 단위 테스트.
  * 코어 DynamicRenderer 환경 셋업 없이도 회귀 차단 가능.
@@ -128,7 +128,7 @@ describe('identity_provider_inicis Extension Point — 본 회차 회귀 차단'
     expect(texts).toContain('$t:sirsoft-verification_kginicis.modal.description');
   });
 
-  it('모든 purpose 분기 if 표현식이 CLAUDE.md 규정 (식 전체를 `{{}}` 한 쌍에) 부합', () => {
+  it('모든 purpose 분기 if 표현식이 코어 규정 (식 전체를 `{{}}` 한 쌍에) 부합', () => {
     const purposeIfs: string[] = [];
 
     for (const root of spec.components) {

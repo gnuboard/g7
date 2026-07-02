@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는(트리 버전 배지 레이아웃+확장 / 버전 기록·복원 / 모달 편집 스크롤 격리) 시나리오 매트릭스 SSoT. 축이 직교(5축)라 full cross product fingerprint 마킹이 실효 없고, 회귀 가드는 test_files 의 통과 테스트(Vitest 단위 18건 + PHPUnit Feature/Unit + Playwright E2E 3건 example.com 실측 + Chrome MCP 9축 매트릭스 라이브 실측 —.claude/history/20260610_1030_*)로 effects 전수를 커버. 편집기 도메인 선례(layout-editor-page-state-switcher/preview-canvas)와 동일 면제 방식.
+# audit:allow test-scenario-coverage reason: 본 매니페스트는(트리 버전 배지 레이아웃+확장 / 버전 기록·복원 / 모달 편집 스크롤 격리) 시나리오 매트릭스 SSoT. 축이 직교(5축)라 full cross product fingerprint 마킹이 실효 없고, 회귀 가드는 test_files 의 통과 테스트(Vitest 단위 18건 + PHPUnit Feature/Unit + Playwright E2E 3건 example.com 실측 + Chrome MCP 9축 매트릭스 라이브 실측 — 내부 검증 이력)로 effects 전수를 커버. 편집기 도메인 선례(layout-editor-page-state-switcher/preview-canvas)와 동일 면제 방식.
 feature: 레이아웃 편집기 라우트 트리 버전 배지 + 모달 편집 캔버스 스크롤 유지
 phase: S9-followup
 session: S9-followup

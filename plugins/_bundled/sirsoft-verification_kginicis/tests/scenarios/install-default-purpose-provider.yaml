@@ -22,7 +22,7 @@ test_files:
   - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Identity/InicisInstallDefaultPurposeProviderTest.php
 
 design_rationale: |
-  PO 결정:
+  설계 결정:
    - 설치 시 1회만 세팅(install 훅), 활성화/업그레이드 시 재적용하지 않음.
    - 운영자 변경 가능(초기값 성격) — 코어 settings 에 저장하므로 환경설정 UI
      (본인인증 > 프로바이더 탭, 목적별 매핑)에서 그대로 변경된다.

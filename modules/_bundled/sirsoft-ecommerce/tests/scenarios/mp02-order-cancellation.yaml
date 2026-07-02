@@ -19,7 +19,7 @@ description: |
       shouldConvertToFullCancel 이 담당(프론트 isFullCancel 휴리스틱 제거).
     - U20③: 취소 차단 메시지를 쿠폰 단정 없이 일반화.
     - U20④: cancelled_at native 컬럼에 전체·부분취소 모두 기록 + Resource 노출(cancelled_at_formatted).
-    - 부분취소 모델 변경(PO 2026-06-22): partial_cancelled 주문 상태를 제거. 부분취소는 별도 상태가 아니라
+    - 부분취소 모델 변경(2026-06-22): partial_cancelled 주문 상태를 제거. 부분취소는 별도 상태가 아니라
       "취소 옵션 + 잔여 활성 옵션 공존"이며, 주문 상태는 잔여 활성 옵션 기준으로 파생(syncParentOrderStatus).
       잔여 항목 재취소는 진행 상태(payment_complete 등)가 취소 가능 목록에 있어 자연 허용. 잔여 전량 취소 시 CANCELLED 전이.
       "일부 취소됨" 표시는 파생 플래그 is_partially_cancelled(취소옵션∧활성옵션)로 노출(목록·상세 보조 배지).

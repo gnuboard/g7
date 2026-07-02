@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 마일리지 기본 통화 사용 규칙 게이트 테스트 (M2)
  *
  * 기본 통화(base_currency)에 대한 마일리지 통화별 사용 단위 규칙이 설정되어 있지 않으면
- * 마일리지 사용이 불가해야 한다(PO 정책).
+ * 마일리지 사용이 불가해야 한다(정책).
  * - isMileageUsable(): base 규칙 존재 시 true, 없으면 false
  * - getMaxUsable(): base 규칙 없으면 0
  * - validateUsage(): base 규칙 없으면 MileageValidationException

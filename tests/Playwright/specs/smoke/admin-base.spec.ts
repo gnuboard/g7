@@ -356,7 +356,7 @@ test('@smoke #399 Phase 1.16 - footer_buttons 의 cancel/save 가 .btn-secondary
   // 행 간격은 부모 .stack 의 gap-4 가 처리하므로 자식의 py-*/pt-*/pb-*/my-*/mt-*/mb-*
   // 는 이중 간격을 만든다. 박스 스타일(bg-/border/rounded/shadow/ring)을 동반한
   // 자식의 전방위 p-*/m-* 는 박스 내부 padding 이므로 보존.
-  // 본 spec 의 보안 탭 #field_login_lockout_time 은 PO 가 직접 지목한 사례 — 수직
+  // 본 spec 의 보안 탭 #field_login_lockout_time 은 검수자가 직접 지목한 사례 — 수직
   // 패딩 토큰이 모두 제거되어 있어야 한다.
   const lockoutField = page.locator('#field_login_lockout_time').first();
   if (await lockoutField.count() > 0) {

@@ -1060,7 +1060,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
       >
         <div
           // 프리뷰 색상 테마 — dark 면 프레임에 `.g7le-preview-dark` 마커 부여.
-          // 종전 `.dark` 는 PO admin 환경의 조상 `html.dark` 와 충돌해 프리뷰 라이트 격리가
+          // 종전 `.dark` 는 관리자 admin 환경의 조상 `html.dark` 와 충돌해 프리뷰 라이트 격리가
           // 깨졌다(조상 어디든 `.dark` 면 Tailwind `dark:` 활성). 코어 CSS 서빙 API(serveEditorCss)
           // 가 편집기용 CSS 의 `.dark` 셀렉터를 이 마커로 치환해 서빙하므로, 프리뷰 프레임의 이
           // 마커만으로 다크가 켜지고 조상 html.dark 와 독립된다(라이트 토글 시 확실히 라이트).

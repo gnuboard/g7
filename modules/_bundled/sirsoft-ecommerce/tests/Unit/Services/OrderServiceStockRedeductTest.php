@@ -98,7 +98,7 @@ class OrderServiceStockRedeductTest extends ModuleTestCase
     public function test_update_to_non_sales_status_is_blocked_by_transition_rule(): void
     {
         // 전이 규칙 도입(A30) 이후: 취소 → 결제 전 상태(결제대기) 복귀는 전이 게이트가 차단한다.
-        // (취소 복원은 판매 반영 상태로만 허용 — PO 2026-06-23.)
+        // (취소 복원은 판매 반영 상태로만 허용 — 2026-06-23.)
         // 차단되므로 update 가 OrderProcessingException 을 던지고, 재차감은 물론 상태/재고 모두 불변.
         [$order, $option] = $this->createCancelledOrderWithRestoredStock(stock: 8, quantity: 3);
 

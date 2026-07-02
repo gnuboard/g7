@@ -4,7 +4,7 @@
  *
  * ConditionBuilder 가 combineConditions 로 만든 단일 `{{ }}` 식이 실제 런타임
  * `evaluateStringCondition`(→ optional chaining 식이라 `evaluateExpression` 진입,
- * CLAUDE.md `if` 평가 규칙)으로 샘플 상태에 따라 표시/숨김 토글되는지 검증한다.
+ * 코어 `if` 평가 규칙)으로 샘플 상태에 따라 표시/숨김 토글되는지 검증한다.
  *
  * 단위 시뮬레이션이 아닌 실제 평가 엔진 라운드트립 — 합성식의 문법 정합성을 잠근다.
  */

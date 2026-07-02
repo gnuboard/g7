@@ -120,7 +120,7 @@ await page.route('https://api.tosspayments.com/v1/payments/confirm', route => ro
 ```
 
 분기별 가맹점 측 처리(주문 상태 전환, 재고 차감, 알림 발송 등) 가 정확한지 검증.
-실 카드 결제 자동화는 권장하지 않음 — PO 수동 검증.
+실 카드 결제 자동화는 권장하지 않음 — 수동 검증.
 
 ## 참고
 

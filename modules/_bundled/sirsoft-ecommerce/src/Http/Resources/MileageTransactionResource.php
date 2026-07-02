@@ -116,7 +116,7 @@ class MileageTransactionResource extends BaseApiResource
      * 행 레벨 능력을 계산합니다.
      *
      * 표준 can_manage 에 더해, 행 편집 메뉴('사유·기간 변경') 게이팅용 can_edit 를 노출합니다.
-     * can_edit = manage 권한 보유 && 적립계 거래 (비적립계 행은 메뉴 비활성 — PO 합의 C-2).
+     * can_edit = manage 권한 보유 && 적립계 거래 (비적립계 행은 메뉴 비활성 — 합의 C-2).
      *
      * @param  Request  $request  HTTP 요청
      * @return array<string, bool> 능력 불리언 맵

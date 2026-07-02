@@ -278,7 +278,7 @@ describe('셀 테두리/텍스트', () => {
       colors: [{ value: 'red', swatch: '#ef4444', token: 'border-red-500' }],
     };
     const paramsCat = { ...params, cellBorder: catalog };
-    // 셀에 두께(border)를 미리 부여 → 색 피커가 즉시 노출(앵커 셀 className 기반). 실제 PO
+    // 셀에 두께(border)를 미리 부여 → 색 피커가 즉시 노출(앵커 셀 className 기반). 실제 운영자
     // 흐름(얇게 선택된 상태)과 동일. (단위 테스트의 onPatchNode mock 은 node prop 을
     // 되먹이지 않아 두께 클릭→리렌더로는 색 피커가 안 떠 별도 셀 className 으로 노출.)
     const bc = (text: string): EditorNode => ({ type: 'basic', name: 'Td', text, props: { className: 'border' } });

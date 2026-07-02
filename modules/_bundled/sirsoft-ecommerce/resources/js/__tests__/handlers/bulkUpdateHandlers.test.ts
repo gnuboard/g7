@@ -1,4 +1,4 @@
-// e2e:allow MP13 — i18n/UX 소품 묶음(라벨 표시·링크 분기·모달 조건부 필드·placeholder 치환). 핵심 회귀는 Vitest(모듈 22 + 템플릿 13)로 커버, 라이브 검수는 계획서 §14 Chrome MCP 매트릭스(PO 환경)로 수행.
+// e2e:allow MP13 — i18n/UX 소품 묶음(라벨 표시·링크 분기·모달 조건부 필드·placeholder 치환). 핵심 회귀는 Vitest(모듈 22 + 템플릿 13)로 커버, 라이브 검수는 계획서 §14 Chrome MCP 매트릭스(검수 환경)로 수행.
 /**
  * bulkUpdateHandlers 테스트
  *

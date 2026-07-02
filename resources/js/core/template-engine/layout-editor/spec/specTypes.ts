@@ -703,9 +703,9 @@ export interface ActionRecipeParamSpec {
  * 치환 결과는 중첩 액션 **배열**이 된다(문자열 보간이 아니라 값 주입).
  */
 export interface ActionBuildTemplate {
-  /** 핸들러명 — CLAUDE.md CRITICAL RULES 의 올바른 핸들러 (navigate/apiCall/...) */
+  /** 핸들러명 — 코어 핸들러 규칙의 올바른 핸들러 (navigate/apiCall/...) */
   handler: string;
-  /** setState 등의 target (top-level — params 안에 두지 않음, CLAUDE.md) */
+  /** setState 등의 target (top-level — params 안에 두지 않음, 코어 규칙) */
   target?: unknown;
   /** apiCall 성공 후속 — `{{paramKey}}`(action-list) 또는 정적 배열 */
   onSuccess?: unknown;

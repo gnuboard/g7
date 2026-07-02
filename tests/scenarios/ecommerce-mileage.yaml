@@ -72,7 +72,7 @@ effects:
   # 소멸 / 탈퇴
   - expire_lots_records_per_item_expired_transaction_with_expired_at
   - expire_lots_decrements_balance_and_is_idempotent_on_rerun
-  - withdrawal_records_expired_activity_log_with_amount_currency_userid_before_delete  # §6.1 PO #8
+  - withdrawal_records_expired_activity_log_with_amount_currency_userid_before_delete  # §6.1 요구 #8
   # 캐시 정합 (§3.5)
   - cache_recalculated_for_user_after_every_balance_changing_path
   - cache_pending_derived_from_order_options_not_ledger

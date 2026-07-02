@@ -155,7 +155,7 @@ design_rationale: |
       주석 명시), 모달 닫힘은 명시적 closeModal 책임. 코어 모달 partial 의 verify 버튼이 이미
       동일 sequence 패턴 사용 — 코어 default 와 일관성.
    2. 사용자 안내 강화 — 기존 "본인인증 시작" 버튼만으로는 사용자가 "왜 이게 뜨지" 의문을 가질 수
-      있어 (PO 피드백), 사전 안내 카드 (아이콘 + 제목 + 설명 + 3단계 절차 안내) 로 확장. Phase E
+      있어 (사용자 피드백), 사전 안내 카드 (아이콘 + 제목 + 설명 + 3단계 절차 안내) 로 확장. Phase E
       폐기 사유 #1 의 "사용자 제스처 확보" 본질은 그대로 유지.
    3. 진행 중 상태 표시 — 팝업이 열린 후 모달이 정적 상태로 남아있어 사용자가 "지금 뭘 해야 하지"
       혼란을 느낄 수 있음. providerInProgress 플래그로 슬롯 if 분기하여 "팝업창에서 진행 중" 스피너
@@ -164,7 +164,7 @@ design_rationale: |
       providerInProgress 만 false 로 set → 모달은 열린 채 시작 버튼이 재활성화되어 사용자가 다시
       시도 가능. 강제 cancelled 처리 시 사용자가 모달 처음부터 다시 열어야 하는 부담 회피.
 
-  옵션 비교 — Phase E′-Redesign 의사결정 (PO 와 검토):
+  옵션 비교 — Phase E′-Redesign 의사결정 (검토):
    - 옵션 1 (사전 안내 모달 + redirect): 페이지 전환 1회 발생, 데스크톱 UX 무거움
    - 옵션 2 (모달 + 팝업 = 본 안): 모달 안에서 완결, 모바일 일반 브라우저 (Safari/Chrome) 도 동일 흐름
      으로 동작 (window.open 이 새 탭으로 열려도 opener 유지 → bridge postMessage 동작)
@@ -178,7 +178,7 @@ design_rationale: |
    - 코어 무수정 + 템플릿 minimal 수정 (모달 partial 에 if 분기 1줄 + 액션 버튼 if 조건 보강)
    - 모달 닫힘 결함만 fix 하면 작업 완결
 
-  PO 피드백 반영 (sirsoft-basic 1.0.0-beta.6):
+  피드백 반영 (sirsoft-basic 1.0.0-beta.6):
    1. 외부 plugin 흐름에서 코어 모달의 [코드 재전송] / [확인] 버튼 숨김 — 외부 plugin 은 자기
       흐름 안에서 verify 까지 책임지므로 코어 액션이 불필요. 코어 mail/SMS 등 코드 발송형
       흐름은 기존대로 노출 (회귀 없음).

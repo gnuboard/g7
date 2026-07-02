@@ -48,7 +48,7 @@ rules_layer_coverage:
     coverage: name/phone/birthday nullable 변경 마이그레이션에 down() (NOT NULL 복귀) + 한국어 comment 포함.
 
 design_rationale: |
-  PO 결정 (부분 데이터 처리 방향):
+  설계 결정 (부분 데이터 처리 방향):
    - 차단 대상 = 신원 핵심값(이름·생년월일·휴대폰·설정 기준 식별값). Chrome MCP 실측(2026-06-23,
      아이핀 채널)에서 이름·휴대폰·생년월일·CI·DI 가 모두 응답에 채워짐을 확인 → 휴대폰도 항상 오는
      핵심값으로 포함. 법규(CI/DI 는 주민/외국인등록번호 기반 → 정상 본인확인이면 제공)·코드(식별값
@@ -61,7 +61,7 @@ design_rationale: |
      휴대폰은 신원 핵심값이라 누락 시 차단 대상 (위 incomplete_identity 케이스에 포함).
    - 토큰 재발급 가드(isVerified enum 비교)는 1번 PR, verify 실패 toast 매핑은 2번 PR 에서 처리됨.
      본 항목은 3번의 신원 가드 + 정합 저장 + INCOMPLETE_IDENTITY toast 1줄 보강.
-   - (저장 원자성 보강) 토큰 발급(log update)과 PII 저장을 한 단위로 묶는다 (PO 결정 A안). PII 저장이
+   - (저장 원자성 보강) 토큰 발급(log update)과 PII 저장을 한 단위로 묶는다 (설계 결정 A안). PII 저장이
      실패하면 토큰 발급까지 롤백하고 STORAGE_FAILED 로 인증을 실패시켜 "인증 성공=PII 저장됨" 무결성을
      보장한다. 로그인 record upsert 는 DB 트랜잭션으로 묶고, 비로그인 cache stash 실패는 트랜잭션 콜백을
      예외 종료시켜 log update 를 롤백한다. 비로그인 가입 backfill(after_register listener)은 record 가

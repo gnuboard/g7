@@ -95,7 +95,7 @@ describe('header-currency-selector-user.json — 헤더 공용 셀렉터 2섹션
   });
 
   it('루트는 if(마운트 게이트) 없이 항상 마운트 + className 으로 기본 hidden 토글 (깜빡임 방지)', () => {
-    // PO 회귀(유저 헤더): if 마운트/언마운트 대신 항상 마운트 + className 기본 hidden(display:none) → 조건 충족 시 해제.
+    // 회귀(유저 헤더): if 마운트/언마운트 대신 항상 마운트 + className 기본 hidden(display:none) → 조건 충족 시 해제.
     expect(root.if).toBeUndefined();
     const cls = root.props?.className ?? '';
     expect(cls).toContain("'hidden'");
@@ -160,7 +160,7 @@ describe('header-currency-selector-admin.json — 관리자 헤더 2섹션', () 
   });
 
   it('루트는 if(마운트 게이트) 없이 항상 마운트 + className 으로 기본 hidden 토글 (깜빡임 방지)', () => {
-    // PO 회귀: if 로 마운트/언마운트하면 첫 페인트에 잠깐 보였다 사라진다.
+    // 회귀: if 로 마운트/언마운트하면 첫 페인트에 잠깐 보였다 사라진다.
     // 항상 마운트하되 className 에 기본 hidden(display:none) 을 깔고 조건 충족 시에만 해제한다.
     expect(root.if).toBeUndefined();
     const cls = root.props?.className ?? '';

@@ -216,7 +216,7 @@ class CommentRepository implements CommentRepositoryInterface
      * 재귀적으로 모든 하위 자손 수를 계산합니다.
      *
      * tombstone(삭제) 댓글은 트리 구조 유지를 위해 노드로는 남기지만,
-     * "답글 N" 집계 모수에서는 제외한다(PO 확정). 단, 삭제 댓글의
+     * "답글 N" 집계 모수에서는 제외한다(확정 정책). 단, 삭제 댓글의
      * 살아있는 하위 자손은 계속 카운트해 누락되지 않게 한다.
      *
      * @param  Collection  $grouped  parent_id로 그룹화된 댓글 컬렉션

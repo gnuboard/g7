@@ -132,7 +132,7 @@ class PostDeleteCascadeTest extends BoardTestCase
     }
 
     /**
-     * 게시글 복원 시 cascade 항목만 복원되고, 사용자가 먼저 지운 것은 trashed 로 유지된다 (PO 우려 차단).
+     * 게시글 복원 시 cascade 항목만 복원되고, 사용자가 먼저 지운 것은 trashed 로 유지된다 (우려 차단).
      *
      * @effects cascaded_comment_restored_on_post_restore,cascaded_attachment_restored_on_post_restore,user_pre_deleted_comment_stays_trashed,user_pre_deleted_attachment_stays_trashed
      */
