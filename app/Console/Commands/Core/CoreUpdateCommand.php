@@ -806,6 +806,7 @@ class CoreUpdateCommand extends Command
         // 페이로드만 보관한다 (각각 UpgradeHandoffException 재구성 / silent skip 가드용).
         $handoffPayload = null;
         $stepsExecuted = null;
+        $stepsDiscovered = null;
         while (! feof($pipes[1])) {
             $line = fgets($pipes[1]);
             if ($line !== false) {
@@ -837,7 +838,13 @@ class CoreUpdateCommand extends Command
                     $decoded = json_decode($json, true);
                     if (is_array($decoded) && isset($decoded['count']) && is_int($decoded['count']) && $decoded['count'] >= 0) {
                         $stepsExecuted = $decoded['count'];
-                        $log('[spawn] 실행된 step 수: '.$stepsExecuted);
+                        // discovered 는 신버전 자식만 발행하는 필드. 구버전 자식(필드 부재)은
+                        // null 로 남아 handleSpawnExit 가 기존(레거시) 판정 경로를 탄다.
+                        if (isset($decoded['discovered']) && is_int($decoded['discovered']) && $decoded['discovered'] >= 0) {
+                            $stepsDiscovered = $decoded['discovered'];
+                        }
+                        $log('[spawn] 실행된 step 수: '.$stepsExecuted
+                            .($stepsDiscovered !== null ? " (발견 {$stepsDiscovered})" : ''));
 
                         continue;
                     }
@@ -852,6 +859,50 @@ class CoreUpdateCommand extends Command
         fclose($pipes[2]);
         $exitCode = proc_close($process);
 
+        return $this->handleSpawnExit(
+            $exitCode,
+            $handoffPayload,
+            $stepsExecuted,
+            $stepsDiscovered,
+            $fromVersion,
+            $toVersion,
+            $log,
+        );
+    }
+
+    /**
+     * spawn 자식 종료 후 exit code · 신호를 해석해 성공/실패/핸드오프를 판정합니다.
+     *
+     * 판정 규칙 (exit=0 경우):
+     *  - `[STEPS_EXECUTED]` 신호 미수신 (`$stepsExecuted === null`) → fail-fast.
+     *    이전 버전 자식 (신호 미발행) 또는 silent skip 의심.
+     *  - executed=0 인데 **discovered>0** → fail-fast. 범위 내에 스텝 파일이 실제로
+     *    존재하는데 자식이 하나도 실행하지 못함 (gnuboard/g7#28 silent skip — 케이스 A).
+     *  - executed=0 이고 **discovered=0** → 정상 통과. 해당 from~to 범위에 스텝 파일이
+     *    애초에 없는 릴리즈 (예: 데이터/설정 변경 없는 패치). from<to 여도 실패 아님 (케이스 B).
+     *  - discovered 신호 부재 (`null`, 구버전 자식) + executed=0 + from<to → 레거시 판정 유지
+     *    (fail-fast). 신버전 자식은 항상 discovered 를 발행하므로 이 경로는 구버전 자식 한정.
+     *
+     * @param  int  $exitCode  자식 프로세스 종료 코드
+     * @param  array|null  $handoffPayload  파싱된 [HANDOFF] 페이로드 (없으면 null)
+     * @param  int|null  $stepsExecuted  실행된 스텝 수 ([STEPS_EXECUTED] 미수신 시 null)
+     * @param  int|null  $stepsDiscovered  범위 내 발견된 스텝 파일 수 (구버전 자식은 null)
+     * @param  string  $fromVersion  업그레이드 시작 버전
+     * @param  string  $toVersion  업그레이드 대상 버전
+     * @param  \Closure  $log  로그 수집 콜백
+     * @return bool spawn 성공 여부 (mode=fallback 실패 시 false — 호출자 in-process fallback)
+     *
+     * @throws UpgradeHandoffException 핸드오프 수신 또는 mode=abort 실패 시
+     */
+    private function handleSpawnExit(
+        int $exitCode,
+        ?array $handoffPayload,
+        ?int $stepsExecuted,
+        ?int $stepsDiscovered,
+        string $fromVersion,
+        string $toVersion,
+        \Closure $log,
+    ): bool {
         if ($exitCode === UpgradeHandoffException::EXIT_CODE && $handoffPayload !== null) {
             $log("spawn 핸드오프 종료 (exit={$exitCode})");
 
@@ -866,9 +917,7 @@ class CoreUpdateCommand extends Command
         }
 
         if ($exitCode === 0) {
-            // silent skip 가드 — 자식이 [STEPS_EXECUTED] 신호를 발행하지 않거나, step 0건
-            // 실행한 채 exit=0 으로 종료한 경우. 이전 버전 자식 (beta.5 이전 디스크) 또는
-            // 자식이 비정상 종료 직전 silent skip 한 상태로 추정. fail-fast 모드 가드 적용.
+            // 신호 미수신 — 이전 버전 자식 (신호 미발행) 또는 silent skip 의심. fail-fast.
             if ($stepsExecuted === null) {
                 return $this->failSpawnWithMode(
                     'spawn 자식이 [STEPS_EXECUTED] 신호 미발행 — 이전 버전 자식 또는 silent skip 의심',
@@ -878,9 +927,27 @@ class CoreUpdateCommand extends Command
                 );
             }
 
-            if ($stepsExecuted === 0 && version_compare($fromVersion, $toVersion, '<')) {
+            // executed=0 + discovered=0 → 범위 내 스텝 파일 부재. 정상 통과 (케이스 B).
+            // 스텝이 필요 없는 릴리즈(데이터/설정 변경 없음)를 실패로 오판하지 않는다.
+            if ($stepsExecuted === 0 && $stepsDiscovered === 0) {
+                $log("spawn 완료 (exit=0, 실행할 스텝 없음 — 범위 내 스텝 파일 부재, from={$fromVersion} to={$toVersion})");
+
+                return true;
+            }
+
+            // executed=0 + (discovered>0 또는 discovered 신호 부재) + from<to → fail-fast.
+            // discovered>0: 스텝 파일이 있는데 자식이 실행 못함 (gnuboard/g7#28 케이스 A).
+            // discovered=null: 구버전 자식 (discovered 미발행) — 레거시 판정 유지.
+            if ($stepsExecuted === 0
+                && $stepsDiscovered !== 0
+                && version_compare($fromVersion, $toVersion, '<')) {
                 return $this->failSpawnWithMode(
-                    sprintf('spawn 자식 exit=0 이지만 step 0건 실행 — 의도된 동작이 아님 (from=%s to=%s)', $fromVersion, $toVersion),
+                    sprintf(
+                        'spawn 자식 exit=0 이지만 step 0건 실행 — 의도된 동작이 아님 (from=%s to=%s%s)',
+                        $fromVersion,
+                        $toVersion,
+                        $stepsDiscovered !== null ? ", 발견 {$stepsDiscovered}건" : '',
+                    ),
                     $log,
                     $fromVersion,
                     $toVersion,

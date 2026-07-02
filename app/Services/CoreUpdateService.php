@@ -1558,8 +1558,9 @@ class CoreUpdateService
      * @param  string  $toVersion  종료 버전
      * @param  \Closure|null  $onStep  각 스텝 실행 시 콜백 (버전 문자열 전달)
      * @param  bool  $force  true 시 fromVersion == toVersion이면 해당 버전 스텝도 포함
+     * @param  \Closure|null  $onDiscovered  범위 내 발견된 스텝 파일 수를 실행 전 1회 통지 (int 전달)
      */
-    public function runUpgradeSteps(string $fromVersion, string $toVersion, ?\Closure $onStep = null, bool $force = false): void
+    public function runUpgradeSteps(string $fromVersion, string $toVersion, ?\Closure $onStep = null, bool $force = false, ?\Closure $onDiscovered = null): void
     {
         // 부모 in-process fallback 진입 시 stale 메모리 가드.
         //
@@ -1597,6 +1598,9 @@ class CoreUpdateService
         $upgradesPath = base_path('upgrades');
 
         if (! File::isDirectory($upgradesPath)) {
+            // upgrades 디렉토리 자체가 없으면 발견된 스텝 0건 — 정상 통지 후 종료.
+            $onDiscovered?->__invoke(0);
+
             return;
         }
 
@@ -1655,6 +1659,12 @@ class CoreUpdateService
         }
 
         uksort($steps, 'version_compare');
+
+        // 범위 내에서 발견된 스텝 파일 수(discovered)를 먼저 통지한다.
+        // 호출자(spawn 자식)는 이 값으로 "스텝 파일이 애초에 없어 0건(정상)" 과 "스텝 파일은
+        // 있는데 실행이 0건(비정상 — gnuboard/g7#28 silent skip)" 을 구분한다. onStep 은 실제 실행
+        // 건마다 호출되므로 executed 수만 세며, discovered 는 실행 전에 1회 통지한다.
+        $onDiscovered?->__invoke(count($steps));
 
         $context = new UpgradeContext($fromVersion, $toVersion);
 

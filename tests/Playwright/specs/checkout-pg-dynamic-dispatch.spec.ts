@@ -20,7 +20,7 @@
  *               라운드트립으로 런타임 동작 검증.
  *             - 백엔드(OrderResponsePaymentHandlerTest.php, 6건 green): provider→응답
  *               pg_payment_handler 매핑, 미선언 시 키 부재.
- *           브라우저 실측은 PG 샌드박스가 구성된 환경에서 PO 가 직접 수행한다.
+ *           브라우저 실측은 PG 샌드박스가 구성된 환경에서 직접 수행한다.
  *
  * 활성화 전 사전 작업:
  *   1. checkout 결제하기 버튼에 data-testid="checkout-submit-order"

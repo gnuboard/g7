@@ -273,7 +273,7 @@ describe('requestPgPayment — placeholder 핸들러 build/match 라운드트립
 
   // 회귀 — "+동작 추가" 로 결제 진입을 고르면 ActionAddPicker 가 buildAction(recipe, {}) 로 빈 값
   // 빌드한다. placeholder 핸들러({{paymentHandler}})가 빈 값에서 undefined 로 떨어져 사라지면
-  // handler 없는 액션이 되어 "알 수 없는 동작"(advanced)으로 강등된다(PO 제보). 빈 빌드에서도
+  // handler 없는 액션이 되어 "알 수 없는 동작"(advanced)으로 강등된다(제보 회귀). 빈 빌드에서도
   // handler placeholder 는 보존돼야 추가 직후 친화 카드로 매칭되고 사용자가 칩으로 채울 수 있다.
   it('빈 값 빌드(+동작 추가) — placeholder 핸들러가 보존되어 handler 가 사라지지 않는다', () => {
     const recipe = recipes.find((r) => r.id === 'requestPgPayment')!;
@@ -290,14 +290,14 @@ describe('requestPgPayment — placeholder 핸들러 build/match 라운드트립
     expect(m?.recipeId).toBe('requestPgPayment');
   });
 
-  // 회귀(PO 제보) — 핸들러 필드를 데이터 칩으로 바꾸고 결제 데이터는 비워두면, buildAction 이
+  // 회귀(제보) — 핸들러 필드를 데이터 칩으로 바꾸고 결제 데이터는 비워두면, buildAction 이
   // 미입력 required pgPaymentData 를 떨궈 params 가 사라진다. 그러면 fingerprint(pgPaymentData)
-  // 가 깨져 친화 카드가 [고급]으로 강등됐다(PO: "변경하니 고급으로 넘어간다"). required placeholder
+  // 가 깨져 친화 카드가 [고급]으로 강등됐다("변경하니 고급으로 넘어간다"). required placeholder
   // param 은 빈 값이어도 토큰을 보존해 fingerprint 를 유지하고, 핸들러를 어떤 칩으로 바꿔도 친화
   // 카드가 유지돼야 한다(핸들러 필드 바인딩 가능성 ↔ greedy 가드 공존).
   it('핸들러를 임의 칩으로 바꾸고 데이터는 비워도 requestPgPayment 친화 카드 유지 (고급 강등 금지)', () => {
     const recipe = recipes.find((r) => r.id === 'requestPgPayment')!;
-    // 핸들러만 데이터 칩으로 채우고 pgPaymentData 는 미입력(빈 값) — PO 시나리오.
+    // 핸들러만 데이터 칩으로 채우고 pgPaymentData 는 미입력(빈 값) — 제보 시나리오.
     const action = buildAction(recipe, { paymentHandler: '{{checkoutData?.data?.temp_order_id}}' });
     // required pgPaymentData 가 토큰으로 보존돼 params 가 살아있어야 한다.
     expect(action.handler).toBe('{{checkoutData?.data?.temp_order_id}}');

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.1] - 2026-07-02
+
+### Added
+
+- 설정 복원 관련 안내 메시지 일본어 번역 추가 (`settings.backup_path_required`·`restore_success`·`restore_failed`·`restore_error`) — 백업 경로 미입력 안내와 설정 복원 성공/실패 결과가 일본어 로케일에서 자연스럽게 표시됩니다.
+
 ## [1.0.0] - 2026-07-01
 
 ### Added

@@ -28,6 +28,23 @@ vi.mock('../template-engine/ActionDispatcher', () => ({
 
 vi.mock('../template-engine/DataBindingEngine', () => ({
   DataBindingEngine: vi.fn(),
+  // @since engine-v1.51.0 __runtime 노출용 싱글톤 인스턴스
+  dataBindingEngine: {},
+}));
+
+// @since engine-v1.51.0 __runtime(편집기 lazy 번들 공유) 노출용 모듈 mock
+vi.mock('../template-engine/DataSourceManager', () => ({
+  DataSourceManager: vi.fn(),
+  dataSourceManager: {},
+}));
+
+vi.mock('../template-engine/DynamicRenderer', () => ({
+  default: () => null,
+}));
+
+vi.mock('../template-engine/ResponsiveManager', () => ({
+  responsiveManager: {},
+  BREAKPOINT_PRESETS: {},
 }));
 
 vi.mock('../template-engine/TransitionContext', () => ({
@@ -36,10 +53,16 @@ vi.mock('../template-engine/TransitionContext', () => ({
 
 vi.mock('../template-engine/TranslationContext', () => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
+  // @since engine-v1.51.0 __runtime 노출용
+  TranslationProvider: () => null,
+  TranslationReactContext: {},
 }));
 
 vi.mock('../template-engine/ResponsiveContext', () => ({
   useResponsive: vi.fn(() => ({ width: 1024, isMobile: false })),
+  // @since engine-v1.51.0 __runtime 노출용
+  ResponsiveProvider: () => null,
+  ResponsiveContext: {},
 }));
 
 vi.mock('../auth/AuthManager', () => ({
@@ -147,6 +170,52 @@ describe('G7CoreGlobals - initializeG7CoreGlobals()', () => {
     (window as any).ReactDOM.unstable_batchedUpdates(callback);
 
     expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  // @since engine-v1.51.0 — 편집기 lazy 번들 공유용 코어 런타임 표면
+  it('window.G7Core.__runtime 에 코어 런타임 표면을 노출해야 함', () => {
+    const deps = createMockDependencies();
+    initializeG7CoreGlobals(deps);
+
+    const runtime = (window as any).G7Core.__runtime;
+    expect(runtime).toBeDefined();
+
+    // 편집기 lazy 번들이 shim 으로 빌려 쓰는 동일성 민감 멤버 전수 노출 확인
+    const requiredKeys = [
+      'DynamicRenderer',
+      'ComponentRegistry',
+      'TranslationEngine',
+      'DataSourceManager',
+      'dataSourceManager',
+      'DataBindingEngine',
+      'dataBindingEngine',
+      'ActionDispatcher',
+      'TranslationReactContext',
+      'TranslationProvider',
+      'useTranslation',
+      'ResponsiveContext',
+      'ResponsiveProvider',
+      'useResponsive',
+      'responsiveManager',
+      'BREAKPOINT_PRESETS',
+      'AuthManager',
+      'createLogger',
+    ];
+    for (const key of requiredKeys) {
+      expect(runtime[key], `__runtime.${key} 미노출`).toBeDefined();
+    }
+  });
+
+  it('__runtime 을 중복 초기화해도 멱등해야 함(동일 참조 유지)', () => {
+    const deps = createMockDependencies();
+    initializeG7CoreGlobals(deps);
+    const first = (window as any).G7Core.__runtime;
+
+    // 재초기화 시 기존 __runtime 참조 보존 (편집기 먼저 로드 시나리오 대비)
+    initializeG7CoreGlobals(deps);
+    const second = (window as any).G7Core.__runtime;
+
+    expect(second).toBe(first);
   });
 });
 

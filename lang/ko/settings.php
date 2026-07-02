@@ -21,6 +21,10 @@ return [
     'backup_success' => '데이터베이스 백업이 성공적으로 시작되었습니다.',
     'backup_failed' => '데이터베이스 백업에 실패했습니다.',
     'backup_error' => '데이터베이스 백업 중 오류가 발생했습니다.',
+    'backup_path_required' => '백업 경로를 입력해주세요.',
+    'restore_success' => '설정이 성공적으로 복원되었습니다.',
+    'restore_failed' => '설정 복원에 실패했습니다.',
+    'restore_error' => '설정 복원 중 오류가 발생했습니다.',
     'save_individual_failed' => '설정 저장에 실패했습니다: :error',
 
     // 앱 키 관련 메시지

@@ -145,4 +145,8 @@ return [
         'source_vendor_missing' => 'ソースディレクトリにvendorがありません。composer installが実行されていない可能性があります。',
         'composer_failed_with_output' => 'composer installの実行に失敗しました。:output',
     ],
+    'backup_path_required' => 'バックアップパスを入力してください。',
+    'restore_success' => '設定が正常に復元されました。',
+    'restore_failed' => '設定の復元に失敗しました。',
+    'restore_error' => '設定の復元中にエラーが発生しました。',
 ];

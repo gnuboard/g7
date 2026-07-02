@@ -776,6 +776,18 @@ php artisan module:update sirsoft-ecommerce --force
 php artisan plugin:update sirsoft-payment --force
 ```
 
+### 코어 3-번들 구조 + 공유 런타임 (engine-v1.51.0+)
+
+`core:build` 는 코어 프론트엔드를 3개 IIFE 번들로 빌드한다:
+
+| 번들 | 로드 시점 | vite config |
+|------|----------|-------------|
+| `template-engine.min.js` | 모든 페이지 (동기 `<script>`) | `vite.config.core.js` |
+| `layout-editor.min.js` | `/admin/layout-editor/*` 진입 시 런타임 주입 | `vite.config.editor.js` |
+| `devtools.min.js` | 디버그 모드에서만 런타임 주입 | `vite.config.devtools.js` |
+
+lazy 번들(편집기/devtools)이 코어 런타임(DynamicRenderer·엔진 싱글톤·React Context·DevTools 코어)을 재사용할 때는 재번들하지 않고 `window.G7Core.__runtime` 을 빌려 쓴다 — React/컨텍스트/싱글톤 인스턴스 동일성이 강제되기 때문(사본이 둘이면 "Invalid hook call"·컨텍스트 미매칭). 메인 번들이 `G7CoreGlobals` 에서 공유 대상을 `G7Core.__runtime` 에 노출하고, lazy 번들 vite config 는 React 4종(`react`/`react-dom`/`react-dom/client`/`react/jsx-runtime`)을 external→window 로, 코어 런타임 모듈을 `resolveId` 플러그인으로 `__runtime-shims/` 로 치환한다.
+
 ### 빌드 명령어 (Artisan)
 
 ```bash

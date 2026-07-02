@@ -164,6 +164,7 @@ class ExecuteUpgradeStepsCommand extends Command
         }
 
         $stepsExecuted = 0;
+        $stepsDiscovered = 0;
 
         try {
             $service->runUpgradeSteps(
@@ -174,6 +175,9 @@ class ExecuteUpgradeStepsCommand extends Command
                     $stepsExecuted++;
                 },
                 $force,
+                function (int $discovered) use (&$stepsDiscovered): void {
+                    $stepsDiscovered = $discovered;
+                },
             );
         } catch (UpgradeHandoffException $e) {
             // 업그레이드 스텝이 새 PHP 프로세스 재진입을 요청했다.
@@ -221,6 +225,7 @@ class ExecuteUpgradeStepsCommand extends Command
         // mode=fallback 시 in-process 진행 (`spawn_failure_mode`).
         $this->line('[STEPS_EXECUTED] '.json_encode([
             'count' => $stepsExecuted,
+            'discovered' => $stepsDiscovered,
             'fromVersion' => $from,
             'toVersion' => $to,
         ], JSON_UNESCAPED_UNICODE));

@@ -85,27 +85,95 @@ class BuildCoreCommand extends Command
      */
     private function buildEngineOnly(string $projectPath, bool $watchMode, bool $productionMode): int
     {
-        $buildCommand = ['npm', 'run'];
-
+        // 감시 모드: 엔진 번들 + 편집기 번들(layout-editor.min.js)을 각각 vite --watch 로
+        // 병렬 감시한다. (기존 dev 서버는 코어 lib 를 빌드하지 않으므로 사용 불가)
         if ($watchMode) {
-            // build:core는 watch 모드가 없으므로 dev 사용
-            $buildCommand[] = 'dev';
-            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (템플릿 엔진)');
+            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (템플릿 엔진 + 레이아웃 편집기)');
             $this->line('   Ctrl+C로 종료할 수 있습니다.');
-        } else {
-            $buildCommand[] = 'build:core';
-            $this->info('🔨 코어 빌드 시작 (템플릿 엔진)'.($productionMode ? ' (프로덕션)' : ''));
+
+            return $this->runWatchBundles($projectPath);
         }
 
-        $result = $this->runNpmCommand($buildCommand, $projectPath, ! $watchMode);
+        // ── 1) 템플릿 엔진 번들 (편집기 코드 제외) ──────────────────────────────
+        $this->info('🔨 코어 빌드 시작 (템플릿 엔진)'.($productionMode ? ' (프로덕션)' : ''));
+        $engineResult = $this->runNpmCommand(['npm', 'run', 'build:core'], $projectPath, true);
 
-        if ($result === Command::SUCCESS && ! $watchMode) {
-            $this->info('✅ 코어 빌드 완료 (템플릿 엔진)');
-            $this->showEngineBuildResults($projectPath);
-            $this->incrementExtensionCacheVersion();
+        if ($engineResult !== Command::SUCCESS) {
+            return $engineResult;
         }
 
-        return $result;
+        // ── 2) 레이아웃 편집기 번들 (lazy, /admin/layout-editor/* 진입 시 로드) ──
+        $this->info('🔨 코어 빌드 시작 (레이아웃 편집기)'.($productionMode ? ' (프로덕션)' : ''));
+        $editorResult = $this->runNpmCommand(['npm', 'run', 'build:core-editor'], $projectPath, true);
+
+        if ($editorResult !== Command::SUCCESS) {
+            $this->error('❌ 레이아웃 편집기 번들 빌드 실패');
+
+            return $editorResult;
+        }
+
+        // ── 3) DevTools 번들 (lazy, 디버그 모드에서만 로드) ──
+        $this->info('🔨 코어 빌드 시작 (DevTools)'.($productionMode ? ' (프로덕션)' : ''));
+        $devtoolsResult = $this->runNpmCommand(['npm', 'run', 'build:core-devtools'], $projectPath, true);
+
+        if ($devtoolsResult !== Command::SUCCESS) {
+            $this->error('❌ DevTools 번들 빌드 실패');
+
+            return $devtoolsResult;
+        }
+
+        $this->info('✅ 코어 빌드 완료 (템플릿 엔진 + 레이아웃 편집기 + DevTools)');
+        $this->showEngineBuildResults($projectPath);
+        $this->incrementExtensionCacheVersion();
+
+        return Command::SUCCESS;
+    }
+
+    /**
+     * 감시 모드에서 엔진 번들 + 편집기 번들을 병렬로 vite --watch 실행합니다.
+     *
+     * @param  string  $projectPath  프로젝트 경로
+     * @return int 명령 실행 결과 코드
+     */
+    private function runWatchBundles(string $projectPath): int
+    {
+        // 엔진 + 편집기 + DevTools 번들을 각각 vite --watch 로 병렬 감시
+        $bundles = [
+            'engine' => ['npm', 'run', 'build:core-watch'],
+            'editor' => ['npm', 'run', 'build:core-editor-watch'],
+            'devtools' => ['npm', 'run', 'build:core-devtools-watch'],
+        ];
+
+        /** @var array<string, Process> $processes */
+        $processes = [];
+
+        foreach ($bundles as $label => $command) {
+            if (PHP_OS_FAMILY === 'Windows') {
+                $command = array_merge(['cmd', '/c'], $command);
+            }
+
+            $process = new Process($command);
+            $process->setWorkingDirectory($projectPath);
+            $process->setTimeout(null);
+            $process->start(function ($type, $buffer) use ($label) {
+                $this->output->write("[{$label}] ".$buffer);
+            });
+
+            $processes[$label] = $process;
+        }
+
+        // 하나라도 실행 중이면 계속 대기 (Ctrl+C 로 종료)
+        do {
+            $anyRunning = false;
+            foreach ($processes as $process) {
+                if ($process->isRunning()) {
+                    $anyRunning = true;
+                }
+            }
+            usleep(100000); // 100ms
+        } while ($anyRunning);
+
+        return Command::SUCCESS;
     }
 
     /**
@@ -155,11 +223,25 @@ class BuildCoreCommand extends Command
 
         $this->line('   빌드 결과:');
 
-        // template-engine.min.js 확인
+        // template-engine.min.js 확인 (일반 페이지 초기 로드 = 이 번들만)
         $engineFile = $corePath.'/template-engine.min.js';
         if (file_exists($engineFile)) {
             $fileSize = number_format(filesize($engineFile) / 1024, 2);
             $this->line("   - template-engine.min.js ({$fileSize} KB)");
+        }
+
+        // layout-editor.min.js 확인 (편집기 lazy 번들, /admin/layout-editor/* 진입 시 로드)
+        $editorFile = $corePath.'/layout-editor.min.js';
+        if (file_exists($editorFile)) {
+            $fileSize = number_format(filesize($editorFile) / 1024, 2);
+            $this->line("   - layout-editor.min.js ({$fileSize} KB, lazy)");
+        }
+
+        // devtools.min.js 확인 (DevTools lazy 번들, 디버그 모드에서만 로드)
+        $devtoolsFile = $corePath.'/devtools.min.js';
+        if (file_exists($devtoolsFile)) {
+            $fileSize = number_format(filesize($devtoolsFile) / 1024, 2);
+            $this->line("   - devtools.min.js ({$fileSize} KB, lazy/debug)");
         }
     }
 

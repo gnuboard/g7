@@ -18,19 +18,21 @@ import * as ReactJSXRuntime from 'react/jsx-runtime';
 import { ComponentRegistry } from './ComponentRegistry';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { ActionDispatcher } from './ActionDispatcher';
-import { DataBindingEngine } from './DataBindingEngine';
+import { DataBindingEngine, dataBindingEngine } from './DataBindingEngine';
+import { DataSourceManager, dataSourceManager } from './DataSourceManager';
+import DynamicRenderer from './DynamicRenderer';
 import { useTransitionState } from './TransitionContext';
-import { useTranslation } from './TranslationContext';
-import { useResponsive } from './ResponsiveContext';
+import { useTranslation, TranslationProvider, TranslationReactContext } from './TranslationContext';
+import { useResponsive, ResponsiveProvider, ResponsiveContext } from './ResponsiveContext';
+import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
 import { WebSocketManager } from '../websocket/WebSocketManager';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
-import { DiagnosticEngine } from '../devtools/DiagnosticEngine';
-import { getServerConnector } from '../devtools/ServerConnector';
-import { DevToolsPanel } from '../devtools/ui/DevToolsPanel';
-import { getStyleTracker } from '../devtools/StyleTracker';
+// DiagnosticEngine/ServerConnector/StyleTracker/DevToolsPanel 은 정적 import 하지 않는다 —
+// 디버그 전용 무거운 모듈은 별도 lazy 번들(devtools.min.js)로 분리되어 initDevToolsAPI() 가
+// isEnabled() 참일 때만 런타임 <script> 주입으로 로드한다. @since engine-v1.52.0
 import type { DiagnosticCategory } from '../devtools/types';
 import {
   renderItemChildren,
@@ -743,6 +745,70 @@ function initComponentEventSystem(G7Core: any): void {
   };
 
   logger.log('전역 객체 window.G7Core.componentEvent에 노출됨');
+}
+
+/**
+ * 코어 런타임 표면을 `window.G7Core.__runtime` 으로 노출 — 편집기 lazy 번들 공유용.
+ *
+ * @since engine-v1.51.0
+ *
+ * 레이아웃 편집기 셸은 별도 번들(`layout-editor.min.js`)로 지연 로드된다(메인 번들 비대화
+ * 회피). 편집기는 코어 런타임의 렌더러/엔진/컨텍스트를 재사용해야 하는데, 이때 **동일 인스턴스
+ * 동일성**이 강제된다:
+ *
+ * - `getInstance()` 싱글톤(TranslationEngine 등)을 편집기 번들이 재번들하면 편집기 사본의
+ *   싱글톤이 메인 번들과 fork → 번역/데이터소스 상태가 어긋난다.
+ * - React Context(TranslationReactContext/ResponsiveContext 등)를 재번들하면 `createContext()`
+ *   가 두 번 실행돼 Context 객체 참조가 달라짐 → 편집기의 `useContext` 가 빈 값을 읽는다.
+ * - `DynamicRenderer` 는 사실상 코어 런타임 전체(ActionDispatcher/DataBindingEngine/모든
+ *   Context/sortable)를 끌어오므로, 재번들 시 코어 대부분이 편집기 번들에 중복된다.
+ *
+ * 이를 막기 위해 메인 번들이 이 런타임 표면을 `G7Core.__runtime` 에 노출하고, 편집기 빌드는
+ * `resolve.alias` 로 `../DynamicRenderer` 등 상대 경로를 `G7Core.__runtime` 재export shim 으로
+ * 치환한다(편집기 소스는 무수정). 결과적으로 편집기 번들은 코어 런타임을 0바이트 중복으로
+ * **빌려 쓰고**, 싱글톤/컨텍스트 동일성이 자동 보장된다.
+ *
+ * 메인 `<script>` 는 동기 선행 실행되므로, 편집기 IIFE 가 실행될 때 `__runtime` 은 항상 존재한다.
+ *
+ * @param G7Core - window.G7Core 전역 객체
+ */
+function initCoreRuntimeExports(G7Core: any): void {
+  // 이미 노출돼 있으면 멱등 (중복 init 방지)
+  if (G7Core.__runtime) return;
+
+  // 노출 대상 = 편집기가 layout-editor/ 밖으로 직접 import 하는 11개 모듈의 런타임 값만.
+  // (Slot/Transition Provider 는 편집기가 직접 import 하지 않고 메인 번들 renderTemplate 이
+  //  wrapping 하므로 __runtime 미포함. DynamicRenderer 내부의 Slot/Transition 의존은 메인 번들
+  //  DynamicRenderer 에 이미 번들돼 있어 별도 공유 불필요.)
+  G7Core.__runtime = {
+    // 렌더러 (default export) — 프리뷰 캔버스
+    DynamicRenderer,
+    // 엔진/레지스트리 클래스 (getInstance 싱글톤)
+    ComponentRegistry,
+    TranslationEngine,
+    DataSourceManager,
+    dataSourceManager,
+    DataBindingEngine,
+    dataBindingEngine,
+    ActionDispatcher,
+    // 번역 컨텍스트 (Context 객체 동일성 필수)
+    TranslationReactContext,
+    TranslationProvider,
+    useTranslation,
+    // 반응형 컨텍스트/매니저
+    ResponsiveContext,
+    ResponsiveProvider,
+    useResponsive,
+    responsiveManager,
+    BREAKPOINT_PRESETS,
+    // 인증/로거
+    AuthManager,
+    createLogger,
+    // DevTools 추적 코어 (디버그 lazy 번들이 패널/진단엔진에서 공유) @since engine-v1.52.0
+    G7DevToolsCore,
+  };
+
+  logger.log('전역 객체 window.G7Core.__runtime(코어 런타임 표면)에 노출됨');
 }
 
 /**
@@ -3032,6 +3098,9 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
 
   const G7Core = (window as any).G7Core;
 
+  // 코어 런타임 표면 노출 (편집기 lazy 번들이 __runtime 재export shim 으로 공유)
+  initCoreRuntimeExports(G7Core);
+
   // 각 API 그룹 초기화
   initComponentEventSystem(G7Core);
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
@@ -3679,6 +3748,86 @@ export function initDevToolsInterface(): void {
  * G7DevTools.server.dumpState()
  * ```
  */
+/**
+ * DevTools 디버그 전용 모듈(패널 UI/진단엔진/서버커넥터/스타일추적기)의 lazy 번들 타입.
+ * @since engine-v1.52.0
+ */
+interface DevToolsBundle {
+  DiagnosticEngine: any;
+  getServerConnector: () => any;
+  getStyleTracker: () => any;
+  DevToolsPanel: any;
+}
+
+let devToolsBundleLoadPromise: Promise<DevToolsBundle> | null = null;
+
+/**
+ * DevTools lazy 번들(devtools.min.js)을 로드하고 디버그 전용 모듈 4종을 반환한다.
+ *
+ * @since engine-v1.52.0
+ *
+ * 디버그 모드에서만 호출된다. 이미 로드됨(멱등)/진행 중(in-flight 병합)/미로드(1회 주입)
+ * 를 구분한다.
+ *
+ * @returns DevTools 디버그 전용 모듈 묶음
+ * @throws {Error} 스크립트 로드 실패 또는 모듈 미노출 시
+ */
+export function loadDevToolsBundle(): Promise<DevToolsBundle> {
+  const G7Core = (window as any).G7Core;
+
+  if (G7Core?.__devtools) {
+    return Promise.resolve(G7Core.__devtools as DevToolsBundle);
+  }
+  if (devToolsBundleLoadPromise) {
+    return devToolsBundleLoadPromise;
+  }
+
+  devToolsBundleLoadPromise = new Promise<DevToolsBundle>((resolve, reject) => {
+    const src = (window as any).G7Config?.coreDevToolsAsset || '/build/core/devtools.min.js';
+    const scriptId = 'g7-devtools-bundle';
+
+    const onReady = () => {
+      const bundle = (window as any).G7Core?.__devtools;
+      if (bundle) {
+        resolve(bundle as DevToolsBundle);
+      } else {
+        reject(new Error('DevTools 번들 로드됨 — 그러나 __devtools 미노출'));
+      }
+    };
+
+    (window as any).G7Core = (window as any).G7Core || {};
+    (window as any).G7Core.__onDevToolsReady = onReady;
+
+    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener('load', onReady, { once: true });
+      existing.addEventListener(
+        'error',
+        () => reject(new Error(`DevTools 번들 로드 실패: ${src}`)),
+        { once: true }
+      );
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = src;
+    script.async = false;
+    script.addEventListener('load', onReady, { once: true });
+    script.addEventListener(
+      'error',
+      () => {
+        devToolsBundleLoadPromise = null;
+        reject(new Error(`DevTools 번들 로드 실패: ${src}`));
+      },
+      { once: true }
+    );
+    document.head.appendChild(script);
+  });
+
+  return devToolsBundleLoadPromise;
+}
+
 export function initDevToolsAPI(): void {
   const G7Core = (window as any).G7Core;
   if (!G7Core) {
@@ -3688,7 +3837,7 @@ export function initDevToolsAPI(): void {
   const devToolsCore = G7DevToolsCore.getInstance();
   devToolsCore.initialize();
 
-  // DevTools가 비활성화된 경우 최소 API만 노출
+  // DevTools가 비활성화된 경우 최소 API만 노출 (devtools.min.js 미로드 — 초기 payload 절감)
   if (!devToolsCore.isEnabled()) {
     (window as any).G7DevTools = {
       isEnabled: () => false,
@@ -3701,6 +3850,31 @@ export function initDevToolsAPI(): void {
     logger.log('G7DevTools 비활성화됨 (디버그 모드 꺼짐)');
     return;
   }
+
+  // 디버그 모드 — DevTools lazy 번들 로드 후 전체 API 활성화 (fire-and-forget)
+  void setupDevToolsWhenEnabled(G7Core, devToolsCore);
+}
+
+/**
+ * 디버그 모드에서 DevTools lazy 번들을 로드하고 전체 API 를 활성화한다.
+ *
+ * @since engine-v1.52.0
+ *
+ * @param G7Core - window.G7Core 전역 객체
+ * @param devToolsCore - G7DevToolsCore 싱글톤 인스턴스
+ */
+async function setupDevToolsWhenEnabled(G7Core: any, devToolsCore: any): Promise<void> {
+  let bundle: DevToolsBundle;
+  try {
+    bundle = await loadDevToolsBundle();
+  } catch (error) {
+    logger.warn('DevTools 번들 로드 실패 — 최소 API 로 폴백:', error);
+    (window as any).G7DevTools = { isEnabled: () => false, enable: () => {} };
+    flushEarlyLogs();
+    return;
+  }
+
+  const { DiagnosticEngine, getServerConnector, getStyleTracker } = bundle;
 
   // G7Core.devTools 인터페이스 초기화 (renderItemChildren 등에서 사용)
   initDevToolsInterface();
@@ -3976,8 +4150,8 @@ export function initDevToolsAPI(): void {
 
   logger.log('G7DevTools 전역 객체 초기화 완료 (window.G7DevTools)');
 
-  // DevToolsPanel UI 렌더링
-  renderDevToolsPanel();
+  // DevToolsPanel UI 렌더링 (lazy 번들에서 로드한 컴포넌트 전달)
+  renderDevToolsPanel(bundle.DevToolsPanel);
 }
 
 /**
@@ -3985,8 +4159,10 @@ export function initDevToolsAPI(): void {
  *
  * 별도의 DOM 컨테이너를 생성하여 메인 앱과 독립적으로 렌더링합니다.
  * 디버그 모드가 활성화된 경우에만 렌더링됩니다.
+ *
+ * @param DevToolsPanel - lazy 번들(devtools.min.js)에서 로드한 패널 컴포넌트
  */
-function renderDevToolsPanel(): void {
+function renderDevToolsPanel(DevToolsPanel: any): void {
   // 이미 렌더링되어 있으면 스킵
   if (document.getElementById('g7-devtools-root')) {
     logger.log('DevToolsPanel 이미 렌더링됨');

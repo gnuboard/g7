@@ -5,6 +5,11 @@
     "scripts": {
         "build": "vite build",
         "build:core": "vite build --config vite.config.core.js",
+        "build:core-editor": "vite build --config vite.config.editor.js",
+        "build:core-devtools": "vite build --config vite.config.devtools.js",
+        "build:core-watch": "vite build --config vite.config.core.js --watch",
+        "build:core-editor-watch": "vite build --config vite.config.editor.js --watch",
+        "build:core-devtools-watch": "vite build --config vite.config.devtools.js --watch",
         "dev": "vite",
         "test": "vitest",
         "test:ui": "vitest --ui",

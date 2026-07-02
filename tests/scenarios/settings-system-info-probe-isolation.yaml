@@ -1,0 +1,41 @@
+# audit:allow test-scenario-coverage reason: axes cross product 중 의미적으로 핵심인 격리/폴백/전체성공 케이스만 docblock 매핑. probe_item 축의 각 항목(os_info/cpu_info/memory_usage/disk_usage 등)은 모두 동일한 safeSystemProbe 격리 경로를 타므로 cpu_info 1건으로 대표 검증(나머지는 형식적 확장). E2E axis 없음 — 순수 백엔드 JSON API 로 레이아웃/프론트 렌더 변경 없음.
+
+feature: 관리자 시스템 정보(system-info) probe 실패 격리
+
+description: |
+  `GET /api/admin/settings/system-info` 는 OS·CPU·메모리·디스크·PHP 확장·DB 등
+  여러 시스템 정보를 수집한다. 이 중 일부 probe (php_uname / shell_exec / disk_*_space
+  등) 는 호스팅의 disable_functions / open_basedir 제약으로 예외·Error 를 던질 수 있다.
+
+  SettingsService::safeSystemProbe 가 각 항목 수집을 개별 격리하여, 한 항목의 실패가
+  전체 API 를 500 으로 떨어뜨리지 않고 해당 항목만 'unknown'(사용량 배열은 percentage 0)
+  폴백으로 채우도록 한다. 개별 실패는 Log::warning, 격리를 뚫은 전체 실패는 컨트롤러
+  Log::error 로 기록된다.
+
+  공개 이슈 gnuboard/g7#59 의 회귀 가드 — 공개 #40(대시보드 리소스 API) 격리가
+  DashboardService 에만 적용되고 SettingsService::buildSystemInfo 에는 disk 한 곳만
+  부분 보강되어, CPU/메모리 등 다른 probe 로 재발한 결함의 재발 차단.
+
+axes:
+  probe_item: [cpu_info, os_info, memory_usage, disk_usage, php_memory_limit, mysql_version]
+  probe_outcome: [success, throws_error, throws_exception]
+  auth_state: [authenticated_with_permission, authenticated_without_permission, unauthenticated]
+
+exclusions:
+  - { probe_item: os_info, probe_outcome: throws_exception, reason: "각 probe_item 은 동일 safeSystemProbe 경로 — cpu_info 대표 검증으로 커버, 나머지는 형식적 확장" }
+  - { auth_state: unauthenticated, probe_outcome: throws_error, reason: "인증 가드가 probe 실행 전에 401/403 으로 차단 — probe_outcome 과 무관" }
+
+effects:
+  - failing_probe_isolated_and_api_returns_200
+  - failed_item_filled_with_unknown_fallback
+  - usage_array_fallback_keeps_total_used_free_unknown_and_percentage_zero
+  - all_probes_success_returns_full_payload
+  - unauthenticated_returns_401
+  - without_permission_returns_403
+
+# E2E axis 없음: system-info 는 순수 백엔드 JSON API. 레이아웃 JSON / 컴포넌트 TSX /
+# 엔진 TS / 핸들러 변경이 없으므로 Playwright spec 동반 의무(frontend-change-requires-e2e)
+# 대상 아님. 격리 검증의 본체는 Feature/Unit 테스트가 담당.
+
+test_files:
+  - tests/Feature/Api/Admin/SettingsControllerTest.php
