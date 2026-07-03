@@ -28,6 +28,14 @@ description: |
   세분화. 범위 내 스텝 파일이 애초에 없어 0건인 경우(discovered=0)를 정상 통과로 재분류하여,
   스텝이 필요 없는 패치 릴리즈(예: 7.0.0→7.0.1) 를 실패로 오판하던 결함을 차단.
 
+  재실행 권한 안내 (§8, resume_exec_context 축): spawn 자식 실패로 스텝이 미실행 상태로
+  남으면 운영자에게 `core:execute-upgrade-steps` 재실행을 안내한다. sudo(root) 로 실행 중이면
+  안내받은 명령을 root 로 그대로 재실행할 경우 스텝 생성 파일이 root 소유가 되어 이후 웹서버
+  요청이 쓰기 실패한다. 실행 사용자(root 여부) × 웹서버 계정 식별성으로 4분기 안내:
+  non_root(명령만) / root_web_known(sudo -u {계정} + 경고) / root_web_symmetric(root 서비스
+  구성, 명령만) / root_web_unknown(placeholder + 계정명 미상 경고). 공유 호스팅에서 웹서버·
+  PHP·실행 유저가 동일하면 non_root 로 처리된다.
+
 axes:
   spawn_branch: [proc_open_disabled, proc_open_resource_fail, child_abnormal_exit, child_silent_skip_no_signal, child_zero_steps_with_discovered, child_zero_steps_no_step_files]
   spawn_failure_mode: [abort, fallback]
@@ -39,6 +47,7 @@ axes:
   upgrade_step_v_one_pattern: [app_service_call, app_manager_call, app_repository_call, local_only]
   audit_allow_inline: [present, absent]                              # 면제 주석 적용 여부
   symlink_target_state: [valid, broken, windows_no_privilege]        # symlink 보존 분기 (§1 연동)
+  resume_exec_context: [non_root, root_web_known, root_web_symmetric, root_web_unknown]  # 핸드오프 재실행 권한 안내 분기 (실행 사용자 × 웹서버 계정 식별성)
 
 exclusions:
   - { spawn_branch: proc_open_disabled, parent_memory_version: equal_to_to, reason: "proc_open 비활성 시점에 부모는 항상 fromVersion 메모리 — equal 케이스 시뮬 불가" }
@@ -83,10 +92,16 @@ effects:
   - upgrade_step_vone_safety_warns_on_app_manager_call_in_upgrade_step
   - upgrade_step_vone_safety_warns_on_app_repository_call_in_upgrade_step
   - upgrade_step_vone_safety_skips_when_audit_allow_inline_present
+  # §8 핸드오프 재실행 권한 안내 (sudo/root × 웹서버 계정 식별성 4분기)
+  - renderResumeGuidance_non_root_prints_command_verbatim_without_permission_warning
+  - renderResumeGuidance_root_web_known_prefixes_sudo_u_and_warns_with_account_name
+  - renderResumeGuidance_root_web_symmetric_prints_command_verbatim
+  - renderResumeGuidance_root_web_unknown_uses_placeholder_and_generic_warning
 
 test_files:
   - tests/Feature/Console/CoreUpdateCommandSpawnFailureTest.php
   - tests/Feature/Console/CoreUpdateCommandHandoffTest.php
+  - tests/Feature/Console/CoreUpdateResumeGuidanceTest.php
   - tests/Feature/Upgrades/MultiVersionUpgradePathTest.php
   - tests/Unit/Extension/Helpers/FilePermissionHelperSymlinkTest.php
 
