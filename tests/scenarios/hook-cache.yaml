@@ -1,0 +1,67 @@
+feature: 정적 훅 매핑 캐시 (Static Hook Cache)
+
+description: |
+  서빙 API 부팅 비용 최적화. 매 요청 코어(app/Listeners 재귀 스캔) + 모듈/플러그인
+  (getHookListeners) 정적 훅 리스너의 발견·리플렉션·getSubscribedHooks() 클래스 로딩을
+  bootstrap/cache/hooks.php 캐시로 제거한다.
+
+  핵심 동작:
+    - 캐시 우선 등록: registerCoreHookListenersFromCache / registerExtensionHookListenersFromCache
+      가 존재하면 스캔·리플렉션 없이 사전 계산 매핑으로 등록
+    - 바이트 동일 게이트: HookListenerRegistrar::registerFromCache 가 register 와 동일한
+      applySubscribedHooks 에 위임 → 훅 매핑(이름·우선순위·콜백 수) 완전 일치, 발화 누락 0
+    - 안전 폴백: 캐시 부재/손상/구조 불일치/테스트 환경에서 기존 스캔 경로로 폴백
+    - 동적 훅(알림)은 캐시 대상 아님 — dynamic 플래그만 저장하여 boot 후반부 지연 실행 순서 유지.
+      getAllActive() 는 이미 ['notification'] 태그 캐시라 캐시 히트 시 DB 조회 0
+    - 재생성(무효화=재생성): 확장 install/update → updateComposerAutoload,
+      코어 업데이트 → clearAllCaches → extension:update-autoload, 코어 리스너 배포 → hooks:cache
+
+# registration 축(cache_state·registration_source·listener_type)과 regeneration_trigger 는
+# 상호 직교 관심사(등록 시점 vs 재생성 시점)라 full cross product 는 인위적 조합을 만든다.
+# pairwise 로 모든 축 값 쌍을 커버하되 케이스 수를 실측 검증 가능한 범위로 유지한다.
+coverage_strategy: pairwise
+
+axes:
+  cache_state: [absent, present_valid, corrupted_broken_structure, present_but_testing_env]
+  registration_source: [core, module, plugin]
+  listener_type: [action_queued, action_sync, filter, dynamic]
+  regeneration_trigger: [extension_update, core_update, hooks_cache_command, hooks_clear_command]
+
+exclusions:
+  - { cache_state: present_but_testing_env, registration_source: core, reason: "테스트 환경은 항상 스캔 폴백 — 캐시 경로 미진입 (registration_source 무관)" }
+  - { listener_type: dynamic, registration_source: module, reason: "동적 훅(registerDynamicHooks)은 코어 NotificationHookListener 전용 — 모듈/플러그인 매니저는 동적 훅 미처리" }
+  - { listener_type: dynamic, registration_source: plugin, reason: "동일 — 동적 훅은 코어 boot 후반부 전용" }
+  - { regeneration_trigger: hooks_clear_command, cache_state: absent, reason: "이미 부재 상태 clear 는 무동작 성공 (route:clear 동형)" }
+
+effects:
+  # 바이트 동일 게이트 (발화 누락 0)
+  - cache_path_registration_byte_identical_to_scan_path
+  - cache_registered_action_dispatches_queue_job
+  - cache_registered_sync_action_executes_immediately
+  - cache_registered_filter_executes_synchronously_and_returns_value
+  # 안전 폴백
+  - absent_cache_falls_back_to_scan_registration
+  - corrupted_cache_returns_null_and_falls_back_to_scan
+  - testing_env_always_scans_ignoring_cache_file
+  # 동적 훅
+  - dynamic_listener_flagged_in_core_cache
+  - dynamic_flagged_listener_deferred_to_boot_tail_like_scan_path
+  - notification_getAllActive_cache_hit_issues_zero_db_query
+  # 캐시 생성 구조
+  - generate_produces_three_bucket_cache_core_modules_plugins
+  - each_cache_entry_has_listener_hooks_and_dynamic_keys
+  - listener_class_not_autoloaded_at_boot_when_registered_from_cache
+  # 재생성 (무효화=재생성)
+  - extension_update_regenerates_hook_cache_via_updateComposerAutoload
+  - core_update_regenerates_hook_cache_via_clearAllCaches_extension_update_autoload
+  - hooks_cache_command_generates_cache_file
+  - hooks_clear_command_removes_cache_file
+  - hooks_clear_is_safe_when_cache_absent
+  - removed_core_listener_dropped_from_cache_after_regeneration
+
+test_files:
+  - tests/Unit/Extension/HookCacheManagerTest.php
+  - tests/Unit/Extension/HookListenerRegistrarTest.php
+  - tests/Feature/Console/HooksCacheCommandTest.php
+  - tests/Unit/Services/NotificationDefinitionServiceTest.php
+  - tests/Unit/Extension/InstallerCompletedGuardTest.php

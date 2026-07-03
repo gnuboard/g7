@@ -34,7 +34,9 @@ class HookListenerRegistrar
     /**
      * 리스너 클래스를 HookManager에 등록합니다.
      *
-     * 동일 source + listenerClass 조합이 이미 등록된 경우 skip (idempotent).
+     * 런타임에 $listenerClass::getSubscribedHooks() 를 호출해 구독 훅을 조회한 뒤
+     * 등록한다. 동일 source + listenerClass 조합이 이미 등록된 경우 skip (idempotent).
+     * 사전 계산된 캐시 매핑으로 등록하려면 registerFromCache() 를 사용한다.
      *
      * @param  string  $listenerClass  HookListenerInterface 구현 클래스의 FQCN
      * @param  string|null  $source  등록 출처 (로그용: 'core', 모듈/플러그인 식별자)
@@ -45,14 +47,10 @@ class HookListenerRegistrar
         if (isset(self::$registered[$key])) {
             return; // 동일 PHP process 내 중복 등록 방지
         }
-        self::$registered[$key] = true;
 
         try {
             $subscribedHooks = $listenerClass::getSubscribedHooks();
         } catch (\Throwable $e) {
-            // 실패 시 캐시 롤백하여 재시도 가능 상태 유지
-            unset(self::$registered[$key]);
-
             Log::error('훅 리스너 등록 실패: getSubscribedHooks() 오류', [
                 'listener' => $listenerClass,
                 'source' => $source,
@@ -61,6 +59,49 @@ class HookListenerRegistrar
 
             return;
         }
+
+        self::applySubscribedHooks($listenerClass, $subscribedHooks, $source);
+    }
+
+    /**
+     * 캐시된 구독 훅 매핑으로 리스너를 등록합니다 (클래스 로딩 없음).
+     *
+     * bootstrap/cache/hooks.php 에서 읽어온 사전 계산 getSubscribedHooks() 결과를
+     * 그대로 받아 HookManager 에 등록한다. register() 와 달리 $listenerClass::getSubscribedHooks()
+     * 를 호출하지 않으므로 리스너 클래스가 부팅 시점에 오토로딩되지 않는다 —
+     * 실제 클래스 로딩은 훅 발화 시 클로저 내부 app($listenerClass) 에서 지연 수행된다.
+     *
+     * 등록 결과(HookManager 훅 매핑)는 register() 스캔 경로와 바이트 동일해야 한다
+     * (동일 applySubscribedHooks 위임).
+     *
+     * @param  string  $listenerClass  리스너 FQCN
+     * @param  array<string, array<string, mixed>>  $subscribedHooks  사전 계산된 getSubscribedHooks() 결과
+     * @param  string|null  $source  등록 출처 ('core', 모듈/플러그인 식별자)
+     */
+    public static function registerFromCache(string $listenerClass, array $subscribedHooks, ?string $source = null): void
+    {
+        $key = ($source ?? 'unknown').'::'.$listenerClass;
+        if (isset(self::$registered[$key])) {
+            return; // 동일 PHP process 내 중복 등록 방지 (스캔 경로와 동일 계약)
+        }
+
+        self::applySubscribedHooks($listenerClass, $subscribedHooks, $source);
+    }
+
+    /**
+     * 구독 훅 배열을 HookManager 에 등록합니다 (스캔/캐시 경로 공통).
+     *
+     * register()(런타임 getSubscribedHooks 호출)와 registerFromCache()(캐시 읽기)가
+     * 이 메서드에 위임하여 등록 결과의 동일성을 보장한다.
+     *
+     * @param  string  $listenerClass  리스너 FQCN
+     * @param  array<string, array<string, mixed>>  $subscribedHooks  구독 훅 매핑
+     * @param  string|null  $source  등록 출처
+     */
+    private static function applySubscribedHooks(string $listenerClass, array $subscribedHooks, ?string $source): void
+    {
+        $key = ($source ?? 'unknown').'::'.$listenerClass;
+        self::$registered[$key] = true;
 
         foreach ($subscribedHooks as $hookName => $config) {
             $method = $config['method'] ?? 'handle';

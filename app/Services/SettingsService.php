@@ -7,6 +7,7 @@ use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
 use App\Http\Resources\AttachmentResource;
+use App\Support\ConfigCacheHelper;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -32,11 +33,14 @@ class SettingsService
      * 시스템 설정 캐시를 무효화합니다.
      *
      * 설정 저장 시 4곳에서 중복되던 로직을 단일 메서드로 통합했습니다.
+     * config 캐시는 clear 후 즉시 재생성한다(ConfigCacheHelper). config:clear 만
+     * 하면 config:cache 가 비워진 채 재생성되지 않아 이후 모든 요청이 config 파일을
+     * 재파싱하는 성능 손실이 발생하기 때문이다.
      */
     private function invalidateSettingsCache(): void
     {
         $this->cache->forget('settings.system');
-        Artisan::call('config:clear');
+        ConfigCacheHelper::rebuild();
     }
 
     /**
@@ -903,9 +907,11 @@ class SettingsService
             }
 
             Artisan::call('cache:clear');
-            Artisan::call('config:clear');
             Artisan::call('route:clear');
             Artisan::call('view:clear');
+
+            // config 는 clear 후 즉시 재생성 (비운 채 두면 이후 모든 요청이 config 재파싱).
+            ConfigCacheHelper::rebuild();
 
             return true;
         } catch (\Exception $e) {
@@ -952,7 +958,8 @@ class SettingsService
             $envContent = preg_replace('/^APP_KEY=.*/m', 'APP_KEY='.$newKey, $envContent);
             file_put_contents($envPath, $envContent);
 
-            Artisan::call('config:clear');
+            // .env 변경 반영 + config 캐시 재생성 (clear 만 하면 캐시 비활성 상태로 잔존).
+            ConfigCacheHelper::rebuild();
 
             return [
                 'success' => true,

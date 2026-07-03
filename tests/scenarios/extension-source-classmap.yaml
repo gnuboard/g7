@@ -1,0 +1,61 @@
+# audit:allow test-scenario-coverage reason: lifecycle_event 축(install/update/uninstall/core_update/activate)은 FQCN 추출·classmap 상태 축과 직교하는 재생성 관심사라 cross product 가 인위적. 재생성 효과는 test_files 의 HooksCacheCommandTest(extension:update-autoload 재생성) + ExtensionManagerComposerTest 가 커버하고, FQCN/classmap/vendor격리는 ExtensionSourceClassmapTest 가 per-case 커버. effects 전량은 아래 @effects 마킹으로 검증.
+coverage_strategy: pairwise
+
+feature: 확장 소스 classmap (Extension Source Classmap / B2)
+
+description: |
+  서빙 API 부팅 비용 최적화. 확장 소스 클래스(Modules\*, Plugins\*)를 autoload-extensions.php 의
+  src_classmap 에 사전 계산(FQCN → 경로)하여 진입점에서 ClassLoader::addClassMap() 으로 등록한다.
+  findFile 이 파일시스템 스캔(is_dir/file_exists stat) 없이 in-memory 맵에서 즉시 경로를 반환
+  → cold OPcache / 느린 파일시스템 환경의 findFile 비용 제거.
+
+  핵심 동작:
+    - buildSourceClassmap: PSR-4 디렉토리 재귀 스캔 + 토큰 기반 FQCN 추출(class/interface/trait/enum)
+    - 소스 클래스만 대상 — 서드파티 vendor 는 각 확장 vendor/autoload.php(별도 ClassLoader) 격리 유지
+    - 지연 로드: classmap 은 경로만 제공, include 는 실제 사용 시점 (매 요청 전량 로드 아님)
+    - PSR-4 폴백 보존: classmap 미포함 클래스는 기존 PSR-4 경로로 폴백 (안전망)
+    - 재생성: psr4 와 동일 생명주기 — install/update/uninstall → updateComposerAutoload,
+      코어 업데이트 → extension:update-autoload. activate/deactivate 는 autoload 미수정
+      (collectAutoloads 가 설치된 전체 포함 → 비활성도 이미 맵에 존재)
+
+axes:
+  declaration_kind: [class, interface, trait, enum]
+  extension_type: [module, plugin]
+  classmap_state: [present_hit, absent_psr4_fallback, path_outside_namespace]
+  lifecycle_event: [install, update, uninstall, activate_no_regen, core_update]
+
+exclusions:
+  - { classmap_state: path_outside_namespace, declaration_kind: interface, reason: "네임스페이스 불일치 제외는 선언 종류 무관 — class 케이스로 대표" }
+  - { classmap_state: path_outside_namespace, declaration_kind: trait, reason: "동일" }
+  - { classmap_state: path_outside_namespace, declaration_kind: enum, reason: "동일" }
+  - { lifecycle_event: activate_no_regen, classmap_state: absent_psr4_fallback, reason: "활성화는 autoload 미수정 — classmap 상태 무관(이미 설치 시 생성됨)" }
+
+effects:
+  # FQCN 추출 정확성
+  - extracts_fqcn_for_class_declaration
+  - extracts_fqcn_for_interface_declaration
+  - extracts_fqcn_for_trait_declaration
+  - extracts_fqcn_for_enum_declaration
+  - maps_fqcn_to_correct_relative_path
+  # 포함/제외 범위
+  - ignores_files_outside_declared_namespace
+  - skips_files_without_top_level_declaration
+  - missing_directory_returns_empty
+  # vendor 격리 (설계 불변조건)
+  - generated_src_classmap_excludes_vendor_paths
+  - generated_src_classmap_only_extension_namespaces
+  # 런타임 등록 + 폴백
+  - classmap_present_findFile_hits_without_filesystem_stat
+  - classmap_absent_findFile_falls_back_to_psr4
+  - class_loading_remains_lazy_include_on_use
+  # 재생성 생명주기
+  - install_regenerates_src_classmap_via_updateComposerAutoload
+  - update_regenerates_src_classmap
+  - uninstall_regenerates_src_classmap
+  - core_update_regenerates_src_classmap_via_extension_update_autoload
+  - activate_does_not_regenerate_but_installed_classes_already_mapped
+
+test_files:
+  - tests/Unit/Extension/ExtensionSourceClassmapTest.php
+  - tests/Unit/Extension/ExtensionManagerComposerTest.php
+  - tests/Feature/Console/HooksCacheCommandTest.php

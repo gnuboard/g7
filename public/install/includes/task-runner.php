@@ -1491,6 +1491,28 @@ if (!function_exists('clearCacheSSE')) {
     }
 }
 
+if (!function_exists('optimizeConfigCacheSSE')) {
+    /**
+     * 설치 완료 직후 config 캐시를 최초 생성한다.
+     *
+     * complete_flag 이후에 실행되어 installer_completed=true 상태에서 캐시를 만들며,
+     * 이 지점이 없으면 설치는 config:cache 가 꺼진(매 요청 config 재파싱) 상태로 종료된다.
+     * best_effort — 실패해도 설치 자체는 완료 처리한다(비캐시 부팅은 정상 동작).
+     *
+     * @return array 태스크 실행 결과
+     */
+    function optimizeConfigCacheSSE(): array
+    {
+        return executeArtisanCommandSSE(
+            artisanCommand: 'config:cache',
+            taskId: 'config_cache',
+            taskNameKey: 'task_config_cache',
+            successMsgKey: 'log_config_cache_success',
+            errorMsgKey: 'error_config_cache_failed'
+        );
+    }
+}
+
 if (!function_exists('createSettingsJsonSSE')) {
     function createSettingsJsonSSE(): array
     {
@@ -1757,6 +1779,9 @@ if (!function_exists('runInstallationTasks')) {
             $tasks[] = ['id' => 'create_settings_json', 'function' => 'createSettingsJsonSSE'];
             $tasks[] = ['id' => 'cache_clear', 'function' => 'clearCacheSSE'];
             $tasks[] = ['id' => 'complete_flag', 'function' => 'setInstallationCompleteSSE'];
+            // complete_flag(installer_completed=true) 이후에 config 캐시를 최초 생성해야
+            // 설치가 config:cache 켜진 상태로 시작한다. best_effort — 실패해도 설치는 완료.
+            $tasks[] = ['id' => 'config_cache', 'function' => 'optimizeConfigCacheSSE', 'best_effort' => true];
 
             foreach ($tasks as $task) {
                 if (checkAbortStatusSSE()) {

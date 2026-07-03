@@ -13,6 +13,7 @@
 3. 설치/삭제 시 자동 갱신: updateComposerAutoload() → generateAutoloadFile()
 4. 수동 갱신: php artisan extension:update-autoload
 5. _bundled/_pending 디렉토리 자동 제외 (str_starts_with($name, '_') → skip)
+6. src_classmap: 확장 소스 FQCN→경로 사전 계산 → findFile 파일시스템 stat 제거 (지연 로드·vendor 격리 유지)
 ```
 
 ---
@@ -79,6 +80,10 @@ return [
         "modules/sirsoft-ecommerce/module.php",
         "plugins/sirsoft-payment/plugin.php",
     ],
+    'src_classmap' => [
+        "Modules\\Sirsoft\\Ecommerce\\Services\\OrderService" => "modules/sirsoft-ecommerce/src/Services/OrderService.php",
+        "Plugins\\Sirsoft\\Payment\\Providers\\PaymentServiceProvider" => "plugins/sirsoft-payment/src/Providers/PaymentServiceProvider.php",
+    ],
     'files' => [],
     'vendor_autoloads' => [
         "modules/sirsoft-ecommerce/vendor/autoload.php",
@@ -86,7 +91,18 @@ return [
 ];
 ```
 
+- `classmap`: `module.php` / `plugin.php` 등 부트스트랩 파일 목록 — 진입점에서 `require_once` (즉시 로드)
+- `src_classmap`: 확장 **소스** 클래스의 `FQCN → 상대경로` 맵 — 진입점에서 `$loader->addClassMap()` (지연 로드)
 - `vendor_autoloads`: 모듈/플러그인의 `vendor/autoload.php` 경로 목록 (Composer 의존성이 설치된 경우만 포함)
+
+#### src_classmap — findFile 파일시스템 스캔 제거 (성능)
+
+확장 소스 클래스는 `addPsr4()` 로만 등록되면 Composer `findFile()` 이 클래스마다 파일시스템을 스캔(`is_dir`/`file_exists` stat)한다. OPcache 가 cold 이거나 파일시스템이 느린 환경에서는 이 stat 비용이 요청 시간의 큰 비중을 차지할 수 있다. `src_classmap` 은 `generateAutoloadFile()` 이 각 PSR-4 디렉토리를 스캔해 `FQCN → 경로` 를 사전 계산하고, 진입점(`public/index.php` / `CoreServiceProvider` / `ExtensionManager::registerExtensionAutoload`)이 `ClassLoader::addClassMap()` 으로 등록한다. `findFile()` 은 classMap 을 **최우선 조회**하므로 확장 클래스는 파일시스템 접근 0 으로 즉시 경로를 얻는다.
+
+- **지연 로드 유지**: classmap 은 경로만 제공하며 `include` 는 실제 사용 시점에. 매 요청 전량 로드가 아니다.
+- **PSR-4 폴백 보존**: classmap 에 없는 클래스(신규 추가 후 미재생성 등)는 기존 PSR-4 경로로 폴백 — 안전망.
+- **vendor 격리 불변**: `src_classmap` 은 확장 **소스**(`Modules\*`/`Plugins\*`)만 담는다. 확장별 독립 서드파티 vendor 는 각 확장 `vendor/autoload.php`(별도 ClassLoader) 가 담당하므로 여기 포함되지 않는다.
+- **재생성**: `psr4` 와 동일 생명주기 — install / update / uninstall 시 `updateComposerAutoload()`, 코어 업데이트 시 `extension:update-autoload` 가 함께 재생성.
 
 ### 중요 규칙
 

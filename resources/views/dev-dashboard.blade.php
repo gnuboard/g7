@@ -788,6 +788,14 @@ if (isset($_GET['ajax_action'])) {
                                     <span>전체 최적화</span>
                                     <span class="text-[10px] opacity-60">(optimize:clear)</span>
                                 </button>
+                                <button onclick="runCommand('hooks:cache')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>훅 캐시 생성</span>
+                                    <span class="text-[10px] opacity-60">(hooks:cache)</span>
+                                </button>
+                                <button onclick="runCommand('hooks:clear')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>훅 캐시 삭제</span>
+                                    <span class="text-[10px] opacity-60">(hooks:clear)</span>
+                                </button>
                                 <button onclick="runCommand('migrate:fresh --seed')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>DB 초기화</span>
                                     <span class="text-[10px] opacity-60">(migrate:fresh --seed)</span>

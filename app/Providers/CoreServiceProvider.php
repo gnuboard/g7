@@ -42,6 +42,7 @@ use App\Enums\DeactivationReason;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\CoreVersionChecker;
 use App\Extension\ExtensionManager;
+use App\Extension\HookCacheManager;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
@@ -149,6 +150,15 @@ class CoreServiceProvider extends ServiceProvider
                     }
                 }
             }
+        }
+
+        // 확장 소스 classmap 등록 (FQCN → 절대경로) — findFile 파일시스템 스캔 제거 (lazy include).
+        if (! empty($extensionAutoloads['src_classmap'])) {
+            $absoluteClassmap = [];
+            foreach ($extensionAutoloads['src_classmap'] as $fqcn => $relPath) {
+                $absoluteClassmap[$fqcn] = base_path($relPath);
+            }
+            $loader->addClassMap($absoluteClassmap);
         }
 
         // Classmap 파일 로드 (module.php, plugin.php)
@@ -866,12 +876,14 @@ class CoreServiceProvider extends ServiceProvider
 
     // registerActivityLogManager() 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
 
-    /**
-     * app/Listeners/ 디렉토리에서 HookListenerInterface 구현체를 자동 발견하여 등록합니다.
-     * 하위 디렉토리까지 재귀적으로 스캔합니다.
-     */
     private function registerCoreHookListeners(): void
     {
+        // 캐시 우선: bootstrap/cache/hooks.php 가 있으면 스캔·리플렉션 없이 등록.
+        // 테스트 환경은 매 setUp 스캔이 정확·격리 우선이므로 캐시 미사용(항상 스캔).
+        if (! $this->app->environment('testing') && $this->registerCoreHookListenersFromCache()) {
+            return;
+        }
+
         $listenersPath = app_path('Listeners');
 
         if (! is_dir($listenersPath)) {
@@ -908,6 +920,41 @@ class CoreServiceProvider extends ServiceProvider
 
             $this->registerCoreHookListener($listenerClass);
         }
+    }
+
+    /**
+     * 훅 캐시에서 코어 리스너를 등록합니다.
+     *
+     * 캐시 파일(bootstrap/cache/hooks.php)이 존재하면 디렉토리 스캔·class_implements
+     * 리플렉션·getSubscribedHooks() 클래스 로딩 없이 사전 계산 매핑으로 등록한다.
+     * 동적 훅(registerDynamicHooks) 보유 리스너는 스캔 경로와 동일하게 boot 후반부 실행을 위해 지연 목록에 담는다.
+     *
+     * @return bool 캐시로 등록했으면 true, 캐시 부재/손상 시 false (스캔 폴백)
+     */
+    private function registerCoreHookListenersFromCache(): bool
+    {
+        $cache = $this->app->make(HookCacheManager::class)->read();
+
+        if ($cache === null) {
+            return false;
+        }
+
+        foreach ($cache['core'] as $entry) {
+            try {
+                HookListenerRegistrar::registerFromCache($entry['listener'], $entry['hooks'], 'core');
+
+                if (! empty($entry['dynamic'])) {
+                    $this->deferredDynamicListeners[] = $entry['listener'];
+                }
+            } catch (\Throwable $e) {
+                Log::error('코어 훅 리스너 캐시 등록 중 오류 발생', [
+                    'listener' => $entry['listener'] ?? null,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return true;
     }
 
     /**

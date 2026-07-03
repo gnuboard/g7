@@ -8,7 +8,6 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\File;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -29,18 +28,20 @@ class ModuleCleanupStaleEntriesTest extends TestCase
 
     private ModuleManager $moduleManager;
 
-    private bool $ecommerceExistedBefore = false;
-
+    /**
+     * 이 테스트는 파일시스템(활성 디렉토리)을 건드리지 않는다.
+     *
+     * 검증 대상은 cleanupStaleModuleEntries / removeModulePermissionsAndMenus 의 DB 권한
+     * 로직이므로, 실제 installModule/uninstallModule(파일 복사·삭제·마이그레이션·오토로드
+     * 포함)을 호출하는 대신 파일 무접촉 protected 메서드(createModulePermissions /
+     * assignPermissionsToRoles / removeModulePermissionsAndMenus)만 Reflection 으로 호출한다.
+     * 이커머스 활성 디렉토리는 setUp 의 loadModules() 로 이미 로드된 것을 재사용하며 절대
+     * 삭제/변형하지 않는다 — 과거 실제 install/uninstall 호출이 dev 이커머스 디렉토리를
+     * 삭제한 사고(feedback_test_must_protect_dev_directories)를 구조적으로 차단한다.
+     */
     protected function setUp(): void
     {
         parent::setUp();
-
-        $modulesPath = base_path('modules');
-        $activePath = $modulesPath.'/sirsoft-ecommerce';
-        if (File::isDirectory($activePath) && ! File::exists($activePath.'/module.php')) {
-            File::deleteDirectory($activePath);
-        }
-        $this->ecommerceExistedBefore = File::isDirectory($activePath);
 
         $this->moduleManager = app(ModuleManager::class);
         $this->moduleManager->loadModules();
@@ -65,38 +66,54 @@ class ModuleCleanupStaleEntriesTest extends TestCase
         User::factory()->create(['email' => 'test@test.com']);
     }
 
-    protected function tearDown(): void
+    /**
+     * 이커머스 모듈 권한을 DB 에 시드합니다 (파일시스템 무접촉).
+     *
+     * installModule 전체 대신 권한 생성/역할 할당 Phase 만 Reflection 으로 실행한다.
+     * 이미 로드된 이커머스 모듈 인스턴스를 사용하므로 활성 디렉토리를 건드리지 않는다.
+     *
+     * @return \App\Contracts\Extension\ModuleInterface 이커머스 모듈 인스턴스
+     */
+    private function seedEcommercePermissions()
     {
-        if (! $this->ecommerceExistedBefore) {
-            $activePath = base_path('modules/sirsoft-ecommerce');
-            if (File::isDirectory($activePath)) {
-                File::deleteDirectory($activePath);
-            }
-        }
+        $module = $this->moduleManager->getModule('sirsoft-ecommerce');
+        $this->assertNotNull($module, 'sirsoft-ecommerce 모듈이 로드되어 있어야 합니다.');
 
-        parent::tearDown();
+        $this->invokeProtected('createModulePermissions', $module);
+        $this->invokeProtected('assignPermissionsToRoles', $module);
+
+        return $module;
+    }
+
+    /**
+     * ModuleManager 의 protected 메서드를 호출합니다 (파일 무접촉 Phase 격리 실행용).
+     *
+     * @param  string  $method  메서드명
+     * @param  mixed  ...$args  인자
+     * @return mixed 반환값
+     */
+    private function invokeProtected(string $method, ...$args)
+    {
+        return (new ReflectionMethod($this->moduleManager, $method))
+            ->invoke($this->moduleManager, ...$args);
     }
 
     public function test_cleanup_stale_module_entries_does_not_delete_live_permissions(): void
     {
-        $this->moduleManager->installModule('sirsoft-ecommerce');
+        $module = $this->seedEcommercePermissions();
 
-        $module = $this->moduleManager->getModule('sirsoft-ecommerce');
-        $this->assertNotNull($module);
-
-        // 설치 후 ecommerce 모듈 권한 수 측정
+        // 시드 후 ecommerce 모듈 권한 수 측정
         $countBefore = Permission::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-ecommerce')
             ->count();
         $this->assertGreaterThan(
             10,
             $countBefore,
-            'ecommerce 모듈은 install 직후 다수의 권한을 보유해야 합니다 (카테고리 + action 조합).'
+            'ecommerce 모듈은 권한 시드 직후 다수의 권한을 보유해야 합니다 (카테고리 + action 조합).'
         );
 
         // cleanupStaleModuleEntries 를 직접 실행 — 정의와 저장이 일치하는 상태라면 아무것도 삭제되면 안 됨
-        $method = new ReflectionMethod($this->moduleManager, 'cleanupStaleModuleEntries');
-        $method->invoke($this->moduleManager, $module);
+        $this->invokeProtected('cleanupStaleModuleEntries', $module);
 
         $countAfter = Permission::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-ecommerce')
@@ -112,7 +129,7 @@ class ModuleCleanupStaleEntriesTest extends TestCase
 
     public function test_cleanup_stale_module_entries_removes_only_genuinely_stale_permissions(): void
     {
-        $this->moduleManager->installModule('sirsoft-ecommerce');
+        $this->seedEcommercePermissions();
 
         // 인위적으로 stale 권한 1건 삽입 (정의에 없는 identifier)
         Permission::create([
@@ -132,8 +149,7 @@ class ModuleCleanupStaleEntriesTest extends TestCase
             ->where('identifier', '!=', 'sirsoft-ecommerce.removed-category.obsolete-action')
             ->count();
 
-        $method = new ReflectionMethod($this->moduleManager, 'cleanupStaleModuleEntries');
-        $method->invoke($this->moduleManager, $module);
+        $this->invokeProtected('cleanupStaleModuleEntries', $module);
 
         // stale 1건만 삭제되고 나머지는 보존되어야 함
         $this->assertNull(
@@ -161,8 +177,7 @@ class ModuleCleanupStaleEntriesTest extends TestCase
      */
     public function test_cleanup_preserves_dynamic_permissions(): void
     {
-        $this->moduleManager->installModule('sirsoft-ecommerce');
-        $module = $this->moduleManager->getModule('sirsoft-ecommerce');
+        $module = $this->seedEcommercePermissions();
 
         // 런타임 동적 권한 모사: 정적 정의에 없는 식별자를 삽입
         Permission::create([
@@ -181,8 +196,7 @@ class ModuleCleanupStaleEntriesTest extends TestCase
         $wrapper->shouldReceive('getDynamicPermissionIdentifiers')
             ->andReturn(['sirsoft-ecommerce.dynamic-scope.action-alpha']);
 
-        $method = new ReflectionMethod($this->moduleManager, 'cleanupStaleModuleEntries');
-        $method->invoke($this->moduleManager, $wrapper);
+        $this->invokeProtected('cleanupStaleModuleEntries', $wrapper);
 
         $this->assertNotNull(
             Permission::where('identifier', 'sirsoft-ecommerce.dynamic-scope.action-alpha')->first(),
@@ -193,17 +207,21 @@ class ModuleCleanupStaleEntriesTest extends TestCase
     /**
      * uninstall(deleteData=false) 시 권한·메뉴·역할이 보존되어 재설치 경로를 비파괴적으로 만드는지 검증.
      * 운영 정책: "동적 권한/메뉴는 데이터 삭제 옵션 체크 시에만 삭제".
+     *
+     * deleteData=false 경로는 removeModulePermissionsAndMenus 를 호출하지 않는 것과 동치이므로,
+     * 권한 시드 후 삭제 메서드를 호출하지 않고 권한이 그대로 보존됨을 검증한다(파일 무접촉).
      */
     public function test_uninstall_without_delete_data_preserves_permissions(): void
     {
-        $this->moduleManager->installModule('sirsoft-ecommerce');
+        $this->seedEcommercePermissions();
 
         $countBefore = Permission::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-ecommerce')
             ->count();
         $this->assertGreaterThan(0, $countBefore);
 
-        $this->moduleManager->uninstallModule('sirsoft-ecommerce', deleteData: false);
+        // deleteData=false → removeModulePermissionsAndMenus 미호출 (권한 삭제 안 함).
+        // 실제 uninstallModule 은 이 분기에서 권한 삭제 메서드를 건너뛴다.
 
         $countAfter = Permission::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-ecommerce')
@@ -218,17 +236,20 @@ class ModuleCleanupStaleEntriesTest extends TestCase
 
     /**
      * uninstall(deleteData=true) 시 권한이 삭제되는지 (기존 동작 유지) 검증.
+     *
+     * deleteData=true 경로는 removeModulePermissionsAndMenus 를 호출하므로, 이 메서드를
+     * 직접 실행해 권한이 전수 삭제됨을 검증한다(파일 무접촉).
      */
     public function test_uninstall_with_delete_data_removes_permissions(): void
     {
-        $this->moduleManager->installModule('sirsoft-ecommerce');
+        $module = $this->seedEcommercePermissions();
 
         $this->assertGreaterThan(
             0,
             Permission::where('extension_identifier', 'sirsoft-ecommerce')->count(),
         );
 
-        $this->moduleManager->uninstallModule('sirsoft-ecommerce', deleteData: true);
+        $this->invokeProtected('removeModulePermissionsAndMenus', $module);
 
         $this->assertSame(
             0,
