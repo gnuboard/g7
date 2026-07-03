@@ -2455,7 +2455,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     }, [resolvedProps]);
 
     /**
-     * DOM id 표현식 해석 (engine-v1.52.4)
+     * DOM id 표현식 해석 (engine-v1.50.0)
      *
      * 노드의 최상위 `id` 필드는 props 가 아니므로 props 바인딩 경로를 타지 않는다.
      * iteration 내부에서 `id: "item_{{$idx}}"` 처럼 표현식을 쓰면 각 row 마다

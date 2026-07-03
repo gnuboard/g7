@@ -606,7 +606,7 @@ iteration 내부에서 상태를 관리하는 컴포넌트(Input, Select, TagInp
 - id가 없으면 동적으로 행 추가/삭제 시 이전 인스턴스의 내부 상태가 새 인스턴스에 표시될 수 있음
 - 특히 내부 상태를 관리하는 컴포넌트(TagInput, Select, Input 등)에서 중요
 
-> **iteration id 표현식 보간** (engine-v1.52.4+): 노드의 최상위 `id` 필드에 쓴 표현식(`id: "item_{{$idx}}"`, `id: "row_{{item.id}}"` 등)은 일반 렌더 경로(DynamicRenderer)에서 iteration 컨텍스트로 보간되어 행마다 고유 DOM id 가 된다. `index_var`(예 `"index_var": "$idx"`) 또는 `item_var` 의 필드를 활용한다. 정적 id 를 iteration 안에 그대로 두면 모든 행이 같은 HTML id 를 갖게 되어 W3C id 유일성을 위반하므로(렌더 누락까지 유발), 반복 항목 노드와 그 자식의 id 는 반드시 동적화한다. 내부 식별(slot 등록·React key)에는 원본 id 가 쓰이므로 보간은 DOM 출력에만 적용된다.
+> **iteration id 표현식 보간** (engine-v1.50.0+): 노드의 최상위 `id` 필드에 쓴 표현식(`id: "item_{{$idx}}"`, `id: "row_{{item.id}}"` 등)은 일반 렌더 경로(DynamicRenderer)에서 iteration 컨텍스트로 보간되어 행마다 고유 DOM id 가 된다. `index_var`(예 `"index_var": "$idx"`) 또는 `item_var` 의 필드를 활용한다. 정적 id 를 iteration 안에 그대로 두면 모든 행이 같은 HTML id 를 갖게 되어 W3C id 유일성을 위반하므로(렌더 누락까지 유발), 반복 항목 노드와 그 자식의 id 는 반드시 동적화한다. 내부 식별(slot 등록·React key)에는 원본 id 가 쓰이므로 보간은 DOM 출력에만 적용된다.
 
 ---
 

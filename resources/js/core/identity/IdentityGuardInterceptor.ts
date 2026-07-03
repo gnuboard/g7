@@ -66,7 +66,7 @@ export class IdentityGuardInterceptor {
    * 일반 본인인증 실패(본인확인 자체 실패/취소)는 이 플래그를 set 하지 않으므로
    * generic 가드 토스트가 그대로 유지된다 — provider 무지식의 범용 신호다.
    *
-   * @since engine-v1.52.2
+   * @since engine-v1.50.0
    */
   private static domainNoticeShown = false;
 
@@ -97,7 +97,7 @@ export class IdentityGuardInterceptor {
    * 안내한 직후 호출한다. 코어 toast 핸들러가 동일 사이클의 generic IDV 가드 토스트를 1회 skip 한다.
    * 호출 시점은 항상 코어가 원 428 을 onError 로 흘려보내기 직전(resolveIdentityChallenge 통보 전)이어야 한다.
    *
-   * @since engine-v1.52.2
+   * @since engine-v1.50.0
    */
   static markDomainNoticeShown(): void {
     this.domainNoticeShown = true;
@@ -110,7 +110,7 @@ export class IdentityGuardInterceptor {
    * true 면 그 토스트를 skip 하고, 플래그는 소비되어 다음 토스트부터는 정상 표출된다.
    *
    * @returns 직전 challenge 가 도메인 안내를 표출했으면 true (그리고 플래그 해제)
-   * @since engine-v1.52.2
+   * @since engine-v1.50.0
    */
   static consumeDomainNoticeShown(): boolean {
     const shown = this.domainNoticeShown;

@@ -5,7 +5,7 @@
  * 안에서 `id: "item_{{$idx}}"` 처럼 표현식을 쓰면 각 row 마다 고유 DOM id 가 되어야 하지만,
  * 보간 없이 출력되면 같은 리터럴이 row 마다 반복되어 W3C HTML id 중복을 유발한다.
  *
- * engine-v1.52.4 수정: DOM 출력 지점이 effectiveComponentDef.id 를 iteration 컨텍스트로
+ * engine-v1.50.0 수정: DOM 출력 지점이 effectiveComponentDef.id 를 iteration 컨텍스트로
  * 보간한 resolvedComponentId 를 쓴다. slot 등록·React key 등 내부 식별은 원본 id 유지(격리).
  */
 

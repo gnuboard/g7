@@ -6,7 +6,7 @@
  * reconciliation 이 행을 합쳐 렌더 누락. 슬롯에 주입된 컴포넌트(헤더 통화 셀렉터)도 데스크톱/
  * 모바일 SlotContainer 양쪽 마운트 시 정적 root id 중복.
  *
- * 수정(engine-v1.52.4):
+ * 수정(engine-v1.50.0):
  *  - DynamicRenderer 가 id 표현식을 iteration 컨텍스트로 보간(resolvedComponentId).
  *  - SlotContainer 가 주입 컴포넌트 root id 를 컨테이너 id 로 스코프.
  *  - 대시보드 반복 목록·게시판/이커머스 위젯 id 동적화.

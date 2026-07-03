@@ -1,5 +1,5 @@
 /**
- * loadDevToolsBundle 테스트 — DevTools lazy 번들 로더 (engine-v1.52.0)
+ * loadDevToolsBundle 테스트 — DevTools lazy 번들 로더 (engine-v1.51.0)
  *
  * DevTools 디버그 전용 모듈(패널/진단엔진/서버커넥터/스타일추적기)은 별도 번들
  * (devtools.min.js)로 분리되어 디버그 모드에서만 <script> 주입으로 로드된다. 본 테스트는

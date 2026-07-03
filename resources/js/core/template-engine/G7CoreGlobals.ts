@@ -32,7 +32,7 @@ import { WebSocketManager } from '../websocket/WebSocketManager';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 // DiagnosticEngine/ServerConnector/StyleTracker/DevToolsPanel 은 정적 import 하지 않는다 —
 // 디버그 전용 무거운 모듈은 별도 lazy 번들(devtools.min.js)로 분리되어 initDevToolsAPI() 가
-// isEnabled() 참일 때만 런타임 <script> 주입으로 로드한다. @since engine-v1.52.0
+// isEnabled() 참일 때만 런타임 <script> 주입으로 로드한다. @since engine-v1.51.0
 import type { DiagnosticCategory } from '../devtools/types';
 import {
   renderItemChildren,
@@ -804,7 +804,7 @@ function initCoreRuntimeExports(G7Core: any): void {
     // 인증/로거
     AuthManager,
     createLogger,
-    // DevTools 추적 코어 (디버그 lazy 번들이 패널/진단엔진에서 공유) @since engine-v1.52.0
+    // DevTools 추적 코어 (디버그 lazy 번들이 패널/진단엔진에서 공유) @since engine-v1.51.0
     G7DevToolsCore,
   };
 
@@ -3750,7 +3750,7 @@ export function initDevToolsInterface(): void {
  */
 /**
  * DevTools 디버그 전용 모듈(패널 UI/진단엔진/서버커넥터/스타일추적기)의 lazy 번들 타입.
- * @since engine-v1.52.0
+ * @since engine-v1.51.0
  */
 interface DevToolsBundle {
   DiagnosticEngine: any;
@@ -3764,7 +3764,7 @@ let devToolsBundleLoadPromise: Promise<DevToolsBundle> | null = null;
 /**
  * DevTools lazy 번들(devtools.min.js)을 로드하고 디버그 전용 모듈 4종을 반환한다.
  *
- * @since engine-v1.52.0
+ * @since engine-v1.51.0
  *
  * 디버그 모드에서만 호출된다. 이미 로드됨(멱등)/진행 중(in-flight 병합)/미로드(1회 주입)
  * 를 구분한다.
@@ -3858,7 +3858,7 @@ export function initDevToolsAPI(): void {
 /**
  * 디버그 모드에서 DevTools lazy 번들을 로드하고 전체 API 를 활성화한다.
  *
- * @since engine-v1.52.0
+ * @since engine-v1.51.0
  *
  * @param G7Core - window.G7Core 전역 객체
  * @param devToolsCore - G7DevToolsCore 싱글톤 인스턴스

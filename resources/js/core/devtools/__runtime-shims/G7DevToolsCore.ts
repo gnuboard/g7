@@ -1,6 +1,6 @@
 /**
  * G7DevToolsCore 런타임 shim — DevTools lazy 번들 전용 (vite.config.devtools.js alias 대상)
- * @since engine-v1.52.0
+ * @since engine-v1.51.0
  *
  * DevTools 추적 코어는 디버그 무관 항상 필요해 메인 번들에 남는다. 디버그 lazy 번들
  * (DevToolsPanel 등)은 이 shim 으로 메인 번들의 단일 인스턴스를 빌려 쓴다(싱글톤 동일성).

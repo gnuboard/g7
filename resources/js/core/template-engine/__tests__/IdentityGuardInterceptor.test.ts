@@ -234,7 +234,7 @@ describe('IdentityGuardInterceptor', () => {
   });
 
   /**
-   * 도메인 안내 표출 신호 (engine-v1.52.0) — 부가 목적(성인인증 등) 실패 시 provider 가
+   * 도메인 안내 표출 신호 (engine-v1.50.0) — 부가 목적(성인인증 등) 실패 시 provider 가
    * 고유 안내를 표출했음을 표시하면, 코어 toast 핸들러가 동일 사이클의 generic IDV 가드
    * 토스트("본인 확인이 필요합니다") 1건을 skip 한다. 일반 본인인증 실패는 무영향.
    */

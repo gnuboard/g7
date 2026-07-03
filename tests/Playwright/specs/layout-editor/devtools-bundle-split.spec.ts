@@ -1,5 +1,5 @@
 /**
- * DevTools — 번들 분리 (lazy/debug 로드) 검증. (engine-v1.52.0)
+ * DevTools — 번들 분리 (lazy/debug 로드) 검증. (engine-v1.51.0)
  *
  * 개발자 진단도구(DevTools)는 디버그 모드에서만 쓰이므로 코어 번들에서 분리해 별도
  * devtools.min.js 로 빌드하고, `initDevToolsAPI()` 가 `isEnabled()` 참일 때만 런타임
