@@ -2802,18 +2802,16 @@ class PluginManager implements PluginManagerInterface
         }
     }
 
-    /**
-     * 플러그인의 훅 리스너를 자동으로 등록합니다.
-     *
-     * 비활성화된 플러그인의 훅 리스너는 등록하지 않습니다.
-     *
-     * @param  PluginInterface  $plugin  플러그인 인스턴스
-     */
     protected function registerPluginHookListeners(PluginInterface $plugin): void
     {
         // 플러그인 활성화 상태 확인 (비활성화된 플러그인의 훅은 등록하지 않음)
         $activeIdentifiers = self::getActivePluginIdentifiers();
         if (! in_array($plugin->getIdentifier(), $activeIdentifiers, true)) {
+            return;
+        }
+
+        // 캐시 우선: 사전 계산된 훅 매핑이 있으면 클래스 로딩 없이 등록.
+        if ($this->registerExtensionHookListenersFromCache('plugins', $plugin->getIdentifier())) {
             return;
         }
 
@@ -2844,6 +2842,44 @@ class PluginManager implements PluginManagerInterface
                 ]);
             }
         }
+    }
+
+    /**
+     * 훅 캐시에서 플러그인의 정적 훅 리스너를 등록합니다.
+     *
+     * 캐시 파일(bootstrap/cache/hooks.php)에 해당 플러그인 식별자의 항목이 있으면
+     * getSubscribedHooks() 클래스 로딩·리플렉션 없이 사전 계산 매핑으로 등록한다.
+     * 테스트 환경은 매 setUp 스캔이 정확·격리 우선이므로 캐시 미사용(항상 스캔 폴백).
+     *
+     * @param  string  $bucket  캐시 버킷 ('plugins')
+     * @param  string  $identifier  플러그인 식별자
+     * @return bool 캐시로 등록했으면 true, 캐시 부재/해당 항목 없음/테스트 환경이면 false (스캔 폴백)
+     */
+    protected function registerExtensionHookListenersFromCache(string $bucket, string $identifier): bool
+    {
+        if (app()->environment('testing')) {
+            return false;
+        }
+
+        $cache = app(HookCacheManager::class)->read();
+
+        if ($cache === null || ! isset($cache[$bucket][$identifier])) {
+            return false;
+        }
+
+        foreach ($cache[$bucket][$identifier] as $entry) {
+            try {
+                HookListenerRegistrar::registerFromCache($entry['listener'], $entry['hooks'], $identifier);
+            } catch (\Throwable $e) {
+                Log::error('확장 훅 리스너 캐시 등록 중 오류 발생', [
+                    'listener' => $entry['listener'] ?? null,
+                    'identifier' => $identifier,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return true;
     }
 
     /**

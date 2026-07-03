@@ -172,8 +172,14 @@ php artisan language-pack:update [identifier] [--force] [--source=auto|bundled|g
 php artisan extension:composer-install          # 모든 모듈+플러그인
 
 # 오토로드
-php artisan extension:update-autoload
+php artisan extension:update-autoload            # 오토로드 캐시 + 정적 훅 매핑 캐시 함께 재생성
+
+# 정적 훅 매핑 캐시 (부팅 비용 절감 — route:cache 동형)
+php artisan hooks:cache                           # bootstrap/cache/hooks.php 생성
+php artisan hooks:clear                           # 캐시 삭제 (삭제 후 스캔 폴백 — 항상 안전)
 ```
+
+> 훅 캐시는 확장 install/update 및 코어 업데이트(`clearAllCaches` → `extension:update-autoload`) 시 자동 재생성됩니다. 코어 리스너 코드 배포 시에만 `hooks:cache` 수동 실행. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](extension/hooks.md).
 
 ### 단발성 결함 보정 (hotfix)
 

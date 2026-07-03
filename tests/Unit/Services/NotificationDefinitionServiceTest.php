@@ -5,6 +5,7 @@ namespace Tests\Unit\Services;
 use App\Models\NotificationDefinition;
 use App\Services\NotificationDefinitionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -162,5 +163,54 @@ class NotificationDefinitionServiceTest extends TestCase
 
         $this->assertEquals(['mail', 'database'], $result->channels);
         $this->assertEquals(['core.auth.after_register', 'core.auth.after_login'], $result->hooks);
+    }
+
+    /**
+     * getAllActive() 캐시 히트 시 notification_definitions DB 조회가 0건인지 확인.
+     *
+     * 서빙 API 부팅 비용 최적화 검증 (계획서 §2-1 나): 동적 훅(알림) 등록 경로
+     * (NotificationHookListener::registerDynamicHooks → getAllActive)는 이미
+     * `['notification']` 태그로 캐시되어 있으므로, 첫 요청(캐시 워밍) 이후에는
+     * 매 요청 DB 조회가 발생하지 않아야 한다 (37ms 캐시 미스는 첫 요청 1회 비용).
+     *
+     * @scenario cache_state=present_but_testing_env, listener_type=action_sync, regeneration_trigger=extension_update, registration_source=plugin
+     *
+     * @effects notification_getAllActive_cache_hit_issues_zero_db_query
+     */
+    public function test_get_all_active_cache_hit_issues_zero_db_query(): void
+    {
+        NotificationDefinition::create([
+            'type' => 'cache_hit_probe',
+            'hook_prefix' => 'core.auth',
+            'extension_type' => 'core',
+            'extension_identifier' => 'core',
+            'name' => ['ko' => '캐시 히트 검증'],
+            'variables' => [],
+            'channels' => ['mail'],
+            'hooks' => ['core.auth.after_register'],
+            'is_active' => true,
+            'is_default' => true,
+        ]);
+
+        // 1차 호출: 캐시 워밍 (DB 조회 발생)
+        $this->service->invalidateAllCache();
+        $this->service->getAllActive();
+
+        // 2차 호출: 캐시 히트 → notification_definitions 조회 0건이어야 함
+        DB::enableQueryLog();
+        $this->service->getAllActive();
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $definitionQueries = array_filter(
+            $queries,
+            fn ($q) => str_contains($q['query'], 'notification_definitions')
+        );
+
+        $this->assertCount(
+            0,
+            $definitionQueries,
+            '캐시 히트 시 notification_definitions DB 조회가 발생하지 않아야 합니다 (동적 훅 등록 비용 제거)'
+        );
     }
 }

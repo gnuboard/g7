@@ -484,6 +484,13 @@ class CoreUpdateCommand extends Command
                 $maintenanceEnabled = false;
             }
 
+            // 모든 파일(코어 config/lang/vendor)이 안착한 뒤 config 캐시를 재생성한다.
+            // clearAllCaches() 는 흐름 중간에서 stale 캐시를 비우기만 하므로, 여기서
+            // 재생성하지 않으면 업데이트 후 config:cache 가 비활성 상태로 남아 이후 모든
+            // 요청이 config 파일을 재파싱한다(성능 손실). ConfigCacheHelper 는 설치 미완료
+            // 상태를 가드하고 실패를 안전하게 흡수한다.
+            \App\Support\ConfigCacheHelper::rebuild();
+
             $log('정리 완료');
 
             $bar->finish();

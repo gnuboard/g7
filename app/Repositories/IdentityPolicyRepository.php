@@ -340,7 +340,9 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
     public function listHookTargets(): array
     {
         try {
-            if (! Schema::hasTable('identity_policies')) {
+            // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 information_schema 쿼리 제거).
+            // 인스톨러 이전/마이그레이션 전 환경에서는 기존 hasTable 폴백으로 안전하게 빈 배열 반환.
+            if (! config('app.installer_completed') && ! Schema::hasTable('identity_policies')) {
                 return [];
             }
 
@@ -404,7 +406,9 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
     {
         try {
             $table = (new $modelClass)->getTable();
-            if (! Schema::hasTable($table)) {
+            // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 information_schema 쿼리 제거).
+            // 인스톨러 이전/마이그레이션 전 환경에서는 기존 hasTable 폴백으로 null 반환(필터 미적용).
+            if (! config('app.installer_completed') && ! Schema::hasTable($table)) {
                 return null;
             }
 

@@ -346,7 +346,7 @@ protected function loadModuleRoutes(): void
 - **`hasTable` 폴백 경로는 반드시 유지** — `installer_completed=false` 환경에서도 안전하게 부팅되어야 함
 - **try/catch 도 그대로 유지** — DB 연결 실패 시 안전한 스킵 계약 준수
 - 가드는 hasTable 체크 **전체 블록을 `if (! config('app.installer_completed'))` 로 래핑** 하는 형태
-- `config:cache` 를 사용하는 환경에서는 `.env` 값 변경 후 반드시 `php artisan config:clear && php artisan config:cache` 를 실행해야 함
+- `config:cache` 는 config 소스를 변경하는 라이프사이클에서 `App\Support\ConfigCacheHelper::rebuild()` 로 자동 재생성된다 (아래 "config 캐시 자동 재생성" 참조). `.env` 를 직접 편집한 경우처럼 헬퍼를 거치지 않는 변경은 여전히 `php artisan config:clear && php artisan config:cache` 를 수동 실행한다
 
 ### 확장 Trait 패턴
 
@@ -368,6 +368,28 @@ private static function isExtensionTableReady(string $table): bool
     }
 }
 ```
+
+### 부팅 경로 Listener / Repository 적용
+
+ServiceProvider 와 Trait 외에도, `CoreServiceProvider::boot()` 말미(동적 훅 등록 / IDV 정책 동기화)에서 매 요청 실행되는 다음 지점도 동일 가드를 적용합니다:
+
+- `NotificationHookListener::registerDynamicHooks()` — `notification_definitions` 존재 확인 (단일 최대 비용)
+- `IdentityPolicyRepository::listHookTargets()` — `identity_policies` 존재 확인
+- `IdentityPolicyRepository::activeExtensionIdentifiers()` — `modules` / `plugins` 존재 확인 (테이블 부재 시 `null` 반환으로 필터 미적용 계약 보존)
+
+```php
+// hasTable 을 단독 조건이 아니라 installer_completed 와 && 로 단락.
+// 설치 완료 시 hasTable 호출 자체를 건너뛰고 후속 로직으로 진행한다.
+if (! config('app.installer_completed') && ! Schema::hasTable('notification_definitions')) {
+    return;
+}
+```
+
+`try/catch` 블록 안에 있는 Repository 조회는 catch 계약(테이블 부재/DB 오류 시 `[]` 또는 `null` 반환)을 그대로 보존한 채 조건만 확장한다.
+
+### 부팅 경로 정적 훅 등록 캐시
+
+`installer_completed` 가드가 부팅 시 DB 조회를 줄이는 것과 별개로, `CoreServiceProvider::boot()` 의 정적 훅 리스너 등록(`app/Listeners` 재귀 스캔 + 모듈/플러그인 `getHookListeners()` 클래스 로딩)은 `bootstrap/cache/hooks.php` 캐시로 매 요청 스캔·리플렉션을 제거한다. 캐시 부재/테스트 환경에서는 기존 스캔 경로로 안전 폴백하며, 등록 결과는 스캔 경로와 바이트 동일하다. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](../extension/hooks.md).
 
 ### 주의사항
 
@@ -405,6 +427,38 @@ php artisan config:clear
 php artisan migrate
 # 예상: 모든 기능 정상 동작
 ```
+
+---
+
+## config 캐시 자동 재생성 (ConfigCacheHelper)
+
+config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확장 목록)를 변경하는 라이프사이클은 `App\Support\ConfigCacheHelper::rebuild()` 를 호출해 config 캐시를 재빌드한다.
+
+### 배경
+
+과거 설정 변경/코어 업데이트/APP_KEY 재생성 등은 `config:clear` 만 하고 `config:cache` 를 재생성하지 않았다. 그 결과 관리자가 "시스템 최적화"(`optimizeSystem`)로 캐시를 만들어도, 이후 설정을 한 번 저장하면 캐시가 비워진 채 재생성되지 않아 이후 모든 요청이 config 파일을 재파싱했다(성능 손실). `rebuild()` 는 clear 직후 재생성까지 수행해 캐시가 비활성 상태로 잔존하지 않게 한다.
+
+### 정책
+
+- **환경 무관 항상 재생성** — config:cache 는 그 자체로 부팅 비용을 줄이고, G7 설정은 config 캐시에 박제되지 않고 매 요청 런타임 `Config::set()` 으로 재주입되므로(설정 stale 없음) 항상 켜두는 것이 이득이다.
+- **testing 환경**: `config:clear` 는 수행(값 반영 계약 유지)하되 `config:cache` 생성은 스킵(캐시된 config 가 다음 테스트로 누출되는 격리 파괴 방지).
+- **설치 미완료 상태**: 불완전 config 박제를 피하려 재생성을 스킵하고 clear 만 한다.
+- **local 개발 주의**: config:cache 가 켜지면 `config/*.php` 를 직접 수정해도 다음 요청에 반영되지 않는다. 이는 개발자가 `php artisan config:clear` 로 대응하는 개발자 책임 영역이다.
+
+### 적용 지점
+
+| 라이프사이클 | 재생성 위치 |
+| --- | --- |
+| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task |
+| 코어 업데이트 | `CoreUpdateCommand` Step 11 완료 지점 |
+| 코어 업그레이드 스텝(단독 실행) | `ExecuteUpgradeStepsCommand` 캐시 정리 블록 (spawn 자식은 부모가 처리) |
+| 코어 관리자 설정 저장 / 캐시 정리 / GeoIP / APP_KEY | `SettingsService` / `GeoIpDatabaseService` 의 각 지점 |
+| 확장 설치/삭제/업데이트 | `ExtensionManager::updateComposerAutoload()` (오토로드·훅 캐시와 동일 생명주기) |
+| 확장 활성화/비활성화 | `ExtensionConfigCacheListener` (`core.*.activated` / `core.*.after_deactivate` 훅 구독) |
+
+`ExtensionConfigCacheListener` 의 구독 훅은 `getSubscribedHooks()` 에서 `'sync' => true` 로 선언한다. 훅 Action 리스너의 기본 등록 정책은 큐 디스패치(`HookListenerRegistrar`)인데, config 캐시 재생성을 큐로 미루면 (1) 워커 미가동 환경에서 영영 재생성되지 않고, (2) 확장 토글을 수행하는 CLI 커맨드(`plugin:deactivate` 등)는 실행 후 프로세스가 종료되어 큐 작업을 처리할 주체가 없다. config 캐시 재생성은 인프라 부수효과이므로 반드시 동기 실행한다. 회귀 방지 테스트: `ExtensionConfigCacheListenerTest::test_all_hooks_are_synchronous`.
+
+**확장별 개별 환경설정 저장(board/ecommerce/plugin SettingsService)은 재생성 대상이 아니다.** 확장 설정은 `config/*.php` 가 아니라 settings JSON 에 저장되고, 매 요청 `CoreServiceProvider::boot` 의 `loadModule/PluginSettingsToConfig` 가 런타임 `Config::set('g7_settings.*', 최신값)` 으로 config 캐시에 박제된 값을 덮어쓴다. 따라서 값 stale 이 없고(즉시 반영), config 캐시를 clear 하지도 않으므로(성능 손실 없음) 재생성이 실효가 없다.
 
 ---
 

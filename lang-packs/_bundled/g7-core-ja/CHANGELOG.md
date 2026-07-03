@@ -9,6 +9,7 @@
 ### Added
 
 - 설정 복원 관련 안내 메시지 일본어 번역 추가 (`settings.backup_path_required`·`restore_success`·`restore_failed`·`restore_error`) — 백업 경로 미입력 안내와 설정 복원 성공/실패 결과가 일본어 로케일에서 자연스럽게 표시됩니다.
+- 훅 매핑 캐시 관리 안내 메시지 일본어 번역 추가 (`hooks.cache_generated`·`cache_cleared`·`cache_absent`) — 부팅 성능을 위한 훅 캐시 생성·삭제 결과가 일본어 로케일에서 자연스럽게 표시됩니다.
 
 ## [1.0.0] - 2026-07-01
 

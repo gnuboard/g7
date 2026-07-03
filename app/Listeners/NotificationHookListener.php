@@ -50,7 +50,9 @@ class NotificationHookListener implements HookListenerInterface
      */
     public function registerDynamicHooks(): void
     {
-        if (! Schema::hasTable('notification_definitions')) {
+        // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 information_schema 쿼리 제거).
+        // 인스톨러 이전/마이그레이션 전 환경에서는 기존 hasTable 폴백으로 안전하게 스킵.
+        if (! config('app.installer_completed') && ! Schema::hasTable('notification_definitions')) {
             return;
         }
 

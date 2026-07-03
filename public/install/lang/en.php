@@ -270,6 +270,7 @@ return [
     'task_cache_clear' => 'Cleaning Up Temporary Files',
     'task_create_settings_json' => 'Creating Settings Files',
     'task_complete_flag' => 'Finalizing Installation',
+    'task_config_cache' => 'Building Configuration Cache',
     'task_unknown' => 'Unknown Task',
 
     // Task Group Names
@@ -371,9 +372,11 @@ return [
 
     // Error Messages - Worker (Cache)
     'error_cache_clear_failed' => 'Cache clearing failed',
+    'error_config_cache_failed' => 'Configuration cache build failed',
 
     // Log Messages - Worker (Cache)
     'log_cache_clear_success' => 'Cache clearing completed',
+    'log_config_cache_success' => 'Configuration cache built',
 
     // Error Messages - Worker (Settings JSON)
     'error_settings_json_failed' => 'Settings file creation failed',

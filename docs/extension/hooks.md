@@ -484,6 +484,44 @@ private function registerCoreHookListeners(): void
 | 위치 | `app/Listeners/**/*.php` | `modules/**/Listeners/`, `plugins/**/Listeners/` |
 | 등록 주체 | `CoreServiceProvider` | `ModuleServiceProvider`, `PluginServiceProvider` |
 
+---
+
+## 정적 훅 매핑 캐시 (Static Hook Cache)
+
+매 요청 부팅 시 코어(`app/Listeners` 재귀 스캔) + 모듈/플러그인(`getHookListeners()`)의 정적 훅 리스너를 발견·리플렉션·`getSubscribedHooks()` 클래스 로딩하는 비용을 제거하기 위해, 사전 계산한 훅 매핑을 `bootstrap/cache/hooks.php` 에 캐시합니다 (오토로드 캐시 `autoload-extensions.php` 와 동일 위치·생명주기).
+
+캐시는 "무엇을 등록할지 목록" 만 제공하며 **등록 자체는 여전히 부팅에서 수행** 되므로 등록↔발화 순서 계약은 불변입니다. 캐시 경로 등록 결과는 스캔 경로와 **훅 매핑이 바이트 동일** 합니다 (`HookListenerRegistrar::registerFromCache()` 가 `register()` 와 동일한 `applySubscribedHooks()` 에 위임).
+
+### 동작
+
+| 상태 | 부팅 시 동작 |
+|------|-------------|
+| 캐시 존재 (`bootstrap/cache/hooks.php`) | 스캔·리플렉션·클래스 로딩 없이 캐시 매핑으로 등록 |
+| 캐시 부재 / 손상 / 구조 불일치 | 기존 스캔 경로로 **안전 폴백** (항상 동작) |
+| 테스트 환경 (`APP_ENV=testing`) | 캐시 미사용 — 매 setUp 스캔이 정확·격리 우선 |
+
+- 동적 훅(알림 등 `registerDynamicHooks()`)은 캐시 대상이 아니며 코드 변경 없이 그대로 동작합니다. 캐시에는 각 리스너의 `dynamic` 플래그만 저장하여, 동적 훅 보유 코어 리스너의 boot 후반부 지연 실행 순서를 스캔 경로와 동일하게 유지합니다.
+- 동적 훅의 DB 조회(`NotificationDefinitionService::getAllActive()`)는 이미 `['notification']` 태그로 캐시되어 있으므로 첫 요청(캐시 워밍) 이후 DB 조회가 발생하지 않습니다.
+
+### 재생성 (무효화 = 재생성)
+
+정적 훅 매핑은 **확장 변경 또는 코어 리스너 코드 배포 시에만** 바뀝니다. 해당 시점에 자동/수동 재생성됩니다:
+
+| 사건 | 재생성 경로 |
+|------|-----------|
+| 확장 install / activate / deactivate / uninstall / update | `ExtensionManager::updateComposerAutoload()` 가 오토로드 캐시와 나란히 재생성 (자동) |
+| 코어 업데이트 (`core:update`) | `clearAllCaches()` → `extension:update-autoload` 가 오토로드 + 훅 캐시 함께 재생성 (자동). 코어 리스너 추가/변경/삭제 반영 |
+| 코어 리스너 코드 배포 | `php artisan hooks:cache` (배포 파이프라인 — `route:cache` 동형) |
+
+```bash
+php artisan hooks:cache   # 정적 훅 매핑 캐시 생성 (bootstrap/cache/hooks.php)
+php artisan hooks:clear   # 캐시 삭제 (삭제 후 스캔 폴백 — 항상 안전)
+```
+
+캐시 파일은 Git 미추적(`bootstrap/cache/*`) 이며 배포 환경마다 생성됩니다. 캐시가 없어도 스캔 폴백으로 정상 동작하므로 필수는 아니지만, 프로덕션 배포 시 부팅 비용 절감을 위해 `config:cache`/`route:cache` 와 함께 실행하는 것을 권장합니다.
+
+**핵심 파일**: `app/Extension/HookCacheManager.php`, `app/Extension/HookListenerRegistrar.php` (`registerFromCache`)
+
 ### 동적 훅 리스너 (DB 기반)
 
 DB 설정에 따라 훅 구독 대상이 동적으로 변하는 경우, 리스너에 `registerDynamicHooks()` 메서드를 구현합니다.
