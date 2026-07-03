@@ -217,6 +217,21 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > **단독 실행 안전성 (beta.6 이후)**: `core:execute-upgrade-steps` 는 HANDOFF 안내 또는 수동 복구 목적으로 운영자가 직접 호출되는 경로가 있다. 단독 실행 시 자식은 기본값으로 부모 Step 9 (`runMigrations` + `reloadCoreConfigAndResync`), Step 11 (`updateVersionInEnv` + `clearAllCaches`), Step 12 (번들 확장 일괄 업데이트) 를 자체적으로 수행해 단일 명령으로 업그레이드를 완결한다. 부모 `CoreUpdateCommand::spawnUpgradeStepsProcess()` 는 자식 명령 라인에 `--skip-migrations`, `--skip-resync`, `--skip-version-env`, `--skip-cache-clear`, `--skip-bundled-updates` 5개를 무조건 추가해 중복 회피한다 — 부모가 자식 종료 후 동일 단계를 직접 수행하기 때문이다.
 
+#### 재실행 안내의 권한 분기 (핸드오프 catch)
+
+spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)하고 `spawn_failure_mode=abort`(기본값) 이면, 파일·버전은 이미 `toVersion` 으로 반영되지만 업그레이드 스텝이 미실행 상태로 남아 운영자에게 `core:execute-upgrade-steps` 재실행을 안내한다. 이때 **sudo(root) 로 `core:update` 를 실행한 경우**, 안내받은 명령을 root 로 그대로 재실행하면 스텝이 만드는 파일·캐시가 root 소유로 생성되어 이후 웹서버(php-fpm www-data 등) 요청이 그 경로에 쓰기 실패한다.
+
+`CoreUpdateCommand::surfaceResumeCommandWithPermissionGuidance()` 는 실행 환경을 4가지로 분류(`classifyResumeExecutionContext()`)하여 안내를 분기한다:
+
+| 모드 | 조건 | 안내 |
+|------|------|------|
+| `non_root` | root 아님(일반 SSH 사용자 = 파일 소유자) / posix 미지원(Windows) / 공유 호스팅(웹서버·PHP·실행 유저 동일) | 명령만 그대로 출력 |
+| `root_web_known` | root 실행 + 웹서버 계정 식별 가능 + 실행 사용자와 다름 | `sudo -u {계정} {명령}` + 계정명 명시 경고 |
+| `root_web_symmetric` | root 실행 + 웹서버 계정이 root 로 추정 (root 서비스 구성) | 명령만 그대로 출력 |
+| `root_web_unknown` | root 실행 + 웹서버 계정 추정 실패 | `sudo -u <웹서버계정>` placeholder + 계정 확인 안내 |
+
+웹서버 계정은 `FilePermissionHelper::inferWebServerOwnership()` 이 `storage/*`·`bootstrap/cache` 쓰기 영역 소유자로 추정한다.
+
 ### Step 11: 마무리
 
 ```text
