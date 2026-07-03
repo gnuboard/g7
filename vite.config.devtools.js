@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 /**
- * DevTools lazy 번들 빌드 설정 (engine-v1.52.0)
+ * DevTools lazy 번들 빌드 설정 (engine-v1.51.0)
  *
  * 개발자 진단도구(패널 UI/진단엔진/서버커넥터/스타일추적기)는 디버그 모드에서만 쓰이므로
  * 메인 코어 번들에서 분리해 별도 `devtools.min.js` 로 빌드한다. `initDevToolsAPI()` 가

@@ -1,7 +1,7 @@
 /**
  * devtools-entry.ts — DevTools lazy 번들 진입점
  *
- * @since engine-v1.52.0
+ * @since engine-v1.51.0
  *
  * 개발자 진단도구(DevTools)는 디버그 모드(`G7Config.debug` / 환경설정)를 켰을 때만 쓰인다.
  * 그럼에도 메인 코어 번들(`template-engine.min.js`)에 정적 포함되면 모든 사용자가 받고도
