@@ -160,7 +160,13 @@
         "changed_fields": "変更: {{fields}}",
         "restored_from": "v{{version}}から復元",
         "restore_guide": "表示ボタンをクリックすると、内容を確認して復元できます。添付ファイルはバージョン管理に含まれていません。",
-        "preview_modal_editor_label": "バージョンプレビュー"
+        "preview_modal_editor_label": "バージョンプレビュー",
+        "field_labels": {
+          "title": "タイトル",
+          "content": "内容",
+          "seo_meta": "SEO情報",
+          "content_mode": "編集モード"
+        }
       }
     }
   }

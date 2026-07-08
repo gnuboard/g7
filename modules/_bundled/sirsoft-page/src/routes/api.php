@@ -105,18 +105,6 @@ Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'
         ->middleware('permission:admin,sirsoft-page.pages.update')
         ->name('reorder');
 
-    // 첨부파일 다운로드 (해시 기반)
-    Route::get('/download/{hash}', [PageAttachmentController::class, 'download'])
-        ->middleware('permission:admin,sirsoft-page.pages.read')
-        ->where('hash', '[a-zA-Z0-9]{12}')
-        ->name('download');
-
-    // 첨부파일 이미지 미리보기 (해시 기반, inline)
-    Route::get('/preview/{hash}', [PageAttachmentController::class, 'preview'])
-        ->middleware('permission:admin,sirsoft-page.pages.read')
-        ->where('hash', '[a-zA-Z0-9]{12}')
-        ->name('preview');
-
     // 첨부파일 삭제
     Route::delete('/{id}', [PageAttachmentController::class, 'destroy'])
         ->middleware('permission:admin,sirsoft-page.pages.update')
@@ -134,12 +122,12 @@ Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'
 */
 // optional.sanctum: Bearer 토큰이 있으면 인증, 없으면 guest로 통과
 Route::prefix('pages')->middleware(['optional.sanctum', 'throttle:600,1'])->name('pages.')->group(function () {
-    // 공개 첨부파일 다운로드 (해시 기반) - /{slug} 보다 먼저 등록
+    // 첨부 다운로드 (해시 기반, 발행 상태에 따라 컨트롤러에서 접근 제어) - /{slug} 보다 먼저 등록
     Route::get('/attachment/{hash}', [PublicPageAttachmentController::class, 'download'])
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.download');
 
-    // 공개 첨부파일 이미지 미리보기 (해시 기반, inline)
+    // 첨부 이미지 미리보기 (공개 - 토큰 없는 <img> 직접 GET 을 위해 권한 체크 없이 이미지만 제공)
     Route::get('/attachment/{hash}/preview', [PublicPageAttachmentController::class, 'preview'])
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.preview');

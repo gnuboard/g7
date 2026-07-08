@@ -207,8 +207,16 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const handleFiles = useCallback(
     async (selectedFiles: FileList) => {
       const totalCount = existingFiles.length + pendingFiles.length;
-      const remainingSlots = maxFiles - totalCount;
+      const remainingSlots = Math.max(0, maxFiles - totalCount);
       const filesToAdd = Array.from(selectedFiles).slice(0, remainingSlots);
+
+      // 개수 상한 초과분은 조용히 절단하지 않고 안내 (개수 초과 silent 무시 방지)
+      if (selectedFiles.length > remainingSlots) {
+        const overflow = Array.from(selectedFiles).slice(remainingSlots);
+        const message = t('attachment.upload_limit_exceeded', { max: maxFiles });
+        // 잘린 첫 파일을 대표로 콜백에 전달 (없으면 무시)
+        onUploadError?.(message, overflow[0] ?? selectedFiles[0]);
+      }
 
       for (const file of filesToAdd) {
         // 크기 검증

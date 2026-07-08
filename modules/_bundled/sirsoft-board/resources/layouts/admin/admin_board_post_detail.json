@@ -81,6 +81,33 @@
                         },
                         "children": [
                             {
+                                "id": "view_user_page_link",
+                                "type": "basic",
+                                "name": "A",
+                                "props": {
+                                    "href": "/board/{{route.slug}}/{{route?.id}}",
+                                    "target": "_blank",
+                                    "rel": "noopener noreferrer",
+                                    "title": "$t:sirsoft-board.admin.posts.actions.view_user_page",
+                                    "className": "flex-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline"
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "external-link",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-board.admin.posts.actions.view_user_page"
+                                    }
+                                ]
+                            },
+                            {
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",

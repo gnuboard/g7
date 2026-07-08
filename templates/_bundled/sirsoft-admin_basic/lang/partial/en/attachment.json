@@ -7,7 +7,7 @@
   "deleting": "Deleting...",
   "drop_or_click": "Drag and drop files or click to upload",
   "upload_limit": "Max {{maxFiles}} files, {{maxSize}}MB each",
-  "upload_limit_exceeded": "You can upload up to {{max}} images.",
+  "upload_limit_exceeded": "You can attach up to {{max}} files.",
   "attached_count": "{{count}}/{{max}} attached",
   "max_size": "Max {{size}}MB",
   "drag_to_reorder": "Drag to reorder",

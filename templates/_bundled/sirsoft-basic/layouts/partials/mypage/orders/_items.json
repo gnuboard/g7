@@ -184,7 +184,7 @@
                     {
                       "type": "click",
                       "handler": "navigate",
-                      "params": { "path": "{{_global.shopBase}}/products/{{item.product_id}}" }
+                      "params": { "path": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}" }
                     }
                   ],
                   "children": [
@@ -223,7 +223,7 @@
                         {
                           "type": "click",
                           "handler": "navigate",
-                          "params": { "path": "{{_global.shopBase}}/products/{{item.product_id}}" }
+                          "params": { "path": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}" }
                         }
                       ]
                     },

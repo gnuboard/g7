@@ -40,14 +40,18 @@ class SeoPageCacheListenerTest extends ModuleTestCase
         $this->assertArrayHasKey('sirsoft-page.page.after_create', $hooks);
         $this->assertArrayHasKey('sirsoft-page.page.after_update', $hooks);
         $this->assertArrayHasKey('sirsoft-page.page.after_delete', $hooks);
+        // 버전 복원도 SEO 캐시 무효화가 필요하다 (복원 후 봇에 복원 전 버전 잔존 회귀 방지)
+        $this->assertArrayHasKey('sirsoft-page.page.after_restore', $hooks);
 
         $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_create']['method']);
         $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_update']['method']);
         $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_delete']['method']);
+        $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_restore']['method']);
 
         $this->assertEquals(20, $hooks['sirsoft-page.page.after_create']['priority']);
         $this->assertEquals(20, $hooks['sirsoft-page.page.after_update']['priority']);
         $this->assertEquals(20, $hooks['sirsoft-page.page.after_delete']['priority']);
+        $this->assertEquals(20, $hooks['sirsoft-page.page.after_restore']['priority']);
     }
 
     // ─── onPageChange: 캐시 무효화 상태 검증 ──────────────
@@ -133,6 +137,29 @@ class SeoPageCacheListenerTest extends ModuleTestCase
 
         $this->expectNotToPerformAssertions();
         $this->listener->onPageChange($page);
+    }
+
+    /**
+     * onPageChange 호출 시 페이지 상세 URL 캐시가 URL 패턴으로 무효화되는지 확인합니다.
+     *
+     * 페이지 공개 URL은 단수형 /page/{slug} 이다 (PageSitemapContributor, SearchPagesListener 동일).
+     * 레이아웃 태그 없이 put()으로 캐시된 항목은 invalidateByLayout('page/show')로는 지워지지 않으므로,
+     * invalidateByUrl 의 와일드카드 패턴이 실제 URL(/page/{slug})과 일치해야만 무효화된다.
+     *
+     * 회귀 배경: 기존 패턴은 복수형 "*​/pages/{slug}" 라서 실제 단수형 URL과 매칭되지 않아
+     * 레이아웃 태그가 없는 페이지 상세 캐시가 영구히 남았다.
+     */
+    public function test_on_page_change_invalidates_page_detail_url_by_pattern(): void
+    {
+        $page = (object) ['id' => 6, 'slug' => 'pattern-page'];
+
+        // 레이아웃 태그 없이 페이지 상세 URL 캐시 (URL 패턴 매칭으로만 무효화 가능)
+        $this->cache->put('/page/pattern-page', 'ko', '<html>detail</html>');
+        $this->assertContains('/page/pattern-page', $this->cache->getCachedUrls());
+
+        $this->listener->onPageChange($page);
+
+        $this->assertNotContains('/page/pattern-page', $this->cache->getCachedUrls());
     }
 
     // ─── handle (인터페이스 준수) ───────────────────────────

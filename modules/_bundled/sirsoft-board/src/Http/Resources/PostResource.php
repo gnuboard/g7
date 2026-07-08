@@ -325,6 +325,7 @@ class PostResource extends BaseApiResource
     private function getBoardInfo(): array
     {
         return [
+            'id' => $this->board->id,
             'slug' => $this->board->slug,
             'name' => $this->board->getLocalizedName(),
             'type' => $this->board->type,
@@ -601,11 +602,19 @@ class PostResource extends BaseApiResource
                 'can_manage' => "sirsoft-board.{$slug}.manager",
             ];
 
-        return collect($permissionMap)
+        $abilities = collect($permissionMap)
             ->mapWithKeys(fn (string $identifier, string $key) => [
                 $key => $this->checkPermissionByIdentifier($identifier),
             ])
             ->toArray();
+
+        // 유저 상세 화면에서만: 관리자 게시판 화면 진입 게이트(Admin 타입 admin.manage).
+        // Admin 요청에서는 can_manage 가 이미 admin.manage 이므로 중복 노출 불필요.
+        if (! $this->isAdminRequest($request)) {
+            $abilities['can_access_admin'] = $this->checkPermissionByIdentifier("sirsoft-board.{$slug}.admin.manage");
+        }
+
+        return $abilities;
     }
 
     /**

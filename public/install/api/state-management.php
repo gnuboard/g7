@@ -138,7 +138,28 @@ class StateManagementApi
         ];
 
         // JSON 응답 반환
-        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        //
+        // 최종 안전망 (gnuboard/g7#62): $response['logs'] 에 invalid UTF-8 바이트가
+        // 섞이면 json_encode 가 false 를 반환하고 echo false = 빈 본문(HTTP 200) 이 되어
+        // 프론트 폴링(res.json())이 "Unexpected end of JSON input" 으로 폭주한다.
+        // 로그는 addLog / task-runner 에서 이미 scrub 되지만, 어떤 경로로도 응답이
+        // 빈 본문이 되지 않도록 JSON_INVALID_UTF8_SUBSTITUTE 로 치환하고 false 를 가드한다.
+        $encoded = json_encode(
+            $response,
+            JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_INVALID_UTF8_SUBSTITUTE
+        );
+
+        if ($encoded === false) {
+            // substitute 플래그로도 인코딩 실패한 극단적 케이스 — 폴링이 파싱 가능한
+            // 최소 유효 JSON 을 반환해 프론트가 다음 tick 에서 정상 복구되도록 한다.
+            $encoded = json_encode([
+                'status' => $status,
+                'logs' => [],
+                'log_total' => $logTotal,
+            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        }
+
+        echo $encoded;
     }
 
     /**

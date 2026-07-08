@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Page\Tests\Unit\Services;
 
 use App\Enums\PermissionType;
 use App\Enums\ScopeType;
+use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Models\Permission;
 use App\Models\Role;
@@ -144,16 +145,16 @@ class PageServiceTest extends ModuleTestCase
     // ─── deletePage ────────────────────────────────────
 
     /**
-     * 페이지를 소프트 삭제할 수 있는지 확인
+     * 페이지를 물리 삭제할 수 있는지 확인
      */
-    public function test_delete_page_soft_deletes(): void
+    public function test_delete_page_hard_deletes(): void
     {
         $page = $this->createTestPage('test-svc-delete');
 
         $result = $this->service->deletePage($page);
 
         $this->assertTrue($result);
-        $this->assertSoftDeleted('pages', ['id' => $page->id]);
+        $this->assertDatabaseMissing('pages', ['id' => $page->id]);
     }
 
     // ─── changePublishStatus ───────────────────────────
@@ -206,6 +207,105 @@ class PageServiceTest extends ModuleTestCase
         );
 
         $this->assertEquals(3, $count);
+
+        // 일괄 발행 후 published/published_at 가 실제 갱신되는지 확인
+        foreach ($pages as $page) {
+            $this->assertDatabaseHas('pages', [
+                'id' => $page->id,
+                'published' => true,
+            ]);
+        }
+    }
+
+    /**
+     * 일괄 발행 시 after_publish 훅이 페이지 수만큼 발화되는지 확인 (회귀)
+     *
+     * 일괄변경 경로가 after_publish 훅을 발화하지 않으면 활동로그가 기록되지 않는다.
+     * 단일 발행(changePublishStatus)과 동일하게 페이지별(per-item) 발화를 보장한다.
+     */
+    public function test_bulk_change_publish_status_fires_after_publish_hook_per_page(): void
+    {
+        $pages = Page::factory()->count(3)->create([
+            'published' => false,
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $firedPageIds = [];
+        $firedPublishedFlags = [];
+        HookManager::addAction(
+            'sirsoft-page.page.after_publish',
+            function (Page $page, bool $published) use (&$firedPageIds, &$firedPublishedFlags) {
+                $firedPageIds[] = $page->id;
+                $firedPublishedFlags[] = $published;
+            }
+        );
+
+        $this->service->bulkChangePublishStatus($pages->pluck('id')->toArray(), true);
+
+        // 페이지 수만큼 발화 + 각 페이지 id 가 1회씩
+        $this->assertCount(3, $firedPageIds);
+        $this->assertEqualsCanonicalizing(
+            $pages->pluck('id')->toArray(),
+            $firedPageIds
+        );
+        // 발행 인자가 모두 true
+        $this->assertSame([true, true, true], $firedPublishedFlags);
+    }
+
+    /**
+     * 일괄 미발행 시 after_publish 훅이 published=false 로 발화되는지 확인 (회귀)
+     */
+    public function test_bulk_change_publish_status_fires_unpublish_hook_per_page(): void
+    {
+        $pages = Page::factory()->published()->count(3)->create([
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $firedPublishedFlags = [];
+        HookManager::addAction(
+            'sirsoft-page.page.after_publish',
+            function (Page $page, bool $published) use (&$firedPublishedFlags) {
+                $firedPublishedFlags[] = $published;
+            }
+        );
+
+        $this->service->bulkChangePublishStatus($pages->pluck('id')->toArray(), false);
+
+        $this->assertSame([false, false, false], $firedPublishedFlags);
+    }
+
+    /**
+     * 일괄 처리 도중 한 건이라도 실패하면 전체 롤백되는지 확인 (회귀)
+     *
+     * all-or-nothing: 존재하지 않는 id 가 섞이면 정상 페이지도 발행되지 않아야 한다.
+     */
+    public function test_bulk_change_publish_status_rolls_back_on_failure(): void
+    {
+        $pages = Page::factory()->count(2)->create([
+            'published' => false,
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $ids = $pages->pluck('id')->toArray();
+        $ids[] = 999999; // 존재하지 않는 페이지 id
+
+        try {
+            $this->service->bulkChangePublishStatus($ids, true);
+            $this->fail('존재하지 않는 페이지 id 포함 시 예외가 발생해야 한다.');
+        } catch (\Throwable $e) {
+            // 예외 발생 기대
+        }
+
+        // 정상 페이지 2건도 발행되지 않아야 함 (전체 롤백)
+        foreach ($pages as $page) {
+            $this->assertDatabaseHas('pages', [
+                'id' => $page->id,
+                'published' => false,
+            ]);
+        }
     }
 
     // ─── restoreVersion ────────────────────────────────
@@ -297,6 +397,35 @@ class PageServiceTest extends ModuleTestCase
         ]);
 
         $page = $this->service->getPublishedPageBySlug('test-svc-draft-slug');
+
+        $this->assertNull($page);
+    }
+
+    /**
+     * allowUnpublished=true 이면 미발행 페이지도 반환하는지 확인 (미리보기)
+     */
+    public function test_get_published_page_by_slug_returns_draft_when_preview_allowed(): void
+    {
+        Page::factory()->create([
+            'slug' => 'test-svc-draft-preview',
+            'published' => false,
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $page = $this->service->getPublishedPageBySlug('test-svc-draft-preview', true);
+
+        $this->assertNotNull($page);
+        $this->assertEquals('test-svc-draft-preview', $page->slug);
+        $this->assertFalse((bool) $page->published);
+    }
+
+    /**
+     * allowUnpublished=true 여도 존재하지 않는 슬러그는 null 을 반환하는지 확인
+     */
+    public function test_get_published_page_by_slug_returns_null_for_missing_even_when_preview_allowed(): void
+    {
+        $page = $this->service->getPublishedPageBySlug('test-svc-no-such-slug', true);
 
         $this->assertNull($page);
     }

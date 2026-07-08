@@ -51,7 +51,8 @@
     "published_at": "Published",
     "create_page": "Create Page",
     "attachments": "Attachments",
-    "download": "Download"
+    "download": "Download",
+    "preview_banner": "Previewing an unpublished page"
   },
   "mypage": {
     "page_title": "My Page",

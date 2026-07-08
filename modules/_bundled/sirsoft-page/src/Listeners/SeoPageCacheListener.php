@@ -35,6 +35,11 @@ class SeoPageCacheListener implements HookListenerInterface
                 'method' => 'onPageChange',
                 'priority' => 20,
             ],
+            // 버전 복원도 콘텐츠(title/content/seo_meta) 변경이므로 수정과 동일하게 무효화
+            'sirsoft-page.page.after_restore' => [
+                'method' => 'onPageChange',
+                'priority' => 20,
+            ],
         ];
     }
 
@@ -62,9 +67,9 @@ class SeoPageCacheListener implements HookListenerInterface
         try {
             $cache = app(SeoCacheManagerInterface::class);
 
-            // 페이지 상세 URL 캐시 무효화
+            // 페이지 상세 URL 캐시 무효화 (공개 URL은 단수형 /page/{slug})
             if ($page && isset($page->slug)) {
-                $cache->invalidateByUrl("*/pages/{$page->slug}");
+                $cache->invalidateByUrl("*/page/{$page->slug}");
             }
 
             // 페이지 상세 레이아웃 캐시 무효화

@@ -4,15 +4,13 @@
  * 그누보드7 웹 인스톨러 요청 처리 핸들러
  *
  * 모든 POST 요청 및 비즈니스 로직을 처리합니다.
- *
- * @package G7\Installer
  */
 
 /**
  * 설치 흐름 검증 및 리다이렉트
  *
- * @param int $currentStep 현재 단계
- * @param array $state 설치 상태
+ * @param  int  $currentStep  현재 단계
+ * @param  array  $state  설치 상태
  */
 function validateInstallationFlow(int $currentStep, array $state): void
 {
@@ -42,14 +40,14 @@ function validateInstallationFlow(int $currentStep, array $state): void
 /**
  * 잘못된 단계 접근 시 알림 표시
  *
- * @param int $correctStep 올바른 단계 번호
+ * @param  int  $correctStep  올바른 단계 번호
  */
 function showInvalidStepAccessAlert(int $correctStep): void
 {
     global $translations;
 
     // 번역이 로드되지 않은 경우 로드
-    if (!isset($translations)) {
+    if (! isset($translations)) {
         $translations = loadTranslations(getCurrentLanguage());
     }
 
@@ -59,7 +57,7 @@ function showInvalidStepAccessAlert(int $correctStep): void
     showAlertAndRedirect(
         lang('error_invalid_step_access'),
         lang('error_invalid_step_access_message'),
-        INSTALLER_BASE_URL . '/'
+        INSTALLER_BASE_URL.'/'
     );
 }
 
@@ -73,7 +71,7 @@ function handleStep0Post(): void
     }
 
     // 다음 버튼 클릭 시 (언어 선택 변경이 아닌 경우)
-    if (!isset($_POST['language_change_only'])) {
+    if (! isset($_POST['language_change_only'])) {
         unset($_SESSION['license_agreed']);
         updateStepStatus(0, 1);
         redirectToStep(1);
@@ -85,14 +83,14 @@ function handleStep0Post(): void
 /**
  * Step 1 POST 처리 (라이선스 동의)
  *
- * @param string $currentLang 현재 언어
- * @param string|null &$error 에러 메시지 (참조)
+ * @param  string  $currentLang  현재 언어
+ * @param  string|null  &$error  에러 메시지 (참조)
  */
 function handleStep1Post(string $currentLang, ?string &$error = null): void
 {
     $translations = loadTranslations($currentLang);
 
-    if (!isset($_POST['agree']) || $_POST['agree'] !== '1') {
+    if (! isset($_POST['agree']) || $_POST['agree'] !== '1') {
         $error = lang('must_agree');
     } else {
         $_SESSION['license_agreed'] = true;
@@ -115,9 +113,9 @@ function handleStep2Post(): void
 /**
  * Step 3 POST 처리 (데이터베이스 및 사이트 설정)
  *
- * @param string $currentLang 현재 언어
- * @param array &$formData 폼 데이터 (참조)
- * @param array &$errors 에러 배열 (참조)
+ * @param  string  $currentLang  현재 언어
+ * @param  array  &$formData  폼 데이터 (참조)
+ * @param  array  &$errors  에러 배열 (참조)
  */
 function handleStep3Post(string $currentLang, array &$formData, array &$errors): void
 {
@@ -135,7 +133,7 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     }
 
     // Read DB 검증 (사용하는 경우)
-    if (!empty($formData['use_read_db'])) {
+    if (! empty($formData['use_read_db'])) {
         if (empty($formData['db_read_host'])) {
             $errors['db_read_host'] = lang('error_db_host_required');
         }
@@ -145,10 +143,10 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     }
 
     // 관리자 정보 검증
-    if (empty($formData['admin_email']) || !filter_var($formData['admin_email'], FILTER_VALIDATE_EMAIL)) {
+    if (empty($formData['admin_email']) || ! filter_var($formData['admin_email'], FILTER_VALIDATE_EMAIL)) {
         $errors['admin_email'] = lang('error_admin_email_invalid');
     }
-    if (!array_key_exists($formData['admin_language'] ?? '', SUPPORTED_LANGUAGES)) {
+    if (! array_key_exists($formData['admin_language'] ?? '', SUPPORTED_LANGUAGES)) {
         $errors['admin_language'] = lang('error_admin_language_invalid');
     }
     if (empty($formData['admin_password']) || strlen($formData['admin_password']) < 8) {
@@ -176,19 +174,19 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         // 절대 경로 변환
         $absolutePath = str_starts_with($corePendingPath, '/')
             ? $corePendingPath
-            : BASE_PATH . '/' . $corePendingPath;
+            : BASE_PATH.'/'.$corePendingPath;
 
-        if (file_exists($absolutePath) && !is_dir($absolutePath)) {
+        if (file_exists($absolutePath) && ! is_dir($absolutePath)) {
             $errors['core_update_pending_path'] = lang('error_core_pending_not_directory');
         }
     }
 
     // DB 테스트 완료 확인
-    if (empty($errors) && !isset($_SESSION['db_write_tested'])) {
+    if (empty($errors) && ! isset($_SESSION['db_write_tested'])) {
         $errors['db_test'] = lang('error_db_not_tested');
     }
 
-    if (empty($errors) && !empty($formData['use_read_db']) && !isset($_SESSION['db_read_tested'])) {
+    if (empty($errors) && ! empty($formData['use_read_db']) && ! isset($_SESSION['db_read_tested'])) {
         $errors['db_test'] = lang('error_db_not_tested');
     }
 
@@ -200,9 +198,21 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         $safeFormData = $formData;
         unset($safeFormData['db_write_password'], $safeFormData['db_read_password']);
 
+        // Read DB 미사용 시 read 필드 잔존값을 제거한다 (이슈 #63 2단계 방어).
+        // use_read_db=false 인데 db_read_host 등이 남아 있으면 하류(installer-runtime.php)
+        // 로 유입되어 잘못된 read 커넥션을 만들 수 있으므로 원천 차단한다.
+        if (empty($safeFormData['use_read_db'])) {
+            unset(
+                $safeFormData['db_read_host'],
+                $safeFormData['db_read_port'],
+                $safeFormData['db_read_database'],
+                $safeFormData['db_read_username']
+            );
+        }
+
         updateStepStatus(3, 4, [
             'config' => $safeFormData,
-            'installation_status' => 'ready'
+            'installation_status' => 'ready',
         ]);
 
         redirectToStep(4);
@@ -212,21 +222,21 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
 /**
  * POST 요청 라우팅
  *
- * @param int $currentStep 현재 단계
- * @param string $currentLang 현재 언어
- * @param array &$formData 폼 데이터 (참조)
- * @param array &$errors 에러 배열 (참조)
- * @param string|null &$error 에러 메시지 (참조)
+ * @param  int  $currentStep  현재 단계
+ * @param  string  $currentLang  현재 언어
+ * @param  array  &$formData  폼 데이터 (참조)
+ * @param  array  &$errors  에러 배열 (참조)
+ * @param  string|null  &$error  에러 메시지 (참조)
  */
 function handlePostRequest(int $currentStep, string $currentLang, array &$formData = [], array &$errors = [], ?string &$error = null): void
 {
     // 단계 이동 처리 (go_to_step POST 파라미터)
     if (isset($_POST['go_to_step'])) {
-        $step = (int)$_POST['go_to_step'];
+        $step = (int) $_POST['go_to_step'];
         if ($step >= 0 && $step <= 5) {
             $_SESSION['installer_current_step'] = $step;
         }
-        header('Location: ' . INSTALLER_BASE_URL . '/');
+        header('Location: '.INSTALLER_BASE_URL.'/');
         exit;
     }
 
@@ -238,7 +248,7 @@ function handlePostRequest(int $currentStep, string $currentLang, array &$formDa
     }
 
     // Step별 POST 처리
-    match($currentStep) {
+    match ($currentStep) {
         0 => handleStep0Post(),
         1 => handleStep1Post($currentLang, $error),
         2 => handleStep2Post(),

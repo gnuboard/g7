@@ -15,6 +15,7 @@ use Modules\Sirsoft\Board\Http\Resources\BoardCollection;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Http\Resources\BoardTypeResource;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\BoardTypeService;
 use Modules\Sirsoft\Board\Services\PostService;
@@ -69,13 +70,13 @@ class BoardController extends AdminBaseController
     /**
      * 게시판 상세 정보를 조회합니다.
      *
-     * @param  int  $id  게시판 ID
+     * @param  Board  $board  라우트 바인딩된 게시판 (slug 또는 ID)
      * @return JsonResponse 게시판 상세 정보 응답
      */
-    public function show(int $id): JsonResponse
+    public function show(Board $board): JsonResponse
     {
         try {
-            $board = $this->boardService->getBoard($id);
+            $board = $this->boardService->getBoard($board->id);
 
             return $this->successWithResource(
                 'sirsoft-board::messages.boards.fetch_success',
@@ -168,13 +169,13 @@ class BoardController extends AdminBaseController
      * 게시판 정보를 수정합니다.
      *
      * @param  UpdateBoardRequest  $request  게시판 수정 요청
-     * @param  int  $id  게시판 ID
+     * @param  Board  $board  라우트 바인딩된 게시판 (slug 또는 ID)
      * @return JsonResponse 수정된 게시판 정보 응답
      */
-    public function update(UpdateBoardRequest $request, int $id): JsonResponse
+    public function update(UpdateBoardRequest $request, Board $board): JsonResponse
     {
         try {
-            $board = $this->boardService->updateBoard($id, $request->validated());
+            $board = $this->boardService->updateBoard($board->id, $request->validated());
 
             return $this->successWithResource(
                 'sirsoft-board::messages.boards.update_success',
@@ -194,16 +195,16 @@ class BoardController extends AdminBaseController
     /**
      * 게시판을 영구 삭제합니다.
      *
-     * @param  int  $id  게시판 ID
+     * @param  Board  $board  라우트 바인딩된 게시판 (slug 또는 ID)
      * @param  Request  $request  HTTP 요청
      * @return JsonResponse 삭제 성공 응답
      */
     // audit:allow controller-base-request-injection reason: DELETE 단건 삭제. force_delete 불리언 플래그만 input()으로 읽음 (검증 불필요)
-    public function destroy(int $id, Request $request): JsonResponse
+    public function destroy(Board $board, Request $request): JsonResponse
     {
         try {
             $forceDelete = (bool) $request->input('force_delete', false);
-            $this->boardService->deleteBoard($id, $forceDelete);
+            $this->boardService->deleteBoard($board->id, $forceDelete);
 
             return $this->success('sirsoft-board::messages.boards.delete_success');
         } catch (ModelNotFoundException $e) {
@@ -227,11 +228,17 @@ class BoardController extends AdminBaseController
         try {
             $basicDefaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
 
-            // 수정 모드
-            if ($request->filled('board_id')) {
+            // 수정 모드 — board_slug(신규, slug 라우팅) 또는 board_id(하위호환) 로 식별
+            if ($request->filled('board_slug') || $request->filled('board_id')) {
                 $request->merge(['include_permissions' => true]);
 
-                $board = $this->boardService->getBoard($request->board_id);
+                $board = $request->filled('board_slug')
+                    ? $this->boardService->getBoardBySlug($request->board_slug)
+                    : $this->boardService->getBoard((int) $request->board_id);
+
+                if (! $board) {
+                    return $this->notFound('sirsoft-board::messages.boards.error_404');
+                }
                 // 폼 토글 초기값: 관리자 메뉴 등록 여부를 모델 속성으로 전달
                 $board->is_in_admin_menu = $this->boardService->isInAdminMenu($board);
                 $data = (new BoardResource($board))->toArray($request);
@@ -317,14 +324,14 @@ class BoardController extends AdminBaseController
     /**
      * 게시판을 관리자 메뉴에 추가합니다.
      *
-     * @param  int  $id  게시판 ID
+     * @param  Board  $board  게시판 모델 (slug/id 라우트 바인딩)
      * @return JsonResponse 메뉴 추가 결과 응답
      */
-    public function addToAdminMenu(int $id): JsonResponse
+    public function addToAdminMenu(Board $board): JsonResponse
     {
         try {
             // Service 계층에 위임
-            $menu = $this->boardService->addToAdminMenu($id);
+            $menu = $this->boardService->addToAdminMenu($board->id);
 
             return $this->success('sirsoft-board::messages.boards.menu_added_success', ['menu' => $menu]);
         } catch (MenuAlreadyExistsException $e) {

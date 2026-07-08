@@ -10,13 +10,22 @@ use Illuminate\Support\Facades\App;
 class ResponseHelper
 {
     /**
+     * JSON 응답 인코딩 옵션.
+     *
+     * JSON_UNESCAPED_UNICODE: 한글 등 멀티바이트 문자를 `\uXXXX` (6바이트) 로
+     * 이스케이프하지 않고 raw UTF-8 (한글 3바이트) 로 직렬화하여 응답 크기를 줄인다.
+     * 특히 다국어 팩(lang) 응답에서 전송량 절감 효과가 크다.
+     */
+    public const JSON_ENCODE_OPTIONS = JSON_UNESCAPED_UNICODE;
+
+    /**
      * 성공 응답을 생성합니다.
      *
-     * @param string $messageKey 메시지 키 (기본값: 'messages.success')
-     * @param mixed $data 응답 데이터
-     * @param int $statusCode HTTP 상태 코드 (기본값: 200)
-     * @param array $messageParams 메시지 매개변수
-     * @param string $domain 번역 도메인 (기본값: 'core')
+     * @param  string  $messageKey  메시지 키 (기본값: 'messages.success')
+     * @param  mixed  $data  응답 데이터
+     * @param  int  $statusCode  HTTP 상태 코드 (기본값: 200)
+     * @param  array  $messageParams  메시지 매개변수
+     * @param  string  $domain  번역 도메인 (기본값: 'core')
      * @return JsonResponse JSON 응답
      */
     public static function success(
@@ -29,18 +38,18 @@ class ResponseHelper
         return response()->json([
             'success' => true,
             'message' => self::trans($messageKey, $messageParams, $domain),
-            'data' => $data
-        ], $statusCode);
+            'data' => $data,
+        ], $statusCode, [], self::JSON_ENCODE_OPTIONS);
     }
 
     /**
      * 실패 응답을 생성합니다.
      *
-     * @param string $messageKey 메시지 키 (기본값: 'messages.failed')
-     * @param int $statusCode HTTP 상태 코드 (기본값: 400)
-     * @param mixed $errors 오류 정보
-     * @param array $messageParams 메시지 매개변수
-     * @param string $domain 번역 도메인 (기본값: 'core')
+     * @param  string  $messageKey  메시지 키 (기본값: 'messages.failed')
+     * @param  int  $statusCode  HTTP 상태 코드 (기본값: 400)
+     * @param  mixed  $errors  오류 정보
+     * @param  array  $messageParams  메시지 매개변수
+     * @param  string  $domain  번역 도메인 (기본값: 'core')
      * @return JsonResponse JSON 응답
      */
     public static function error(
@@ -59,28 +68,28 @@ class ResponseHelper
             if (config('app.debug')) {
                 // messageParams에 이미 에러 메시지가 포함된 경우 중복 방지
                 if (empty($messageParams)) {
-                    $response['message'] .= ': ' . $errors->getMessage();
+                    $response['message'] .= ': '.$errors->getMessage();
                 }
                 $response['debug'] = self::formatException($errors);
             }
         } elseif ($errors !== null) {
-            if ($statusCode >= 500 && is_string($errors) && !config('app.debug')) {
+            if ($statusCode >= 500 && is_string($errors) && ! config('app.debug')) {
                 // 프로덕션 500+ 에러의 string errors 차단 (내부 예외 메시지 노출 방지)
             } else {
                 $response['errors'] = $errors;
             }
         }
 
-        return response()->json($response, $statusCode);
+        return response()->json($response, $statusCode, [], self::JSON_ENCODE_OPTIONS);
     }
 
     /**
      * 입력 검증 실패 응답을 생성합니다.
      *
-     * @param mixed $errors 검증 오류 정보
-     * @param string $messageKey 메시지 키 (기본값: 'messages.validation_failed')
-     * @param array $messageParams 메시지 매개변수
-     * @param string $domain 번역 도메인 (기본값: 'core')
+     * @param  mixed  $errors  검증 오류 정보
+     * @param  string  $messageKey  메시지 키 (기본값: 'messages.validation_failed')
+     * @param  array  $messageParams  메시지 매개변수
+     * @param  string  $domain  번역 도메인 (기본값: 'core')
      * @return JsonResponse 422 상태 코드를 가진 JSON 응답
      */
     public static function validationError(
@@ -92,16 +101,16 @@ class ResponseHelper
         return response()->json([
             'success' => false,
             'message' => self::trans($messageKey, $messageParams, $domain),
-            'errors' => $errors
-        ], 422);
+            'errors' => $errors,
+        ], 422, [], self::JSON_ENCODE_OPTIONS);
     }
 
     /**
      * 인증 실패 응답을 생성합니다.
      *
-     * @param string $messageKey 메시지 키 (기본값: 'messages.unauthorized')
-     * @param array $messageParams 메시지 매개변수
-     * @param string $domain 번역 도메인 (기본값: 'core')
+     * @param  string  $messageKey  메시지 키 (기본값: 'messages.unauthorized')
+     * @param  array  $messageParams  메시지 매개변수
+     * @param  string  $domain  번역 도메인 (기본값: 'core')
      * @return JsonResponse 401 상태 코드를 가진 JSON 응답
      */
     public static function unauthorized(
@@ -111,16 +120,16 @@ class ResponseHelper
     ): JsonResponse {
         return response()->json([
             'success' => false,
-            'message' => self::trans($messageKey, $messageParams, $domain)
-        ], 401);
+            'message' => self::trans($messageKey, $messageParams, $domain),
+        ], 401, [], self::JSON_ENCODE_OPTIONS);
     }
 
     /**
      * 권한 부족 응답을 생성합니다.
      *
-     * @param string $messageKey 멤시지 키 (기본값: 'messages.forbidden')
-     * @param array $messageParams 멤시지 매개변수
-     * @param string $domain 번역 도메인 (기본값: 'core')
+     * @param  string  $messageKey  멤시지 키 (기본값: 'messages.forbidden')
+     * @param  array  $messageParams  멤시지 매개변수
+     * @param  string  $domain  번역 도메인 (기본값: 'core')
      * @return JsonResponse 403 상태 코드를 가진 JSON 응답
      */
     public static function forbidden(
@@ -130,16 +139,16 @@ class ResponseHelper
     ): JsonResponse {
         return response()->json([
             'success' => false,
-            'message' => self::trans($messageKey, $messageParams, $domain)
-        ], 403);
+            'message' => self::trans($messageKey, $messageParams, $domain),
+        ], 403, [], self::JSON_ENCODE_OPTIONS);
     }
 
     /**
      * 리소스를 찾을 수 없음 응답을 생성합니다.
      *
-     * @param string $messageKey 멤시지 키 (기본값: 'messages.not_found')
-     * @param array $messageParams 멤시지 매개변수
-     * @param string $domain 번역 도메인 (기본값: 'core')
+     * @param  string  $messageKey  멤시지 키 (기본값: 'messages.not_found')
+     * @param  array  $messageParams  멤시지 매개변수
+     * @param  string  $domain  번역 도메인 (기본값: 'core')
      * @return JsonResponse 404 상태 코드를 가진 JSON 응답
      */
     public static function notFound(
@@ -149,17 +158,17 @@ class ResponseHelper
     ): JsonResponse {
         return response()->json([
             'success' => false,
-            'message' => self::trans($messageKey, $messageParams, $domain)
-        ], 404);
+            'message' => self::trans($messageKey, $messageParams, $domain),
+        ], 404, [], self::JSON_ENCODE_OPTIONS);
     }
 
     /**
      * 서버 내부 오류 응답을 생성합니다.
      *
-     * @param string $messageKey 멤시지 키 (기본값: 'messages.error_occurred')
-     * @param mixed $error 오류 정보 (디버그 모드에서만 표시)
-     * @param array $messageParams 멤시지 매개변수
-     * @param string $domain 번역 도메인 (기본값: 'core')
+     * @param  string  $messageKey  멤시지 키 (기본값: 'messages.error_occurred')
+     * @param  mixed  $error  오류 정보 (디버그 모드에서만 표시)
+     * @param  array  $messageParams  멤시지 매개변수
+     * @param  string  $domain  번역 도메인 (기본값: 'core')
      * @return JsonResponse 500 상태 코드를 가진 JSON 응답
      */
     public static function serverError(
@@ -175,22 +184,22 @@ class ResponseHelper
 
         if ($error instanceof \Throwable) {
             if (config('app.debug')) {
-                $response['message'] .= ': ' . $error->getMessage();
+                $response['message'] .= ': '.$error->getMessage();
                 $response['debug'] = self::formatException($error);
             }
         } elseif ($error !== null && config('app.debug')) {
             $response['error'] = $error;
         }
 
-        return response()->json($response, 500);
+        return response()->json($response, 500, [], self::JSON_ENCODE_OPTIONS);
     }
 
     /**
      * 다국어 메시지를 변환합니다.
      *
-     * @param string $key 번역 키
-     * @param array $params 번역 매개변수
-     * @param string $domain 번역 도메인
+     * @param  string  $key  번역 키
+     * @param  array  $params  번역 매개변수
+     * @param  string  $domain  번역 도메인
      * @return string 번역된 메시지
      */
     private static function trans(
@@ -199,10 +208,10 @@ class ResponseHelper
         string $domain = 'core'
     ): string {
         $locale = self::getUserLocale();
-        
+
         // 도메인별로 다른 경로에서 번역 파일 로드
         $translationKey = $domain === 'core' ? $key : "{$domain}::{$key}";
-        
+
         return __($translationKey, $params, $locale);
     }
 
@@ -225,7 +234,7 @@ class ResponseHelper
     /**
      * 예외 정보를 디버그용 배열로 변환합니다.
      *
-     * @param \Throwable $e 예외 인스턴스
+     * @param  \Throwable  $e  예외 인스턴스
      * @return array 디버그 정보 배열
      */
     private static function formatException(\Throwable $e): array
@@ -238,7 +247,7 @@ class ResponseHelper
             'trace' => collect($e->getTrace())->take(10)->map(fn ($frame) => [
                 'file' => $frame['file'] ?? null,
                 'line' => $frame['line'] ?? null,
-                'function' => ($frame['class'] ?? '') . ($frame['type'] ?? '') . ($frame['function'] ?? ''),
+                'function' => ($frame['class'] ?? '').($frame['type'] ?? '').($frame['function'] ?? ''),
             ])->toArray(),
         ];
     }
@@ -246,11 +255,11 @@ class ResponseHelper
     /**
      * 모듈별 성공 응답을 생성합니다.
      *
-     * @param string $module 모듈명
-     * @param string $messageKey 멤시지 키
-     * @param mixed $data 응답 데이터
-     * @param int $statusCode HTTP 상태 코드 (기본값: 200)
-     * @param array $messageParams 멤시지 매개변수
+     * @param  string  $module  모듈명
+     * @param  string  $messageKey  멤시지 키
+     * @param  mixed  $data  응답 데이터
+     * @param  int  $statusCode  HTTP 상태 코드 (기본값: 200)
+     * @param  array  $messageParams  멤시지 매개변수
      * @return JsonResponse JSON 응답
      */
     public static function moduleSuccess(
@@ -266,11 +275,11 @@ class ResponseHelper
     /**
      * 모듈별 실패 응답을 생성합니다.
      *
-     * @param string $module 모듈명
-     * @param string $messageKey 멤시지 키
-     * @param int $statusCode HTTP 상태 코드 (기본값: 400)
-     * @param mixed $errors 오류 정보
-     * @param array $messageParams 멤시지 매개변수
+     * @param  string  $module  모듈명
+     * @param  string  $messageKey  멤시지 키
+     * @param  int  $statusCode  HTTP 상태 코드 (기본값: 400)
+     * @param  mixed  $errors  오류 정보
+     * @param  array  $messageParams  멤시지 매개변수
      * @return JsonResponse JSON 응답
      */
     public static function moduleError(
@@ -286,11 +295,11 @@ class ResponseHelper
     /**
      * 플러그인별 성공 응답을 생성합니다.
      *
-     * @param string $plugin 플러그인명
-     * @param string $messageKey 멤시지 키
-     * @param mixed $data 응답 데이터
-     * @param int $statusCode HTTP 상태 코드 (기본값: 200)
-     * @param array $messageParams 멤시지 매개변수
+     * @param  string  $plugin  플러그인명
+     * @param  string  $messageKey  멤시지 키
+     * @param  mixed  $data  응답 데이터
+     * @param  int  $statusCode  HTTP 상태 코드 (기본값: 200)
+     * @param  array  $messageParams  멤시지 매개변수
      * @return JsonResponse JSON 응답
      */
     public static function pluginSuccess(
@@ -306,11 +315,11 @@ class ResponseHelper
     /**
      * 플러그인별 실패 응답을 생성합니다.
      *
-     * @param string $plugin 플러그인명
-     * @param string $messageKey 멤시지 키
-     * @param int $statusCode HTTP 상태 코드 (기본값: 400)
-     * @param mixed $errors 오류 정보
-     * @param array $messageParams 멤시지 매개변수
+     * @param  string  $plugin  플러그인명
+     * @param  string  $messageKey  멤시지 키
+     * @param  int  $statusCode  HTTP 상태 코드 (기본값: 400)
+     * @param  mixed  $errors  오류 정보
+     * @param  array  $messageParams  멤시지 매개변수
      * @return JsonResponse JSON 응답
      */
     public static function pluginError(
@@ -326,11 +335,11 @@ class ResponseHelper
     /**
      * JSON Resource를 사용한 성공 응답을 생성합니다.
      *
-     * @param string $messageKey 멤시지 키 (기본값: 'messages.success')
-     * @param JsonResource|ResourceCollection|null $resource JSON 리소스
-     * @param int $statusCode HTTP 상태 코드 (기본값: 200)
-     * @param array $messageParams 멤시지 매개변수
-     * @param string $domain 번역 도메인 (기본값: 'core')
+     * @param  string  $messageKey  멤시지 키 (기본값: 'messages.success')
+     * @param  JsonResource|ResourceCollection|null  $resource  JSON 리소스
+     * @param  int  $statusCode  HTTP 상태 코드 (기본값: 200)
+     * @param  array  $messageParams  멤시지 매개변수
+     * @param  string  $domain  번역 도메인 (기본값: 'core')
      * @return JsonResponse JSON 응답
      */
     public static function successWithResource(
@@ -341,22 +350,22 @@ class ResponseHelper
         string $domain = 'core'
     ): JsonResponse {
         $data = $resource ? $resource->resolve() : null;
-        
+
         return response()->json([
             'success' => true,
             'message' => self::trans($messageKey, $messageParams, $domain),
-            'data' => $data
-        ], $statusCode);
+            'data' => $data,
+        ], $statusCode, [], self::JSON_ENCODE_OPTIONS);
     }
 
     /**
      * JSON Resource를 사용한 모듈 성공 응답을 생성합니다.
      *
-     * @param string $module 모듈명
-     * @param string $messageKey 멤시지 키
-     * @param JsonResource|ResourceCollection|null $resource JSON 리소스
-     * @param int $statusCode HTTP 상태 코드 (기본값: 200)
-     * @param array $messageParams 멤시지 매개변수
+     * @param  string  $module  모듈명
+     * @param  string  $messageKey  멤시지 키
+     * @param  JsonResource|ResourceCollection|null  $resource  JSON 리소스
+     * @param  int  $statusCode  HTTP 상태 코드 (기본값: 200)
+     * @param  array  $messageParams  멤시지 매개변수
      * @return JsonResponse JSON 응답
      */
     public static function moduleSuccessWithResource(
@@ -372,11 +381,11 @@ class ResponseHelper
     /**
      * JSON Resource를 사용한 플러그인 성공 응답을 생성합니다.
      *
-     * @param string $plugin 플러그인명
-     * @param string $messageKey 멤시지 키
-     * @param JsonResource|ResourceCollection|null $resource JSON 리소스
-     * @param int $statusCode HTTP 상태 코드 (기본값: 200)
-     * @param array $messageParams 멤시지 매개변수
+     * @param  string  $plugin  플러그인명
+     * @param  string  $messageKey  멤시지 키
+     * @param  JsonResource|ResourceCollection|null  $resource  JSON 리소스
+     * @param  int  $statusCode  HTTP 상태 코드 (기본값: 200)
+     * @param  array  $messageParams  멤시지 매개변수
      * @return JsonResponse JSON 응답
      */
     public static function pluginSuccessWithResource(
@@ -392,21 +401,21 @@ class ResponseHelper
     /**
      * 페이지네이션된 리소스 응답을 생성합니다.
      *
-     * @param string $messageKey 멤시지 키 (기본값: 'messages.success')
-     * @param ResourceCollection|null $collection 페이지네이션된 리소스 컬렉션
-     * @param array $messageParams 멤시지 매개변수
-     * @param string $domain 번역 도메인 (기본값: 'core')
+     * @param  string  $messageKey  멤시지 키 (기본값: 'messages.success')
+     * @param  ResourceCollection|null  $collection  페이지네이션된 리소스 컬렉션
+     * @param  array  $messageParams  멤시지 매개변수
+     * @param  string  $domain  번역 도메인 (기본값: 'core')
      * @return JsonResponse 페이지네이션 메타 데이터를 포함한 JSON 응답
      */
     public static function successWithPagination(
         string $messageKey = 'messages.success',
-        ResourceCollection|null $collection = null,
+        ?ResourceCollection $collection = null,
         array $messageParams = [],
         string $domain = 'core'
     ): JsonResponse {
         $response = [
             'success' => true,
-            'message' => self::trans($messageKey, $messageParams, $domain)
+            'message' => self::trans($messageKey, $messageParams, $domain),
         ];
 
         if ($collection) {
@@ -424,7 +433,7 @@ class ResponseHelper
             $response['links'] = $paginationData['links'] ?? null;
         }
 
-        return response()->json($response);
+        return response()->json($response, 200, [], self::JSON_ENCODE_OPTIONS);
     }
 
     /**
@@ -444,6 +453,6 @@ class ResponseHelper
             'error_code' => 'identity_verification_required',
             'message' => self::trans('identity.errors.verification_required', [], 'core'),
             'verification' => $verification,
-        ], 428);
+        ], 428, [], self::JSON_ENCODE_OPTIONS);
     }
 }

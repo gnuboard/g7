@@ -87,7 +87,8 @@
     "edit_search": "Edit Search",
     "search": "Search",
     "reset": "Reset",
-    "save_preset": "Save Preset"
+    "save_preset": "Save Preset",
+    "view_user_page": "View on site"
   },
   "bulk_apply": "Apply",
   "bulk_success": "Selected products have been changed.",

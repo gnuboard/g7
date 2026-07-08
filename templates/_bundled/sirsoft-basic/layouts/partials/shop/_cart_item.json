@@ -35,7 +35,7 @@
       "comment": "상품 이미지 (새 창으로 열기)",
       "type": "basic",
       "name": "A",
-      "props": { "href": "{{_global.shopBase}}/products/{{item.product_id}}", "target": "_blank", "className": "flex-shrink-0" },
+      "props": { "href": "{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}", "target": "_blank", "className": "flex-shrink-0" },
       "children": [
         {
           "type": "basic",
@@ -57,7 +57,7 @@
           "comment": "상품명 (새 창으로 열기)",
           "type": "basic",
           "name": "A",
-          "props": { "href": "{{_global.shopBase}}/products/{{item.product_id}}", "target": "_blank", "className": "block w-full text-left no-underline" },
+          "props": { "href": "{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}", "target": "_blank", "className": "block w-full text-left no-underline" },
           "children": [
             { "type": "basic", "name": "H3", "props": { "className": "font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate" }, "text": "{{item.product.name}}" }
           ]
@@ -304,7 +304,7 @@
                     {
                       "comment": "상품 옵션 정보 조회 후 모달 열기",
                       "handler": "apiCall",
-                      "target": "/api/modules/sirsoft-ecommerce/products/{{item.product_id}}",
+                      "target": "/api/modules/sirsoft-ecommerce/products/{{item.product?.product_code ?? item.product_id}}",
                       "auth_mode": "optional",
                       "onSuccess": [
                         {

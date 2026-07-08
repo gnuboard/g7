@@ -111,7 +111,8 @@
 ├─ Step 4:  다운로드 (GitHub zipball 또는 --source/--local에서 복사)
 ├─ Step 5:  백업 생성 (--no-backup 시 스킵)
 ├─ Step 6:  Composer install (_pending에서 실행, 변경 없으면 스킵)
-├─ Step 7:  파일 적용 (_pending → base_path 선택적 덮어쓰기)
+├─ Step 6.5: 신규 파일 manifest 생성 + 증분 적용 대상(3-way) 산출 (백업 있을 때)
+├─ Step 7:  파일 적용 (_pending → base_path, 기본=코어 변경분만 / --prune=전체 덮어쓰기)
 ├─ Step 8:  vendor 복사 (_pending/vendor → base_path/vendor, Step 6 스킵 시 함께 스킵)
 ├─ Step 9:  마이그레이션 + 동기화 (migrate, roles, permissions, menus, mail templates)
 ├─ Step 10: 업그레이드 스텝 실행 (upgrades/Upgrade_X_Y_Z.php)
@@ -178,15 +179,45 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > Vendor 번들 시스템 상세: [docs/extension/vendor-bundle.md](../extension/vendor-bundle.md)
 
+### Step 6.5: 신규 파일 manifest + 증분 적용 대상 산출
+
+```text
+백업이 있을 때(--no-backup 아님)만 수행:
+
+1. writeNewFilesManifest() — 자동 롤백용 `_new_files_manifest.json` 기록
+   (base=백업 vs theirs=_pending: 신 버전이 추가한 파일/디렉토리 목록)
+
+2. computeApplyList() — 기본(증분) 모드의 3-way 적용 대상 산출 (--prune 시 스킵)
+   · base   = 구버전 원본 = 백업 스냅샷
+   · theirs = 신 버전     = _pending
+   · base 없음 → added / size·md5 다름 → changed / 동일 → 제외(스킵)
+   · size 선필터 후 size 동일할 때만 md5 (mtime 비교 안 함 — _pending 은 추출 시각)
+   · symlink / excludes / protected_paths 하위 → 목록 제외
+```
+
 ### Step 7: 파일 적용
 
 ```text
-- _pending 소스에서 config('app.update.targets') 에 해당하는 파일/디렉토리 선택적 덮어쓰기
+기본(증분) 모드 — --prune 미지정 + 백업 있음:
+- Step 6.5 의 applyList(코어가 실제 변경/추가한 파일)에 있는 파일만 적용
+- 코어가 건드리지 않은 파일은 복사·chmod·chown·mtime 갱신을 전부 스킵 → 현재 디스크
+  상태(사용자 수정 포함 가능)를 그대로 보존
+- orphan(소스에 없는 대상 파일) 삭제 안 함 → 사용자가 추가한 신규 파일 보존
+
+--prune 모드 (또는 백업 부재 fallback):
+- targets 전체 무조건 덮어쓰기 + orphan 삭제 (기존 동작)
+- 백업 부재 시 base 가 없어 3-way 불가 → 안전하게 전체 덮어쓰기로 회귀 + 안내 출력
+
+공통:
 - 자동 발견 폴백: targets 에 미등재된 source 최상위 항목도 스캔하여 적용
   (config('app.update.protected_paths') 와 config('app.update.excludes') 매치 시 스킵)
 - FilePermissionHelper::copyDirectory() 사용 → 원본 파일 권한 보존
 - ExtensionPendingHelper::copyToActive() 미사용 (권한 유실 방지)
 ```
+
+> **기본 동작 변경 배경 (공개 #64)**: 이전에는 Step 7 이 targets 전체를 무조건 재복사하고 orphan 을 삭제하여, 사용자가 수정한 `public/.htaccess` 커스텀 블록이나 `_bundled/` 아래 커스텀 확장이 소실되는 사고가 반복 제보되었다. 기본 동작을 "코어가 실제로 변경/추가한 파일만 적용(3-way)"으로 전환해 발생 표면을 제거했다. 전체 덮어쓰기 + 정리를 원하면 `--prune` 을 지정한다. "코어도 바꾸고 사용자도 바꾼" 파일은 코어 버전으로 갱신되지만 백업에 원본이 보존되어 복구 가능하다.
+
+> **증분 모드 잔존 stale 파일 정리**: 기본(증분) 모드는 orphan 을 삭제하지 않으므로, 신 버전에서 제거된 파일이 활성 디렉토리에 잔존할 수 있다. 완료 요약이 잔존을 안내하며, 정리하려면 다음 업데이트를 `--prune` 으로 실행하거나 단발성 정리 도구 `php artisan hotfix:rollback-stale-files --prune` 을 사용한다 (진단 모드 기본, `--prune` 시 확인 프롬프트 후 정리, symlink/protected_paths 가드 적용). 상세 사용법: [docs/cheatsheet.md](../cheatsheet.md) "단발성 결함 보정 (hotfix)".
 
 > **자동 발견 폴백의 배경 (engine-v / beta.4 이후)**: Step 7 은 부모 프로세스의 `config('app.update.targets')` 를 사용한다. 부모는 업그레이드 *직전* 의 코드/메모리 상태이므로 신버전이 도입한 신규 최상위 디렉토리(예: beta.4 의 `lang-packs/`) 가 부모의 stale targets 에서 누락된다. 폴백은 이 결함을 안전망으로 차단하며, `config/app.php` 의 `update.protected_paths` 가 런타임 데이터(`storage`)·로컬 환경(`.env*`)·별도 파이프라인 산출물(`vendor`)·개발 메타(`.git`/`.claude`/`.serena` 등) 의 의도치 않은 덮어쓰기를 방지한다.
 
@@ -631,12 +662,13 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `createBackup()` | `(?Closure $onProgress): string` | CoreBackupHelper로 백업 생성 |
 | `restoreFromBackup()` | `(string $backupPath, ?Closure $onProgress): void` | 백업에서 파일 복원 |
+| `CoreBackupHelper::computeApplyList()` | `(string $backupPath, string $sourcePath, array $targets, array $protectedPaths, array $excludes): array` | 3-way 판정으로 증분 적용 대상(added/changed) 산출 (`apply`, `added_count`, `changed_count`, `has_symlink`) |
 
 ### 적용 및 설치
 
 | 메서드 | 시그니처 | 설명 |
 |--------|---------|------|
-| `applyUpdate()` | `(string $sourcePath, ?Closure $onProgress): void` | _pending → base_path 선택적 덮어쓰기 |
+| `applyUpdate()` | `(string $sourcePath, ?Closure $onProgress, bool $prune = false, ?array $applyList = null): void` | _pending → base_path 적용. `$applyList` 지정 + `!$prune` 이면 증분(코어 변경분만), 그 외 전체 덮어쓰기 + orphan 삭제 |
 | `runComposerInstallInPending()` | `(string $pendingPath, ?Closure $onProgress): void` | _pending에서 composer install (--no-scripts) |
 | `isComposerUnchangedForCore()` | `(string $pendingPath): bool` | composer.json/lock MD5 비교 |
 | `runComposerInstall()` | `(?Closure $onProgress): void` | base_path에서 composer install |
@@ -678,13 +710,14 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 ### core:update
 
 ```bash
-php artisan core:update [--force] [--no-backup] [--no-maintenance] [--local] [--source={path}]
+php artisan core:update [--force] [--no-backup] [--prune] [--no-maintenance] [--local] [--source={path}]
 ```
 
 | 옵션 | 설명 |
 |------|------|
 | `--force` | 버전 비교 스킵, 동일 버전이어도 강제 업데이트 |
-| `--no-backup` | 백업 생성 스킵 (Step 5) |
+| `--no-backup` | 백업 생성 스킵 (Step 5). 증분 적용 불가 → 전체 덮어쓰기로 회귀 |
+| `--prune` | 코어가 제거한 파일 정리 + targets 전체 덮어쓰기(기존 방식). 미지정 시 코어가 실제 변경/추가한 파일만 적용(3-way)하고 나머지는 보존 |
 | `--no-maintenance` | 유지보수 모드 스킵 (Step 3) |
 | `--local` | 현재 코드베이스를 소스로 사용 (GitHub 스킵) |
 | `--source={path}` | 지정 디렉토리를 소스로 사용 (GitHub 스킵) |

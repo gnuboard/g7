@@ -231,7 +231,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.0.1'),
+    'version' => env('APP_VERSION', '7.0.2'),
 
     /*
     |--------------------------------------------------------------------------
@@ -270,7 +270,7 @@ return [
         'github_url' => env('G7_UPDATE_GITHUB_URL', 'https://github.com/gnuboard/g7'),
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
-        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,.editorconfig,.gitattributes,.gitignore,README.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
+        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,.editorconfig,.gitattributes,.gitignore,README.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
         'excludes' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_EXCLUDES', 'node_modules,.git,bootstrap/cache')))),
         // applyUpdate 의 "신규 최상위 항목 자동 발견" 폴백이 절대 덮어쓰면 안 되는 경로 목록.
         // 런타임 데이터(`storage`), 로컬 환경(`.env*`), 별도 파이프라인 산출물(`vendor`),

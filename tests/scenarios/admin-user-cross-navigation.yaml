@@ -1,0 +1,48 @@
+feature: admin_user_cross_navigation
+description: >
+  관리자 ↔ 유저 화면 상호 이동 링크 (#450). 관리자 사이드바 "사이트 보기",
+  관리자 게시물 조회 ↔ 유저 게시판, 유저 게시판 → 관리자(게시물 조회+게시판 관리),
+  유저 상품 상세 ↔ 관리자 상품 수정. 유저측 관리자 진입 링크는 세부 권한 플래그로 게이트.
+  모바일 사이드바 드로어 상단 잘림 수정 포함.
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostResourcePermissionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicProductControllerTest.php
+  - tests/Playwright/specs/admin/cross-navigation-and-mobile-drawer.spec.ts
+
+# 입력 axis
+#  link     : 크로스링크 종류 (출발→도착 surface)
+#  permitted: 유저측 관리자 진입 권한 보유 여부 (관리자측/항상노출 링크는 n/a 로 컷)
+axes:
+  link: [admin_sidebar_to_user_site, admin_board_to_user_board, user_board_to_admin, user_product_to_admin_edit, admin_product_to_user_detail]
+  permitted: [true, false, na]
+
+# 의미 없는 조합 컷:
+#  - 항상 노출(게이트 없음) 링크는 permitted 축이 무의미 → na 만 유지, true/false 컷
+#  - 게이트 있는 유저측 링크는 na 컷 (true/false 만)
+exclusions:
+  - { link: admin_sidebar_to_user_site, permitted: true, reason: "관리자 전용 화면, 게이트 없음" }
+  - { link: admin_sidebar_to_user_site, permitted: false, reason: "관리자 전용 화면, 게이트 없음" }
+  - { link: admin_board_to_user_board, permitted: true, reason: "관리자 화면, 항상 노출" }
+  - { link: admin_board_to_user_board, permitted: false, reason: "관리자 화면, 항상 노출" }
+  - { link: admin_product_to_user_detail, permitted: true, reason: "관리자 화면, 편집모드 노출(권한 무관)" }
+  - { link: admin_product_to_user_detail, permitted: false, reason: "관리자 화면, 편집모드 노출(권한 무관)" }
+  - { link: user_board_to_admin, permitted: na, reason: "게이트 있음 — true/false 만 유효" }
+  - { link: user_product_to_admin_edit, permitted: na, reason: "게이트 있음 — true/false 만 유효" }
+
+# 후속 효과 체인 — 각 링크가 실제로 수행/노출하는 결과
+effects:
+  - new_tab_navigation
+  - board_admin_gate_true_shows_link
+  - board_admin_gate_false_hides_link
+  - product_edit_gate_true_shows_link
+  - product_edit_gate_false_hides_link
+  - drawer_starts_below_header
+  # 라우팅 식별자 전환 (#450): 상품=product_code, 게시판=slug
+  - product_detail_routes_by_code
+  - board_admin_routes_by_slug
+
+# 보조 흐름
+sub_flows:
+  - id: mobile_drawer
+    effects: [drawer_starts_below_header]

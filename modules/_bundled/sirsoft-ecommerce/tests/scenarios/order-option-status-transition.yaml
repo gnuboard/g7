@@ -69,6 +69,19 @@ effects:
   - can_confirm_true_only_for_shipping_or_delivered_status
   - can_write_review_true_only_after_confirmed
   - confirm_option_earns_mileage_via_order_option_after_confirm
+  # 관리자 옵션 상태변경 → 구매확정 대칭 (이슈 #61: changeStatusWithQuantity 경로가 유저 셀프 확정과 대칭)
+  - admin_full_quantity_confirm_stamps_confirmed_at                  # 전체수량 CONFIRMED → 옵션 confirmed_at 기록
+  - admin_split_confirm_stamps_confirmed_at                          # 부분수량 CONFIRMED 분할 → 분할 레코드 confirmed_at 기록
+  - admin_confirm_fires_after_confirm_hook                           # CONFIRMED 전이 → order-option.after_confirm 발화(생존 레코드 인자)
+  - admin_confirm_earns_mileage_immediately_when_delay_zero          # delay=0 즉시 적립 + 스케줄러 멱등
+  - admin_full_confirm_stamps_order_header_confirmed_at              # 주문 전체 확정 시 주문 헤더 confirmed_at 기록
+  - admin_full_quantity_delivered_stamps_delivered_at                # delivered_at 회귀 가드
+  # 나눠 확정 델타 적립 + enabled 게이트 통일 (검수 후속 2·3)
+  - admin_split_then_merge_confirm_earns_full_delta                  # 나눠 확정→병합 시 목표액 델타까지 적립(총액 정확)
+  - admin_three_way_split_confirm_accumulates                        # 3분할 확정 누적 총액
+  - admin_full_confirm_delta_idempotent                              # 전량 확정 후 재실행 델타=0 멱등
+  - admin_confirm_no_earn_when_disabled_immediate                    # 기능 OFF 시 즉시적립도 미발생(지연과 미지급 통일)
+  - admin_confirm_earns_when_enabled_immediate                       # 기능 ON 즉시적립 대조군
   # 프론트 (Vitest 레이아웃 렌더링 커버)
   - review_button_opens_inline_modal_not_dead_route                  # F1
   - review_button_visible_only_when_can_write_review                 # F1
@@ -78,6 +91,8 @@ effects:
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionServiceConfirmTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/MileageEarnDeltaAndGateTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/OrderPaymentResourceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ConfirmDepositControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderConfirmDeposit.test.tsx

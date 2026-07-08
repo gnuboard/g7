@@ -39,6 +39,7 @@
                 modules: @json($moduleSettings ?? []),
                 moduleAssets: @json($moduleAssets ?? []),
                 pluginAssets: @json($pluginAssets ?? []),
+                bundleUrls: @json($bundleUrls ?? null),
                 activeModules: @json($activeModulesMeta ?? []),
                 activePlugins: @json($activePluginsMeta ?? []),
                 appConfig: @json($appConfig ?? []),

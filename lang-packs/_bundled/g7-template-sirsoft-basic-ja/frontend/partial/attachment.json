@@ -9,5 +9,6 @@
   "reorder_failed": "ファイルの順序変更に失敗しました",
   "drag_to_reorder": "ドラッグして順序を変更",
   "primary_image": "代表画像",
-  "set_as_primary": "代表画像に設定"
+  "set_as_primary": "代表画像に設定",
+  "upload_limit_exceeded": "最大{{max}}個まで添付できます。"
 }

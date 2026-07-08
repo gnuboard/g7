@@ -69,6 +69,18 @@
           ]
         },
         {
+          "comment": "우측 액션 그룹 (관리자 수정 링크 + 찜하기)",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 flex-shrink-0"
+          },
+          "children": [
+            {
+              "comment": "관리자 상품 수정 링크 (권한 게이트, 새 탭)",
+              "partial": "./_admin_edit_link.json"
+            },
+            {
           "type": "basic",
           "name": "Button",
           "props": {
@@ -169,6 +181,8 @@
             }
           ]
         }
+            ]
+          }
       ]
     }
   ]

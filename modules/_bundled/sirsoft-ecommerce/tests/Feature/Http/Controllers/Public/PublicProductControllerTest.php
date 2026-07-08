@@ -476,6 +476,25 @@ class PublicProductControllerTest extends ModuleTestCase
     }
 
     /**
+     * 상품 상세를 product_code(상품코드)로 조회할 수 있다 (#450 라우팅 code 전환)
+     */
+    #[Test]
+    public function test_show_returns_product_by_product_code(): void
+    {
+        // Given: product_code 를 가진 상품
+        $product = Product::factory()->onSale()->create();
+        $this->assertNotEmpty($product->product_code);
+
+        // When: 숫자 id 가 아닌 product_code 로 상세 조회
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->product_code);
+
+        // Then: 동일 상품이 반환되고 응답에 product_code 노출
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.id', $product->id);
+        $response->assertJsonPath('data.product_code', $product->product_code);
+    }
+
+    /**
      * 상품 상세 조회 시 PublicProductResource 필드 구조 검증 테스트
      */
     #[Test]
@@ -1040,5 +1059,71 @@ class PublicProductControllerTest extends ModuleTestCase
         $this->assertNotNull($data);
         $this->assertEquals(0, $data['review_count']);
         $this->assertEquals(0.0, $data['rating_avg']);
+    }
+
+    // ========================================
+    // abilities.can_update 게이트 테스트 (#450)
+    // 유저 상품 상세에서 관리자 상품 수정 화면 진입 크로스링크 노출 여부
+    // ========================================
+
+    /**
+     * 상품 수정 권한(sirsoft-ecommerce.products.update) 보유자는 abilities.can_update = true
+     *
+     * @scenario link=user_product_to_admin_edit, permitted=true
+     * @effects product_edit_gate_true_shows_link
+     */
+    #[Test]
+    public function test_show_returns_can_update_true_for_product_update_permission_holder(): void
+    {
+        // Given: visible 상품 + 상품 수정 권한 보유 관리자
+        $product = Product::factory()->onSale()->create();
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.products.update']);
+
+        // When: 권한 보유자가 유저 상품 상세 조회
+        $response = $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+
+        // Then: abilities.can_update = true
+        $response->assertStatus(200);
+        $this->assertTrue($response->json('data.abilities.can_update'));
+    }
+
+    /**
+     * 상품 수정 권한 미보유 일반 사용자는 abilities.can_update = false
+     *
+     * @scenario link=user_product_to_admin_edit, permitted=false
+     * @effects product_edit_gate_false_hides_link
+     */
+    #[Test]
+    public function test_show_returns_can_update_false_for_regular_user(): void
+    {
+        // Given
+        $product = Product::factory()->onSale()->create();
+        $user = $this->createUser();
+
+        // When
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+
+        // Then
+        $response->assertStatus(200);
+        $this->assertFalse($response->json('data.abilities.can_update'));
+    }
+
+    /**
+     * 비로그인(게스트)은 abilities.can_update = false
+     */
+    #[Test]
+    public function test_show_returns_can_update_false_for_guest(): void
+    {
+        // Given
+        $product = Product::factory()->onSale()->create();
+
+        // When: 비로그인 조회
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+
+        // Then
+        $response->assertStatus(200);
+        $this->assertFalse($response->json('data.abilities.can_update'));
     }
 }

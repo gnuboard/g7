@@ -157,12 +157,40 @@ class PageAttachmentServiceTest extends ModuleTestCase
         $this->assertNull($tempAttachment->temp_key);
     }
 
+    /**
+     * 연결 시 업로드(조회) 순서대로 order가 1..N 재부여되는지 확인
+     *
+     * 이커머스 ProductImageService::linkTempImages 와 동일하게, getByTempKey 가
+     * order 순으로 반환한 순서대로 order 를 1,2,3 으로 재배치한다. (생성 모드의
+     * 드래그 재정렬은 미지원 — 업로드 순서가 SSoT, 재정렬은 수정 모드 reorder API)
+     */
+    public function test_link_reassigns_order_by_upload_sequence(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-svc-link-order',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        // 임시 첨부 3개 업로드 (order 는 업로드 시점에 1,2,3 순차 부여됨)
+        $a = $this->service->upload(UploadedFile::fake()->create('a.pdf', 100, 'application/pdf'), null, 'attachments', 'order-key');
+        $b = $this->service->upload(UploadedFile::fake()->create('b.pdf', 100, 'application/pdf'), null, 'attachments', 'order-key');
+        $c = $this->service->upload(UploadedFile::fake()->create('c.pdf', 100, 'application/pdf'), null, 'attachments', 'order-key');
+
+        $this->service->linkTempAttachmentsWithMove('order-key', $page->id);
+
+        // 연결 후 업로드(조회) 순서대로 order 1,2,3 재부여
+        $this->assertEquals(1, $a->fresh()->order);
+        $this->assertEquals(2, $b->fresh()->order);
+        $this->assertEquals(3, $c->fresh()->order);
+    }
+
     // ─── deleteAttachment ──────────────────────────────
 
     /**
      * 첨부파일을 삭제할 수 있는지 확인
      */
-    public function test_delete_attachment_soft_deletes(): void
+    public function test_delete_attachment_hard_deletes(): void
     {
         $page = Page::factory()->create([
             'slug' => 'test-svc-del-attach',
@@ -176,7 +204,7 @@ class PageAttachmentServiceTest extends ModuleTestCase
         $result = $this->service->deleteAttachment($attachment);
 
         $this->assertTrue($result);
-        $this->assertSoftDeleted('page_attachments', ['id' => $attachment->id]);
+        $this->assertDatabaseMissing('page_attachments', ['id' => $attachment->id]);
     }
 
     // ─── reorder ───────────────────────────────────────

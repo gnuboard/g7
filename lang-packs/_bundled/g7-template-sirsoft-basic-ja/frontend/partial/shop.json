@@ -610,5 +610,6 @@
     "blocks_order": "配送不可商品が含まれているため注文できません。該当商品を削除するか、配送国家を変更してください。",
     "shippable_to": "{country} 配送可能",
     "shipping_fee_summary": "{country} 配送料：{fee}"
-  }
+  },
+  "admin_edit": "管理者で編集"
 }

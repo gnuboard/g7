@@ -1,6 +1,7 @@
 {
   "title": "쇼핑",
   "description": "다양한 상품을 만나보세요",
+  "admin_edit": "관리자에서 수정",
   "shippability": {
     "not_shippable": "선택하신 배송국가로는 배송할 수 없는 상품입니다.",
     "not_shippable_short": "배송 불가",

@@ -16,6 +16,7 @@ use PHPUnit\Framework\TestCase;
 class InstallerRuntimeHelperTest extends TestCase
 {
     private string $tempBase = '';
+
     private string $skipReason = '';
 
     protected function setUp(): void
@@ -23,7 +24,7 @@ class InstallerRuntimeHelperTest extends TestCase
         parent::setUp();
 
         // 격리된 BASE_PATH — 운영 환경 storage/installer 와 충돌 방지
-        $this->tempBase = sys_get_temp_dir() . '/g7-installer-runtime-test-' . bin2hex(random_bytes(4));
+        $this->tempBase = sys_get_temp_dir().'/g7-installer-runtime-test-'.bin2hex(random_bytes(4));
 
         // 안전 가드: INSTALLER_RUNTIME_PATH(= BASE_PATH/storage/installer/runtime.php) 는
         // PHP 상수라 한 프로세스에서 단 한 번만 정의된다. 다른 Installer 테스트가 먼저
@@ -34,9 +35,9 @@ class InstallerRuntimeHelperTest extends TestCase
         if (defined('BASE_PATH')) {
             $resolved = realpath((string) BASE_PATH) ?: (string) BASE_PATH;
             if (strpos($resolved, $tempPrefix) !== 0) {
-                $this->skipReason = 'BASE_PATH (' . $resolved . ') 가 시스템 temp 하위가 아님 — '
-                    . '다른 Installer 테스트의 BASE_PATH 정의가 선행됨. 실제 storage/installer/runtime.php '
-                    . '파괴 방지를 위해 skip. 격리 실행: php vendor/bin/phpunit --filter=InstallerRuntimeHelperTest';
+                $this->skipReason = 'BASE_PATH ('.$resolved.') 가 시스템 temp 하위가 아님 — '
+                    .'다른 Installer 테스트의 BASE_PATH 정의가 선행됨. 실제 storage/installer/runtime.php '
+                    .'파괴 방지를 위해 skip. 격리 실행: php vendor/bin/phpunit --filter=InstallerRuntimeHelperTest';
                 $this->markTestSkipped($this->skipReason);
             }
             $this->tempBase = (string) BASE_PATH;
@@ -44,15 +45,15 @@ class InstallerRuntimeHelperTest extends TestCase
             define('BASE_PATH', $this->tempBase);
         }
 
-        if (! is_dir($this->tempBase . '/storage/installer')) {
-            @mkdir($this->tempBase . '/storage/installer', 0755, true);
+        if (! is_dir($this->tempBase.'/storage/installer')) {
+            @mkdir($this->tempBase.'/storage/installer', 0755, true);
         }
 
         // INSTALLER_RUNTIME_PATH 는 BASE_PATH 기반으로 한 번만 정의되므로,
         // 첫 테스트가 끝까지 책임진다 (BASE_PATH 자체가 const 라 재정의 불가).
         // installer-runtime.php 자체에 escapeEnvValue polyfill 이 있어 functions.php
         // 미로드 환경에서도 mergeRuntimeIntoEnv 가 정상 동작한다.
-        require_once dirname(__DIR__, 3) . '/public/install/includes/installer-runtime.php';
+        require_once dirname(__DIR__, 3).'/public/install/includes/installer-runtime.php';
     }
 
     protected function tearDown(): void
@@ -151,6 +152,7 @@ class InstallerRuntimeHelperTest extends TestCase
     public function test_build_runtime_includes_separate_read_when_specified(): void
     {
         $built = buildInstallerRuntimeFromState([
+            'use_read_db' => true, // Read DB 사용 선택 (판정 SSoT)
             'db_write_host' => 'write-host',
             'db_write_database' => 'g7',
             'db_read_host' => 'read-host',
@@ -165,8 +167,40 @@ class InstallerRuntimeHelperTest extends TestCase
     public function test_build_runtime_omits_read_when_same_as_write(): void
     {
         $built = buildInstallerRuntimeFromState([
+            'use_read_db' => true,
             'db_write_host' => 'localhost',
             'db_read_host' => 'localhost', // 동일 호스트 → 별도 read 불필요
+        ]);
+
+        $this->assertArrayNotHasKey('read', $built['db']);
+    }
+
+    /**
+     * 이슈 #63 회귀 — use_read_db=false 인데 db_read_host 에 잘못된 값이 잔존한 경우
+     * read 커넥션을 만들지 않아야 한다 (Laravel 이 write 로 자동 fallback).
+     */
+    public function test_build_runtime_omits_read_when_use_read_db_false(): void
+    {
+        $built = buildInstallerRuntimeFromState([
+            'use_read_db' => false,
+            'db_write_host' => 'mysql',
+            'db_write_database' => 'g7',
+            'db_read_host' => 'l3ocalhost', // 잔존 잘못된 값 (이슈 재현값)
+            'db_read_database' => 'wrong_db',
+        ]);
+
+        $this->assertArrayNotHasKey('read', $built['db']);
+    }
+
+    /**
+     * 이슈 #63 회귀 — use_read_db 키 자체가 없는 레거시 state 도
+     * read 를 만들지 않아야 한다 (기본 미사용).
+     */
+    public function test_build_runtime_omits_read_when_use_read_db_absent(): void
+    {
+        $built = buildInstallerRuntimeFromState([
+            'db_write_host' => 'mysql',
+            'db_read_host' => 'read-host', // use_read_db 미지정 → read 무시
         ]);
 
         $this->assertArrayNotHasKey('read', $built['db']);
@@ -273,7 +307,7 @@ ENV;
                 ],
                 'prefix' => 'real_',
             ],
-            'app' => ['key' => 'base64:' . base64_encode(str_repeat('a', 32))],
+            'app' => ['key' => 'base64:'.base64_encode(str_repeat('a', 32))],
         ];
 
         $merged = mergeRuntimeIntoEnv($envContent, $runtime);
@@ -287,10 +321,14 @@ ENV;
 
         // Read 라인도 write 와 동기화되어 치환되어야 함
         $this->assertStringNotContainsString('DB_WRITE_HOST=127.0.0.1', $merged);
-        $this->assertStringNotContainsString('DB_WRITE_DATABASE=g7' . PHP_EOL, $merged);
+        $this->assertStringNotContainsString('DB_WRITE_DATABASE=g7'.PHP_EOL, $merged);
     }
 
-    public function test_merge_syncs_read_with_write_when_read_not_specified(): void
+    /**
+     * 이슈 #63 — read 미지정(use_read_db=false) 시 DB_READ_* 를 빈 값으로 남긴다.
+     * write 값을 복사하지 않고 config/database.php 의 Elvis fallback 에 위임한다.
+     */
+    public function test_merge_leaves_read_empty_when_read_not_specified(): void
     {
         $envContent = "DB_READ_HOST=127.0.0.1\nDB_READ_DATABASE=g7\nDB_READ_USERNAME=root\nDB_READ_PASSWORD=\n";
 
@@ -308,11 +346,14 @@ ENV;
 
         $merged = mergeRuntimeIntoEnv($envContent, $runtime);
 
-        // read 미지정 시 write 값으로 동기
-        $this->assertStringContainsString('DB_READ_HOST=w-host', $merged);
-        $this->assertStringContainsString('DB_READ_DATABASE=wdb', $merged);
-        $this->assertStringContainsString('DB_READ_USERNAME=wu', $merged);
-        $this->assertStringContainsString('DB_READ_PASSWORD="wp"', $merged);
+        // read 미지정 시 DB_READ_* 는 빈 값 — write 값이 복사되면 안 됨
+        $this->assertStringContainsString("DB_READ_HOST=\n", $merged);
+        $this->assertStringContainsString("DB_READ_DATABASE=\n", $merged);
+        $this->assertStringContainsString("DB_READ_USERNAME=\n", $merged);
+        $this->assertStringNotContainsString('DB_READ_HOST=w-host', $merged);
+        $this->assertStringNotContainsString('DB_READ_DATABASE=wdb', $merged);
+        // write 라인은 정상 기록
+        $this->assertStringContainsString('DB_WRITE_HOST=w-host', $merged);
     }
 
     public function test_merge_uses_separate_read_when_specified(): void
@@ -360,7 +401,7 @@ ENV;
         $envContent = "DB_WRITE_HOST=user-input.com\nAPP_KEY=\n";
 
         // runtime 에 db 키 자체가 없는 케이스 (이상 상태) — 기존 .env 값 보존
-        $runtime = ['app' => ['key' => 'base64:' . base64_encode(str_repeat('x', 32))]];
+        $runtime = ['app' => ['key' => 'base64:'.base64_encode(str_repeat('x', 32))]];
 
         $merged = mergeRuntimeIntoEnv($envContent, $runtime);
 

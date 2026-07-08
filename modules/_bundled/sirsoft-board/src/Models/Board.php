@@ -38,6 +38,29 @@ class Board extends Model
     ];
 
     /**
+     * 라우트 모델 바인딩 시 슬러그(slug) 또는 숫자 ID로 게시판을 조회합니다.
+     *
+     * 관리자 게시판 URL 은 slug 기준(/admin/boards/:slug/edit)이며,
+     * 숫자 ID 도 하위호환으로 허용합니다.
+     *
+     * @param  mixed  $value  라우트 파라미터 값 (slug 또는 ID)
+     * @param  string|null  $field  검색할 필드명
+     * @return Model|null
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field) {
+            return $this->where($field, $value)->firstOrFail();
+        }
+
+        if (is_numeric($value)) {
+            return $this->where('id', $value)->firstOrFail();
+        }
+
+        return $this->where('slug', $value)->firstOrFail();
+    }
+
+    /**
      * 팩토리 생성
      */
     protected static function newFactory(): BoardFactory

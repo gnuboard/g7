@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.1] - 2026-07-08
+
+### Added
+
+- 페이지 버전 이력의 변경 필드명 라벨 일본어 번역 추가 (`versions.field_labels.*`) — 버전 이력의 "변경내역" 항목이 일본어 로케일에서 필드 키 대신 자연스러운 라벨로 표시됩니다.
+
 ## [1.0.0] - 2026-07-01
 
 ### Added

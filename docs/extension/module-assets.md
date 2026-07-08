@@ -381,6 +381,72 @@ GET /api/modules/assets/{identifier}/{path}
 
 ---
 
+## 서버측 번들 병합 (Server-side Bundle)
+
+활성 모듈/플러그인이 늘어날수록 개별 IIFE JS/CSS 요청이 선형 증가한다. 이를 줄이기 위해 코어는 타입별(모듈/플러그인)로 활성 `global` 에셋을 서버에서 하나의 번들로 병합해 서빙한다. 각 확장 IIFE 는 자체 클로저에서 자가등록(레지스트리 + 핸들러/리스너)을 수행하므로, priority 순으로 이어붙여 단일 `<script>` 로 실행해도 등록 동작은 동일하다.
+
+### 서빙 엔드포인트
+
+```
+GET /api/modules/bundle.js?v={version}
+GET /api/modules/bundle.css?v={version}
+GET /api/plugins/bundle.js?v={version}
+GET /api/plugins/bundle.css?v={version}
+```
+
+`{version}` = 확장 캐시 버전(`ClearsTemplateCaches::getExtensionCacheVersion()`). 활성 조합이 바뀌면 install/activate/deactivate/update 라이프사이클에서 version 이 bump 되어 새 URL → 새 캐시 파일명으로 자동 무효화된다.
+
+### 동작 흐름
+
+```
+1. blade → window.G7Config.bundleUrls 주입 (활성 에셋 없는 타입은 null)
+2. TemplateApp.loadExtensionAssets()
+   └─ ModuleAssetLoader.loadBundle('module', ...) → loadBundle('plugin', ...)
+       ├─ 단일 <script async=false> + 단일 <link> append
+       └─ 번들 내부 물리 순서(=priority 정렬)로 IIFE 자가등록 실행
+```
+
+`bundleUrls` 가 없으면(구버전 blade) `ModuleAssetLoader.loadActiveExtensionAssets` 개별 로딩으로 폴백한다.
+
+### 병합 규율
+
+| 규율 | 내용 | audit 룰 |
+|------|------|---------|
+| priority 순서 | manifest `loading.priority` 오름차순만. 확장 이름 하드코딩 금지 | (선언형) |
+| `\n;\n` 구분자 | IIFE 사이는 `\n;\n`(JS)/`\n`(CSS). 미사용 시 ASI 붕괴 → 전체 파싱 에러 | `extension-bundle-concat-separator` |
+| 소스맵 | prod strip, dev 는 개별 에셋 서빙 절대 URL 로 rewrite | - |
+| same-origin | 번들 URL 은 `/api/...` 만 (CDN 금지 — gdpr preblocker 자기차단 방지) | `extension-bundle-url-same-origin` |
+| 절대경로 게터 | `getBuiltAssetAbsolutePaths()` 사용. `base_path("modules"\|"plugins")` 직접 조립 금지 | `extension-bundle-asset-path-getter` |
+| 확장별 try/catch | 파일 읽기 실패 시 해당 확장만 skip, 나머지 병합 지속 | (메모리+회귀테스트) |
+| CSS url() | 상대경로 url() 을 가진 CSS 는 번들 제외(개별 폴백) | - |
+
+### 캐시 stale 관리
+
+번들 파일(`storage/app/ext-bundles/{type}.{version}.{js,css}`)은 Laravel 캐시 스토어 밖 파일시스템이라 version bump/`cache:clear` 가 구파일을 지우지 않는다. 정리 경로:
+
+```bash
+php artisan ext-bundles:cleanup           # 현재 version 외 구파일 삭제
+php artisan module:cache-clear            # 모듈 번들 파일 정리 포함
+php artisan plugin:cache-clear            # 플러그인 번들 파일 정리 포함
+php artisan template:cache-clear          # 전체 번들 파일 정리 포함
+```
+
+프로덕션은 version-in-path 디스크 캐시, 비프로덕션(dev/watch)은 캐시 없이 매 요청 concat(rebuild 즉시 반영). `_bundled` 수정 후에는 `{type}:update {id} --force` 로 활성 반영 후 version bump 로 번들이 재생성된다.
+
+> 개별 에셋 서빙 라우트(`/api/{type}/assets/...`, `*.map` 포함)는 소스맵·static 참조를 위해 존치한다.
+
+### 전송 압축 (gzip)
+
+번들 JS/CSS 는 `fileResponse()`(= `response()->file()` → `BinaryFileResponse`)로 서빙되며, `GzipEncodeResponse` 미들웨어가 gzip 압축을 적용한다. `BinaryFileResponse` 는 `getContent()` 가 `false` 를 반환하므로, 미들웨어는 파일 경로(`getFile()->getPathname()`)에서 본문을 읽어 압축한 뒤 헤더(Content-Type/ETag/Cache-Control)를 승계한 일반 `Response` 로 치환한다.
+
+- 1KB 미만 번들(예: 빈 CSS)은 `MIN_COMPRESS_SIZE` 가드로 압축 생략.
+- `Accept-Encoding: gzip` 미포함 요청, 이미 `Content-Encoding` 이 있는 응답, 304 응답은 압축 대상에서 제외.
+- 회귀 테스트: `tests/Feature/Middleware/GzipEncodeResponseTest.php` (BinaryFileResponse 압축/헤더 승계/소용량 skip).
+
+> `BinaryFileResponse` 를 압축 대상에 포함하지 않으면 번들이 비압축 전송되는 사각지대가 생긴다(모듈/플러그인 번들은 크기가 커 압축 이득이 특히 크다).
+
+---
+
 ## 에셋 로딩 전략
 
 ### global (기본값)

@@ -59,6 +59,11 @@ return [
         'max' => '검색어는 최대 :max자까지 입력 가능합니다.',
     ],
 
+    // 검증 오류에 표시할 사용자 친화적 필드명
+    'attributes' => [
+        'search' => '검색어',
+    ],
+
     // search_field 검증 메시지
     'search_field' => [
         'in' => '검색 필드는 all, title, slug 중 하나여야 합니다.',

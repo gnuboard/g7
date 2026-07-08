@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.1] - 2026-07-08
+
+### Added
+
+- 관리자 게시글 목록의 "사용자 화면 보기" 링크 라벨(`view_user_page`) 일본어 번역 추가 — 관리자에서 해당 게시글의 사용자 화면으로 이동하는 링크가 일본어 로케일에서 자연스럽게 표시됩니다.
+
 ## [1.0.0] - 2026-07-01
 
 ### Added

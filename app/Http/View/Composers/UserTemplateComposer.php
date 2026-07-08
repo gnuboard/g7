@@ -105,6 +105,9 @@ class UserTemplateComposer
         // 확장 기능 캐시 버전 (브라우저 캐시 무효화용)
         $extensionCacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
 
+        // 확장 프론트엔드 병합 번들 URL (상시 ON — 활성 에셋이 없으면 null)
+        $bundleUrls = $this->buildExtensionBundleUrls($moduleAssets, $pluginAssets, $extensionCacheVersion);
+
         $view->with('activeUserTemplate', $activeTemplate);
         $view->with('extensionCacheVersion', $extensionCacheVersion);
         $view->with('frontendSettings', $frontendSettings);
@@ -112,10 +115,37 @@ class UserTemplateComposer
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);
         $view->with('pluginAssets', $pluginAssets);
+        $view->with('bundleUrls', $bundleUrls);
         $view->with('activeModulesMeta', $activeModulesMeta);
         $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
         $view->with('templateExternals', $templateExternals);
+    }
+
+    /**
+     * 확장 프론트엔드 병합 번들 URL을 계산합니다.
+     *
+     * 활성 global 에셋(JS/CSS)이 하나라도 있는 타입만 해당 번들 URL을 채우고,
+     * 없으면 null을 두어 프론트가 로드를 스킵하게 한다. URL은 same-origin
+     * (`/api/...`)이어야 gdpr preblocker 의 same-origin 통과 규칙에 자기 차단되지
+     * 않는다(CDN 호스팅 금지).
+     *
+     * @param  array  $moduleAssets  수집된 모듈 개별 에셋 맵
+     * @param  array  $pluginAssets  수집된 플러그인 개별 에셋 맵
+     * @param  int  $version  확장 캐시 버전
+     * @return array{moduleJs: ?string, moduleCss: ?string, pluginJs: ?string, pluginCss: ?string}
+     */
+    private function buildExtensionBundleUrls(array $moduleAssets, array $pluginAssets, int $version): array
+    {
+        $hasJs = static fn (array $assets): bool => ! empty(array_filter($assets, fn ($a) => ! empty($a['js'])));
+        $hasCss = static fn (array $assets): bool => ! empty(array_filter($assets, fn ($a) => ! empty($a['css'])));
+
+        return [
+            'moduleJs' => $hasJs($moduleAssets) ? "/api/modules/bundle.js?v={$version}" : null,
+            'moduleCss' => $hasCss($moduleAssets) ? "/api/modules/bundle.css?v={$version}" : null,
+            'pluginJs' => $hasJs($pluginAssets) ? "/api/plugins/bundle.js?v={$version}" : null,
+            'pluginCss' => $hasCss($pluginAssets) ? "/api/plugins/bundle.css?v={$version}" : null,
+        ];
     }
 
     /**

@@ -67,7 +67,7 @@ class ProductRepository implements ProductRepositoryInterface
                 // FULLTEXT 매칭 ID (Scout 엔진 순수 검색 — queryCallback 없음)
                 $ftIds = Product::search($keyword)->keys()->all();
 
-                // 보조필드(product_code/sku/barcode) LIKE 매칭 ID (all 일 때만)
+                // 보조필드(id/product_code/sku/barcode) LIKE 매칭 ID (all 일 때만)
                 $auxIds = [];
                 if ($field === 'all') {
                     $auxIds = $this->model->newQuery()
@@ -75,6 +75,11 @@ class ProductRepository implements ProductRepositoryInterface
                             $q->where('product_code', 'like', "%{$keyword}%")
                                 ->orWhere('sku', 'like', "%{$keyword}%")
                                 ->orWhere('barcode', 'like', "%{$keyword}%");
+
+                            // 숫자 키워드는 상품 ID 정확 매칭도 포함 (예: "99" → id=99)
+                            if (ctype_digit($keyword)) {
+                                $q->orWhere('id', (int) $keyword);
+                            }
                         })
                         ->pluck('id')
                         ->all();
@@ -499,23 +504,49 @@ class ProductRepository implements ProductRepositoryInterface
     {
         $page = (int) floor($offset / $limit) + 1;
 
-        $results = Product::search($keyword)
-            ->query(function ($query) use ($categoryId, $orderBy, $direction) {
-                $query->where('display_status', ProductDisplayStatus::VISIBLE->value);
+        // FULLTEXT(name/description) 매칭 + 보조필드(product_code/id) 매칭의 합집합.
+        // 통합검색도 관리자 검색과 동일하게 상품코드/ID 로 상품을 찾을 수 있어야 한다.
+        $matchedIds = $this->resolveKeywordMatchedProductIds($keyword);
 
-                $query->with(['images', 'primaryCategory', 'brand', 'activeLabelAssignments.label'])
-                    ->withCount('visibleReviews as review_count')
-                    ->withAvg('visibleReviews as rating_avg', 'rating');
+        $paginator = $this->model->newQuery()
+            ->whereIn('id', $matchedIds ?: [0])
+            ->where('display_status', ProductDisplayStatus::VISIBLE->value)
+            ->with(['images', 'primaryCategory', 'brand', 'activeLabelAssignments.label'])
+            ->withCount('visibleReviews as review_count')
+            ->withAvg('visibleReviews as rating_avg', 'rating')
+            ->when($categoryId !== null, fn ($q) => $q->whereHas('categories', fn ($c) => $c->where('ecommerce_categories.id', $categoryId)))
+            ->orderBy($orderBy, $direction)
+            ->paginate($limit, ['*'], 'page', $page);
 
-                if ($categoryId !== null) {
-                    $query->whereHas('categories', fn ($q) => $q->where('ecommerce_categories.id', $categoryId));
+        return ['total' => $paginator->total(), 'items' => $paginator->getCollection()];
+    }
+
+    /**
+     * 키워드로 매칭되는 상품 ID 집합을 반환합니다.
+     *
+     * FULLTEXT(name/description) Scout 매칭과 보조필드(product_code / 숫자 ID) 매칭의
+     * 합집합. 통합검색의 결과 조회와 total 계산이 동일한 조건을 쓰도록 단일 경로로 산출한다.
+     *
+     * @param  string  $keyword  검색 키워드
+     * @return array<int> 매칭된 상품 ID 배열
+     */
+    private function resolveKeywordMatchedProductIds(string $keyword): array
+    {
+        $ftIds = Product::search($keyword)->keys()->all();
+
+        $auxIds = $this->model->newQuery()
+            ->where(function ($q) use ($keyword) {
+                $q->where('product_code', 'like', "%{$keyword}%");
+
+                // 숫자 키워드는 상품 ID 정확 매칭도 포함
+                if (ctype_digit($keyword)) {
+                    $q->orWhere('id', (int) $keyword);
                 }
-
-                $query->orderBy($orderBy, $direction);
             })
-            ->paginate($limit, 'page', $page);
+            ->pluck('id')
+            ->all();
 
-        return ['total' => $results->total(), 'items' => $results->getCollection()];
+        return array_values(array_unique([...$ftIds, ...$auxIds]));
     }
 
     /**
@@ -523,16 +554,14 @@ class ProductRepository implements ProductRepositoryInterface
      */
     public function countByKeyword(string $keyword, ?int $categoryId = null): int
     {
-        return Product::search($keyword)
-            ->query(function ($query) use ($categoryId) {
-                $query->where('display_status', ProductDisplayStatus::VISIBLE->value);
+        // searchByKeyword 와 동일한 매칭 조건(FULLTEXT ∪ 보조필드)으로 total 산출.
+        $matchedIds = $this->resolveKeywordMatchedProductIds($keyword);
 
-                if ($categoryId !== null) {
-                    $query->whereHas('categories', fn ($q) => $q->where('ecommerce_categories.id', $categoryId));
-                }
-            })
-            ->paginate(1)
-            ->total();
+        return $this->model->newQuery()
+            ->whereIn('id', $matchedIds ?: [0])
+            ->where('display_status', ProductDisplayStatus::VISIBLE->value)
+            ->when($categoryId !== null, fn ($q) => $q->whereHas('categories', fn ($c) => $c->where('ecommerce_categories.id', $categoryId)))
+            ->count();
     }
 
     /**

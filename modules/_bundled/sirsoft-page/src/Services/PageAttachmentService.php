@@ -92,6 +92,9 @@ class PageAttachmentService
     /**
      * 임시 첨부파일을 페이지에 연결하고 파일을 이동합니다.
      *
+     * getByTempKey 가 order(업로드 시점 부여) 순으로 반환하므로, 그 순서대로
+     * order 를 1..N 으로 재부여한다 (이커머스 ProductImageService::linkTempImages 와 동일).
+     *
      * @param  string  $tempKey  임시 키
      * @param  int  $pageId  연결할 페이지 ID
      * @return int 연결된 첨부파일 수
@@ -101,7 +104,7 @@ class PageAttachmentService
         $tempAttachments = $this->attachmentRepository->getByTempKey($tempKey);
         $linkedCount = 0;
 
-        foreach ($tempAttachments as $attachment) {
+        foreach ($tempAttachments as $index => $attachment) {
             // 최종 경로 생성
             $newPath = date('Y/m/d').'/'.$attachment->stored_filename;
 
@@ -112,12 +115,14 @@ class PageAttachmentService
                 $this->storage->delete('attachments', $attachment->path);
             }
 
-            // DB 업데이트: page_id 설정, temp_key 제거, path 변경
+            // DB 업데이트: page_id 설정, temp_key 제거, path 변경, order 재배치 (조회 순서 = 업로드 순서)
             $this->attachmentRepository->update($attachment, [
                 'page_id' => $pageId,
                 'temp_key' => null,
                 'path' => $newPath,
+                'order' => $index + 1,
             ]);
+
             $linkedCount++;
         }
 

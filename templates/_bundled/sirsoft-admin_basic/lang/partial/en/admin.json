@@ -1,6 +1,7 @@
 {
   "sidebar": {
-    "no_accessible_menus": "No accessible menus"
+    "no_accessible_menus": "No accessible menus",
+    "view_site": "View site"
   },
   "profile_settings": "Profile Settings",
   "logout": "Logout",

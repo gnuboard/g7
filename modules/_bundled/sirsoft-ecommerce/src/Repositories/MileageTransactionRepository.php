@@ -97,6 +97,38 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
+    public function sumPurchaseEarnedForOption(int $orderOptionId): float
+    {
+        return (float) MileageTransaction::query()
+            ->where('order_option_id', $orderOptionId)
+            ->where('type', MileageTransactionTypeEnum::PURCHASE_EARN->value)
+            ->sum('amount');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function transferPurchaseEarnByOrderOptionId(int $fromOrderOptionId, int $toOrderOptionId): int
+    {
+        return MileageTransaction::query()
+            ->where('order_option_id', $fromOrderOptionId)
+            ->where('type', MileageTransactionTypeEnum::PURCHASE_EARN->value)
+            ->update(['order_option_id' => $toOrderOptionId]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function incrementEarnLotAmount(MileageTransaction $lot, float $delta): void
+    {
+        $lot->amount = (float) $lot->amount + $delta;
+        $lot->remaining_amount = (float) $lot->remaining_amount + $delta;
+        $lot->save();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function resolveUserIdByUuid(string $uuid): ?int
     {
         $id = User::query()->where('uuid', $uuid)->value('id');
@@ -335,11 +367,14 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
             ->whereNotNull("opt.{$triggerColumn}")
             ->where("opt.{$triggerColumn}", '<=', $threshold)
             ->where('opt.subtotal_earned_points_amount', '>', 0)
-            ->whereNotExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from('ecommerce_mileage_transactions as tx')
-                    ->whereColumn('tx.order_option_id', 'opt.id')
-                    ->whereIn('tx.type', self::EARN_TYPES);
+            // 금액 델타 멱등: 목표 적립액보다 기적립 purchase_earn 합계가 적은 옵션을 대상으로 삼는다.
+            // (나눠 확정·병합으로 목표액이 늘어난 옵션의 잔여분까지 스케줄러가 포착)
+            // 빌더 서브쿼리로 표현 — raw SQL/테이블 별칭은 prefix 자동 적용을 받지 못하므로 별칭 없이 컬럼만 참조.
+            ->where('opt.subtotal_earned_points_amount', '>', function ($sub) {
+                $sub->from('ecommerce_mileage_transactions')
+                    ->selectRaw('COALESCE(SUM(amount), 0)')
+                    ->whereColumn('order_option_id', 'opt.id')
+                    ->where('type', MileageTransactionTypeEnum::PURCHASE_EARN->value);
             })
             ->orderBy('opt.id', 'asc')
             ->select([

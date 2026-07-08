@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\StoreInquiryRequest;
+use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\ProductInquiryService;
 
 /**
@@ -24,10 +25,10 @@ class ProductInquiryController extends PublicBaseController
     /**
      * 상품 문의 목록 조회
      *
-     * @param  int  $productId  상품 ID
+     * @param  Product  $product  라우트 바인딩된 상품 (product_code 또는 id)
      * @return JsonResponse 문의 목록 및 board_settings 메타 JSON 응답
      */
-    public function index(int $productId): JsonResponse
+    public function index(Product $product): JsonResponse
     {
         try {
             $this->logApiUsage('inquiry.index');
@@ -35,7 +36,7 @@ class ProductInquiryController extends PublicBaseController
             $page = (int) (request()->query('page', 1));
             $excludeSecret = filter_var(request()->query('exclude_secret', false), FILTER_VALIDATE_BOOLEAN);
 
-            $result = $this->inquiryService->getProductInquiries($productId, $perPage, $page, $excludeSecret);
+            $result = $this->inquiryService->getProductInquiries($product->id, $perPage, $page, $excludeSecret);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -55,14 +56,14 @@ class ProductInquiryController extends PublicBaseController
      * 상품 문의 작성
      *
      * @param  StoreInquiryRequest  $request  문의 작성 요청
-     * @param  int  $productId  상품 ID
+     * @param  Product  $product  라우트 바인딩된 상품 (product_code 또는 id)
      * @return JsonResponse 작성된 문의 JSON 응답
      */
-    public function store(StoreInquiryRequest $request, int $productId): JsonResponse
+    public function store(StoreInquiryRequest $request, Product $product): JsonResponse
     {
         try {
             $this->logApiUsage('inquiry.store');
-            $inquiry = $this->inquiryService->createInquiry($productId, $request->validated());
+            $inquiry = $this->inquiryService->createInquiry($product->id, $request->validated());
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',

@@ -87,7 +87,8 @@
     "edit_search": "検索編集",
     "search": "検索",
     "reset": "初期化",
-    "save_preset": "プリセット保存"
+    "save_preset": "プリセット保存",
+    "view_user_page": "ユーザー画面を表示"
   },
   "bulk_apply": "一括適用",
   "bulk_success": "選択された商品が一括変更されました。",

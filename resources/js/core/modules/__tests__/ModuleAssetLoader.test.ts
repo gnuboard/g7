@@ -18,7 +18,7 @@ describe('ModuleAssetLoader', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
-        document.head.querySelectorAll('[id^="module-js-"],[id^="module-css-"]')
+        document.head.querySelectorAll('[id^="module-js-"],[id^="module-css-"],[id^="ext-bundle-js-"],[id^="ext-bundle-css-"]')
             .forEach(el => el.remove());
     });
 
@@ -163,6 +163,112 @@ describe('ModuleAssetLoader', () => {
 
         it('빈 배열은 no-op', async () => {
             await expect(loader.loadActiveExtensionAssets([])).resolves.toBeUndefined();
+        });
+    });
+
+    describe('loadBundle (서버측 병합 번들)', () => {
+        it('단일 script + 단일 link 를 1개씩만 append 한다', async () => {
+            const scriptAppends: string[] = [];
+            const linkAppends: string[] = [];
+
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT') {
+                    scriptAppends.push(node.id);
+                    queueMicrotask(() => node.onload?.());
+                } else if (node.tagName === 'LINK') {
+                    linkAppends.push(node.id);
+                    queueMicrotask(() => node.onload?.());
+                }
+                return node;
+            }) as any);
+
+            await loader.loadBundle('module', '/api/modules/bundle.js?v=1', '/api/modules/bundle.css?v=1');
+
+            expect(scriptAppends).toEqual(['ext-bundle-js-module']);
+            expect(linkAppends).toEqual(['ext-bundle-css-module']);
+
+            appendSpy.mockRestore();
+        });
+
+        it('번들 script 는 async=false 여야 한다 (내부 순서 실행 보장)', async () => {
+            const created: HTMLScriptElement[] = [];
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT') {
+                    created.push(node);
+                    queueMicrotask(() => node.onload?.());
+                }
+                return node;
+            }) as any);
+
+            await loader.loadBundle('plugin', '/api/plugins/bundle.js?v=1', null);
+
+            expect(created).toHaveLength(1);
+            expect(created[0].async).toBe(false);
+            appendSpy.mockRestore();
+        });
+
+        it('같은 key 를 중복 로드하지 않는다 (중복 가드)', async () => {
+            let scriptCount = 0;
+            // 실제 DOM 에 삽입해 element id 가 등록되어야 getElementById 중복 가드가 동작
+            const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT') {
+                    scriptCount++;
+                    queueMicrotask(() => node.onload?.());
+                }
+                // jsdom 실제 삽입 (id 등록 → 두 번째 호출 시 getElementById 가 찾아 중복 방지)
+                Node.prototype.appendChild.call(document.head, node);
+                return node;
+            }) as any);
+
+            await loader.loadBundle('module', '/api/modules/bundle.js?v=1', null);
+            await loader.loadBundle('module', '/api/modules/bundle.js?v=1', null);
+
+            expect(scriptCount).toBe(1);
+            appendSpy.mockRestore();
+        });
+
+        it('jsUrl/cssUrl 모두 null 이면 no-op', async () => {
+            const appendSpy = vi.spyOn(document.head, 'appendChild');
+            await expect(loader.loadBundle('module', null, null)).resolves.toBeUndefined();
+            expect(appendSpy).not.toHaveBeenCalled();
+            appendSpy.mockRestore();
+        });
+    });
+
+    describe('concat 자가등록 (IIFE 병합 계약)', () => {
+        it(';\\n 로 이어붙인 2개 IIFE 가 모두 실행되어 레지스트리에 자가등록된다', () => {
+            // 모의 IIFE 2개 — ecommerce IIFE 처럼 세미콜론 없이 끝나도 `\n;\n` 구분자로 ASI 경계 보호
+            const registry: Record<string, unknown> = {};
+            (globalThis as any).__G7TestRegistry = registry;
+
+            const iifeA = `(function(){"use strict";globalThis.__G7TestRegistry["mod-a"]={handler:"mod-a.doThing"}})()`;
+            // 세미콜론 없이 끝나는 IIFE (sourceMappingURL 주석 strip 후 형태)
+            const iifeB = `(function(){"use strict";globalThis.__G7TestRegistry["mod-b"]={handler:"mod-b.doThing"}})()`;
+
+            const bundle = [iifeA, iifeB].join('\n;\n');
+
+            // 번들 실행 (단일 <script> 실행 시뮬레이션)
+            // eslint-disable-next-line no-new-func
+            new Function(bundle)();
+
+            expect(registry['mod-a']).toEqual({ handler: 'mod-a.doThing' });
+            expect(registry['mod-b']).toEqual({ handler: 'mod-b.doThing' });
+            // 핸들러 네임스페이스 격리 — 각 확장 prefix
+            expect((registry['mod-a'] as any).handler).toContain('mod-a.');
+            expect((registry['mod-b'] as any).handler).toContain('mod-b.');
+
+            delete (globalThis as any).__G7TestRegistry;
+        });
+
+        it('구분자 없이 이어붙이면 ASI 경계가 깨진다 (구분자 필요성 회귀 가드)', () => {
+            // 세미콜론 없이 끝나는 IIFE 뒤에 즉시 다음 IIFE 를 붙이면 파싱 에러
+            const iifeA = `(function(){return 1})()`;
+            const iifeB = `(function(){return 2})()`;
+
+            // 구분자 없는 병합 → `()()(function...` 형태로 호출 연쇄 파싱 (런타임 에러)
+            expect(() => new Function(iifeA + '\n' + iifeB)()).toThrow();
+            // 구분자 있는 병합 → 정상
+            expect(() => new Function(iifeA + '\n;\n' + iifeB)()).not.toThrow();
         });
     });
 });

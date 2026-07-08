@@ -11,25 +11,11 @@ use App\Helpers\PermissionHelper;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use App\Search\Engines\DatabaseFulltextEngine;
-use Laravel\Scout\EngineManager;
+use App\Seo\Contracts\SeoCacheManagerInterface;
 use Modules\Sirsoft\Page\Models\Page;
+use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Models\PageVersion;
 use Modules\Sirsoft\Page\Tests\FeatureTestCase;
-
-/**
- * LIKE fallback 전용 Scout 엔진
- *
- * MySQL FULLTEXT는 트랜잭션 내 미커밋 데이터를 인덱싱하지 않으므로,
- * 테스트에서 Scout 파이프라인 전체를 검증하기 위해 LIKE fallback을 강제합니다.
- */
-class LikeFallbackEngine extends DatabaseFulltextEngine
-{
-    public static function supportsFulltext(): bool
-    {
-        return false;
-    }
-}
 
 /**
  * 관리자 페이지 관리 API 테스트
@@ -122,12 +108,13 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 검색어로 목록을 조회할 수 있는지 확인
+     *
+     * 검색 동작은 슬러그(LIKE) 매칭으로 검증한다 — 슬러그 검색은 InnoDB FULLTEXT 가
+     * 트랜잭션 내 미커밋 데이터를 보장하지 않는 가시성 문제와 무관하게 안정적이다.
+     * (제목/본문 FULLTEXT 컬럼 범위 분리는 test_admin_search_title_excludes_content 가 담당)
      */
     public function test_admin_can_search_pages(): void
     {
-        // Scout 엔진을 LIKE fallback으로 교체 (트랜잭션 호환)
-        $this->swapScoutEngineToLikeFallback();
-
         Page::factory()->create([
             'slug' => 'test-search-target',
             'title' => ['ko' => '검색대상페이지', 'en' => 'Search Target'],
@@ -135,11 +122,158 @@ class PageControllerTest extends FeatureTestCase
             'updated_by' => $this->adminUser->id,
         ]);
 
+        // 전체(all) 검색에 슬러그 토큰을 넣으면 결과에 포함되어야 한다
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-page/admin/pages?search=검색대상');
+            ->getJson('/api/modules/sirsoft-page/admin/pages?search=search-target&search_field=all');
 
         $response->assertStatus(200);
-        $this->assertGreaterThanOrEqual(1, $response->json('data.meta.total'));
+        $slugs = collect($response->json('data.data'))->pluck('slug')->all();
+        $this->assertContains('test-search-target', $slugs);
+    }
+
+    /**
+     * 검색조건 '전체'(all)로 슬러그를 검색하면 결과에 포함되는지 확인
+     *
+     * 회귀: 기존에는 all 검색이 Scout(제목·본문 FULLTEXT) 경로로만 처리되어
+     * 슬러그가 검색 범위에서 누락됨. all 검색에도 슬러그 LIKE 가 포함되어야 한다.
+     *
+     * 슬러그 매칭은 LIKE 기반이라 테스트 트랜잭션의 미커밋 데이터도 검증 가능하다.
+     * (제목·본문 FULLTEXT 매칭은 별도 title 단독 검색 테스트가 담당)
+     */
+    public function test_admin_search_all_includes_slug(): void
+    {
+        // 제목/본문에 없는 고유 슬러그 토큰 (운영 시더 데이터와 충돌 회피)
+        Page::factory()->create([
+            'slug' => 'test-zzslugonly-target',
+            'title' => ['ko' => '제목없음표제', 'en' => 'Heading Only'],
+            'content' => ['ko' => '본문내용', 'en' => 'Body'],
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        // search_field 미지정 = all. 제목/본문에 없는 슬러그 토큰으로 검색
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages?search=zzslugonly');
+
+        $response->assertStatus(200);
+        $slugs = collect($response->json('data.data'))->pluck('slug')->all();
+        $this->assertContains('test-zzslugonly-target', $slugs);
+    }
+
+    /**
+     * '전체'(all) 검색 결과의 total 이 실제 행 수와 일치하는지 확인 (#225 회귀 가드)
+     *
+     * 과거 Scout 콜백 내 orWhere('slug') 가 total 카운트를 부풀렸던 회귀(#225)를
+     * all 검색 통합 후에도 재발하지 않는지 검증한다.
+     * 고유 슬러그 토큰으로 결과를 1건으로 한정해 total ↔ 행 수 정합을 본다.
+     */
+    public function test_admin_search_all_total_matches_rows(): void
+    {
+        Page::factory()->create([
+            'slug' => 'test-zztotalguard-one',
+            'title' => ['ko' => '집계가드대상', 'en' => 'Count Guard'],
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages?search=zztotalguard');
+
+        $response->assertStatus(200);
+        $total = $response->json('data.meta.total');
+        $rowCount = count($response->json('data.data'));
+        // 단일 페이지 결과: total 과 실제 반환 행 수가 일치해야 함 (부풀림 없음)
+        $this->assertSame(1, $total);
+        $this->assertSame(1, $rowCount);
+    }
+
+    /**
+     * per_page 미지정 시 기본값이 20 인지 확인
+     *
+     * 회귀: 백엔드 기본값이 15 였으나 프론트 셀렉트는 20 을 표시해
+     * '표시 20 / 실제 조회 15' 불일치 발생. 양쪽을 20 으로 통일한다.
+     */
+    public function test_admin_list_default_per_page_is_20(): void
+    {
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages');
+
+        $response->assertStatus(200);
+        $this->assertSame(20, $response->json('data.meta.per_page'));
+    }
+
+    /**
+     * 본문(content)에만 있는 단어는 제목/전체 검색 어느 쪽에서도 검색되지 않는지 확인 (E4)
+     *
+     * 검색 대상은 제목·슬러그이며 본문은 포함하지 않는다 (UI '제목 또는 슬러그로 검색',
+     * 검색 필드 옵션 전체/제목/슬러그와 일치). '제목'뿐 아니라 '전체' 검색도 본문을 제외한다.
+     *
+     * 검증 범위: '본문 단어가 검색에 누출되지 않음'(항상 0건이라 트랜잭션 FULLTEXT 가시성과 무관하게 안정적).
+     */
+    public function test_admin_search_excludes_content(): void
+    {
+        Page::factory()->create([
+            'slug' => 'test-content-scope',
+            'title' => ['ko' => '제목쪽고유단어', 'en' => 'Heading'],
+            'content' => ['ko' => '본문쪽고유단어', 'en' => 'Body'],
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        // 본문에만 있는 단어는 '제목' 검색에서 0건
+        $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages?search=본문쪽고유단어&search_field=title')
+            ->assertStatus(200)
+            ->assertJsonPath('data.meta.total', 0);
+
+        // 본문에만 있는 단어는 '전체' 검색에서도 0건 (본문은 검색 대상 아님)
+        $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages?search=본문쪽고유단어&search_field=all')
+            ->assertStatus(200)
+            ->assertJsonPath('data.meta.total', 0);
+    }
+
+    /**
+     * 검색조건 '전체'(all)는 제목 외에 슬러그도 검색해 title 보다 넓은 범위인지 확인 (E4 대조)
+     *
+     * '전체' 검색 = 제목 + 슬러그. title 검색이 제목만 보더라도, all 검색은 슬러그까지 포함해야 한다.
+     */
+    public function test_admin_search_all_wider_than_title(): void
+    {
+        Page::factory()->create([
+            'slug' => 'test-allscope-zzslugword',
+            'title' => ['ko' => '무관한제목', 'en' => 'x'],
+            'content' => ['ko' => '본문', 'en' => 'y'],
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        // all 검색: 슬러그 토큰으로 잡혀야 함 (제목엔 없음)
+        $all = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages?search=zzslugword&search_field=all');
+        $all->assertStatus(200);
+        $this->assertGreaterThanOrEqual(1, $all->json('data.meta.total'));
+
+        // title 검색: 같은 슬러그 토큰은 제목에 없으므로 0건 (범위가 좁음을 대조)
+        $title = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages?search=zzslugword&search_field=title');
+        $title->assertStatus(200);
+        $this->assertSame(0, $title->json('data.meta.total'));
+    }
+
+    /**
+     * 검색어가 최대 길이를 초과하면 500 이 아닌 422 검증 오류를 반환하는지 확인 (E5)
+     *
+     * 회귀: 공백 없는 긴 한글(140자+)이 FULLTEXT phrase 토큰 한도를 초과해
+     * 'Too many words in a FTS phrase'(191) → 500 을 유발했다.
+     * search max 를 100 으로 제한해 긴 입력을 422 로 사전 차단한다.
+     */
+    public function test_admin_search_too_long_returns_422(): void
+    {
+        // 레이아웃이 실제로 쓰는 filters[0][value] 경로로 긴 검색어 전송 → 500 이 아닌 422
+        $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages?filters[0][field]=all&filters[0][value]='.str_repeat('가', 200))
+            ->assertStatus(422);
     }
 
     // ─── 상세 조회 (show) ──────────────────────────────
@@ -178,6 +312,77 @@ class PageControllerTest extends FeatureTestCase
             ->getJson('/api/modules/sirsoft-page/admin/pages/99999');
 
         $response->assertStatus(404);
+    }
+
+    /**
+     * 관리자 상세 조회 시 첨부 URL이 공개 hash 라우트를 가리키는지 확인
+     *
+     * 썸네일 <img>·다운로드는 토큰을 실을 수 없어 인증 라우트에 물리면 401 로 깨진다.
+     * 게시판·이커머스 표준과 동일하게 공개 hash 라우트로 단일화하고, 미발행 콘텐츠
+     * 다운로드 차단은 공개 라우트 내부의 권한 게이트가 담당한다.
+     */
+    public function test_admin_show_returns_public_attachment_urls(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-admin-attach-url',
+            'published' => false,
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+        $attachment = PageAttachment::factory()->image()->create([
+            'page_id' => $page->id,
+            'hash' => 'abc123def456',
+            'created_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson("/api/modules/sirsoft-page/admin/pages/{$page->id}");
+
+        $response->assertStatus(200);
+        $att = $response->json('data.attachments.0');
+        $this->assertSame(
+            "/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}/preview",
+            $att['preview_url']
+        );
+        $this->assertSame(
+            "/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}",
+            $att['download_url']
+        );
+    }
+
+    /**
+     * 공개 상세 조회 시 첨부 URL이 공개 라우트를 유지하는지 확인
+     *
+     * 공개 응답에 admin URL(발행 가드 없음)이 섞이면 미발행 첨부가
+     * 노출되는 보안 회귀가 된다. 공개 응답은 공개 라우트만 반환해야 한다.
+     */
+    public function test_public_show_returns_public_attachment_urls(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-public-attach-url',
+            'published' => true,
+            'published_at' => now(),
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+        $attachment = PageAttachment::factory()->image()->create([
+            'page_id' => $page->id,
+            'hash' => 'pub123def456',
+            'created_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->getJson("/api/modules/sirsoft-page/pages/{$page->slug}");
+
+        $response->assertStatus(200);
+        $att = $response->json('data.attachments.0');
+        $this->assertSame(
+            "/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}/preview",
+            $att['preview_url']
+        );
+        $this->assertSame(
+            "/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}",
+            $att['download_url']
+        );
     }
 
     // ─── 생성 (store) ──────────────────────────────────
@@ -383,7 +588,7 @@ class PageControllerTest extends FeatureTestCase
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('pages', ['id' => $page->id, 'slug' => 'test-slug-new']);
-        $this->assertDatabaseMissing('pages', ['slug' => 'test-slug-old', 'deleted_at' => null]);
+        $this->assertDatabaseMissing('pages', ['slug' => 'test-slug-old']);
     }
 
     /**
@@ -593,7 +798,7 @@ class PageControllerTest extends FeatureTestCase
     // ─── 삭제 (destroy) ────────────────────────────────
 
     /**
-     * 페이지를 삭제(소프트 삭제)할 수 있는지 확인
+     * 페이지를 삭제(물리 삭제)할 수 있는지 확인
      */
     public function test_admin_can_delete_page(): void
     {
@@ -609,8 +814,8 @@ class PageControllerTest extends FeatureTestCase
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
 
-        // 소프트 삭제 확인
-        $this->assertSoftDeleted('pages', ['id' => $page->id]);
+        // 물리 삭제 확인 (soft delete 미사용 — 행이 실제로 제거됨)
+        $this->assertDatabaseMissing('pages', ['id' => $page->id]);
     }
 
     /**
@@ -622,6 +827,117 @@ class PageControllerTest extends FeatureTestCase
             ->deleteJson('/api/modules/sirsoft-page/admin/pages/99999');
 
         $response->assertStatus(404);
+    }
+
+    /**
+     * 페이지 삭제 후 동일 슬러그로 재생성할 수 있는지 확인 (회귀)
+     *
+     * soft delete 시절에는 삭제된 페이지의 slug 가 잔존하여 동일 slug 재생성 시
+     * Rule::unique 가 422 를 반환했다. hard delete 전환으로 재생성이 성공해야 한다.
+     */
+    public function test_can_recreate_page_with_same_slug_after_delete(): void
+    {
+        $slug = 'test-reuse-slug';
+
+        // 1) 최초 생성
+        $first = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-page/admin/pages', [
+                'slug' => $slug,
+                'title' => ['ko' => '원본 페이지', 'en' => 'Original'],
+                'content' => ['ko' => '본문', 'en' => 'Content'],
+                'content_mode' => 'html',
+            ]);
+        $first->assertStatus(201);
+        $firstId = $first->json('data.id');
+
+        // 2) 삭제
+        $this->actingAs($this->adminUser)
+            ->deleteJson("/api/modules/sirsoft-page/admin/pages/{$firstId}")
+            ->assertStatus(200);
+
+        $this->assertDatabaseMissing('pages', ['id' => $firstId]);
+
+        // 3) 동일 slug 로 재생성 — 성공해야 함
+        $second = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-page/admin/pages', [
+                'slug' => $slug,
+                'title' => ['ko' => '재생성 페이지', 'en' => 'Recreated'],
+                'content' => ['ko' => '본문', 'en' => 'Content'],
+                'content_mode' => 'html',
+            ]);
+
+        $second->assertStatus(201)
+            ->assertJsonPath('data.slug', $slug);
+    }
+
+    /**
+     * 페이지 삭제 후 슬러그 중복 체크와 생성 검증 결과가 일치하는지 확인 (회귀)
+     *
+     * 삭제 후 check-slug 는 "사용 가능", 생성도 성공해야 한다 (두 경로 정합).
+     */
+    public function test_check_slug_and_create_are_consistent_after_delete(): void
+    {
+        $slug = 'test-consistent-slug';
+
+        $first = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-page/admin/pages', [
+                'slug' => $slug,
+                'title' => ['ko' => '원본', 'en' => 'Original'],
+                'content_mode' => 'html',
+            ]);
+        $first->assertStatus(201);
+        $firstId = $first->json('data.id');
+
+        $this->actingAs($this->adminUser)
+            ->deleteJson("/api/modules/sirsoft-page/admin/pages/{$firstId}")
+            ->assertStatus(200);
+
+        // check-slug 는 사용 가능(exists=false)으로 응답
+        $check = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-page/admin/pages/check-slug', [
+                'slug' => $slug,
+            ]);
+        $check->assertStatus(200)
+            ->assertJsonPath('data.exists', false);
+
+        // 생성도 성공 (check-slug 와 동일 결론)
+        $create = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-page/admin/pages', [
+                'slug' => $slug,
+                'title' => ['ko' => '재생성', 'en' => 'Recreated'],
+                'content_mode' => 'html',
+            ]);
+        $create->assertStatus(201);
+    }
+
+    /**
+     * 첨부가 있는 페이지를 물리 삭제해도 삭제 흐름(첨부 정리 + 활동로그 기록)이 정상 완료되는지 확인
+     *
+     * 활동로그 리스너는 삭제되는 페이지를 loggable 로 참조한다. hard delete 후 loggable 행이
+     * 사라지더라도 삭제 응답이 200 이고 페이지/첨부 행이 모두 물리 삭제되어야 한다.
+     */
+    public function test_deleting_page_with_attachment_completes_without_error(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-delete-with-attach',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $attachment = PageAttachment::factory()->create([
+            'page_id' => $page->id,
+            'created_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->deleteJson("/api/modules/sirsoft-page/admin/pages/{$page->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+
+        // 페이지 + 첨부 모두 물리 삭제
+        $this->assertDatabaseMissing('pages', ['id' => $page->id]);
+        $this->assertDatabaseMissing('page_attachments', ['id' => $attachment->id]);
     }
 
     // ─── 발행 토글 (publish) ───────────────────────────
@@ -698,6 +1014,11 @@ class PageControllerTest extends FeatureTestCase
         $response->assertStatus(200)
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.count', 3);
+
+        // 성공 메시지의 :count 플레이스홀더가 실제 건수로 치환되는지 확인 (회귀)
+        $message = $response->json('message');
+        $this->assertStringNotContainsString(':count', $message, '메시지에 :count 플레이스홀더가 치환되지 않고 남았습니다.');
+        $this->assertStringContainsString('3', $message, '메시지에 변경 건수(3)가 포함되어야 합니다.');
 
         // DB 확인
         foreach ($ids as $id) {
@@ -831,7 +1152,7 @@ class PageControllerTest extends FeatureTestCase
         ]);
 
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-page/admin/pages?' . http_build_query([
+            ->getJson('/api/modules/sirsoft-page/admin/pages?'.http_build_query([
                 'filters' => [
                     ['field' => 'slug', 'value' => 'filters-target', 'operator' => 'like'],
                 ],
@@ -977,6 +1298,102 @@ class PageControllerTest extends FeatureTestCase
         $this->assertEquals(3, $page->current_version); // 복원 후 버전 증가
     }
 
+    /**
+     * 버전 복원 시 페이지 상세 SEO 캐시가 무효화되는지 확인
+     *
+     * 복원은 title/content/seo_meta 를 이전 버전으로 되돌리므로 수정과 동일하게
+     * 검색봇용 SEO 캐시를 갱신해야 한다. 복원 전 상세 URL 캐시를 적재한 뒤 복원하면
+     * after_restore 훅 → SeoPageCacheListener 가 해당 캐시를 무효화해야 한다.
+     * (회귀 배경: after_restore 미구독으로 복원 후에도 봇에 복원 전 버전이 잔존)
+     */
+    public function test_restore_version_invalidates_page_detail_seo_cache(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'restore-seo-cache',
+            'title' => ['ko' => '현재 제목', 'en' => 'Current Title'],
+            'current_version' => 2,
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $version1 = PageVersion::create([
+            'page_id' => $page->id,
+            'version' => 1,
+            'title' => ['ko' => '원래 제목', 'en' => 'Original Title'],
+            'content' => ['ko' => '원래 내용', 'en' => 'Original Content'],
+            'content_mode' => 'html',
+            'created_by' => $this->adminUser->id,
+        ]);
+
+        PageVersion::create([
+            'page_id' => $page->id,
+            'version' => 2,
+            'title' => ['ko' => '현재 제목', 'en' => 'Current Title'],
+            'content' => ['ko' => '현재 내용', 'en' => 'Current Content'],
+            'content_mode' => 'html',
+            'created_by' => $this->adminUser->id,
+        ]);
+
+        // 복원 전 페이지 상세 URL 캐시 적재 (봇 응답 캐시 시뮬레이션)
+        $cache = app(SeoCacheManagerInterface::class);
+        $cache->put("/page/{$page->slug}", 'ko', '<html>현재 내용</html>');
+        $this->assertContains("/page/{$page->slug}", $cache->getCachedUrls());
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson("/api/modules/sirsoft-page/admin/pages/{$page->id}/versions/{$version1->id}/restore");
+
+        $response->assertStatus(200);
+
+        // 복원 후 상세 캐시가 무효화되어 봇이 새로 렌더한다
+        $this->assertNotContains("/page/{$page->slug}", $cache->getCachedUrls());
+    }
+
+    /**
+     * 버전 복원 후 새 버전이 생성되고 기존 버전 이력이 모두 보존되는지 확인 (검수항목 3·4)
+     *
+     * 복원은 다음 버전 번호로 새 스냅샷을 만들며, 복원 대상을 포함한 기존 버전 이력을
+     * 삭제하지 않고 그대로 보존해야 한다.
+     */
+    public function test_restore_version_creates_new_version_and_preserves_history(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'restore-history-preserved',
+            'title' => ['ko' => '현재 제목', 'en' => 'Current Title'],
+            'current_version' => 2,
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $version1 = PageVersion::create([
+            'page_id' => $page->id,
+            'version' => 1,
+            'title' => ['ko' => '원래 제목', 'en' => 'Original Title'],
+            'content' => ['ko' => '원래 내용', 'en' => 'Original Content'],
+            'content_mode' => 'html',
+            'created_by' => $this->adminUser->id,
+        ]);
+
+        PageVersion::create([
+            'page_id' => $page->id,
+            'version' => 2,
+            'title' => ['ko' => '현재 제목', 'en' => 'Current Title'],
+            'content' => ['ko' => '현재 내용', 'en' => 'Current Content'],
+            'content_mode' => 'html',
+            'created_by' => $this->adminUser->id,
+        ]);
+
+        $this->actingAs($this->adminUser)
+            ->postJson("/api/modules/sirsoft-page/admin/pages/{$page->id}/versions/{$version1->id}/restore")
+            ->assertStatus(200);
+
+        // 기존 버전 1·2 는 보존되고, 복원으로 버전 3 이 새로 생성되어 총 3건
+        $versions = PageVersion::where('page_id', $page->id)->orderBy('version')->get();
+        $this->assertCount(3, $versions);
+        $this->assertEquals([1, 2, 3], $versions->pluck('version')->all());
+        // 복원 대상(버전 1) 레코드가 삭제되지 않고 남아 있다
+        $this->assertNotNull(PageVersion::find($version1->id));
+    }
+
     // ─── 인증/권한 차단 ────────────────────────────────
 
     /**
@@ -1052,7 +1469,7 @@ class PageControllerTest extends FeatureTestCase
     {
         // 별도 역할을 생성하여 read 권한만 부여 (admin 역할과 분리)
         $readOnlyRole = Role::create([
-            'identifier' => 'test_page_read_only_' . uniqid(),
+            'identifier' => 'test_page_read_only_'.uniqid(),
             'name' => ['ko' => '읽기전용', 'en' => 'Read Only'],
             'is_active' => true,
         ]);
@@ -1323,26 +1740,5 @@ class PageControllerTest extends FeatureTestCase
         $prop->setValue(null, []);
 
         return $user;
-    }
-
-    /**
-     * Scout 엔진을 LIKE fallback 모드로 교체합니다.
-     *
-     * MySQL FULLTEXT는 트랜잭션 내 미커밋 데이터를 검색하지 못하므로,
-     * Scout 파이프라인 전체(Model::search → EngineManager → performSearch → 쿼리)를
-     * 검증하기 위해 LIKE fallback 엔진으로 교체합니다.
-     *
-     * @return void
-     */
-    private function swapScoutEngineToLikeFallback(): void
-    {
-        $manager = $this->app->make(EngineManager::class);
-        $manager->extend('mysql-fulltext', fn () => new LikeFallbackEngine());
-
-        // EngineManager 캐시된 드라이버 인스턴스 초기화
-        $reflection = new \ReflectionClass($manager);
-        $property = $reflection->getProperty('drivers');
-        $property->setAccessible(true);
-        $property->setValue($manager, []);
     }
 }

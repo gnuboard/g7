@@ -227,5 +227,9 @@
       "confirm_remove_attachment_title": "添付ファイル削除",
       "confirm_remove_attachment_message": "ファイルが即座に削除されます。投稿保存と無関係に取り戻せません。"
     }
+  },
+  "admin_links": {
+    "posts": "管理者投稿閲覧",
+    "manage": "掲示板管理"
   }
 }

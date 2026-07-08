@@ -1,6 +1,10 @@
 {
   "loading_posts": "게시글을 불러오는 중입니다...",
   "view_board": "게시판 보기",
+  "admin_links": {
+    "posts": "관리자 게시물 조회",
+    "manage": "게시판 관리"
+  },
   "no": "번호",
   "title": "제목",
   "author": "작성자",

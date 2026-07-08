@@ -5,6 +5,7 @@
   "delete_confirm_message": "Are you sure you want to delete this file?",
   "deleting": "Deleting...",
   "attached_count": "{{count}}/{{max}} attached",
+  "upload_limit_exceeded": "You can attach up to {{max}} files.",
   "max_size": "Max {{size}}MB",
   "reorder_failed": "Failed to reorder files",
   "drag_to_reorder": "Drag to reorder",

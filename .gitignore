@@ -49,6 +49,9 @@ node_modules/
 # Settings JSON files (환경별 설정)
 /storage/app/settings/
 
+# 확장 프론트엔드 병합 번들 캐시 (version-in-path, 런타임 생성)
+/storage/app/ext-bundles/
+
 # Bootstrap cache (auto-generated)
 /bootstrap/cache/*
 !/bootstrap/cache/.gitkeep

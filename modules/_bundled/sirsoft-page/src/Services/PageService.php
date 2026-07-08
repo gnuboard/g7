@@ -4,10 +4,13 @@ namespace Modules\Sirsoft\Page\Services;
 
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Page\Models\Page;
+use Modules\Sirsoft\Page\Models\PageVersion;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageVersionRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -32,7 +35,7 @@ class PageService
      * @param  int  $perPage  페이지당 항목 수
      * @return LengthAwarePaginator 페이지 목록
      */
-    public function getPages(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function getPages(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $filters = HookManager::applyFilters('sirsoft-page.page.filter_list_query', $filters);
 
@@ -72,9 +75,12 @@ class PageService
             // 버전 1 스냅샷 저장
             $this->saveVersionSnapshot($page, $userId);
 
-            // temp_key 첨부파일 연결 및 파일 이동
+            // temp_key 첨부파일 연결 및 파일 이동 (업로드 순서대로 order 부여)
             if (! empty($data['temp_key'])) {
-                $this->pageAttachmentService->linkTempAttachmentsWithMove($data['temp_key'], $page->id);
+                $this->pageAttachmentService->linkTempAttachmentsWithMove(
+                    $data['temp_key'],
+                    $page->id
+                );
             }
 
             HookManager::doAction('sirsoft-page.page.after_create', $page, $data);
@@ -122,9 +128,12 @@ class PageService
             // 버전 스냅샷 저장
             $this->saveVersionSnapshot($page, $userId);
 
-            // temp_key 첨부파일 연결 및 파일 이동
+            // temp_key 첨부파일 연결 및 파일 이동 (업로드 순서대로 order 부여)
             if (! empty($data['temp_key'])) {
-                $this->pageAttachmentService->linkTempAttachmentsWithMove($data['temp_key'], $page->id);
+                $this->pageAttachmentService->linkTempAttachmentsWithMove(
+                    $data['temp_key'],
+                    $page->id
+                );
             }
 
             HookManager::doAction('sirsoft-page.page.after_update', $page, $data, $snapshot);
@@ -205,16 +214,40 @@ class PageService
      */
     public function bulkChangePublishStatus(array $ids, bool $published): int
     {
-        $updateData = [
-            'published' => $published,
-            'updated_by' => Auth::id(),
-        ];
-
-        if ($published) {
-            $updateData['published_at'] = now();
+        if (empty($ids)) {
+            return 0;
         }
 
-        return $this->pageRepository->bulkUpdatePublished($ids, $updateData);
+        return DB::transaction(function () use ($ids, $published) {
+            $userId = Auth::id();
+            $count = 0;
+
+            foreach ($ids as $id) {
+                // 존재하지 않는 페이지가 섞이면 예외 → 트랜잭션 전체 롤백 (all-or-nothing)
+                $page = $this->pageRepository->findOrFail((int) $id);
+
+                HookManager::doAction('sirsoft-page.page.before_publish', $page, $published);
+
+                $updateData = [
+                    'published' => $published,
+                    'updated_by' => $userId,
+                ];
+
+                // 발행 시 published_at 갱신
+                if ($published) {
+                    $updateData['published_at'] = now();
+                }
+
+                $page = $this->pageRepository->update($page, $updateData);
+
+                // 페이지별 after_publish 발화 → 활동로그 per-item 기록
+                HookManager::doAction('sirsoft-page.page.after_publish', $page, $published);
+
+                $count++;
+            }
+
+            return $count;
+        });
     }
 
     /**
@@ -270,7 +303,7 @@ class PageService
      * @param  int  $id  페이지 ID
      * @return Page 페이지 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function getPage(int $id): Page
     {
@@ -286,23 +319,32 @@ class PageService
     /**
      * 슬러그로 발행된 페이지를 조회합니다.
      *
+     * $allowUnpublished 가 true 이면 미발행 페이지도 반환합니다. 관리자 미리보기
+     * (사용자 화면에서 발행 전 페이지 확인)를 위한 것으로, 권한 판정은 호출부(컨트롤러)가
+     * 담당하고 이 메서드는 허용 여부만 플래그로 전달받습니다.
+     *
      * @param  string  $slug  페이지 슬러그
-     * @return Page|null 발행된 페이지 모델 또는 null
+     * @param  bool  $allowUnpublished  미발행 페이지 반환 허용 여부 (관리자 미리보기)
+     * @return Page|null 페이지 모델 또는 null
      */
-    public function getPublishedPageBySlug(string $slug): ?Page
+    public function getPublishedPageBySlug(string $slug, bool $allowUnpublished = false): ?Page
     {
         $page = $this->pageRepository->findBySlug($slug);
 
-        return ($page && $page->published) ? $page : null;
+        if (! $page) {
+            return null;
+        }
+
+        return ($page->published || $allowUnpublished) ? $page : null;
     }
 
     /**
      * 페이지 버전 이력을 조회합니다.
      *
      * @param  Page  $page  페이지 모델
-     * @return \Illuminate\Database\Eloquent\Collection 버전 목록 (최신순)
+     * @return Collection 버전 목록 (최신순)
      */
-    public function getVersions(Page $page): \Illuminate\Database\Eloquent\Collection
+    public function getVersions(Page $page): Collection
     {
         return $this->pageVersionRepository->getVersionsByPage($page);
     }
@@ -311,11 +353,11 @@ class PageService
      * 버전 ID로 페이지 버전을 조회합니다.
      *
      * @param  int  $versionId  버전 ID
-     * @return \Modules\Sirsoft\Page\Models\PageVersion 버전 모델
+     * @return PageVersion 버전 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
-    public function getVersion(int $versionId): \Modules\Sirsoft\Page\Models\PageVersion
+    public function getVersion(int $versionId): PageVersion
     {
         return $this->pageVersionRepository->findOrFail($versionId);
     }
@@ -339,7 +381,7 @@ class PageService
      * @param  string  $orderBy  정렬 컬럼
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $limit  조회할 최대 항목 수
-     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
+     * @return array{total: int, items: Collection}
      */
     public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', int $limit = 10): array
     {

@@ -4,6 +4,14 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.1] - 2026-07-08
+
+### Added
+
+- 미발행 페이지 관리자 미리보기 안내 배너(`user.page.preview_banner`) 일본어 번역 추가 — 관리자가 발행 전 페이지를 사용자 화면에서 미리 볼 때의 안내 문구가 일본어 로케일에서 자연스럽게 표시됩니다.
+- 첨부 개수 초과 안내 문구(`attachment.upload_limit_exceeded`) 일본어 번역 추가 — 게시글 첨부를 허용 개수보다 많이 선택했을 때의 안내가 일본어 로케일에서 자연스럽게 표시됩니다.
+- 게시판·상품 사용자 화면의 관리자 이동 링크 라벨(`admin_links.posts`·`admin_links.manage`·상품 `admin_edit`) 일본어 번역 추가 — 관리자가 사용자 화면에서 관리자 게시글 목록·게시판 관리·상품 편집으로 이동하는 링크가 일본어 로케일에서 자연스럽게 표시됩니다.
+
 ## [1.0.0] - 2026-07-01
 
 ### Added

@@ -27,7 +27,7 @@
             }
         },
         {
-            "path": "*/admin/boards/:id/edit",
+            "path": "*/admin/boards/:slug/edit",
             "layout": "admin_board_form",
             "auth_required": true,
             "meta": {

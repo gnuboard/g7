@@ -59,6 +59,11 @@ return [
         'max' => 'The search query must not exceed :max characters.',
     ],
 
+    // user-friendly attribute names shown in validation errors
+    'attributes' => [
+        'search' => 'search query',
+    ],
+
     // search_field validation messages
     'search_field' => [
         'in' => 'The search field must be one of: all, title, slug.',

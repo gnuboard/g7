@@ -51,7 +51,8 @@
     "published_at": "발행일",
     "create_page": "페이지 생성",
     "attachments": "첨부파일",
-    "download": "다운로드"
+    "download": "다운로드",
+    "preview_banner": "미발행 페이지 미리보기 중입니다"
   },
   "mypage": {
     "page_title": "마이페이지",

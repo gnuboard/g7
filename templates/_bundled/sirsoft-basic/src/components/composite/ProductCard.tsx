@@ -71,6 +71,8 @@ interface ProductLabel {
 interface ProductCardProps {
   product: {
     id: number;
+    /** 상품코드 — 상세 페이지 링크 식별자 (product_code 기준 라우팅). 없으면 id 로 폴백 */
+    product_code?: string;
     name?: string | Record<string, string>;
     name_localized?: string;
     thumbnail_url: string;
@@ -218,7 +220,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
       onClick(product.id);
     } else {
       const base = shopBase === '/' ? '' : shopBase;
-      navigate(`${base}/products/${product.id}`);
+      // 상세 페이지는 product_code 기준 라우팅. code 미제공 시 id 로 폴백(하위호환).
+      const identifier = product.product_code ?? product.id;
+      navigate(`${base}/products/${identifier}`);
     }
   };
 

@@ -3,12 +3,15 @@
 namespace Modules\Sirsoft\Page\Providers;
 
 use App\Extension\BaseModuleServiceProvider;
+use App\Seo\SitemapGenerator;
+use Modules\Sirsoft\Page\Console\Commands\PlaywrightSeedPage;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageVersionRepositoryInterface;
 use Modules\Sirsoft\Page\Repositories\PageAttachmentRepository;
 use Modules\Sirsoft\Page\Repositories\PageRepository;
 use Modules\Sirsoft\Page\Repositories\PageVersionRepository;
+use Modules\Sirsoft\Page\Seo\PageSitemapContributor;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
 
 /**
@@ -20,8 +23,6 @@ class PageServiceProvider extends BaseModuleServiceProvider
 {
     /**
      * 모듈 식별자
-     *
-     * @var string
      */
     protected string $moduleIdentifier = 'sirsoft-page';
 
@@ -47,18 +48,23 @@ class PageServiceProvider extends BaseModuleServiceProvider
 
     /**
      * 서비스 부트스트랩
-     *
-     * @return void
      */
     public function boot(): void
     {
         parent::boot();
 
+        // Artisan 커맨드 등록 (콘솔 환경에서만)
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                PlaywrightSeedPage::class,
+            ]);
+        }
+
         // Sitemap 기여자 등록
         $this->app->booted(function () {
-            if ($this->app->bound(\App\Seo\SitemapGenerator::class)) {
-                $this->app->make(\App\Seo\SitemapGenerator::class)->registerContributor(
-                    new \Modules\Sirsoft\Page\Seo\PageSitemapContributor()
+            if ($this->app->bound(SitemapGenerator::class)) {
+                $this->app->make(SitemapGenerator::class)->registerContributor(
+                    new PageSitemapContributor
                 );
             }
         });

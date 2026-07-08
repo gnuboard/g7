@@ -44,16 +44,35 @@
     ],
     "init_actions": [
         {
-            "comment": "생성 모드에서 폼 기본값 초기화 (published는 Select fallback과 동기화)",
+            "comment": "생성 모드: 직전 페이지(수정)에서 같은 레이아웃을 재사용하므로 _local.form 잔존을 먼저 제거 (form=null → deep merge 가 객체 대신 null 로 덮어써 이전 id/title/attachments 완전 삭제)",
+            "if": "{{!route?.id}}",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "form": null
+            }
+        },
+        {
+            "comment": "생성 모드에서 폼 기본값 초기화 (published는 Select fallback과 동기화). 수정→등록 전환 시 이전 슬러그 검증 상태(slugChecked/slugAvailable 등)도 함께 리셋",
             "if": "{{!route?.id}}",
             "handler": "setState",
             "params": {
                 "target": "local",
                 "form": {
                     "slug": "{{query.slug ?? ''}}",
+                    "title": {},
+                    "content": null,
                     "published": false,
-                    "content_mode": "html"
-                }
+                    "content_mode": "html",
+                    "seo_meta": null,
+                    "attachments": []
+                },
+                "slugChecked": false,
+                "slugAvailable": false,
+                "slugChecking": false,
+                "slugError": null,
+                "errors": null,
+                "hasChanges": false
             }
         },
         {
@@ -102,7 +121,7 @@
                         "name": "Div",
                         "if": "{{_local.errors && Object.keys(_local.errors).length > 0}}",
                         "props": {
-                            "className": "alert-danger"
+                            "className": "alert-danger mb-6"
                         },
                         "children": [
                             {
@@ -128,7 +147,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-mediumtext-danger-soft"
+                                                    "className": "text-sm font-medium text-danger-soft"
                                                 },
                                                 "text": "$t:sirsoft-page.admin.page.form.validation_error"
                                             },
@@ -406,7 +425,7 @@
                                                         "props": {
                                                             "className": "form-hint block"
                                                         },
-                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug ?? 'example'}}"
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug || 'example'}}"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -693,7 +712,7 @@
                                     "maxFiles": 5,
                                     "maxSize": 10,
                                     "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip",
-                                    "initialFiles": "{{pageData?.data?.attachments ?? []}}",
+                                    "initialFiles": "{{_local.form?.attachments ?? []}}",
                                     "autoUpload": false,
                                     "uploadTriggerEvent": "upload:page_attachments",
                                     "disabled": "{{_computed.isReadOnly}}",
@@ -707,9 +726,47 @@
                                     "apiEndpoints": {
                                         "upload": "/api/modules/sirsoft-page/admin/attachments",
                                         "delete": "/api/modules/sirsoft-page/admin/attachments/:id",
-                                        "reorder": "/api/modules/sirsoft-page/admin/attachments/reorder"
+                                        "reorder": "{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"
                                     }
-                                }
+                                },
+                                "actions": [
+                                    {
+                                        "comment": "업로드 완료 시 form.attachments 에 누적 (수정 모드만 - 생성 모드는 저장 시 temp_key 로 연결)",
+                                        "event": "onUploadComplete",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "form.attachments": "{{route?.id ? [...(_local.form?.attachments ?? []), ...($args[0] ?? [])] : (_local.form?.attachments ?? [])}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "드래그 순서 변경 시 form.attachments 를 최종 순서로 덮어쓰기 (이커머스 상품 이미지와 동일 패턴)",
+                                        "event": "onReorder",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "form.attachments": "{{$args[0] ?? []}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "첨부 삭제 시 form.attachments 에서 제거",
+                                        "event": "onRemove",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "form.attachments": "{{(_local.form?.attachments ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "업로드 검증 실패(용량/확장자/개수 초과 등) 시 사용자에게 toast 안내",
+                                        "event": "onUploadError",
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{$args[0]}}"
+                                        }
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -904,7 +961,10 @@
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigateBack"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}"
+                                        }
                                     }
                                 ],
                                 "children": [
@@ -923,7 +983,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_local.saving}}",
-                                    "className": "{{_local.saving ? 'px-4 py-2 bg-blue-400 text-white rounded-lg font-medium cursor-not-allowed' : 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors'}}"
+                                    "className": "btn btn-primary flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
                                 "actions": [
                                     {
@@ -966,7 +1026,7 @@
                                                         }
                                                     },
                                                     {
-                                                        "comment": "FileUploader 업로드 트리거",
+                                                        "comment": "FileUploader 업로드 트리거 (대기 중인 첨부를 temp_key 로 업로드 → 저장 시 백엔드가 연결)",
                                                         "handler": "emitEvent",
                                                         "params": {
                                                             "event": "upload:page_attachments"
@@ -1026,6 +1086,15 @@
                                     }
                                 ],
                                 "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_local.saving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "spinner-sm"
+                                        }
+                                    },
                                     {
                                         "type": "basic",
                                         "name": "Span",

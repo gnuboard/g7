@@ -121,7 +121,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "refresh",
-                      "className": "w-5 h-5"
+                      "size": "sm"
                     }
                   }
                 ]
@@ -131,7 +131,7 @@
                 "type": "basic",
                 "name": "Button",
                 "props": {
-                  "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                  "className": "btn btn-primary",
                   "disabled": "{{pages?.data?.abilities?.can_create !== true}}"
                 },
                 "actions": [
@@ -149,7 +149,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "plus",
-                      "className": "w-5 h-5"
+                      "size": "sm"
                     }
                   },
                   {
@@ -250,7 +250,7 @@
                     "type": "basic",
                     "name": "Button",
                     "props": {
-                      "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                      "className": "btn btn-primary"
                     },
                     "actions": [
                       {
@@ -323,7 +323,6 @@
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
-                                      "target": "global",
                                       "searchField": "{{$event.target.value}}"
                                     }
                                   }
@@ -344,7 +343,6 @@
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
-                                      "target": "global",
                                       "searchQuery": "{{$event.target.value}}"
                                     }
                                   },
@@ -373,7 +371,7 @@
                             "type": "basic",
                             "name": "Button",
                             "props": {
-                              "className": "w-full px-4 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                              "className": "btn btn-primary w-full"
                             },
                             "actions": [
                               {
@@ -442,7 +440,7 @@
                     "name": "Select",
                     "props": {
                       "value": "{{query.published ?? ''}}",
-                      "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                      "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                       "options": [
                         {
                           "label": "$t:sirsoft-page.admin.page.published_filter.all",
@@ -480,7 +478,7 @@
                     "name": "Select",
                     "props": {
                       "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
-                      "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                      "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                       "options": [
                         {
                           "label": "$t:sirsoft-page.admin.page.sort.created_at_desc",
@@ -523,7 +521,7 @@
                     "name": "Select",
                     "props": {
                       "value": "{{query.per_page || '20'}}",
-                      "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                      "className": "w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                       "options": [
                         {
                           "label": "$t:sirsoft-page.admin.page.per_page|count=10",
@@ -902,7 +900,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "btn btn-secondary",
                 "disabled": "{{_global.isBulkPublishing}}"
               },
               "actions": [
@@ -924,7 +922,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "flex-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "btn btn-primary",
                 "disabled": "{{_global.isBulkPublishing}}"
               },
               "actions": [
@@ -1063,7 +1061,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "btn btn-secondary",
                 "disabled": "{{_global.isBulkPublishing}}"
               },
               "actions": [
@@ -1085,7 +1083,7 @@
               "name": "Button",
               "props": {
                 "type": "button",
-                "className": "flex-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "btn btn-primary",
                 "disabled": "{{_global.isBulkPublishing}}"
               },
               "actions": [
@@ -1223,7 +1221,7 @@
               "type": "basic",
               "name": "Button",
               "props": {
-                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "btn btn-secondary",
                 "disabled": "{{_global.isDeletingPage}}"
               },
               "actions": [
@@ -1244,7 +1242,7 @@
               "type": "basic",
               "name": "Button",
               "props": {
-                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "btn btn-danger",
                 "disabled": "{{_global.isDeletingPage}}"
               },
               "actions": [

@@ -74,6 +74,16 @@ return [
             'report' => false,
         ],
 
+        // 확장(모듈/플러그인) 프론트엔드 IIFE/CSS 번들 병합 결과 캐시.
+        // ExtensionBundleService 가 version-in-path 파일명으로 저장/서빙한다.
+        'ext-bundles' => [
+            'driver' => 'local',
+            'root' => storage_path('app/ext-bundles'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

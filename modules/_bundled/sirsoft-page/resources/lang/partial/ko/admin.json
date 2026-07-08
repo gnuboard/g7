@@ -160,7 +160,13 @@
         "initial": "최초 생성",
         "changed_fields": "변경: {{fields}}",
         "restored_from": "v{{version}}에서 복원",
-        "restore_guide": "보기 버튼을 클릭하면 내용을 확인하고 복원할 수 있습니다. 첨부파일은 버전 관리에 포함되지 않습니다."
+        "restore_guide": "보기 버튼을 클릭하면 내용을 확인하고 복원할 수 있습니다. 첨부파일은 버전 관리에 포함되지 않습니다.",
+        "field_labels": {
+          "title": "제목",
+          "content": "내용",
+          "seo_meta": "SEO 정보",
+          "content_mode": "편집 모드"
+        }
       }
     }
   }

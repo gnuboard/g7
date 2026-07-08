@@ -77,6 +77,40 @@ interface MileageTransactionRepositoryInterface
     public function existsEarnForOption(int $orderOptionId): bool;
 
     /**
+     * 해당 주문옵션의 구매 적립(purchase_earn) 총액을 반환합니다 (금액 델타 멱등 기준).
+     *
+     * 관리자 수동 지급(admin_earn)·복원(refund_restore/order_cancel_restore)은 제외하고
+     * 구매확정/배송 적립(purchase_earn)만 합산한다. 나눠 확정·병합으로 옵션의 적립 예정액이
+     * 늘었을 때, 목표액과 이 합계의 차액(델타)만 추가 적립하기 위한 기준값이다.
+     *
+     * @param  int  $orderOptionId  주문옵션 ID
+     * @return float 기적립 purchase_earn 총액
+     */
+    public function sumPurchaseEarnedForOption(int $orderOptionId): float;
+
+    /**
+     * 피흡수 옵션의 구매 적립(purchase_earn) 거래를 생존 옵션으로 이전합니다 (병합 정합).
+     *
+     * 옵션 병합 시 shipping·review 처럼 마일리지 적립 거래의 order_option_id 도 생존 레코드로
+     * 옮겨, 병합 후 생존 옵션 기준의 적립 합계·델타 계산이 정합하도록 한다.
+     *
+     * @param  int  $fromOrderOptionId  피흡수 옵션 ID
+     * @param  int  $toOrderOptionId  생존 옵션 ID
+     * @return int 이전된 거래 수
+     */
+    public function transferPurchaseEarnByOrderOptionId(int $fromOrderOptionId, int $toOrderOptionId): int;
+
+    /**
+     * 기존 구매 적립건(lot)에 델타 금액을 증액합니다 (방식 A — 적립 내역 한 줄 유지).
+     *
+     * amount·remaining_amount 를 델타만큼 증가시킨다. expires_at 은 최초 적립 시점을 유지한다.
+     *
+     * @param  MileageTransaction  $lot  대상 적립건
+     * @param  float  $delta  증액할 금액 (> 0)
+     */
+    public function incrementEarnLotAmount(MileageTransaction $lot, float $delta): void;
+
+    /**
      * 해당 주문취소에 대한 복원 거래가 이미 존재하는지 확인합니다 (멱등 가드).
      *
      * @param  int  $orderCancelId  주문취소 ID

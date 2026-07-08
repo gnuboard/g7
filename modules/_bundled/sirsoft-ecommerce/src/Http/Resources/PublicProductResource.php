@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Enums\PermissionType;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -162,6 +163,14 @@ class PublicProductResource extends BaseApiResource
                 ? $this->currentUserWishlist->isNotEmpty()
                 : ProductWishlist::where('user_id', Auth::id())->where('product_id', $this->id)->exists()
                 : false,
+
+            // 권한 (유저 상세 화면에서 관리자 상품 수정 화면 진입 게이트 전용)
+            // can_update: 상품 수정 권한(sirsoft-ecommerce.products.update, Admin 타입) 보유자만 true.
+            // 식별자는 DB 시더 권한 기준(products 복수형) — 라우트 정의의 단수 표기가 아닌 실제 등록 권한과 일치시킴.
+            'abilities' => [
+                'can_update' => Auth::check()
+                    && Auth::user()->hasPermission('sirsoft-ecommerce.products.update', PermissionType::Admin),
+            ],
         ];
     }
 

@@ -38,8 +38,22 @@
           ]
         },
         {
-          "comment": "상단 글쓰기 버튼",
-          "partial": "../../index/_write_button.json"
+          "comment": "상단 액션 (관리자 진입 링크 + 글쓰기 버튼)",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "comment": "관리자 진입 크로스링크 (권한 보유 시)",
+              "partial": "../../index/_admin_links.json"
+            },
+            {
+              "comment": "상단 글쓰기 버튼",
+              "partial": "../../index/_write_button.json"
+            }
+          ]
         }
       ]
     },

@@ -174,7 +174,7 @@ class PageAttachmentControllerTest extends FeatureTestCase
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
 
-        $this->assertSoftDeleted('page_attachments', ['id' => $attachment->id]);
+        $this->assertDatabaseMissing('page_attachments', ['id' => $attachment->id]);
     }
 
     /**
@@ -258,29 +258,9 @@ class PageAttachmentControllerTest extends FeatureTestCase
             ->assertJsonValidationErrors(['order']);
     }
 
-    // ─── 다운로드/미리보기 ─────────────────────────────
-
-    /**
-     * 존재하지 않는 해시로 다운로드 시 404를 반환하는지 확인
-     */
-    public function test_download_nonexistent_hash_returns_404(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-page/admin/attachments/download/abcdefghijkl');
-
-        $response->assertStatus(404);
-    }
-
-    /**
-     * 존재하지 않는 해시로 미리보기 시 404를 반환하는지 확인
-     */
-    public function test_preview_nonexistent_hash_returns_404(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-page/admin/attachments/preview/abcdefghijkl');
-
-        $response->assertStatus(404);
-    }
+    // 첨부 다운로드/미리보기는 공개 hash 라우트(pages/attachment/*)로 단일화되어
+    // 관리자 전용 preview/download 라우트가 제거됨. 해당 서빙 경로 테스트는
+    // PublicPageControllerTest 의 preview/download 매트릭스로 이관.
 
     // ─── 인증 차단 ─────────────────────────────────────
 

@@ -885,7 +885,16 @@ class CoreUpdateService
     }
 
     /**
-     * 코어 업데이트 대상 파일만 선택적으로 덮어씁니다.
+     * 코어 업데이트 대상 파일을 덮어씁니다.
+     *
+     * 기본(증분) 모드 — `$applyList` 가 주어지고 `$prune === false`:
+     *  - 코어(신 버전)가 실제로 추가·변경한 파일만 적용한다(3-way 판정 산출물).
+     *  - 코어가 건드리지 않은 파일은 복사·chmod·chown·mtime 갱신을 전부 스킵하여 현재
+     *    디스크 상태(사용자 수정 포함 가능)를 그대로 보존한다.
+     *  - orphan(소스에 없는 대상 파일) 삭제를 하지 않는다 — 사용자가 추가한 신규 파일 보존.
+     *
+     * prune 모드 — `$prune === true` 또는 `$applyList === null`(백업 부재 fallback):
+     *  - targets 전체를 무조건 덮어쓰고, 소스에 없는 orphan 을 삭제한다(기존 동작).
      *
      * 주의: ExtensionPendingHelper::copyToActive()는 PHP copy()를 사용하여
      * 파일 퍼미션/소유자를 보존하지 않으므로, 코어 업데이트에서는 사용하지 않습니다.
@@ -893,11 +902,28 @@ class CoreUpdateService
      *
      * @param  string  $sourcePath  소스 경로 (_pending 내)
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @param  bool  $prune  true 면 전체 덮어쓰기 + orphan 삭제(기존 동작), false 면 증분 적용
+     * @param  array<int, string>|null  $applyList  적용 대상 상대경로 목록(target 접두사 포함).
+     *   `CoreBackupHelper::computeApplyList()` 산출물. null 이면 증분 불가로 판단해 전체 덮어쓰기.
      */
-    public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null): void
+    public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null, bool $prune = false, ?array $applyList = null): void
     {
         $targets = config('app.update.targets', []);
         $excludes = config('app.update.excludes', []);
+
+        // 증분 모드 여부: prune 이 아니고 적용 목록이 주어진 경우에만 증분 적용.
+        // applyList 가 null 이면(백업 부재 등) 안전을 위해 전체 덮어쓰기로 회귀한다.
+        $incremental = ! $prune && $applyList !== null;
+
+        // 증분 모드에서 각 target 하위 파일을 O(1) 로 조회하기 위한 lookup 맵.
+        // computeApplyList 는 target 접두사를 포함한 상대경로(예: 'public/.htaccess')를
+        // 반환하므로, 그대로 정규화 키로 담는다.
+        $applySet = [];
+        if ($incremental) {
+            foreach ($applyList as $rel) {
+                $applySet[$this->normalizeRelativePath((string) $rel)] = true;
+            }
+        }
 
         $applied = [];
 
@@ -909,21 +935,45 @@ class CoreUpdateService
                 continue;
             }
 
+            $normalizedTarget = $this->normalizeRelativePath($target);
+
             $onProgress?->__invoke('apply', $target);
 
             if (File::isDirectory($src)) {
+                // 증분 모드: 이 target 하위의 적용 대상만 추린 뒤, target 접두사를 벗겨
+                // copyDirectory 의 내부 상대경로($itemRelativePath)와 직접 매칭되는
+                // 화이트리스트 맵을 만든다.
+                $targetApplyList = null;
+                if ($incremental) {
+                    $targetApplyList = $this->buildTargetApplyList($applySet, $normalizedTarget);
+                }
+
                 // `{domain}/_bundled` 타깃은 최상위 한 레벨의 orphan 을 보존한다 — 사용자가
                 // `_bundled/` 바로 아래에 직접 만든 커스텀 확장 디렉토리/파일이 코어 업데이트
                 // 소스(번들 확장만 포함)에 없다는 이유로 삭제되던 결함 차단.
-                // 번들 확장 디렉토리 *내부* stale 정리는 그대로 유지된다.
-                $preserveTopLevelOrphans = str_ends_with($this->normalizeRelativePath($target), '_bundled');
-                FilePermissionHelper::copyDirectory($src, $dest, $onProgress, $excludes, removeOrphans: true, preserveTopLevelOrphans: $preserveTopLevelOrphans);
+                // 번들 확장 디렉토리 *내부* stale 정리는 prune 모드에서만 수행된다.
+                $preserveTopLevelOrphans = str_ends_with($normalizedTarget, '_bundled');
+                FilePermissionHelper::copyDirectory(
+                    $src,
+                    $dest,
+                    $onProgress,
+                    $excludes,
+                    removeOrphans: $prune,
+                    preserveTopLevelOrphans: $preserveTopLevelOrphans,
+                    applyList: $targetApplyList,
+                );
             } else {
+                // 단일 파일 target — 증분 모드에서는 적용 목록에 있을 때만 복사.
+                if ($incremental && ! isset($applySet[$normalizedTarget])) {
+                    $applied[$normalizedTarget] = true;
+
+                    continue;
+                }
                 File::ensureDirectoryExists(dirname($dest));
                 FilePermissionHelper::copyFile($src, $dest);
             }
 
-            $applied[$this->normalizeRelativePath($target)] = true;
+            $applied[$normalizedTarget] = true;
         }
 
         // 자동 발견 폴백 — 부모 프로세스(구버전) 의 stale `app.update.targets` 가
@@ -1003,6 +1053,31 @@ class CoreUpdateService
     private function normalizeRelativePath(string $path): string
     {
         return trim(str_replace(['\\', '/'], '/', $path), '/');
+    }
+
+    /**
+     * 전체 적용 집합에서 특정 target 하위 항목만 추려, target 접두사를 제거한
+     * `copyDirectory` 내부 상대경로 화이트리스트 맵을 만듭니다.
+     *
+     * `computeApplyList` 는 target 접두사를 포함한 경로(예: `public/.htaccess`)를 담지만,
+     * `copyDirectory` 는 target 루트 기준 상대경로(`.htaccess`)로 항목을 순회하므로 접두사를
+     * 벗겨야 매칭된다.
+     *
+     * @param  array<string, bool>  $applySet  전체 적용 대상 정규화 경로 lookup 맵
+     * @param  string  $normalizedTarget  정규화된 target 경로 (예: `public`)
+     * @return array<string, bool> target 내부 상대경로 화이트리스트 (빈 맵일 수 있음 → 전부 스킵)
+     */
+    private function buildTargetApplyList(array $applySet, string $normalizedTarget): array
+    {
+        $prefix = $normalizedTarget.'/';
+        $out = [];
+        foreach ($applySet as $rel => $_) {
+            if (str_starts_with((string) $rel, $prefix)) {
+                $out[substr((string) $rel, strlen($prefix))] = true;
+            }
+        }
+
+        return $out;
     }
 
     /**
