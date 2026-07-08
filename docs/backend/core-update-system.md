@@ -193,7 +193,10 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
    · base 없음 → added / size·md5 다름 → changed / 동일 → 제외(스킵)
    · size 선필터 후 size 동일할 때만 md5 (mtime 비교 안 함 — _pending 은 추출 시각)
    · symlink / excludes / protected_paths 하위 → 목록 제외
+   · 단, targets 에 더 구체적으로 명시된 경로는 상위 protected 를 오버라이드(아래 주석)
 ```
+
+> **protected_paths 오버라이드 (공개 #64 / 내부 #452)**: `protected_paths` 에는 확장 부모(`modules`·`plugins`·`templates`·`lang-packs`)가 포함되지만, `targets` 에는 `{domain}/_bundled` 가 명시된다. 3-way 산출(`computeApplyList`)과 신규 파일 manifest(`writeNewFilesManifest`)는 "targets 에 더 구체적(하위)으로 명시된 경로가 상위 protected 를 오버라이드"하도록 판정한다. 이로써 코어 배포본에 포함된 번들 확장의 갱신 파일(`_bundled/{id}/composer.json`·`vendor-bundle.json` 등)이 코어 업데이트로 정상 반영된다. 오버라이드는 target 이 protected 보다 **더 깊을 때만** 적용되므로, `storage`(target) == `storage`(protected) 같은 동일 경로는 여전히 제외된다. 확장 부모를 protected 에 둔 원래 의도(자동 발견 폴백이 활성 서브디렉토리 `modules/sirsoft-*` 를 삭제하는 #347 방어)는 그대로 유지된다 — 자동 발견 폴백은 targets 순회가 아니므로 오버라이드 영향을 받지 않는다.
 
 ### Step 7: 파일 적용
 
@@ -662,7 +665,7 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `createBackup()` | `(?Closure $onProgress): string` | CoreBackupHelper로 백업 생성 |
 | `restoreFromBackup()` | `(string $backupPath, ?Closure $onProgress): void` | 백업에서 파일 복원 |
-| `CoreBackupHelper::computeApplyList()` | `(string $backupPath, string $sourcePath, array $targets, array $protectedPaths, array $excludes): array` | 3-way 판정으로 증분 적용 대상(added/changed) 산출 (`apply`, `added_count`, `changed_count`, `has_symlink`) |
+| `CoreBackupHelper::computeApplyList()` | `(string $backupPath, string $sourcePath, array $targets, array $protectedPaths, array $excludes): array` | 3-way 판정으로 증분 적용 대상(added/changed) 산출 (`apply`, `added_count`, `changed_count`, `has_symlink`). targets 에 명시된 `{domain}/_bundled` 는 상위 protected(`modules` 등)를 오버라이드해 목록에 포함 (공개 #64 / 내부 #452) |
 
 ### 적용 및 설치
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Services\CoreUpdateService;
 use Illuminate\Support\Facades\Artisan;
@@ -1179,6 +1180,57 @@ MD;
             $this->assertFileDoesNotExist(
                 $fakeBase.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Unlisted.php',
                 'applyList 에 없는 파일은 복사되지 않아야 한다',
+            );
+        } finally {
+            $restore();
+        }
+    }
+
+    /**
+     * end-to-end 회귀 (공개 #64 / 내부 #452): 코어 업데이트가 번들 확장의 변경된
+     * `_bundled` 파일을 실제로 반영합니다.
+     *
+     * computeApplyList(3-way 산출) → applyUpdate(적용) 전 체인을 실제 config 조합
+     * (protected 에 `modules`, targets 에 `modules/_bundled`)으로 검증한다.
+     * protected 필터가 `_bundled` 갱신을 삼키던 결함으로 인해, 코어 배포본에
+     * 새 번들(vendor-bundle.json/composer.json 갱신)이 포함돼도 활성 서버의
+     * `_bundled` 가 갱신되지 않아 이후 `module:update` 무결성 검증이 실패하던
+     * 회귀를 차단한다.
+     */
+    public function test_incremental_apply_reflects_changed_bundled_extension_file(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['modules/_bundled']);
+
+        try {
+            // 실제 config 조합 재현: protected 에 부모 도메인 포함
+            config(['app.update.protected_paths' => ['.env', 'storage', 'vendor', 'modules', 'plugins', 'templates', 'lang-packs']]);
+
+            $rel = 'modules/_bundled/sirsoft-ecommerce/vendor-bundle.json';
+            $relPlatform = str_replace('/', DIRECTORY_SEPARATOR, $rel);
+
+            // base(구버전) = 옛 해시, source(신버전) = 새 해시 (코어가 변경한 번들 파일)
+            File::ensureDirectoryExists(dirname($fakeBase.DIRECTORY_SEPARATOR.$relPlatform));
+            File::put($fakeBase.DIRECTORY_SEPARATOR.$relPlatform, '{"composer_json_sha256":"OLD"}');
+            File::ensureDirectoryExists(dirname($source.DIRECTORY_SEPARATOR.$relPlatform));
+            File::put($source.DIRECTORY_SEPARATOR.$relPlatform, '{"composer_json_sha256":"NEW-differs-in-length"}');
+
+            // 3-way 산출: base != theirs → changed 로 목록 포함되어야 한다
+            $applyResult = CoreBackupHelper::computeApplyList(
+                $fakeBase,
+                $source,
+                config('app.update.targets'),
+                config('app.update.protected_paths'),
+                config('app.update.excludes'),
+            );
+            $this->assertContains($rel, $applyResult['apply'], 'changed 된 _bundled 파일이 apply 목록에 포함되어야 한다');
+
+            // 적용: 활성(base) 파일이 신버전 내용으로 갱신되어야 한다
+            $this->service->applyUpdate($source, null, prune: false, applyList: $applyResult['apply']);
+
+            $this->assertSame(
+                '{"composer_json_sha256":"NEW-differs-in-length"}',
+                File::get($fakeBase.DIRECTORY_SEPARATOR.$relPlatform),
+                '코어 업데이트가 변경된 _bundled 번들 파일을 실제로 반영해야 한다',
             );
         } finally {
             $restore();
