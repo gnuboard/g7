@@ -57,7 +57,7 @@ describe('이슈 #424-15 — 미발행 페이지 미리보기 배너 (page/show.
         const banner = findById(pageShow, 'page_preview_banner');
         expect(typeof banner?.if).toBe('string');
         expect(banner?.if as string).toContain('is_preview');
-        // 단일 바인딩 형태 {{...}} 여야 엔진이 식으로 평가 (CLAUDE.md if 규칙)
+        // 단일 바인딩 형태 {{...}} 여야 엔진이 식으로 평가 (if 표현식 규칙)
         expect((banner?.if as string).trim()).toMatch(/^\{\{.*\}\}$/);
     });
 

@@ -186,8 +186,8 @@ class MileageTransactionListener implements HookListenerInterface
      *
      * mileage.enabled 가 꺼져 있으면 즉시 적립도 발생시키지 않는다 — 지연 적립(스케줄러
      * EarnMileageCommand)이 enabled 게이트로 막히는 것과 미지급 기준으로 통일한다.
-     * (PO 확정 2026-07-02: 기능 비활성 시 계산 완료건도 지급하지 않음. 이전 "토글로 막지 않음"
-     *  정책에서 변경 — 즉시/지연 경로 일관성 확보.) 저장 적립액이 0 이면 Service 가 자연 no-op.
+     * (기능 비활성 시 계산 완료건도 지급하지 않음 — 즉시/지연 경로 일관성 확보.)
+     * 저장 적립액이 0 이면 Service 가 자연 no-op.
      *
      * @param  Order  $order  주문
      * @param  OrderOption  $option  주문옵션

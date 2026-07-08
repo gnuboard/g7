@@ -401,7 +401,7 @@ describe('admin_page_list.json', () => {
     it('[C5] 모달 버튼에 flex-center gap-* 접두사가 없음 (btn 자체가 inline-flex 정렬 — 취소/확인 크기 정합)', () => {
         // 회귀 배경: btn 은 이미 inline-flex items-center justify-center gap-2 를 포함.
         // 위에 flex-center(=flex items-center)를 덧붙이면 inline-flex→flex 로 덮어써 버튼 폭이
-        // 늘어나 취소/확인 버튼 크기가 어긋남(PO 지적: 닫기≠복원). btn 만 남겨 정합.
+        // 늘어나 취소/확인 버튼 크기가 어긋남(닫기≠복원). btn 만 남겨 정합.
         const modalsStr = JSON.stringify((adminPageList as any).modals ?? []);
         expect(modalsStr).not.toMatch(/flex-center gap-[\d.]+ btn/);
     });
@@ -1051,7 +1051,7 @@ describe('admin_page_detail.json', () => {
     });
 
     it('[토글] 첨부 목록이 기본 열림 상태 (showAttachments ?? true) — 토글/아이콘/본문 3곳 일관', () => {
-        // PO 요청: 첨부 목록이 처음부터 펼쳐져 보이도록.
+        // 첨부 목록이 처음부터 펼쳐져 보이도록.
         const section = findById(adminPageDetail, 'attachments_section');
         const sectionStr = JSON.stringify(section);
         // 기본 열림: (_local.showAttachments ?? true) 패턴 사용 (fallback true)
@@ -1065,7 +1065,7 @@ describe('admin_page_detail.json', () => {
     });
 
     it('[메타카드] info_grid 가 grid-2col-responsive (모바일 1열 → PC 2열) 를 사용함', () => {
-        // PO 결정: 메타 4항목(작성자/발행일시/생성일/수정일)을 PC 2열·모바일 1열로.
+        // 메타 4항목(작성자/발행일시/생성일/수정일)을 PC 2열·모바일 1열로.
         const infoGrid = findById(adminPageDetail, 'info_grid');
         expect(infoGrid).not.toBeNull();
         expect(infoGrid.props.className).toContain('grid-2col-responsive');
@@ -1076,7 +1076,7 @@ describe('admin_page_detail.json', () => {
     it('[헤더통일 A] 카드 섹션 헤더가 card-title + px-6/panel-header 미사용 (admin-card 패딩만 의존, 이중여백·구분선 제거)', () => {
         // 조사 결과 board/ecommerce norm = admin-card > card-title (헤더에 px-6/panel-header 없음).
         // 회귀 배경: admin-card 자체 p-4 위에 헤더가 px-6(24px)+panel-header(border-b)를 더해
-        // 헤더 앞 여백이 16+24=40px 로 이중 적용되고 구분선이 어색하게 뜸(PO 지적).
+        // 헤더 앞 여백이 16+24=40px 로 이중 적용되고 구분선이 어색하게 뜸.
         const headerIds = ['content_header', 'seo_header', 'versions_header'];
         for (const id of headerIds) {
             const header = findById(adminPageDetail, id);
