@@ -238,6 +238,7 @@ class CoreBackupHelper
         $newDirs = [];
 
         $protectedSet = self::normalizeProtectedSet($protectedPaths);
+        $allowedTargetSet = self::normalizeProtectedSet($targets);
         $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
 
         foreach ($targets as $target) {
@@ -246,8 +247,9 @@ class CoreBackupHelper
                 continue;
             }
 
-            // target 자체가 보호 경로면 스킵
-            if (self::isWithinProtectedPath($target, $protectedSet)) {
+            // target 자체가 보호 경로면 스킵 (단, targets 에 더 구체적으로 명시된
+            // 경로는 상위 protected 를 오버라이드 — _bundled 갱신 허용)
+            if (self::isWithinProtectedPath($target, $protectedSet, $allowedTargetSet)) {
                 continue;
             }
 
@@ -284,7 +286,7 @@ class CoreBackupHelper
                 if (self::matchesExcludes($relative, $excludeSet)) {
                     continue;
                 }
-                if (self::isWithinProtectedPath($relative, $protectedSet)) {
+                if (self::isWithinProtectedPath($relative, $protectedSet, $allowedTargetSet)) {
                     continue;
                 }
 
@@ -369,7 +371,7 @@ class CoreBackupHelper
      * @param  array  $protectedPaths  보호 경로 목록 (목록에서 제외)
      * @param  array  $excludes  제외 패턴 목록 (예: ['node_modules', '.git'])
      * @return array{apply:array<int,string>, added_count:int, changed_count:int, has_symlink:bool}
-     *               apply = 적용 대상 상대경로 목록(정렬됨, 슬래시 정규화)
+     *                                                                                              apply = 적용 대상 상대경로 목록(정렬됨, 슬래시 정규화)
      */
     public static function computeApplyList(
         string $backupPath,
@@ -383,6 +385,7 @@ class CoreBackupHelper
         $hasSymlink = false;
 
         $protectedSet = self::normalizeProtectedSet($protectedPaths);
+        $allowedTargetSet = self::normalizeProtectedSet($targets);
         $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
 
         foreach ($targets as $target) {
@@ -391,7 +394,7 @@ class CoreBackupHelper
                 continue;
             }
 
-            if (self::isWithinProtectedPath($target, $protectedSet)) {
+            if (self::isWithinProtectedPath($target, $protectedSet, $allowedTargetSet)) {
                 continue;
             }
 
@@ -433,7 +436,7 @@ class CoreBackupHelper
                 if (self::matchesExcludes($relative, $excludeSet)) {
                     continue;
                 }
-                if (self::isWithinProtectedPath($relative, $protectedSet)) {
+                if (self::isWithinProtectedPath($relative, $protectedSet, $allowedTargetSet)) {
                     continue;
                 }
 
@@ -661,23 +664,61 @@ class CoreBackupHelper
 
     /**
      * 상대 경로가 protected_paths 목록의 어떤 항목 하위에 위치하는지 검사합니다.
+     *
+     * `$allowedTargetSet` 이 주어지면 "targets 에 명시된 더 구체적인 경로" 는 상위
+     * protected 를 오버라이드한다. 예: `protected_paths` 에 `modules` 가 있고
+     * `targets` 에 `modules/_bundled` 가 명시되어 있으면, `modules/_bundled/...` 파일은
+     * protected 로 차단되지 않고 apply 대상에 포함된다.
+     *
+     * 배경: `protected_paths` 의 확장 부모(`modules`/`plugins`/`templates`/`lang-packs`)는
+     * "자동 발견 폴백" 이 활성 서브디렉토리(`modules/sirsoft-*`)를 통째로 삭제하는
+     * 회귀(#347) 를 막기 위한 방어인데, 정상 증분 흐름에서는 `_bundled` 갱신까지
+     * 함께 막아 코어 업데이트로 번들 확장 파일이 반영되지 않는 결함(#452 / 공개 #64)을
+     * 유발했다. targets 에 명시된 경로가 protected 보다 더 구체적(하위)이면 예외 처리한다.
+     *
+     * @param  string  $relative  검사할 상대 경로
+     * @param  array<int, string>  $protectedSet  정규화된 보호 경로 집합
+     * @param  array<int, string>  $allowedTargetSet  정규화된 targets 집합 (protected 오버라이드 허용)
      */
-    private static function isWithinProtectedPath(string $relative, array $protectedSet): bool
+    private static function isWithinProtectedPath(string $relative, array $protectedSet, array $allowedTargetSet = []): bool
     {
         $relative = self::normalizeRelative($relative);
+
+        // 가장 구체적으로 매칭되는 protected 경로 길이(세그먼트 수)를 찾는다.
+        $matchedProtectedLen = -1;
         foreach ($protectedSet as $p) {
             if ($p === '') {
                 continue;
             }
-            if ($relative === $p) {
-                return true;
-            }
-            if (str_starts_with($relative, $p.'/')) {
-                return true;
+            if ($relative === $p || str_starts_with($relative, $p.'/')) {
+                $len = substr_count($p, '/') + 1;
+                if ($len > $matchedProtectedLen) {
+                    $matchedProtectedLen = $len;
+                }
             }
         }
 
-        return false;
+        if ($matchedProtectedLen === -1) {
+            return false;
+        }
+
+        // protected 하위이지만, targets 에 더 구체적으로(= 더 깊게) 명시된 경로의
+        // 하위이면 오버라이드하여 통과(= 보호 해제). target 이 protected 와 같거나
+        // 더 얕으면 오버라이드하지 않는다(예: target `storage` == protected `storage`).
+        foreach ($allowedTargetSet as $t) {
+            if ($t === '') {
+                continue;
+            }
+            $targetLen = substr_count($t, '/') + 1;
+            if ($targetLen <= $matchedProtectedLen) {
+                continue;
+            }
+            if ($relative === $t || str_starts_with($relative, $t.'/')) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

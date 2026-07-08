@@ -164,6 +164,102 @@ class CoreBackupHelperApplyListTest extends TestCase
     }
 
     /**
+     * targets 에 명시된 `{domain}/_bundled` 경로는 상위 protected(`{domain}`)보다
+     * 우선하여 apply 목록에 포함됩니다 (공개 #64 / 내부 #452 회귀).
+     *
+     * 배경: `config/app.php` 의 update.targets 에는 `modules/_bundled`,
+     * `plugins/_bundled`, `templates/_bundled`, `lang-packs/_bundled` 가 있고,
+     * protected_paths 에는 부모 `modules`, `plugins`, `templates`, `lang-packs` 가
+     * 있다. protected 는 자동 발견 폴백이 활성 서브디렉토리(`modules/sirsoft-*`)를
+     * 통째로 삭제하는 회귀(#347)를 막기 위한 것인데, 정상 증분 흐름의 apply 산출에서
+     * `{domain}/_bundled/...` 파일이 `{domain}/` 접두사에 걸려 통째로 제외되면
+     * 코어 업데이트 시 번들 확장의 새 파일(composer.json·vendor-bundle.*)이
+     * 반영되지 않는다. targets 에 더 구체적으로 명시된 경로는 상위 protected 를
+     * 오버라이드해야 한다. 4종 확장(모듈/플러그인/템플릿/언어팩) 전수 검증.
+     *
+     * @dataProvider bundledDomainProvider
+     */
+    public function test_bundled_target_overrides_parent_protected_path(string $domain): void
+    {
+        $bundledTarget = "{$domain}/_bundled";
+
+        // theirs 에만 존재하는 신규 번들 파일 (added)
+        $newRel = "{$bundledTarget}/vendor-ext/composer.json";
+        $newAbs = $this->theirsPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $newRel);
+        File::ensureDirectoryExists(dirname($newAbs));
+        File::put($newAbs, '{"version":"1.0.1"}');
+
+        // base·theirs 양쪽에 있지만 내용이 다른 번들 파일 (changed)
+        $this->writeBoth(
+            "{$bundledTarget}/vendor-ext/vendor-bundle.json",
+            '{"composer_json_sha256":"old"}',
+            '{"composer_json_sha256":"new-value-differs"}',
+        );
+
+        // 활성 서브디렉토리(=targets 밖, protected 로 보존되어야 함)
+        $activeRel = "{$domain}/vendor-ext-active";
+        File::ensureDirectoryExists($this->theirsPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $activeRel));
+        File::put(
+            $this->theirsPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, "{$activeRel}/active.php"),
+            'active',
+        );
+
+        $result = CoreBackupHelper::computeApplyList(
+            $this->basePath,
+            $this->theirsPath,
+            [$bundledTarget],                 // targets: _bundled 만 명시
+            [$domain, 'storage', 'vendor'],   // protected: 부모 도메인 포함 (실제 config 반영)
+            ['node_modules', '.git'],
+        );
+
+        // _bundled 하위 신규/변경 파일은 apply 목록에 포함되어야 한다
+        $this->assertContains("{$bundledTarget}/vendor-ext/composer.json", $result['apply']);
+        $this->assertContains("{$bundledTarget}/vendor-ext/vendor-bundle.json", $result['apply']);
+        $this->assertSame(1, $result['added_count']);
+        $this->assertSame(1, $result['changed_count']);
+
+        // 활성 서브디렉토리(targets 밖)는 순회 대상이 아니므로 목록에 없어야 한다
+        $this->assertNotContains("{$activeRel}/active.php", $result['apply']);
+    }
+
+    /**
+     * 4종 번들 확장 도메인 (config/app.php 의 targets/protected_paths 실제 조합).
+     *
+     * @return array<string, array{string}>
+     */
+    public static function bundledDomainProvider(): array
+    {
+        return [
+            'modules' => ['modules'],
+            'plugins' => ['plugins'],
+            'templates' => ['templates'],
+            'lang-packs' => ['lang-packs'],
+        ];
+    }
+
+    /**
+     * target 과 protected 가 정확히 동일한 경로면 여전히 제외됩니다 (기존 방어 유지).
+     *
+     * `_bundled` 오버라이드는 "targets 가 protected 보다 더 구체적(하위)일 때"만
+     * 적용된다. target == protected (예: storage) 는 제외가 정상.
+     */
+    public function test_target_equal_to_protected_is_still_excluded(): void
+    {
+        File::ensureDirectoryExists($this->theirsPath.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app');
+        File::put($this->theirsPath.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'runtime.txt', 'data');
+
+        $result = CoreBackupHelper::computeApplyList(
+            $this->basePath,
+            $this->theirsPath,
+            ['storage'],
+            ['storage'],
+            [],
+        );
+
+        $this->assertSame([], $result['apply']);
+    }
+
+    /**
      * added 와 changed 가 섞여 있을 때 apply 목록이 정렬되어 둘 다 포함합니다.
      */
     public function test_apply_list_merges_added_and_changed_sorted(): void

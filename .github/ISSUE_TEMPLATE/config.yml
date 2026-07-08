@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 질문·사용법 문의 (Discussions)
-    url: https://github.com/gnuboard/g7/discussions
-    about: 버그가 아닌 사용법 질문·아이디어 논의는 Discussions 를 이용해 주세요.
+  - name: 질문·사용법 문의 (sir.kr Q&A)
+    url: https://sir.kr/questions/create?tag=%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7
+    about: 버그가 아닌 사용법 질문·사용법 문의는 sir.kr Q&A 를 이용해 주세요.
   - name: 보안 취약점 신고
     url: https://github.com/gnuboard/g7/security/advisories/new
     about: 보안 취약점은 공개 이슈가 아닌 비공개 Security Advisory 로 신고해 주세요.

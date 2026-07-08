@@ -45,6 +45,9 @@ axes:
   apply_mode: [incremental, prune, fallback_no_backup]                     # 파일 적용 방식
   three_way_verdict: [unchanged_same, added_new, changed_size, changed_md5] # base↔theirs 판정
   user_local_modification: [modified, untouched]                          # mine 이 base 와 다른지 (사용자 수정)
+  # targets 의 {domain}/_bundled 가 상위 protected({domain}) 를 오버라이드해 apply 되는지 (공개 #64 / 내부 #452)
+  bundled_apply_override: [override_applies, sibling_active_preserved, target_equals_protected_still_blocked]
+  protected_override_domain: [modules, plugins, templates, lang-packs]     # 오버라이드 대상 4종 확장
 
 exclusions:
   - { source_structure: empty_top_level, active_subdir_state: present, reason: "source 가 비었으면 자동 발견 폴백 자체가 트리거 안 됨 — 활성 서브디렉토리 보존 무조건 보장" }
@@ -53,6 +56,8 @@ exclusions:
   - { apply_mode: prune, three_way_verdict: unchanged_same, reason: "prune 은 3-way 판정을 건너뛰고 전체 덮어쓰기 — three_way_verdict 무의미" }
   - { apply_mode: fallback_no_backup, three_way_verdict: unchanged_same, reason: "백업 부재 시 base 자체가 없어 3-way 불가 — 전체 덮어쓰기로 회귀" }
   - { apply_mode: incremental, user_local_modification: modified, three_way_verdict: changed_size, reason: "코어+사용자 동시 변경 — 코어 버전으로 갱신(§6 한계), 백업에서 복구 가능" }
+  - { apply_mode: prune, bundled_apply_override: override_applies, reason: "prune 은 3-way/protected 필터를 우회하고 전체 덮어쓰기 — 오버라이드 판정 자체가 무의미" }
+  - { bundled_apply_override: target_equals_protected_still_blocked, protected_override_domain: modules, reason: "target==protected 방어는 storage 같은 동일 경로 케이스로 검증 — 도메인 무관 (protected_override_domain 축과 직교 아님)" }
 
 effects:
   - applyDiscoveredTopLevelPaths_does_not_remove_active_subdirs_when_source_only_has_bundled
@@ -91,6 +96,11 @@ effects:
   - test_apply_update_incremental_does_not_remove_orphans                  # 증분=삭제 안 함
   - test_apply_update_prune_removes_orphans_and_overwrites_all             # prune=전체 덮어쓰기+삭제
   - test_apply_update_null_apply_list_falls_back_to_full_overwrite         # 백업 부재 fallback
+  # targets 의 {domain}/_bundled 가 상위 protected 를 오버라이드해 코어 업데이트로 번들 확장 파일이 갱신됨 (공개 #64 / 내부 #452).
+  # effect 명 = 실제 테스트 메서드명 (CoreBackupHelperApplyListTest / CoreUpdateServiceTest).
+  - test_bundled_target_overrides_parent_protected_path                    # 4종 확장 전수 (dataProvider)
+  - test_target_equal_to_protected_is_still_excluded                       # target==protected 는 여전히 제외 (방어 유지)
+  - test_incremental_apply_reflects_changed_bundled_extension_file         # computeApplyList→applyUpdate end-to-end 반영
 
 test_files:
   - tests/Unit/Services/CoreUpdateServiceTest.php
