@@ -5,6 +5,19 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.52.0] - 2026-07-04
+
+### Added
+
+#### 확장 프론트엔드 에셋 서버측 번들 로딩
+
+- `TemplateApp.loadExtensionAssets()` — 활성 모듈/플러그인 에셋을 확장별 개별 로딩에서 **서버측 병합 번들 로딩**으로 전환한다. `window.G7Config.bundleUrls`(blade 주입)를 읽어 `ModuleAssetLoader.loadBundle('module', ...)` → `loadBundle('plugin', ...)` 순으로 종류별 1개 번들만 로드한다. 확장 IIFE 자가등록 계약(핸들러/리스너/preblocker)은 priority 순 물리 병합으로 실행 순서가 보존되어 그대로 동작한다. `bundleUrls` 부재 시(구버전 blade) 기존 개별 로딩(`loadExtensionAssetsIndividually`)으로 폴백한다.
+- `ModuleAssetLoader.loadBundle(key, jsUrl?, cssUrl?)`(신규) — 병합 번들을 단일 `<script async=false>` + 단일 `<link>` 로 append 하고 key(module/plugin)별 중복 로드를 가드한다. `<script async=false>` 로 번들 내부 물리 순서(=priority 정렬)가 곧 실행 순서다.
+- `ModuleAssetLoader.parseBundleUrlsFromConfig()` + `ExtensionBundleUrls` 타입(신규) — `G7Config.bundleUrls` 파서. 활성 global 에셋이 없는 타입은 서버가 null 을 내려주어 프론트가 로드를 스킵한다.
+- 기존 `loadActiveExtensionAssets`/`parse{Module,Plugin}AssetsFromConfig` 는 폴백 경로로 유지(dead-but-tested).
+
+> 코어 측 번들 병합 서비스(`ExtensionBundleService`)·서빙 엔드포인트·캐시 정책은 루트 CHANGELOG [7.0.2] 및 `docs/extension/module-assets.md` "서버측 번들 병합" 참조.
+
 ## [engine-v1.51.0] - 2026-07-03
 
 ### Changed

@@ -26,7 +26,7 @@ import { getErrorHandlingResolver } from './error';
 import type { ErrorHandlingMap } from './types/ErrorHandling';
 import { createLogger, Logger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
-import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig } from './modules';
+import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
@@ -722,38 +722,61 @@ export class TemplateApp {
     }
 
     /**
-     * 모듈/플러그인 에셋 로드
+     * 모듈/플러그인 에셋 로드 (서버측 병합 번들)
      *
-     * window.G7Config.moduleAssets 및 pluginAssets에서 에셋 정보를 읽어
-     * 동적으로 JS/CSS를 로드합니다.
+     * window.G7Config.bundleUrls 에서 병합 번들 URL 을 읽어 모듈 번들 →
+     * 플러그인 번들 순으로 로드한다. 각 번들은 활성 확장 IIFE 를 priority 순으로
+     * 이어붙인 단일 파일이며, 로드 즉시 각 IIFE 가 자가등록(핸들러/리스너)을
+     * 실행한다. 개별 로딩(loadActiveExtensionAssets)과 실행 계약은 동일하다.
      *
-     * 모듈 JS는 IIFE 형태로 빌드되어 로드 즉시 initModule()이 실행되고,
-     * ActionDispatcher에 핸들러가 등록됩니다.
+     * 모듈 → 플러그인 순서를 유지하는 이유: gdpr preblocker 등 인터셉터가
+     * 플러그인 번들 내 priority 최상단으로 오되 모듈보다는 뒤에 실행된다
+     * (2번들 구조). bundleUrls 가 없으면(구버전 blade) 개별 로딩으로 폴백한다.
+     *
+     * @since engine-v1.52.0 (서버측 번들 로딩으로 전환)
      */
     private async loadExtensionAssets(): Promise<void> {
         try {
             const moduleAssetLoader = getModuleAssetLoader();
+            const bundleUrls = parseBundleUrlsFromConfig();
 
-            // 모듈 에셋 로드
-            const moduleAssets = parseModuleAssetsFromConfig();
-            if (moduleAssets.length > 0) {
-                logger.log('Loading module assets:', moduleAssets.map(m => m.identifier));
-                await moduleAssetLoader.loadActiveExtensionAssets(moduleAssets);
+            // bundleUrls 부재 시 개별 로딩 폴백 (회귀 안전)
+            if (!bundleUrls) {
+                await this.loadExtensionAssetsIndividually();
+                return;
             }
 
-            // 플러그인 에셋 로드
-            const pluginAssets = parsePluginAssetsFromConfig();
-            if (pluginAssets.length > 0) {
-                logger.log('Loading plugin assets:', pluginAssets.map(p => p.identifier));
-                await moduleAssetLoader.loadActiveExtensionAssets(pluginAssets);
-            }
+            // 모듈 번들 → 플러그인 번들 순서 (gdpr 는 플러그인 번들 내 최상단)
+            await moduleAssetLoader.loadBundle('module', bundleUrls.moduleJs, bundleUrls.moduleCss);
+            await moduleAssetLoader.loadBundle('plugin', bundleUrls.pluginJs, bundleUrls.pluginCss);
 
-            if (moduleAssets.length > 0 || pluginAssets.length > 0) {
-                logger.log('Extension assets loaded successfully');
-            }
+            logger.log('Extension bundle assets loaded successfully');
         } catch (error) {
             // 에셋 로드 실패는 경고만 출력하고 앱 계속 진행
             logger.warn('Failed to load extension assets:', error);
+        }
+    }
+
+    /**
+     * 개별 확장 에셋 로드 (bundleUrls 부재 시 폴백)
+     *
+     * window.G7Config.moduleAssets/pluginAssets 에서 확장별 개별 URL 을 읽어
+     * priority 순으로 각각 로드한다. 서버측 번들이 준비되지 않은 구버전 blade
+     * 환경 회귀 안전용.
+     */
+    private async loadExtensionAssetsIndividually(): Promise<void> {
+        const moduleAssetLoader = getModuleAssetLoader();
+
+        const moduleAssets = parseModuleAssetsFromConfig();
+        if (moduleAssets.length > 0) {
+            logger.log('Loading module assets (individual fallback):', moduleAssets.map(m => m.identifier));
+            await moduleAssetLoader.loadActiveExtensionAssets(moduleAssets);
+        }
+
+        const pluginAssets = parsePluginAssetsFromConfig();
+        if (pluginAssets.length > 0) {
+            logger.log('Loading plugin assets (individual fallback):', pluginAssets.map(p => p.identifier));
+            await moduleAssetLoader.loadActiveExtensionAssets(pluginAssets);
         }
     }
 

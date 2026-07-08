@@ -1,0 +1,71 @@
+# audit:allow test-scenario-coverage reason: 서버측 확장 번들 병합 도입 회귀 가드. 입력 axis(활성 조합·환경·에셋 종류)의 cross-product 는 test_files 의 Unit/Feature 가 cover 하고, effects 는 병합 계약(순서/구분자/소스맵/캐시/폴백)과 브라우저 실측(요청수/gdpr race)을 enumerate.
+
+feature: 확장(모듈/플러그인) 프론트엔드 IIFE/CSS 서버측 번들 병합
+
+description: |
+  활성 모듈/플러그인의 global 전략 프론트엔드 에셋을 타입별로 하나의 번들로
+  서버에서 병합해 서빙, 확장 수에 비례하던 HTTP 요청을 종류별 1건으로 줄인다.
+  각 확장 IIFE 자가등록 계약은 유지(priority 순 물리 병합 = 실행 순서).
+
+  핵심 동작:
+    - ExtensionBundleService 가 getOrderedGlobalAssetPaths(uasort priority) →
+      buildJsBundle(`\n;\n` join, sourceMappingURL 처리) → getBundleFilePath(캐시)
+    - PublicModule/PluginController::serveBundle{Js,Css} → fileResponse(ETag/304)
+    - blade bundleUrls → ModuleAssetLoader.loadBundle(module) → loadBundle(plugin)
+    - 확장 캐시 버전 bump 시 새 파일명 자동 무효화, ext-bundles:cleanup GC
+    - bundleUrls 부재 시 개별 로딩 폴백(회귀 안전)
+
+axes:
+  ext_type: [module, plugin]
+  asset_kind: [js, css, both]
+  active_combo: [none, one, multiple]
+  strategy: [global, layout, lazy]
+  environment: [production, non_production]
+  version_state: [first_request, cache_hit, version_bumped]
+  source_map_state: [present, absent]
+  css_url_state: [no_url, absolute_url, relative_url]
+  file_state: [all_present, one_missing]
+  priority_order: [ascending, gdpr_lowest]
+  bundle_urls_present: [present, absent_fallback]
+
+exclusions:
+  - { strategy: layout, active_combo: none, reason: "layout/lazy 전략은 번들 대상 아님 — 개별 레이아웃 처리" }
+  - { active_combo: none, version_state: cache_hit, reason: "활성 에셋 0건이면 캐시 파일을 만들지 않음 (빈 경로)" }
+
+effects:
+  - ordered_by_priority_ascending_only_no_name_hardcode
+  - non_global_strategy_excluded_from_bundle
+  - js_iife_joined_with_semicolon_newline_separator
+  - prod_strips_source_mapping_url
+  - dev_rewrites_source_mapping_url_to_asset_serving_path
+  - per_extension_fault_tolerance_skips_missing_file_keeps_rest
+  - css_with_relative_url_excluded_from_bundle
+  - empty_bundle_returns_empty_path_and_empty_ok_response
+  - prod_writes_versioned_cache_file_and_reuses_on_same_version
+  - non_production_rebuilds_every_request_no_disk_cache
+  - cleanup_removes_stale_version_bundles_only
+  - clear_bundles_by_type_scopes_to_prefix
+  - plugin_bundle_gdpr_first_when_priority_lowest
+  - bundle_endpoint_serves_with_etag_and_304
+  - bundle_url_same_origin_only
+  - loadbundle_single_script_single_link_append
+  - loadbundle_dedup_guard_no_double_load
+  - loadbundle_null_urls_noop
+  - concat_iife_self_registration_preserved
+  - missing_bundle_urls_falls_back_to_individual_loading
+  - individual_iife_requests_absent_in_browser
+  - gdpr_interceptor_still_active_after_merge
+  - extension_handlers_registered_no_console_error
+
+test_files:
+  - tests/Unit/Services/ExtensionBundleServiceTest.php
+  - tests/Feature/Api/Public/ExtensionBundleServingTest.php
+  - resources/js/core/modules/__tests__/ModuleAssetLoader.test.ts
+  - tests/Playwright/specs/extension-bundle-loading.spec.ts
+
+validation:
+  audit_rules:
+    - extension-bundle-url-same-origin
+    - extension-bundle-concat-separator
+    - extension-bundle-asset-path-getter
+    - clears-template-caches-no-file-delete

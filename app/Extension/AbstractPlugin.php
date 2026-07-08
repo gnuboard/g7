@@ -1012,6 +1012,30 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
+     * 빌드된 에셋의 절대 파일 경로를 반환합니다.
+     *
+     * `getBuiltAssetPaths()` 는 plugin.json 의 상대 output 경로를 돌려주므로
+     * 파일을 실제로 읽으려면 플러그인 루트(`getPluginPath()`: 활성 dir 또는
+     * `_bundled` 실제 위치)를 앞에 붙여야 한다. 서버측 번들 병합
+     * (ExtensionBundleService)이 `getAssetFilePath()` 의
+     * `base_path("plugins/{id}/...")` 하드코딩을 복제하지 않고 `_bundled`
+     * 확장에서도 정확한 경로를 얻도록 이 게터를 SSoT 로 쓴다.
+     *
+     * @return array 빌드된 에셋 절대 경로 배열 ['js' => '...', 'css' => '...']
+     */
+    public function getBuiltAssetAbsolutePaths(): array
+    {
+        $relative = $this->getBuiltAssetPaths();
+        $result = [];
+
+        foreach ($relative as $kind => $output) {
+            $result[$kind] = $this->getPluginPath().'/'.$output;
+        }
+
+        return $result;
+    }
+
+    /**
      * 플러그인이 설정 페이지를 가지고 있는지 확인합니다.
      *
      * 설정 레이아웃 파일이 존재하면 설정 페이지가 있는 것으로 간주합니다.

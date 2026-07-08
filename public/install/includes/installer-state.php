@@ -5,16 +5,15 @@
  *
  * 설치 진행 상태를 storage/installer-state.json에 저장하고 조회합니다.
  */
-
-if (!defined('BASE_PATH')) {
+if (! defined('BASE_PATH')) {
     define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3)); // public/install/includes에서 프로젝트 루트로
 }
 
 if (! defined('STATE_PATH')) {
-    define('STATE_PATH', BASE_PATH . '/storage/installer-state.json');
+    define('STATE_PATH', BASE_PATH.'/storage/installer-state.json');
 }
 if (! defined('INSTALLER_DIR')) {
-    define('INSTALLER_DIR', BASE_PATH . '/storage/installer');
+    define('INSTALLER_DIR', BASE_PATH.'/storage/installer');
 }
 
 /**
@@ -36,15 +35,16 @@ function getInstallationState(): array
     // state.json 파일이 없으면 기본 상태 반환
     // (설치 완료 후 워커가 DELETE_INSTALLER_AFTER_COMPLETE로 정상 삭제하는 경우가 있으므로
     //  부재 자체는 에러가 아님. 호출자가 g7_installed 플래그 등으로 완료 여부 판정)
-    if (!file_exists(STATE_PATH)) {
+    if (! file_exists(STATE_PATH)) {
         return $defaultState;
     }
 
     // 파일 읽기 권한 체크
-    if (!is_readable(STATE_PATH)) {
-        $msg = "[installer-state] State file is not readable: " . STATE_PATH;
+    if (! is_readable(STATE_PATH)) {
+        $msg = '[installer-state] State file is not readable: '.STATE_PATH;
         error_log($msg);
         addLog($msg);
+
         return $defaultState;
     }
 
@@ -53,9 +53,10 @@ function getInstallationState(): array
 
     // 파일 읽기 실패 시 기본 상태 반환
     if ($content === false) {
-        $msg = "[installer-state] Failed to read state file: " . STATE_PATH;
+        $msg = '[installer-state] Failed to read state file: '.STATE_PATH;
         error_log($msg);
         addLog($msg);
+
         return $defaultState;
     }
 
@@ -65,9 +66,10 @@ function getInstallationState(): array
     if (json_last_error() !== JSON_ERROR_NONE) {
         $contentLen = strlen($content);
         $preview = substr($content, 0, 200);
-        $msg = "[installer-state] Failed to parse state file JSON (length={$contentLen}): " . json_last_error_msg() . " / preview: " . $preview;
+        $msg = "[installer-state] Failed to parse state file JSON (length={$contentLen}): ".json_last_error_msg().' / preview: '.$preview;
         error_log($msg);
         addLog($msg);
+
         return $defaultState;
     }
 
@@ -77,25 +79,27 @@ function getInstallationState(): array
 /**
  * 설치 상태 저장
  *
- * @param array $state 저장할 상태 배열
+ * @param  array  $state  저장할 상태 배열
  * @return bool 저장 성공 여부
  */
 function saveInstallationState(array $state): bool
 {
     // storage 디렉토리 존재 여부 확인 (생성하지 않음)
-    $storageDir = BASE_PATH . '/storage';
-    if (!is_dir($storageDir)) {
+    $storageDir = BASE_PATH.'/storage';
+    if (! is_dir($storageDir)) {
         $msg = "[installer-state] Storage directory does not exist: {$storageDir}";
         error_log($msg);
         addLog($msg);
+
         return false;
     }
 
     // 디렉토리 쓰기 권한 확인
-    if (!is_writable($storageDir)) {
+    if (! is_writable($storageDir)) {
         $msg = "[installer-state] Storage directory is not writable: {$storageDir}";
         error_log($msg);
         addLog($msg);
+
         return false;
     }
 
@@ -106,33 +110,36 @@ function saveInstallationState(array $state): bool
     $content = json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     if ($content === false) {
-        $msg = "[installer-state] Failed to encode state as JSON: " . json_last_error_msg();
+        $msg = '[installer-state] Failed to encode state as JSON: '.json_last_error_msg();
         error_log($msg);
         addLog($msg);
+
         return false;
     }
 
     // 원자적 쓰기: tmp 파일에 쓰고 rename으로 교체
     // 동시 쓰기 경쟁 상황에서 부분 쓰기(half-written file)로 인한 JSON 손상 방지.
     // Linux에서 rename()은 atomic syscall이므로 다른 리더가 항상 완전한 파일만 읽는다.
-    $tmpPath = STATE_PATH . '.tmp.' . getmypid() . '.' . uniqid();
+    $tmpPath = STATE_PATH.'.tmp.'.getmypid().'.'.uniqid();
 
     $result = @file_put_contents($tmpPath, $content, LOCK_EX);
     if ($result === false || $result !== strlen($content)) {
-        $msg = "[installer-state] Failed to write state tmp file: " . $tmpPath;
+        $msg = '[installer-state] Failed to write state tmp file: '.$tmpPath;
         error_log($msg);
         addLog($msg);
         @unlink($tmpPath);
+
         return false;
     }
 
     @chmod($tmpPath, 0664);
 
-    if (!@rename($tmpPath, STATE_PATH)) {
-        $msg = "[installer-state] Failed to rename state tmp file: " . $tmpPath . ' → ' . STATE_PATH;
+    if (! @rename($tmpPath, STATE_PATH)) {
+        $msg = '[installer-state] Failed to rename state tmp file: '.$tmpPath.' → '.STATE_PATH;
         error_log($msg);
         addLog($msg);
         @unlink($tmpPath);
+
         return false;
     }
 
@@ -161,13 +168,13 @@ function isInstallationCompleted(): bool
     }
 
     // g7_installed 파일 존재 여부 확인 (추가 안전장치)
-    $installedFlagPath = BASE_PATH . '/storage/app/g7_installed';
+    $installedFlagPath = BASE_PATH.'/storage/app/g7_installed';
     if (file_exists($installedFlagPath)) {
         return true;
     }
 
     // .env 파일의 INSTALLER_COMPLETED 플래그 확인
-    $envPath = BASE_PATH . '/.env';
+    $envPath = BASE_PATH.'/.env';
     if (file_exists($envPath)) {
         $envContent = file_get_contents($envPath);
         if (strpos($envContent, 'INSTALLER_COMPLETED=true') !== false) {
@@ -181,7 +188,7 @@ function isInstallationCompleted(): bool
 /**
  * 특정 작업을 완료로 표시
  *
- * @param string $task 작업 식별자
+ * @param  string  $task  작업 식별자
  * @return bool 업데이트 성공 여부
  */
 function markTaskCompleted(string $task): bool
@@ -189,7 +196,7 @@ function markTaskCompleted(string $task): bool
     $state = getInstallationState();
 
     // completed_tasks 배열에 추가 (중복 방지)
-    if (!in_array($task, $state['completed_tasks'])) {
+    if (! in_array($task, $state['completed_tasks'])) {
         $state['completed_tasks'][] = $task;
     }
 
@@ -205,7 +212,7 @@ function markTaskCompleted(string $task): bool
 /**
  * 특정 작업을 완료 목록에서 제거
  *
- * @param string $task 작업 식별자
+ * @param  string  $task  작업 식별자
  * @return bool 업데이트 성공 여부
  */
 function removeTaskCompleted(string $task): bool
@@ -213,7 +220,7 @@ function removeTaskCompleted(string $task): bool
     $state = getInstallationState();
 
     $state['completed_tasks'] = array_values(
-        array_filter($state['completed_tasks'], fn($t) => $t !== $task)
+        array_filter($state['completed_tasks'], fn ($t) => $t !== $task)
     );
 
     return saveInstallationState($state);
@@ -251,7 +258,7 @@ function removeTaskCompleted(string $task): bool
  *
  * @param  int  $staleSeconds  heartbeat 가 이 시간 이상 갱신 안 되면 stale 판정 (default 15초)
  * @return array{acquired: bool, worker_id: string|null, reason: string}
- *         reason: 'available' | 'takeover_stale' | 'busy'
+ *                                                                       reason: 'available' | 'takeover_stale' | 'busy'
  */
 function acquireWorkerLock(int $staleSeconds = 15): array
 {
@@ -337,7 +344,7 @@ function applyExistingDbActionStateGuard(array $state, string $newAction): array
         $resetTasks = ['db_cleanup', 'db_migrate', 'db_seed'];
         $state['completed_tasks'] = array_values(array_filter(
             $state['completed_tasks'] ?? [],
-            fn($t) => !in_array($t, $resetTasks, true)
+            fn ($t) => ! in_array($t, $resetTasks, true)
         ));
     } else {
         // 키 정규화 — completed_tasks 가 부재인 경우 빈 배열 보장
@@ -350,7 +357,7 @@ function applyExistingDbActionStateGuard(array $state, string $newAction): array
 /**
  * 현재 진행 중인 작업 업데이트
  *
- * @param string $task 작업 식별자
+ * @param  string  $task  작업 식별자
  * @return bool 업데이트 성공 여부
  */
 function updateCurrentTask(string $task): bool
@@ -369,7 +376,7 @@ function updateCurrentTask(string $task): bool
  * 페이지 새로고침/재시작 시 로그가 즉시 표시되도록
  * fflush() + clearstatcache()를 적용합니다.
  *
- * @param string $message 로그 메시지
+ * @param  string  $message  로그 메시지
  * @return bool 저장 성공 여부
  */
 /**
@@ -389,23 +396,25 @@ function addLogBatch(array $messages): bool
         return true;
     }
 
-    $logDir = BASE_PATH . '/storage/logs';
-    $logFile = $logDir . '/installation.log';
+    $logDir = BASE_PATH.'/storage/logs';
+    $logFile = $logDir.'/installation.log';
 
-    if (!is_dir($logDir)) {
+    if (! is_dir($logDir)) {
         $created = @mkdir($logDir, 0775, true);
-        if (!$created) {
+        if (! $created) {
             $msg = "[addLogBatch] Failed to create log directory: {$logDir}";
             error_log($msg);
             addLog($msg); // 재귀 가드가 차단하므로 안전 — error_log fallback 만 수행
+
             return false;
         }
     }
 
-    if (!is_writable($logDir)) {
+    if (! is_writable($logDir)) {
         $msg = "[addLogBatch] Log directory is not writable: {$logDir}";
         error_log($msg);
         addLog($msg); // 재귀 가드가 차단
+
         return false;
     }
 
@@ -425,9 +434,9 @@ function addLogBatch(array $messages): bool
     }
 
     clearstatcache(true, $logFile);
-    $isNewFile = !file_exists($logFile) || filesize($logFile) === 0;
+    $isNewFile = ! file_exists($logFile) || filesize($logFile) === 0;
     if ($isNewFile) {
-        $entries = "\xEF\xBB\xBF" . $entries;
+        $entries = "\xEF\xBB\xBF".$entries;
     }
 
     $handle = @fopen($logFile, 'a');
@@ -435,6 +444,7 @@ function addLogBatch(array $messages): bool
         $msg = "[addLogBatch] Failed to open log file: {$logFile}";
         error_log($msg);
         addLog($msg); // 재귀 가드가 차단
+
         return false;
     }
     flock($handle, LOCK_EX);
@@ -455,7 +465,8 @@ function addLog(string $message): bool
     static $inAddLog = false;
     if ($inAddLog) {
         // 재진입: installation.log 시도 skip, PHP error_log 만 호출하고 즉시 종료
-        error_log("[addLog reentrant] " . $message);
+        error_log('[addLog reentrant] '.$message);
+
         return false;
     }
     $inAddLog = true;
@@ -478,25 +489,27 @@ function addLog(string $message): bool
  */
 function _addLogInternal(string $message): bool
 {
-    $logDir = BASE_PATH . '/storage/logs';
-    $logFile = $logDir . '/installation.log';
+    $logDir = BASE_PATH.'/storage/logs';
+    $logFile = $logDir.'/installation.log';
 
     // 로그 디렉토리 확인 및 생성 시도
-    if (!is_dir($logDir)) {
+    if (! is_dir($logDir)) {
         $created = @mkdir($logDir, 0775, true);
-        if (!$created) {
+        if (! $created) {
             $msg = "[addLog] Failed to create log directory: {$logDir} (storage 권한 확인 필요)";
             error_log($msg);
             addLog($msg); // 재귀 가드가 차단 (본 함수는 이미 가드 안)
+
             return false;
         }
     }
 
     // 로그 디렉토리 쓰기 권한 확인
-    if (!is_writable($logDir)) {
+    if (! is_writable($logDir)) {
         $msg = "[addLog] Log directory is not writable: {$logDir}";
         error_log($msg);
         addLog($msg); // 재귀 가드가 차단
+
         return false;
     }
 
@@ -506,6 +519,17 @@ function _addLogInternal(string $message): bool
         if ($encoding && $encoding !== 'UTF-8') {
             $message = mb_convert_encoding($message, 'UTF-8', $encoding);
         }
+    }
+
+    // OS 무관 최종 방어 — 항상 유효 UTF-8 만 로그에 저장한다 (gnuboard/g7#62).
+    // composer install 등 외부 프로세스 stdout 이 시스템 코드페이지로 출력되거나
+    // 진행바(\r 갱신)가 임의 바이트 경계에서 잘려 mb_detect_encoding 이 확정 감지에
+    // 실패한 경우(위 분기 미적용), invalid 바이트가 그대로 로그에 남으면
+    // 폴링 응답 state-management.php 의 json_encode 가 false 를 반환해 빈 본문(HTTP 200)
+    // → 프론트 res.json() 이 "Unexpected end of JSON input" 으로 폭주한다.
+    // mb_scrub 은 invalid 바이트를 U+FFFD 로 치환해 응답 무력화를 원천 차단한다.
+    if (! mb_check_encoding($message, 'UTF-8')) {
+        $message = mb_scrub($message, 'UTF-8');
     }
 
     // 타임스탬프와 함께 로그 작성 — millisecond 정밀도 (hang 진단 시 정확한 timing 필요)
@@ -518,10 +542,10 @@ function _addLogInternal(string $message): bool
     clearstatcache(true, $logFile);
 
     // 파일이 없거나 빈 파일이면 UTF-8 BOM 추가 (Windows 텍스트 편집기 호환성)
-    $isNewFile = !file_exists($logFile) || filesize($logFile) === 0;
+    $isNewFile = ! file_exists($logFile) || filesize($logFile) === 0;
     if ($isNewFile) {
         $utf8Bom = "\xEF\xBB\xBF";
-        $logEntry = $utf8Bom . $logEntry;
+        $logEntry = $utf8Bom.$logEntry;
     }
 
     // 파일 핸들 열기 (append 모드)
@@ -530,6 +554,7 @@ function _addLogInternal(string $message): bool
         $msg = "[addLog] Failed to open log file: {$logFile}";
         error_log($msg);
         addLog($msg); // 재귀 가드가 차단
+
         return false;
     }
 
@@ -553,6 +578,7 @@ function _addLogInternal(string $message): bool
         $msg = "[addLog] Failed to write log file: {$logFile}";
         error_log($msg);
         addLog($msg); // 재귀 가드가 차단
+
         return false;
     }
 
@@ -565,16 +591,16 @@ function _addLogInternal(string $message): bool
  * 페이지 새로고침 시 최신 로그를 즉시 표시하기 위해
  * clearstatcache()를 적용합니다.
  *
- * @param int $offset 건너뛸 로그 줄 수 (폴링 모드 증분 조회용, 기본 0)
+ * @param  int  $offset  건너뛸 로그 줄 수 (폴링 모드 증분 조회용, 기본 0)
  * @return array 로그 배열 [{timestamp, message}, ...]
  */
 function getInstallationLogs(int $offset = 0): array
 {
-    $logFile = BASE_PATH . '/storage/logs/installation.log';
+    $logFile = BASE_PATH.'/storage/logs/installation.log';
 
     clearstatcache(true, $logFile);
 
-    if (!file_exists($logFile)) {
+    if (! file_exists($logFile)) {
         return [];
     }
 
@@ -621,11 +647,11 @@ function getInstallationLogs(int $offset = 0): array
  */
 function getInstallationLogCount(): int
 {
-    $logFile = BASE_PATH . '/storage/logs/installation.log';
+    $logFile = BASE_PATH.'/storage/logs/installation.log';
 
     clearstatcache(true, $logFile);
 
-    if (!file_exists($logFile)) {
+    if (! file_exists($logFile)) {
         return 0;
     }
 
@@ -637,10 +663,11 @@ function getInstallationLogCount(): int
     $lines = explode("\n", trim($content));
     $count = 0;
     foreach ($lines as $line) {
-        if (!empty($line)) {
+        if (! empty($line)) {
             $count++;
         }
     }
+
     return $count;
 }
 
@@ -655,7 +682,7 @@ function getLastCompletedStep(): int
 
     // step_status를 역순으로 확인
     for ($step = 5; $step >= 0; $step--) {
-        $stepKey = (string)$step;
+        $stepKey = (string) $step;
         if (isset($state['step_status'][$stepKey]) && $state['step_status'][$stepKey] === 'completed') {
             return $step;
         }

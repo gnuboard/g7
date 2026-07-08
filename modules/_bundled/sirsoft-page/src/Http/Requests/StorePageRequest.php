@@ -15,6 +15,8 @@ class StorePageRequest extends FormRequest
 {
     /**
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true (권한은 미들웨어 체인에서 검증)
      */
     public function authorize(): bool
     {

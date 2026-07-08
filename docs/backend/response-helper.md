@@ -587,6 +587,27 @@ class PublicLayoutController extends PublicBaseController
 
 ---
 
+## JSON 인코딩 옵션 (JSON_UNESCAPED_UNICODE)
+
+모든 `response()->json()` 호출은 `ResponseHelper::JSON_ENCODE_OPTIONS`(= `JSON_UNESCAPED_UNICODE`)를 인코딩 옵션으로 전달한다. 한글 등 멀티바이트 문자를 `\uXXXX`(6바이트)로 이스케이프하지 않고 raw UTF-8(한글 3바이트)로 직렬화하여 응답 전송 크기를 줄인다. 다국어 팩(lang) 응답처럼 한글 비중이 큰 페이로드에서 절감 효과가 크다.
+
+```php
+// ✅ 올바른 사용 — 네 번째 인자로 옵션 전달
+return response()->json($payload, $status, [], ResponseHelper::JSON_ENCODE_OPTIONS);
+
+// 헤더 배열이 필요한 경우 (세 번째 인자)
+return response()->json($payload, $status, ['Cache-Control' => '...'], ResponseHelper::JSON_ENCODE_OPTIONS);
+
+// ❌ 옵션 누락 — 한글이 \uXXXX 로 팽창
+return response()->json($payload, $status);
+```
+
+`ResponseHelper` 의 모든 메서드(`success`/`error`/`validationError`/… )와 `BaseApiController::successWithCache`/`cachedJsonResponse` 는 이미 이 옵션을 적용한다. 컨트롤러/서비스는 `ResponseHelper` 를 사용하면 자동으로 적용되므로 별도 조치가 불필요하다. `response()->json()` 을 직접 호출하는 신규 코드에서만 옵션 전달을 잊지 않는다.
+
+> 슬래시 언이스케이프(`JSON_UNESCAPED_SLASHES`)는 적용하지 않는다 — endpoint 경로의 `\/` 는 크기 영향이 미미하고, 기존 응답 본문 정확 매칭 테스트의 안전성을 우선한다.
+
+---
+
 ## 관련 문서
 
 - [index.md](index.md) - 백엔드 가이드 인덱스

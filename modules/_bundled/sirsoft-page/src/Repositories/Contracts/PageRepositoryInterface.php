@@ -17,7 +17,7 @@ interface PageRepositoryInterface
      * @param  int  $perPage  페이지당 항목 수
      * @return LengthAwarePaginator 페이지 목록
      */
-    public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator;
+    public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator;
 
     /**
      * ID로 페이지를 조회합니다.
@@ -97,13 +97,4 @@ interface PageRepositoryInterface
      * @return int 일치하는 페이지 수
      */
     public function countByKeyword(string $keyword): int;
-
-    /**
-     * 여러 페이지의 발행 상태를 일괄 변경합니다.
-     *
-     * @param  array  $ids  페이지 ID 목록
-     * @param  array  $data  업데이트할 데이터 (published, updated_by 등)
-     * @return int 변경된 페이지 수
-     */
-    public function bulkUpdatePublished(array $ids, array $data): int;
 }

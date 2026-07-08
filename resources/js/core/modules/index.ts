@@ -7,6 +7,7 @@ export {
     getModuleAssetLoader,
     parseModuleAssetsFromConfig,
     parsePluginAssetsFromConfig,
+    parseBundleUrlsFromConfig,
 } from './ModuleAssetLoader';
 
-export type { ModuleAsset, ExternalScript } from './ModuleAssetLoader';
+export type { ModuleAsset, ExternalScript, ExtensionBundleUrls } from './ModuleAssetLoader';

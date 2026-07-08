@@ -6,11 +6,11 @@
     ],
     "extends": "_admin_base",
     "meta": {
-        "title": "{{route?.id ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}",
+        "title": "{{route?.slug ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}",
         "description": "$t:sirsoft-board.admin.form.description"
     },
     "computed": {
-        "isReadOnly": "{{!!route?.id && !!boards?.data && boards?.data?.abilities?.can_update !== true}}"
+        "isReadOnly": "{{!!route?.slug && !!boards?.data && boards?.data?.abilities?.can_update !== true}}"
     },
     "state": {
         "activeTab": "section_basic_card",
@@ -40,7 +40,7 @@
             "cache": false,
             "loading_strategy": "blocking",
             "params": {
-                "board_id": "{{route?.id}}",
+                "board_slug": "{{route?.slug}}",
                 "copy_id": "{{query?.copy_id}}"
             },
             "initLocal": "form",
@@ -141,7 +141,7 @@
                                         "props": {
                                             "className": "page-title"
                                         },
-                                        "text": "{{route?.id ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}"
+                                        "text": "{{route?.slug ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}"
                                     },
                                     {
                                         "type": "basic",
@@ -368,7 +368,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
+                                            "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.slug && !_local.hasChanges)}}",
                                             "className": "btn btn-primary flex-center gap-1.5"
                                         },
                                         "children": [
@@ -403,9 +403,9 @@
                                                         {
                                                             "handler": "apiCall",
                                                             "auth_required": true,
-                                                            "target": "{{route?.id ? '/api/modules/sirsoft-board/admin/boards/' + route.id : '/api/modules/sirsoft-board/admin/boards'}}",
+                                                            "target": "{{route?.slug ? '/api/modules/sirsoft-board/admin/boards/' + route.slug : '/api/modules/sirsoft-board/admin/boards'}}",
                                                             "params": {
-                                                                "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                                "method": "{{route?.slug ? 'PUT' : 'POST'}}",
                                                                 "body": "{{_local.form}}"
                                                             },
                                                             "onSuccess": [
@@ -422,14 +422,14 @@
                                                                     "handler": "toast",
                                                                     "params": {
                                                                         "type": "success",
-                                                                        "message": "{{route?.id ? '$t:sirsoft-board.admin.board.messages.update_success' : '$t:sirsoft-board.admin.board.messages.create_success'}}"
+                                                                        "message": "{{route?.slug ? '$t:sirsoft-board.admin.board.messages.update_success' : '$t:sirsoft-board.admin.board.messages.create_success'}}"
                                                                     }
                                                                 },
                                                                 {
                                                                     "handler": "openWindow",
-                                                                    "condition": "{{!route?.id}}",
+                                                                    "condition": "{{!route?.slug}}",
                                                                     "params": {
-                                                                        "path": "{{'/admin/boards/' + result.data.id + '/edit'}}",
+                                                                        "path": "{{'/admin/boards/' + result.data.slug + '/edit'}}",
                                                                         "target": "_self"
                                                                     }
                                                                 }

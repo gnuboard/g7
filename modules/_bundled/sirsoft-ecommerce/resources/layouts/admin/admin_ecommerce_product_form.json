@@ -393,7 +393,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "page-header-padded"
+                                    "className": "page-header-padded flex items-start justify-between gap-3"
                                 },
                                 "children": [
                                     {
@@ -415,6 +415,34 @@
                                                     "className": "page-description"
                                                 },
                                                 "text": "{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "view_user_page_link",
+                                        "type": "basic",
+                                        "name": "A",
+                                        "if": "{{!!route.itemCode}}",
+                                        "props": {
+                                            "href": "{{(_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ('/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'))) + '/products/' + route.itemCode}}",
+                                            "target": "_blank",
+                                            "rel": "noopener noreferrer",
+                                            "title": "$t:sirsoft-ecommerce.admin.product.action.view_user_page",
+                                            "className": "flex-center gap-2 flex-shrink-0 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "external-link",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.product.action.view_user_page"
                                             }
                                         ]
                                     }

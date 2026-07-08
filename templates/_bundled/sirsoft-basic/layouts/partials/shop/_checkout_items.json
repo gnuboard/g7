@@ -62,7 +62,7 @@
                   "comment": "상품 이미지 (새 창으로 열기)",
                   "type": "basic",
                   "name": "A",
-                  "props": { "href": "{{_global.shopBase}}/products/{{item.product_id}}", "target": "_blank", "className": "flex-shrink-0" },
+                  "props": { "href": "{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}", "target": "_blank", "className": "flex-shrink-0" },
                   "children": [
                     {
                       "type": "basic",
@@ -97,7 +97,7 @@
                       "comment": "상품명 (새 창으로 열기)",
                       "type": "basic",
                       "name": "A",
-                      "props": { "href": "{{_global.shopBase}}/products/{{item.product_id}}", "target": "_blank", "className": "block no-underline" },
+                      "props": { "href": "{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}", "target": "_blank", "className": "block no-underline" },
                       "children": [
                         {
                           "type": "basic",

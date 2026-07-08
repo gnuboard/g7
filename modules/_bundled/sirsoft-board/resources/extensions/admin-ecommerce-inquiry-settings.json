@@ -174,7 +174,7 @@
                           "type": "click",
                           "handler": "navigate",
                           "params": {
-                            "path": "/admin/boards/{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}/edit"
+                            "path": "/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/edit"
                           }
                         }
                       ]
@@ -278,7 +278,7 @@
                             {
                               "type": "click",
                               "handler": "apiCall",
-                              "target": "/api/modules/sirsoft-board/admin/boards/{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}/add-to-menu",
+                              "target": "/api/modules/sirsoft-board/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/add-to-menu",
                               "params": {
                                 "method": "POST"
                               },

@@ -292,6 +292,46 @@
                                     ]
                                 }
                             ]
+                        },
+                        {
+                            "id": "sidebar_footer",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "sidebar_footer"
+                            },
+                            "children": [
+                                {
+                                    "id": "sidebar_view_site_link",
+                                    "type": "basic",
+                                    "name": "A",
+                                    "props": {
+                                        "href": "/",
+                                        "target": "_blank",
+                                        "rel": "noopener noreferrer",
+                                        "title": "$t:admin.sidebar.view_site",
+                                        "className": "sidebar_view_site_link"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "I",
+                                            "props": {
+                                                "className": "sidebar_view_site_icon fas fa-globe"
+                                            }
+                                        },
+                                        {
+                                            "id": "sidebar_view_site_label",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "sidebar_view_site_label"
+                                            },
+                                            "text": "$t:admin.sidebar.view_site"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
                 },

@@ -554,7 +554,7 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 | `id` | string | ✅ | 컴포넌트 고유 ID |
 | `type` | string | ✅ | 컴포넌트 타입 (basic/composite/layout) |
 | `name` | string | ✅ | 컴포넌트 이름 (components.json에 등록된 이름) |
-| `comment` | string | ✅ | 시안 추적 코드 및 역할 설명 (예: "F-002: 상품명 검색 필드") |
+| `comment` | string | ✅ | 시안 추적 코드 및 역할 설명 (예: "F-002: 상품명 검색 필드"). 공개 서빙 응답에서는 제거됨 (아래 참조) |
 | `props` | object | ❌ | 컴포넌트에 전달할 props |
 | `text` | string | ❌ | 텍스트 콘텐츠 (최우선 렌더링) |
 | `children` | array | ❌ | 자식 컴포넌트 배열 (레이아웃/집합 컴포넌트에서 사용) |
@@ -574,6 +574,13 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 > - `lifecycle`: [layout-json-components.md](layout-json-components.md#컴포넌트-생명주기-lifecycle)
 > - `actions`: [layout-json-features.md](layout-json-features.md#액션-시스템-actions)
 > - `isolatedState`: [아래 섹션](#격리된-상태-isolatedstate)
+
+### `comment` / `_comment` — 공개 서빙 응답에서 제거
+
+`comment` / `_comment` 는 편집기·개발자용 설명 주석이며 런타임 렌더러는 참조하지 않는다. 공개 레이아웃 서빙(`GET /api/layouts/{template}/{layout}.json`) 응답에서는 전송 크기 절감을 위해 이 두 키가 노드 트리 전체에서 재귀적으로 제거된다(`LayoutService::stripDeveloperComments`).
+
+- 편집 모드 서빙(`?with_source_meta=1`, 편집 권한 필요)에서는 편집기가 `comment` 를 편집 가능한 속성으로 노출하므로 **보존**된다. 공개/편집 응답은 별도 캐시 키로 분리되어 있어 조건부 제거가 안전하다.
+- 따라서 `comment` 는 편집기·저장본에서는 유지되고, 일반 사용자에게 서빙되는 응답에서만 사라진다. 레이아웃 로직이 `comment` 값에 의존해서는 안 된다.
 
 ---
 

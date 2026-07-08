@@ -1,0 +1,110 @@
+# audit:allow test-scenario-coverage reason: |
+#   본 매니페스트는 서로 독립적인 5개 페이지 검수 결함(첨부 URL 컨텍스트 6-1 / 첨부 순서 6-2 /
+#   수정→등록 폼 잔존 7 / SEO 캐시 무효화 12-2 / 버전 변경 필드 다국어 라벨 13)을 한 회귀
+#   매트릭스로 묶어 기록한다. 축(url_context/form_mode/upload_count/page_change/cached_entry)은
+#   결함별로 서로 무관해 full cross product(48케이스)에 "public × delete × multiple" 같은
+#   무의미 조합이 다수 포함되므로 docblock @scenario 전수 마킹이 부적합하다.
+#   실제 회귀 가드는 test_files 의 통과 테스트가 결함별로 담당한다:
+#     6-1 → PageControllerTest(Feature) / 6-2 → PageAttachmentServiceTest(Unit) +
+#     admin-page-layouts.test.ts(레이아웃 렌더) / 7(폼 잔존) → admin-page-layouts.test.ts /
+#     12-2 → SeoPageCacheListenerTest(Unit) / 13 → admin-page-layouts.test.ts /
+#     7(검증 안내 toast) → admin-page-layouts.test.ts(onUploadError→toast 핸들러 존재) +
+#     FileUploaderLimit.test.ts(개수 초과 발화). upload_validation 축은 용량/확장자/개수/정상
+#     4값이나 용량·확장자는 컴포넌트 기존 검증이라 레이아웃 핸들러 존재로, 개수는 훅 단위로 커버.
+#   E2E: 페이지 모듈에 Playwright 인프라를 이커머스와 동일 패턴으로 신설(config + page-auth/
+#   page-seed fixture + playwright:seed-page stub)하고 spec 3건을 form_mode/upload_count/
+#   page_change axis 와 1:1 매핑해 등록했으며, 대상 화면 data-testid 보강 전까지 skip placeholder
+#   로 운용한다(이커머스 product-seo-input-debounce 와 동일 운용).
+feature: 페이지 첨부 컨텍스트 URL / 다중 업로드 최종 순서 저장 / 페이지 변경 시 SEO 캐시 무효화 / 수정→등록 폼 잔존 차단 / 버전 변경 필드 다국어 라벨
+
+description: |
+  페이지 검수 오류 회귀를 한 매트릭스로 묶어 보장한다.
+
+  6-1 (첨부 URL — 공개 hash 단일화):
+    - 관리자/공개 화면 모두 공개 hash 라우트(/pages/attachment/{hash}[/preview])를 사용한다.
+    - 썸네일 <img>·다운로드 <a> 는 토큰을 실을 수 없어 인증 라우트에 물리면 401 로 깨진다.
+      게시판·이커머스 표준과 동일하게 공개 hash 라우트로 단일화하고, 미발행 첨부 파일 다운로드
+      차단은 공개 라우트 내부 권한 게이트가 담당한다. (별건 page-attachment-serving.yaml 이 SSoT.)
+
+  6-2 (다중 업로드 / 첨부 순서 — 이커머스 상품 이미지와 동일 패턴):
+    - 생성 모드: temp_key 로 업로드된 첨부를 저장 시 업로드(조회) 순서대로 order 1..N 재부여
+      (linkTempAttachmentsWithMove). 드래그 재정렬은 생성 모드에서 미지원 — 업로드 순서가 SSoT.
+    - 수정 모드: 드래그 시 즉시 reorder API(PATCH /attachments/reorder)로 순서를 저장하고,
+      onReorder 가 form.attachments 를 최종 순서로 동기화.
+    - 저장 body 는 _local.form + temp_key (이커머스 image_temp_key 와 동일). 별도 attachment_order
+      페이로드/코어 emitEvent 결과 의존 없음.
+    - 등록 폼 잔존 버그: 수정→등록 라우트 전환은 같은 layout_name 이라 _local·컴포넌트가 보존된다.
+      FileUploader 의 initialFiles 를 pageData?.data?.attachments(등록 모드 absent → 참조 불변) 대신
+      _local.form.attachments 에 바인딩하고, init_actions 에서 생성 모드 form 을 null→빈 기본값으로
+      초기화하여 참조를 바꿈으로써 동기화 useEffect 가 발화해 이전 첨부/제목/슬러그/검증상태가 비워진다.
+      slug_hint URL 미리보기는 빈 슬러그('')에서 || 'example' fallback 으로 {{slug}} 미치환을 차단.
+      (공용 FileUploader 컴포넌트·코어 템플릿 엔진 무수정 — 레이아웃 바인딩/init_actions 만 변경)
+
+  12-2 (SEO 캐시 무효화):
+    - 페이지 생성/수정/삭제 시 페이지 상세 SEO 캐시가 즉시 갱신돼야 한다.
+    - 공개 URL 은 단수형 /page/{slug} (PageSitemapContributor, SearchPagesListener 동일).
+    - 이전 패턴은 복수형 */pages/{slug} 라 실제 URL 과 매칭되지 않아, 레이아웃 태그 없이
+      put() 으로 캐시된 상세 캐시가 영구히 남았다 → */page/{slug} 로 정정.
+
+  13 (버전 변경 필드 다국어 라벨):
+    - 페이지 상세 버전 이력의 "변경 항목" 이 필드 키(title/slug/content 등) 원문 대신 다국어
+      라벨로 표시돼야 한다.
+    - changes_summary.changed_fields 를
+      $t('sirsoft-page.admin.page.detail.versions.field_labels.<field>') 로 매핑.
+
+  14 (버전 복원 후 SEO 캐시 무효화):
+    - 특정 버전으로 복원하면 title/content/seo_meta 가 이전 버전으로 되돌아가므로, 수정과
+      동일하게 페이지 상세 SEO 캐시가 즉시 갱신돼야 한다.
+    - 회귀: SeoPageCacheListener 가 after_restore 를 미구독해 복원 후에도 봇에 복원 전 버전이
+      잔존 → after_restore 를 onPageChange 로 구독 추가(수정/삭제와 동일 무효화 정책).
+
+axes:
+  url_context: [public]
+  form_mode: [create, edit]
+  upload_count: [single, multiple]
+  page_change: [create, update, delete, restore]
+  cached_entry: [layout_tagged, url_only]
+  upload_validation: [size_exceeded, ext_not_allowed, count_exceeded, valid]
+
+effects:
+  - admin_detail_and_public_both_return_public_hash_url
+  - temp_attachments_linked_in_upload_order_1_to_n
+  - edit_mode_drag_persists_via_reorder_api
+  - create_form_clears_stale_attachments_via_form_attachments_binding
+  - create_form_clears_stale_title_slug_and_slug_check_state
+  - slug_hint_url_preview_falls_back_to_example_on_empty_slug
+  - page_change_invalidates_page_detail_url_by_singular_pattern
+  - page_change_invalidates_url_only_cached_detail_without_layout_tag
+  - page_change_invalidates_page_show_layout_cache
+  - page_change_invalidates_home_and_search_and_sitemap_cache
+  - page_restore_invalidates_page_detail_seo_cache
+  - page_restore_creates_new_version_and_preserves_history
+  - page_version_changed_fields_render_localized_labels
+  - attachment_size_or_ext_rejection_shows_error_toast
+  - attachment_count_exceeded_shows_error_toast_and_truncates
+  - valid_attachment_upload_shows_no_error_toast
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Unit/Services/PageAttachmentServiceTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/Admin/PageControllerTest.php
+  - modules/_bundled/sirsoft-page/tests/Unit/Listeners/SeoPageCacheListenerTest.php
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-layouts.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/FileUploaderLimit.test.ts
+  - modules/_bundled/sirsoft-page/tests/Playwright/specs/admin/page-form-reset-on-route-switch.spec.ts
+  - modules/_bundled/sirsoft-page/tests/Playwright/specs/admin/page-attachment-order.spec.ts
+  - modules/_bundled/sirsoft-page/tests/Playwright/specs/admin/page-version-changed-fields-i18n.spec.ts
+
+notes: |
+  6-2 는 이커머스 상품 이미지(FileUploader + temp_key 연결 + reorder API)와 동일한 검증된
+  패턴으로 정렬했다. 생성 모드 업로드 순서 연결은 PageAttachmentServiceTest, 수정 모드 reorder 와
+  잔존 버그(라우트 전환 시 key 리마운트)는 admin_page_form 레이아웃 렌더 테스트로 확인.
+  6-1 은 백엔드 Feature 테스트, 12-2 는 리스너 unit 테스트, 13 은 레이아웃 렌더 테스트로 커버.
+  14 는 리스너 unit 테스트(after_restore 구독 단언) + Admin Feature 테스트(복원 엔드포인트 →
+  상세 SEO 캐시 무효화 + 새 버전 생성·이력 보존)로 커버.
+
+  E2E: 페이지 모듈에 Playwright 인프라(playwright.config.ts + page-auth/page-seed fixture +
+  playwright:seed-page stub 커맨드)를 이커머스와 동일 패턴으로 신설했다. spec 3건은
+  form_mode / upload_count / page_change axis 와 1:1 매핑되며, 대상 화면에 data-testid 가
+  아직 없어 test.describe.skip placeholder 로 등록(각 spec docblock 에 활성화 절차 명시).
+  실제 회귀 가드는 위 단위/Feature/레이아웃 렌더 테스트가 담당하고, spec 은 data-testid 보강 +
+  seed 로직 구현 후 활성화된다 (이커머스 product-seo-input-debounce 등과 동일 운용).

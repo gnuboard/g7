@@ -7,11 +7,11 @@
   "deleting": "削除中...",
   "drop_or_click": "ファイルをドラッグするか、クリックしてアップロード",
   "upload_limit": "最大{{maxFiles}}個、1個あたり{{maxSize}}MB",
+  "upload_limit_exceeded": "最大{{max}}個まで添付できます。",
   "attached_count": "{{count}}/{{max}}個添付済み",
   "max_size": "最大{{size}}MB",
   "drag_to_reorder": "ドラッグして順序を変更",
   "reorder_failed": "順序変更に失敗しました。",
   "primary_image": "メイン画像",
-  "set_as_primary": "メイン画像に設定",
-  "upload_limit_exceeded": "画像は最大{{max}}枚までアップロードできます。"
+  "set_as_primary": "メイン画像に設定"
 }

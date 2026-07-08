@@ -1,0 +1,75 @@
+# audit:allow test-scenario-coverage reason: |
+#   본 매니페스트는 첨부 서빙(preview 썸네일 / download 파일) 별건 결함의 serving_type ×
+#   published × viewer cross product 를 기록한다. preview 는 모든 조합에서 공개 서빙(200),
+#   download 는 published=200 무조건 / unpublished 는 page_reader admin 만 200·나머지 404 로
+#   비대칭이다. 실제 회귀 가드는 test_files 의 Feature/레이아웃 테스트가 담당하므로 docblock
+#   @scenario 전수 마킹 대신 통과 테스트로 커버한다.
+#   E2E: 관리자 상세(admin_page_detail) 썸네일·다운로드는 페이지 모듈 Playwright 인프라
+#   보강 전까지 test.describe.skip placeholder 로 운용한다(기존 admin spec 3건과 동일 운용).
+feature: 페이지 첨부 서빙 (썸네일 공개 hash 서빙 + 다운로드 권한 게이트)
+
+description: |
+  별건(관리자 상세 첨부 썸네일·다운로드 미노출): 커밋 d48c684 가 관리자 화면 첨부 URL 을
+  auth:sanctum 보호 admin 라우트로 바꿔, 토큰을 실을 수 없는 <img>/<a> 브라우저 직접 GET 이
+  발행/미발행 무관 401 로 깨지던 회귀를 수정한다. 게시판·이커머스 표준으로 정렬.
+
+  서빙 정책:
+    - preview(썸네일): 공개 hash 서빙. <img> 는 인증 수단이 없어 모든 모듈이 공개로 둔다.
+      보안은 hash(12자 랜덤) 비추측성 + 미발행 페이지 미노출에 의존. 발행/미발행 무관 200.
+    - download(파일): 권한 게이트. 발행 첨부는 누구나 200, 미발행 첨부는
+      sirsoft-page.pages.read(admin) 보유자만 200, 그 외(비로그인/일반회원/무권한 admin) 404.
+
+  구현:
+    - PageAttachment::downloadUrl()/previewUrl() — 공개 hash URL 단일화(admin 분기 제거).
+    - PageAttachmentResource — urlContext/withContext 컨텍스트 인프라 제거(공개 URL 고정).
+    - PublicPageAttachmentController::preview — published 가드 제거(공개 서빙).
+    - PublicPageAttachmentController::download — Request 주입 +
+      published || user()?->hasPermission('sirsoft-page.pages.read', admin) 게이트.
+    - admin 첨부 preview/download 라우트·컨트롤러 메서드 제거(공개 라우트로 단일화 후 데드코드).
+    - admin_page_detail.json / page/show.json — 다운로드 <a href> → downloadAttachment 핸들러
+      (토큰 fetch → blob) 전환. admin 다운로드 아이콘 arrow-down-tray(Heroicons·FA미존재) → download.
+    - page/show.json — 이미지 첨부는 preview_url 썸네일(<Img>, is_image 가드)로 표시(관리자 상세와
+      일관). 일반 파일은 파일 아이콘 유지. preview_url 이 공개 서빙이 되었으므로 백엔드 변경 불요.
+
+  수용된 트레이드오프:
+    - 썸네일 공개 → hash 보유 시 비로그인도 미발행 이미지 썸네일 조회 가능. 파일 다운로드는
+      권한으로 보호. 게시판·이커머스와 동일 수위(PO 수용).
+
+axes:
+  serving_type: [preview, download]
+  published: [published, unpublished]
+  viewer: [guest, member, page_reader_admin]
+
+effects:
+  - preview_published_returns_200_for_any_viewer
+  - preview_unpublished_returns_200_for_guest
+  - preview_nonexistent_hash_returns_404
+  - download_published_returns_200_for_guest
+  - download_unpublished_blocked_404_for_guest
+  - download_unpublished_blocked_404_for_member
+  - download_unpublished_allowed_200_for_page_reader_admin
+  - attachment_urls_are_public_hash_route_even_for_admin_detail
+  - download_card_uses_downloadAttachment_handler_not_anchor
+  - download_icon_uses_valid_fa_name_not_heroicon
+  - user_page_image_attachment_renders_preview_thumbnail
+  - user_page_non_image_attachment_renders_file_icon
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/User/PublicPageControllerTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/Admin/PageControllerTest.php
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-detail-attachment-download.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/page-attachment-download-handler.test.tsx
+
+notes: |
+  회귀 가드 담당:
+    - preview/download × published × viewer 게이트 → PublicPageControllerTest(Feature).
+    - 관리자 상세 응답 첨부 URL 이 공개 hash 라우트인지 → PageControllerTest(Feature).
+    - admin_page_detail 다운로드 카드가 downloadAttachment 핸들러 + 아이콘 name=download →
+      admin-page-detail-attachment-download.test.tsx(레이아웃 렌더).
+    - page/show 다운로드가 downloadAttachment 핸들러 + 이미지 첨부 preview_url 썸네일(is_image 가드)
+      → page-attachment-download-handler.test.tsx.
+
+  E2E: 관리자 상세 썸네일·다운로드 브라우저 검증은 Chrome MCP 실측으로 대체 확인
+  (id=96 미발행 썸네일 3건 200 + 다운로드 아이콘 4건 렌더 + 다운로드 토큰동반 200,
+   genuinely unpublished(page_id=10) guest download 404 / preview 200). 페이지 모듈
+  Playwright 인프라 보강 전까지 전용 spec 은 미작성(기존 admin spec 3건과 동일 운용).

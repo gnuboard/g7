@@ -236,7 +236,8 @@
     "blind": "블라인드",
     "restore": "복원",
     "delete": "삭제",
-    "create": "게시글 추가"
+    "create": "게시글 추가",
+    "view_user_page": "유저 화면 보기"
   },
   "author_actions": {
     "view_user": "사용자 정보 보기"

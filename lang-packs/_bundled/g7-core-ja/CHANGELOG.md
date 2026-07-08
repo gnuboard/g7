@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-07-08
+
+### Added
+
+- 코어 업데이트 파일 적용 방식 안내 메시지 일본어 번역 추가 (`settings.core_update.apply_mode_incremental`·`apply_mode_incremental_prune_hint`·`apply_mode_prune`·`apply_mode_fallback`) — 코어가 실제 변경한 파일만 적용하는 기본 방식·`--prune` 전체 덮어쓰기·백업 부재 회귀 안내가 일본어 로케일에서 자연스럽게 표시됩니다.
+
 ## [1.0.1] - 2026-07-03
 
 ### Added

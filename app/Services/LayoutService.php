@@ -807,6 +807,12 @@ class LayoutService
         // 캐시 비활성 시 매번 병합 실행
         if (! $cacheEnabled) {
             $merged = $this->loadAndMergeLayoutInternal($templateId, $layoutName, $withSourceMeta);
+
+            // 공개 서빙 응답에서 개발자용 comment 필드 제거 (편집 모드는 보존)
+            if (! $withSourceMeta) {
+                $merged = $this->stripDeveloperComments($merged);
+            }
+
             HookManager::doAction('core.layout.after_load', $merged, $templateId, $layoutName, false);
 
             return $merged;
@@ -843,6 +849,12 @@ class LayoutService
 
         // 병합된 레이아웃 생성
         $mergedLayout = $this->loadAndMergeLayoutInternal($templateId, $layoutName, $withSourceMeta);
+
+        // 공개 서빙 응답에서 개발자용 comment 필드 제거 (편집 모드는 보존).
+        // withSourceMeta 가 캐시 키에 반영되므로 공개/편집 캐시가 분리되어 안전.
+        if (! $withSourceMeta) {
+            $mergedLayout = $this->stripDeveloperComments($mergedLayout);
+        }
 
         // 캐시에 저장
         $cacheTtl = $this->getCacheTtl();
@@ -1599,6 +1611,30 @@ class LayoutService
 
             return $component;
         }, $components);
+    }
+
+    /**
+     * 병합된 레이아웃에서 개발자용 comment 필드를 재귀적으로 제거합니다.
+     *
+     * 레이아웃 JSON 의 `comment` / `_comment` 키는 편집기(layout-editor)와 개발자를 위한
+     * 설명 주석으로, 프론트엔드 런타임 렌더러(DynamicRenderer)는 이를 참조하지 않는다.
+     * 공개 서빙 응답에서만 제거하여 전송 크기를 줄이며, 편집 모드(withSourceMeta)에서는
+     * 호출하지 않아 보존한다. 배열/객체 노드를 재귀 순회하며 두 키만 unset 한다.
+     *
+     * @param  array  $node  정리 대상 레이아웃(또는 하위) 배열
+     * @return array comment 필드가 제거된 배열
+     */
+    private function stripDeveloperComments(array $node): array
+    {
+        unset($node['comment'], $node['_comment']);
+
+        foreach ($node as $key => $value) {
+            if (is_array($value)) {
+                $node[$key] = $this->stripDeveloperComments($value);
+            }
+        }
+
+        return $node;
     }
 
     /**

@@ -144,6 +144,12 @@ return [
         'step_composer_prod' => 'Running composer install in production directory...',
         'step_cleanup' => 'Cleaning up...',
 
+        // File apply mode summary (Step 7)
+        'apply_mode_incremental' => 'File apply: only files actually changed by the core were applied (:added new, :changed changed). All other files were left untouched as-is.',
+        'apply_mode_incremental_prune_hint' => 'To also remove files deleted in the new version, re-run with the `--prune` option or use `php artisan hotfix:rollback-stale-files --prune`.',
+        'apply_mode_prune' => 'File apply: full overwrite plus cleanup of removed files was performed (--prune).',
+        'apply_mode_fallback' => 'File apply: no backup available, so incremental apply was skipped and a full overwrite was performed. To preserve custom files, keep the backup enabled on future updates.',
+
         // GitHub API error messages
         'github_url_not_configured' => 'GitHub repository URL is not configured.',
         'github_api_failed' => 'Unable to connect to GitHub API.',

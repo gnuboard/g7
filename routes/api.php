@@ -125,6 +125,12 @@ Route::group([], function () {
 
     // 모듈 에셋 서빙 API
     Route::prefix('modules')->group(function () {
+        // 활성 모듈 프론트엔드 IIFE/CSS 병합 번들 (개별 assets 라우트보다 위에 명시 등록)
+        Route::get('bundle.js', [PublicModuleController::class, 'serveBundleJs'])
+            ->name('api.public.modules.bundle.js');
+        Route::get('bundle.css', [PublicModuleController::class, 'serveBundleCss'])
+            ->name('api.public.modules.bundle.css');
+
         Route::get('assets/{identifier}/{path}', [PublicModuleController::class, 'serveAsset'])
             ->where('path', '.*')
             ->name('api.public.modules.assets');
@@ -140,6 +146,12 @@ Route::group([], function () {
 
     // 플러그인 에셋 서빙 API
     Route::prefix('plugins')->group(function () {
+        // 활성 플러그인 프론트엔드 IIFE/CSS 병합 번들 (개별 assets 라우트보다 위에 명시 등록)
+        Route::get('bundle.js', [PublicPluginController::class, 'serveBundleJs'])
+            ->name('api.public.plugins.bundle.js');
+        Route::get('bundle.css', [PublicPluginController::class, 'serveBundleCss'])
+            ->name('api.public.plugins.bundle.css');
+
         Route::get('assets/{identifier}/{path}', [PublicPluginController::class, 'serveAsset'])
             ->where('path', '.*')
             ->name('api.public.plugins.assets');

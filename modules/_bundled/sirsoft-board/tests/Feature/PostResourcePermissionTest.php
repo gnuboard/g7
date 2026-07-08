@@ -263,6 +263,122 @@ class PostResourcePermissionTest extends BoardTestCase
     }
 
     // ==========================================
+    // can_access_admin 게이트 테스트 (#450)
+    // 유저 화면에서 관리자 게시판 화면 진입 크로스링크 노출 여부
+    // ==========================================
+
+    /**
+     * User 상세: admin.manage(Admin 타입) 권한 보유자는 can_access_admin = true
+     *
+     * @scenario link=user_board_to_admin, permitted=true
+     * @effects board_admin_gate_true_shows_link
+     */
+    #[Test]
+    public function user_detail_returns_can_access_admin_true_for_admin_permission_holder(): void
+    {
+        // Given: 게시글 + admin.manage 권한 보유 사용자
+        $postId = $this->createPost([
+            'user_id' => $this->postAuthor->id,
+            'title' => 'Test Post',
+            'content' => 'Test Content',
+        ]);
+
+        // When: 관리 권한 보유자가 유저 라우트로 상세 조회
+        $response = $this->actingAs($this->adminUser, 'sanctum')
+            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}");
+
+        // Then: 유저 컨텍스트에도 can_access_admin 노출 + true
+        $response->assertStatus(200);
+        $abilities = $response->json('data.abilities');
+
+        $this->assertArrayHasKey('can_access_admin', $abilities);
+        $this->assertTrue($abilities['can_access_admin']);
+    }
+
+    /**
+     * User 상세: 일반 사용자(admin.manage 미보유)는 can_access_admin = false
+     *
+     * @scenario link=user_board_to_admin, permitted=false
+     * @effects board_admin_gate_false_hides_link
+     */
+    #[Test]
+    public function user_detail_returns_can_access_admin_false_for_regular_user(): void
+    {
+        // Given
+        $postId = $this->createPost([
+            'user_id' => $this->postAuthor->id,
+            'title' => 'Test Post',
+            'content' => 'Test Content',
+        ]);
+
+        // When: user 권한만 보유한 사용자가 유저 라우트로 상세 조회
+        $response = $this->actingAs($this->regularUser, 'sanctum')
+            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}");
+
+        // Then: can_access_admin 은 노출되나 false
+        $response->assertStatus(200);
+        $abilities = $response->json('data.abilities');
+
+        $this->assertArrayHasKey('can_access_admin', $abilities);
+        $this->assertFalse($abilities['can_access_admin']);
+    }
+
+    /**
+     * User 목록: 컬렉션 abilities 에도 can_access_admin 노출
+     */
+    #[Test]
+    public function user_list_collection_exposes_can_access_admin(): void
+    {
+        // Given
+        $this->createPost([
+            'user_id' => $this->postAuthor->id,
+            'title' => 'List Post',
+            'content' => 'List Content',
+        ]);
+
+        // When: 관리 권한 보유자가 유저 라우트로 목록 조회
+        $response = $this->actingAs($this->adminUser, 'sanctum')
+            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts");
+
+        // Then: 컬렉션 abilities 에 can_access_admin = true
+        $response->assertStatus(200);
+        $abilities = $response->json('data.abilities');
+
+        $this->assertArrayHasKey('can_access_admin', $abilities);
+        $this->assertTrue($abilities['can_access_admin']);
+    }
+
+    /**
+     * User 목록/상세 응답의 board 정보에 id 가 포함된다 (#450)
+     *
+     * "게시판 관리" 크로스링크가 /admin/boards/:id/edit 로 이동하려면 board id 필요.
+     */
+    #[Test]
+    public function user_response_board_info_includes_id(): void
+    {
+        // Given
+        $postId = $this->createPost([
+            'user_id' => $this->postAuthor->id,
+            'title' => 'Board Id Post',
+            'content' => 'Board Id Content',
+        ]);
+
+        // When: 목록
+        $listResponse = $this->actingAs($this->regularUser, 'sanctum')
+            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts");
+        // And: 상세
+        $detailResponse = $this->actingAs($this->regularUser, 'sanctum')
+            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}");
+
+        // Then: 목록/상세 board 정보 모두 실제 게시판 id 노출
+        $listResponse->assertStatus(200);
+        $this->assertSame($this->board->id, $listResponse->json('data.board.id'));
+
+        $detailResponse->assertStatus(200);
+        $this->assertSame($this->board->id, $detailResponse->json('data.board.id'));
+    }
+
+    // ==========================================
     // 소유권 플래그 테스트
     // ==========================================
 

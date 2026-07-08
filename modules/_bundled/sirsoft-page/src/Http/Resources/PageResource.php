@@ -38,7 +38,10 @@ class PageResource extends BaseApiResource
                 'uuid' => $this->updater->uuid,
                 'name' => $this->updater->name,
             ]),
-            'attachments' => PageAttachmentResource::collection($this->whenLoaded('attachments')),
+            'attachments' => $this->whenLoaded(
+                'attachments',
+                fn () => PageAttachmentResource::collectionFor($this->attachments)
+            ),
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
         ];

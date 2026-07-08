@@ -870,6 +870,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>레이아웃 미리보기 정리</span>
                                     <span class="text-[10px] opacity-60">(layout-previews:cleanup)</span>
                                 </button>
+                                <button onclick="runCommand('ext-bundles:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>확장 번들 정리</span>
+                                    <span class="text-[10px] opacity-60">(ext-bundles:cleanup)</span>
+                                </button>
                                 <button onclick="runCommand('geoip:update')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>GeoIP DB 갱신</span>
                                     <span class="text-[10px] opacity-60">(geoip:update)</span>

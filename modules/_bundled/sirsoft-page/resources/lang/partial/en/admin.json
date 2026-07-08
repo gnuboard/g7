@@ -160,7 +160,13 @@
         "initial": "Initial",
         "changed_fields": "Changed: {{fields}}",
         "restored_from": "Restored from v{{version}}",
-        "restore_guide": "Click View to check contents and restore. Attachments are not included in version management."
+        "restore_guide": "Click View to check contents and restore. Attachments are not included in version management.",
+        "field_labels": {
+          "title": "Title",
+          "content": "Content",
+          "seo_meta": "SEO",
+          "content_mode": "Edit Mode"
+        }
       }
     }
   }

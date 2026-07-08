@@ -81,6 +81,30 @@
                                 },
                                 "children": [
                                     {
+                                        "id": "page_preview_banner",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{page?.data?.is_preview}}",
+                                        "props": {
+                                            "className": "flex items-center gap-2 mb-4 px-4 py-3 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 text-sm"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "eye",
+                                                    "className": "text-amber-600 dark:text-amber-400 text-sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:user.page.preview_banner"
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
@@ -252,10 +276,32 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "이미지 썸네일 (이미지 파일인 경우) - preview_url 공개 서빙",
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "if": "{{att_item.is_image}}",
+                                                                        "props": {
+                                                                            "className": "flex-shrink-0 w-10 h-10 rounded overflow-hidden bg-gray-100 dark:bg-gray-800"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Img",
+                                                                                "props": {
+                                                                                    "src": "{{att_item.preview_url}}",
+                                                                                    "alt": "{{att_item.original_filename}}",
+                                                                                    "className": "w-full h-full object-cover"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "comment": "파일 아이콘 (일반 파일인 경우)",
                                                                         "type": "basic",
                                                                         "name": "Icon",
+                                                                        "if": "{{!att_item.is_image}}",
                                                                         "props": {
-                                                                            "name": "{{att_item.is_image ? 'image' : 'file'}}",
+                                                                            "name": "file",
                                                                             "className": "text-gray-400 text-sm flex-shrink-0"
                                                                         }
                                                                     },
@@ -271,11 +317,21 @@
                                                             },
                                                             {
                                                                 "type": "basic",
-                                                                "name": "A",
+                                                                "name": "Button",
                                                                 "props": {
-                                                                    "href": "{{att_item.download_url}}",
-                                                                    "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 no-underline"
+                                                                    "type": "button",
+                                                                    "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 bg-transparent border-0 cursor-pointer"
                                                                 },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "downloadAttachment",
+                                                                        "params": {
+                                                                            "url": "{{att_item.download_url}}",
+                                                                            "filename": "{{att_item.original_filename}}"
+                                                                        }
+                                                                    }
+                                                                ],
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",

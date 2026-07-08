@@ -32,8 +32,13 @@ class FilePermissionHelper
      * @param  string  $relativePath  현재 상대 경로 (내부 재귀용)
      * @param  bool  $removeOrphans  소스에 없는 대상 파일/디렉토리 삭제 여부
      * @param  bool  $preserveTopLevelOrphans  최상위 한 레벨의 orphan 보존 여부
+     * @param  array<string, bool>|null  $applyList  적용 대상 파일 상대경로 화이트리스트
+     *   (이 디렉토리 루트 기준, `'sub/file.txt' => true` 형태의 lookup 맵). null 이면
+     *   전체 파일 복사(기존 동작). 지정 시 이 맵에 없는 파일은 복사를 스킵한다 — 코어
+     *   업데이트 증분 모드에서 "코어가 변경하지 않은 파일"을 건드리지 않기 위함. symlink
+     *   는 이 필터의 영향을 받지 않고 항상 재생성된다(링크는 목록 산출 대상이 아님).
      */
-    public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false, bool $preserveTopLevelOrphans = false): void
+    public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false, bool $preserveTopLevelOrphans = false, ?array $applyList = null): void
     {
         if (! File::isDirectory($destination)) {
             // 신규 디렉토리: 부모 디렉토리의 퍼미션/소유권 상속
@@ -76,8 +81,13 @@ class FilePermissionHelper
 
             if ($item->isDir()) {
                 // preserveTopLevelOrphans 는 최상위 한 레벨 한정 — 자식 재귀에는 항상 false 전달.
-                static::copyDirectory($item->getPathname(), $destPath, $onProgress, $excludes, $itemRelativePath, $removeOrphans, preserveTopLevelOrphans: false);
+                static::copyDirectory($item->getPathname(), $destPath, $onProgress, $excludes, $itemRelativePath, $removeOrphans, preserveTopLevelOrphans: false, applyList: $applyList);
             } else {
+                // 증분 모드(applyList 지정): 화이트리스트에 없는 파일은 스킵 —
+                // 코어가 변경하지 않은 파일의 현재 디스크 상태(사용자 수정 포함)를 보존.
+                if ($applyList !== null && ! isset($applyList[$itemRelativePath])) {
+                    continue;
+                }
                 static::copyFile($item->getPathname(), $destPath);
             }
         }

@@ -97,6 +97,121 @@ export class ModuleAssetLoader {
     }
 
     /**
+     * 서버측에서 병합된 확장 번들(JS/CSS)을 로드합니다.
+     *
+     * 활성 모듈/플러그인 IIFE 를 priority 순으로 이어붙인 단일 파일을 하나의
+     * `<script async=false>` 로, CSS 는 하나의 `<link>` 로 append 한다. 개별
+     * 로딩과 달리 확장 수와 무관하게 요청 1(+1)건으로 끝난다. `<script async=false>`
+     * 는 번들 내부 물리 순서로 실행되므로 병합 시 priority 정렬이 곧 실행 순서다.
+     *
+     * 중복 append 가드 — 같은 key(module/plugin) 는 최초 1회만 로드한다.
+     *
+     * @param key 번들 구분 키 (예: 'module' | 'plugin')
+     * @param jsUrl 병합 JS URL (없으면 스킵)
+     * @param cssUrl 병합 CSS URL (없으면 스킵)
+     * @since engine-v1.52.0
+     */
+    async loadBundle(key: string, jsUrl?: string | null, cssUrl?: string | null): Promise<void> {
+        const promises: Promise<void>[] = [];
+
+        if (cssUrl) {
+            promises.push(this.loadBundleCss(key, cssUrl));
+        }
+
+        if (jsUrl) {
+            promises.push(this.loadBundleJs(key, jsUrl));
+        }
+
+        if (promises.length === 0) {
+            logger.log(`No bundle assets to load for: ${key}`);
+            return;
+        }
+
+        await Promise.all(promises);
+    }
+
+    /**
+     * 병합 CSS 번들을 단일 `<link>` 로 로드합니다(중복 가드).
+     *
+     * @param key 번들 구분 키
+     * @param url 병합 CSS URL
+     */
+    private async loadBundleCss(key: string, url: string): Promise<void> {
+        const elementId = `ext-bundle-css-${key}`;
+
+        if (document.getElementById(elementId)) {
+            logger.log(`Bundle CSS already loaded: ${key}`);
+            return;
+        }
+
+        return new Promise<void>((resolve) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = url;
+            link.id = elementId;
+
+            link.onload = () => {
+                logger.log(`Bundle CSS loaded: ${key}`);
+                this.registerLoadedAsset(`bundle-${key}`, { type: 'css', element: link });
+                resolve();
+            };
+
+            link.onerror = () => {
+                logger.warn(`Failed to load bundle CSS: ${key} (${url})`);
+                resolve();
+            };
+
+            document.head.appendChild(link);
+        });
+    }
+
+    /**
+     * 병합 JS 번들을 단일 `<script async=false>` 로 로드합니다(중복 가드).
+     *
+     * @param key 번들 구분 키
+     * @param url 병합 JS URL
+     */
+    private async loadBundleJs(key: string, url: string): Promise<void> {
+        const elementId = `ext-bundle-js-${key}`;
+
+        if (document.getElementById(elementId)) {
+            logger.log(`Bundle JS already loaded: ${key}`);
+            return;
+        }
+
+        const existingPromise = this.loadingPromises.get(elementId);
+        if (existingPromise) {
+            logger.log(`Bundle JS already loading: ${key}`);
+            return existingPromise;
+        }
+
+        const loadPromise = new Promise<void>((resolve) => {
+            const script = document.createElement('script');
+            script.src = url;
+            script.id = elementId;
+            script.async = false; // 번들 내부 물리 순서로 실행 보장
+
+            script.onload = () => {
+                logger.log(`Bundle JS loaded: ${key}`);
+                this.registerLoadedAsset(`bundle-${key}`, { type: 'js', element: script });
+                this.loadingPromises.delete(elementId);
+                resolve();
+            };
+
+            script.onerror = () => {
+                logger.warn(`Failed to load bundle JS: ${key} (${url})`);
+                this.loadingPromises.delete(elementId);
+                resolve();
+            };
+
+            document.head.appendChild(script);
+        });
+
+        this.loadingPromises.set(elementId, loadPromise);
+        return loadPromise;
+    }
+
+    /**
      * CSS 파일을 동적으로 로드합니다.
      *
      * @param identifier 모듈 식별자
@@ -304,6 +419,42 @@ export function parseModuleAssetsFromConfig(): ModuleAsset[] {
     }
 
     return moduleAssets;
+}
+
+/**
+ * 확장 병합 번들 URL 정보 인터페이스
+ */
+export interface ExtensionBundleUrls {
+    /** 모듈 병합 JS 번들 URL */
+    moduleJs?: string | null;
+    /** 모듈 병합 CSS 번들 URL */
+    moduleCss?: string | null;
+    /** 플러그인 병합 JS 번들 URL */
+    pluginJs?: string | null;
+    /** 플러그인 병합 CSS 번들 URL */
+    pluginCss?: string | null;
+}
+
+/**
+ * window.G7Config.bundleUrls 에서 병합 번들 URL 을 파싱합니다.
+ *
+ * 활성 global 에셋이 없는 타입은 서버가 null 을 내려주므로, 프론트는 해당
+ * 번들 로드를 스킵한다. bundleUrls 자체가 없으면(구버전 blade 등) null 반환.
+ *
+ * @returns 번들 URL 객체 또는 null
+ * @since engine-v1.52.0
+ */
+export function parseBundleUrlsFromConfig(): ExtensionBundleUrls | null {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const g7Config = (window as any).G7Config;
+    if (!g7Config?.bundleUrls) {
+        return null;
+    }
+
+    return g7Config.bundleUrls as ExtensionBundleUrls;
 }
 
 /**

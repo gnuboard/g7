@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Public\Plugin\ServePluginAssetRequest;
+use App\Services\ExtensionBundleService;
 use App\Services\PluginService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -17,9 +18,51 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class PublicPluginController extends PublicBaseController
 {
     public function __construct(
-        private readonly PluginService $pluginService
+        private readonly PluginService $pluginService,
+        private readonly ExtensionBundleService $bundleService
     ) {
         parent::__construct();
+    }
+
+    /**
+     * 활성 플러그인 프론트엔드 IIFE 병합 번들(JS)을 서빙합니다.
+     *
+     * 활성 global 플러그인 에셋이 없으면 빈 200 응답(text/javascript)을 반환한다.
+     * 그 외에는 병합 파일을 fileResponse 로 서빙(ETag/304/환경별 Cache-Control 재사용).
+     *
+     * @return BinaryFileResponse|Response 병합 JS 파일 응답 또는 빈 응답
+     */
+    public function serveBundleJs(): BinaryFileResponse|Response
+    {
+        $this->logApiUsage('plugins.bundle', ['kind' => 'js']);
+
+        $version = $this->bundleService->getCurrentVersion();
+        $path = $this->bundleService->getBundleFilePath('plugin', 'js', $version);
+
+        if ($path === '') {
+            return response('', 200)->header('Content-Type', 'text/javascript');
+        }
+
+        return $this->fileResponse($path, 'text/javascript', 31536000);
+    }
+
+    /**
+     * 활성 플러그인 프론트엔드 병합 번들(CSS)을 서빙합니다.
+     *
+     * @return BinaryFileResponse|Response 병합 CSS 파일 응답 또는 빈 응답
+     */
+    public function serveBundleCss(): BinaryFileResponse|Response
+    {
+        $this->logApiUsage('plugins.bundle', ['kind' => 'css']);
+
+        $version = $this->bundleService->getCurrentVersion();
+        $path = $this->bundleService->getBundleFilePath('plugin', 'css', $version);
+
+        if ($path === '') {
+            return response('', 200)->header('Content-Type', 'text/css');
+        }
+
+        return $this->fileResponse($path, 'text/css', 31536000);
     }
 
     /**

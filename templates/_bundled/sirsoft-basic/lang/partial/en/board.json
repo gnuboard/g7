@@ -1,6 +1,10 @@
 {
   "loading_posts": "Loading posts...",
   "view_board": "View Board",
+  "admin_links": {
+    "posts": "Admin posts",
+    "manage": "Board settings"
+  },
   "no": "No.",
   "title": "Title",
   "author": "Author",

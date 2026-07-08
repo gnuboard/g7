@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "유저 상품 상세에서 관리자 상품 수정 화면으로 이동하는 링크. 상품 수정 권한(can_update) 보유 시에만 노출, 새 탭."
+  },
+  "comment": "관리자 상품 수정 링크 (권한 게이트)",
+  "type": "basic",
+  "name": "A",
+  "if": "{{product.data?.abilities?.can_update}}",
+  "props": {
+    "href": "/admin/ecommerce/products/{{product.data?.product_code ?? route.product_code}}/edit",
+    "target": "_blank",
+    "rel": "noopener noreferrer",
+    "title": "$t:shop.admin_edit",
+    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline flex-shrink-0"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Icon",
+      "props": {
+        "name": "pencil",
+        "size": "sm"
+      }
+    },
+    {
+      "type": "basic",
+      "name": "Span",
+      "props": {
+        "className": "hidden sm:inline"
+      },
+      "text": "$t:shop.admin_edit"
+    }
+  ]
+}

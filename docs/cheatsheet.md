@@ -27,6 +27,8 @@ _bundled에서 TSX/TS 파일 수정한 경우    → 빌드 후 확장 업데이
 | `modules/**/resources/js/**/*.ts` (핸들러) | `module:build` + `module:update {id} --force` |
 | `templates/**/src/**/*.tsx` (컴포넌트) | `template:build` + `template:update {id} --force` |
 
+> **확장 프론트엔드 번들**: 활성 모듈/플러그인 IIFE 는 서버측에서 종류별 1개 번들로 병합 서빙된다(`/api/{modules,plugins}/bundle.{js,css}`). `{type}:update` 후 확장 캐시 버전이 bump 되면 번들이 자동 재생성된다(prod 캐시, dev 매 요청 concat). 구버전 번들 파일은 `ext-bundles:cleanup` 또는 `{type}:cache-clear` 로 정리. 상세: [module-assets.md](extension/module-assets.md#서버측-번들-병합).
+
 ---
 
 ## 확장 업데이트 (_bundled → 활성 반영)

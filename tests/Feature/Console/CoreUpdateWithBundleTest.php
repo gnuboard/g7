@@ -120,4 +120,17 @@ class CoreUpdateWithBundleTest extends TestCase
             ->expectsOutputToContain('--vendor-mode')
             ->assertExitCode(0);
     }
+
+    /**
+     * `--prune` 옵션이 등록되어 있는지 검증합니다 (공개 #64).
+     *
+     * 실제 파일 적용 로직(증분/prune)은 CoreUpdateServiceTest 의 applyUpdate 단위
+     * 테스트가 커버하며, 여기서는 커맨드 표면에 옵션이 노출되는지만 확인한다.
+     */
+    public function test_core_update_command_accepts_prune_option(): void
+    {
+        $this->artisan('core:update', ['--help' => true])
+            ->expectsOutputToContain('--prune')
+            ->assertExitCode(0);
+    }
 }

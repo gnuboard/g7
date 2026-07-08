@@ -51,7 +51,8 @@
     "published_at": "公開日",
     "create_page": "ページ作成",
     "attachments": "添付ファイル",
-    "download": "ダウンロード"
+    "download": "ダウンロード",
+    "preview_banner": "未公開ページをプレビュー中です"
   },
   "mypage": {
     "page_title": "マイページ",

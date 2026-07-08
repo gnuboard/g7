@@ -12,6 +12,75 @@
   },
   "children": [
     {
+      "comment": "관리자 진입 크로스링크 (게시판 관리 권한 보유 시) — 관리자 게시물 조회 + 게시판 관리, 새 탭",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{post?.data?.abilities?.can_access_admin}}",
+      "props": {
+        "className": "flex items-center justify-end gap-2 mb-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "A",
+          "props": {
+            "href": "/admin/board/{{route.slug}}/post/{{post?.data?.id ?? route.id}}",
+            "target": "_blank",
+            "rel": "noopener noreferrer",
+            "title": "$t:board.admin_links.posts",
+            "className": "inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "external-link",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "hidden sm:inline"
+              },
+              "text": "$t:board.admin_links.posts"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "A",
+          "props": {
+            "href": "/admin/boards/{{route.slug}}/edit",
+            "target": "_blank",
+            "rel": "noopener noreferrer",
+            "title": "$t:board.admin_links.manage",
+            "className": "inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "settings",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "hidden sm:inline"
+              },
+              "text": "$t:board.admin_links.manage"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "comment": "게시글 본문 카드",
       "type": "basic",
       "name": "Div",

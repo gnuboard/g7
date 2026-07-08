@@ -337,6 +337,176 @@ class CoreBackupHelper
     }
 
     /**
+     * 코어(신 버전)가 실제로 추가·변경한 파일 목록(적용 대상)을 3-way 비교로 산출합니다.
+     *
+     * `core:update` 기본(증분) 모드에서 `applyUpdate()` 가 참조하는 "적용 대상 집합"을
+     * 만든다. 코어가 건드리지 않은 파일(base == theirs)은 목록에서 제외되어, 활성
+     * 디렉토리에 남은 현재 상태(사용자 수정 포함 가능)를 그대로 보존한다.
+     *
+     * 3-way 판정:
+     *  - base   = 구버전 원본 = 백업 스냅샷 (`$backupPath/$target`)
+     *  - theirs = 신 버전     = _pending 소스 (`$sourcePath/$target`)
+     *  - 규칙:
+     *      · base 없음 (theirs 에만 존재)        → added   (신규 파일 — 적용)
+     *      · base 있고 size 또는 md5 다름         → changed (코어가 변경 — 적용)
+     *      · base 있고 size·md5 동일             → 제외 (코어 미변경 — 스킵/보존)
+     *
+     * 성능: size 가 다르면 md5 를 계산하지 않는다(즉시 changed). size 가 같을 때만
+     * `md5_file`. mtime 은 비교하지 않는다 — `_pending` 은 방금 추출되어 mtime 이
+     * 전부 추출 시각이므로 항상 "다름"으로 오판한다.
+     *
+     * symlink 는 목록에서 제외한다 — 링크 자체는 `copyDirectory` 의 별도 링크 처리
+     * 경로가 담당하며, 증분 모드에서도 항상 재생성되어야 한다(target 추적 없이 동일
+     * 링크). 따라서 반환값 `is_partial` 이 true 여도 링크는 정상 반영된다.
+     *
+     * `writeNewFilesManifest()` 와 동일한 순회 구조·가드(`excludes`/`protectedPaths`)를
+     * 재사용한다. 두 산출을 각각 별도 순회하지만, 반환값은 in-memory 로 즉시 소비되어
+     * 파일화 비용이 없다(롤백용 `_new_files_manifest.json` 은 별도).
+     *
+     * @param  string  $backupPath  백업 디렉토리 경로 (= base, 활성 사전 스냅샷)
+     * @param  string  $sourcePath  소스 디렉토리 경로 (= theirs, _pending 신 버전)
+     * @param  array  $targets  처리할 target 경로 목록 (`app.update.targets`)
+     * @param  array  $protectedPaths  보호 경로 목록 (목록에서 제외)
+     * @param  array  $excludes  제외 패턴 목록 (예: ['node_modules', '.git'])
+     * @return array{apply:array<int,string>, added_count:int, changed_count:int, has_symlink:bool}
+     *               apply = 적용 대상 상대경로 목록(정렬됨, 슬래시 정규화)
+     */
+    public static function computeApplyList(
+        string $backupPath,
+        string $sourcePath,
+        array $targets,
+        array $protectedPaths,
+        array $excludes,
+    ): array {
+        $added = [];
+        $changed = [];
+        $hasSymlink = false;
+
+        $protectedSet = self::normalizeProtectedSet($protectedPaths);
+        $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
+
+        foreach ($targets as $target) {
+            $target = trim($target);
+            if ($target === '') {
+                continue;
+            }
+
+            if (self::isWithinProtectedPath($target, $protectedSet)) {
+                continue;
+            }
+
+            $sourceTargetPath = $sourcePath.DIRECTORY_SEPARATOR.$target;
+            if (! file_exists($sourceTargetPath)) {
+                continue;
+            }
+
+            // 단일 파일 target
+            if (is_file($sourceTargetPath) && ! is_link($sourceTargetPath)) {
+                $rel = self::normalizeRelative($target);
+                $backupFilePath = $backupPath.DIRECTORY_SEPARATOR.$target;
+                self::classifyForApply($rel, $sourceTargetPath, $backupFilePath, $added, $changed);
+
+                continue;
+            }
+
+            if (is_link($sourceTargetPath)) {
+                $hasSymlink = true;
+
+                continue;
+            }
+
+            if (! is_dir($sourceTargetPath)) {
+                continue;
+            }
+
+            // 디렉토리 target — 재귀 비교
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($sourceTargetPath, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST,
+            );
+
+            foreach ($iterator as $item) {
+                /** @var SplFileInfo $item */
+                $absolute = $item->getPathname();
+                $relative = self::normalizeRelative($target.'/'.ltrim(substr($absolute, strlen($sourceTargetPath)), DIRECTORY_SEPARATOR.'/'));
+
+                if (self::matchesExcludes($relative, $excludeSet)) {
+                    continue;
+                }
+                if (self::isWithinProtectedPath($relative, $protectedSet)) {
+                    continue;
+                }
+
+                // symlink 는 목록 제외 — 링크 처리 경로가 별도 담당
+                if ($item->isLink()) {
+                    $hasSymlink = true;
+
+                    continue;
+                }
+
+                // 디렉토리 자체는 목록에 담지 않는다 — 파일 단위 적용이 디렉토리를
+                // 필요 시 생성한다(copyDirectory 가 대상 디렉토리를 ensure).
+                if (! $item->isFile()) {
+                    continue;
+                }
+
+                $backupItemPath = $backupPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
+                self::classifyForApply($relative, $absolute, $backupItemPath, $added, $changed);
+            }
+        }
+
+        $apply = array_values(array_unique(array_merge($added, $changed)));
+        sort($apply, SORT_STRING);
+
+        return [
+            'apply' => $apply,
+            'added_count' => count($added),
+            'changed_count' => count($changed),
+            'has_symlink' => $hasSymlink,
+        ];
+    }
+
+    /**
+     * 3-way 판정으로 파일 하나를 added/changed 로 분류하거나 제외합니다.
+     *
+     * base(백업) 부재 → added, size 다름 또는 md5 다름 → changed, 동일 → 제외.
+     *
+     * @param  string  $relative  슬래시 정규화된 상대 경로 (목록 등재값)
+     * @param  string  $theirsAbsolute  신 버전(_pending) 파일 절대 경로
+     * @param  string  $baseAbsolute  백업(base) 파일 절대 경로
+     * @param  array<int,string>  $added  added 누적 배열 (참조)
+     * @param  array<int,string>  $changed  changed 누적 배열 (참조)
+     */
+    private static function classifyForApply(
+        string $relative,
+        string $theirsAbsolute,
+        string $baseAbsolute,
+        array &$added,
+        array &$changed,
+    ): void {
+        if (! file_exists($baseAbsolute) || is_dir($baseAbsolute)) {
+            $added[] = $relative;
+
+            return;
+        }
+
+        // size 선필터 — 다르면 md5 생략하고 즉시 changed
+        $theirsSize = @filesize($theirsAbsolute);
+        $baseSize = @filesize($baseAbsolute);
+        if ($theirsSize !== $baseSize) {
+            $changed[] = $relative;
+
+            return;
+        }
+
+        // size 동일 → 내용 비교
+        if (@md5_file($theirsAbsolute) !== @md5_file($baseAbsolute)) {
+            $changed[] = $relative;
+        }
+        // 동일하면 제외 (코어 미변경 — 스킵)
+    }
+
+    /**
      * 백업 디렉토리의 manifest 를 로드해 활성 디렉토리에서 신 버전 신규 파일을 정리합니다.
      *
      * 안전 가드:

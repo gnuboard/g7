@@ -28,6 +28,7 @@ class CoreUpdateCommand extends Command
     protected $signature = 'core:update
         {--force : 버전 비교 없이 강제 업데이트}
         {--no-backup : 백업 생성 건너뛰기}
+        {--prune : 코어가 제거한 파일 정리 + targets 전체 덮어쓰기(기존 방식). 미지정 시 코어가 실제 변경/추가한 파일만 적용하고 나머지는 보존}
         {--no-maintenance : 유지보수 모드 활성화 건너뛰기}
         {--local : 로컬 코드베이스를 업데이트 소스로 사용 (GitHub 스킵)}
         {--source= : 수동 업데이트용 소스 디렉토리 경로 (GitHub 다운로드 대신 지정 디렉토리 사용)}
@@ -346,6 +347,12 @@ class CoreUpdateCommand extends Command
             //
             // `--no-backup` 모드면 backupPath 가 null 이므로 manifest 생성을 스킵 — 롤백
             // 자체가 불가능한 모드이므로 기존 동작 유지.
+            // 증분 적용(3-way) 대상 목록. 백업 있음 + --prune 미지정 시에만 산출.
+            // null 로 남으면(백업 부재 또는 --prune) applyUpdate 가 전체 덮어쓰기로 회귀.
+            $applyList = null;
+            $applyStats = null;
+            $prune = (bool) $this->option('prune');
+
             if ($backupPath !== null) {
                 $bar->setMessage('신규 파일 manifest 생성 중...');
                 $log('신규 파일 manifest 생성 시작');
@@ -371,15 +378,51 @@ class CoreUpdateCommand extends Command
                         'error' => $manifestError->getMessage(),
                     ]);
                 }
+
+                // ── 증분 적용 대상 산출 (3-way) ──
+                // --prune 이면 전체 덮어쓰기이므로 산출 자체를 스킵.
+                if (! $prune) {
+                    try {
+                        $applyStats = CoreBackupHelper::computeApplyList(
+                            $backupPath,
+                            $pendingPath,
+                            (array) config('app.update.targets', []),
+                            (array) config('app.update.protected_paths', []),
+                            (array) config('app.update.excludes', []),
+                        );
+                        $applyList = $applyStats['apply'];
+                        $log(sprintf(
+                            '증분 적용 대상 산출 완료 (added=%d, changed=%d, total=%d)',
+                            $applyStats['added_count'],
+                            $applyStats['changed_count'],
+                            count($applyList),
+                        ));
+                    } catch (\Throwable $applyError) {
+                        // 산출 실패 시 안전하게 전체 덮어쓰기로 회귀 (applyList=null 유지)
+                        $applyList = null;
+                        $applyStats = null;
+                        $log("증분 적용 대상 산출 실패 (전체 덮어쓰기로 회귀): {$applyError->getMessage()}");
+                        Log::warning('코어 업데이트: 증분 적용 대상 산출 실패', [
+                            'error' => $applyError->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             // ── Step 7: 파일 적용 ──
             $bar->setMessage(__('settings.core_update.step_apply'));
             $bar->advance();
-            $log('코어 파일 덮어쓰기 시작');
 
-            $service->applyUpdate($pendingPath, $onProgress);
-            $log('코어 파일 덮어쓰기 완료');
+            if ($prune) {
+                $log('코어 파일 덮어쓰기 시작 (--prune: 전체 덮어쓰기 + orphan 정리)');
+            } elseif ($applyList !== null) {
+                $log(sprintf('코어 파일 적용 시작 (증분: 코어 변경분 %d건만 적용, 나머지 보존)', count($applyList)));
+            } else {
+                $log('코어 파일 덮어쓰기 시작 (백업 부재 — 전체 덮어쓰기로 회귀)');
+            }
+
+            $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList);
+            $log('코어 파일 적용 완료');
 
             // ── Step 8: vendor 디렉토리 복사 (_pending → 운영) ──
             if ($composerSkipped) {
@@ -502,6 +545,9 @@ class CoreUpdateCommand extends Command
 
             $this->info("그누보드7 코어가 {$toVersion} 버전으로 업데이트되었습니다!");
             $this->newLine();
+
+            // ── 파일 적용 방식 요약 (부수의무: 설명의무) ──
+            $this->summarizeApplyMode($prune, $applyList, $applyStats);
 
             // _bundled 확장 일괄 업데이트 프롬프트 (번들에 신버전이 있을 때만 표시).
             //
@@ -1066,6 +1112,41 @@ class CoreUpdateCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * 파일 적용 방식(증분/prune/fallback)과 통계를 사용자에게 요약 출력합니다.
+     *
+     * @param  bool  $prune  --prune 지정 여부
+     * @param  array<int, string>|null  $applyList  증분 적용 대상 목록 (null 이면 전체 덮어쓰기)
+     * @param  array{apply:array<int,string>, added_count:int, changed_count:int, has_symlink:bool}|null  $applyStats  computeApplyList 산출 통계
+     */
+    private function summarizeApplyMode(bool $prune, ?array $applyList, ?array $applyStats): void
+    {
+        if ($prune) {
+            $this->line(__('settings.core_update.apply_mode_prune'));
+            $this->newLine();
+
+            return;
+        }
+
+        if ($applyList === null) {
+            // 백업 부재 또는 산출 실패 → 전체 덮어쓰기로 회귀
+            $this->warn(__('settings.core_update.apply_mode_fallback'));
+            $this->newLine();
+
+            return;
+        }
+
+        // 증분 모드
+        $added = $applyStats['added_count'] ?? 0;
+        $changed = $applyStats['changed_count'] ?? 0;
+        $this->line(__('settings.core_update.apply_mode_incremental', [
+            'added' => $added,
+            'changed' => $changed,
+        ]));
+        $this->line(__('settings.core_update.apply_mode_incremental_prune_hint'));
+        $this->newLine();
     }
 
     /**

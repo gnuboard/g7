@@ -76,6 +76,46 @@ class UserProductInquiryControllerTest extends ModuleTestCase
     }
 
     // ========================================
+    // index() — 문의 목록 (마이페이지)
+    // ========================================
+
+    /**
+     * 마이페이지 문의 목록의 상품 링크가 상품 id 가 아닌 product_code 로 나간다 (#450).
+     *
+     * 회귀: getUserInquiries 의 product.url 이 id 로 하드코딩되어 있어 클릭 시
+     * /shop/products/{id} 로 이동하던 버그. product_code 기준으로 수정.
+     */
+    #[Test]
+    public function 문의_목록의_상품_링크는_product_code_로_나간다(): void
+    {
+        // Given: product_code 를 가진 상품에 대한 본인 문의 (setUp 의 $this->inquiry)
+        $this->assertNotEmpty($this->product->product_code);
+
+        // When: 마이페이지 문의 목록 조회
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/modules/sirsoft-ecommerce/user/inquiries');
+
+        // Then: 응답의 product.url 과 product.product_code 가 상품코드 기준
+        // (getUserInquiries 응답 구조는 data.items[] + data.meta)
+        $response->assertOk();
+        $item = collect($response->json('data.items'))
+            ->firstWhere('id', $this->inquiry->id);
+
+        $this->assertNotNull($item, '본인 문의가 목록에 포함되어야 합니다.');
+        $this->assertSame($this->product->product_code, $item['product']['product_code']);
+        $this->assertStringContainsString(
+            '/products/'.$this->product->product_code,
+            $item['product']['url'],
+            '상품 링크는 product_code 기준이어야 합니다.'
+        );
+        $this->assertStringNotContainsString(
+            '/products/'.$this->product->id,
+            $item['product']['url'],
+            '상품 링크에 상품 id 가 노출되면 안 됩니다.'
+        );
+    }
+
+    // ========================================
     // update() — 문의 수정
     // ========================================
 

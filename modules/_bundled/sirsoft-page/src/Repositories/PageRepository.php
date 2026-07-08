@@ -5,7 +5,9 @@ namespace Modules\Sirsoft\Page\Repositories;
 use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\HasMultipleSearchFilters;
 use App\Search\Engines\DatabaseFulltextEngine;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
@@ -26,35 +28,17 @@ class PageRepository implements PageRepositoryInterface
      * @param  int  $perPage  페이지당 항목 수
      * @return LengthAwarePaginator 페이지 목록
      */
-    public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         // filters 배열에서 search/search_field 변환
         $filters = $this->normalizeSearchFilters($filters);
 
-        // FULLTEXT 대상 검색인 경우 Scout 사용
-        if (! empty($filters['search'])) {
-            $searchField = $filters['search_field'] ?? 'all';
-
-            if (in_array($searchField, ['all', 'title'])) {
-                return Page::search($filters['search'])
-                    ->query(function ($query) use ($filters) {
-                        $query->with(['creator', 'updater']);
-
-                        // 권한 스코프 필터링
-                        PermissionHelper::applyPermissionScope($query, 'sirsoft-page.pages.read');
-
-                        // 발행 상태 필터
-                        if (isset($filters['published']) && $filters['published'] !== '') {
-                            $query->where('published', (bool) $filters['published']);
-                        }
-
-                        // 정렬
-                        $this->applySorting($query, $filters);
-                    })
-                    ->paginate($perPage);
-            }
-        }
-
+        // 검색 필드(title/slug/all)별로 대상 컬럼을 정확히 분리하기 위해
+        // 모든 검색을 applyFilters 통합 쿼리로 처리한다.
+        //  - title: 제목만 (Scout searchableColumns 는 title+content 를 함께 검색하므로 사용하지 않음)
+        //  - slug : 슬러그만
+        //  - all  : 제목 + 슬러그 (본문 content 은 검색 대상 아님 — UI '제목 또는 슬러그로 검색')
+        // (Scout 콜백에 slug orWhere 를 넣으면 total 카운트가 부풀려지는 회귀가 있어 #225 에서 제거됨)
         $query = Page::with(['creator', 'updater']);
 
         // 권한 스코프 필터링
@@ -94,7 +78,7 @@ class PageRepository implements PageRepositoryInterface
      * @param  int  $id  페이지 ID
      * @return Page 페이지 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findOrFail(int $id): Page
     {
@@ -202,9 +186,8 @@ class PageRepository implements PageRepositoryInterface
      * (Scout 엔진은 indexing 및 다른 검색에서 계속 사용됨).
      *
      * @param  string  $keyword  검색 키워드
-     * @return \Illuminate\Database\Eloquent\Builder
      */
-    private function buildKeywordQuery(string $keyword): \Illuminate\Database\Eloquent\Builder
+    private function buildKeywordQuery(string $keyword): Builder
     {
         return Page::query()
             ->published()
@@ -218,7 +201,7 @@ class PageRepository implements PageRepositoryInterface
     /**
      * 쿼리에 정렬을 적용합니다.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query  쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건 (sort_by, sort_order 포함)
      */
     private function applySorting($query, array $filters): void
@@ -236,7 +219,7 @@ class PageRepository implements PageRepositoryInterface
     /**
      * 쿼리에 필터를 적용합니다.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query  쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건
      */
     private function applyFilters($query, array $filters): void
@@ -255,12 +238,12 @@ class PageRepository implements PageRepositoryInterface
                 $query->where('slug', 'like', "%{$keyword}%");
             } elseif ($searchField === 'title') {
                 $query->where(function ($q) use ($keyword) {
-                    $this->applyTitleKeywordSearch($q, $keyword, titleOnly: true);
+                    $this->applyTitleKeywordSearch($q, $keyword, includeSlug: false);
                 });
             } else {
-                // all: slug + title 통합 검색
+                // all: 제목 + 슬러그 통합 검색 (본문 content 은 검색 대상 아님 — UI '제목 또는 슬러그로 검색')
                 $query->where(function ($q) use ($keyword) {
-                    $this->applyTitleKeywordSearch($q, $keyword);
+                    $this->applyTitleKeywordSearch($q, $keyword, includeSlug: true);
                 });
             }
         }
@@ -269,36 +252,21 @@ class PageRepository implements PageRepositoryInterface
     /**
      * 제목(JSON) + 슬러그 키워드 검색을 쿼리에 적용합니다.
      *
-     * title은 {"ko": "...", "en": "..."} 형태의 JSON 컬럼이므로
-     * JSON_UNQUOTE + LIKE 방식으로 각 로케일 값을 검색합니다.
+     * title은 {"ko": "...", "en": "..."} 형태의 JSON 컬럼이므로 FULLTEXT 로 검색한다.
+     * 검색 대상은 제목·슬러그이며 본문(content)은 포함하지 않는다
+     * (검색 UI 안내 '제목 또는 슬러그로 검색' 및 검색 필드 옵션 전체/제목/슬러그와 일치).
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query  쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @param  string  $keyword  검색 키워드
-     * @param  bool  $titleOnly  제목만 검색 여부 (false 시 slug도 포함)
+     * @param  bool  $includeSlug  슬러그도 함께 검색할지 여부 (전체 검색 시 true)
      */
-    private function applyTitleKeywordSearch($query, string $keyword, bool $titleOnly = false): void
+    private function applyTitleKeywordSearch($query, string $keyword, bool $includeSlug = false): void
     {
-        if (! $titleOnly) {
+        if ($includeSlug) {
             $query->where('slug', 'like', "%{$keyword}%");
         }
 
         DatabaseFulltextEngine::whereFulltext($query, 'title', $keyword, 'or');
-
-        if (! $titleOnly) {
-            DatabaseFulltextEngine::whereFulltext($query, 'content', $keyword, 'or');
-        }
-    }
-
-    /**
-     * 여러 페이지의 발행 상태를 일괄 변경합니다.
-     *
-     * @param  array  $ids  페이지 ID 목록
-     * @param  array  $data  업데이트할 데이터 (published, updated_by 등)
-     * @return int 변경된 페이지 수
-     */
-    public function bulkUpdatePublished(array $ids, array $data): int
-    {
-        return Page::whereIn('id', $ids)->update($data);
     }
 
     /**

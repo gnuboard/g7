@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductRecentRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductListResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\PublicProductResource;
+use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
 
 /**
@@ -167,16 +168,19 @@ class ProductController extends PublicBaseController
      * 공개 상품 상세 정보를 조회합니다.
      *
      * 전시상태가 visible인 상품만 조회할 수 있습니다.
+     * 라우트 파라미터는 상품코드(product_code) 기준이며, 숫자 ID도 하위호환으로 허용됩니다
+     * (Product::resolveRouteBinding 이 code/id 를 자동 해석).
      *
-     * @param  int  $id  상품 ID
+     * @param  Product  $product  라우트 바인딩된 상품 (product_code 또는 id)
      * @return JsonResponse 상품 상세 정보를 포함한 JSON 응답
      */
-    public function show(int $id): JsonResponse
+    public function show(Product $product): JsonResponse
     {
         try {
-            $this->logApiUsage('products.show', ['product_id' => $id]);
+            $this->logApiUsage('products.show', ['product_id' => $product->id]);
 
-            $product = $this->productService->getDetail($id);
+            // 바인딩된 상품의 id 로 상세(옵션/관계 포함)를 재조회
+            $product = $this->productService->getDetail($product->id);
 
             if (! $product || $product->display_status->value !== 'visible') {
                 return ResponseHelper::notFound(

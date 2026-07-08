@@ -5,6 +5,7 @@
   "delete_confirm_message": "이 파일을 삭제하시겠습니까?",
   "deleting": "삭제 중...",
   "attached_count": "{{count}}/{{max}}개 첨부됨",
+  "upload_limit_exceeded": "최대 {{max}}개까지 첨부할 수 있습니다.",
   "max_size": "최대 {{size}}MB",
   "reorder_failed": "파일 순서 변경에 실패했습니다",
   "drag_to_reorder": "드래그하여 순서 변경",

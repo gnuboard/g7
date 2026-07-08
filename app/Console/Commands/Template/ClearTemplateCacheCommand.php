@@ -6,6 +6,7 @@ use App\Contracts\Extension\CacheInterface;
 use App\Extension\TemplateManager;
 use App\Models\Template;
 use App\Models\TemplateLayout;
+use App\Services\ExtensionBundleService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -27,7 +28,8 @@ class ClearTemplateCacheCommand extends Command
      */
     public function __construct(
         private TemplateManager $templateManager,
-        private CacheInterface $cache
+        private CacheInterface $cache,
+        private ExtensionBundleService $bundleService
     ) {
         parent::__construct();
     }
@@ -152,6 +154,9 @@ class ClearTemplateCacheCommand extends Command
         $this->cache->forget('templates.active.admin');
         $this->cache->forget('templates.active.user');
         $clearedCount += 2;
+
+        // 5. 확장 프론트엔드 병합 번들 파일 전체 삭제 (템플릿 캐시 정리는 페이지 전면 갱신)
+        $clearedCount += $this->bundleService->clearBundles();
 
         $this->info('✅ '.__('templates.commands.cache_clear.success_all', [
             'count' => $clearedCount,

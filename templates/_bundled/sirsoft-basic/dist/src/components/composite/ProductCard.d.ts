@@ -11,6 +11,8 @@ interface ProductLabel {
 interface ProductCardProps {
     product: {
         id: number;
+        /** 상품코드 — 상세 페이지 링크 식별자 (product_code 기준 라우팅). 없으면 id 로 폴백 */
+        product_code?: string;
         name?: string | Record<string, string>;
         name_localized?: string;
         thumbnail_url: string;

@@ -788,6 +788,18 @@ php artisan plugin:update sirsoft-payment --force
 
 lazy 번들(편집기/devtools)이 코어 런타임(DynamicRenderer·엔진 싱글톤·React Context·DevTools 코어)을 재사용할 때는 재번들하지 않고 `window.G7Core.__runtime` 을 빌려 쓴다 — React/컨텍스트/싱글톤 인스턴스 동일성이 강제되기 때문(사본이 둘이면 "Invalid hook call"·컨텍스트 미매칭). 메인 번들이 `G7CoreGlobals` 에서 공유 대상을 `G7Core.__runtime` 에 노출하고, lazy 번들 vite config 는 React 4종(`react`/`react-dom`/`react-dom/client`/`react/jsx-runtime`)을 external→window 로, 코어 런타임 모듈을 `resolveId` 플러그인으로 `__runtime-shims/` 로 치환한다.
 
+### 확장 번들 병합 (서버측 concat)
+
+활성 모듈/플러그인의 프론트엔드 IIFE JS·CSS 는 타입별로 서버에서 하나의 번들로 병합해 서빙한다(`/api/{modules,plugins}/bundle.{js,css}?v={version}`). `ExtensionBundleService` 가 정렬·필터·concat·캐시를 전담하고, 프론트는 `window.G7Config.bundleUrls` 를 읽어 모듈 번들 → 플러그인 번들 순으로 로드한다. 병합 규율:
+
+- priority 순서는 선언형 — 실행 순서는 오직 manifest `loading.priority` 오름차순(`uasort`). 특정 확장 이름을 지목하는 분기를 두지 않는다.
+- IIFE 사이는 `\n;\n`(JS)/`\n`(CSS) 로 잇는다. 미사용 시 ASI 경계가 깨져 번들 전체 파싱 에러가 난다.
+- 소스맵은 prod strip, dev 는 개별 에셋 서빙 절대 URL 로 rewrite. 개별 에셋 서빙 라우트(`*.map` 포함)는 존치한다.
+- 번들 URL 은 반드시 same-origin(`/api/...`). 외부 origin/CDN·protocol-relative 는 gdpr preblocker 에 자기 차단된다.
+- 확장 에셋 절대경로는 `getBuiltAssetAbsolutePaths()`(=`getModulePath()`/`getPluginPath()`) 만 쓴다. `base_path("modules"|"plugins")` 직접 조립은 `_bundled` 경로 오해석 → 빈 번들.
+- concat 루프는 확장별 try/catch — 실패 확장만 skip 하고 나머지 병합을 지속한다.
+- 번들 파일명에 확장 캐시 버전을 포함(`{type}.{version}.{js,css}`). 조합 변경 시 version bump → 새 파일명 → 자동 재생성. 구파일 GC 는 `ext-bundles:cleanup` + `{module,plugin,template}:cache-clear` 가 담당한다. prod 은 version-in-path 디스크 캐시, 비프로덕션은 매 요청 concat.
+
 ### 빌드 명령어 (Artisan)
 
 ```bash

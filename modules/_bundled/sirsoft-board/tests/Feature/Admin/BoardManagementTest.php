@@ -374,6 +374,83 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
+     * 게시판 상세를 slug 로 조회할 수 있다 (#450 관리자 라우팅 slug 전환)
+     */
+    public function test_board_detail_can_be_fetched_by_slug(): void
+    {
+        // Given
+        $board = Board::factory()->create(['is_active' => true]);
+
+        // When: 숫자 id 가 아닌 slug 로 상세 조회
+        $response = $this->actingAs($this->adminUser)
+            ->getJson("/api/modules/sirsoft-board/admin/boards/{$board->slug}");
+
+        // Then: 동일 게시판 반환
+        $response->assertStatus(200);
+        $this->assertSame($board->id, $response->json('data.id'));
+        $this->assertSame($board->slug, $response->json('data.slug'));
+    }
+
+    /**
+     * 게시판을 slug 로 수정할 수 있다 (#450)
+     */
+    public function test_board_can_be_updated_by_slug(): void
+    {
+        // Given
+        $board = Board::factory()->create(['is_active' => true]);
+
+        // When: slug 로 PUT
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-board/admin/boards/{$board->slug}", [
+                'is_active' => false,
+            ]);
+
+        // Then
+        $response->assertStatus(200);
+        $this->assertFalse($board->fresh()->is_active);
+    }
+
+    /**
+     * 폼 데이터를 board_slug 로 수정 모드 조회할 수 있다 (#450)
+     */
+    public function test_get_form_data_edit_mode_by_board_slug(): void
+    {
+        // Given
+        $board = Board::factory()->create(['is_active' => true]);
+
+        // When: board_slug 쿼리로 폼 데이터 조회
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-board/admin/boards/form-data?board_slug='.$board->slug);
+
+        // Then: 해당 게시판 데이터가 로드됨
+        $response->assertStatus(200);
+        $this->assertSame($board->id, $response->json('data.id'));
+    }
+
+    /**
+     * 게시판을 slug 로 관리자 메뉴에 추가할 수 있다 (#450 add-to-menu slug 바인딩)
+     *
+     * 라우트 파라미터가 {board} 이므로 컨트롤러가 Board route-model binding 으로
+     * slug 를 해석해야 한다. int $id 로 받으면 slug 문자열이 전달될 때 실패한다.
+     */
+    public function test_add_to_admin_menu_resolves_board_by_slug(): void
+    {
+        // Given: 활성 게시판
+        $board = Board::factory()->create([
+            'slug' => 'test-'.substr(md5(microtime().'addmenu'), 0, 8),
+            'is_active' => true,
+        ]);
+
+        // When: 숫자 id 가 아닌 slug 로 add-to-menu 호출
+        $response = $this->actingAs($this->adminUser)
+            ->postJson("/api/modules/sirsoft-board/admin/boards/{$board->slug}/add-to-menu");
+
+        // Then: slug 가 정상 해석되어 메뉴가 추가됨 (route-model binding 성공)
+        $response->assertStatus(200);
+        $this->assertNotNull($response->json('data.menu'));
+    }
+
+    /**
      * 부분 업데이트 시 is_active만 변경 가능 테스트
      */
     public function test_can_update_only_is_active_field(): void

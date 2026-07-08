@@ -73,6 +73,40 @@ class ProductControllerSearchTest extends ModuleTestCase
     }
 
     /**
+     * all 검색에서 숫자 키워드로 상품 ID 정확 매칭이 잡히는지 확인
+     */
+    public function test_search_all_matches_by_product_id(): void
+    {
+        $user = $this->createAdminUser(['sirsoft-ecommerce.products.read']);
+        $target = Product::factory()->create();
+        Product::factory()->create(); // 노이즈
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/products?search_field=all&search_keyword='.$target->id);
+
+        $response->assertOk();
+        $data = $response->json('data.data');
+        $ids = array_column($data, 'id');
+        $this->assertContains($target->id, $ids);
+    }
+
+    /**
+     * all 검색에서 상품코드로 매칭이 잡히는지 확인 (id 매칭 추가 후 회귀 방지)
+     */
+    public function test_search_all_matches_by_product_code(): void
+    {
+        $user = $this->createAdminUser(['sirsoft-ecommerce.products.read']);
+        $product = Product::factory()->create(['product_code' => 'ALLCODE1234ABCD']);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/products?search_field=all&search_keyword=ALLCODE1234ABCD');
+
+        $response->assertOk();
+        $ids = array_column($response->json('data.data'), 'id');
+        $this->assertContains($product->id, $ids);
+    }
+
+    /**
      * code 검색 필드(잘못된 값)가 거부되는지 확인
      */
     public function test_search_field_rejects_code(): void

@@ -1,6 +1,7 @@
 {
   "sidebar": {
-    "no_accessible_menus": "접근 가능한 메뉴가 없습니다"
+    "no_accessible_menus": "접근 가능한 메뉴가 없습니다",
+    "view_site": "사이트 보기"
   },
   "profile_settings": "프로필 설정",
   "logout": "로그아웃",

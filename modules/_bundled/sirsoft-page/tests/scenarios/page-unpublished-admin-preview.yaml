@@ -1,0 +1,67 @@
+# audit:allow test-scenario-coverage reason: |
+#   본 매니페스트는 미발행 페이지 관리자 미리보기 단일 결함의 권한 × 발행상태
+#   cross product 를 기록한다. viewer(guest/member/other_admin/page_reader) × published
+#   (published/unpublished) 8케이스 중 "미리보기 허용" 은 page_reader × unpublished 단 1조합이며,
+#   나머지는 기존 동작(발행=200 공개 / 미발행=404) 유지다. 실제 회귀 가드는 test_files 의
+#   Feature/Unit/레이아웃 테스트가 결함별로 담당하므로 docblock @scenario 전수 마킹 대신
+#   통과 테스트로 커버한다.
+#   E2E: 사용자 화면 미리보기 spec 은 페이지 모듈 Playwright 인프라(page-auth/page-seed fixture)
+#   를 재사용하되, playwright:seed-page 시드 로직 + 대상 화면 data-testid 보강 전까지
+#   test.describe.skip placeholder 로 운용한다(기존 admin spec 3건과 동일 운용).
+feature: 미발행 페이지 관리자 미리보기 (권한자만 사용자 화면 노출 + 미리보기 배너 + 첨부 admin URL)
+
+description: |
+  미발행 페이지는 관리자여도 사용자 화면(/page/{slug})에 접근할 수 없던 결함을 수정한다.
+
+  게이트 정책:
+    - 비로그인·일반 회원: 미발행 페이지 → 404 유지 (비공개).
+    - 페이지 조회 권한(sirsoft-page.pages.read, admin) 보유자: 미발행 페이지 → 200 미리보기.
+    - pages.read 없는 다른 모듈 admin: 404 (최소권한 — 관리자 상세 라우트와 동일 게이트).
+    - 발행 페이지: 모두 200 (기존 동작 무변경).
+
+  구현:
+    - PageService::getPublishedPageBySlug($slug, $allowUnpublished) — 허용 플래그로 미발행 반환.
+    - PublicPageController::show — optional.sanctum 로 인증된 사용자의 hasPermission(pages.read, admin)
+      판정 후 플래그 전달. 권한 판정은 컨트롤러, Service 는 플래그만 수신(게시판 PostController 패턴).
+    - PublicPageResource::withPreview — is_preview 노출. (첨부 URL 컨텍스트 분기는 별건
+      page-attachment-serving.yaml 에서 공개 hash 라우트로 단일화되어 제거됨.)
+    - page/show.json(sirsoft-basic) — is_preview=true 일 때 "미발행 페이지 미리보기 중" 배너 노출.
+
+  안전:
+    - SEO 캐시 오염 없음: 봇(게스트)은 미발행에 여전히 404 → 미리보기 콘텐츠가 봇 캐시에 안 들어감.
+    - 정보 노출 최소: published 전체가 아닌 is_preview(bool)만 추가 노출.
+    - 미발행 첨부 파일 다운로드 보호: 첨부 서빙은 공개 hash 라우트지만 다운로드는 권한 게이트로
+      미발행+비권한자를 404 차단(별건 page-attachment-serving.yaml).
+
+axes:
+  viewer: [guest, member, other_admin, page_reader]
+  published: [published, unpublished]
+
+effects:
+  - guest_sees_published_page
+  - guest_gets_404_for_unpublished_page
+  - member_gets_404_for_unpublished_page
+  - other_admin_without_pages_read_gets_404_for_unpublished_page
+  - page_reader_admin_previews_unpublished_page_with_200
+  - preview_response_exposes_is_preview_true_only_for_unpublished_preview
+  - preview_attachments_use_public_hash_url
+  - published_page_attachments_use_public_hash_url_even_for_admin
+  - preview_banner_renders_when_is_preview_true
+  - preview_banner_hidden_for_published_or_guest
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/User/PublicPageControllerTest.php
+  - modules/_bundled/sirsoft-page/tests/Unit/Services/PageServiceTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/page-show-preview-banner.test.tsx
+  - modules/_bundled/sirsoft-page/tests/Playwright/specs/user/unpublished-admin-preview.spec.ts
+
+notes: |
+  회귀 가드 담당:
+    - 게이트(권한 4변종 × 발행상태) + is_preview 노출 + 첨부 컨텍스트 URL → PublicPageControllerTest(Feature).
+    - getPublishedPageBySlug 플래그 동작 격리 → PageServiceTest(Unit).
+    - 배너 if=is_preview 의존 + 다국어 키 + 위치 → page-show-preview-banner.test.tsx(레이아웃 렌더).
+
+  E2E: 사용자 화면 미리보기 spec(unpublished-admin-preview.spec.ts)은 페이지 모듈 Playwright
+  인프라(page-auth fixture 재사용, page-seed fixture)를 사용한다. playwright:seed-page 시드 로직과
+  대상 화면 data-testid 보강 전까지 test.describe.skip placeholder 로 등록하며(기존 admin spec 3건과
+  동일 운용), 실제 회귀 가드는 위 Feature/Unit/레이아웃 렌더 테스트가 담당한다.

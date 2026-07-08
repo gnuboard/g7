@@ -1,6 +1,7 @@
 {
   "sidebar": {
-    "no_accessible_menus": "アクセス可能なメニューがありません"
+    "no_accessible_menus": "アクセス可能なメニューがありません",
+    "view_site": "サイトを表示"
   },
   "profile_settings": "プロフィール設定",
   "logout": "ログアウト",

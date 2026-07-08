@@ -3,7 +3,7 @@
   "type": "basic",
   "name": "Button",
   "props": { "className": "flex w-full text-left items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" },
-  "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products/{{product.id}}" } }],
+  "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products/{{product.product_code ?? product.id}}" } }],
   "children": [
     {
       "comment": "썸네일",

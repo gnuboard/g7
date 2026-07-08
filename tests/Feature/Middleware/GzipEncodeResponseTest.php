@@ -251,4 +251,131 @@ class GzipEncodeResponseTest extends TestCase
         // 압축 후 크기가 50% 이상 감소해야 함
         $this->assertLessThan($originalSize * 0.5, $compressedSize);
     }
+
+    /**
+     * 임시 파일을 생성하고 테스트 종료 시 정리되도록 등록합니다.
+     *
+     * @param  string  $content  파일 내용
+     * @return string 생성된 임시 파일 경로
+     */
+    private function makeTempFile(string $content): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'gzip_test_');
+        file_put_contents($path, $content);
+        $this->beforeApplicationDestroyed(function () use ($path) {
+            @unlink($path);
+        });
+
+        return $path;
+    }
+
+    /**
+     * BinaryFileResponse(번들 JS/CSS 서빙)도 gzip 압축되어야 합니다.
+     *
+     * 기존에는 BinaryFileResponse.getContent() 가 false 를 반환해 미들웨어가
+     * 압축 없이 통과시켜 번들이 비압축 전송되던 사각지대를 해소한 회귀 테스트입니다.
+     */
+    public function test_compresses_binary_file_response(): void
+    {
+        // 1KB 이상의 JS 번들 파일 (압축 대상 크기 충족)
+        $jsContent = str_repeat("console.log('bundle chunk');\n", 200);
+        $path = $this->makeTempFile($jsContent);
+
+        $middleware = new GzipEncodeResponse;
+
+        $request = Request::create('/api/modules/bundle.js', 'GET');
+        $request->headers->set('Accept-Encoding', 'gzip');
+
+        $response = $middleware->handle($request, function () use ($path) {
+            return response()->file($path, ['Content-Type' => 'text/javascript']);
+        });
+
+        // 압축 적용 확인
+        $this->assertEquals('gzip', $response->headers->get('Content-Encoding'));
+
+        // 압축 해제 시 원본 파일 내용 복원
+        $decompressed = gzdecode($response->getContent());
+        $this->assertNotFalse($decompressed);
+        $this->assertEquals($jsContent, $decompressed);
+
+        // Content-Length 는 압축된 크기와 일치
+        $this->assertEquals(
+            strlen($response->getContent()),
+            (int) $response->headers->get('Content-Length')
+        );
+
+        // Vary: Accept-Encoding 헤더 설정
+        $this->assertStringContainsString(
+            'Accept-Encoding',
+            $response->headers->get('Vary', '')
+        );
+    }
+
+    /**
+     * BinaryFileResponse 압축 시 원본 응답의 캐싱 헤더가 승계되어야 합니다.
+     */
+    public function test_binary_file_response_preserves_headers(): void
+    {
+        $cssContent = str_repeat('.selector{color:red}', 100);
+        $path = $this->makeTempFile($cssContent);
+
+        $middleware = new GzipEncodeResponse;
+
+        $request = Request::create('/api/plugins/bundle.css', 'GET');
+        $request->headers->set('Accept-Encoding', 'gzip');
+
+        $response = $middleware->handle($request, function () use ($path) {
+            $fileResponse = response()->file($path, [
+                'Content-Type' => 'text/css',
+                'ETag' => '"test-etag"',
+            ]);
+            $fileResponse->headers->set('Cache-Control', 'public, max-age=31536000, immutable');
+
+            return $fileResponse;
+        });
+
+        $this->assertEquals('gzip', $response->headers->get('Content-Encoding'));
+        $this->assertEquals('"test-etag"', $response->headers->get('ETag'));
+        $this->assertStringContainsString('immutable', $response->headers->get('Cache-Control', ''));
+    }
+
+    /**
+     * 작은 BinaryFileResponse(1KB 미만)는 압축하지 않아야 합니다.
+     */
+    public function test_does_not_compress_small_binary_file_response(): void
+    {
+        $path = $this->makeTempFile('small');
+
+        $middleware = new GzipEncodeResponse;
+
+        $request = Request::create('/api/modules/bundle.js', 'GET');
+        $request->headers->set('Accept-Encoding', 'gzip');
+
+        $response = $middleware->handle($request, function () use ($path) {
+            return response()->file($path, ['Content-Type' => 'text/javascript']);
+        });
+
+        // 1KB 미만은 압축 생략 — 원본 BinaryFileResponse 그대로 통과
+        $this->assertNull($response->headers->get('Content-Encoding'));
+    }
+
+    /**
+     * gzip 미지원 클라이언트에는 BinaryFileResponse 를 압축하지 않아야 합니다.
+     */
+    public function test_does_not_compress_binary_file_response_without_gzip_support(): void
+    {
+        $jsContent = str_repeat("console.log('x');\n", 200);
+        $path = $this->makeTempFile($jsContent);
+
+        $middleware = new GzipEncodeResponse;
+
+        // Accept-Encoding 헤더 없음
+        $request = Request::create('/api/modules/bundle.js', 'GET');
+
+        $response = $middleware->handle($request, function () use ($path) {
+            return response()->file($path, ['Content-Type' => 'text/javascript']);
+        });
+
+        $this->assertNull($response->headers->get('Content-Encoding'));
+    }
 }

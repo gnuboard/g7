@@ -6,13 +6,11 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Sirsoft\Page\Database\Factories\PageAttachmentFactory;
 
 class PageAttachment extends Model
 {
     use HasFactory;
-    use SoftDeletes;
 
     /**
      * 팩토리 클래스를 반환합니다.
@@ -124,21 +122,45 @@ class PageAttachment extends Model
     }
 
     /**
-     * 다운로드 URL을 반환합니다.
+     * 다운로드 URL을 반환합니다 (공개 hash 라우트).
      *
      * @return string 다운로드 URL
      */
     public function getDownloadUrlAttribute(): string
     {
-        return '/api/modules/sirsoft-page/pages/attachment/'.$this->hash;
+        return $this->downloadUrl();
     }
 
     /**
-     * 이미지 미리보기 URL을 반환합니다.
+     * 이미지 미리보기 URL을 반환합니다 (공개 hash 라우트).
      *
      * @return string|null 미리보기 URL (이미지가 아니면 null)
      */
     public function getPreviewUrlAttribute(): ?string
+    {
+        return $this->previewUrl();
+    }
+
+    /**
+     * 다운로드 URL을 반환합니다.
+     *
+     * 썸네일 <img>·다운로드는 브라우저 직접 GET 이라 토큰을 실을 수 없으므로,
+     * 게시판·이커머스 표준과 동일하게 공개 hash 라우트로 단일화한다.
+     * 미발행 콘텐츠 다운로드 차단은 공개 라우트 내부의 권한 게이트가 담당한다.
+     *
+     * @return string 다운로드 URL
+     */
+    public function downloadUrl(): string
+    {
+        return '/api/modules/sirsoft-page/pages/attachment/'.$this->hash;
+    }
+
+    /**
+     * 이미지 미리보기 URL을 반환합니다 (공개 hash 라우트).
+     *
+     * @return string|null 미리보기 URL (이미지가 아니면 null)
+     */
+    public function previewUrl(): ?string
     {
         if (! $this->isImage()) {
             return null;

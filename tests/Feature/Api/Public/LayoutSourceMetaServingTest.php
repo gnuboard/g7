@@ -392,6 +392,90 @@ class LayoutSourceMetaServingTest extends TestCase
     }
 
     /**
+     * comment / _comment 필드를 가진 레이아웃을 생성합니다.
+     *
+     * @param  Template  $template  대상 템플릿
+     * @return TemplateLayout 생성된 레이아웃
+     */
+    private function createCommentedLayout(Template $template): TemplateLayout
+    {
+        return TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'commented',
+            'content' => [
+                'comment' => '레이아웃 최상단 개발자 주석',
+                'meta' => ['title' => 'Commented'],
+                'components' => [
+                    [
+                        'comment' => '컴포넌트 설명 주석',
+                        'type' => 'basic',
+                        'name' => 'Div',
+                        'props' => ['className' => 'container'],
+                        'children' => [
+                            [
+                                '_comment' => '중첩 자식 주석',
+                                'type' => 'basic',
+                                'name' => 'Span',
+                                'text' => 'Hello',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * 편집 모드(with_source_meta) 서빙에서는 comment 필드가 보존되어야 합니다.
+     *
+     * 편집기는 comment 를 편집 가능한 속성으로 노출하므로 편집 경로에서는 제거하지 않는다.
+     * 공개 서빙과 별도 캐시 키로 분리되어 조건부 제거가 안전함을 함께 검증한다.
+     */
+    #[Test]
+    public function serve_with_source_meta_preserves_developer_comments(): void
+    {
+        $template = $this->createActiveTemplate();
+        $this->createCommentedLayout($template);
+
+        $admin = $this->makeEditor();
+        Sanctum::actingAs($admin, ['*'], 'sanctum');
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/commented.json?with_source_meta=1");
+
+        $response->assertStatus(200);
+
+        // 편집 모드에서는 comment / _comment 가 보존됨
+        $data = $response->json('data');
+        $this->assertSame('레이아웃 최상단 개발자 주석', $data['comment'] ?? null);
+        $this->assertSame('컴포넌트 설명 주석', $data['components'][0]['comment'] ?? null);
+        $this->assertSame('중첩 자식 주석', $data['components'][0]['children'][0]['_comment'] ?? null);
+    }
+
+    /**
+     * 공개 서빙(옵션 미전달)에서는 comment 필드가 제거되어야 합니다.
+     *
+     * 편집 경로와 동일 레이아웃 소스를 사용해 공개/편집 캐시 키 분리를 함께 검증한다.
+     */
+    #[Test]
+    public function serve_without_source_meta_strips_developer_comments(): void
+    {
+        $template = $this->createActiveTemplate();
+        $this->createCommentedLayout($template);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/commented.json");
+
+        $response->assertStatus(200);
+
+        $body = $response->getContent();
+        $this->assertStringNotContainsString('"comment"', $body);
+        $this->assertStringNotContainsString('"_comment"', $body);
+
+        // 실제 콘텐츠는 보존
+        $data = $response->json('data');
+        $this->assertSame('Div', $data['components'][0]['name']);
+    }
+
+    /**
      * 컴포넌트 트리에서 특정 키가 존재하는지 재귀 탐색
      */
     private function treeHasKey(array $components, string $key): bool

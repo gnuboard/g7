@@ -202,6 +202,7 @@ class SearchProductsListener implements HookListenerInterface
 
         return [
             'id' => $product->id,
+            'product_code' => $product->product_code,
             'name' => $name,
             'name_highlighted' => $this->highlightKeyword($name, $keyword),
             'short_description' => $shortDescription,
@@ -219,7 +220,7 @@ class SearchProductsListener implements HookListenerInterface
             'multi_currency_selling_price' => $this->buildMultiCurrencyPrices($product->selling_price),
             'multi_currency_list_price' => $this->buildMultiCurrencyPrices($product->list_price),
             'labels' => $labels,
-            'url' => '/shop/'.$product->id,
+            'url' => '/shop/products/'.$product->product_code,
             'review_count' => (int) ($product->review_count ?? 0),
             'rating_avg' => $product->rating_avg !== null ? round((float) $product->rating_avg, 1) : 0.0,
         ];

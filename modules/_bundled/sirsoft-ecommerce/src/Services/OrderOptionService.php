@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
@@ -27,6 +28,7 @@ class OrderOptionService
      * @param  OrderShippingRepositoryInterface  $orderShippingRepository  주문 배송 Repository
      * @param  OrderRepositoryInterface  $orderRepository  주문 Repository
      * @param  ProductReviewRepositoryInterface  $productReviewRepository  상품 리뷰 Repository
+     * @param  MileageTransactionRepositoryInterface  $mileageTransactionRepository  마일리지 거래 Repository (병합 시 적립 거래 이전)
      */
     public function __construct(
         protected OrderOptionRepositoryInterface $orderOptionRepository,
@@ -35,6 +37,7 @@ class OrderOptionService
         protected ProductReviewRepositoryInterface $productReviewRepository,
         protected StockService $stockService,
         protected EcommerceSettingsService $settingsService,
+        protected MileageTransactionRepositoryInterface $mileageTransactionRepository,
     ) {}
 
     /**
@@ -141,9 +144,14 @@ class OrderOptionService
             if ($quantity === $option->quantity) {
                 // 전체 수량 변경 → UPDATE만
                 $updateData = ['option_status' => $newStatus];
-                // 배송완료 진입 시점 기록 (confirmed_at 과 대칭 — 지연 적립 기준)
+                // 배송완료 진입 시점 기록 (지연 적립 기준)
                 if ($newStatus === OrderStatusEnum::DELIVERED && $option->delivered_at === null) {
                     $updateData['delivered_at'] = now();
+                }
+                // 구매확정 진입 시점 기록 (delivered_at 과 대칭 — 지연 적립·리뷰 기한 기준).
+                // 멱등: 이미 값이 있으면 유지(상태 재진입 시 최초 확정 시점 보존).
+                if ($newStatus === OrderStatusEnum::CONFIRMED && $option->confirmed_at === null) {
+                    $updateData['confirmed_at'] = now();
                 }
                 $this->orderOptionRepository->update($option, $updateData);
 
@@ -187,6 +195,11 @@ class OrderOptionService
                 if ($newStatus === OrderStatusEnum::DELIVERED && $splitOption->delivered_at === null) {
                     $splitOption->delivered_at = now();
                 }
+                // 구매확정으로 분할 전이 시 분할 레코드에 구매확정 시점 기록 (delivered_at 과 대칭).
+                // 원본에서 replicate 로 계승한 delivered_at 은 유지한다(배송완료·구매확정은 둘 다 실제 발생한 사건).
+                if ($newStatus === OrderStatusEnum::CONFIRMED && $splitOption->confirmed_at === null) {
+                    $splitOption->confirmed_at = now();
+                }
 
                 // 분할 레코드 금액 = 원본 × ratio
                 $this->applySplitAmounts($splitOption, $origAmounts, $ratio, $quantity);
@@ -225,6 +238,14 @@ class OrderOptionService
 
         // 변경 후 훅
         HookManager::doAction('sirsoft-ecommerce.order_option.after_status_change', $result['original'], $newStatus, $result['split']);
+
+        // 구매확정 전이는 유저 셀프 확정(OrderService::confirmOption)과 동일하게 order-option.after_confirm 을 발화한다.
+        // (즉시 적립·구매확정 활동로그 등 확정 전용 부수효과가 관리자 경로에서도 대칭 동작하도록)
+        // 즉시 적립·로그 대상은 CONFIRMED 를 보유한 (병합 후) 생존 레코드 → merged_into > split > original 순으로 선택.
+        if ($newStatus === OrderStatusEnum::CONFIRMED) {
+            $confirmTarget = $result['merged_into'] ?? $result['split'] ?? $result['original'];
+            HookManager::doAction('sirsoft-ecommerce.order-option.after_confirm', $confirmTarget->order, $confirmTarget);
+        }
 
         return $result;
     }
@@ -474,6 +495,8 @@ class OrderOptionService
         // 1. 의존 레코드 이전 (cascade 삭제 방지)
         $this->orderShippingRepository->transferByOrderOptionId($consumed->id, $survivor->id);
         $this->productReviewRepository->transferByOrderOptionId($consumed->id, $survivor->id);
+        // 피흡수 옵션의 구매 적립 거래도 생존 옵션으로 이전 — 병합 후 생존 옵션 기준 적립 델타 계산 정합.
+        $this->mileageTransactionRepository->transferPurchaseEarnByOrderOptionId($consumed->id, $survivor->id);
 
         // 2. 수량/금액 합산
         $amountFields = [
@@ -670,7 +693,13 @@ class OrderOptionService
         }
 
         $previousStatus = $order->order_status?->value;
-        $order->update(['order_status' => $newStatus->value]);
+        $orderUpdate = ['order_status' => $newStatus->value];
+        // 주문 전체가 구매확정으로 전이되면 헤더에도 확정 시점 기록 (유저 셀프 확정 OrderService::confirmOption 과 대칭).
+        // 멱등: 이미 값이 있으면 유지(최초 확정 시점 보존).
+        if ($newStatus === OrderStatusEnum::CONFIRMED && $order->confirmed_at === null) {
+            $orderUpdate['confirmed_at'] = now();
+        }
+        $order->update($orderUpdate);
 
         // 옵션별 일괄 상태변경(운송장 등)으로 부모 주문 상태가 전이되면 알림 훅 발화 (A35/A36/C3).
         // OrderStatusNotificationListener 가 결제완료/배송중/배송완료/구매확정 알림으로 매핑한다.

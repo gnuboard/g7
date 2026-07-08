@@ -68,7 +68,7 @@ class PageRepositorySearchTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Page::query()->withTrashed()->forceDelete();
+        Page::query()->forceDelete();
 
         if (isset($this->user)) {
             User::where('id', $this->user->id)->delete();

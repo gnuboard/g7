@@ -284,16 +284,36 @@ class UserMileageService
             return null;
         }
 
-        if ($this->ledger->existsEarnForOption($option->id)) {
-            return null;
-        }
-
-        $amount = (float) $option->subtotal_earned_points_amount;
+        // 금액 델타 멱등: 목표 적립액(옵션 subtotal_earned) − 기적립 purchase_earn 합계 = 델타만 적립.
+        // 나눠 확정·병합으로 목표액이 늘면 차액을 추가 지급하고, 단순 재확정·스케줄러 재실행은 델타 0 으로 no-op.
+        $target = (float) $option->subtotal_earned_points_amount;
+        $alreadyEarned = $this->ledger->sumPurchaseEarnedForOption($option->id);
+        $amount = $target - $alreadyEarned;
         if ($amount <= 0) {
             return null;
         }
 
         $currency = $this->baseCurrencyForOrder($order);
+
+        // 방식 A: 기존 purchase_earn lot 이 있으면 그 lot 에 델타를 증액(적립 내역 한 줄 유지).
+        // 취소 회수(findEarnLotForOption 단일 lot 가정)·유효기간 정합을 위해 신규 lot 을 늘리지 않는다.
+        if ($type === MileageTransactionTypeEnum::PURCHASE_EARN
+            && ($existingLot = $this->ledger->findEarnLotForOption($option->id)) !== null) {
+            $this->ledger->incrementEarnLotAmount($existingLot, $amount);
+
+            $this->cache->recalculateForUser($order->user_id, $currency);
+            $this->cache->recalculatePending($order->user_id, $currency);
+
+            $this->logActivity('mileage.earn', [
+                'loggable' => $existingLot,
+                'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
+                'description_params' => ['amount' => (int) $amount],
+                'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency, 'delta' => (int) $amount],
+            ]);
+
+            return $existingLot;
+        }
+
         $expiresAt = $this->resolveEarnExpiry();
 
         $tx = $this->ledger->createTransaction([

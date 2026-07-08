@@ -236,7 +236,8 @@
     "blind": "ブラインド",
     "restore": "復元",
     "delete": "削除",
-    "create": "投稿を追加"
+    "create": "投稿を追加",
+    "view_user_page": "ユーザー画面を表示"
   },
   "author_actions": {
     "view_user": "ユーザー情報を表示"

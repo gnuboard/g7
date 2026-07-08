@@ -87,7 +87,8 @@
     "edit_search": "검색 편집",
     "search": "검색",
     "reset": "초기화",
-    "save_preset": "프리셋 저장"
+    "save_preset": "프리셋 저장",
+    "view_user_page": "유저 화면 보기"
   },
   "bulk_apply": "일괄 적용",
   "bulk_success": "선택한 상품이 일괄 변경되었습니다.",

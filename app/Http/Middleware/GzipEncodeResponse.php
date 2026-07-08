@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -98,6 +99,15 @@ class GzipEncodeResponse
         }
 
         // 최소 크기 이상인지 확인
+        // BinaryFileResponse 는 getContent() 가 false 를 반환하므로 파일 크기로 판정한다.
+        // (번들 JS/CSS 서빙은 response()->file() 로 BinaryFileResponse 를 반환하며,
+        //  이 분기가 없으면 미들웨어가 압축 없이 통과시켜 비압축 전송된다.)
+        if ($response instanceof BinaryFileResponse) {
+            $file = $response->getFile();
+
+            return $file !== null && $file->getSize() >= self::MIN_COMPRESS_SIZE;
+        }
+
         $content = $response->getContent();
         if ($content === false || strlen($content) < self::MIN_COMPRESS_SIZE) {
             return false;
@@ -158,6 +168,12 @@ class GzipEncodeResponse
      */
     private function compressResponse(Response $response): Response
     {
+        // BinaryFileResponse 는 본문을 setContent() 로 교체할 수 없으므로
+        // 파일 내용을 읽어 일반 Response 로 치환한 뒤 압축한다 (헤더는 승계).
+        if ($response instanceof BinaryFileResponse) {
+            return $this->compressBinaryFileResponse($response);
+        }
+
         $content = $response->getContent();
 
         // gzip 압축 적용
@@ -173,14 +189,70 @@ class GzipEncodeResponse
         $response->headers->set('Content-Encoding', 'gzip');
         $response->headers->set('Content-Length', (string) strlen($compressed));
 
-        // Vary 헤더가 없으면 추가 (캐시 프록시 지원)
+        $this->ensureVaryAcceptEncoding($response);
+
+        return $response;
+    }
+
+    /**
+     * BinaryFileResponse 를 gzip 압축된 일반 Response 로 치환합니다.
+     *
+     * BinaryFileResponse 는 파일 스트림 기반이라 setContent() 로 본문을 교체할 수 없으므로,
+     * 파일 내용을 읽어 gzip 압축한 새 Response 를 생성하고 기존 헤더(Content-Type,
+     * ETag, Cache-Control, Expires 등)를 승계한다. Content-Encoding/Content-Length 는
+     * 압축 결과로 재설정한다.
+     *
+     * @param  BinaryFileResponse  $response  파일 응답
+     * @return Response gzip 압축된 응답 (실패 시 원본 반환)
+     */
+    private function compressBinaryFileResponse(BinaryFileResponse $response): Response
+    {
+        $file = $response->getFile();
+
+        if ($file === null) {
+            return $response;
+        }
+
+        $content = @file_get_contents($file->getPathname());
+
+        if ($content === false) {
+            // 파일 읽기 실패 시 원본(비압축) 반환
+            return $response;
+        }
+
+        $compressed = gzencode($content, self::COMPRESSION_LEVEL);
+
+        if ($compressed === false) {
+            return $response;
+        }
+
+        // 기존 헤더를 승계한 새 Response 생성 (본문만 압축된 내용으로 교체)
+        $compressedResponse = new Response(
+            $compressed,
+            $response->getStatusCode(),
+            $response->headers->all()
+        );
+
+        $compressedResponse->headers->set('Content-Encoding', 'gzip');
+        $compressedResponse->headers->set('Content-Length', (string) strlen($compressed));
+
+        $this->ensureVaryAcceptEncoding($compressedResponse);
+
+        return $compressedResponse;
+    }
+
+    /**
+     * 응답에 `Vary: Accept-Encoding` 헤더를 보장합니다 (캐시 프록시 지원).
+     *
+     * @param  Response  $response  HTTP 응답
+     */
+    private function ensureVaryAcceptEncoding(Response $response): void
+    {
         if (! $response->headers->has('Vary')) {
             $response->headers->set('Vary', 'Accept-Encoding');
         } elseif (! str_contains($response->headers->get('Vary', ''), 'Accept-Encoding')) {
             $currentVary = $response->headers->get('Vary');
             $response->headers->set('Vary', $currentVary.', Accept-Encoding');
         }
-
-        return $response;
     }
 }

@@ -279,4 +279,52 @@ class ProductSearchIntegrationTest extends ModuleTestCase
         $this->assertContains('suspended', $statuses);
     }
 
+    /**
+     * 통합검색에서 상품코드(product_code)로 상품이 검색되는지 확인
+     *
+     * FULLTEXT(name/description) 에 없는 상품코드도 보조필드 매칭으로 잡혀야 한다.
+     */
+    public function test_search_matches_product_by_product_code(): void
+    {
+        // Arrange — name 에는 없는 고유 상품코드
+        $product = Product::factory()->create([
+            'name' => ['ko' => '상품코드검색 대상', 'en' => 'code search target'],
+            'product_code' => 'UNIQCODE9988XYZ0',
+            'display_status' => ProductDisplayStatus::VISIBLE,
+        ]);
+        $this->flushProductFulltextIndex();
+
+        // Act — 상품코드로 통합검색
+        $response = $this->getJson('/api/search?q=UNIQCODE9988XYZ0&type=products');
+
+        // Assert
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $this->assertGreaterThanOrEqual(1, $data['products_count'] ?? 0);
+        $ids = collect($data['products'])->pluck('id')->toArray();
+        $this->assertContains($product->id, $ids);
+    }
+
+    /**
+     * 통합검색에서 상품 ID(숫자 키워드)로 상품이 검색되는지 확인
+     */
+    public function test_search_matches_product_by_id(): void
+    {
+        // Arrange — 다른 상품과 구분되는 이름의 대상 상품
+        $product = Product::factory()->create([
+            'name' => ['ko' => '아이디검색 대상', 'en' => 'id search target'],
+            'display_status' => ProductDisplayStatus::VISIBLE,
+        ]);
+        $this->flushProductFulltextIndex();
+
+        // Act — 상품 id 숫자로 통합검색
+        $response = $this->getJson('/api/search?q='.$product->id.'&type=products');
+
+        // Assert
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $ids = collect($data['products'] ?? [])->pluck('id')->toArray();
+        $this->assertContains($product->id, $ids);
+    }
+
 }

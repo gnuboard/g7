@@ -5,6 +5,7 @@ namespace App\Console\Commands\Module;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Extension\ModuleManager;
+use App\Services\ExtensionBundleService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -27,7 +28,8 @@ class ClearModuleCacheCommand extends Command
     public function __construct(
         private ModuleManager $moduleManager,
         private ModuleRepositoryInterface $moduleRepository,
-        private CacheInterface $cache
+        private CacheInterface $cache,
+        private ExtensionBundleService $bundleService
     ) {
         parent::__construct();
     }
@@ -85,6 +87,9 @@ class ClearModuleCacheCommand extends Command
                 foreach ($allModules as $moduleName => $module) {
                     $clearedCount += $this->clearModuleCache($module->getIdentifier());
                 }
+
+                // 모듈 프론트엔드 병합 번들 파일 삭제 (캐시 키 forget 만으로는 미삭제)
+                $clearedCount += $this->bundleService->clearBundles('module');
 
                 $this->info('✅ '.__('modules.commands.cache_clear.success_all', ['count' => $clearedCount]));
             }

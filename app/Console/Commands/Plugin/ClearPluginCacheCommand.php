@@ -5,6 +5,7 @@ namespace App\Console\Commands\Plugin;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\PluginManager;
+use App\Services\ExtensionBundleService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -27,7 +28,8 @@ class ClearPluginCacheCommand extends Command
     public function __construct(
         private PluginManager $pluginManager,
         private PluginRepositoryInterface $pluginRepository,
-        private CacheInterface $cache
+        private CacheInterface $cache,
+        private ExtensionBundleService $bundleService
     ) {
         parent::__construct();
     }
@@ -85,6 +87,9 @@ class ClearPluginCacheCommand extends Command
                 foreach ($allPlugins as $pluginName => $plugin) {
                     $clearedCount += $this->clearPluginCache($plugin->getIdentifier());
                 }
+
+                // 플러그인 프론트엔드 병합 번들 파일 삭제 (캐시 키 forget 만으로는 미삭제)
+                $clearedCount += $this->bundleService->clearBundles('plugin');
 
                 $this->info('✅ '.__('plugins.commands.cache_clear.success_all', ['count' => $clearedCount]));
             }

@@ -54,9 +54,16 @@
     @apply w-0 overflow-hidden;
   }
 
+  /*
+   * 모바일 드로어. 모바일 헤더(.mobile_header_portable, h-16=4rem, relative)가 일반 흐름
+   * 최상단에 있으므로, 드로어를 inset-y-0(top:0)로 두면 헤더 영역을 덮어 첫 메뉴 항목이
+   * 잘려 보인다(#450). top 을 헤더 높이(4rem)만큼 내려 드로어가 헤더 아래에서 시작하게 한다.
+   */
   .left_sidebar_area_portable {
-    @apply fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 flex flex-col bg-white;
+    @apply fixed left-0 z-50 w-64 transition-transform duration-300 flex flex-col bg-white;
     @apply dark:bg-gray-800;
+    top: 4rem;
+    bottom: 0;
     transform: translateX(-100%);
   }
 
@@ -104,6 +111,38 @@
   .admin_sidebar_empty_icon {
     @apply mb-2 text-lg text-gray-300;
     @apply dark:text-gray-600;
+  }
+
+  /* ========================================
+   * 4-1. SIDEBAR FOOTER (사이트 보기 링크)
+   *
+   * 스크롤 메뉴(.admin_sidebar_menu) 밖의 형제로 사이드바 하단에 고정.
+   * 관리자 → 유저 사이트 진입 링크. 데스크톱 접힘 시 아이콘만 표시.
+   * ======================================== */
+
+  .sidebar_footer {
+    @apply flex-shrink-0 border-t border-gray-100 p-3;
+    @apply dark:border-gray-700;
+  }
+
+  .sidebar_view_site_link {
+    @apply flex items-center gap-2 h-9 px-3 rounded-lg no-underline;
+    @apply text-sm font-medium text-slate-600 transition-colors;
+    @apply hover:bg-slate-100 hover:text-slate-900;
+    @apply dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white;
+  }
+
+  .sidebar_view_site_icon {
+    @apply text-sm flex-shrink-0;
+  }
+
+  /*
+   * 데스크톱 접힘 상태: 라벨을 숨기고 아이콘만 중앙 정렬.
+   * (.left_sidebar_area_collapsed 는 w-0 overflow-hidden 이므로 접힘 시 자동으로
+   *  footer 도 함께 잘리지만, 접힘 애니메이션 중 라벨 줄바꿈 방지를 위해 truncate 처리)
+   */
+  .sidebar_view_site_label {
+    @apply truncate;
   }
 
   /* ========================================

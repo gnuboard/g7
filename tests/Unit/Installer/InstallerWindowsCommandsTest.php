@@ -12,6 +12,19 @@ use PHPUnit\Framework\TestCase;
 class InstallerWindowsCommandsTest extends TestCase
 {
     /**
+     * 프로젝트 루트 절대경로 (BASE_PATH 상수와 독립).
+     *
+     * 다른 인스톨러 테스트(#[RunClassInSeparateProcess] + temp BASE_PATH)가 메인
+     * 프로세스로 BASE_PATH 를 누수시키면, 그 temp 경로 하위에는 public/install 이 없어
+     * require 가 깨진다. 본 클래스는 __DIR__ 기준 절대경로로 인스톨러 파일을 로드해
+     * 누수된 BASE_PATH 값과 무관하게 항상 실제 프로젝트 파일을 참조한다.
+     */
+    private function installerRoot(): string
+    {
+        return dirname(__DIR__, 3);
+    }
+
+    /**
      * 테스트 전 인스톨러 설정 및 함수 파일을 로드합니다.
      */
     protected function setUp(): void
@@ -40,8 +53,8 @@ class InstallerWindowsCommandsTest extends TestCase
             define('INSTALLER_BASE_URL', '/install');
         }
 
-        // functions.php 로드 (한 번만) — base_path() 대신 BASE_PATH 상수 직접 사용
-        require_once BASE_PATH . '/public/install/includes/functions.php';
+        // functions.php 로드 (한 번만) — 누수된 BASE_PATH 와 무관하게 프로젝트 루트 절대경로 사용
+        require_once $this->installerRoot().'/public/install/includes/functions.php';
     }
 
     /**
@@ -165,8 +178,8 @@ class InstallerWindowsCommandsTest extends TestCase
      */
     public function test_translation_keys_exist(): void
     {
-        $koTranslations = require BASE_PATH . '/public/install/lang/ko.php';
-        $enTranslations = require BASE_PATH . '/public/install/lang/en.php';
+        $koTranslations = require $this->installerRoot().'/public/install/lang/ko.php';
+        $enTranslations = require $this->installerRoot().'/public/install/lang/en.php';
 
         $this->assertArrayHasKey('permission_windows_hint', $koTranslations, 'ko.php에 permission_windows_hint 키가 없습니다');
         $this->assertArrayHasKey('permission_windows_hint', $enTranslations, 'en.php에 permission_windows_hint 키가 없습니다');
@@ -179,8 +192,8 @@ class InstallerWindowsCommandsTest extends TestCase
      */
     public function test_directory_create_guide_translation_keys_exist(): void
     {
-        $koTranslations = require BASE_PATH . '/public/install/lang/ko.php';
-        $enTranslations = require BASE_PATH . '/public/install/lang/en.php';
+        $koTranslations = require $this->installerRoot().'/public/install/lang/ko.php';
+        $enTranslations = require $this->installerRoot().'/public/install/lang/en.php';
 
         $this->assertArrayHasKey('directory_create_guide', $koTranslations, 'ko.php에 directory_create_guide 키가 없습니다');
         $this->assertArrayHasKey('directory_create_guide', $enTranslations, 'en.php에 directory_create_guide 키가 없습니다');

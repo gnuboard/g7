@@ -12,7 +12,7 @@
         "en": "G7 template (sirsoft-basic) Japanese language pack (bundled)",
         "ja": "G7 テンプレート (sirsoft-basic) 日本語 言語パック(バンドル)"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "scope": "template",
     "target_identifier": "sirsoft-basic",

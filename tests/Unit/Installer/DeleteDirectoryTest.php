@@ -43,12 +43,17 @@ class DeleteDirectoryTest extends TestCase
             define('INSTALLER_BASE_URL', '/install');
         }
 
-        // 인스톨러 함수 로드 (pure PHPUnit TestCase 라서 Laravel base_path() 사용 불가 — BASE_PATH 상수 사용)
-        require_once BASE_PATH . '/public/install/includes/functions.php';
-        require_once BASE_PATH . '/public/install/api/rollback-functions.php';
+        // 인스톨러 함수 로드 (pure PHPUnit TestCase 라서 Laravel base_path() 사용 불가).
+        // 프로젝트 루트 절대경로(__DIR__ 기준)로 로드한다 — 다른 인스톨러 테스트
+        // (#[RunClassInSeparateProcess] + temp BASE_PATH)가 메인 프로세스로 BASE_PATH 를
+        // 누수시켜도 그 temp 경로에는 public/install 이 없어 require 가 깨지므로, 누수된
+        // BASE_PATH 값과 무관하게 항상 실제 프로젝트 파일을 참조한다.
+        $installerRoot = dirname(__DIR__, 3);
+        require_once $installerRoot.'/public/install/includes/functions.php';
+        require_once $installerRoot.'/public/install/api/rollback-functions.php';
 
         // 임시 디렉토리 생성
-        $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'g7_test_delete_' . uniqid();
+        $this->tempDir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7_test_delete_'.uniqid();
         mkdir($this->tempDir, 0755, true);
     }
 
@@ -67,10 +72,10 @@ class DeleteDirectoryTest extends TestCase
     public function test_preserves_gitkeep_file(): void
     {
         // Given: 디렉토리에 .gitkeep과 일반 파일이 있음
-        file_put_contents($this->tempDir . '/.gitkeep', '');
-        file_put_contents($this->tempDir . '/some_file.txt', 'test');
-        mkdir($this->tempDir . '/subdir', 0755);
-        file_put_contents($this->tempDir . '/subdir/nested.txt', 'test');
+        file_put_contents($this->tempDir.'/.gitkeep', '');
+        file_put_contents($this->tempDir.'/some_file.txt', 'test');
+        mkdir($this->tempDir.'/subdir', 0755);
+        file_put_contents($this->tempDir.'/subdir/nested.txt', 'test');
 
         // When: deleteDirectory 호출 (기본: removeDir=false)
         $result = deleteDirectory($this->tempDir);
@@ -78,9 +83,9 @@ class DeleteDirectoryTest extends TestCase
         // Then: .gitkeep은 보존, 나머지는 삭제, 디렉토리 자체는 유지
         $this->assertTrue($result);
         $this->assertDirectoryExists($this->tempDir);
-        $this->assertFileExists($this->tempDir . '/.gitkeep');
-        $this->assertFileDoesNotExist($this->tempDir . '/some_file.txt');
-        $this->assertDirectoryDoesNotExist($this->tempDir . '/subdir');
+        $this->assertFileExists($this->tempDir.'/.gitkeep');
+        $this->assertFileDoesNotExist($this->tempDir.'/some_file.txt');
+        $this->assertDirectoryDoesNotExist($this->tempDir.'/subdir');
     }
 
     /**
@@ -89,8 +94,8 @@ class DeleteDirectoryTest extends TestCase
     public function test_preserves_gitignore_file(): void
     {
         // Given: 디렉토리에 .gitignore와 일반 파일이 있음
-        file_put_contents($this->tempDir . '/.gitignore', '*');
-        file_put_contents($this->tempDir . '/data.log', 'log');
+        file_put_contents($this->tempDir.'/.gitignore', '*');
+        file_put_contents($this->tempDir.'/data.log', 'log');
 
         // When
         $result = deleteDirectory($this->tempDir);
@@ -98,8 +103,8 @@ class DeleteDirectoryTest extends TestCase
         // Then
         $this->assertTrue($result);
         $this->assertDirectoryExists($this->tempDir);
-        $this->assertFileExists($this->tempDir . '/.gitignore');
-        $this->assertFileDoesNotExist($this->tempDir . '/data.log');
+        $this->assertFileExists($this->tempDir.'/.gitignore');
+        $this->assertFileDoesNotExist($this->tempDir.'/data.log');
     }
 
     /**
@@ -108,8 +113,8 @@ class DeleteDirectoryTest extends TestCase
     public function test_keeps_directory_when_no_preserve_files_and_remove_dir_false(): void
     {
         // Given: 보호 파일 없이 일반 파일만 있음
-        file_put_contents($this->tempDir . '/file1.txt', 'test');
-        file_put_contents($this->tempDir . '/file2.txt', 'test');
+        file_put_contents($this->tempDir.'/file1.txt', 'test');
+        file_put_contents($this->tempDir.'/file2.txt', 'test');
 
         // When: removeDir=false (기본값)
         $result = deleteDirectory($this->tempDir);
@@ -117,8 +122,8 @@ class DeleteDirectoryTest extends TestCase
         // Then: 디렉토리 자체는 유지, 내용물은 삭제
         $this->assertTrue($result);
         $this->assertDirectoryExists($this->tempDir);
-        $this->assertFileDoesNotExist($this->tempDir . '/file1.txt');
-        $this->assertFileDoesNotExist($this->tempDir . '/file2.txt');
+        $this->assertFileDoesNotExist($this->tempDir.'/file1.txt');
+        $this->assertFileDoesNotExist($this->tempDir.'/file2.txt');
     }
 
     /**
@@ -127,8 +132,8 @@ class DeleteDirectoryTest extends TestCase
     public function test_keeps_directory_when_preserve_files_exist_even_with_remove_dir(): void
     {
         // Given: .gitkeep이 있음
-        file_put_contents($this->tempDir . '/.gitkeep', '');
-        file_put_contents($this->tempDir . '/other.txt', 'test');
+        file_put_contents($this->tempDir.'/.gitkeep', '');
+        file_put_contents($this->tempDir.'/other.txt', 'test');
 
         // When: removeDir=true여도 보호 파일이 있으면 디렉토리 유지
         $result = deleteDirectory($this->tempDir, true);
@@ -136,8 +141,8 @@ class DeleteDirectoryTest extends TestCase
         // Then
         $this->assertTrue($result);
         $this->assertDirectoryExists($this->tempDir);
-        $this->assertFileExists($this->tempDir . '/.gitkeep');
-        $this->assertFileDoesNotExist($this->tempDir . '/other.txt');
+        $this->assertFileExists($this->tempDir.'/.gitkeep');
+        $this->assertFileDoesNotExist($this->tempDir.'/other.txt');
     }
 
     /**
@@ -146,7 +151,7 @@ class DeleteDirectoryTest extends TestCase
     public function test_removes_directory_when_no_preserve_files_and_remove_dir_true(): void
     {
         // Given: 보호 파일 없음
-        file_put_contents($this->tempDir . '/file.txt', 'test');
+        file_put_contents($this->tempDir.'/file.txt', 'test');
 
         // When
         $result = deleteDirectory($this->tempDir, true);
@@ -161,10 +166,10 @@ class DeleteDirectoryTest extends TestCase
     public function test_handles_nested_directories(): void
     {
         // Given: vendor 디렉토리 구조 시뮬레이션
-        file_put_contents($this->tempDir . '/.gitkeep', '');
-        mkdir($this->tempDir . '/laravel/framework/src', 0755, true);
-        file_put_contents($this->tempDir . '/laravel/framework/src/Application.php', '<?php');
-        file_put_contents($this->tempDir . '/autoload.php', '<?php');
+        file_put_contents($this->tempDir.'/.gitkeep', '');
+        mkdir($this->tempDir.'/laravel/framework/src', 0755, true);
+        file_put_contents($this->tempDir.'/laravel/framework/src/Application.php', '<?php');
+        file_put_contents($this->tempDir.'/autoload.php', '<?php');
 
         // When
         $result = deleteDirectory($this->tempDir);
@@ -172,9 +177,9 @@ class DeleteDirectoryTest extends TestCase
         // Then: .gitkeep만 보존, 나머지 전부 삭제
         $this->assertTrue($result);
         $this->assertDirectoryExists($this->tempDir);
-        $this->assertFileExists($this->tempDir . '/.gitkeep');
-        $this->assertFileDoesNotExist($this->tempDir . '/autoload.php');
-        $this->assertDirectoryDoesNotExist($this->tempDir . '/laravel');
+        $this->assertFileExists($this->tempDir.'/.gitkeep');
+        $this->assertFileDoesNotExist($this->tempDir.'/autoload.php');
+        $this->assertDirectoryDoesNotExist($this->tempDir.'/laravel');
     }
 
     /**
@@ -195,24 +200,24 @@ class DeleteDirectoryTest extends TestCase
      */
     public function test_returns_false_for_nonexistent_directory(): void
     {
-        $result = deleteDirectory($this->tempDir . '/nonexistent');
+        $result = deleteDirectory($this->tempDir.'/nonexistent');
         $this->assertFalse($result);
     }
 
     /**
      * 임시 디렉토리를 완전히 정리합니다 (테스트용).
      *
-     * @param string $dir 정리할 디렉토리 경로
+     * @param  string  $dir  정리할 디렉토리 경로
      */
     private function cleanupTempDir(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
 
         $items = array_diff(scandir($dir), ['.', '..']);
         foreach ($items as $item) {
-            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            $path = $dir.DIRECTORY_SEPARATOR.$item;
             if (is_dir($path)) {
                 $this->cleanupTempDir($path);
             } else {

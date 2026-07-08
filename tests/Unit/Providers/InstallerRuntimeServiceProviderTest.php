@@ -193,7 +193,7 @@ class InstallerRuntimeServiceProviderTest extends TestCase
     public function test_provider_injects_app_key(): void
     {
         $this->withProductionEnv();
-        $key = 'base64:' . base64_encode(random_bytes(32));
+        $key = 'base64:'.base64_encode(random_bytes(32));
 
         $this->writeRuntime([
             'app' => ['key' => $key],
@@ -284,6 +284,7 @@ class InstallerRuntimeServiceProviderTest extends TestCase
 
     public function test_recovers_stale_process_env_when_disk_env_is_healthy(): void
     {
+        $this->skipUnlessBeta7CoreVersion();
         $this->withProductionEnv();
 
         // 디스크 .env 는 정합 자격증명 + INSTALLER_COMPLETED (finalize 완료 신호)
@@ -424,6 +425,32 @@ class InstallerRuntimeServiceProviderTest extends TestCase
     }
 
     /**
+     * beta.7 stale-ENV 복구는 config/app.php version === '7.0.0-beta.7' 일 때만 발동한다
+     * (InstallerRuntimeServiceProvider::recoverStaleProcessEnvFromDiskEnv 의 한시 가드).
+     * 코어가 beta.7 을 지난 버전이면 복구가 의도적으로 비활성이므로, 복구 발동을 기대하는
+     * 테스트는 skip 한다. no-recovery 테스트들은 비활성 상태에서도 결과가 동일하여 영향 없음.
+     */
+    private function skipUnlessBeta7CoreVersion(): void
+    {
+        $configPath = base_path('config/app.php');
+        $content = is_file($configPath) ? (string) @file_get_contents($configPath) : '';
+
+        $version = null;
+        if (preg_match("/'version'\s*=>\s*env\(\s*'APP_VERSION'\s*,\s*'([^']+)'\s*\)/", $content, $m)) {
+            $version = $m[1];
+        } elseif (preg_match("/'version'\s*=>\s*'([^']+)'/", $content, $m)) {
+            $version = $m[1];
+        }
+
+        if ($version !== '7.0.0-beta.7') {
+            $this->markTestSkipped(
+                'beta.7 stale-ENV 복구는 코어 version === 7.0.0-beta.7 일 때만 발동. '
+                .'현재 version='.($version ?? 'unknown').' → 한시 보정 비활성 (정상).'
+            );
+        }
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     private function writeRuntime(array $data): void
@@ -433,7 +460,7 @@ class InstallerRuntimeServiceProviderTest extends TestCase
             mkdir($dir, 0755, true);
         }
 
-        $php = "<?php\n\nreturn " . var_export($data, true) . ";\n";
+        $php = "<?php\n\nreturn ".var_export($data, true).";\n";
         file_put_contents($this->runtimePath, $php);
     }
 }

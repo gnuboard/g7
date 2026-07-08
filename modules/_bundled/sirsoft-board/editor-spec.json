@@ -2170,10 +2170,10 @@
         ]
       },
       {
-        "comment": "admin 게시판 폼 — route.id 유무로 수정/신규(본문 line 9), _local.activeTab 으로 탭 분기(본문 line 161). 검증 오류는 _local.errors.",
+        "comment": "admin 게시판 폼 — route.slug 유무로 수정/신규(본문 line 9), _local.activeTab 으로 탭 분기(본문 line 161). 검증 오류는 _local.errors.",
         "scope": {
           "kind": "route",
-          "match": "*/admin/boards/:id/edit"
+          "match": "*/admin/boards/:slug/edit"
         },
         "items": [
           {

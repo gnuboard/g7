@@ -787,4 +787,123 @@ class LayoutServingTest extends TestCase
         // Assert: 압축 후 크기가 50% 이상 감소
         $this->assertLessThan($originalSize * 0.5, $compressedSize);
     }
+
+    /**
+     * 공개 서빙 응답에서 개발자용 comment / _comment 필드가 제거되어야 합니다.
+     *
+     * 레이아웃 JSON 의 comment/_comment 는 편집기·개발자용 주석으로 런타임 렌더러가
+     * 사용하지 않으며, 공개 응답 크기를 키우므로 서빙 시 재귀적으로 제거된다.
+     */
+    public function test_strips_developer_comments_from_public_serving(): void
+    {
+        $template = Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'commented',
+            'content' => [
+                'comment' => '레이아웃 최상단 개발자 주석',
+                'meta' => ['title' => 'Commented Layout'],
+                'data_sources' => [
+                    [
+                        '_comment' => '데이터소스 설명 주석',
+                        'id' => 'stats',
+                        'type' => 'api',
+                        'endpoint' => '/api/stats',
+                    ],
+                ],
+                'components' => [
+                    [
+                        'comment' => '컴포넌트 설명 주석',
+                        'type' => 'div',
+                        'props' => ['class' => 'container'],
+                        'children' => [
+                            [
+                                '_comment' => '중첩 자식 주석',
+                                'type' => 'span',
+                                'props' => [],
+                                'children' => ['Hello'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
+
+        $response->assertStatus(200);
+
+        // 응답 본문 어디에도 comment / _comment 키가 없어야 함
+        $body = $response->getContent();
+        $this->assertStringNotContainsString('"comment"', $body);
+        $this->assertStringNotContainsString('"_comment"', $body);
+
+        // 실제 콘텐츠(컴포넌트 구조)는 보존
+        $data = $response->json('data');
+        $this->assertArrayNotHasKey('comment', $data);
+        $this->assertSame('div', $data['components'][0]['type']);
+        $this->assertArrayNotHasKey('comment', $data['components'][0]);
+        $this->assertArrayNotHasKey('_comment', $data['components'][0]['children'][0]);
+        $this->assertArrayNotHasKey('_comment', $data['data_sources'][0]);
+    }
+
+    /**
+     * 한글이 포함된 응답이 \uXXXX 이스케이프 없이 raw UTF-8 로 직렬화되어야 합니다.
+     *
+     * JSON_UNESCAPED_UNICODE 적용으로 멀티바이트 문자의 전송 크기를 줄인다.
+     */
+    public function test_serves_korean_as_unescaped_utf8(): void
+    {
+        $template = Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'korean',
+            'content' => [
+                'meta' => ['title' => '한글 제목'],
+                'data_sources' => [],
+                'components' => [
+                    [
+                        'type' => 'span',
+                        'props' => [],
+                        'children' => ['안녕하세요'],
+                    ],
+                ],
+            ],
+        ]);
+
+        // 압축 없이 raw 본문 검사 (Accept-Encoding 미지정)
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
+
+        $response->assertStatus(200);
+
+        $body = $response->getContent();
+
+        // raw UTF-8 한글이 그대로 실려야 함
+        $this->assertStringContainsString('한글 제목', $body);
+        $this->assertStringContainsString('안녕하세요', $body);
+
+        // \uXXXX 이스케이프 형태가 아니어야 함 (예: '한' = 한)
+        $this->assertStringNotContainsString('\\ud55c', $body);
+
+        // 메시지도 raw UTF-8 (레이아웃 제공 성공 메시지)
+        $this->assertMatchesRegularExpression('/[가-힣]/u', $body);
+    }
 }

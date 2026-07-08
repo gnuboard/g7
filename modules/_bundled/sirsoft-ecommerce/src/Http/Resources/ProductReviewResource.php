@@ -34,6 +34,7 @@ class ProductReviewResource extends BaseApiResource
             // 상품 정보
             'product' => $this->whenLoaded('product', fn () => [
                 'id' => $this->product->id,
+                'product_code' => $this->product->product_code,
                 'name' => $this->product->getLocalizedName(),
                 'thumbnail_url' => $this->product->getThumbnailUrl(),
             ]),

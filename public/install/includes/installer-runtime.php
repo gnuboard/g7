@@ -15,13 +15,12 @@
  *
  * @see https://github.com/gnuboard/g7/issues/23
  */
-
 if (! defined('BASE_PATH')) {
     throw new RuntimeException('installer-runtime.php requires BASE_PATH constant.');
 }
 
 if (! defined('INSTALLER_RUNTIME_PATH')) {
-    define('INSTALLER_RUNTIME_PATH', BASE_PATH . '/storage/installer/runtime.php');
+    define('INSTALLER_RUNTIME_PATH', BASE_PATH.'/storage/installer/runtime.php');
 }
 
 if (! function_exists('readInstallerRuntime')) {
@@ -59,9 +58,9 @@ if (! function_exists('writeInstallerRuntime')) {
             return false;
         }
 
-        $php = "<?php\n\nreturn " . var_export($data, true) . ";\n";
+        $php = "<?php\n\nreturn ".var_export($data, true).";\n";
 
-        $tmp = INSTALLER_RUNTIME_PATH . '.tmp';
+        $tmp = INSTALLER_RUNTIME_PATH.'.tmp';
         if (@file_put_contents($tmp, $php, LOCK_EX) === false) {
             return false;
         }
@@ -107,7 +106,7 @@ if (! function_exists('generateAppKeyInline')) {
      */
     function generateAppKeyInline(): string
     {
-        return 'base64:' . base64_encode(random_bytes(32));
+        return 'base64:'.base64_encode(random_bytes(32));
     }
 }
 
@@ -138,13 +137,23 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
             $envContent = replaceEnvLine($envContent, 'DB_WRITE_PASSWORD', escapeEnvValue((string) ($write['password'] ?? '')));
         }
 
-        $read = $runtime['db']['read'] ?? $write; // read 미지정 시 write 와 동기화
+        // Read DB — runtime 에 read 키가 있을 때(use_read_db=true)만 명시 기록한다.
+        // 미지정 시 DB_READ_* 를 빈 값으로 남겨 config/database.php 의 write fallback(Elvis)
+        // 에 위임 → .env 에 write 값이 중복 기록되지 않고, write 변경 시 read stale 위험 제거.
+        // (이슈 #63)
+        $read = $runtime['db']['read'] ?? null;
         if (is_array($read)) {
             $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', (string) ($read['host'] ?? ''));
             $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', (string) ($read['port'] ?? ''));
             $envContent = replaceEnvLine($envContent, 'DB_READ_DATABASE', (string) ($read['database'] ?? ''));
             $envContent = replaceEnvLine($envContent, 'DB_READ_USERNAME', (string) ($read['username'] ?? ''));
             $envContent = replaceEnvLine($envContent, 'DB_READ_PASSWORD', escapeEnvValue((string) ($read['password'] ?? '')));
+        } else {
+            $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', '');
+            $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', '');
+            $envContent = replaceEnvLine($envContent, 'DB_READ_DATABASE', '');
+            $envContent = replaceEnvLine($envContent, 'DB_READ_USERNAME', '');
+            $envContent = replaceEnvLine($envContent, 'DB_READ_PASSWORD', '');
         }
 
         if (isset($runtime['db']['prefix'])) {
@@ -159,7 +168,7 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
 
         // INSTALLER_COMPLETED 플래그 추가 (CachesModuleStatus 등이 사용)
         if (! preg_match('/^INSTALLER_COMPLETED=/m', $envContent)) {
-            $envContent = rtrim($envContent) . "\n\n# Installation Status\nINSTALLER_COMPLETED=true\n";
+            $envContent = rtrim($envContent)."\n\n# Installation Status\nINSTALLER_COMPLETED=true\n";
         }
 
         return $envContent;
@@ -190,7 +199,7 @@ if (! function_exists('escapeEnvValue')) {
 
         $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
 
-        return '"' . $escaped . '"';
+        return '"'.$escaped.'"';
     }
 }
 
@@ -208,13 +217,13 @@ if (! function_exists('replaceEnvLine')) {
      */
     function replaceEnvLine(string $envContent, string $key, string $value): string
     {
-        $line = $key . '=' . $value;
-        $pattern = '/^' . preg_quote($key, '/') . '=.*$/m';
+        $line = $key.'='.$value;
+        $pattern = '/^'.preg_quote($key, '/').'=.*$/m';
 
         $replaced = preg_replace($pattern, $line, $envContent, 1, $count);
 
         if ($count === 0) {
-            return rtrim($envContent) . "\n" . $line . "\n";
+            return rtrim($envContent)."\n".$line."\n";
         }
 
         return $replaced;
@@ -257,8 +266,13 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
             'created_at' => date('c'),
         ];
 
-        // Read 커넥션이 별도로 지정된 경우만 포함 (그렇지 않으면 Laravel 이 write 사용)
-        if (! empty($stateConfig['db_read_host']) && $stateConfig['db_read_host'] !== ($stateConfig['db_write_host'] ?? null)) {
+        // Read 커넥션은 use_read_db 플래그가 켜진 경우에만 포함한다 (판정 SSoT).
+        // 플래그가 꺼져 있으면 db_read_host 에 잔존 값이 있어도 무시 → runtime 에 read 키
+        // 미생성 → 하류(mergeRuntimeIntoEnv / InstallerRuntimeServiceProvider)가 write 로
+        // 자동 동기화. (이슈 #63: use_read_db=false 인데 db_read_host 를 참조하던 회귀 차단)
+        if (! empty($stateConfig['use_read_db'])
+            && ! empty($stateConfig['db_read_host'])
+            && $stateConfig['db_read_host'] !== ($stateConfig['db_write_host'] ?? null)) {
             $runtime['db']['read'] = [
                 'host' => $stateConfig['db_read_host'],
                 'port' => $stateConfig['db_read_port'] ?? $runtime['db']['write']['port'],

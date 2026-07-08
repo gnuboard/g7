@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Base;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -20,11 +21,11 @@ abstract class BaseApiController extends Controller
     /**
      * 성공 응답을 생성합니다.
      *
-     * @param string $messageKey 메시지 키
-     * @param mixed $data 응답 데이터
-     * @param int $statusCode HTTP 상태 코드
-     * @param array $messageParams 메시지 매개변수
-     * @return \Illuminate\Http\JsonResponse
+     * @param  string  $messageKey  메시지 키
+     * @param  mixed  $data  응답 데이터
+     * @param  int  $statusCode  HTTP 상태 코드
+     * @param  array  $messageParams  메시지 매개변수
+     * @return JsonResponse
      */
     protected function success(
         string $messageKey = 'common.success',
@@ -38,11 +39,11 @@ abstract class BaseApiController extends Controller
     /**
      * 실패 응답을 생성합니다.
      *
-     * @param string $messageKey 메시지 키
-     * @param int $statusCode HTTP 상태 코드
-     * @param mixed $errors 오류 정보
-     * @param array $messageParams 메시지 매개변수
-     * @return \Illuminate\Http\JsonResponse
+     * @param  string  $messageKey  메시지 키
+     * @param  int  $statusCode  HTTP 상태 코드
+     * @param  mixed  $errors  오류 정보
+     * @param  array  $messageParams  메시지 매개변수
+     * @return JsonResponse
      */
     protected function error(
         string $messageKey = 'common.failed',
@@ -56,11 +57,11 @@ abstract class BaseApiController extends Controller
     /**
      * 리소스와 함께 성공 응답을 생성합니다.
      *
-     * @param string $messageKey 메시지 키
-     * @param mixed $resource JSON 리소스
-     * @param int $statusCode HTTP 상태 코드
-     * @param array $messageParams 메시지 매개변수
-     * @return \Illuminate\Http\JsonResponse
+     * @param  string  $messageKey  메시지 키
+     * @param  mixed  $resource  JSON 리소스
+     * @param  int  $statusCode  HTTP 상태 코드
+     * @param  array  $messageParams  메시지 매개변수
+     * @return JsonResponse
      */
     protected function successWithResource(
         string $messageKey = 'common.success',
@@ -74,7 +75,7 @@ abstract class BaseApiController extends Controller
     /**
      * 현재 인증된 사용자를 반환합니다.
      *
-     * @return \App\Models\User|null
+     * @return User|null
      */
     protected function getCurrentUser()
     {
@@ -84,9 +85,9 @@ abstract class BaseApiController extends Controller
     /**
      * Not Found 응답을 생성합니다.
      *
-     * @param string $messageKey 메시지 키
-     * @param array $messageParams 메시지 매개변수
-     * @return \Illuminate\Http\JsonResponse
+     * @param  string  $messageKey  메시지 키
+     * @param  array  $messageParams  메시지 매개변수
+     * @return JsonResponse
      */
     protected function notFound(
         string $messageKey = 'common.not_found',
@@ -98,9 +99,9 @@ abstract class BaseApiController extends Controller
     /**
      * Unauthorized 응답을 생성합니다.
      *
-     * @param string $messageKey 메시지 키
-     * @param array $messageParams 메시지 매개변수
-     * @return \Illuminate\Http\JsonResponse
+     * @param  string  $messageKey  메시지 키
+     * @param  array  $messageParams  메시지 매개변수
+     * @return JsonResponse
      */
     protected function unauthorized(
         string $messageKey = 'common.unauthorized',
@@ -112,9 +113,9 @@ abstract class BaseApiController extends Controller
     /**
      * Forbidden 응답을 생성합니다.
      *
-     * @param string $messageKey 메시지 키
-     * @param array $messageParams 메시지 매개변수
-     * @return \Illuminate\Http\JsonResponse
+     * @param  string  $messageKey  메시지 키
+     * @param  array  $messageParams  메시지 매개변수
+     * @return JsonResponse
      */
     protected function forbidden(
         string $messageKey = 'common.forbidden',
@@ -126,10 +127,10 @@ abstract class BaseApiController extends Controller
     /**
      * Validation Error 응답을 생성합니다.
      *
-     * @param mixed $errors 검증 오류
-     * @param string $messageKey 메시지 키
-     * @param array $messageParams 메시지 매개변수
-     * @return \Illuminate\Http\JsonResponse
+     * @param  mixed  $errors  검증 오류
+     * @param  string  $messageKey  메시지 키
+     * @param  array  $messageParams  메시지 매개변수
+     * @return JsonResponse
      */
     protected function validationError(
         mixed $errors,
@@ -142,9 +143,9 @@ abstract class BaseApiController extends Controller
     /**
      * 파일 응답을 반환합니다 (ETag 및 캐싱 헤더 포함).
      *
-     * @param string $filePath 파일 경로
-     * @param string $mimeType MIME 타입
-     * @param int $maxAge 캐시 유지 시간 (초, 기본: 1년)
+     * @param  string  $filePath  파일 경로
+     * @param  string  $mimeType  MIME 타입
+     * @param  int  $maxAge  캐시 유지 시간 (초, 기본: 1년)
      */
     protected function fileResponse(string $filePath, string $mimeType, int $maxAge = 31536000): BinaryFileResponse|Response
     {
@@ -176,35 +177,35 @@ abstract class BaseApiController extends Controller
     /**
      * JSON 응답을 반환합니다 (캐싱 헤더 포함).
      *
-     * @param mixed $data JSON으로 변환할 데이터
-     * @param int $maxAge 캐시 유지 시간 (초, 기본: 1시간)
-     * @param int $status HTTP 상태 코드
+     * @param  mixed  $data  JSON으로 변환할 데이터
+     * @param  int  $maxAge  캐시 유지 시간 (초, 기본: 1시간)
+     * @param  int  $status  HTTP 상태 코드
      * @return JsonResponse JSON 응답
      */
     protected function cachedJsonResponse(mixed $data, int $maxAge = 3600, int $status = 200): JsonResponse
     {
         return response()->json($data, $status, [
             'Cache-Control' => "public, max-age={$maxAge}",
-        ]);
+        ], ResponseHelper::JSON_ENCODE_OPTIONS);
     }
 
     /**
      * ETag를 생성합니다.
      *
-     * @param mixed $data 해시할 데이터
+     * @param  mixed  $data  해시할 데이터
      * @return string ETag 값 (따옴표 포함)
      */
     protected function generateETag(mixed $data): string
     {
         $content = is_string($data) ? $data : json_encode($data);
 
-        return '"' . md5($content) . '"';
+        return '"'.md5($content).'"';
     }
 
     /**
      * 클라이언트 캐시가 유효한지 확인합니다.
      *
-     * @param string $etag 현재 ETag 값
+     * @param  string  $etag  현재 ETag 값
      * @return bool 캐시가 유효하면 true
      */
     protected function isNotModified(string $etag): bool
@@ -217,8 +218,8 @@ abstract class BaseApiController extends Controller
     /**
      * 304 Not Modified 응답을 반환합니다.
      *
-     * @param string $etag ETag 값
-     * @param int $maxAge 캐시 TTL (초)
+     * @param  string  $etag  ETag 값
+     * @param  int  $maxAge  캐시 TTL (초)
      * @return Response 304 응답
      */
     protected function notModifiedResponse(string $etag, int $maxAge = 3600): Response
@@ -233,10 +234,10 @@ abstract class BaseApiController extends Controller
      *
      * 클라이언트의 ETag가 일치하면 304 Not Modified를 반환합니다.
      *
-     * @param string $messageKey 메시지 키
-     * @param mixed $data 응답 데이터
-     * @param int $maxAge 캐시 TTL (초, 기본: 1시간)
-     * @param array $messageParams 메시지 매개변수
+     * @param  string  $messageKey  메시지 키
+     * @param  mixed  $data  응답 데이터
+     * @param  int  $maxAge  캐시 TTL (초, 기본: 1시간)
+     * @param  array  $messageParams  메시지 매개변수
      * @return JsonResponse|Response JSON 응답 또는 304 응답
      */
     protected function successWithCache(
@@ -256,7 +257,7 @@ abstract class BaseApiController extends Controller
             'success' => true,
             'message' => __($messageKey, $messageParams),
             'data' => $data,
-        ])
+        ], 200, [], ResponseHelper::JSON_ENCODE_OPTIONS)
             ->header('ETag', $etag)
             ->header('Cache-Control', "public, max-age={$maxAge}")
             ->header('Vary', 'Accept-Encoding, Accept-Language');

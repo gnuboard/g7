@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicReviewListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductReviewResource;
+use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
 
 /**
@@ -24,11 +25,11 @@ class ProductReviewController extends PublicBaseController
     /**
      * 상품 공개 리뷰 목록 및 별점 통계 조회
      *
-     * @param  Request  $request  요청
-     * @param  int  $productId  상품 ID
+     * @param  PublicReviewListRequest  $request  요청
+     * @param  Product  $product  라우트 바인딩된 상품 (product_code 또는 id)
      * @return JsonResponse 리뷰 목록 및 별점 통계 JSON 응답
      */
-    public function index(PublicReviewListRequest $request, int $productId): JsonResponse
+    public function index(PublicReviewListRequest $request, Product $product): JsonResponse
     {
         try {
             $this->logApiUsage('review.index');
@@ -40,7 +41,7 @@ class ProductReviewController extends PublicBaseController
                 : (json_decode($rawOptionFilters, true) ?? []);
             $perPage = (int) ($filters['per_page'] ?? 10);
 
-            $result = $this->reviewService->getProductReviews($productId, $filters, $perPage);
+            $result = $this->reviewService->getProductReviews($product->id, $filters, $perPage);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
