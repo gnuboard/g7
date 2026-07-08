@@ -216,7 +216,7 @@ class ExtensionBundleService
      * 파일명에 version 을 포함(`{type}.{version}.{js|css}`)하므로 활성 조합이
      * 바뀌어 version 이 bump 되면 새 파일명으로 자연 무효화된다. 프로덕션에서만
      * 디스크 캐시하며, 비프로덕션(dev/watch)에서는 캐시하지 않고 매 요청 build 해
-     * rebuild 를 즉시 반영한다(PO 결정).
+     * rebuild 를 즉시 반영한다.
      *
      * @param  string  $type  'module' | 'plugin'
      * @param  string  $kind  'js' | 'css'
