@@ -28,6 +28,7 @@ import { createLogger, Logger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
+import { resetLocalInitTracking } from './template-engine/localInitSlot';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
  */
@@ -1146,6 +1147,11 @@ export class TemplateApp {
                 // 다른 레이아웃으로 전환 → _local 완전 초기화 (이전 레이아웃 잔존값 제거)
                 logger.log('_local reset due to layout change:', { from: this.currentLayoutName, to: newLayoutName });
                 this.globalState._local = {};
+
+                // @since engine-v1.52.2: _localInit 추적 레지스트리도 함께 초기화.
+                // _local 을 비웠는데 추적 해시가 남아 있으면, 새 레이아웃의 _localInit payload 가
+                // 이전 레이아웃과 우연히 동일할 때 "이미 적용됨"으로 오판되어 건너뛴다.
+                resetLocalInitTracking();
             }
 
             this.currentLayoutName = newLayoutName;

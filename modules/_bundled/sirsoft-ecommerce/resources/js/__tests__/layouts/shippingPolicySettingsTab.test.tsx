@@ -210,33 +210,46 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(addForm.if).toContain('international_shipping_enabled');
         });
 
-        it('국가 추가 폼에 코드/한국어명/영문명 Input이 있다', () => {
+        it('국가 추가 폼에 코드 Input + 설치 언어마다 반복되는 국가명 Input이 있다', () => {
+            // #459: 이름 입력칸은 ko/en 두 칸 고정이 아니라 $locales 순회로 언어 수만큼 생성된다.
+            // 따라서 정적 노드 트리에는 name Input 이 "템플릿 1개"로만 존재한다.
             const addForm = findById(allNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);
             const inputs = formNodes.filter((n: any) => n.name === 'Input');
-            // code, name.ko, name.en => 3개
-            expect(inputs.length).toBeGreaterThanOrEqual(3);
-            // code input
+
             const codeInput = inputs.find((i: any) => i.props?.value?.includes('newCountry?.code'));
             expect(codeInput).toBeDefined();
             expect(codeInput.props?.maxLength).toBe(10);
-            // name.ko input
-            const koInput = inputs.find((i: any) => i.props?.value?.includes('newCountry?.name?.ko'));
-            expect(koInput).toBeDefined();
-            // name.en input
-            const enInput = inputs.find((i: any) => i.props?.value?.includes('newCountry?.name?.en'));
-            expect(enInput).toBeDefined();
+
+            // 로케일 인덱싱 이름 입력칸 (name?.[loc]) — 특정 로케일 하드코딩이 아니어야 한다
+            const nameInput = inputs.find((i: any) => i.props?.value?.includes('newCountry?.name?.[loc]'));
+            expect(nameInput).toBeDefined();
+
+            // 그 입력칸을 감싼 Div 가 $locales 를 순회한다
+            const iterated = formNodes.find(
+                (n: any) => n.iteration?.source?.includes('$locales') && n.iteration?.item_var === 'loc'
+            );
+            expect(iterated).toBeDefined();
+
+            // ko/en 고정 입력칸 잔존 0 (회귀 차단)
+            expect(inputs.some((i: any) => i.props?.value?.includes('newCountry?.name?.ko'))).toBe(false);
+            expect(inputs.some((i: any) => i.props?.value?.includes('newCountry?.name?.en'))).toBe(false);
         });
 
-        it('추가 버튼은 code와 name.ko가 없으면 disabled', () => {
+        it('추가 버튼은 코드가 없거나 모든 언어의 이름이 비면 disabled', () => {
+            // #459: 특정 로케일(ko)을 필수로 강제하지 않는다.
+            // 백엔드 StoreEcommerceSettingsRequest 도 name 을 array 로만 요구한다.
             const addForm = findById(allNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);
             const buttons = formNodes.filter((n: any) => n.name === 'Button');
-            // 추가 버튼 (disabled prop 가진 것)
             const addButton = buttons.find((b: any) => b.props?.disabled);
             expect(addButton).toBeDefined();
             expect(addButton.props.disabled).toContain('newCountry?.code');
-            expect(addButton.props.disabled).toContain('newCountry?.name?.ko');
+            // "어느 한 언어라도 채워졌는가" 조건
+            expect(addButton.props.disabled).toContain('Object.values');
+            expect(addButton.props.disabled).toContain('some');
+            // ko 필수 조건 잔존 0 (회귀 차단)
+            expect(addButton.props.disabled).not.toContain('newCountry?.name?.ko');
         });
 
         it('추가 버튼 클릭 시 available_countries에 새 국가가 push된다', () => {

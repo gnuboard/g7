@@ -2,6 +2,29 @@
   "comment": "admin 목록/폼 상태 세트. with_data/empty_data/loading + edit_existing/validation_failed/saving.",
   "groups": [
     {
+      "comment": "베이스 레이아웃 _admin_base. 모바일 드로어(left_sidebar_area)는 _global.sidebarOpen 으로 열리고, 그 안의 언어/통화/배송국가 칩(admin_drawer_prefs)은 responsive.portable 게이트라 디바이스=모바일 + 드로어 열림 상태에서만 캔버스에 보인다. 편집기 캔버스는 정적 시뮬레이션이라 햄버거 클릭이 없으므로 sidebarOpen 을 상태로 주입해야 드로어 내부를 편집할 수 있다.",
+      "scope": {
+        "kind": "base",
+        "match": "_admin_base"
+      },
+      "items": [
+        {
+          "id": "default",
+          "label": "$t:editor.state.admin_base_default",
+          "default": true
+        },
+        {
+          "id": "sidebar_open",
+          "label": "$t:editor.state.sidebar_open",
+          "initialState": {
+            "global": {
+              "sidebarOpen": true
+            }
+          }
+        }
+      ]
+    },
+    {
       "scope": {
         "kind": "route",
         "match": "*/admin/users"

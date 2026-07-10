@@ -58,6 +58,45 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends TestCase
         $this->assertStringNotContainsString("['point','deposit','free','dbank'].includes", $json);
     }
 
+    public function test_adds_test_mode_warning_to_order_settings_tab(): void
+    {
+        $listener = new AdjustEcommercePaymentMethodsLayoutListener();
+
+        $layout = [
+            'layout_name' => 'admin_ecommerce_settings',
+            'children' => [
+                [
+                    'id' => 'tab_content_order_settings',
+                    'children' => [
+                        ['id' => 'default_pg_card'],
+                        ['id' => 'payment_methods_card'],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $listener->markEasyPayMethodsAsPgNotRequired($layout, 1);
+        $result = $listener->markEasyPayMethodsAsPgNotRequired($result, 1);
+        $json = json_encode($result, JSON_UNESCAPED_SLASHES);
+
+        $this->assertIsString($json);
+        $this->assertStringContainsString('kginicis_test_mode_status', $json);
+        $this->assertStringContainsString('/api/plugins/sirsoft-pay_kginicis/admin/settings/test-mode-status', $json);
+        $this->assertStringContainsString('payment_test_mode_order_settings_notice', $json);
+        $this->assertStringContainsString('kginicis_test_mode_order_settings_notice', $json);
+        $this->assertStringNotContainsString('sirsoft-pay_kginicis.admin.test_mode_settings_summary_title', $json);
+        $this->assertStringNotContainsString('sirsoft-pay_kginicis.admin.test_mode_settings_summary_body', $json);
+        $this->assertStringContainsString('sirsoft-pay_kginicis.admin.test_mode_settings_warning_plugin', $json);
+        $this->assertStringContainsString('sirsoft-pay_kginicis.admin.test_mode_settings_warning_body', $json);
+        $this->assertStringContainsString('/admin/plugins/sirsoft-pay_kginicis/settings', $json);
+        $this->assertSame(1, substr_count($json, 'payment_test_mode_order_settings_notice'));
+        $this->assertSame(1, substr_count($json, 'kginicis_test_mode_order_settings_notice'));
+        $this->assertLessThan(
+            strpos($json, 'payment_methods_card'),
+            strpos($json, 'payment_test_mode_order_settings_notice')
+        );
+    }
+
     public function test_leaves_other_layouts_unchanged(): void
     {
         $listener = new AdjustEcommercePaymentMethodsLayoutListener();

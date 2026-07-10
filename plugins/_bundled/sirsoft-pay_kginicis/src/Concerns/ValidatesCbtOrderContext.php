@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Concerns;
 
+use InvalidArgumentException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
@@ -22,6 +24,33 @@ trait ValidatesCbtOrderContext
     protected function cbtExpectedPrice(Order $order): int
     {
         return $this->expectedPaymentPrice($order);
+    }
+
+    protected function resolveExpectedPaymentPriceOrNull(Order $order, string $context, array $logContext = []): ?int
+    {
+        try {
+            return $this->expectedPaymentPrice($order);
+        } catch (InvalidArgumentException $e) {
+            $this->logInvalidPaymentCurrency($order, $e, $context, $logContext);
+
+            return null;
+        }
+    }
+
+    protected function logInvalidPaymentCurrency(
+        Order $order,
+        InvalidArgumentException $e,
+        string $context,
+        array $logContext = [],
+    ): void {
+        Log::error('KG Inicis: payment currency is not chargeable', array_merge([
+            'context' => $context,
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'currency' => $order->currency,
+            'currency_snapshot' => $order->currency_snapshot,
+            'error' => $e->getMessage(),
+        ], $logContext));
     }
 
     protected function requestMatchesOrderBuyer(Request $request, Order $order): bool

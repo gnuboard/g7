@@ -13,10 +13,10 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
     public function test_injects_easy_pay_methods_between_phone_and_point(): void
     {
         $this->mockSettings([
-            'easy_pay_samsung_pay' => true,
-            'easy_pay_naverpay' => true,
-            'easy_pay_lpay' => true,
-            'easy_pay_kakaopay' => true,
+            'easy_pay_samsung_pay' => false,
+            'easy_pay_naverpay' => false,
+            'easy_pay_lpay' => false,
+            'easy_pay_kakaopay' => false,
             'japan_enabled' => true,
         ]);
 
@@ -46,10 +46,10 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
     public function test_easy_pay_methods_do_not_require_pg_provider_in_saved_defaults(): void
     {
         $this->mockSettings([
-            'easy_pay_samsung_pay' => true,
-            'easy_pay_naverpay' => true,
-            'easy_pay_lpay' => true,
-            'easy_pay_kakaopay' => true,
+            'easy_pay_samsung_pay' => false,
+            'easy_pay_naverpay' => false,
+            'easy_pay_lpay' => false,
+            'easy_pay_kakaopay' => false,
             'japan_enabled' => true,
         ]);
 
@@ -118,11 +118,11 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         $this->assertSame('wallet', $naverpay['icon'] ?? null);
     }
 
-    public function test_disabled_easy_pay_settings_are_not_injected(): void
+    public function test_disabled_easy_pay_settings_are_injected_as_inactive_for_admin_toggle(): void
     {
         $this->mockSettings([
             'easy_pay_samsung_pay' => false,
-            'easy_pay_naverpay' => true,
+            'easy_pay_naverpay' => false,
             'easy_pay_lpay' => false,
             'easy_pay_kakaopay' => false,
             'japan_enabled' => false,
@@ -137,9 +137,41 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
 
         $this->assertSame([
             'phone',
+            'kginicis_samsung_pay',
             'kginicis_naverpay',
+            'kginicis_lpay',
+            'kginicis_kakaopay',
             'point',
         ], array_column($methods, 'id'));
+
+        foreach ($methods as $method) {
+            if (str_starts_with((string) ($method['id'] ?? ''), 'kginicis_')) {
+                $this->assertFalse($method['defaults']['is_active'] ?? true);
+            }
+        }
+    }
+
+    public function test_legacy_easy_pay_settings_are_used_as_default_active_state(): void
+    {
+        $this->mockSettings([
+            'easy_pay_samsung_pay' => true,
+            'easy_pay_naverpay' => false,
+            'easy_pay_lpay' => true,
+            'easy_pay_kakaopay' => false,
+            'japan_enabled' => false,
+        ]);
+
+        $listener = new RegisterEasyPayMethodsListener();
+
+        $methods = collect($listener->injectEasyPayMethods([
+            ['id' => 'phone'],
+            ['id' => 'point'],
+        ]))->keyBy('id');
+
+        $this->assertTrue($methods->get('kginicis_samsung_pay')['defaults']['is_active'] ?? false);
+        $this->assertFalse($methods->get('kginicis_naverpay')['defaults']['is_active'] ?? true);
+        $this->assertTrue($methods->get('kginicis_lpay')['defaults']['is_active'] ?? false);
+        $this->assertFalse($methods->get('kginicis_kakaopay')['defaults']['is_active'] ?? true);
     }
 
     private function mockSettings(array $settings): void

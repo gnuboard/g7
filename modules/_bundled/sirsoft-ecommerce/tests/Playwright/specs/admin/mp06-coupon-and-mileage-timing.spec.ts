@@ -13,8 +13,8 @@
  *   - 무통장 1회 제한 쿠폰은 주문 생성 즉시 USED 차감되어 입금 전까지 재사용 불가(공개#57).
  *
  *   Select 렌더/disabled 바인딩은 레이아웃 렌더 테스트(adminEcommerceSettingsOrder.test.tsx)가,
- *   차감 시점 분기·쿠폰 검증·선차감/반환은 PHPUnit(OrderCalculation*/CouponUse*/CouponRestore*/
- *   EcommerceSettingsMileageTiming/MigrateMileageDeductionTiming)가 커버한다. 본 spec 은 브라우저에서
+ *   차감 시점 분기·쿠폰 검증·선차감/반환은 PHPUnit(OrderCalculation·CouponUse·CouponRestore·
+ *   EcommerceSettingsMileageTiming·MigrateMileageDeductionTiming)가 커버한다. 본 spec 은 브라우저에서
  *   설정 disabled 연동 + 주문서 위반 안내 노출만 왕복 검증한다.
  *
  * 활성화 전 사전 작업(data-testid 보강):

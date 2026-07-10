@@ -9,7 +9,6 @@
   "id": "modal_cancel_order",
   "props": {
     "width": "750px",
-    "className": "max-w-full",
     "title": "$t:mypage.order_detail.cancel_modal.title"
   },
   "actions": [
@@ -372,7 +371,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.item_count" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.item_count" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.item_count ?? 0)}}$t:mypage.order_detail.cancel_modal.count_unit" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.item_count ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.item_count ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.item_count ?? 0)}}$t:mypage.order_detail.cancel_modal.count_unit" }
                   ]
@@ -383,7 +382,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.list_price_amount" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.list_price_amount" },
                     {
                       "type": "basic",
                       "name": "Div",
@@ -440,7 +439,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.subtotal_amount" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.subtotal_amount" },
                     {
                       "type": "basic",
                       "name": "Div",
@@ -502,7 +501,7 @@
                       "name": "Div",
                       "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.product_coupon_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.product_coupon_discount" },
                         { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_product_coupon_discount_amount ?? (_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}" },
                         { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_product_coupon_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}" }
                       ]
@@ -528,7 +527,7 @@
                                 "item_var": "pc",
                                 "index_var": "pcIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500 break-keep" },
                               "text": "{{pc.name}} -{{(pc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
                             }
                           ]
@@ -546,7 +545,7 @@
                                 "item_var": "rpc",
                                 "index_var": "rpcIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500 break-keep" },
                               "text": "{{rpc.name}} -{{(rpc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
                             }
                           ]
@@ -566,7 +565,7 @@
                       "name": "Div",
                       "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.order_coupon_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.order_coupon_discount" },
                         { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_order_coupon_discount_amount ?? (_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}" },
                         { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_order_coupon_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}" }
                       ]
@@ -592,7 +591,7 @@
                                 "item_var": "oc",
                                 "index_var": "ocIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500 break-keep" },
                               "text": "{{oc.name}} -{{(oc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
                             }
                           ]
@@ -610,7 +609,7 @@
                                 "item_var": "roc",
                                 "index_var": "rocIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500 break-keep" },
                               "text": "{{roc.name}} -{{(roc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
                             }
                           ]
@@ -625,7 +624,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.code_discount" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.code_discount" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_code_discount_amount ?? (_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_code_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}" }
                   ]
@@ -641,7 +640,7 @@
                       "name": "Div",
                       "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.shipping_coupon_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.shipping_coupon_discount" },
                         { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.shipping_discount_amount ?? (_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}" },
                         { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.shipping_discount_amount ?? (_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}" }
                       ]
@@ -667,7 +666,7 @@
                                 "item_var": "sc",
                                 "index_var": "scIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500 break-keep" },
                               "text": "{{sc.name}} -{{(sc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
                             }
                           ]
@@ -685,7 +684,7 @@
                                 "item_var": "rsc",
                                 "index_var": "rscIdx"
                               },
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500 break-keep" },
                               "text": "{{rsc.name}} -{{(rsc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
                             }
                           ]
@@ -700,7 +699,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.base_shipping" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.base_shipping" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.base_shipping_amount ?? (_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.base_shipping_amount ?? (_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}" }
                   ]
@@ -711,7 +710,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.extra_shipping" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.extra_shipping" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.extra_shipping_amount ?? (_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.extra_shipping_amount ?? (_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}" }
                   ]
@@ -722,7 +721,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.points_used" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.points_used" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{_local.refundEstimate?.original_snapshot?.formatted?.total_points_used_amount ?? (_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_points_used_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}" }
                   ]
@@ -733,7 +732,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.taxable_amount" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.taxable_amount" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_tax_amount ?? (_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0).toLocaleString()}}" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_tax_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0).toLocaleString()}}" }
                   ]
@@ -744,7 +743,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.vat_amount" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.vat_amount" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0).toLocaleString()}}" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0).toLocaleString()}}" }
                   ]
@@ -812,7 +811,7 @@
                   "name": "Div",
                   "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
                   "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.earned_points" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "$t:mypage.order_detail.cancel_modal.earned_points" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P" },
                     { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_earned_points_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_earned_points_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P" }
                   ]
@@ -892,7 +891,7 @@
                     {
                       "type": "basic",
                       "name": "Span",
-                      "props": { "className": "text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1" },
+                      "props": { "className": "text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1 break-keep" },
                       "text": "$t:mypage.order_detail.cancel_modal.restored_coupons_label"
                     },
                     {
@@ -905,8 +904,8 @@
                       },
                       "props": { "className": "flex justify-between text-xs py-0.5" },
                       "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{coupon.coupon_name ?? ''}}" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{(coupon.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400 break-keep" }, "text": "{{coupon.coupon_name ?? ''}}" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300 whitespace-nowrap" }, "text": "{{(coupon.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
                       ]
                     },
                     {

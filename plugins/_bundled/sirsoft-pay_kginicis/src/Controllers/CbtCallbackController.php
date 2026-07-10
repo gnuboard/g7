@@ -10,11 +10,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
+use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtCallbackRequest;
+use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Services\CbtReconciliationService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
@@ -31,6 +32,8 @@ class CbtCallbackController
 {
     use IssuesReceiptCookie;
     use PreventsReplayCallback;
+    use SerializesPaymentCallbacks;
+    use ValidatesCbtOrderContext;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
 
@@ -167,6 +170,7 @@ class CbtCallbackController
         // Approve 성공 후 후속 처리 실패 시 PG 자동 cancel 추적 변수.
         $approvedTid = null;
         $approvedAmount = 0;
+        $callbackLock = null;
 
         try {
             $order = $this->orderService->findByOrderNumber($oid);
@@ -176,6 +180,8 @@ class CbtCallbackController
 
                 return redirect($this->resolveFailUrl(['error' => 'order_not_found', 'orderId' => $oid]));
             }
+
+            $callbackLock = $this->acquireOrderCallbackLock('cbtAuthCallback', $oid);
 
             $this->assertPayableCbtOrder($order);
 
@@ -221,9 +227,6 @@ class CbtCallbackController
             }
 
             $this->assertCbtApproveResponseMatchesOrder($order, $pgResponse, $request, $payMethod);
-            // PG 승인금액이 누락되어 검증 예외가 발생해도 자동환불 대사 레코드에는 결제 통화 청구액을 남긴다
-            // (buildPgPaymentData 와 동일 SSoT — base≠결제 통화에서도 PG 청구 통화와 단위 일치).
-            $approvedAmount = app(CurrencyConversionService::class)->resolveOrderPaymentChargeAmount($order);
             $approvedAmount = $this->resolveApprovedAmount($pgResponse, $order);
             $authResponse = $this->sanitizePgResponse($request->except(['_token']), self::CBT_AUTH_RESPONSE_KEYS);
             $approveResponse = $this->sanitizePgResponse($pgResponse, self::CBT_APPROVE_RESPONSE_KEYS);
@@ -293,6 +296,8 @@ class CbtCallbackController
             );
 
             return redirect($this->resolveFailUrl(['error' => 'cbt_failed', 'orderId' => $oid]));
+        } finally {
+            $this->releaseOrderCallbackLock($callbackLock);
         }
     }
 
@@ -396,8 +401,14 @@ class CbtCallbackController
         // 결제 청구액 SSoT = 결제 통화(order_currency) 환산액 (buildPgPaymentData 와 동일 기준).
         // CBT 는 order_currency=JPY 강제이나 base 통화는 다를 수 있어(예: base KRW, 결제 JPY)
         // total_due_amount(base) 직접 비교 시 PG 승인액(JPY)과 단위가 어긋난다.
-        $expectedAmount = app(CurrencyConversionService::class)->resolveOrderPaymentChargeAmount($order);
         $pgAmount = $this->firstNonEmptyString($pgResponse, ['amount', 'price', 'bokuApplPrice', 'bokuLocalApplPrice']);
+        $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($order, 'cbt_approve', [
+            'tid' => $pgResponse['tid'] ?? ($pgResponse['transactionId'] ?? null),
+            'received_amount' => $pgAmount,
+        ]);
+        if ($expectedAmount === null) {
+            throw new \RuntimeException('KG Inicis CBT payment currency is not chargeable.');
+        }
 
         // 일본 CBT 승인 응답은 금액 필드가 비어 온다(매뉴얼상 미사용). 금액이 없으면
         // 주문 결제예정액을 승인액으로 신뢰한다(승인 권위 = resultCode OK + tid).

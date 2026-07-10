@@ -69,7 +69,7 @@ class AdminCbtTestProductControllerTest extends PluginTestCase
             'order_number' => 'JP-ORDER-ADMIN-CBT-001',
             'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
             'currency' => 'JPY',
-            'currency_snapshot' => ['JPY' => 1.0],
+            'currency_snapshot' => self::jpyCurrencySnapshot(),
             'subtotal_amount' => 100,
             'total_amount' => 100,
             'total_due_amount' => 100,
@@ -86,7 +86,7 @@ class AdminCbtTestProductControllerTest extends PluginTestCase
             'paid_amount_local' => 100,
             'paid_amount_base' => 100,
             'currency' => 'JPY',
-            'currency_snapshot' => ['JPY' => 1.0],
+            'currency_snapshot' => self::jpyCurrencySnapshot(),
             'payment_meta' => [
                 'is_cbt' => true,
                 'cbt_type' => 'JPPG',

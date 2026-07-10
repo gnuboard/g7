@@ -9,7 +9,6 @@
   "id": "modal_write_review",
   "props": {
     "width": "560px",
-    "className": "max-w-full",
     "title": "$t:mypage.order_detail.review_modal.title"
   },
   "children": [

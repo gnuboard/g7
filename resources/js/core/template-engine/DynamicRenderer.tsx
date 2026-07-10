@@ -29,6 +29,7 @@ import { hasPipes } from './PipeRegistry';
 import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, isRawWrapped, unwrapRaw, containsRawMarker, wrapRawDeep } from './rawMarkers';
 import type { ConditionsProperty } from './helpers/ConditionEvaluator';
 import { useTransitionState } from './TransitionContext';
+import { getLocalInitTracking, markLocalInitConsumed } from './localInitSlot';
 import { useResponsive } from './ResponsiveContext';
 import { createLogger } from '../utils/Logger';
 import { shallowObjectEqual } from '../hooks/useControllableState';
@@ -1318,11 +1319,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // - extends 레이아웃에서 여러 컴포넌트가 동일한 _localInit을 받을 수 있음
         // - 컴포넌트 ID 기반 추적은 각 컴포넌트가 독립적으로 처리하여 중복 적용됨
         // - 데이터 해시만으로 추적하여, 같은 데이터는 어떤 컴포넌트에서든 한 번만 처리
-        const globalTrackingKey = '__g7LocalInitTracking';
-        if (!(window as any)[globalTrackingKey]) {
-          (window as any)[globalTrackingKey] = { hash: '', timestamp: undefined };
-        }
-        const tracking = (window as any)[globalTrackingKey] as { hash: string; timestamp?: number };
+        const tracking = getLocalInitTracking();
 
         // 추적 키는 데이터 해시 + 타임스탬프 (컴포넌트 ID 제외)
         // refetchOnMount 시 _forceLocalInit 타임스탬프가 변경되면 재적용됨
@@ -1398,6 +1395,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // hash tracking에 의해 shouldApply가 false(skip)된 경우에도 갱신하여
         // extendedDataContext useMemo가 정상 병합(deepMergeState)을 재개하도록 함
         lastProcessedInitRef.current = dataContext._localInit;
+
+        // @since engine-v1.52.2: 이 슬롯을 관측했음을 생산부(updateTemplateData)에 알림.
+        // 생산부는 아직 관측되지 않은 슬롯만 누적 병합하고, 관측된 슬롯은 교체한다.
+        // skip(동일 해시)된 경우에도 그 payload는 이미 _local에 반영되어 있으므로 소비된 것이다.
+        markLocalInitConsumed(dataContext._localInit);
       }
     }, [dataContext._localInit, parentDataContext, bindingEngine]);
 

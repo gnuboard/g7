@@ -62,6 +62,74 @@ abstract class PluginTestCase extends TestCase
         $this->registerEcommerceModuleInManager();
     }
 
+    protected static function krwCurrencySnapshot(): array
+    {
+        return [
+            'base_currency' => 'KRW',
+            'order_currency' => 'KRW',
+            'base_unit' => 1,
+            'exchange_rates' => [
+                'KRW' => [
+                    'rate' => 1,
+                    'rounding_unit' => '1',
+                    'rounding_method' => 'round',
+                    'decimal_places' => 0,
+                    'base_unit' => 1,
+                ],
+            ],
+        ];
+    }
+
+    protected static function jpyCurrencySnapshot(): array
+    {
+        return [
+            'base_currency' => 'JPY',
+            'order_currency' => 'JPY',
+            'base_unit' => 1,
+            'exchange_rates' => [
+                'JPY' => [
+                    'rate' => 1,
+                    'rounding_unit' => '1',
+                    'rounding_method' => 'round',
+                    'decimal_places' => 0,
+                    'base_unit' => 1,
+                ],
+            ],
+        ];
+    }
+
+    protected static function unchargeableKrwCurrencySnapshot(): array
+    {
+        return [
+            'base_currency' => 'USD',
+            'order_currency' => 'KRW',
+            'base_unit' => 1,
+            'exchange_rates' => [
+                'USD' => [
+                    'rate' => 1,
+                    'rounding_unit' => '0.01',
+                    'rounding_method' => 'round',
+                    'decimal_places' => 2,
+                    'base_unit' => 1,
+                ],
+                'KRW' => [
+                    'rate' => 0,
+                    'rounding_unit' => '1',
+                    'rounding_method' => 'round',
+                    'decimal_places' => 0,
+                    'base_unit' => 1,
+                ],
+            ],
+        ];
+    }
+
+    protected static function currencySnapshotFor(string $currency): array
+    {
+        return strtoupper($currency) === 'JPY'
+            ? self::jpyCurrencySnapshot()
+            : self::krwCurrencySnapshot();
+    }
+
     /**
      * 테스트 환경에서 sirsoft-ecommerce 모듈을 ModuleManager 에 명시 등록.
      */

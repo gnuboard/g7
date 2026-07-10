@@ -85,11 +85,11 @@
             }
         },
         {
-            "_comment": "헤더 배송국가 셀렉터 목록 주입 (MP08 후속). 활성 국가만 {code, name(현지화), flag_class(fi fi-xx)} 형태로. 해외배송 OFF 시 KR 만 활성이라 셀렉터 자연 숨김(2개↑ 게이트).",
+            "_comment": "헤더 배송국가 셀렉터 목록 주입 (MP08 후속). 활성 국가만 {code, name(현지화), flag_class(fi fi-xx)} 형태로. 해외배송 OFF 시 KR 만 활성이라 셀렉터 자연 숨김(2개↑ 게이트). 국가명 $localized(name, fallbackKey): 활성 로케일 키는 서버(localize_catalog_field)가 settings.countries.{code}.name 으로 미리 보강해 통상 즉시 hit 한다. fallbackKey 와 || c.code 는 보강이 실패한 경우의 방어선.",
             "handler": "setState",
             "params": {
                 "target": "global",
-                "availableShippingCountries": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ code: c.code, name: (c.name?.[_global.locale] ?? c.name?.ko ?? c.code), flag_class: ('fi fi-' + (c.code ?? '').toLowerCase()) }))}}"
+                "availableShippingCountries": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ code: c.code, name: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code), flag_class: ('fi fi-' + (c.code ?? '').toLowerCase()) }))}}"
             }
         },
         {
@@ -626,104 +626,6 @@
                                     ]
                                 },
                                 {
-                                    "comment": "언어 선택(모바일) — 데스크톱 헤더와 동일하게 통화 옆 같은 줄에 노출(globe + 현재 로케일 코드). 비회원 포함 전체. setLocale 은 코어 빌트인.",
-                                    "id": "mobile_lang_selector_wrap",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{$locales.length > 1}}",
-                                    "props": { "className": "relative" },
-                                    "children": [
-                                        {
-                                            "id": "mobile_lang_btn",
-                                            "type": "basic",
-                                            "name": "Button",
-                                            "props": {
-                                                "className": "flex items-center gap-1 px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer",
-                                                "aria-haspopup": "listbox",
-                                                "aria-expanded": "{{_global.mobileLangMenuOpen ?? false}}",
-                                                "aria-label": "$t:common.language"
-                                            },
-                                            "actions": [
-                                                {
-                                                    "type": "click",
-                                                    "handler": "setState",
-                                                    "params": { "target": "global", "mobileLangMenuOpen": "{{!_global.mobileLangMenuOpen}}" }
-                                                }
-                                            ],
-                                            "children": [
-                                                { "type": "basic", "name": "Icon", "size": "sm", "props": { "name": "globe" } },
-                                                { "type": "basic", "name": "Span", "props": { "className": "font-medium uppercase" }, "text": "{{$locale}}" },
-                                                { "type": "basic", "name": "Icon", "size": "xs", "props": { "name": "chevron-down" } }
-                                            ]
-                                        },
-                                        {
-                                            "comment": "드롭다운 메뉴",
-                                            "id": "mobile_lang_menu",
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "if": "{{_global.mobileLangMenuOpen}}",
-                                            "props": {
-                                                "className": "absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 overflow-hidden",
-                                                "role": "listbox"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "iteration": { "source": "{{$locales}}", "item_var": "loc" },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Button",
-                                                            "props": {
-                                                                "className": "{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}} w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer",
-                                                                "role": "option",
-                                                                "aria-selected": "{{loc === $locale}}"
-                                                            },
-                                                            "actions": [
-                                                                {
-                                                                    "type": "click",
-                                                                    "handler": "sequence",
-                                                                    "actions": [
-                                                                        { "handler": "setLocale", "target": "{{loc}}" },
-                                                                        { "handler": "setState", "params": { "target": "global", "mobileLangMenuOpen": false } }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "children": [
-                                                                { "type": "basic", "name": "Icon", "size": "sm", "props": { "name": "globe" } },
-                                                                { "type": "basic", "name": "Span", "props": { "className": "flex-1 font-medium" }, "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}" },
-                                                                { "type": "basic", "name": "Icon", "size": "sm", "if": "{{loc === $locale}}", "props": { "name": "check" } }
-                                                            ]
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "comment": "배경 클릭 시 닫기",
-                                            "id": "mobile_lang_backdrop",
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "if": "{{_global.mobileLangMenuOpen}}",
-                                            "props": { "className": "fixed inset-0 z-40" },
-                                            "actions": [
-                                                { "type": "click", "handler": "setState", "params": { "target": "global", "mobileLangMenuOpen": false } }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "통화 선택 — 이커머스 모듈이 'header_currency' 슬롯에 주입(layout_extensions). 헤더는 슬롯 이름만 알고 통화/모듈을 모름. 모듈 비활성 시 빈 슬롯 → 미렌더(인프라 자동 게이트). 데스크톱 Header.tsx 의 SlotContainer 와 동일 슬롯 공유(언어와 같은 줄).",
-                                    "id": "mobile_currency_selector_wrap",
-                                    "type": "composite",
-                                    "name": "SlotContainer",
-                                    "props": {
-                                        "slotId": "header_currency",
-                                        "className": "flex items-center"
-                                    }
-                                },
-                                {
                                     "comment": "사용자 아이콘 (로그인 시) / 로그인 버튼",
                                     "id": "mobile_user_btn",
                                     "type": "basic",
@@ -897,6 +799,129 @@
                                             ]
                                         }
                                     ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "언어/통화 선택 — 회원·비회원 공통. 헤더 우측 그룹에서 이동(모바일 오버플로 해소). 통화는 이커머스 모듈이 header_currency 슬롯에 주입하므로 SlotContainer 만 배치(모듈 비활성 시 자동 미렌더).",
+                            "id": "mobile_drawer_prefs",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "px-4 pb-4 border-b border-gray-200 dark:border-gray-700 space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "comment": "언어 선택 (여러 언어 지원 시). 접기/펼치기 — 접힘이 기본이고 트리거에 현재 언어를 요약 표기한다. 통화/배송국가(이커머스 주입 슬롯)와는 독립된 토글(_global.mobileLanguageOpen)이라 서로 영향 없음.",
+                                    "id": "mobile_drawer_language",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{$locales.length > 1}}",
+                                    "children": [
+                                        {
+                                            "comment": "트리거 — 좌측 '언어' 라벨, 우측 현재 언어명 + chevron. 접힘 상태에서 현재 값을 알 수 있어야 하므로 요약을 항상 노출한다.",
+                                            "id": "mobile_drawer_language_toggle",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "w-full flex items-center justify-between py-1 cursor-pointer",
+                                                "aria-expanded": "{{_global.mobileLanguageOpen ?? false}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "mobileLanguageOpen": "{{!_global.mobileLanguageOpen}}"
+                                                    }
+                                                }
+                                            ],
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                                                    },
+                                                    "text": "$t:common.language"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "comment": "접힘 상태 요약 = 현재 언어명",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": { "className": "font-medium" },
+                                                            "text": "{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "chevron-down",
+                                                                "className": "{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "펼침 영역 — 사용자 정보 아코디언과 동일한 max-h/opacity 트랜지션. overflow-hidden 이라 접힘 시 칩이 잘려 사라진다.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileLanguageOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}"
+                                            },
+                                            "children": [
+                                        {
+                                            "comment": "가로 나열 칩. iteration 은 반드시 Button 자신에 건다 — 엔진은 iteration 을 가진 노드를 항목 수만큼 복제하므로, flex 컨테이너에 걸면 컨테이너가 복제되어 칩이 세로로 쌓인다.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-wrap gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "iteration": { "source": "{{$locales}}", "item_var": "loc" },
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}} inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap",
+                                                        "role": "option",
+                                                        "aria-selected": "{{loc === $locale}}"
+                                                    },
+                                                    "actions": [
+                                                        { "type": "click", "handler": "setLocale", "target": "{{loc}}" }
+                                                    ],
+                                                    "children": [
+                                                        { "type": "basic", "name": "Icon", "props": { "name": "globe", "size": "sm" } },
+                                                        { "type": "basic", "name": "Span", "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}" }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "통화 선택 — 이커머스 모듈 주입 슬롯(헤더에서 이동). 모듈 미설치 시 빈 슬롯 → 렌더 영향 0. 헤더는 가로 flex 였으나 드로어는 세로 블록이므로 block 으로 둔다(flex items-center 면 주입 루트가 콘텐츠 폭으로 줄어 펼친 목록이 좁아짐). 주입 루트가 portable 에서 스스로 w-full 을 갖는다.",
+                                    "id": "mobile_drawer_currency_wrap",
+                                    "type": "composite",
+                                    "name": "SlotContainer",
+                                    "props": {
+                                        "slotId": "header_currency",
+                                        "className": "block"
+                                    }
                                 }
                             ]
                         },
@@ -1145,64 +1170,6 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "text": "$t:mypage.tabs.wishlist"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "comment": "언어 선택 (여러 언어 지원 시)",
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "if": "{{$locales.length > 1}}",
-                                                    "props": {
-                                                        "className": "mt-2 pt-2 border-t border-gray-200 dark:border-gray-600"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "props": {
-                                                                "className": "px-4 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-                                                            },
-                                                            "text": "$t:common.language"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "iteration": {
-                                                                "source": "{{$locales}}",
-                                                                "item_var": "loc"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Button",
-                                                                    "props": {
-                                                                        "className": "{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}} w-full flex items-center justify-start gap-3 px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
-                                                                    },
-                                                                    "actions": [
-                                                                        {
-                                                                            "type": "click",
-                                                                            "handler": "setLocale",
-                                                                            "target": "{{loc}}"
-                                                                        }
-                                                                    ],
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Icon",
-                                                                            "props": {
-                                                                                "name": "globe",
-                                                                                "size": "sm"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
                                                         }
                                                     ]
                                                 },

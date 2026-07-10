@@ -4,6 +4,7 @@
             "kginicis_cbt_reconciliation": "해외결제 정산",
             "kginicis_escrow_delivery": "에스크로 배송",
             "kginicis_status": "결제 상태",
+            "kginicis_test_mode_status": "테스트 모드 상태",
             "kginicis_test_map": "테스트 결제 맵",
             "settings": "결제 설정",
             "vbank_info": "가상계좌 정보"
@@ -52,7 +53,7 @@
             "japan_contact_email_required": "운영 일본 결제창에 표시할 문의 이메일이 필요합니다.",
             "japan_contact_phone_required": "운영 일본 결제창에 표시할 문의 전화번호가 필요합니다.",
             "japan_contact_opening_hours_required": "운영 일본 결제창에 표시할 문의 영업시간이 필요합니다.",
-            "replace_sample_value": "운영 모드에서는 샘플값 대신 실제 계약 정보를 입력하세요."
+            "replace_sample_value": "운영 모드에서는 일본 가맹점 표시 정보의 샘플값을 실제 계약 정보로 변경하세요."
         }
     },
     "payment_error": {
@@ -74,6 +75,10 @@
         "test_mode_badge": "테스트 결제",
         "test_mode_warning_badge": "테스트 결제 주의)",
         "test_mode_order_notice": "이 주문은 테스트 결제로 처리되었습니다. 실제 카드 승인/출금 알림이 발생할 수 있으나, KG 이니시스 테스트 거래는 매일 23:00~23:50 사이 자동 취소될 수 있습니다. 절대 배송하지 마세요.",
+        "test_mode_settings_warning_plugin": "KG 이니시스",
+        "test_mode_settings_warning_title": "(주의!) KG 이니시스 결제 설정이 현재 테스트결제로 되어 있습니다.",
+        "test_mode_settings_warning_body": "테스트결제 시 실제 결제가 되지 않으므로, 쇼핑몰 운영 중이면 반드시 실결제로 설정하여 운영하세요.",
+        "test_mode_settings_warning_action": "실결제로 설정",
         "order_verify_title": "KG 이니시스 결제 검증",
         "order_verify_description": "KG 이니시스 서버에서 실시간으로 결제 상태를 조회합니다.",
         "order_verify_button": "결제 조회",

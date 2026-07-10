@@ -48,6 +48,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
             'user_id' => $user->id,
             'order_number' => 'ORD-TEST-' . random_int(10000, 99999),
             'order_status' => OrderStatusEnum::PENDING_ORDER,
+            'currency' => 'KRW',
+            'currency_snapshot' => self::krwCurrencySnapshot(),
             'subtotal_amount' => $totalAmount,
             'total_discount_amount' => 0,
             'total_coupon_discount_amount' => 0,

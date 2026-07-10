@@ -394,11 +394,12 @@
           },
           "children": [
             {
+              "comment": "overflow-x-auto 명시 — 6열 표(615px)가 좁은 뷰포트 컨테이너를 넘는다. overflow-y 만 선언해도 CSS Overflow 명세상 다른 축이 visible 로 남을 수 없어 computed 가 auto 로 계산되지만 그 의존은 암묵적이다. 누군가 overflow-y-visible 로 바꾸면 즉시 표가 잘리므로 의도를 코드에 고정한다. 표는 whitespace-nowrap 이라 절단 없이 가로 스크롤된다(세로 스택 전환은 과잉 대응).",
               "id": "template_list",
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "max-h-96 overflow-y-auto"
+                "className": "max-h-96 overflow-y-auto overflow-x-auto"
               },
               "actions": [
                 {

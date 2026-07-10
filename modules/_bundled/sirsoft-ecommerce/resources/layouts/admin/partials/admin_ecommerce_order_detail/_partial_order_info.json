@@ -430,7 +430,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                          "className": "flex flex-col items-center gap-1 whitespace-nowrap"
+                          "className": "flex flex-col items-end gap-1 whitespace-nowrap"
                         },
                         "children": [
                           {
@@ -683,7 +683,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                          "className": "flex flex-col items-center gap-1 whitespace-nowrap"
+                          "className": "flex flex-col items-end gap-1 whitespace-nowrap"
                         },
                         "children": [
                           {
@@ -1614,7 +1614,7 @@
                           "props": {
                             "name": "recipient_country_code",
                             "value": "{{_local.form.recipient_country_code ?? order?.data?.shipping_address?.recipient_country_code ?? 'KR'}}",
-                            "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: (c.name?.[_global.locale] ?? c.name?.ko ?? c.code) }))}}",
+                            "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}",
                             "className": "w-full",
                             "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                           },
@@ -1634,7 +1634,7 @@
                           "name": "Span",
                           "if": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled !== true}}",
                           "props": { "className": "text-gray-900 dark:text-white" },
-                          "text": "{{order?.data?.shipping_address?.recipient_country_name?.[_global.locale] ?? order?.data?.shipping_address?.recipient_country_name?.ko ?? order?.data?.shipping_address?.recipient_country_code ?? 'KR'}}"
+                          "text": "{{$localized(order?.data?.shipping_address?.recipient_country_name) || order?.data?.shipping_address?.recipient_country_code || 'KR'}}"
                         }
                       ]
                     },

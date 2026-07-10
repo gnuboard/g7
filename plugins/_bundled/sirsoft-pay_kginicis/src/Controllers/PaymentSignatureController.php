@@ -108,7 +108,17 @@ class PaymentSignatureController
             ], 403);
         }
 
-        if ($price !== $this->expectedPaymentPrice($order)) {
+        $expectedPrice = $this->resolveExpectedPaymentPriceOrNull($order, 'signature', [
+            'received_amount' => $price,
+        ]);
+        if ($expectedPrice === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment currency is not chargeable.',
+            ], 422);
+        }
+
+        if ($price !== $expectedPrice) {
             return response()->json([
                 'success' => false,
                 'message' => 'Payment amount does not match the order amount.',

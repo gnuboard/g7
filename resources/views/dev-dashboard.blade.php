@@ -855,6 +855,24 @@ if (isset($_GET['ajax_action'])) {
                             </div>
                         </div>
 
+                        <!-- API 문서 -->
+                        <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-lg">📘</span>
+                                <span class="text-xs font-medium text-slate-200">API 문서</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="runCommand('api:docgen --scope=core --seed')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>코어 API 문서 생성(실측)</span>
+                                    <span class="text-[10px] opacity-60">(api:docgen --scope=core --seed)</span>
+                                </button>
+                                <button onclick="runCommand('api:docgen --scope=core --check')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>API 문서 drift 검사</span>
+                                    <span class="text-[10px] opacity-60">(api:docgen --check)</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- 유지보수 -->
                         <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
                             <div class="flex items-center gap-2 mb-3">

@@ -297,8 +297,9 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
   }, [localMultilingualContent]);
 
   // 다국어 탭 렌더링
+  // flex-wrap: 로케일이 3개 이상이면 md 미만 뷰포트에서 탭 행이 컨테이너를 넘친다.
   const renderLocaleTabs = () => (
-    <Div className="flex items-center gap-2 mb-3">
+    <Div className="flex flex-wrap items-center gap-2 mb-3">
       {supportedLocales.map(localeCode => {
         const isDefault = localeCode === defaultLocale;
         const isActive = currentLocale === localeCode;

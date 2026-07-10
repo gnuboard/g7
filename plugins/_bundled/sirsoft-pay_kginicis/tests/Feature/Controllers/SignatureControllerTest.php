@@ -79,6 +79,33 @@ class SignatureControllerTest extends PluginTestCase
             ->assertJsonPath('message', 'Payment amount does not match the order amount.');
     }
 
+    public function test_pc_signature_rejects_unchargeable_payment_currency_without_server_error(): void
+    {
+        $order = $this->makePendingOrder('ORD-SIGN-CURRENCY-001', 10000, 'KRW', self::unchargeableKrwCurrencySnapshot());
+
+        $orderService = Mockery::mock(OrderProcessingService::class);
+        $orderService->shouldReceive('findByOrderNumber')
+            ->with('ORD-SIGN-CURRENCY-001')
+            ->andReturn($order);
+
+        $apiService = Mockery::mock(KgInicisApiService::class);
+        $apiService->shouldNotReceive('hasStandardPaymentCredentials');
+        $apiService->shouldNotReceive('generateSignature');
+        $apiService->shouldNotReceive('generateVerification');
+
+        $this->app->instance(OrderProcessingService::class, $orderService);
+        $this->app->instance(KgInicisApiService::class, $apiService);
+
+        $response = $this->postJson('/api/plugins/sirsoft-pay_kginicis/payment/signature', [
+            'oid' => 'ORD-SIGN-CURRENCY-001',
+            'price' => 10000,
+            'timestamp' => $this->freshEpochMs(),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Payment currency is not chargeable.');
+    }
+
     public function test_pc_signature_rejects_non_krw_order(): void
     {
         $order = $this->makePendingOrder('ORD-SIGN-USD-001', 10000, 'USD');
@@ -216,6 +243,32 @@ class SignatureControllerTest extends PluginTestCase
             ->assertJsonPath('message', 'KG Inicis mobile payment credentials are not configured.');
     }
 
+    public function test_mobile_signature_rejects_unchargeable_payment_currency_without_server_error(): void
+    {
+        $order = $this->makePendingOrder('ORD-SIGN-CURRENCY-002', 10000, 'KRW', self::unchargeableKrwCurrencySnapshot());
+
+        $orderService = Mockery::mock(OrderProcessingService::class);
+        $orderService->shouldReceive('findByOrderNumber')
+            ->with('ORD-SIGN-CURRENCY-002')
+            ->andReturn($order);
+
+        $apiService = Mockery::mock(KgInicisApiService::class);
+        $apiService->shouldNotReceive('hasMobilePaymentCredentials');
+        $apiService->shouldNotReceive('generateMobileChkfake');
+
+        $this->app->instance(OrderProcessingService::class, $orderService);
+        $this->app->instance(KgInicisApiService::class, $apiService);
+
+        $response = $this->postJson('/api/plugins/sirsoft-pay_kginicis/payment/mobile/signature', [
+            'oid' => 'ORD-SIGN-CURRENCY-002',
+            'price' => 10000,
+            'timestamp' => $this->freshEpochMs(),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Payment currency is not chargeable.');
+    }
+
     public function test_pc_signature_expects_converted_price_for_non_base_order_currency(): void
     {
         // base=USD, 결제통화=KRW. base $6 → KRW 7058 환산이 검증 기준(price)이어야 한다.
@@ -266,7 +319,9 @@ class SignatureControllerTest extends PluginTestCase
         $order->order_status = OrderStatusEnum::PENDING_ORDER;
         $order->currency = $currency;
         $order->total_due_amount = $amount;
-        $order->currency_snapshot = $currencySnapshot;
+        $order->currency_snapshot = $currencySnapshot !== []
+            ? $currencySnapshot
+            : self::currencySnapshotFor($currency);
 
         return $order;
     }

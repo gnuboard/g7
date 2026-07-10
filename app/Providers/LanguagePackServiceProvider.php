@@ -18,6 +18,7 @@ use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
 use App\Services\LanguagePack\LanguagePackTranslator;
+use App\Support\InstallerContext;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\File;
@@ -477,8 +478,7 @@ class LanguagePackServiceProvider extends ServiceProvider
             return false;
         }
 
-        if ($this->app->runningInConsole()
-            && in_array($_SERVER['argv'][1] ?? null, ['migrate', 'migrate:fresh', 'migrate:rollback', 'migrate:reset', 'db:wipe'], true)) {
+        if (InstallerContext::isSchemaMutatingCommand()) {
             return false;
         }
 

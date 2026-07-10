@@ -380,9 +380,7 @@
                     {
                       "type": "change",
                       "handler": "setLocale",
-                      "params": {
-                        "locale": "{{$event.target.value}}"
-                      }
+                      "target": "{{$event.target.value}}"
                     }
                   ]
                 }

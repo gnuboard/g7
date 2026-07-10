@@ -70,10 +70,10 @@
       "props": { "className": "border-t border-gray-200 dark:border-gray-700 pt-3 mt-3" },
       "children": [
         {
-          "comment": "쿠폰 배지 목록 (가로 스크롤)",
+          "comment": "쿠폰 배지 목록 (좁은 화면에서 여러 줄로 줄바꿈 — 칩 라벨 자체는 whitespace-nowrap 으로 한 줄 유지)",
           "type": "basic",
           "name": "Div",
-          "props": { "className": "flex items-center gap-2 overflow-x-auto pb-1" },
+          "props": { "className": "flex flex-wrap items-center gap-2 pb-1" },
           "children": [
             {
               "type": "basic",
@@ -101,6 +101,7 @@
                     {
                       "type": "basic",
                       "name": "Span",
+                      "props": { "className": "whitespace-nowrap" },
                       "text": "{{dlCoupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? dlCoupon.benefit_formatted}}"
                     },
                     {

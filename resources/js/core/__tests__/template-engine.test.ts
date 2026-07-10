@@ -14,6 +14,7 @@ import TemplateEngine, {
   getState,
 } from '../template-engine';
 import { ComponentRegistry } from '../template-engine/ComponentRegistry';
+import { markLocalInitConsumed, resetLocalInitTracking } from '../template-engine/localInitSlot';
 import { Logger } from '../utils/Logger';
 
 /**
@@ -45,12 +46,19 @@ vi.mock('../template-engine/ComponentRegistry', () => {
 });
 
 // DataBindingEngine mock
-vi.mock('../template-engine/DataBindingEngine', () => ({
-  DataBindingEngine: vi.fn(function(this: any) {
+// G7CoreGlobals.initCoreRuntimeExports가 싱글톤 `dataBindingEngine`도 참조하므로 함께 노출
+vi.mock('../template-engine/DataBindingEngine', () => {
+  const DataBindingEngine = vi.fn(function(this: any) {
     this.bind = vi.fn();
     this.unbind = vi.fn();
-  }),
-}));
+    this.invalidateCacheByKeys = vi.fn();
+  });
+
+  return {
+    DataBindingEngine,
+    dataBindingEngine: new (DataBindingEngine as any)(),
+  };
+});
 
 // TranslationEngine mock
 vi.mock('../template-engine/TranslationEngine', () => {
@@ -97,10 +105,13 @@ vi.mock('../template-engine/ResponsiveManager', () => ({
     getMatchingKey: vi.fn(() => null),
     parseRange: vi.fn(() => null),
   },
+  BREAKPOINT_PRESETS: {},
 }));
 
 // ResponsiveContext mock
+// G7CoreGlobals.initCoreRuntimeExports가 Context 객체 자체도 참조하므로 함께 노출
 vi.mock('../template-engine/ResponsiveContext', () => ({
+  ResponsiveContext: {},
   ResponsiveProvider: ({ children }: { children: React.ReactNode }) => children,
   useResponsive: vi.fn(() => ({
     width: 1024,
@@ -374,6 +385,8 @@ describe('TemplateEngine - updateTemplateData()', () => {
   beforeEach(async () => {
     destroyTemplate();
     vi.clearAllMocks();
+    // DynamicRenderer가 모킹되어 _localInit 슬롯을 소비하지 않으므로 테스트 간 격리 필요
+    resetLocalInitTracking();
 
     document.body.innerHTML = '<div id="app"></div>';
 
@@ -454,6 +467,53 @@ describe('TemplateEngine - updateTemplateData()', () => {
       name: 'Test Role',
       permission_ids: [1, 2, 3],
     });
+  });
+
+  /**
+   * 다중 progressive 데이터소스의 _localInit 상호 덮어쓰기 회귀
+   *
+   * 증상: initLocal을 가진 progressive 데이터소스가 한 레이아웃에 둘 이상이면,
+   *       React commit 전에 두 번의 updateTemplateData가 연달아 들어올 때
+   *       나중 payload가 _localInit 슬롯을 통째로 교체하여 앞선 소스의 초기값이 유실됨.
+   * 해결: 아직 어떤 렌더러도 관측하지 않은(unconsumed) 슬롯은 교체하지 않고 누적 병합.
+   *
+   * @see troubleshooting-state-global.md
+   */
+  it('소비되지 않은 _localInit 슬롯은 후속 payload와 누적 병합되어야 함', () => {
+    // settings 소스 응답 (refetchOnMount → _forceLocalInit 보유)
+    updateTemplateData({
+      settings: { shipping: {} },
+      _localInit: { form: { name: 'shipping' }, _forceLocalInit: 1700000000000 },
+    });
+
+    // notification 소스 응답 (같은 commit 이전에 도착)
+    updateTemplateData({
+      notificationDefinitions: { data: [] },
+      _localInit: { notificationDefinitionCurrentPage: 1 },
+    });
+
+    const state = getState();
+    // 먼저 도착한 settings의 form이 살아있어야 함
+    expect(state.currentDataContext._localInit.form).toEqual({ name: 'shipping' });
+    // 나중에 도착한 notification 값도 함께 있어야 함
+    expect(state.currentDataContext._localInit.notificationDefinitionCurrentPage).toBe(1);
+    // refetchOnMount 타임스탬프가 보존되어야 함
+    expect(state.currentDataContext._localInit._forceLocalInit).toBe(1700000000000);
+  });
+
+  it('이미 소비된 _localInit 슬롯은 교체되어 stale 재적용이 없어야 함', () => {
+    updateTemplateData({ _localInit: { form: { name: 'shipping' } } });
+
+    // 렌더러가 슬롯을 관측 (DynamicRenderer의 _localInit useEffect가 하는 일)
+    markLocalInitConsumed(getState().currentDataContext._localInit);
+
+    // 사용자가 화면을 쓰는 도중 다른 소스를 refetch
+    updateTemplateData({ _localInit: { notificationDefinitionCurrentPage: 2 } });
+
+    const state = getState();
+    // 소비가 끝난 form은 재적용 대상이 아니어야 함 (폼 편집 결과 되돌림 방지)
+    expect(state.currentDataContext._localInit.form).toBeUndefined();
+    expect(state.currentDataContext._localInit.notificationDefinitionCurrentPage).toBe(2);
   });
 
   it('sync 옵션으로 업데이트해도 정상 작동해야 함', () => {

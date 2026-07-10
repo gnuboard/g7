@@ -16,12 +16,13 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
+use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
+use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\AuthCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\MobileVbankNotifyRequest;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\VbankNotifyRequest;
@@ -40,6 +41,8 @@ class PaymentCallbackController
     use PreventsReplayCallback;
     use ResolvesEasyPaySelection;
     use SanitizesPgResponse;
+    use SerializesPaymentCallbacks;
+    use ValidatesCbtOrderContext;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
 
@@ -223,6 +226,7 @@ class PaymentCallbackController
         $authUrl = $receivedAuthUrl;
         $netCancelUrl = $this->apiService->resolveIdcNetCancelUrl($idcName);
         $tid = '';
+        $callbackLock = null;
 
         try {
             $order = $this->orderService->findByOrderNumber($moid);
@@ -232,6 +236,8 @@ class PaymentCallbackController
 
                 return redirect($this->resolveFailUrl(['error' => 'order_not_found', 'orderId' => $moid]));
             }
+
+            $callbackLock = $this->acquireOrderCallbackLock('authCallback', $moid);
 
             HookManager::doAction('sirsoft-pay_kginicis.payment.before_authorize', $order, $validated);
 
@@ -278,6 +284,21 @@ class PaymentCallbackController
             // TotPrice 가 콜백에 없으면 PG 승인 응답의 TotPrice 사용
             if ($totPrice === null) {
                 $totPrice = (int) ($pgResponse['TotPrice'] ?? $pgResponse['totPrice'] ?? 0);
+            }
+
+            $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($order, 'auth_callback', [
+                'tid' => $tid,
+                'received_amount' => $totPrice,
+            ]);
+            if ($expectedAmount === null) {
+                $this->apiService->sendNetCancel($netCancelUrl, $authToken);
+
+                return redirect($this->resolveFailUrl(['error' => 'invalid_payment_currency', 'orderId' => $moid]));
+            }
+            if ($expectedAmount > 0 && $totPrice !== $expectedAmount) {
+                $this->apiService->sendNetCancel($netCancelUrl, $authToken);
+
+                return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $moid]));
             }
 
             $embeddedPgProvider = $this->resolveEmbeddedPgProvider($selectedEasyPayMethod);
@@ -352,6 +373,8 @@ class PaymentCallbackController
                 'message' => $e->getMessage(),
                 'orderId' => $moid,
             ]));
+        } finally {
+            $this->releaseOrderCallbackLock($callbackLock);
         }
     }
 
@@ -376,6 +399,8 @@ class PaymentCallbackController
             'bank' => $validated['nm_inputbank'] ?? null,
         ]);
 
+        $callbackLock = null;
+
         try {
             $order = $this->orderService->findByOrderNumber($moid);
 
@@ -384,6 +409,8 @@ class PaymentCallbackController
 
                 return response('FAIL', 200)->header('Content-Type', 'text/plain');
             }
+
+            $callbackLock = $this->acquireOrderCallbackLock('vbankNotify', $moid);
 
             if ($this->wasAlreadyPaid($tid)) {
                 $this->logReplayDetected($tid, $moid, 'PC vbankNotify');
@@ -430,6 +457,8 @@ class PaymentCallbackController
             ]);
 
             return response('FAIL', 200)->header('Content-Type', 'text/plain');
+        } finally {
+            $this->releaseOrderCallbackLock($callbackLock);
         }
     }
 
@@ -467,6 +496,8 @@ class PaymentCallbackController
             'bank' => $validated['P_FN_NM'] ?? null,
         ]);
 
+        $callbackLock = null;
+
         try {
             $order = $this->orderService->findByOrderNumber($moid);
 
@@ -475,6 +506,8 @@ class PaymentCallbackController
 
                 return response('FAIL', 200)->header('Content-Type', 'text/plain');
             }
+
+            $callbackLock = $this->acquireOrderCallbackLock('mobileVbankNotify', $moid);
 
             if ($this->wasAlreadyPaid($tid)) {
                 $this->logReplayDetected($tid, $moid, 'mobile vbankNotify');
@@ -521,6 +554,8 @@ class PaymentCallbackController
             ]);
 
             return response('FAIL', 200)->header('Content-Type', 'text/plain');
+        } finally {
+            $this->releaseOrderCallbackLock($callbackLock);
         }
     }
 
@@ -599,7 +634,15 @@ class PaymentCallbackController
 
         // 결제 청구액 SSoT = 결제 통화(order_currency) 환산액 (buildPgPaymentData 와 동일 기준).
         // base≠결제 통화에서 PG 통보 금액(환산 통화)과 단위가 일치하도록 한다.
-        $expectedAmount = app(CurrencyConversionService::class)->resolveOrderPaymentChargeAmount($order);
+        $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($order, 'vbank_notify', [
+            'source' => $source,
+            'tid' => $notify['tid'],
+            'received_amount' => $notify['amount'],
+        ]);
+        if ($expectedAmount === null) {
+            return false;
+        }
+
         if ($expectedAmount > 0 && $notify['amount'] !== $expectedAmount) {
             Log::warning('KG Inicis: vbank notify rejected - amount mismatch', [
                 'source' => $source,

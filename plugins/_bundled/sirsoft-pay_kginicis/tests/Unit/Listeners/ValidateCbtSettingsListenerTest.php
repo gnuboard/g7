@@ -13,6 +13,11 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
     public function test_plugin_registers_cbt_settings_validation_listener(): void
     {
         $this->assertContains(ValidateCbtSettingsListener::class, (new Plugin())->getHookListeners());
+
+        $hooks = ValidateCbtSettingsListener::getSubscribedHooks();
+        $this->assertSame('validateBeforeSave', $hooks['core.plugin_settings.before_save']['method'] ?? null);
+        $this->assertSame(10, $hooks['core.plugin_settings.before_save']['priority'] ?? null);
+        $this->assertTrue($hooks['core.plugin_settings.before_save']['sync'] ?? false);
     }
 
     public function test_plugin_schema_includes_jpy_payment_method_restriction_option(): void
@@ -120,16 +125,27 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
     public function test_live_japan_payment_rejects_sample_jppg_display_values(): void
     {
         $this->mockCurrentSettings([]);
+        app()->setLocale('ko');
 
         $listener = new ValidateCbtSettingsListener();
 
         try {
             $listener->validateBeforeSave('sirsoft-pay_kginicis', $this->validLiveSettings([
                 'japan_merchant_name' => 'サンプルストア',
+                'japan_merchant_name_alphabet' => 'Sample Store',
+                'japan_contact_email' => 'support@example.com',
             ]));
             $this->fail('ValidationException was not thrown.');
         } catch (ValidationException $e) {
-            $this->assertArrayHasKey('japan_merchant_name', $e->errors());
+            $errors = $e->errors();
+
+            $this->assertArrayHasKey('japan_contract_info', $errors);
+            $this->assertArrayNotHasKey('japan_merchant_name', $errors);
+            $this->assertArrayNotHasKey('japan_merchant_name_alphabet', $errors);
+            $this->assertArrayNotHasKey('japan_contact_email', $errors);
+            $this->assertSame([
+                '운영 모드에서는 일본 가맹점 표시 정보의 샘플값을 실제 계약 정보로 변경하세요.',
+            ], $errors['japan_contract_info']);
         }
     }
 

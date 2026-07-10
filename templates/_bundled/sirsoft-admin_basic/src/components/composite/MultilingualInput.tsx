@@ -485,7 +485,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   const renderTabsLayout = () => (
     <Div className={className}>
       {/* 언어 탭들 + 추가 버튼 (Pill Badge 스타일) */}
-      <Div className="flex items-center gap-2 mb-3">
+      {/* flex-wrap: 로케일이 3개 이상이면 md 미만 뷰포트에서 탭 행이 컨테이너를 넘친다. */}
+      <Div className="flex flex-wrap items-center gap-2 mb-3">
         {activeLocales.map(localeCode => (
           <Button
             key={localeCode}

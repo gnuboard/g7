@@ -8,8 +8,7 @@
   "name": "Modal",
   "props": {
     "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.title",
-    "width": "1125px",
-    "className": "max-w-full"
+    "width": "1125px"
   },
   "children": [
     {
@@ -154,7 +153,14 @@
                   "props": {
                     "className": "col-span-5"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_col"
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_col",
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": ""
+                      }
+                    }
+                  }
                 },
                 {
                   "type": "basic",
@@ -162,7 +168,14 @@
                   "props": {
                     "className": "col-span-2 text-right"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.unit_price_col"
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.unit_price_col",
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "text-left"
+                      }
+                    }
+                  }
                 },
                 {
                   "type": "basic",
@@ -170,7 +183,14 @@
                   "props": {
                     "className": "col-span-3 text-center"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_quantity_col"
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_quantity_col",
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "text-left"
+                      }
+                    }
+                  }
                 },
                 {
                   "type": "basic",
@@ -178,9 +198,21 @@
                   "props": {
                     "className": "col-span-2 text-center"
                   },
-                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.status_col"
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.status_col",
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "text-left"
+                      }
+                    }
+                  }
                 }
-              ]
+              ],
+              "responsive": {
+                "portable": {
+                  "if": "{{false}}"
+                }
+              }
             },
             {
               "comment": "취소 항목 반복",
@@ -238,7 +270,14 @@
                         }
                       ]
                     }
-                  ]
+                  ],
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "flex-center gap-2"
+                      }
+                    }
+                  }
                 },
                 {
                   "comment": "단가 + 소계",
@@ -249,22 +288,31 @@
                   },
                   "children": [
                     {
+                      "comment": "whitespace-nowrap — 금액 토큰은 숫자 내부에서 절대 줄바꿈되지 않아야 한다(`249,000원` → `249,000` / `원`). portable 세로 스택으로 셀이 전폭이라 현재는 절단이 없으나, 셀이 다시 좁아지면 즉시 재발하므로 의도를 코드에 고정한다.",
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-body"
+                        "className": "text-body whitespace-nowrap"
                       },
                       "text": "{{(cancelItem.unit_price ?? 0).toLocaleString()}}원 × {{cancelItem.quantity ?? 1}}"
                     },
                     {
+                      "comment": "break-keep + whitespace-nowrap 조합 대신 break-keep 만 — `소계`(한글 라벨) + 금액이 한 문자열이라 nowrap 을 주면 좁은 셀에서 넘친다. break-keep 은 어절 경계에서만 줄바꿈해 `소계` / `249,000원` 으로 끊고 숫자 내부는 보존한다.",
                       "type": "basic",
                       "name": "P",
                       "props": {
-                        "className": "text-tertiary"
+                        "className": "text-tertiary break-keep"
                       },
                       "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{((cancelItem.unit_price ?? 0) * (cancelItem.quantity ?? 1)).toLocaleString()}}원"
                     }
-                  ]
+                  ],
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "text-left"
+                      }
+                    }
+                  }
                 },
                 {
                   "comment": "취소수량 입력",
@@ -297,7 +345,14 @@
                         }
                       ]
                     }
-                  ]
+                  ],
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "flex justify-start"
+                      }
+                    }
+                  }
                 },
                 {
                   "comment": "현재상태 Badge",
@@ -310,13 +365,31 @@
                   },
                   "children": [
                     {
+                      "comment": "break-keep — 한글 상태명(`결제완료`)이 음절 경계에서 `결제완`/`료` 로 쪼개지지 않게 어절 단위 줄바꿈을 강제한다. 현재 Badge 는 inline-flex 라 콘텐츠 폭으로 자라 줄바꿈이 없지만, 배지 폭이 제한되면 즉시 재발한다.",
                       "type": "basic",
                       "name": "Span",
+                      "props": {
+                        "className": "break-keep"
+                      },
                       "text": "{{cancelItem.option_status_label ?? cancelItem.option_status ?? ''}}"
                     }
-                  ]
+                  ],
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": ""
+                      }
+                    }
+                  }
                 }
-              ]
+              ],
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "grid grid-cols-1 gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 items-center"
+                  }
+                }
+              }
             }
           ]
         },
@@ -1675,8 +1748,7 @@
                   ]
                 }
               ],
-              "props": {
-              }
+              "props": {}
             }
           ]
         }

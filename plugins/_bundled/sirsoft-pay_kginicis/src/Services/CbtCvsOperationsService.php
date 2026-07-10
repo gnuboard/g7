@@ -10,16 +10,19 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
+use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
+use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepositoryInterface;
 
 class CbtCvsOperationsService
 {
     use PreventsReplayCallback;
     use SanitizesPgResponse;
+    use SerializesPaymentCallbacks;
+    use ValidatesCbtOrderContext;
 
     private const HISTORY_LIMIT = 20;
 
@@ -64,6 +67,7 @@ class CbtCvsOperationsService
         $amount = (int) ($payload['amount'] ?? 0);
         $payment = null;
         $existingMeta = [];
+        $callbackLock = null;
 
         if ($tid === '' || $orderId === '' || $mid === '' || $amount <= 0) {
             Log::warning('KG Inicis CBT CVS: invalid notify payload', [
@@ -84,6 +88,8 @@ class CbtCvsOperationsService
 
                 return $this->notifyResult('FAIL', 'failed', 'order_not_found');
             }
+
+            $callbackLock = $this->acquireOrderCallbackLock('cbtCvsNotify', $orderId);
 
             $payment = $this->repository->firstPaymentForOrder($order);
             if (! $payment) {
@@ -177,6 +183,16 @@ class CbtCvsOperationsService
             }
 
             $expectedAmount = $this->resolveExpectedCvsAmount($order, $existingMeta);
+            if ($expectedAmount === null) {
+                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'invalid_payment_currency', $source, $remoteIp);
+                Log::warning('KG Inicis CBT CVS: payment currency is not chargeable', [
+                    'order_id' => $orderId,
+                    'tid' => $tid,
+                ]);
+
+                return $this->notifyResult('FAIL', 'failed', 'invalid_payment_currency');
+            }
+
             if ($expectedAmount > 0 && $amount !== $expectedAmount) {
                 $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'amount_mismatch', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: amount mismatch', [
@@ -251,6 +267,8 @@ class CbtCvsOperationsService
             ]);
 
             return $this->notifyResult('FAIL', 'failed', 'exception');
+        } finally {
+            $this->releaseOrderCallbackLock($callbackLock);
         }
     }
 
@@ -338,6 +356,11 @@ class CbtCvsOperationsService
             return $this->operationError('messages.cbt_cvs.not_waiting_deposit', 422);
         }
 
+        $expectedAmount = $this->resolveExpectedCvsAmount($order, $meta);
+        if ($expectedAmount === null) {
+            return $this->operationError('messages.cbt_cvs.simulate_failed', 422);
+        }
+
         $now = now();
         $payload = [
             'tid' => $payment->transaction_id ?: 'ADMIN_CVS_'.$order->order_number,
@@ -353,7 +376,7 @@ class CbtCvsOperationsService
             'confNo' => (string) ($meta['cvs_conf_no'] ?? ''),
             'receiptNo' => (string) ($meta['cvs_receipt_no'] ?? ''),
             'paymentTerm' => (string) ($meta['cvs_payment_term'] ?? ''),
-            'amount' => (string) $this->resolveExpectedCvsAmount($order, $meta),
+            'amount' => (string) $expectedAmount,
             'currencyCd' => 'JPY',
         ];
 
@@ -599,7 +622,7 @@ class CbtCvsOperationsService
         return $paymentTermAt instanceof CarbonImmutable && $paymentTermAt->isPast();
     }
 
-    private function resolveExpectedCvsAmount(Order $order, array $paymentMeta): int
+    private function resolveExpectedCvsAmount(Order $order, array $paymentMeta): ?int
     {
         $metaAmount = (int) ($paymentMeta['cvs_amount'] ?? 0);
         if ($metaAmount > 0) {
@@ -608,7 +631,9 @@ class CbtCvsOperationsService
 
         // 결제 청구액 SSoT = 결제 통화(order_currency) 환산액 (buildPgPaymentData 와 동일 기준).
         // base≠결제 통화에서 CVS 통보 금액(결제 통화)과 단위가 일치하도록 한다.
-        return app(CurrencyConversionService::class)->resolveOrderPaymentChargeAmount($order);
+        return $this->resolveExpectedPaymentPriceOrNull($order, 'cbt_cvs_notify', [
+            'pay_method' => 'CVS',
+        ]);
     }
 
     private function parseCbtDateTime(?string $value): ?CarbonImmutable

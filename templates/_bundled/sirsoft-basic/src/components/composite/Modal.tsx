@@ -177,7 +177,7 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Modal Content */}
       <Div
         ref={modalRef}
-        className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-h-[90vh] overflow-hidden ${className}`}
+        className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-h-[90vh] max-w-[calc(100vw-2rem)] overflow-hidden ${className}`}
         style={{ width, ...(style ? { ...style, zIndex: undefined } : {}) }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"

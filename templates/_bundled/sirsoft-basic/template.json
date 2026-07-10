@@ -5,7 +5,7 @@
         "ko": "Basic",
         "en": "Basic"
     },
-    "version": "1.0.1",
+    "version": "1.0.2",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 기본 사용자 템플릿",
@@ -26,7 +26,7 @@
     "dependencies": {
         "modules": {
             "sirsoft-board": ">=1.0.0",
-            "sirsoft-ecommerce": ">=1.0.0",
+            "sirsoft-ecommerce": ">=1.0.2",
             "sirsoft-page": ">=1.0.0"
         },
         "plugins": {

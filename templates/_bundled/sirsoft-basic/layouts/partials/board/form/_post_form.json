@@ -371,7 +371,7 @@
       "name": "Div",
       "if": "{{form_meta?.data && !_global.currentUser?.uuid && !route.id}}",
       "props": {
-        "className": "grid grid-cols-2 gap-4"
+        "className": "grid grid-cols-1 sm:grid-cols-2 gap-4"
       },
       "children": [
         {

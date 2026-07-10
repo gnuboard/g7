@@ -77,6 +77,30 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             ->assertJsonPath('errors.message.0', 'Payment amount does not match the order amount.');
     }
 
+    public function test_close_report_rejects_unchargeable_payment_currency_without_server_error(): void
+    {
+        $order = $this->makeOrder('ORD-CLOSE-CURRENCY-001', 10000);
+        $order->currency_snapshot = self::unchargeableKrwCurrencySnapshot();
+
+        $orderService = Mockery::mock(OrderProcessingService::class);
+        $orderService->shouldReceive('findByOrderNumber')
+            ->once()
+            ->with('ORD-CLOSE-CURRENCY-001')
+            ->andReturn($order);
+        $orderService->shouldNotReceive('failPayment');
+        $orderService->shouldNotReceive('recordPaymentCancellation');
+
+        $this->app->instance(OrderProcessingService::class, $orderService);
+
+        $response = $this->postJson('/api/plugins/sirsoft-pay_kginicis/payment/close-report', [
+            'oid' => 'ORD-CLOSE-CURRENCY-001',
+            'price' => 10000,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('errors.message.0', 'Payment currency is not chargeable.');
+    }
+
     public function test_close_report_rejects_non_krw_order_without_failing_payment(): void
     {
         $order = $this->makeOrder('ORD-CLOSE-USD-001', 10000, 'USD');
@@ -157,8 +181,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
 
     public function test_close_report_ignores_order_when_payment_already_paid(): void
     {
-        // race 재현: 승인 콜백이 payment 를 먼저 PAID 로 갱신했으나 order_status 는 아직 PENDING_ORDER.
-        $order = $this->makeOrder('ORD-CLOSE-PAID-001', 10000);
+        // race 재현: 승인 콜백이 payment 를 PAID 로 갱신했고 결제 예정액은 이미 0원이 됐으나,
+        // order_status 관계가 아직 PENDING_ORDER 로 관측되는 순간에도 close-report 는 금액 불일치가
+        // 아니라 결제 성공으로 판단해 무시해야 한다.
+        $order = $this->makeOrder('ORD-CLOSE-PAID-001', 0);
         $order->setRelation('shippingAddress', new OrderAddress([
             'address_type' => 'shipping',
             'orderer_email' => 'buyer@example.com',
@@ -199,6 +225,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
             'order_number' => 'ORD-CLOSE-EASYPAY-001',
             'order_status' => OrderStatusEnum::PENDING_ORDER,
             'currency' => 'KRW',
+            'currency_snapshot' => self::krwCurrencySnapshot(),
             'subtotal_amount' => 10000,
             'total_amount' => 10000,
             'total_due_amount' => 10000,
@@ -246,6 +273,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $order->order_status = OrderStatusEnum::PENDING_ORDER;
         $order->currency = $currency;
         $order->total_due_amount = $amount;
+        $order->currency_snapshot = self::currencySnapshotFor($currency);
 
         return $order;
     }

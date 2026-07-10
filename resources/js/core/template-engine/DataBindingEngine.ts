@@ -1119,13 +1119,33 @@ export class DataBindingEngine {
         extendedContext.$computed = context._computed;
       }
 
+      // 활성 로케일 / 템플릿 ID 해석 — $localized 와 $t 가 공유한다.
+      //
+      // @since engine-v1.38.2 ActionDispatcher 경로 fallback — bindActionsToProps
+      //   이후 createHandler 에서 빌드된 action data context 는 `$templateId`/`$locale`
+      //   을 명시적으로 포함하지 않을 수 있다. 이 경우 `window.__templateApp.getConfig()`
+      //   로부터 회수하여 `{{$event.target.checked ? '$t:A' : '$t:B'}}` 같은 조건부
+      //   $t: 평가가 raw key 를 반환하던 버그를 해결한다.
+      //
+      // @since engine-v1.52.1 회수 결과를 `$localized` 도 공유한다. 이전에는 `$localized`
+      //   가 `$t` 보다 먼저 `context.$locale || 'ko'` 로 로케일을 확정해, ActionDispatcher
+      //   경로(init_actions 파생 등)에서 항상 ko 값을 반환했다. `$locale` 이 컨텍스트에
+      //   없는 것은 로케일이 ko 라는 뜻이 아니라 "이 경로가 로케일을 안 넘긴다"는 뜻이다.
+      let templateId = context.$templateId;
+      let resolvedLocale = context.$locale;
+      if (typeof window !== 'undefined' && (!templateId || !resolvedLocale)) {
+        const appConfig = (window as any).__templateApp?.getConfig?.();
+        templateId ??= appConfig?.templateId;
+        resolvedLocale ??= appConfig?.locale;
+      }
+      const locale = resolvedLocale || 'ko';
+
       // $localized 헬퍼 함수 추가
       // 다국어 객체에서 현재 로케일에 해당하는 값을 반환
       // 사용법:
       //   $localized(value)            - 객체면 로케일 우선순위로 반환, 문자열이면 그대로
       //   $localized(value, fallbackKey) - 활성 로케일 키 부재 시 $t(fallbackKey) 호출
       //                                   (settings JSON 등 시스템 카탈로그의 lang pack 보강용)
-      const locale = context.$locale || 'ko';
       extendedContext.$localized = (value: any, fallbackKey?: string): string => {
         if (value == null && !fallbackKey) {
           return '';
@@ -1175,28 +1195,11 @@ export class DataBindingEngine {
       // $t 헬퍼 함수 추가
       // 번역 키를 사용하여 다국어 텍스트를 반환
       // 사용법: $t('admin.settings.info.write_only') - 번역된 텍스트 반환
-      // 컨텍스트에서 번역 관련 정보 추출
       //
-      // @since engine-v1.38.2 ActionDispatcher 경로 fallback — bindActionsToProps
-      //   이후 createHandler 에서 빌드된 action data context 는 `$templateId`/`$locale`
-      //   을 명시적으로 포함하지 않을 수 있다. 이 경우 `window.__templateApp.getConfig()`
-      //   로부터 회수하여 `{{$event.target.checked ? '$t:A' : '$t:B'}}` 같은 조건부
-      //   $t: 평가가 raw key 를 반환하던 버그를 해결한다.
-      let templateId = context.$templateId;
-      let resolvedLocale = locale;
-      if (!templateId && typeof window !== 'undefined') {
-        const templateApp = (window as any).__templateApp;
-        const appConfig = templateApp?.getConfig?.();
-        if (appConfig?.templateId) {
-          templateId = appConfig.templateId;
-          if (!context.$locale && appConfig.locale) {
-            resolvedLocale = appConfig.locale;
-          }
-        }
-      }
+      // templateId / locale 은 위에서 해석된 값을 그대로 사용한다($localized 와 공유).
       const translationContext = {
         templateId: templateId || '',
-        locale: resolvedLocale,
+        locale,
       };
       extendedContext.$t = (key: string): string => {
         if (!key || typeof key !== 'string') {

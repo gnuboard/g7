@@ -4,6 +4,7 @@
       "kginicis_cbt_reconciliation": "海外決済精算",
       "kginicis_escrow_delivery": "エスクロー配送",
       "kginicis_status": "決済ステータス",
+      "kginicis_test_mode_status": "テストモード状態",
       "kginicis_test_map": "テスト決済マップ",
       "settings": "決済設定",
       "vbank_info": "仮想口座情報"
@@ -74,6 +75,10 @@
     "test_mode_badge": "テスト決済",
     "test_mode_warning_badge": "テスト決済注意事項",
     "test_mode_order_notice": "この注文はテスト決済として処理されました。実際のカード承認・出金通知が発生する可能性がありますが、KGイニシスのテスト取引は毎日23:00～23:50の間に自動キャンセルされる可能性があります。絶対に配送しないでください。",
+    "test_mode_settings_warning_plugin": "KGイニシス",
+    "test_mode_settings_warning_title": "（注意）KGイニシス決済設定が現在テスト決済になっています。",
+    "test_mode_settings_warning_body": "テスト決済では実際の決済は発生しません。ショップ運営中の場合は必ず実決済に設定して運営してください。",
+    "test_mode_settings_warning_action": "実決済に設定",
     "order_verify_title": "KGイニシス決済検証",
     "order_verify_description": "KGイニシスサーバーからリアルタイムで決済ステータスを照会します。",
     "order_verify_button": "決済照会",

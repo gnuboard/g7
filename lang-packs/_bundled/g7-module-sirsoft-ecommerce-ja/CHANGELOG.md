@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-07-10
+
+### Removed
+
+- 배송설정의 배송가능 국가 추가 화면이 설치된 언어 전체에 대해 국가명 입력칸을 자동으로 만들도록 바뀌면서, 더 이상 쓰이지 않게 된 "한국어명"·"영문명" 라벨과 입력 예시 문구를 제거했습니다.
+
 ## [1.0.1] - 2026-07-08
 
 ### Added
