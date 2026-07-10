@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * (settings.countries.{code}.name)이 읽기 시점에 보강하고, 운영자가 직접 추가한 국가는
  * 운영자가 채운다. 따라서 빈 문자열 키는 제거해 "부재" 로 정규화한다.
  *
- * 이름을 새로 채우지는 않는다(PO 결정) — 청소만 한다.
+ * 이름을 새로 채우지는 않는다 — 청소만 한다.
  */
 class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
 {
@@ -142,7 +142,7 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
 
     public function test_country_names_are_never_filled_in(): void
     {
-        // PO 결정: 이름을 새로 채우지 않는다. 부재 로케일은 언어팩이 읽기 시점에 보강한다.
+        // 이름을 새로 채우지 않는다. 부재 로케일은 언어팩이 읽기 시점에 보강한다.
         $this->writeSettings([
             'default_country' => 'KR',
             'available_countries' => [
