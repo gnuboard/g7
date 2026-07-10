@@ -76,14 +76,14 @@ G7 의 REST API 는 라우트 `->name()` 규약은 있으나 엔드포인트별 
 확장 API 문서의 발견성은 이 목차를 통해 확보한다. `api:docgen` 과 코어 인덱스 생성기
 (`generate-docs-index.cjs`) 는 확장명을 하드코딩하지 않고
 `{modules,plugins}/_bundled/*/docs/api/README.md` 를 **패턴 스캔**해, 코어 README 의 "확장 API 레퍼런스"
-표와 CLAUDE.md·AGENTS.md·docs-index 에 자동 편입한다(동적 로딩 원칙 — 코어는 규약과 스캔 패턴만, 확장
+표와 AGENTS.md·docs-index 에 자동 편입한다(동적 로딩 원칙 — 코어는 규약과 스캔 패턴만, 확장
 이름은 파일 시스템에서 발견). 문서 수·엔드포인트 수는 각 README 의 집계 라인
 (`**문서 수**: N · **엔드포인트 수**: M`)에서 읽으므로, 이 라인 형식을 바꾸면 두 스캐너를 함께 갱신한다.
 
 처음 진입하는 개발자/AI 의 도달 경로:
 
 ```text
-README.md "API 레퍼런스"  또는  CLAUDE.md "API 레퍼런스 진입점" 표
+README.md "API 레퍼런스"  또는  AGENTS.md "API 레퍼런스 진입점" 표
   → docs/backend/api/README.md (공통 규약 + 코어 목차 + 확장 목차)
   → {도메인}.md  또는  {확장}/docs/api/README.md
   → 엔드포인트별 파라미터·응답·예시
