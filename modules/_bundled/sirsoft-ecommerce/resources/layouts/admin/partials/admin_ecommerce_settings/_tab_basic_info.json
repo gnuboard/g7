@@ -74,6 +74,7 @@
                   ]
                 },
                 {
+                  "comment": "w-80(320px) 고정폭은 폰(<768px)의 콘텐츠 영역을 넘긴다(320px 뷰포트에서 32px 초과). 태블릿(768~1023px)은 넘치지 않으므로 portable 이 아니라 mobile(0~767px) 로 한정한다 — portable 로 잡으면 태블릿에서 입력칸이 불필요하게 늘어난다. className 오버라이드는 통째 교체라 에러 분기 표현식을 복제한다.",
                   "type": "basic",
                   "name": "Input",
                   "props": {
@@ -82,6 +83,13 @@
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.shop_name_placeholder",
                     "className": "{{_local.errors?.['basic_info.shop_name'] ? 'input input-error w-80' : 'input w-80'}}",
                     "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "responsive": {
+                    "mobile": {
+                      "props": {
+                        "className": "{{_local.errors?.['basic_info.shop_name'] ? 'input input-error w-full' : 'input w-full'}}"
+                      }
+                    }
                   }
                 },
                 {
@@ -453,6 +461,7 @@
                   "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.business_category"
                 },
                 {
+                  "comment": "w-80(320px) 고정폭은 폰(<768px)의 콘텐츠 영역을 넘긴다(320px 뷰포트에서 32px 초과). 태블릿(768~1023px)은 넘치지 않으므로 portable 이 아니라 mobile(0~767px) 로 한정한다 — portable 로 잡으면 태블릿에서 입력칸이 불필요하게 늘어난다. className 오버라이드는 통째 교체라 에러 분기 표현식을 복제한다.",
                   "type": "basic",
                   "name": "Input",
                   "props": {
@@ -461,6 +470,13 @@
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.business_category_placeholder",
                     "className": "{{_local.errors?.['basic_info.business_category'] ? 'input input-error w-80' : 'input w-80'}}",
                     "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "responsive": {
+                    "mobile": {
+                      "props": {
+                        "className": "{{_local.errors?.['basic_info.business_category'] ? 'input input-error w-full' : 'input w-full'}}"
+                      }
+                    }
                   }
                 },
                 {
@@ -778,10 +794,18 @@
                   "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.email"
                 },
                 {
+                  "comment": "flex-center 는 nowrap 이고 자식이 고정폭(아이디 w-36 + @ + 도메인 입력 + '직접입력' 드롭다운 104px)이라 좁은 뷰포트에서 이 행이 콘텐츠 영역을 71px 넘긴다 → portable 에서 줄바꿈.",
                   "type": "basic",
                   "name": "Div",
                   "props": {
                     "className": "flex-center gap-2"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "flex-center flex-wrap gap-2"
+                      }
+                    }
                   },
                   "children": [
                     {

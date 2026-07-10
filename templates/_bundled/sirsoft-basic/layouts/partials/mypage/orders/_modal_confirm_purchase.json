@@ -9,7 +9,6 @@
   "id": "modal_confirm_purchase",
   "props": {
     "width": "480px",
-    "className": "max-w-full",
     "title": "$t:mypage.order_detail.confirm_modal.title"
   },
   "children": [
@@ -77,7 +76,7 @@
                 {
                   "type": "basic",
                   "name": "Icon",
-                  "props": { "name": "gift", "className": "w-4 h-4 text-blue-600 dark:text-blue-400" }
+                  "props": { "name": "gift", "className": "text-base text-blue-600 dark:text-blue-400" }
                 },
                 {
                   "type": "basic",
@@ -104,7 +103,7 @@
             {
               "type": "basic",
               "name": "Icon",
-              "props": { "name": "triangle-exclamation", "className": "w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" }
+              "props": { "name": "triangle-exclamation", "className": "text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" }
             },
             {
               "type": "basic",

@@ -9,13 +9,25 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 32개 | 정상 |
+| [백엔드](backend/) | 33개 | 정상 |
 | [프론트엔드](frontend/) | 51개 | 정상 |
 | [확장 시스템](extension/) | 31개 | 정상 |
 | 공통 | 20개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
 <!-- AUTO-GENERATED-END: docs-readme-stats -->
+
+---
+
+## API 레퍼런스
+
+G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 필드·요청/응답 예시입니다.
+템플릿의 `data_sources` 를 작성하거나 외부에서 G7 을 연동할 때 참고하세요.
+
+| 문서 | 설명 |
+|------|------|
+| [backend/api/README.md](backend/api/README.md) | **API 레퍼런스 진입점** — 공통 규약(인증·응답 봉투·페이지네이션·에러) + 코어/확장 전체 목차 |
+| [backend/api-documentation.md](backend/api-documentation.md) | API 문서 작성·갱신 규정 (기여자용) |
 
 ---
 
@@ -113,13 +125,14 @@
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (32개)
+### 백엔드 (33개)
 
 | 문서 | 제목 |
 |------|------|
 | [activity-log-hooks.md](backend/activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) |
 | [activity-log.md](backend/activity-log.md) | 활동 로그 시스템 (Activity Log System) |
 | [admin-settings-access.md](backend/admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) |
+| [api-documentation.md](backend/api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) |
 | [api-resources.md](backend/api-resources.md) | API 리소스 |
 | [authentication.md](backend/authentication.md) | 인증 및 세션 처리 |
 | [broadcasting.md](backend/broadcasting.md) | Broadcasting (실시간 이벤트) |

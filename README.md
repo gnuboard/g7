@@ -8,12 +8,17 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.0.2-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.0.3-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
   <a href="#"><img src="https://img.shields.io/badge/status-Stable-brightgreen" alt="Status"></a>
+</p>
+
+<p align="center">
+  <a href="https://g7.gnuboard.com"><strong>데모 사이트</strong></a> ·
+  <a href="https://g7.gnuboard.com/admin"><strong>관리자 데모</strong></a>
 </p>
 
 ---
@@ -462,7 +467,8 @@ cp .env.example .env
 | 플러그인 개발 | [docs/extension/plugin-development.md](docs/extension/plugin-development.md) |
 | 템플릿 개발 | [docs/extension/template-basics.md](docs/extension/template-basics.md) |
 | 테스트 | [docs/testing-guide.md](docs/testing-guide.md) |
-| API 레퍼런스 | 준비 중 |
+| API 레퍼런스 | [docs/backend/api/README.md](docs/backend/api/README.md) |
+| API 문서 작성 규정 | [docs/backend/api-documentation.md](docs/backend/api-documentation.md) |
 
 ---
 

@@ -4,7 +4,8 @@
  * 템플릿에서 사용하는 모든 커스텀 핸들러를 정의합니다.
  */
 
-import { setLocaleHandler } from './setLocaleHandler';
+// 언어 관련 핸들러는 엔진 레벨(ActionDispatcher)에서 처리
+// setLocale 핸들러는 ActionDispatcher에 빌트인으로 등록되어 있음
 import { setThemeHandler, initThemeHandler } from './setThemeHandler';
 import { scrollToSectionHandler } from './scrollToSectionHandler';
 import { initMenuFromUrlHandler } from './initMenuFromUrlHandler';
@@ -33,7 +34,7 @@ import { downloadAttachmentHandler } from './downloadAttachment';
  * 새로운 핸들러 추가 시 여기에만 등록하면 자동으로 ActionDispatcher에 등록됩니다.
  */
 export const handlerMap = {
-  setLocale: setLocaleHandler,
+  // 언어: setLocale은 엔진 레벨(ActionDispatcher)에서 빌트인으로 처리
   setTheme: setThemeHandler,
   initTheme: initThemeHandler,
   scrollToSection: scrollToSectionHandler,

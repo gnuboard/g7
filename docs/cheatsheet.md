@@ -253,6 +253,22 @@ php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치)
 php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
 ```
 
+### API 문서 Artisan 커맨드
+
+```bash
+# API 레퍼런스 문서 생성/갱신 (실측 기반 스캐폴딩). 상세: docs/backend/api-documentation.md
+php artisan api:docgen --scope=core                 # 코어 문서 생성 (범위: core|module:{id}|plugin:{id}|all)
+php artisan api:docgen --scope=core --seed           # 실측용 완전 샘플 시드 후 생성 (개발 환경 전용)
+php artisan api:docgen --scope=core --base-url=https://example.com  # 실측 기준 URL 지정
+php artisan api:docgen --scope=core --examples-only  # 표·서술 불가침, 요청/응답 예시 블록만 in-place 삽입
+php artisan api:docgen --scope=core --check           # 생성 없이 누락/drift 만 리포트 (하네스 소비)
+php artisan api:docgen --scope=core --dry-run         # 생성 대상 파일/엔드포인트 목록만 출력
+
+# 파라미터/응답 필드 설명 TODO 셀 in-place 백필 (재생성 없이 공통 필드 자동 서술, 멱등)
+php artisan api:docgen-backfill-params               # 요청 파라미터 표 TODO 셀 백필
+php artisan api:docgen-backfill-fields               # 응답 필드 표 TODO 셀 백필
+```
+
 ---
 
 ## 확장 업데이트 (CLI + API)

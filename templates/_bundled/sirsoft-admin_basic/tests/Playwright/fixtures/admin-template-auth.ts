@@ -12,11 +12,16 @@ import { issueToken, authenticatePage } from '../../../../../../tests/Playwright
 type AdminTemplateAuthFixtures = {
   /** 레이아웃 편집/조회 권한 보유 토큰 */
   layoutEditToken: string;
+  /** 관리자 대시보드 진입 권한 보유 토큰 (모바일 뷰포트 검증용) */
+  adminDashboardToken: string;
 };
 
 export const test = base.extend<AdminTemplateAuthFixtures>({
   layoutEditToken: async ({}, use) => {
     await use(issueToken('core.templates.layouts.edit', 'core.templates.read'));
+  },
+  adminDashboardToken: async ({}, use) => {
+    await use(issueToken('core.dashboard.read'));
   },
 });
 

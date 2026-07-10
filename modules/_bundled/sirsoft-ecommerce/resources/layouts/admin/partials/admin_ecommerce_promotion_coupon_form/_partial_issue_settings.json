@@ -194,13 +194,20 @@
                           ]
                         },
                         {
-                          "comment": "기간설정 시: 시작일 ~ 종료일",
+                          "comment": "기간설정 시: 시작일 ~ 종료일. flex-center 는 nowrap 이고 datetime-local 입력이 각 208px(w-52) 이라 좁은 뷰포트에서 행이 콘텐츠 영역을 넘친다 → portable 에서 줄바꿈 + 입력 전폭.",
                           "id": "issue_period_range",
                           "type": "basic",
                           "name": "Div",
                           "if": "{{_local.issue_period_type === 'limited'}}",
                           "props": {
                             "className": "flex-center gap-2"
+                          },
+                          "responsive": {
+                            "portable": {
+                              "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                              }
+                            }
                           },
                           "children": [
                             {
@@ -210,6 +217,15 @@
                                 "type": "datetime-local",
                                 "name": "issue_from",
                                 "className": "input w-52"
+                              },
+                              "responsive": {
+                                "portable": {
+                                  "props": {
+                                    "type": "datetime-local",
+                                    "name": "issue_from",
+                                    "className": "input w-full"
+                                  }
+                                }
                               }
                             },
                             {
@@ -227,6 +243,15 @@
                                 "type": "datetime-local",
                                 "name": "issue_to",
                                 "className": "input w-52"
+                              },
+                              "responsive": {
+                                "portable": {
+                                  "props": {
+                                    "type": "datetime-local",
+                                    "name": "issue_to",
+                                    "className": "input w-full"
+                                  }
+                                }
                               }
                             }
                           ]

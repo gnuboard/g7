@@ -1393,7 +1393,9 @@
     "page_detail_default": "基本",
     "page_detail_attachments_open": "添付を展開",
     "order_detail_default": "通常注文",
-    "order_detail_partially_cancelled": "部分キャンセル"
+    "order_detail_partially_cancelled": "部分キャンセル",
+    "admin_base_default": "基本",
+    "sidebar_open": "モバイルメニュー展開"
   },
   "cell_border": {
     "side_all": "すべて",

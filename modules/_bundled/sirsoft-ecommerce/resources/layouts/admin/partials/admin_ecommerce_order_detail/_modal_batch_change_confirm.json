@@ -8,8 +8,7 @@
   "name": "Modal",
   "props": {
     "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.title",
-    "width": "750px",
-    "className": "max-w-full"
+    "width": "750px"
   },
   "children": [
     {
@@ -48,7 +47,14 @@
                       "props": {
                         "className": "col-span-5"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.product_col"
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.product_col",
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": ""
+                          }
+                        }
+                      }
                     },
                     {
                       "type": "basic",
@@ -56,7 +62,14 @@
                       "props": {
                         "className": "col-span-2 text-right"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.price_col"
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.price_col",
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "text-left"
+                          }
+                        }
+                      }
                     },
                     {
                       "type": "basic",
@@ -64,7 +77,14 @@
                       "props": {
                         "className": "col-span-2 text-center"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.change_quantity_col"
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.change_quantity_col",
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "text-left"
+                          }
+                        }
+                      }
                     },
                     {
                       "type": "basic",
@@ -72,9 +92,21 @@
                       "props": {
                         "className": "col-span-3 text-center"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.current_status_col"
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.current_status_col",
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "text-left"
+                          }
+                        }
+                      }
                     }
-                  ]
+                  ],
+                  "responsive": {
+                    "portable": {
+                      "if": "{{false}}"
+                    }
+                  }
                 },
                 {
                   "type": "basic",
@@ -165,7 +197,14 @@
                                 }
                               ]
                             }
-                          ]
+                          ],
+                          "responsive": {
+                            "portable": {
+                              "props": {
+                                "className": "flex-center gap-2 min-w-0"
+                              }
+                            }
+                          }
                         },
                         {
                           "type": "basic",
@@ -175,11 +214,12 @@
                           },
                           "children": [
                             {
+                              "comment": "whitespace-nowrap — 금액은 순수 숫자 토큰이라 숫자 내부에서 절대 줄바꿈되지 않아야 한다(`1,249,000` → `1,249` / `,000`). portable 세로 스택으로 셀이 전폭이라 현재는 절단이 없으나, 셀이 다시 좁아지면 즉시 재발하므로 의도를 코드에 고정한다.",
                               "type": "basic",
                               "name": "P",
                               "if": "{{confirmItem.original_price && Number(confirmItem.original_price) !== Number(confirmItem.unit_price)}}",
                               "props": {
-                                "className": "text-hint line-through"
+                                "className": "text-hint line-through whitespace-nowrap"
                               },
                               "text": "{{Number(confirmItem.original_price).toLocaleString()}}"
                             },
@@ -187,11 +227,18 @@
                               "type": "basic",
                               "name": "P",
                               "props": {
-                                "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                "className": "text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap"
                               },
                               "text": "{{Number(confirmItem.unit_price).toLocaleString()}}"
                             }
-                          ]
+                          ],
+                          "responsive": {
+                            "portable": {
+                              "props": {
+                                "className": "text-left"
+                              }
+                            }
+                          }
                         },
                         {
                           "type": "basic",
@@ -230,7 +277,14 @@
                               },
                               "text": "/ {{confirmItem.quantity}}"
                             }
-                          ]
+                          ],
+                          "responsive": {
+                            "portable": {
+                              "props": {
+                                "className": "flex justify-start"
+                              }
+                            }
+                          }
                         },
                         {
                           "type": "basic",
@@ -243,13 +297,27 @@
                               "type": "basic",
                               "name": "Span",
                               "props": {
-                                "className": "{{({'pending_order':'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300','pending_payment':'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300','payment_complete':'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300','shipping_hold':'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300','preparing':'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300','shipping_ready':'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300','shipping':'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300','delivered':'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300','cancelled':'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300','confirmed':'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300'})[confirmItem.option_status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                "className": "{{({'pending_order':'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300','pending_payment':'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300','payment_complete':'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300','shipping_hold':'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300','preparing':'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300','shipping_ready':'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300','shipping':'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300','delivered':'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300','cancelled':'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300','confirmed':'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300'})[confirmItem.option_status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2 py-0.5 rounded text-xs font-medium break-keep"
                               },
                               "text": "{{({'pending_order':'$t:sirsoft-ecommerce.admin.order.status.waiting','pending_payment':'$t:sirsoft-ecommerce.admin.order.status.payment_pending','payment_complete':'$t:sirsoft-ecommerce.admin.order.status.payment_complete','shipping_hold':'$t:sirsoft-ecommerce.admin.order.status.shipping_hold','preparing':'$t:sirsoft-ecommerce.admin.order.status.preparing','shipping_ready':'$t:sirsoft-ecommerce.admin.order.status.shipping_ready','shipping':'$t:sirsoft-ecommerce.admin.order.status.shipping','delivered':'$t:sirsoft-ecommerce.admin.order.status.delivered','cancelled':'$t:sirsoft-ecommerce.admin.order.status.cancelled','confirmed':'$t:sirsoft-ecommerce.admin.order.status.confirmed'})[confirmItem.option_status] ?? confirmItem.option_status}}"
                             }
-                          ]
+                          ],
+                          "responsive": {
+                            "portable": {
+                              "props": {
+                                "className": "flex justify-start"
+                              }
+                            }
+                          }
                         }
-                      ]
+                      ],
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "grid grid-cols-1 gap-2 px-3 py-2 items-center"
+                          }
+                        }
+                      }
                     }
                   ]
                 }

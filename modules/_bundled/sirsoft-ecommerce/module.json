@@ -5,7 +5,7 @@
         "ko": "이커머스",
         "en": "Ecommerce"
     },
-    "version": "1.0.1",
+    "version": "1.0.2",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 이커머스 모듈 - 상품, 주문, 결제 관리",

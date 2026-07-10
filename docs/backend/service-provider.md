@@ -334,11 +334,14 @@ protected function loadModuleRoutes(): void
 
 ### 동작 표
 
-| 환경 | `installer_completed` | 동작 |
-|------|----------------------|------|
-| 프로덕션 (설치 완료) | `true` | 가드 통과 → `hasTable` 스킵 (쿼리 0건) |
-| 인스톨러 실행 중 / 마이그레이션 전 | `false` (기본값) | 기존 `hasTable` 폴백 경로 (원본 동작 보존) |
-| 테스트 (`.env.testing` 에 플래그 없음) | `false` | 기존 `hasTable` 경로 |
+| 환경 | `installer_completed` | 마이그레이션 명령 | 동작 |
+|------|----------------------|------------------|------|
+| 프로덕션 (설치 완료, 웹 요청) | `true` | 아님 | 가드 통과 → `hasTable` 스킵 (쿼리 0건) |
+| 설치 완료 `.env` 복사 + 빈 DB (마이그레이션 전) | `true` | **실행 중** | fast-path 무력화 → `hasTable` 폴백 (table not found 부팅 실패 방지) |
+| 인스톨러 실행 중 / 마이그레이션 전 | `false` (기본값) | — | 기존 `hasTable` 폴백 경로 (원본 동작 보존) |
+| 테스트 (`.env.testing` 에 플래그 없음) | `false` | — | 기존 `hasTable` 경로 |
+
+두 번째 행이 이 가드의 핵심 케이스다. `INSTALLER_COMPLETED=true` 가 적힌 `.env` 를 빈 DB 새 서버에 복사한 뒤 `php artisan migrate` 로 테이블을 만들기 **전** 에 앱이 부팅되면, fast-path 가 테이블 존재를 잘못 전제하여 뒤따르는 쿼리가 "table not found" 로 부팅을 깨뜨린다. 이 컨텍스트에서는 fast-path 를 신뢰하지 않고 실제 `hasTable` 검증 경로로 폴백해야 한다 (아래 "마이그레이션 컨텍스트 가드" 참조).
 
 ### 적용 가이드
 
@@ -346,6 +349,66 @@ protected function loadModuleRoutes(): void
 - **`hasTable` 폴백 경로는 반드시 유지** — `installer_completed=false` 환경에서도 안전하게 부팅되어야 함
 - **try/catch 도 그대로 유지** — DB 연결 실패 시 안전한 스킵 계약 준수
 - 가드는 hasTable 체크 **전체 블록을 `if (! config('app.installer_completed'))` 로 래핑** 하는 형태
+- **fast-path 이후 쿼리가 try/catch 로 보호되지 않는 지점은 마이그레이션 컨텍스트 가드를 함께 적용** (아래 참조). 예외로 보호되는 지점은 빈 DB 에서도 안전하므로 불필요
+
+### 마이그레이션 컨텍스트 가드
+
+`installer_completed` fast-path 는 테이블 존재를 전제한다. 그러나 `INSTALLER_COMPLETED=true` 가 적힌 `.env` 를 빈 DB 새 서버에 복사한 뒤 `php artisan migrate` 로 테이블을 만들기 **전** 에 앱이 부팅되면, fast-path 가 `true` 를 반환하고 곧이어 실제 쿼리(`Model::where()->pluck()` 등)가 실행되어 "table not found" 로 부팅이 실패한다. 마이그레이션을 실행하려는 부팅에서 그 명령이 오히려 실패하는 닭-달걀 상태다.
+
+이를 막기 위해, 스키마를 파괴/재생성하는 마이그레이션 계열 콘솔 명령 판정을 `App\Support\InstallerContext::isSchemaMutatingCommand()` 로 단일 SSoT 화하고, fast-path 지점에 가드로 결합한다. 명령 리스트: `migrate`, `migrate:fresh`, `migrate:refresh`, `migrate:rollback`, `migrate:reset`, `db:wipe`.
+
+```php
+// App\Support\InstallerContext
+public static function isSchemaMutatingCommand(): bool
+{
+    if (! app()->runningInConsole()) {
+        return false;
+    }
+
+    return in_array(
+        $_SERVER['argv'][1] ?? null,
+        ['migrate', 'migrate:fresh', 'migrate:refresh', 'migrate:rollback', 'migrate:reset', 'db:wipe'],
+        true
+    );
+}
+```
+
+가드 결합 방식은 지점의 **논리 극성** 에 따라 다르다:
+
+- **Trait (fast-path 통과 조건)** — `&&` 로 결합. 마이그레이션 중이면 fast-path 를 건너뛰고 hasTable 폴백으로 진입.
+
+  ```php
+  if (! InstallerContext::isSchemaMutatingCommand() && config('app.installer_completed')) {
+      return true;
+  }
+  ```
+
+- **RouteServiceProvider (hasTable 검증 블록 진입 조건)** — `||` 로 결합. 마이그레이션 중이면 hasTable 검증 경로로 진입해 빈 DB 시 early return → 무방비 `pluck` 도달 차단.
+
+  ```php
+  if (! config('app.installer_completed') || InstallerContext::isSchemaMutatingCommand()) {
+      try {
+          if (! Schema::hasTable('modules')) {
+              return;
+          }
+          // ...
+      } catch (\Exception) {
+          return;
+      }
+  }
+  ```
+
+`isRegistryReady()` 처럼 fast-path 앞에서 조기 반환하는 지점은 `if (InstallerContext::isSchemaMutatingCommand()) { return false; }` 로 단순 게이트한다.
+
+#### 부류 A (가드 필수) vs 부류 B (불필요)
+
+| 부류 | 조건 | 예 | 조치 |
+|------|------|-----|------|
+| A | fast-path 이후 쿼리가 try/catch 로 **미보호** → 빈 DB 에서 부팅 실패 | `Caches{Module,Plugin,Template}Status`, `Module/PluginRouteServiceProvider` | 마이그레이션 컨텍스트 가드 적용 |
+| B | fast-path 이후 쿼리가 try/catch(\Throwable) 로 **보호** → 예외를 삼켜 안전한 기본값 반환 | `NotificationHookListener`, `IdentityPolicyRepository::{listHookTargets,activeExtensionIdentifiers}` | 가드 불필요 (예외 흡수로 안전) |
+
+### config 캐시 재생성 주의
+
 - `config:cache` 는 config 소스를 변경하는 라이프사이클에서 `App\Support\ConfigCacheHelper::rebuild()` 로 자동 재생성된다 (아래 "config 캐시 자동 재생성" 참조). `.env` 를 직접 편집한 경우처럼 헬퍼를 거치지 않는 변경은 여전히 `php artisan config:clear && php artisan config:cache` 를 수동 실행한다
 
 ### 확장 Trait 패턴

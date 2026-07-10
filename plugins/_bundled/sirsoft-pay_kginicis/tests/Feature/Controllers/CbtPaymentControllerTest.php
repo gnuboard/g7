@@ -1284,6 +1284,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $order->order_status = OrderStatusEnum::PENDING_ORDER;
         $order->currency = 'JPY';
         $order->total_due_amount = $amount;
+        $order->currency_snapshot = self::jpyCurrencySnapshot();
 
         return $order;
     }
@@ -1294,7 +1295,7 @@ class CbtPaymentControllerTest extends PluginTestCase
             'order_number' => $orderNumber,
             'order_status' => OrderStatusEnum::PENDING_ORDER,
             'currency' => 'JPY',
-            'currency_snapshot' => ['JPY' => 1.0],
+            'currency_snapshot' => self::jpyCurrencySnapshot(),
             'subtotal_amount' => $amount,
             'total_discount_amount' => 0,
             'total_coupon_discount_amount' => 0,
@@ -1328,7 +1329,7 @@ class CbtPaymentControllerTest extends PluginTestCase
             'paid_amount_local' => 0,
             'paid_amount_base' => 0,
             'currency' => 'JPY',
-            'currency_snapshot' => ['JPY' => 1.0],
+            'currency_snapshot' => self::jpyCurrencySnapshot(),
             'paid_at' => null,
         ]);
 
@@ -1369,6 +1370,7 @@ class CbtPaymentControllerTest extends PluginTestCase
             'order_number' => $orderNumber,
             'order_status' => OrderStatusEnum::PENDING_ORDER->value,
             'currency' => 'JPY',
+            'currency_snapshot' => json_encode(self::jpyCurrencySnapshot(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'subtotal_amount' => $amount,
             'total_amount' => $amount,
             'total_tax_amount' => $amount,

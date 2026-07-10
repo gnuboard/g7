@@ -12,6 +12,51 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Logger } from '../../utils/Logger';
 import { hasExplicitSetStateForField } from '../FormContext';
+import { responsiveManager } from '../ResponsiveManager';
+
+describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
+  /**
+   * 사례: 텍스트가 길어질수록 형제 버튼이 좁아지는데 오버플로 검사로는 안 잡힘
+   *
+   * 해결책이 `responsive.mobile`(0~767) 로 좁힌 2행 레이아웃에 의존한다.
+   * `portable`(0~1023) 이면 태블릿에서 불필요하게 줄바꿈된다.
+   * 여기서는 그 전제인 스코프 경계와 우선순위를 고정한다.
+   *
+   * @see docs/frontend/troubleshooting-components-misc.md "flex 압착(shrink) 관련 이슈"
+   */
+  describe('[사례 1] responsive 스코프 경계 — mobile(0~767) vs portable(0~1023)', () => {
+    it('mobile 은 767px 까지만 매칭되고 768px 부터는 미적용', () => {
+      const responsive = { mobile: { props: { className: 'flex-wrap' } } };
+
+      expect(responsiveManager.getMatchingKey(responsive, 320)).toBe('mobile');
+      expect(responsiveManager.getMatchingKey(responsive, 390)).toBe('mobile');
+      expect(responsiveManager.getMatchingKey(responsive, 767)).toBe('mobile');
+      // 768px 부터 태블릿 — 한 줄 유지 (버튼 261px + 21자 제목 323px = 584px < 735px)
+      expect(responsiveManager.getMatchingKey(responsive, 768)).toBeNull();
+      expect(responsiveManager.getMatchingKey(responsive, 1280)).toBeNull();
+    });
+
+    it('portable 은 1023px 까지 매칭되어 태블릿도 포함한다', () => {
+      const responsive = { portable: { props: { className: 'flex-wrap' } } };
+
+      expect(responsiveManager.getMatchingKey(responsive, 767)).toBe('portable');
+      expect(responsiveManager.getMatchingKey(responsive, 768)).toBe('portable');
+      expect(responsiveManager.getMatchingKey(responsive, 1023)).toBe('portable');
+      expect(responsiveManager.getMatchingKey(responsive, 1024)).toBeNull();
+    });
+
+    it('mobile 과 portable 이 함께 정의되면 좁은 범위(mobile)가 우선한다', () => {
+      const responsive = {
+        portable: { props: { className: 'portable-wins' } },
+        mobile: { props: { className: 'mobile-wins' } },
+      };
+
+      expect(responsiveManager.getMatchingKey(responsive, 390)).toBe('mobile');
+      // 태블릿 구간에서는 mobile 이 매칭되지 않으므로 portable 로 폴백
+      expect(responsiveManager.getMatchingKey(responsive, 900)).toBe('portable');
+    });
+  });
+});
 
 describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
   beforeEach(() => {

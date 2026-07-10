@@ -4,6 +4,7 @@
             "kginicis_cbt_reconciliation": "Cross-border Reconciliation",
             "kginicis_escrow_delivery": "Escrow Delivery",
             "kginicis_status": "Payment Status",
+            "kginicis_test_mode_status": "Test Mode Status",
             "kginicis_test_map": "Test Payment Map",
             "settings": "Payment Settings",
             "vbank_info": "Virtual Account Info"
@@ -52,7 +53,7 @@
             "japan_contact_email_required": "Contact email for the live Japan payment window is required.",
             "japan_contact_phone_required": "Contact phone for the live Japan payment window is required.",
             "japan_contact_opening_hours_required": "Contact opening hours for the live Japan payment window are required.",
-            "replace_sample_value": "Replace sample values with your real contract information in live mode."
+            "replace_sample_value": "Replace the sample Japan merchant display information with your real contract information in live mode."
         }
     },
     "payment_error": {
@@ -74,6 +75,10 @@
         "test_mode_badge": "Test Payment",
         "test_mode_warning_badge": "Test Payment WARNING)",
         "test_mode_order_notice": "This order was processed in test mode. Real card authorization/withdrawal notifications may occur, but KG Inicis test transactions may be automatically cancelled daily between 23:00 and 23:50. DO NOT ship this order.",
+        "test_mode_settings_warning_plugin": "KG Inicis",
+        "test_mode_settings_warning_title": "Warning: KG Inicis payments are currently set to test mode.",
+        "test_mode_settings_warning_body": "Test payments do not create real payments. If the shop is live, switch this plugin to live payment mode before operating.",
+        "test_mode_settings_warning_action": "Switch to live mode",
         "order_verify_title": "KG Inicis Payment Verification",
         "order_verify_description": "Query real-time payment status from KG Inicis servers.",
         "order_verify_button": "Query Payment",

@@ -1,4 +1,3 @@
-import { setLocaleHandler } from './setLocaleHandler';
 import { setThemeHandler, initThemeHandler } from './setThemeHandler';
 import { scrollToSectionHandler } from './scrollToSectionHandler';
 import { initMenuFromUrlHandler } from './initMenuFromUrlHandler';
@@ -16,7 +15,6 @@ import { downloadAttachmentHandler } from './downloadAttachment';
  * 새로운 핸들러 추가 시 여기에만 등록하면 자동으로 ActionDispatcher에 등록됩니다.
  */
 export declare const handlerMap: {
-    readonly setLocale: typeof setLocaleHandler;
     readonly setTheme: typeof setThemeHandler;
     readonly initTheme: typeof initThemeHandler;
     readonly scrollToSection: typeof scrollToSectionHandler;

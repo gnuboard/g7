@@ -1,0 +1,12246 @@
+# Modules API 레퍼런스
+
+> **소유**: 코어 · **생성**: `php artisan api:docgen` (실측 기반). @generated 블록은 재생성 시 갱신되며, 사람이 작성한 설명은 보존됩니다.
+
+---
+
+## TL;DR (5초 요약)
+
+```text
+1. 이 문서는 실제 API 호출로 실측한 Modules 엔드포인트 레퍼런스입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
+3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
+5. 설명(TODO) 칸은 사람이 채웁니다
+```
+
+---
+
+
+### GET /api/admin/modules
+<!-- @generated:start:api.admin.modules.index -->
+- **라우트명**: `api.admin.modules.index`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@index`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.read|core.menus.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
+| filters | query | array | 아니오 | max 10 | 추가 필터 조건 맵 (필드별 조건) |
+| status | query | string | 아니오 | `installed`, `not_installed`, `active`, `inactive` | 상태 필터 (해당 상태의 항목만 조회) |
+| with | query | array | 아니오 | max 5 | 함께 포함할 추가 데이터 옵션 목록 (허용값 `custom_menus` — 각 모듈의 커스텀 메뉴 데이터 포함) |
+| per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
+| page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
+| include_hidden | query | boolean | 아니오 | — | manifest `hidden=true` 로 표시된 숨김 확장까지 목록에 포함할지 여부 (기본 제외) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.index_validation_rules`).
+
+**요청 예시**
+
+```http
+GET /api/admin/modules?search=%EC%98%88%EC%8B%9C%EA%B0%92&filters=%EC%98%88%EC%8B%9C%EA%B0%92&status=installed&with=%EC%98%88%EC%8B%9C%EA%B0%92&per_page=1&page=1&include_hidden=1 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-board` | 모듈 고유 식별자 (vendor-module 형식) |
+| vendor | string | `sirsoft` | 벤더/개발자명 |
+| name | string | `게시판` | 모듈 이름 (다국어 JSON) |
+| version | string | `1.0.0` | 모듈 버전 |
+| description | string | `게시판 관리를 위한 모듈` | 모듈 설명 (다국어 JSON) |
+| dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
+| assets | object | `{"js":"\/api\/modules\/assets\/sirsoft-ecommerce\/dist\/j…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
+| update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
+| latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
+| file_version | string | `1.0.0` | 설치된 파일의 manifest 버전 |
+| github_url | string | `https://github.com/gnuboard/g7-module…` | GitHub 저장소 URL |
+| github_changelog_url | string | `https://github.com/gnuboard/g7-module…` | GitHub 변경 내역 URL |
+| is_pending | boolean | `false` | _pending 대기소에 있어 설치 대기 중인지 여부 |
+| is_bundled | boolean | `false` | 코어에 선탑재된 번들 확장인지 여부 |
+| deactivated_reason | null | `null` | 비활성화 사유: manual(사용자 수동) \| incompatible_core(코어 버전 호환성) \| null(active) |
+| deactivated_at | null | `null` | deactivated 일시 |
+| incompatible_required_version | null | `null` | 요구 코어 버전 미충족 시 필요한 버전 (호환되면 null) |
+| abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":t…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "모듈을 성공적으로 가져왔습니다.",
+    "data": {
+        "data": [
+            {
+                "identifier": "sirsoft-board",
+                "vendor": "sirsoft",
+                "name": "게시판",
+                "version": "1.0.0",
+                "description": "게시판 관리를 위한 모듈",
+                "dependencies": [],
+                "status": "active",
+                "assets": null,
+                "update_available": false,
+                "update_source": null,
+                "latest_version": null,
+                "file_version": "1.0.0",
+                "github_url": "https://github.com/gnuboard/g7-module-sirsoft-board",
+                "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/releases",
+                "is_pending": false,
+                "is_bundled": false,
+                "deactivated_reason": null,
+                "deactivated_at": null,
+                "incompatible_required_version": null,
+                "abilities": {
+                    "can_install": true,
+                    "can_activate": true,
+                    "can_uninstall": true
+                }
+            },
+            {
+                "identifier": "sirsoft-ecommerce",
+                "vendor": "sirsoft",
+                "name": "이커머스",
+                "version": "1.0.1",
+                "description": "그누보드7 이커머스 모듈 - 상품, 주문, 결제 관리",
+                "dependencies": [],
+                "status": "active",
+                "assets": {
+                    "js": "/api/modules/assets/sirsoft-ecommerce/dist/js/module.iife.js",
+                    "css": "/api/modules/assets/sirsoft-ecommerce/dist/css/module.css",
+                    "priority": 100
+                },
+                "update_available": false,
+                "update_source": null,
+                "latest_version": null,
+                "file_version": "1.0.1",
+                "github_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce",
+                "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce/releases",
+                "is_pending": false,
+                "is_bundled": false,
+                "deactivated_reason": null,
+                "deactivated_at": null,
+                "incompatible_required_version": null,
+                "abilities": {
+                    "can_install": true,
+                    "can_activate": true,
+                    "can_uninstall": true
+                }
+            },
+            "... (총 3건 중 2건 표시)"
+        ],
+        "pagination": {
+            "total": 3,
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 25
+        },
+        "meta": {
+            "total_modules": 3,
+            "active_modules": 0,
+            "system_modules": 0,
+            "user_modules": 3,
+            "total_installs": 0,
+            "average_rating": null,
+            "latest_version": "1.0.1",
+            "categories": [
+                null
+            ],
+            "dependency_count": 0
+        },
+        "abilities": {
+            "can_install": true,
+            "can_activate": true,
+            "can_uninstall": true
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read|core.menus.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** 설치된 모듈과 미설치 모듈을 모두 포함한 전체 모듈 목록을 페이지네이션으로 조회합니다. `search` 는 이름·식별자·설명·벤더에 대한 OR 검색이고 `filters` 는 AND 조건으로 적용되며, `with[]` 에 `custom_menus` 를 지정하면 커스텀 메뉴 데이터를 함께 포함합니다. `core.modules.read` 또는 `core.menus.read` 권한 중 하나가 필요하고, 응답의 `abilities` 는 현재 사용자의 수행 가능 작업 맵을 담습니다. 관리자 모듈 관리 화면의 목록 그리드를 구성하는 기본 엔드포인트입니다.
+
+
+### POST /api/admin/modules/activate
+<!-- @generated:start:api.admin.modules.activate -->
+- **라우트명**: `api.admin.modules.activate`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@activate`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.activate`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| module_name | body | string | 예 | max 255 | module 이름 (식별자) |
+| force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.activate_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/activate HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "module_name": "예시 이름",
+    "force": true
+}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.activate`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** 설치된 모듈을 활성화합니다. `core.modules.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다.
+
+
+### POST /api/admin/modules/check-updates
+<!-- @generated:start:api.admin.modules.check-updates -->
+- **라우트명**: `api.admin.modules.check-updates`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@checkUpdates`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.install`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/check-updates HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 설치된 모든 모듈에 대해 GitHub·번들 소스를 조회하여 새 버전 배포 여부를 일괄 확인합니다. `core.modules.install` 권한이 필요합니다. 파라미터 없이 호출하며, 각 모듈의 업데이트 가능 여부와 감지된 최신 버전 정보를 반환합니다. 모듈 목록 화면 진입 시 업데이트 뱃지를 갱신하는 용도로 사용됩니다.
+
+
+### POST /api/admin/modules/deactivate
+<!-- @generated:start:api.admin.modules.deactivate -->
+- **라우트명**: `api.admin.modules.deactivate`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@deactivate`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.activate`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| module_name | body | string | 예 | max 255 | module 이름 (식별자) |
+| force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.deactivate_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/deactivate HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "module_name": "예시 이름",
+    "force": true
+}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.activate`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** 활성 모듈을 비활성화합니다. `core.modules.activate` 권한이 필요합니다. `force` 없이 호출했을 때 이 모듈에 의존하는 템플릿·모듈·플러그인이 있으면 409 응답으로 `dependent_templates`·`dependent_modules`·`dependent_plugins` 목록과 함께 경고를 반환합니다. 의존 관계 확인 후 `force: true` 로 강제 비활성화할 수 있습니다.
+
+
+### POST /api/admin/modules/install
+<!-- @generated:start:api.admin.modules.install -->
+- **라우트명**: `api.admin.modules.install`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@install`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.install`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| module_name | body | string | 예 | max 255 | module 이름 (식별자) |
+| vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
+| dependencies | body | array | 아니오 | — | 함께 설치할 의존 확장 목록 (cascade 1단계). 각 원소는 `type`(module\|plugin)·`identifier` 로 구성하며, install-preview 응답에서 사용자가 선택한 항목 |
+| language_packs | body | array | 아니오 | — | 함께 설치할 번들 언어팩 식별자 목록 (cascade 2단계, best-effort). 원소는 언어팩 식별자 문자열 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.install_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/install HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "module_name": "예시 이름",
+    "vendor_mode": "auto",
+    "dependencies": [
+        "예시값"
+    ],
+    "language_packs": [
+        "예시값"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** `_pending`·`_bundled` 대기소에 있는 모듈을 활성 디렉토리로 설치합니다. `core.modules.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 성공 시 201 상태로 반환하고, 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담깁니다.
+
+
+### POST /api/admin/modules/install-from-file
+<!-- @generated:start:api.admin.modules.install-from-file -->
+- **라우트명**: `api.admin.modules.install-from-file`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@installFromFile`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.install`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| file | body | file | 예 | max 51200 | 업로드 파일 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.install_from_file_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/install-from-file HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: multipart/form-data; boundary=----G7ExampleBoundary
+
+------G7ExampleBoundary
+Content-Disposition: form-data; name="file"; filename="example.pdf"
+Content-Type: application/octet-stream
+
+(바이너리 파일 내용)
+------G7ExampleBoundary--
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** 업로드된 ZIP 파일에서 모듈을 설치합니다. `core.modules.install` 권한이 필요하며, 파일은 최대 50MB(51200KB)까지 허용됩니다. ZIP 압축 해제 후 module.json 검증을 거쳐 설치하며, 성공 시 201 상태로 설치된 모듈 정보를 반환합니다. 설치 전 manifest 만 미리 확인하려면 `manifest-preview` 를 먼저 호출하는 것이 안전합니다.
+
+
+### POST /api/admin/modules/install-from-github
+<!-- @generated:start:api.admin.modules.install-from-github -->
+- **라우트명**: `api.admin.modules.install-from-github`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@installFromGithub`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.install`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| github_url | body | string | 예 | — | GitHub 저장소 URL |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.install_from_github_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/install-from-github HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "github_url": "https://example.com"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** GitHub 저장소 URL 에서 모듈을 내려받아 설치합니다. `core.modules.install` 권한이 필요합니다. `github_url` 로 지정한 공개 저장소의 릴리스/소스를 받아 압축 해제·검증 후 설치하며, 성공 시 201 상태로 설치된 모듈 정보를 반환합니다.
+
+
+### GET /api/admin/modules/installed
+<!-- @generated:start:api.admin.modules.installed -->
+- **라우트명**: `api.admin.modules.installed`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@installed`
+- **인증/권한**: `auth:sanctum`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/modules/installed HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-board` | 모듈 고유 식별자 (vendor-module 형식) |
+| vendor | string | `sirsoft` | 벤더/개발자명 |
+| name | string | `게시판` | 모듈 이름 (다국어 JSON) |
+| version | string | `1.0.0` | 모듈 버전 |
+| description | string | `게시판 관리를 위한 모듈` | 모듈 설명 (다국어 JSON) |
+| dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
+| assets | object | `{"js":"\/api\/modules\/assets\/sirsoft-ecommerce\/dist\/j…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
+| update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
+| latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
+| file_version | string | `1.0.0` | 설치된 파일의 manifest 버전 |
+| github_url | string | `https://github.com/gnuboard/g7-module…` | GitHub 저장소 URL |
+| github_changelog_url | string | `https://github.com/gnuboard/g7-module…` | GitHub 변경 내역 URL |
+| is_pending | boolean | `false` | _pending 대기소에 있어 설치 대기 중인지 여부 |
+| is_bundled | boolean | `false` | 코어에 선탑재된 번들 확장인지 여부 |
+| deactivated_reason | null | `null` | 비활성화 사유: manual(사용자 수동) \| incompatible_core(코어 버전 호환성) \| null(active) |
+| deactivated_at | null | `null` | deactivated 일시 |
+| incompatible_required_version | null | `null` | 요구 코어 버전 미충족 시 필요한 버전 (호환되면 null) |
+| abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":t…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "모듈을 성공적으로 가져왔습니다.",
+    "data": {
+        "data": [
+            {
+                "identifier": "sirsoft-board",
+                "vendor": "sirsoft",
+                "name": "게시판",
+                "version": "1.0.0",
+                "description": "게시판 관리를 위한 모듈",
+                "dependencies": [],
+                "status": "active",
+                "assets": null,
+                "update_available": false,
+                "update_source": null,
+                "latest_version": null,
+                "file_version": "1.0.0",
+                "github_url": "https://github.com/gnuboard/g7-module-sirsoft-board",
+                "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/releases",
+                "is_pending": false,
+                "is_bundled": false,
+                "deactivated_reason": null,
+                "deactivated_at": null,
+                "incompatible_required_version": null,
+                "abilities": {
+                    "can_install": true,
+                    "can_activate": true,
+                    "can_uninstall": true
+                }
+            },
+            {
+                "identifier": "sirsoft-ecommerce",
+                "vendor": "sirsoft",
+                "name": "이커머스",
+                "version": "1.0.1",
+                "description": "그누보드7 이커머스 모듈 - 상품, 주문, 결제 관리",
+                "dependencies": [],
+                "status": "active",
+                "assets": {
+                    "js": "/api/modules/assets/sirsoft-ecommerce/dist/js/module.iife.js",
+                    "css": "/api/modules/assets/sirsoft-ecommerce/dist/css/module.css",
+                    "priority": 100
+                },
+                "update_available": false,
+                "update_source": null,
+                "latest_version": null,
+                "file_version": "1.0.1",
+                "github_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce",
+                "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce/releases",
+                "is_pending": false,
+                "is_bundled": false,
+                "deactivated_reason": null,
+                "deactivated_at": null,
+                "incompatible_required_version": null,
+                "abilities": {
+                    "can_install": true,
+                    "can_activate": true,
+                    "can_uninstall": true
+                }
+            },
+            "... (총 3건 중 2건 표시)"
+        ],
+        "meta": {
+            "total_modules": 3,
+            "active_modules": 0,
+            "system_modules": 0,
+            "user_modules": 3,
+            "total_installs": 0,
+            "average_rating": null,
+            "latest_version": "1.0.1",
+            "categories": [
+                null
+            ],
+            "dependency_count": 0
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+
+<!-- @generated:end -->
+
+**설명** 현재 설치된 모듈만 조회합니다(미설치 항목 제외). 이 엔드포인트는 세부 권한 미들웨어 없이 `auth:sanctum` 인증만 요구하므로, 다른 화면이 활성/설치된 모듈 목록을 참조할 때 사용하는 경량 조회 API 입니다. 페이지네이션 없이 설치된 항목 배열을 반환합니다.
+
+
+### POST /api/admin/modules/manifest-preview
+<!-- @generated:start:api.admin.modules.manifest-preview -->
+- **라우트명**: `api.admin.modules.manifest-preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@manifestPreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.install`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| file | body | file | 예 | max 51200 | 업로드 파일 |
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/manifest-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: multipart/form-data; boundary=----G7ExampleBoundary
+
+------G7ExampleBoundary
+Content-Disposition: form-data; name="file"; filename="example.pdf"
+Content-Type: application/octet-stream
+
+(바이너리 파일 내용)
+------G7ExampleBoundary--
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** 업로드된 ZIP 파일의 module.json manifest 와 검증 결과만 추출합니다(실제 설치는 수행하지 않음). `core.modules.install` 권한이 필요하며 파일은 최대 50MB 까지 허용됩니다. 설치 모달에서 사용자가 파일 선택 직후 manifest 유효성과 검증 실패 사유를 미리 확인하는 용도이며, 검증 오류 시 422 로 사유를 반환합니다.
+
+
+### POST /api/admin/modules/refresh-layouts
+<!-- @generated:start:api.admin.modules.refresh-layouts -->
+- **라우트명**: `api.admin.modules.refresh-layouts`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@refreshLayouts`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.activate`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| module_name | body | string | 예 | max 255 | module 이름 (식별자) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.refresh_layouts_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/refresh-layouts HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "module_name": "예시 이름"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.activate`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** 모듈의 레이아웃 파일을 파일에서 다시 읽어 DB 에 동기화합니다. `core.modules.activate` 권한이 필요합니다. 파일에서 변경된 레이아웃은 갱신되고 삭제된 레이아웃은 DB 에서도 제거되며, 갱신된 모듈 정보를 반환합니다. 모듈의 `_bundled` 레이아웃 JSON 을 수정한 뒤 재빌드 없이 반영할 때 사용합니다.
+
+
+### DELETE /api/admin/modules/uninstall
+<!-- @generated:start:api.admin.modules.uninstall -->
+- **라우트명**: `api.admin.modules.uninstall`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@uninstall`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.uninstall`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| module_name | query | string | 예 | max 255 | module 이름 (식별자) |
+| delete_data | query | boolean | 아니오 | — | 제거 시 모듈이 생성한 DB 데이터까지 함께 삭제할지 여부 (기본 false — 데이터 보존) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.uninstall_validation_rules`).
+
+**요청 예시**
+
+```http
+DELETE /api/admin/modules/uninstall?module_name=%EC%98%88%EC%8B%9C%20%EC%9D%B4%EB%A6%84&delete_data=1 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.uninstall`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** 모듈을 시스템에서 제거합니다. `core.modules.uninstall` 권한이 필요합니다. 활성 디렉토리만 삭제하고 `_bundled` 원본은 보존합니다. `delete_data: true` 인 경우 모듈이 생성한 DB 데이터까지 함께 삭제하며, 기본값은 데이터 보존입니다. 삭제될 데이터 범위는 사전에 `uninstall-info` 로 확인할 수 있습니다.
+
+
+### GET /api/admin/modules/uninstalled
+<!-- @generated:start:api.admin.modules.uninstalled -->
+- **라우트명**: `api.admin.modules.uninstalled`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@uninstalled`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/modules/uninstalled HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `gnuboard7-hello_module` | 모듈 고유 식별자 (vendor-module 형식) |
+| vendor | string | `gnuboard7` | 벤더/개발자명 |
+| name | string | `Hello 모듈` | 모듈 이름 (다국어 JSON) |
+| version | string | `0.1.0` | 모듈 버전 |
+| description | string | `학습용 최소 샘플 모듈 (Memo CRUD)` | 모듈 설명 (다국어 JSON) |
+| dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| status | string | `uninstalled` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
+| assets | null | `null` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
+| update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
+| latest_version | null | `null` | 감지된 최신 배포 버전 |
+| file_version | null | `null` | 설치된 파일의 manifest 버전 |
+| github_url | null | `null` | GitHub 저장소 URL |
+| github_changelog_url | null | `null` | GitHub 변경 내역 URL |
+| is_pending | boolean | `false` | _pending 대기소에 있어 설치 대기 중인지 여부 |
+| is_bundled | boolean | `true` | 코어에 선탑재된 번들 확장인지 여부 |
+| deactivated_reason | null | `null` | 비활성화 사유: manual(사용자 수동) \| incompatible_core(코어 버전 호환성) \| null(active) |
+| deactivated_at | null | `null` | deactivated 일시 |
+| incompatible_required_version | null | `null` | 요구 코어 버전 미충족 시 필요한 버전 (호환되면 null) |
+| abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":t…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "모듈을 성공적으로 가져왔습니다.",
+    "data": {
+        "data": [
+            {
+                "identifier": "gnuboard7-hello_module",
+                "vendor": "gnuboard7",
+                "name": "Hello 모듈",
+                "version": "0.1.0",
+                "description": "학습용 최소 샘플 모듈 (Memo CRUD)",
+                "dependencies": [],
+                "status": "uninstalled",
+                "assets": null,
+                "update_available": false,
+                "update_source": null,
+                "latest_version": null,
+                "file_version": null,
+                "github_url": null,
+                "github_changelog_url": null,
+                "is_pending": false,
+                "is_bundled": true,
+                "deactivated_reason": null,
+                "deactivated_at": null,
+                "incompatible_required_version": null,
+                "abilities": {
+                    "can_install": true,
+                    "can_activate": true,
+                    "can_uninstall": true
+                }
+            }
+        ],
+        "meta": {
+            "total_modules": 1,
+            "active_modules": 0,
+            "system_modules": 0,
+            "user_modules": 1,
+            "total_installs": 0,
+            "average_rating": null,
+            "latest_version": "0.1.0",
+            "categories": [
+                null
+            ],
+            "dependency_count": 0
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 아직 설치되지 않은 모듈만 조회합니다(예: 번들로 제공되나 미설치 상태인 샘플 모듈). `core.modules.read` 권한이 필요합니다. 설치 가능한 모듈을 사용자에게 노출하는 화면에서 사용하며, 미설치 항목은 assets·latest_version 등 설치 후에만 채워지는 필드가 null 로 반환됩니다.
+
+
+### GET /api/admin/modules/{identifier}/changelog
+<!-- @generated:start:api.admin.modules.changelog -->
+- **라우트명**: `api.admin.modules.changelog`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@changelog`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 리소스의 식별자 |
+| source | query | string | 아니오 | `active`, `bundled`, `github` | 변경 내역 조회 출처 (active: 활성 설치본, bundled: 번들 원본, github: 원격 저장소) |
+| from_version | query | string | 아니오 | — | 시작 버전 (범위 하한) |
+| to_version | query | string | 아니오 | — | 대상 버전 (범위 상한) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.extension.changelog_rules`).
+
+**요청 예시**
+
+```http
+GET /api/admin/modules/sirsoft-ecommerce/changelog?source=active&from_version=%EC%98%88%EC%8B%9C%EA%B0%92&to_version=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| changelog | array | `[{"version":"1.0.1","date":"2026-07-02","categories":[{"n…` | 변경 이력 텍스트 (원격/파일 CHANGELOG 본문) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "모듈을 성공적으로 가져왔습니다.",
+    "data": {
+        "changelog": [
+            {
+                "version": "1.0.1",
+                "date": "2026-07-02",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "관리자 주문 상세에서 주문상품을 \"구매확정\"으로 변경할 때 구매확정 처리가 고객이 직접 구매확정한 경우와 동일하게 이뤄지지 않던 문제를 수정했습니다 — 이제 구매확정 시점이 정확히 기록되어(부분 수량만 구매확정한 경우 포함), 구매확정 기준으로 지급되는 마일리지 적립이 정상적으로 지급되고, 리뷰 작성 기한도 올바르게 계산됩니다. 기존에는 관리자가 구매확정 처리한 주문상품이 마일리지 적립 대상에서 누락되고 리뷰 작성 기한이 계산되지 않을 수 있었습니다. (#61 @miles44229 님께서 제보해주셨습니다.)",
+                            "주문상품을 여러 번에 나누어 구매확정할 때(예: 2개 중 1개씩 따로 확정) 적립 포인트가 일부만 지급되던 문제를 수정했습니다 — 이제 나누어 확정해도 예정 적립 포인트가 정확한 총액으로 지급됩니다.",
+                            "마일리지 기능을 사용 안 함으로 설정한 뒤에는 지연 적립뿐 아니라 즉시 적립도 지급되지 않도록 통일했습니다 — 기존에는 지급 시점 설정에 따라 어떤 적립은 지급되고 어떤 적립은 지급되지 않을 수 있었습니다."
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "1.0.0",
+                "date": "2026-07-01",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품의 기본 통화와 다른 통화로 결제한 주문(예: 엔화로 등록된 상품을 원화로 결제)에서 결제·취소 금액의 통화 표기와 실제 환불 금액이 정확해졌습니다 — 주문서·주문 상세·결제 정보·취소 화면에서 금액은 주문 시점 기준 통화(상품 기본 통화)로 표기하고, 고객이 실제 결제한 통화와 그 통화 기준 청구액(예: \"결제 통화 KRW 4,750원 청구\")을 함께 표시합니다. 또한 주문을 취소·환불할 때 환불 금액이 고객이 실제 결제한 통화로 정확히 결제사에 요청되어, 기본 통화와 결제 통화가 다른 주문도 결제한 금액 그대로 환불됩니다(부분취소를 여러 번 나눠 진행해도 누적 환불액이 결제 통화 기준으로 정확히 계산됩니다). 이전에는 결제·취소 금액이 기본 통화 기호로만 고정 표기되고, 환불 요청 금액이 기본 통화 숫자로 전달되어 결제 통화와 단위가 어긋날 수 있었습니다.",
+                            "상품의 기본 통화와 다른 통화로 결제할 때(예: 엔화로 등록된 상품을 원화로 결제) \"결제 금액이 일치하지 않습니다\"라는 오류로 결제가 막히던 문제를 수정했습니다 — 결제창에 청구되는 금액과 주문 승인 시 확인하는 금액의 통화 기준이 어긋나 있었습니다. 이제 결제창 청구액·승인 확인·입금 통보 확인이 모두 고객이 선택한 결제 통화 기준으로 일관되게 검증되어, 기본 통화와 결제 통화가 어떤 조합이든 정상적으로 결제가 진행됩니다.",
+                            "상품에 배송정책을 따로 지정하지 않은 경우(\"기본 배송정책 사용\")에도 기본 배송정책이 그대로 적용됩니다 — 기존에는 배송정책을 지정하지 않은 상품이 해외 배송국가(예: 일본)를 선택하면 기본 배송정책에 그 국가가 설정돼 있어도 \"배송할 수 없는 상품\"으로 안내되고 배송비가 무료로 잡히던 문제가 있었습니다. 이제 상품 상세·장바구니·주문서·주문 처리·배송비 계산 전반에서 기본 배송정책의 국가별 설정과 배송비가 일관되게 반영됩니다. 주문 시점의 기본 배송정책은 주문에 함께 보관되어, 이후 기본 배송정책이 바뀌어도 취소·환불 배송비는 주문 당시 기준으로 계산됩니다.",
+                            "관리자 대시보드의 이커머스 위젯(최신 리뷰·미답변 문의 목록)에서 각 항목이 같은 화면 식별자를 공유해 일부 보조 기능·접근성 도구가 항목을 구분하지 못하던 문제를 수정했습니다 — 이제 목록의 각 행이 고유하게 식별됩니다.",
+                            "헤더의 통화·배송국가 선택기가 데스크톱과 모바일 화면에 동시에 배치되면서 같은 화면 식별자를 공유하던 문제를 수정했습니다 — 두 위치의 선택기가 각각 고유하게 식별됩니다."
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "상품 등록 화면에서 새로 시작할 때 과세 여부는 \"과세\", 판매상태는 \"판매중\", 전시상태는 \"전시중\"이 기본으로 선택되어 있고, 옵션을 추가하면 재고가 1로 미리 채워집니다 — 가장 흔한 설정이 처음부터 지정되어 매번 직접 고르거나 입력하는 수고를 덜 수 있습니다. 옵션을 일괄 생성하거나 행을 추가·삭제하면 원 상품의 재고가 옵션 재고 합계로 즉시 맞춰집니다(옵션 보유 상품의 재고는 직접 입력하지 않고 옵션 재고 합으로 표시됩니다) — 이전에는 옵션을 만든 직후에는 상품 재고가 0으로 남아 있다가 옵션 재고를 한 번 직접 수정해야 반영되었습니다. 기존 상품을 수정할 때는 저장된 값이 그대로 표시됩니다.",
+                            "상품 등록·수정 화면과 상품 관리 목록에서 옵션별 외화 가격을 직접 입력하던 칸을 없애고, 판매가 아래에 환율로 자동 계산된 외화 가격을 읽기 전용으로 보여주도록 바꿨습니다. 외화 가격은 기본 통화 판매가를 기준으로 환율을 적용해 표시되므로(장바구니·주문서와 동일한 방식), 판매가만 입력하면 설정한 통화들의 환산 금액이 함께 표시됩니다. 표시되는 통화는 쇼핑몰 설정에서 추가한 통화를 그대로 따르며, 통화를 추가하면 자동으로 함께 나타납니다. 상품 관리 목록의 통화별 열과 열 선택 메뉴의 통화 항목, \"다중통화 가격 자동계산\" 켜기/끄기도 더 이상 필요하지 않아 정리했습니다. 판매가 아래에 외화 환산값이 여러 줄로 표시되어도 정가·재고·SKU 등 다른 입력칸이 같은 줄에 가지런히 정렬되도록 행 정렬을 맞췄습니다.",
+                            "쇼핑몰 설정의 마일리지 알림 카드에서 사이트 알림 / 이메일 아이콘이 채널 라벨 위로 올라가 비대칭으로 보이던 회귀를 수정했습니다 — 아이콘이 채널 라벨 옆 가운데로 정렬되어 한 줄로 응집됩니다.",
+                            "쿠폰 등록 / 수정 화면의 직접발급 안내문에서 정보 아이콘이 안내 문구 위로 살짝 떠 보이던 정렬을 바로잡았습니다 — 아이콘이 안내 문구와 세로 가운데로 맞춰집니다.",
+                            "상품 등록 / 수정 화면에서 상단 탭 내비와 본문 콘텐츠가 너무 붙어 보이던 회귀를 수정했습니다 — 탭 내비와 첫 카드 사이에 표준 상단 여백이 자동으로 들어가 다른 관리자 화면과 동일한 결로 통일됩니다.",
+                            "관리자 환경설정·상품·주문·배송정책·쿠폰 화면의 카드 모양과 간격을 다른 관리자 화면과 동일하게 통일했습니다 — 사용자 영역용 카드 자산이 혼용되던 부분을 관리자 표준 카드로 환원하고, 카드 안의 헤더 묶음·본문 묶음을 표준 패턴으로 정리했습니다.",
+                            "관리자 환경설정 페이지의 빈 컨테이너 한 겹을 제거해 다른 관리자 화면과 본문 구조가 동일합니다 — 저장 중 시각 피드백(저장 버튼 안의 회전 아이콘과 \"저장 중...\" 문구)은 그대로 제공됩니다.",
+                            "상품·카테고리의 SEO 제목·SEO 설명을 언어별로 입력할 수 있습니다 — 상품명·상세설명과 동일하게 언어 탭으로 한국어·영어 등 각 언어의 SEO 문구를 따로 작성할 수 있고, 검색엔진이 해당 언어로 접근하면 그 언어의 제목·설명이 노출됩니다. \"상품명과 동일하게 설정\"을 켜면 입력한 언어별 상품명·설명이 그대로 SEO에 반영되고, SEO 문구를 비워 두면 상품명·상세설명으로 자동 대체됩니다. 기존에 입력해 둔 SEO 문구는 기본 언어 값으로 보존됩니다. (이전에는 한 줄 문구만 저장되어 모든 언어에 같은 값이 쓰였고, 입력 중 검색결과 미리보기가 매 글자마다 다시 그려져 타이핑이 느려지던 문제도 함께 해소되었습니다.)",
+                            "배송정책의 통화가 상품 등록과 동일하게 쇼핑몰 기본 통화로 자동 적용됩니다 — 배송정책 등록·수정 화면의 통화 항목이 직접 고르는 칸에서 현재 기본 통화를 보여 주는 읽기 전용 표시로 바뀌었고, 배송비는 항상 기본 통화 기준으로 계산됩니다. 배송비·무료배송 기준금액 입력칸 옆의 통화 표시도 기준 통화 칸과 동일하게 현재 기본 통화로 통일했습니다. 기존에 다른 통화로 저장돼 있던 배송정책도 기본 통화로 통일됩니다. (이전에는 배송정책마다 통화를 따로 지정할 수 있었으나 배송비 계산에는 반영되지 않아 합계가 어긋날 수 있었습니다.)",
+                            "주문서 작성과 장바구니의 배송비가 선택한 배송 국가 기준으로 계산되어 표시됩니다 — 배송정책에 국가별 배송비(예: 국내·미국)를 다르게 설정한 경우, 헤더에서 고른 배송 국가 또는 주문서에서 선택한 배송 국가에 맞는 배송비가 적용됩니다. 주문서에서는 헤더에서 고른 국가가 기본으로 선택되며, 주문서의 배송 국가를 바꾸면 그 즉시 해당 국가 배송비로 다시 계산됩니다. 우편번호를 입력하지 않아도 국가만으로 해당 국가의 기본 배송비가 미리 표시됩니다. (이전에는 미국 등 해외 국가를 선택해도 배송비가 국내 기준으로만 계산되어 표시되던 문제가 있었습니다.)",
+                            "상품 등록·수정 화면의 목록·복사·삭제·저장 버튼을 화면 하단 고정으로 옮기고, 환경설정 화면의 상단 탭과 저장 버튼이 스크롤 중에도 고정되도록 개선했습니다 — 긴 폼을 스크롤하는 동안에도 주요 버튼이 항상 화면에 보입니다. 배송정책·쿠폰·상품·주문 상세 화면에서 페이지 제목이 함께 따라 고정되던 동작은 일반 흐름으로 정리했습니다.",
+                            "카테고리·브랜드 슬러그 수정 모드와 주문 상세의 자동 채움·참조용 입력 칸의 글자를 옅은 회색으로 표시해, 수정할 수 없는 항목임을 한눈에 구분할 수 있습니다.",
+                            "이커머스 관리 전반(상품·주문·결제·배송·환경설정·카테고리·브랜드·쿠폰·마일리지·예치금·리뷰)의 카드·입력 칸·라벨·본문 텍스트·구분선·여백 모양을 다른 관리자 화면과 동일한 결로 통일했습니다 — 화면마다 조금씩 다르게 보이던 카드 모양·간격, 입력 칸 테두리·배경, 글자 톤, 2단 그리드 간격이 한 가지 기준으로 정합되고, 마일리지/예치금 환경설정의 페이지 배경이 누락되어 다르게 보이던 회귀도 함께 해소됩니다.",
+                            "이커머스 관리 화면 곳곳의 역할 없는 빈 컨테이너 중첩을 정리해, 화면 모양은 그대로 둔 채 페이지 구조만 단순해졌습니다.",
+                            "주문 결제 진입이 특정 결제사에 고정되지 않고, 주문을 만들 때 서버 응답이 알려주는 결제 수단으로 진행됩니다 — 결제 플러그인을 바꾸거나 새로 추가해도 주문 화면 수정 없이 해당 결제사의 결제창이 열립니다. 결제 수단을 따로 지정하지 않은 결제(무통장 입금 등)는 기존과 동일하게 동작합니다.",
+                            "코어 최소 요구 버전을 7.0.0-beta.8 로 상향. SEO 자동값 연결 칩 편집 기능이 코어 7.0.0-beta.8 에서 제공하는 편집기 연동 표면을 사용합니다."
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "레이아웃 편집기에서 마일리지 거래내역·쿠폰 목록·쿠폰 생성·주문 목록·주문 상세 화면의 화면 상태를 미리보기로 전환할 수 있습니다 — 목록의 비어 있음, 쿠폰 신규 작성·검증 실패, 주문 상세의 부분 취소 등 특정 상황에서만 나타나는 모양을 편집기에서 골라 미리보고 편집할 수 있습니다.",
+                            "비회원으로 주문하면 주문 접수·입금 확인·배송·취소 등 주요 단계에서 입력한 이메일로 주문 알림이 발송됩니다 — 회원 주문과 동일한 알림을 비회원도 받으며, 메일은 주문할 때 보던 화면 언어로 전달됩니다. 주문 완료 화면에 \"주문 확인 안내를 입력하신 이메일로 보내드렸습니다\"라는 안내가 함께 표시됩니다.",
+                            "회원이 자신의 배송국가를 직접 설정할 수 있습니다 — 해외배송을 켜면 사이트 상단 헤더의 통화 선택기에 배송국가 선택이 함께 표시되고(선택기 버튼에 배송국가 코드와 통화가 나란히 표시), 회원정보 수정·마이페이지·가입 화면에서도 배송국가를 고를 수 있습니다. 로그인한 회원은 선택한 배송국가가 계정에 저장되어 다음 방문에도 유지되고, 비회원은 브라우저에 임시 저장됩니다. 처음 방문 시에는 접속 위치를 추정해 기본 배송국가가 정해지며, 추정이 어려우면 설정한 기본 국가가 사용됩니다. 주문서·주문 상세·주문 내역·배송지 관리에 배송국가가 함께 표시됩니다(국내 포함). 선택한 배송국가로 배송할 수 없는 상품이 장바구니·주문서에 하나라도 있으면 그 상품이 표시되고 주문하기가 막히며, 상품 상세에서도 배송 가능 여부를 미리 확인할 수 있습니다. 해외 주소로 주문하면 도시·우편번호 등 해외 주소가 온전히 저장되고, 주문 알림 메일에도 받는 분·배송국가·배송지가 표시됩니다. 주문을 취소·환불할 때도 그 시점의 배송국가·우편번호가 함께 보관되어, 이후 배송지가 바뀌어도 도서산간·국가별 배송비 환불이 주문 당시 기준으로 정확히 계산됩니다. 해외배송을 끄면 배송국가 선택이 함께 사라집니다.",
+                            "사이트 상단 헤더에 통화 선택기를 추가했습니다 — 이커머스 모듈을 켜면 헤더에 통화 전환 버튼이 나타나고, 관리자가 등록한 통화(환율이 설정된 통화) 중에서 표시 통화를 고를 수 있습니다. 로그인한 회원은 선택한 통화가 계정에 저장되어 다음 방문에도 유지되고, 비회원은 브라우저에 임시 저장됩니다. 관리자 화면 헤더에서도 동일하게 표시 통화를 전환할 수 있습니다. 모듈을 끄면 통화 선택기가 함께 사라집니다. 레이아웃 편집기 미리보기에서도 헤더의 통화·배송국가 선택기가 실제 화면과 동일하게 표시되어, 편집 중 위치와 모양을 미리 확인할 수 있습니다(사용자·관리자 템플릿 공통).",
+                            "기본 통화가 원(KRW)이 아닌 통화(달러·유로 등)일 때도 상품을 등록·수정할 수 있습니다 — 기본 통화가 소수점을 쓰는 통화이면 상품 정가·판매가·옵션 가격과 추가옵션 추가금을 3.30 처럼 소수점까지 입력할 수 있고, 통화별 소수 자릿수(예: 달러 2자리)를 초과하는 입력은 막습니다. 원·엔처럼 소수점이 없는 통화에서는 정수만 허용됩니다. 기존에는 가격이 정수로만 저장되어 기본 통화를 달러 등으로 바꾸면 새 상품 저장이 되지 않았습니다. 아울러 상품·옵션·주문·결제·환불·쿠폰·마일리지·배송비·대시보드 매출 등 금액이 표시되는 화면 전반에서, 소수점이 없는 통화(원·엔 등)인데도 `200.00`처럼 불필요한 소수점이 붙던 부분을 정리해 — 모든 금액이 쇼핑몰 설정의 통화별 소수 자릿수를 그대로 따라 표시됩니다(소수점 없는 통화는 `200`, 달러·유로 등은 `1.70`).",
+                            "기본 통화가 원(KRW)이 아닌 통화(달러 등)일 때 상품·장바구니·주문의 외화 환산 금액이 0 또는 비정상값으로 표시되던 문제를 해결했습니다 — 통화마다 \"환율 입력의 기준 단위\"(예: 원은 1,000원당, 달러·엔 등은 1단위당)를 설정에 두어, 어떤 통화를 기본으로 삼든 외화 가격이 올바르게 환산됩니다. 환율/통화 설정 화면에서 통화마다 \"기준 단위\"를 직접 입력·수정할 수 있고, 환율 입력 안내도 기본 통화의 기준 단위에 맞춰 \"USD 1 =\", \"KRW 1,000 =\"처럼 표시됩니다. 기준 단위·환율을 잘못 입력해 저장하면 해당 입력칸이 빨갛게 강조되고 칸 아래에 사유가 표시됩니다. 이미 접수된 주문의 환불 금액은 주문 당시 환율 그대로 유지됩니다.",
+                            "상품 등록·수정 시 입력 오류 안내에 \"판매가\"·\"옵션 판매가\"처럼 사람이 읽을 수 있는 항목 이름이 표시됩니다 — 기존에는 일부 항목에서 내부 식별자(예: options.0.selling_price)가 그대로 노출됐습니다.",
+                            "쇼핑몰 설정의 언어·통화 화면에서 통화마다 표시 기호를 직접 지정할 수 있습니다 — 통화 추가·수정 시 \"기호\" 칸에 ₩·$·¥·€ 등 원하는 기호를 입력하면, 상품 등록·수정 화면의 기본 통화 표시와 판매가 일괄 변경 창의 금액 단위, 상품 복사 미리보기의 가격이 모두 그 기호로 표시됩니다. 기존 통화(원·달러·엔·위안·유로)에는 표준 기호가 기본으로 채워지며, 통화를 추가·삭제하거나 기본 통화를 바꾸면 상품 관리 화면의 기호 표시가 설정을 그대로 따라갑니다. 위안화(CNY)는 엔화(JPY)와 같은 ¥ 기호를 쓰면 가격을 혼동할 수 있어 元 기호를 기본으로 사용합니다 — 장바구니·상품·주문 화면에서 엔화는 ¥, 위안화는 元 로 구분되어 표시됩니다. 아울러 장바구니·상품·주문서·주문 상세·주문 내역·영수증·배송정책 등 금액이 표시되는 화면 전반에서 통화 기호가 원화로 고정되어 있던 부분을 정리해, 기본 통화를 달러·엔 등으로 바꾸면 그 통화 기호로 표시됩니다(상품 옵션 추가금·과세금액 표기 포함). 이미 접수된 주문의 금액은 주문 시점의 통화로 계속 표시되어, 이후 기본 통화를 바꿔도 과거 주문 표기가 달라지지 않습니다. (이전에는 상품 관리 일부 화면이 통화 설정과 무관하게 원화 기호로 고정 표시되었고, 엔화와 위안화가 모두 ¥ 로 표시되어 구분되지 않았습니다.)",
+                            "관리자 대시보드에 이커머스 영역이 추가되었습니다 — 이커머스 모듈을 켜면 상단에 상품·주문·리뷰·쿠폰·배송 바로가기 버튼이 나타나고, 오늘 주문 현황(결제완료·준비중·배송중·취소 등) 배지, 최근 7일 판매 추세 그래프(판매 수량·매출액과 직전 7일 대비 증감율), 최신 리뷰, 미답변 문의 위젯이 실제 데이터로 표시됩니다. 모듈을 끄면 이 영역과 버튼이 함께 사라집니다.",
+                            "대시보드 판매 현황은 매시간 집계되어 빠르게 표시됩니다 — 판매 수량과 매출은 결제 완료 이후(배송보류·준비중·배송준비·배송중·배송완료·구매확정) 주문상품을 기준으로 집계하며, 취소된 수량은 자동으로 차감되고 주문일 기준으로 날짜에 반영됩니다.",
+                            "마이페이지 취소 주문 상세에서 \"재주문\" 기능 추가 — 과거 주문의 상품 옵션을 현재 장바구니에 일괄 추가, 품절/단종 상품은 사유와 함께 안내",
+                            "비회원 주문 지원 — 로그인 없이 주문/결제하고, 주문번호·휴대폰·조회 비밀번호(8자 이상)로 본인 확인 후 30분간 유효한 토큰으로 주문을 조회할 수 있습니다. 회원/비회원은 주문 단계에서 자동 분기됩니다.",
+                            "비회원 주문 상세에서 주문 취소·환불 예상·구매확정과 배송 전 배송지 변경(직접 입력)을 회원과 동일하게 이용할 수 있으며, 상품 합계·할인·배송비·총액의 다중 통화 금액도 함께 표시됩니다.",
+                            "상품 \"구매 대상 제한\"을 실제 주문 단계에 적용 — 허용 역할에 없는 사용자(비회원 포함)는 제한 상품을 주문할 수 없으며, 주문서 진입과 결제 시점 양쪽에서 안내됩니다. 기존에는 설정만 저장되고 구매를 막지 않았습니다.",
+                            "관리자가 주문 목록에서 회원/비회원을 구분해 조회하고, 비회원 주문의 조회 비밀번호를 재설정할 수 있습니다.",
+                            "관리자 주문 상세의 주문상품 표에서 상품별 재고 차감 여부(\"재고 차감\"/\"재고 미차감\")를 구매수량과 함께 확인할 수 있습니다.",
+                            "주문이 취소된 경우 관리자 주문 상세에 취소 사유가 표시됩니다 — 취소 유형(전체/부분)과 사유, \"기타\" 선택 시 입력한 상세 사유, 취소 일시를 취소 건별로 확인할 수 있습니다. 부분 취소가 여러 번 이뤄진 주문은 각 취소 건이 최근 순으로 모두 나열됩니다.",
+                            "상품·장바구니·주문·찜·문의 등 쇼핑 화면을 샘플 데이터로 미리보고 편집할 수 있습니다 — 재고 있음/품절, 목록 있음/없음, 장바구니 비었음 같은 화면 상태도 미리보기로 전환해 볼 수 있습니다.",
+                            "화면 상태 미리보기를 더 많은 쇼핑 화면으로 넓혔습니다 — 상품의 품절·판매 중지·판매 예정, 상품 목록의 접근 제한, 장바구니 주문 처리 중, 결제 오류, 주문 완료의 결제수단별 안내(카드·가상계좌·무통장), 재주문 진행/일부/실패와 함께, 관리자의 상품·쿠폰·배송정책 폼(신규/수정/검증 실패)과 쇼핑몰 설정의 모든 탭(기본 정보·언어 통화·SEO·주문·취소 반품·배송·리뷰·알림 정의·본인인증)·마일리지/예치금 탭을 전환해 미리볼 수 있습니다.",
+                            "주문서(결제) 화면의 입력 검증 실패 상태를 미리보기에 추가 — 주문자 이름·연락처·이메일, 받는 분 이름·연락처, 우편번호·주소 입력칸에 빨간 오류 안내가 표시된 화면을 전환해 미리볼 수 있습니다.",
+                            "비회원 주문 조회 화면을 회원/비회원 상태로 전환해 미리볼 수 있습니다 — 비회원 상태에서는 주문 조회 입력 폼을, 회원 상태에서는 마이페이지 안내를 각각 편집할 수 있습니다.",
+                            "데이터 소스 목록에서 이 확장이 제공하는 데이터 소스가 친화 명칭으로 표시되고, 어느 확장이 제공했는지 출처가 함께 표시됩니다.",
+                            "[검색엔진] 탭에서 상품·카테고리의 공유 이미지·제목·구조화 데이터 등 이 확장이 제공하는 SEO 자동값이 \"상품 이름\"·\"상품 대표 이미지\" 같은 데이터 연결 칩(출처 표시 포함)으로 보이고, 다른 데이터로 바꿔 지정할 수 있습니다.",
+                            "주문 구매확정 시 결제 금액에 적립률을 적용해 마일리지를 자동 적립하고, 결제 시 보유 마일리지를 사용할 수 있습니다. 적립·사용·소멸 내역이 회원별로 원장에 기록됩니다.",
+                            "마일리지로 결제 금액 전액을 충당하면 별도 결제 절차 없이 주문이 즉시 결제완료 처리됩니다.",
+                            "마일리지 차감 시점을 결제수단별로 \"결제완료 시\" 또는 \"주문접수 시\" 중에서 선택할 수 있습니다. 무통장입금·가상계좌는 입금 전 마일리지가 재사용되지 않도록 주문접수 시 차감이 기본이고, 신용카드(PG)는 결제창을 닫거나 결제에 실패한 주문에서 마일리지가 선차감되어 사라지지 않도록 결제완료 시 차감이 기본입니다. 차감된 뒤 결제가 실패하거나 주문을 취소한 경우에는 사용 마일리지가 자동으로 복원됩니다. 마일리지 사용을 꺼 두면 결제수단별 차감 시점 설정은 비활성화됩니다.",
+                            "마일리지 사용 시 먼저 적립된 분부터 차감(선입선출)되며, 주문 취소·부분 취소 시 사용분 복원과 적립 회수가 정확히 재계산됩니다.",
+                            "무통장입금 주문 접수 시 마일리지 차감 후 실제 입금할 금액과 입금 계좌·기한을 담은 입금 안내가 자동 발송됩니다.",
+                            "통화별 마일리지 규칙(적립률·사용 한도·최소 사용 금액·소멸 기간)을 설정할 수 있으며, 다중 통화 환경에서 통화별로 독립 적용됩니다.",
+                            "적립 마일리지에 유효기간을 두어 만료분이 자동 소멸하며, 소멸 예정 마일리지를 회원에게 사전 안내할 수 있습니다.",
+                            "회원 탈퇴 시 보유 마일리지가 정리되어 잔여가 남지 않습니다.",
+                            "환경설정에 \"마일리지\" 탭이 추가되어 기능 사용 여부·기본 적립률·통화별 규칙·유효기간·소멸 알림을 한 화면에서 관리합니다. 통화 추가가 미확정인 상태로는 저장이 차단되고, 적립률 0%·잘못된 통화 코드 등 잘못된 입력은 저장 전 안내됩니다.",
+                            "관리자 \"마일리지 내역\" 화면에서 회원·유형·통화·기간으로 거래를 조회하고, 특정 회원에게 마일리지를 수동 지급/차감하거나 선택한 적립분의 유효기간을 일괄 연장할 수 있습니다. 다른 관리자 목록 화면(주문/리뷰)과 동일한 필터·페이지네이션·표 구조로 정렬했습니다.",
+                            "각 적립 내역의 \"사유·기간 변경\" 메뉴에서 적립 사유와 만료일을 수정할 수 있습니다. 회원·금액·유형·적립일은 변경할 수 없도록 함께 표시되며, 이미 소멸되었거나 모두 사용된 적립분은 만료일을 바꿀 수 없습니다.",
+                            "마일리지 내역 표에 \"유효기간\" 열이 추가되어 적립분의 만료 예정일, 무기한 지급 여부, 그리고 소멸된 경우 \"전체 소멸\"/\"일부 소멸\" 여부와 소멸된 금액을 한눈에 확인할 수 있습니다.",
+                            "거래 행을 펼치면 표시되는 연결 거래에 관련 주문번호(클릭 시 주문 상세 열람)와 지급한 관리자(또는 시스템 발생) 정보가 함께 표시됩니다.",
+                            "수동 지급 시 적립분의 유효기간을 \"정책 따름\" 또는 \"직접 지정\"(날짜 선택) 중에서 명확한 안내와 함께 선택할 수 있습니다.",
+                            "주문 관련 모든 화면에서 마일리지 사용액·적립 예정액이 일관되게 표시됩니다 — 주문서 결제 요약, 주문완료 화면, 회원/비회원 주문 상세, 마이페이지·관리자 주문 목록에서 사용·적립 마일리지를 확인할 수 있으며, 관리자 주문 상세에는 환불된 마일리지도 함께 표시됩니다.",
+                            "관리자 주문 상세의 주문상품 표에서 상품별 적립 예정액 옆에 실제 적립 여부(\"적립완료\"/\"적립예정\")를 함께 확인할 수 있습니다.",
+                            "장바구니에 담긴 상품이 설정한 보관기간이 지나면 자동으로 정리됩니다. 환경설정의 장바구니 보관기간(일)에 따라 마지막 활동 이후 기간이 지난 항목을 매일 자동 삭제하며, 보관기간을 0(또는 비움)으로 두면 자동 삭제하지 않습니다.",
+                            "배송정책 계산 API의 요청 참고 필드를 시스템이 지원하는 항목(배송정책 ID·국가 코드·주문 항목·그룹 합계 금액·총 수량) 중에서 선택하도록 개선했습니다. 자유 입력으로 인해 지원하지 않는 필드명이 조용히 무시되던 문제를 막고, 선택하지 않으면 모든 항목을 전송합니다.",
+                            "배송정책 계산 API 연동을 외부 API 규격에 맞춰 세부 설정할 수 있도록 확장했습니다.",
+                            "요청 방식을 GET 또는 POST로 선택할 수 있습니다.",
+                            "인증이 필요한 API를 위해 Bearer 토큰 또는 커스텀 헤더(API 키 등)를 지정할 수 있습니다. 저장한 토큰은 안전하게 보관되며 화면에는 가려져 표시됩니다.",
+                            "요청 항목별로 외부 API가 요구하는 필드명을 따로 지정(매핑)할 수 있어, 항목 이름이 다른 API에도 맞출 수 있습니다.",
+                            "응답이 JSON일 때 배송비 값의 위치를 점(.)으로 중첩 경로(예: data.shipping.fee)까지 지정할 수 있고, 텍스트로 응답하는 API는 통화기호·콤마가 섞여 있어도 금액을 인식합니다.",
+                            "\"테스트 호출\" 버튼으로 입력한 설정 그대로 실제 API를 한 번 호출해 요청 내용과 응답·추출된 배송비를 즉시 확인할 수 있습니다.",
+                            "무통장입금 주문의 입금을 관리자가 직접 확인할 수 있는 \"입금확인\" 기능이 추가되었습니다 — 주문 상세 결제정보에서 입금자명과 입금액을 입력해 입금을 기록하며, 입금액이 결제예정금액과 정확히 일치할 때만 처리됩니다. 입금확인 버튼은 무통장입금이면서 입금이 아직 확인되지 않은 결제 건에 표시됩니다. \"주문을 결제완료로 처리\" 체크박스를 함께 제공해, 체크하면 입금 기록과 함께 주문을 결제완료로 변경(마일리지 적립·재고 차감·알림 발송)하고, 체크하지 않으면 입금 내역만 기록합니다. 이미 결제완료된 주문에 추가 금액(교환·반품 배송비 등)을 별도로 입금받아 기록하는 경우에 활용할 수 있습니다.",
+                            "\"배송 완료\" 알림이 추가되었습니다 — 주문이 배송완료 상태로 바뀌면 구매자에게 택배사·운송장번호와 함께 배송완료 안내(메일·알림함)가 발송됩니다.",
+                            "상품 등록·수정 화면의 기타정보에서 새 라벨을 바로 추가할 수 있습니다 — \"라벨 추가\" 버튼으로 이름·색상을 입력해 등록하면 곧바로 해당 상품에 연결됩니다. 같은 모달에서 기존 라벨 수정도 가능합니다.",
+                            "추가옵션 선택지에 \"직접입력 허용\"을 켤 수 있습니다 — 켜면 구매자가 그 선택지를 골랐을 때 각인 문구처럼 원하는 내용을 직접 입력해 주문할 수 있고, 입력한 내용은 장바구니·주문서·주문 상세에 함께 표시되며 주문 시점 그대로 보존됩니다. 필수 추가옵션의 직접입력 선택지는 내용을 입력해야 담기·주문이 진행되고, 필수가 아닌 추가옵션은 비워 두어도 됩니다. 직접입력 내용이 다르면 장바구니에서 별도 항목으로 담깁니다.",
+                            "추가옵션을 선택한 주문이 마이페이지 주문 내역과 관리자 주문 관리 목록에도 대표 옵션과 함께 추가옵션 요약(\"첫 추가옵션 외 N건\")으로 표시됩니다 — 직접입력한 내용도 함께 병기됩니다. 이전에는 목록에서 대표 옵션만 보여 추가옵션 주문 여부를 알 수 없었습니다.",
+                            "추가옵션 그룹·선택지 등록 시 입력 검증 안내가 정확한 우리말 안내로 표시됩니다 — 선택지를 등록하지 않은 빈 그룹을 저장하면 영문 키 대신 \"각 추가옵션 그룹에는 선택지를 1개 이상 등록해주세요.\" 안내가 해당 그룹 영역 강조와 함께 표시됩니다.",
+                            "관리자가 쿠폰 목록에서 회원을 검색·선택해 쿠폰을 즉시 발급할 수 있습니다 — 회원 이름·이메일을 입력하면 실시간으로 검색되며, 발급 한도에 도달한 회원은 자동으로 제외되고 발급 결과를 안내합니다.",
+                            "관리자가 쿠폰 발급 내역에서 발급된 쿠폰의 사용 여부와 사용된 주문(주문번호 바로가기)을 확인할 수 있습니다.",
+                            "관리자가 아직 사용하지 않은 발급 쿠폰을 발급취소할 수 있습니다 — 취소하면 해당 발급분이 회수되어 회원 쿠폰함에서 사라지고 발급 수량이 복원됩니다. 이미 사용했거나 만료·취소된 발급 건은 취소할 수 없습니다.",
+                            "장바구니·주문서 작성 화면에 정가(취소선)·할인율(%)·판매가가 함께 표시되며, 보조 통화를 선택하면 정가도 같이 환산되어 보입니다.",
+                            "회원이 마이페이지에서 결제 통화를 직접 설정할 수 있으며, 관리자도 회원 편집 화면에서 회원별 결제 통화를 지정할 수 있습니다. 로그인하면 헤더에서 임시로 고른 통화 대신 계정에 저장된 통화가 우선 적용됩니다.",
+                            "회원 가입 시 브라우저 언어/지역에 맞는 결제 통화가 자동으로 지정됩니다 — 환경설정의 통화별 사용 언어 매핑을 따르며, 매핑이 겹치거나 없으면 기본 통화가 지정됩니다. 관리자는 환경설정에서 통화별 사용 언어를 여러 개 지정할 수 있습니다.",
+                            "상품 또는 주문이 한 건이라도 등록된 후에는 데이터 정합성을 위해 기본 통화를 변경할 수 없습니다.",
+                            "상품 목록·검색·인기 상품, 상품 상세의 옵션 합계 금액, 상품 상세 쿠폰, 체크아웃의 쿠폰·배송비 쿠폰 금액이 모두 선택한 통화로 환산되어 표시됩니다 — 그동안 이 영역들이 기본 통화(원)로 고정되어 보이던 문제를 바로잡았습니다. 헤더에서 통화를 바꾸면 상품 목록 가격도 즉시 함께 바뀝니다.",
+                            "마일리지 \"통화별 사용 단위\" 설정에서 통화는 언어·통화 설정에 등록된 통화 중에서만 선택할 수 있고, 기본 통화에 대한 사용 단위가 설정되지 않으면 결제 시 마일리지를 사용할 수 없습니다.",
+                            "주문 시 선택한 배송 메모가 내부 코드 대신 안내 문구(라벨)로 저장·표시됩니다 — 마이페이지 주문 상세와 관리자 주문 상세에서 \"경비실에 맡겨주세요\" 같은 문구가 그대로 보이며, 직접 입력한 자유 메모는 입력한 내용이 보존됩니다.",
+                            "주문 상세의 배송 현황에서 운송장 번호를 누르면 택배사 배송조회 페이지가 새 창으로 열립니다 — 운송장 정보가 없으면 기존처럼 번호만 표시됩니다.",
+                            "결제창으로 넘어가는 청구 금액이 결제 통화로 환산되어 전달됩니다 — 결제창에는 주문 시점 환율로 환산한 결제 통화 금액(화면에 표시된 총 결제금액과 동일한 값)이 전달되며, 달러처럼 소수점을 쓰는 통화는 결제대행사 규격에 맞춰 청구됩니다. 결제할 수 없는 통화(환율이 설정되지 않은 통화 등)로는 주문 단계에서 안내와 함께 결제가 차단됩니다. 무통장입금 안내액도 같은 기준으로 결제 통화 금액으로 안내됩니다.",
+                            "환율/통화 설정에서 통화마다 \"사용 언어\"를 사이트가 지원하는 언어 중에서 지정할 수 있습니다 — 방문자가 보는 사이트 언어에 맞춰 표시 통화를 자동으로 정하는 데 쓰입니다. 로그인하지 않은 방문자도 현재 사이트 언어에 해당하는 통화로 가격이 표시되며(예: 영어로 보는 방문자에게는 영어로 지정된 통화), 회원 가입 시에도 같은 기준으로 결제 통화가 자동 지정됩니다. 방문자가 헤더에서 직접 고른 통화가 있으면 그 선택이 우선합니다. 처음 제공되던 통화 중 위안·유로에 지원하지 않는 언어가 들어 있어 통화 설정을 저장하면 \"설정 저장에 실패했습니다\"로 막히던 문제를 해결했습니다 — 기본값을 원은 한국어, 그 외 통화는 영어로 정리하고, 기존에 저장된 설정에서도 지원하지 않는 언어를 자동으로 정리합니다(직접 지정한 지원 언어는 그대로 유지). 지원하지 않는 언어를 선택해 저장하면 해당 입력칸이 빨갛게 강조되고 칸 아래에 \"사용 언어\" 항목명으로 사유가 표시됩니다.",
+                            "쇼핑몰 본인인증 정책 편집 화면에서 \"인증 목적\"과 \"적용 대상\"을 바꿔 저장해도 반영되지 않던 문제를 수정했습니다 — 이제 정책 키·강제 시점·강제 위치를 제외한 모든 항목(인증 목적·적용 대상 등)을 자유롭게 변경할 수 있으며, 변경한 값은 업데이트 후에도 유지됩니다.",
+                            "쇼핑몰 환경설정의 본인인증 정책 탭에서 출처 필터(전체/코어/모듈/플러그인)를 골라도 결과가 항상 비어 보이던 문제를 해소했습니다 — 이 탭은 쇼핑몰 정책만 보여주는 화면이므로, 동작하지 않던 출처 필터를 정리했습니다. 강제 시점 필터와 검색은 그대로 사용할 수 있으며, \"이 모듈이 등록한 본인인증 목적\" 안내는 그대로 표시됩니다.",
+                            "데이터베이스 테이블 접두사를 기본값(`g7_`)보다 길게 설정한 환경에서 쇼핑몰 모듈 설치가 실패하던 문제를 수정했습니다 — 배송정책 관련 일부 테이블의 인덱스 이름이 데이터베이스 한도를 넘겨 설치가 중단되던 결함으로, 접두사 길이와 관계없이 설치가 정상 완료됩니다.",
+                            "할인이 적용되지 않은 주문 항목의 금액이 주문 상세에서 표시되지 않던 문제를 수정했습니다 — 할인이 없는 항목도 소계 금액이 정상적으로 보입니다.",
+                            "주문을 취소한 뒤에도 관리자 주문 상세·주문 목록에 \"적립 예정\" 마일리지가 계속 표시되던 문제를 수정했습니다 — 전체 취소·부분 취소된 주문에는 적립 예정 표시가 더 이상 나타나지 않습니다(실제 적립은 종전에도 발생하지 않았으며 표시만 정리되었습니다).",
+                            "다른 언어를 쓰는 회원에게 보내는 알림(이메일·사이트 알림)이 받는 사람 본인의 언어로 발송됩니다 — 관리자가 한국어 화면에서 영어 회원의 주문 상태를 바꿔도 알림은 영어로 전달됩니다.",
+                            "상품 일괄 적용 확인 창의 옵션 변경 요약에서 \"안전재고\"·\"사용\" 항목이 영어 화면에서도 올바른 언어로 표시됩니다 — 그동안 한국어로 고정 표시되던 문제를 바로잡았습니다.",
+                            "공통정보 관리의 다국어 탭 저장이 정상 동작합니다 — 한국어 탭에 입력하고 저장할 때 \"한국어 필수\" 오류가 뜨거나, 영문 탭으로 옮긴 뒤 저장하면 공통정보명이 비워지던 문제를 해소했습니다.",
+                            "주문 이력이 있는 상품을 삭제하려 하면 \"N건의 주문 이력이 있어 삭제할 수 없습니다\"라고 사유가 표시되고, 삭제 확인 창이 목록 화면과 동일하게 삭제 가능 여부를 먼저 확인해 불가 시 안내와 함께 버튼이 비활성화됩니다. 삭제에 성공한 뒤 잘못된 오류 안내가 뜨던 문제도 함께 해소했습니다.",
+                            "장바구니 선택 삭제·전체 삭제 후 안내 문구에 실제 삭제 개수가 표시됩니다 — 그동안 \"{개수}개 상품이 삭제되었습니다\"처럼 자리표시자가 그대로 노출되던 문제를 바로잡았습니다.",
+                            "통화 선택 메뉴가 관리자가 설정한 통화 목록을 표시하도록 수정했습니다 — 그동안 목록이 비어 통화를 고를 수 없던 문제를 바로잡았고, 환율이 설정되지 않은 통화는 메뉴에서 자동으로 숨겨집니다. 기본 화폐를 바꾸면 사용자 화면의 가격·합계·쿠폰 금액이 선택한 통화로 환산되어 표시됩니다.",
+                            "관리자가 통화 설정을 저장할 때 일부 통화의 환율 정보가 사라지던 문제를 수정했습니다 — 빠진 통화가 기본 카탈로그에서 자동으로 보충됩니다.",
+                            "쿠폰 다운로드 모달에서 정액 할인·최소주문금액이 선택한 통화로 환산되어 표시됩니다 — 그동안 기호만 바뀌고 금액은 환산되지 않던 문제를 바로잡았습니다(정률 할인은 통화와 무관하게 % 그대로 표시).",
+                            "\"언어·통화\" 설정에서 기본 언어 항목을 제거하고, 사이트 언어는 일반 설정에서 일원화하여 관리합니다.",
+                            "결제·결제 통지·부분 환불 금액이 사이트 기본 통화를 기준으로 산정되며, 선택 통화는 주문 시점 환율로 환산된 금액으로 표시·청구됩니다. 환율이 바뀌어도 기존 주문의 환불 금액은 주문 당시 환율로 계산되어 환차손이 없습니다.",
+                            "신용카드(PG) 주문의 관리자 신규주문 알림을 결제 완료 시점에 보내도록 바꿨습니다 — 그동안 결제 전(주문서 생성) 시점에 알림을 보내면서 결제를 마치지 않은 주문도 알림이 발송되고, 알림 발송이 결제하기 응답을 지연시키던 문제가 함께 해소되었습니다. 무통장입금 주문은 기존대로 주문 접수 시점에 입금 안내가 발송됩니다.",
+                            "상품 관리 목록에서 옵션명만 인라인으로 바꾼 뒤 일괄 적용하면 \"일괄 업데이트에 실패했습니다\"로 저장되지 않던 문제 수정 — 한국어 옵션명만 입력하고 영어·일본어를 비워 둔 옵션도 정상 저장됩니다. 또한 일괄 적용이 실패하면 어떤 항목이 왜 거부됐는지 확인 모달과 알림에 구체적인 사유가 표시됩니다.",
+                            "상품 수정 화면에서 이미지를 추가하고 저장하면, 업로드는 됐는데도 저장 직후 새로고침하면 추가한 이미지가 모두 사라지던 문제 수정 — 이미지를 추가하고 저장할 때 그 이미지들이 상품에 정상 반영됩니다. 기존 이미지가 있는 상태에서 추가, 모두 지우고 다시 첨부, 추가 후 순서 바꾸기 모두 저장한 그대로 유지됩니다.",
+                            "상품 관리 목록에서 기본으로 설정한 옵션의 판매가를 바꿔도 상품 판매가가 따라 바뀌지 않던 문제 수정 — 상품 등록·수정 화면과 동일하게, 기본 옵션의 판매가를 바꾸면 상품 판매가가 함께 맞춰지고 나머지 옵션 판매가도 가산액 기준으로 다시 계산됩니다.",
+                            "상품 등록·수정 화면에서 추가옵션의 옵션명을 입력할 때 글자 입력이 버벅이던 문제 수정 — 입력이 끝난 뒤 잠깐 후에 반영되도록 바꿔 타이핑이 매끄러워집니다.",
+                            "상품 등록·수정 화면의 추가옵션 \"필수\" 선택을 체크박스에서 켜기/끄기 토글로 바꿔, 옵션의 사용/노출 토글과 동일한 조작감으로 통일했습니다.",
+                            "쿠폰 정액 할인값에 음수를 입력하면 정률(%) 전용 안내 문구가 잘못 표시되던 문제와, 최소주문금액을 비우고 저장하면 오류가 나던 문제를 수정했습니다 — 정액 할인값은 1원 이상으로 안내되고, 최소주문금액을 비우면 \"제한 없음\"으로 저장됩니다.",
+                            "쿠폰 적용 대상을 \"특정 상품\" 또는 \"특정 카테고리\"로 고른 뒤 대상을 하나도 선택하지 않아도 저장되던 문제를 수정했습니다 — 대상을 1개 이상 선택해야 저장됩니다.",
+                            "쿠폰 등록·수정 화면의 상품 검색이 입력한 검색어를 무시하고 전체 상품을 보여주던 문제를 수정했습니다.",
+                            "\"특정 카테고리\" 쿠폰이 해당 카테고리에 속하지 않은 상품에도 노출·적용되던 문제를 수정했습니다 — 쿠폰의 카테고리와 상품의 카테고리가 일치할 때만 적용됩니다.",
+                            "쿠폰 목록 검색에서 검색 필드(쿠폰명/설명/등록자)를 골라도 항상 전체가 검색되던 문제와, 상세 필터 선택이 주소(URL)로 복원될 때 상세 필터 영역이 펼쳐지지 않아 선택이 보이지 않던 문제를 수정했습니다.",
+                            "상품 상세의 쿠폰 다운로드 모달을 무한 스크롤로 개선했습니다 — 페이지 전환 버튼 없이 목록을 아래로 내리면 다음 쿠폰을 한 묶음씩 이어서 불러오고(불러오는 동안 \"불러오는 중\" 표시), 전체를 다 불러오면 멈춥니다.",
+                            "상품 등록·수정 화면의 \"공통정보\" 선택 목록에 비활성 처리한 공통정보까지 나타나던 문제 수정 — 활성 상태인 공통정보만 선택 대상으로 표시됩니다. 상품정보제공고시 템플릿과 동일하게 동작합니다.",
+                            "신규 주문 접수 시 관리자에게 발송되는 알림 메일에서 결제금액이 0원으로 표시되던 문제 수정 — 결제 예정 금액이 정확히 표시됩니다.",
+                            "관리자 주문 상세의 결제정보에서 \"결제요청일시\"가 비어 있고, 무통장입금의 입금 계좌(은행·계좌번호·예금주) 요약이 표시되지 않던 문제 수정 — 주문 접수 시 결제 요청 시각과 구매자 정보가 기록되며, 무통장입금 주문에 입금 계좌 요약이 표시됩니다.",
+                            "신용카드(PG) 결제가 완료된 뒤에도 주문 상세·마이페이지의 개별 상품 \"주문상태\"가 \"주문대기\"로 남던 문제 수정 — 결제가 완료되면 주문 상품 상태도 함께 결제완료로 표시됩니다. 결제 금액 전액을 마일리지로 충당한 주문도 동일하게 반영됩니다.",
+                            "관리자가 주문 상세에서 주문 상태를 변경할 때 주문 전체 상태만 바뀌고 개별 상품 상태는 이전 상태로 남던 문제 수정 — 상품 상태도 함께 변경됩니다. 이미 취소된 상품은 변경 대상에서 제외되어 그대로 유지됩니다.",
+                            "결제 실패·결제창 닫힘으로 주문이 취소될 때 개별 상품 상태가 \"주문대기\"로 남던 문제 수정 — 주문이 취소되면 상품 상태도 함께 취소로 정리되며, 이미 부분취소된 상품은 그대로 보존됩니다. 그동안 상품 상태가 주문대기에 갇혀 구매확정·리뷰 작성이 막히던 연쇄 문제도 함께 해소됩니다.",
+                            "신용카드 결제가 정상 완료됐는데도 주문 상세에서 주문은 \"결제완료\"이면서 개별 상품만 \"주문취소\"로 표시되던 문제 수정 — 결제 승인과 결제창 닫힘 처리가 겹칠 때 결제가 이미 완료된 주문은 취소 처리하지 않도록 바로잡아, 결제완료 주문의 상품이 임의로 취소 상태가 되지 않습니다.",
+                            "관리자가 주문 상태를 결제완료·배송중·배송완료·구매확정으로 바꿔도(단건/목록 일괄/운송장 일괄 포함) 구매자에게 해당 알림이 발송되지 않던 문제 수정 — 모든 상태변경 경로에서 결제완료·배송중·배송완료·구매확정 알림이 누락 없이 발송됩니다. 이미 같은 상태인 주문을 다시 저장할 때는 중복 발송되지 않습니다.",
+                            "결제 완료 시 발송되는 알림의 제목·본문이 \"주문 확인\"으로 표시되어 결제 완료 시점과 의미가 어긋나던 문구를 \"결제 완료\"로 명확히 정정했습니다.",
+                            "본인인증 정책(결제 시 확인·무통장 입금확인·결제 승인·결제 취소)을 활성화해도 실제 액션 시 본인인증이 요구되지 않던 문제 수정 — 4종 정책 모두 실제 결제·취소·입금확인·주문 진입 시점에 정상 동작합니다.",
+                            "상품 \"구매 대상 제한\" 설정 화면에서 제한으로 전환할 때 이전 역할이 빈 칩으로 남던 문제와, 역할이 많을 때 일부 역할(관리자 등)이 선택 목록에서 누락되던 문제 수정",
+                            "회원 주문 상세에서 \"배송 메모\"·\"배송 현황\" 영역이 표시되지 않던 문제 수정 — 회원/비회원 모두 동일한 배송 정보가 표시됩니다.",
+                            "상품 상세 페이지의 검색엔진용 구조화 데이터(Schema.org Product/Offer)에서 재고 상태가 실제 판매 상태와 무관하게 항상 \"품절(OutOfStock)\"로 출력되던 결함 수정. 판매 중인 상품은 \"재고 있음(InStock)\", 판매 중지·예정 상품은 \"품절\"로 정확히 출력됩니다.",
+                            "레이아웃 편집기 라우트 트리에서 상품정보제공고시 화면이 잘못된 다국어 키 참조로 라벨이 비어 보이던 결함 수정. 정확한 화면명(\"상품정보제공고시 관리\")이 표시됩니다.",
+                            "레이아웃 편집기 라우트 트리에서 상품 등록 단축 경로(`/admin/ecommerce/product-create`) 가 다국어 라벨 없이 경로 그대로 표시되던 문제 수정. \"상품 등록\" 라벨에 \"리다이렉트\" 배지를 함께 표시합니다.",
+                            "쇼핑몰 환경설정의 결제수단·통화·배송 국가 목록 라벨이 일본어 등 비한국어 로케일에서도 한국어로 표시되던 결함 수정. 활성 언어팩의 번역 라벨이 정확히 노출됩니다.",
+                            "주문 취소 시 재고가 이중으로 복구되던 결함 수정. 전체취소·부분취소 모두 취소한 수량만큼만 정확히 한 번 복구됩니다(이전에는 전체취소 시 최대 두 배가 복구되어 오버셀 위험이 있었습니다).",
+                            "환경설정의 \"취소 시 재고 복구\" 끄기 설정이 무시되어, 꺼 두어도 취소 시 재고가 복구되던 문제 수정. 이제 설정대로 켜면 복구, 끄면 복구하지 않습니다.",
+                            "무통장입금 주문이 입금 기한이 지나도 자동으로 취소되지 않던 문제 수정. 가상계좌와 무통장입금 결제대기 주문 모두 설정한 자동취소 기한이 지나면 정상적으로 자동 취소됩니다.",
+                            "무통장입금 주문의 결제 정보에서 입금 은행·계좌 요약이 비어 보이던 문제 수정. 주문 상세에서 입금 은행명과 계좌번호가 정상 표시됩니다.",
+                            "취소했던 주문을 다시 판매 상태(결제완료 등)로 되돌릴 때, 취소로 복구되었던 재고가 다시 차감됩니다. 되돌리려는 시점에 재고가 부족하면 상태 변경이 차단되어 재고가 음수로 빠지거나 오버셀이 발생하지 않습니다. 단건 변경·목록 일괄 변경과 더불어, 주문 상세에서 상품(옵션) 단위로 상태를 되돌리는 경우에도 동일하게 재고가 재차감됩니다.",
+                            "주문 상세에서 상품(옵션) 단위로 상태를 \"주문취소\"로 바꿀 때, 결제(PG) 취소를 함께 하지 않는 경우에는 재고가 복구되지 않던 문제 수정. 이제 결제 취소 동반 여부와 관계없이 취소 시 재고가 설정대로 복구됩니다. 결제를 함께 취소하는 경우에도 재고가 이중으로 복구되지 않고 정확히 한 번만 복구됩니다.",
+                            "단일 상품 주문에서 취소 수량을 줄여 부분취소하려 해도 항상 전체취소로 처리되던 문제 수정. 취소 수량을 상품 수량보다 적게 지정하면 그 수량만 부분취소되고, 모든 상품을 전량 취소할 때만 전체취소로 처리됩니다.",
+                            "쇼핑몰 환경설정의 \"취소 시 재고 복구\" 토글을 켜서 저장하면 \"참/거짓 값이어야 합니다\" 오류로 저장이 거부되던 문제 수정. 이제 토글을 켜고 끄는 설정이 정상적으로 저장됩니다.",
+                            "주문서 작성 시 보유한 마일리지보다 많은 금액을 사용하려 하면, 조용히 보유 잔액으로 줄여 결제하지 않고 \"보유 마일리지를 초과하여 사용할 수 없습니다\"라고 명확히 안내하도록 변경. 의도와 다른 금액으로 결제되던 혼란을 제거했습니다.",
+                            "판매중지·품절·출시예정·전시중지 상태의 상품이 장바구니에 담기거나 결제까지 진행되던 문제 수정. 이제 담기 단계에서 차단되며, 이미 담겨 있던 상품이 판매중지로 바뀌면 합계 금액에서 자동으로 제외되고 구매 불가로 표시됩니다.",
+                            "상품에 설정한 최소·최대 구매 수량이 실제 구매 과정(옵션 상품 포함)에 적용되지 않던 문제 수정. 이제 같은 상품의 옵션 수량을 합산한 총수량 기준으로 최소 미만·최대 초과 구매가 차단됩니다.",
+                            "상품 등록·수정에서 \"구매 대상 제한\"을 선택하고도 허용 역할을 하나도 선택하지 않은 채 저장되던 문제 수정. 이제 제한을 선택하면 허용 역할을 최소 1개 이상 지정해야 저장됩니다.",
+                            "상품 상세에서 \"바로 구매\"를 하면 해당 상품이 장바구니에도 함께 담기던 문제 수정. 이제 바로 구매는 장바구니를 거치지 않으며, 장바구니에 같은 상품이 들어 있어도 그 수량과 합산되지 않고 지금 선택한 수량만으로 주문됩니다(구매 수량 제한도 이번 선택 수량 기준으로 적용). 바로 구매 후 장바구니에는 기존 항목만 그대로 유지됩니다.",
+                            "장바구니 담기·바로 구매가 차단될 때 \"담을 수 없습니다\" 같은 일반 안내만 나오던 문제 수정. 이제 어떤 상품이 왜(판매 중지·품절·구매 권한 없음·최소/최대 구매 수량 초과) 막혔는지 상품명과 함께 구체적으로 안내합니다.",
+                            "쇼핑몰 상품 목록에서 상위 카테고리를 선택하면 그 하위 카테고리에만 속한 상품이 함께 표시되도록 개선. 이전에는 상위 카테고리 버튼을 눌러도 직접 지정된 상품만 나오고 하위 카테고리 상품은 누락되었으며, 카테고리 버튼이 목록을 실제로 필터링하지 않던 문제도 함께 수정했습니다. 선택한 카테고리는 버튼에 표시되어 현재 어떤 분류를 보고 있는지 알 수 있습니다.",
+                            "관리자 상품 목록에서 검색어로 조회하면 결과는 나오는데 \"총 N개\"가 0으로 잘못 표시되던 문제 수정. 이제 검색 결과 수가 실제 목록과 일치하며, 검색어와 판매 상태 등 다른 필터를 함께 적용해도 정확히 집계됩니다. 관리자 쿠폰 목록의 검색 총 개수 오표시도 동일하게 수정했습니다.",
+                            "관리자 상품 목록의 \"카테고리 미등록\"·\"브랜드 미등록\" 필터를 켜면 오류가 발생하며 영문 키가 그대로 노출되던 문제 수정. 이제 해당 필터가 정상 동작하여 분류가 지정되지 않은 상품만 정확히 조회됩니다.",
+                            "관리자 상품·주문 목록에서 검색어를 빠르게 입력한 직후 곧바로 Enter 를 누르면 방금 입력한 검색어가 누락된 채 조회되던 문제 수정. 검색 입력 시 화면 버벅임도 함께 줄였습니다.",
+                            "무통장입금 주문을 취소할 때 결제(PG) 취소 처리가 실패하며 취소 자체가 막히던 문제 수정. 무통장 등 PG를 거치지 않는 결제수단은 취소 시 결제대행 환불 단계를 건너뛰며, 환불금은 운영자가 직접 송금하도록 \"환불 승인(대기)\" 상태로 표시됩니다.",
+                            "입금 전(미입금)이거나 실제 결제금액이 0원인 주문에서 일부 상품을 부분취소하려 하면 항상 \"취소할 수 없습니다\"로 막히던 문제 수정. 실제로 낸 돈이 없는 주문은 환불·추가청구 대상이 아니므로 그대로 부분취소됩니다.",
+                            "여러 상품이 담긴 주문에서 일부 상품만 선택해 취소해도 주문 전체가 취소되던 문제 수정. 선택한 상품만 정확히 취소되고, 남은 상품은 그대로 유지됩니다. 모든 상품을 전량 취소할 때만 주문 전체가 취소됩니다.",
+                            "일부 상품만 취소한 주문도 남은 상품을 이어서 취소할 수 있습니다. 남은 상품을 모두 취소하면 주문 전체가 취소 처리됩니다.",
+                            "일부 상품만 취소한 주문이 그 주문의 실제 진행 단계(결제완료·상품준비중·배송중 등)에서 사라지지 않고 그대로 추적되도록 개선했습니다. 일부가 취소된 주문에는 주문내역·주문 상세에 \"일부취소\" 표시가 함께 붙어, 남은 상품은 정상 배송 흐름을 따르면서 일부 취소 사실도 한눈에 확인할 수 있습니다. (관리자 주문 목록·상세에도 동일하게 표시됩니다.)",
+                            "취소 차단 안내 문구가 \"쿠폰 할인 조건\" 으로 단정하던 표현을 실제 사유(적용 중인 할인 조건 변경으로 결제금액 증가)에 맞게 일반화했습니다.",
+                            "마이페이지 주문내역의 \"상품준비중\" 건수에는 배송준비완료 주문까지 포함되는데, 그 건수를 눌러 필터링하면 배송준비완료 주문이 빠져 표시 건수와 목록 수가 어긋나던 문제 수정. 이제 건수와 목록이 일치합니다.",
+                            "무통장입금 등 결제대행을 거치지 않는 주문의 취소 화면에서 의미 없는 \"결제(PG) 함께 취소\" 선택이 노출되던 문제 수정. 해당 결제수단에서는 자동으로 숨겨집니다. 또한 \"환불 우선순위\"(PG↔마일리지 배분 순서)는 사용한 마일리지가 없는 주문에서 선택 의미가 없으므로, 항목은 보이되 선택할 수 없도록(비활성) 처리하고 사유를 함께 안내합니다.",
+                            "주문 취소 시각이 전체취소에만 기록되고 부분취소에는 남지 않던 문제 수정. 전체·부분취소 모두 취소 시각이 정확히 기록됩니다.",
+                            "관리자 배송정책 목록에서 데이터가 없을 때 빈 표 머리글과 \"검색 결과가 없습니다\" 안내가 동시에 어색하게 겹쳐 보이던 문제 수정. 쿠폰·주문·상품 목록과 동일하게 표 영역에 빈 상태 안내만 깔끔하게 표시되도록 정리했습니다.",
+                            "무통장입금·가상계좌 입금 대기 주문의 자동취소 기한이 환경설정의 자동취소 기한(일)대로 적용됩니다. 이전에는 이 설정이 실제 동작에 반영되지 않았으며, 결제수단별로 나뉘어 있던 입금기한 설정을 하나의 자동취소 기한으로 통일했습니다(기존에 설정해 둔 값은 그대로 보존됩니다).",
+                            "리뷰 작성 화면에 리뷰 이미지 최대 개수·최대 용량 설정이 실제로 반영됩니다. 이전에는 설정과 무관하게 항상 기본값(5장·10MB)이 적용되었으며, 최대 개수를 0으로 두면 이미지 첨부 영역이 숨겨집니다. 용량 초과 시 안내 메시지에도 설정한 용량이 표시됩니다.",
+                            "리뷰 작성 가능 기간(구매확정 후 일수) 설정이 리뷰 작성 버튼 노출과 실제 작성 가능 여부에 동일하게 적용됩니다. 이전에는 두 판정이 미세하게 어긋나 버튼은 보이는데 작성이 막히거나 그 반대가 될 수 있었고, 기간을 0(무제한)으로 두면 버튼이 사라지던 문제도 해소되었습니다.",
+                            "배송정책 목록이 빈 화면일 때 안내 문구가 한 번만 표시되도록 정리했습니다. 상품 등록·수정 폼의 배송정책 선택에는 사용 중인(활성) 정책만 표시되며, 기존 상품에 적용된 정책이 비활성화된 경우에는 그 정책을 그대로 유지하면서 \"비활성화된 배송정책 적용 중\" 안내를 함께 보여 줍니다.",
+                            "배송정책 계산 API 주소를 입력하지 않은 채 저장하면 조용히 기본 배송비로 처리되던 문제를 막아, 계산 API 정책을 선택하면 API 주소 입력을 요구합니다. 또한 구간별 배송비·계산 API 설정에서 음수나 잘못된 값 입력 시 오류 메시지가 내부 코드 경로로 표시되던 문제를 수정해, 이해하기 쉬운 안내 문구로 표시됩니다.",
+                            "상품정보제공고시(및 공통정보) 관리 목록의 무한 스크롤을 정비했습니다. 목록 상단의 개수가 전체 등록 건수를 정확히 표시하고(이전에는 처음 불러온 만큼만 표시), 스크롤하면 다음 항목을 한 묶음씩 불러오다 전체를 다 불러오면 멈춥니다(이전에는 더 불러올 항목이 없어도 추가 요청을 반복). 다음 묶음을 불러오는 동안 \"불러오는 중\" 표시가 화면에 보이도록 했습니다. 같은 방식의 배송정책 \"추가 배송비 템플릿\" 선택 목록과 쿠폰 \"상품 검색\" 목록에도 동일하게 적용했습니다. 목록에서 각 항목의 사용 여부를 바로 켜고 끌 수 있는 토글을 추가했고, 상품 등록·수정 폼의 고시 선택에는 사용 중인 항목만 표시됩니다.",
+                            "상품 옵션을 장바구니에 담거나 수량·옵션을 바꿀 때 품절·재고 부족이면 오류 화면 대신 \"재고가 부족합니다 (요청 N개, 가용 M개)\"처럼 명확한 안내가 표시됩니다. 이미 삭제됐거나 다른 사용자의 장바구니 항목을 조작하려 할 때도 알 수 없는 오류 대신 적절한 안내가 표시됩니다.",
+                            "주문 상태를 진행 순서에 어긋나게(예: 구매확정 → 결제완료) 변경하던 문제 수정 — 관리자 주문 관리의 단건·일괄·상품옵션별 상태 변경 모두에서 허용되지 않는 상태 전이를 차단합니다. 정상 진행 방향(중간 단계 건너뛰기 포함)과 운영상 필요한 일부 되돌림(배송중→상품준비중 등), 취소했던 주문을 다시 판매 상태로 되살리는 복원은 그대로 허용됩니다. 차단될 때에는 \"구매확정 상태에서 결제완료 상태로는 변경할 수 없습니다\"처럼 어떤 전이가 왜 막혔는지 알 수 있는 안내가 표시됩니다(이전에는 주문 일괄·상품옵션 일괄 변경에서 \"Request failed with status code 422\"나 일반 실패 문구만 보였습니다).",
+                            "상품 쿠폰의 \"최소 주문금액\" 조건이 주문 전체 합계가 아니라 그 쿠폰을 적용한 상품 금액 기준으로 검증되도록 수정. 다른 상품을 함께 담아 전체 금액만 채워 최소 주문금액 조건을 우회하던 문제를 막았습니다(주문·배송비 쿠폰은 종전처럼 전체 합계 기준).",
+                            "쿠폰의 \"1인 사용 횟수 제한\"이 주문 단계에서 실제로 적용되도록 수정. 이전에는 다운로드 시점에만 확인되어, 한 주문에 같은 쿠폰을 여러 상품에 중복 적용하거나 이미 사용한 쿠폰을 다시 사용할 수 있었습니다. 이제 과거 사용 횟수와 한 주문 내 중복 적용을 합산해 한도를 초과하면 차단합니다.",
+                            "\"다른 쿠폰과 함께 사용 불가\"로 설정한 쿠폰이 서로 다른 종류의 쿠폰(상품·주문·배송비)과 동시에 적용되던 문제 수정. 이제 어떤 종류의 쿠폰과도 함께 적용되지 않도록 차단합니다.",
+                            "만료되었거나 존재하지 않는 주문서(임시 주문)에 접근할 때 서버 오류(500)로 응답하던 문제 수정. 이제 한국어·영어 환경 모두에서 \"찾을 수 없음\"(404)으로 정확히 응답하며, 주문서 작성 단계에서 적용 불가한 쿠폰(최소금액 미달·사용 한도 초과·중복 불가)이 있으면 해당 쿠폰을 할인에서 제외하고 사유를 안내합니다. 주문 확정 시 적용 불가 쿠폰이 남아 있으면 결제가 차단됩니다.",
+                            "무통장입금 주문에서 1회 사용 제한 쿠폰이 입금 처리 전까지 다시 사용되던 문제 수정. 이제 주문 접수 즉시 쿠폰이 사용 처리되며, 미입금으로 자동취소되거나 주문을 취소하면(부분취소로 적용 조건이 깨지는 경우 포함) 해당 쿠폰이 다시 사용 가능하도록 복원됩니다. (#57 @ChoDongHyeon 님께서 제보해주셨습니다.)",
+                            "상품 등록·수정의 옵션에서 기본 옵션 판매가를 바꾸면 상단 판매정보의 판매가가 함께 갱신되도록 수정 — 기본 옵션 라디오를 다른 옵션으로 바꿀 때도 상단 판매가가 새 기본 옵션 가격으로 맞춰지며, 비기본 옵션은 기존 가산액을 유지한 채 재계산됩니다.",
+                            "추가옵션을 \"사용\"으로 켠 뒤 항목을 추가해도 설정이 \"미사용\"으로 풀리지 않도록 수정 — 추가옵션 항목 유무로 표시 상태가 결정되며, \"미사용\"으로 끌 때 입력한 항목이 있으면 확인 후 비웁니다.",
+                            "상품 이미지를 상한(20장)보다 많이 선택하면 조용히 잘리지 않고 안내가 표시되도록 수정했고, 대표 이미지 안내 문구를 실제 동작(★ 버튼으로 지정)에 맞게 정정했습니다. 서버에서도 상품당 이미지 개수 상한을 검증합니다.",
+                            "SEO 제목·설명을 직접 입력해 저장하면 상품명·설명으로 덮어써지던 문제 수정 — 동기화 사용 여부가 저장되어, 끄면 입력한 값이 그대로 유지되고 켜면 상품명·설명으로 자동 채워집니다. 동기화를 끈 뒤 수정 화면을 다시 열면 끈 상태가 그대로 복원됩니다.",
+                            "판매가·재고 일괄변경에서 상품/옵션 헤더로 전체선택했을 때 \"변경할 항목 없음\"으로 표시되던 문제 수정 — 전체선택에서도 대상이 정확히 집계되어 변경이 적용됩니다. 변경 완료 안내 문구에 실제 변경 건수가 표시됩니다.",
+                            "상품 라벨 적용 기간의 날짜를 직접 입력할 때 화면 오류(\"컴포넌트 로드 실패\")가 발생하던 문제 수정 — 라벨 기간 날짜, 쇼핑몰 연동 설정, 양식 저장 모달 입력이 모두 정상 동작합니다.",
+                            "추가옵션이 등록된 상품을 수정 화면에서 열면 추가옵션이 표시되지 않고 \"미사용\"으로 보여 저장 시 사라질 수 있던 문제 수정 — 저장된 추가옵션이 그대로 불러와집니다.",
+                            "상품 등록·수정의 추가옵션 \"미사용\" 확인 창, 공지 양식 저장 창이 열리지 않던 문제 수정 — 확인 창이 정상적으로 뜨고, 공지 양식 저장 창에서 이름을 입력해 저장할 수 있습니다.",
+                            "상품 관리 일괄변경 확인 창에서 판매·전시 상태가 \"on_sale\", \"visible\" 같은 내부 코드값으로 표시되던 문제 수정 — 드롭다운에서 고른 그대로 \"판매중\", \"전시중\" 등 한글 라벨로 표시됩니다.",
+                            "상품 관리 재고 일괄변경 확인 창의 옵션별 변경 내용이 \"재고: undefined undefined\"로 표시되던 문제 수정 — 입력한 \"+10개\" 같은 변경 값이 그대로 표시됩니다. 가격 일괄변경의 옵션별 표시도 동일하게 정정됩니다.",
+                            "쇼핑몰 환경설정에서 상품 목록·카테고리·상품 상세의 \"SEO 제공 페이지\"를 꺼도 검색엔진 사이트맵(sitemap.xml)에 해당 주소가 그대로 남던 문제 수정 — 끈 페이지 유형의 주소는 사이트맵에서 제외됩니다."
+                        ]
+                    },
+                    {
+                        "name": "Security",
+                        "items": [
+                            "결제 거래번호 DB 레벨 멱등성 보장 — PG 결제 콜백이 동일한 거래번호로 중복 수신되어도 DB 가 자동 차단하여 중복 결제완료/포인트 적립 등의 사고를 원천 차단"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "1.0.0-beta.4",
+                "date": "2026-05-12",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "이커머스 환경설정의 본인인증 정책 탭에 권한 기반 버튼 비활성화 적용 — 수정 권한이 없는 운영자는 \"정책 추가\" / \"수정\" / \"삭제\" / \"활성 토글\" 버튼이 자동 비활성화"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "위시리스트 활동 로그의 \"액션\" 열에 `wishlist.remove` 가 번역되지 않은 키 그대로 노출되던 문제 수정"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "1.0.0-beta.3",
+                "date": "2026-05-11",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "상품 상세 페이지의 OG 메타태그·Product 구조화 데이터를 이커머스 모듈이 직접 선언하도록 SEO declaration 구현 — 썸네일 가로/세로 크기·가격·통화·재고 상태가 og:product:* 와 Schema.org Product/Offer/AggregateRating 스키마로 자동 출력됨",
+                            "결제 취소·승인·무통장 입금 확인·재고 차감/복원·배송지 관리(CRUD + 기본 설정)·체크아웃 응답 변환 지점에 본인인증(IDV) 정책 등 외부 확장을 붙일 수 있는 확장점 제공",
+                            "IDV 정책 3종(결제 취소·승인·무통장 입금 확인) 을 코어 본인인증 정책에 자동 동기화. 운영자가 관리자 UI 에서 수정한 필드(활성/유예/프로바이더/실패 모드) 는 업데이트 재설치 시 보존 — 모두 기본 비활성",
+                            "결제 직전 성인/본인 확인 목적(`checkout_verification`) 등록 — 별도 본인인증 프로바이더 설치 시 결제 단계 전 검증 가능",
+                            "결제 진행 직전 본인인증(`checkout_verification`) 발생 시 결제 도메인 전용 메일 문구가 발송되도록 모듈에서 메시지 템플릿을 직접 제공 (이전에는 일반 fallback 문구가 발송됨)",
+                            "이커머스 환경설정에 \"본인인증 정책\" 탭 추가 — 결제 취소·승인 등 이커머스 컨텍스트 정책을 코어 정책 관리 화면과 동일한 UI/UX (검색·필터(강제 시점/출처)·페이지네이션·정책 추가/편집 모달 직접 호출·이 모듈이 등록한 본인인증 목적(checkout_verification) 메타 카드 상단 노출·데스크탑 테이블/모바일 카드 자동 분기 + enabled 인라인 토글) 로 한 곳에서 관리. 정책 목록 \"인증 목적\" 컬럼이 코드명 대신 사람이 읽을 수 있는 라벨로 표시",
+                            "결제 직전 본인 확인 정책 신설 (`checkout_verification` 목적) — 운영자가 활성화하면 결제 진행 전 자동 본인인증 진행",
+                            "이커머스 모듈 자체 권한 신설: `sirsoft-ecommerce.identity.policies.{read,update}` (정책 관리 최소 권한)",
+                            "이커머스 알림 발송 이력 / 본인인증 이력 샘플 시더 추가 — `module:seed sirsoft-ecommerce --sample` 으로 결제·문의·주문 등 이커머스 영역 더미 이력만 독립 생성 (코어/타 모듈 영역 침범 없음)",
+                            "이커머스 알림 정의 7종(주문 확인·배송 시작·구매 확정·주문 취소·신규 주문 관리자·상품 문의 접수·문의 답변)을 모듈 manifest 에서 직접 선언하도록 통일 — 활성화/업데이트 시 운영자 편집값을 보존하면서 자동 등록·정리되며, 권한·메뉴·본인인증과 동일한 declarative 패턴으로 일관화",
+                            "활동 로그의 이커머스 액션 라벨(주문·상품·카테고리·쿠폰·배송 정책 등)을 이커머스 모듈 다국어 파일에서 관리하도록 정리 — 모듈 라벨이 자기 영역에서 자기설명되며, 일본어 등 추가 언어팩이 키 누락 없이 동기화"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "코어 최소 요구 버전을 7.0.0-beta.4 로 상향 — 본인인증 정책 인프라 의존",
+                            "결제 본인 확인 인증 목적 라벨/설명을 모듈 다국어 파일에서 관리하도록 정리 (운영자/번역자가 lang 파일만 편집해도 라벨 변경 가능)",
+                            "클레임 사유·배송 유형·배송사의 다국어 라벨이 활성 언어팩 추가 시 자동으로 새 언어 키를 포함하도록 정합화 — 운영자가 한국어 라벨만 직접 수정한 row 도 한국어는 보존하면서 신규 언어(예: 일본어) 라벨은 자동 동기화",
+                            "배송사 다국어 라벨이 활성 언어팩의 데이터를 자동으로 머지하도록 시더 정합화 (다른 entity 시더와 일관)"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "모듈 시더 실행 시 배송 유형 시더가 자동 호출되지 않던 회귀 수정 — 언어팩 활성/비활성 토글 시 즉시 다국어 라벨 반영",
+                            "일부 주문에서 옵션 정보 직렬화 시 500 에러가 발생하던 문제 수정",
+                            "상품 옵션 삭제 검증 시 런타임 에러가 발생하던 문제 수정",
+                            "설치 직후 또는 활성 모듈 디렉토리 부재 시 환경설정 기본값이 비어있던 문제 수정 — 활성 디렉토리 부재 시 번들 디렉토리를 fallback 으로 사용",
+                            "알림 템플릿 편집 모달의 입력 필드에서 글자를 입력할 때마다 화면이 심하게 버벅이던 문제 수정",
+                            "이커머스 환경설정 알림 탭의 채널 라벨이 식별자(mail / database)로 노출되던 문제 수정 — 활성 언어 기준의 사람이 읽을 수 있는 라벨로 표시"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "1.0.0-beta.2",
+                "date": "2026-04-20",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "**알림 시스템 강화**",
+                            "7종 알림(주문확인/배송시작/구매확정/주문취소/신규주문/문의접수/문의답변) 실제 발송 구현",
+                            "알림 목록에 채널별 수신자 뱃지 표시",
+                            "알림 편집 모달에 수신자 설정 섹션 추가 — 타입 선택 및 규칙 관리",
+                            "알림 클릭 시 이동 URL 기본값 설정",
+                            "알림 정의 일괄 초기화 기능 — 확인 모달 + 진행 스피너 UX 포함",
+                            "이커머스 알림 정의를 코어 리셋 로직에 자동 기여하여 기본값 복원 가능",
+                            "알림 탭은 코어 알림 권한 기준으로 편집 가능 여부를 판단하도록 개선 (모듈 설정 권한과 분리)",
+                            "**SEO 환경설정 강화**",
+                            "페이지 타입별 SEO 변수 메타데이터 선언 (상품/카테고리/검색/쇼핑몰 메인)",
+                            "쇼핑몰 메인 페이지 메타태그 설정 추가",
+                            "캐시 삭제 확인 모달 및 캐시 용량 동적 표시",
+                            "**배송유형 관리 기능**",
+                            "환경설정 > 배송설정에서 배송유형 추가/수정/삭제/활성화 가능",
+                            "기본 11종(국내 7종 + 해외 2종 + 기타 2종) 시딩",
+                            "배송유형/배송사 테이블 드래그앤드롭 순서 변경",
+                            "배송방법 \"직접입력\" 선택 시 다국어 배송방법명 입력 지원",
+                            "클레임 사유(ClaimReason) 사용자 수정 보존 지원",
+                            "주소 중복 등록 시 전용 도메인 예외 처리"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "코어 최소 요구 버전을 7.0.0-beta.2 로 상향",
+                            "알림 정의 시더를 인라인 방식으로 전환 — 사용자 수정 자동 보존 패턴 적용",
+                            "레거시 메일 템플릿 테이블을 통합 알림 시스템으로 이관",
+                            "알림 수신자를 채널별 독립 관리 방식으로 변경",
+                            "이전 업그레이드 스텝에 클래스 부재 시 안전 스킵 처리 추가",
+                            "상품 설명/공통정보 에디터를 확장 포인트(extension_point)로 변환",
+                            "SEO 캐시 무효화를 코어 공통 캐시 인터페이스로 전환",
+                            "상품정보제공고시, 공통정보, 알림 템플릿 편집의 다국어 탭을 동적 생성으로 전환",
+                            "배송유형을 Enum에서 DB 테이블로 변경하여 관리자 화면에서 동적 관리 가능하도록 변경",
+                            "주문 필터, 배송정책 폼의 하드코딩 옵션을 DB 기반 동적 렌더링으로 변경",
+                            "주문/배송정책에서 직접입력 배송방법명 해석 지원 (스냅샷 기반)"
+                        ]
+                    },
+                    {
+                        "name": "Removed",
+                        "items": [
+                            "레거시 메일 템플릿 시더 및 관련 다국어 키 제거",
+                            "ShippingTypeEnum, ShippingMethodEnum 제거 — DB 관리 방식으로 이관",
+                            "환경설정의 도서산간 배송비 기본설정 제거 — 배송정책별 설정으로 완전 이관"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "마이페이지 배송지 관리에서 수정 버튼에 권한 체크가 누락되어 있던 문제 수정",
+                            "사용자 화면에서 상품 설명 HTML이 텍스트로 노출되던 문제 수정",
+                            "상품 설명/공통정보 에디터에 HTML 모드 전환 옵션 누락 수정",
+                            "공통정보 패널 폼 초기화 및 모달 전환 관련 버그 수정",
+                            "주문목록 검색필터 배송방법 선택 시 검증 에러 수정",
+                            "환경설정/상품옵션 테이블의 Select 드롭다운이 가려지는 문제 수정",
+                            "재설치·재시드 시 주문/상품 시퀀스 counter 가 0으로 리셋되어 주문번호 중복 위험이 있던 문제 수정 — 기존 counter 보존",
+                            "재설치·재시드 시 관리자가 수정·추가한 택배사 정보가 기본 목록으로 초기화되던 문제 수정 — 사용자 수정분 자동 보존"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "1.0.0-beta.1",
+                "date": "2026-04-01",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "오픈 베타 릴리즈"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.20.0",
+                "date": "2026-03-31",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "기본 클레임 사유(환불/취소) 자동 등록 — 모듈 설치 시 7건 기본 사유 시딩 (고객 귀책 4건 + 판매자 귀책 3건)",
+                            "`ClaimReasonSeeder` 시더 추가 (`getSeeders()` 및 `DatabaseSeeder` 등록)",
+                            "업그레이드 스텝 `Upgrade_0_20_0` — 기존 설치 환경에 기본 클레임 사유 삽입"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "장바구니 API 서버 에러 수정 — 삭제된 배송정책을 참조하는 상품의 배송비 계산 시 null TypeError 방지, 배송비 0원 처리 (OrderCalculationService)",
+                            "사용자 주문 취소 완료 후 모달이 닫히지 않는 문제 수정 — `showCancelModal: false` 상태값 방식을 `G7Core.modal.close('modal_cancel_order')` 호출 방식으로 교체 (userCancelOrderHandlers)",
+                            "사용자 주문 취소 모달 취소 사유 selectbox 다크모드 미적용 수정 — 다크모드 색상 클래스 추가 (_modal_cancel.json)",
+                            "사용자 주문 취소 모달 취소 사유 selectbox 하단 여백 누락 수정 — `mb-4` 추가 (_modal_cancel.json)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.19.6",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품옵션/고시정보 다국어 입력 stale closure 수정 — productOptionHandlers/productNoticeHandlers에서 디바운스 병합 시 이전 키 변경 유실 방지 (`_partial_product_options.json`, `_partial_product_notices.json`)",
+                            "주문상세 배송방법 `$t:` 번역 토큰 원문 노출 수정 — 배송방법 표시 바인딩에 `raw:` 마커 적용 (_partial_order_info.json)",
+                            "FileUploader onRemove 시 form 데이터 동기화 누락 수정 — remove 핸들러에 setState 추가하여 폼 데이터에서 삭제된 파일 즉시 반영 (_partial_image_upload.json)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.19.5",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문 일괄 변경 활동 로그 `:count` 플레이스홀더 미치환 수정 — bulk 핸들러 4개(bulkUpdate, bulkStatusUpdate, bulkShippingUpdate, bulkOptionStatusChange)의 `description_params`에 `count` 키 추가",
+                            "주문 상태 변경 활동 로그에서 enum 값(payment_complete, shipping 등)이 번역되지 않고 원시값 노출 수정 — Order/OrderOption 모델 `$activityLogFields`의 status 필드를 `type: 'enum'`으로 변경 + `OrderStatusEnum::labelKey()` 메서드 추가"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.19.4",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "`window.G7Config` 설정 노출 최소화 — frontend_schema 필드별 `expose: false` 처리 (basic_info: route_path, no_route만 노출, language_currency: default_currency, currencies만 노출, order_settings/shipping/seo/review_settings 전체 미노출)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.19.3",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "관리자 다크모드 레이아웃 전수 수정 — 101개 파일에서 누락된 `dark:` variant 약 415건 추가 (text-gray, bg-white/gray, focus:ring, text-red/blue/green/yellow, border-gray, hover 등)",
+                            "상품 일괄 변경 모달 라벨 미정의 CSS 클래스 수정 — `className: \"label\"` → `\"form-label\"` (다크모드 텍스트 가독성 복원)",
+                            "상품 목록 판매가/재고 일괄 변경 버튼 다크모드 텍스트 색상 누락 수정 — `text-gray-700 dark:text-gray-300` 추가",
+                            "레이아웃 JSON 내 Select 컴포넌트 다크모드 배경색 수정 — `dark:bg-gray-800` → `dark:bg-gray-700` (카드 배경과 구분)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.19.2",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "검색/필터/정렬 성능 향상을 위한 일반 인덱스 추가 — ecommerce_products(selling_price, list_price, stock_quantity, shipping_policy_id, barcode, tax_status, updated_at), ecommerce_orders(total_amount, order_device, confirmed_at, [user_id+ordered_at]), ecommerce_order_addresses(orderer_phone, recipient_phone)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "Repository 7개의 직접 `MATCH...AGAINST` 호출을 Laravel Scout `Model::search()` 파이프라인으로 전환 — DBMS별 검색 분기를 엔진 내부에서 처리 (ProductRepository, CategoryRepository, BrandRepository, CouponRepository, ProductCommonInfoRepository)",
+                            "ReportRepository의 관계 검색을 `DatabaseFulltextEngine::whereFulltext()` 정적 헬퍼로 전환 — 다중 DBMS 호환",
+                            "Category, Brand, PromotionCoupon, ProductCommonInfo 모델에 `FulltextSearchable` 인터페이스 + `Searchable` 트레이트 추가",
+                            "`searchIndexShouldBeUpdated()` 훅 기반 전환 — `HookManager::applyFilters()` 사용으로 검색 플러그인이 모델별 인덱스 업데이트 제어 가능",
+                            "마이그레이션 FULLTEXT 인덱스 생성을 `DatabaseFulltextEngine::addFulltextIndex()` 정적 헬퍼로 전환 — DBMS별 조건부 처리"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "인덱스명 약어 수정 — `idx_ecom_*` → `idx_ecommerce_*`, `stock_qty` → `stock_quantity` (네이밍 규칙 준수)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.19.1",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "상품 옵션 재생성 시 기존 옵션 초기화 확인 모달 연결 — 기존 옵션이 존재할 때 generateOptions 호출 시 확인 모달 표시, 확인 후 skipConfirm 플래그로 실제 생성 진행 (optionHandlers, _modal_confirm_regenerate.json)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.19.0",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "FULLTEXT 인덱스(ngram) 추가 — ecommerce_products(name, description), ecommerce_categories(name, description), ecommerce_brands(name), ecommerce_promotion_coupons(name, description), ecommerce_product_common_infos(name, content) 총 9개",
+                            "Product 모델에 Laravel Scout `Searchable` 트레이트 + `FulltextSearchable` 인터페이스 적용"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "상품/카테고리/브랜드/쿠폰/공통정보 관리자 검색 쿼리를 `LIKE '%keyword%'`에서 `MATCH...AGAINST IN BOOLEAN MODE`로 전환 — JSON TEXT 컬럼 검색 성능 향상",
+                            "공개 상품 검색(통합검색) 쿼리를 로케일 루프 `JSON_EXTRACT + LIKE`에서 `MATCH...AGAINST`로 전환",
+                            "관리자 상품 목록 검색 필드에 '상품설명', 'SKU' 옵션 추가 — description FULLTEXT 검색 지원"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.18.4",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품 수정 시 이미지 순서 유실 수정 — syncImages에서 배열 인덱스를 sort_order SSoT로 사용, stale sort_order 값 무시 (ProductService)",
+                            "상품 수정 시 대표이미지 hash 기반 설정 — syncImages에 thumbnail_hash 파라미터 추가, hash 기준 is_thumbnail 갱신 (ProductService)",
+                            "상품 복사 시 원본 이미지 파일 복사 — copyFromSource() 메서드 추가, hash 기반 원본 조회 및 스토리지 파일 복사 (ProductImageService)",
+                            "상품 복사 시 createImages에서 hash 기반 이미지 복사 분기 — hash 존재 시 copyFromSource 호출, 미존재 시 기존 직접 생성 (ProductService)",
+                            "상품 이미지 임시 파일 연결 시 sort_order 재배치 — linkTempImages에서 기존 이미지 최대 sort_order 뒤에 배치, is_thumbnail 해제 (ProductImageService)",
+                            "상품 수정 폼 이미지 메타데이터 확장 — download_url, size, size_formatted, mime_type, is_image, width, height, thumbnail_hash 추가 (ProductService)",
+                            "상품 이미지 업로드 레이아웃 전면 수정 — event 기반 콜백, hash 기반 대표이미지, 편집/복사 모드별 API 엔드포인트 분기, onReorder/onRemove 핸들러 추가 (_partial_image_upload.json)",
+                            "ProductResource에 thumbnail_hash 필드 추가 — 대표이미지 hash 반환 (ProductResource)",
+                            "StoreProductRequest에 thumbnail_hash 검증 추가, description maxLength 65535 적용 (StoreProductRequest)",
+                            "ProductController 에러 응답에 상세 에러 정보 추가 — ValidationException errors 전달, debug 모드 예외 메시지 포함 (ProductController)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.18.3",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "카테고리 삭제 모달 영문 다국어 ICU MessageFormat 오류 수정 — `{count, plural, ...}` 형식을 단순 `{count}` 치환 형식으로 변경 (category.json)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.18.2",
+                "date": "2026-03-29",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문 일괄 배송중 변경 시 운송장/택배사 정보가 저장되지 않는 버그 수정 — `bulkUpdateShipping()`에서 shipping 레코드 미존재 시 옵션별 신규 생성 로직 추가 (OrderRepository)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "order_shippings 테이블에서 `carrier_name` 컬럼 삭제 — 택배사명은 carrier_id 관계를 통해 사용자 로케일에 맞게 동적 조회로 전환 (OrderShipping, OrderOptionResource, OrderListResource, OrderShippingResource)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.18.1",
+                "date": "2026-03-29",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "배송완료 상태 변경 시 운송장 입력 강제 해제 — `shippingInfoRequiredStatuses()`에서 DELIVERED 제거 (OrderStatusEnum)",
+                            "주문 목록 일괄 배송완료 시 상태가 \"배송중\"으로 표시되는 버그 수정 — `bulkUpdateShipping()`에서 order_status를 SHIPPING으로 덮어쓰는 코드 삭제 (OrderRepository)",
+                            "주문상세 일괄변경 시 carrier vs carrier_id 키 불일치로 422 에러 발생 수정 — FE `body.carrier` → `body.carrier_id`, BE `$validated['carrier']` → `$validated['carrier_id']` (orderDetailHandlers, OrderController)",
+                            "주문상세 옵션 일괄 상태 변경 후 부모 주문 상태 미동기화 수정 — `syncParentOrderStatus()` 메서드 추가, 모든 활성 옵션 동일 상태면 주문도 해당 상태로, 혼합 시 최저 진행 단계로 설정 (OrderOptionService)",
+                            "ActivityLog 일괄 상태 변경 로그 미기록 수정 — Service results 키를 `order_option_id`로 변경하여 Listener pluck와 일치, 분할/병합 케이스별 loggable 대상 정확히 지정 (OrderOptionService, OrderActivityLogListener)",
+                            "프론트엔드 주문 목록 배송완료 선택 시 운송장 필수 경고/비활성화 해제 — shippingStatuses 배열 및 modal 조건에서 delivered 제거 (orderHandlers, _modal_bulk_confirm.json)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "OrderOption 일괄 상태 변경 results 구조 확장 — `option_id` → `order_option_id`, `split_order_option_id`, `merged_into_order_option_id`, `is_full_quantity` 추가 (OrderOptionService)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.18.0",
+                "date": "2026-03-29",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "검색/필터/정렬 성능 향상을 위한 누락 인덱스 일괄 추가 — ecommerce_products 7개(selling_price, list_price, stock_quantity, shipping_policy_id, barcode, tax_status, updated_at), ecommerce_orders 4개(total_amount, order_device, confirmed_at, [user_id+ordered_at] 복합), ecommerce_order_addresses 2개(orderer_phone, recipient_phone)",
+                            "상품 복사 모드 이미지 파일 복사 기능 — copyFromSource() 메서드로 원본 이미지 파일과 메타데이터를 새 상품에 복제 (ProductImageService)",
+                            "상품 등록 시 에러 상세 로깅 — ValidationException/Exception 분리 처리 및 debug 모드 시 exception 메시지 포함 응답 (ProductController)"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품 등록 시 상세설명 255자 제한 버그 수정 — TranslatableField maxLength 65535 명시 (StoreProductRequest)",
+                            "상품 복사/수정 화면에서 FileUploader 렌더링 에러 수정 — getDetailForForm() 이미지 매핑에 누락 필드(mime_type, is_image, download_url, size, order 등) 추가 (ProductService)",
+                            "상품 복사 컨트롤러에서 중복 download_url 추가 로직 제거 — getDetailForForm()에서 이미 포함 (ProductController)",
+                            "상품 복사 등록 시 500 에러 수정 — createImages()에서 hash 기반 복사 모드 이미지를 copyFromSource()로 파일 복사 처리 (ProductService)",
+                            "인덱스 마이그레이션 날짜 순서 수정 — 테이블 생성 마이그레이션 이후로 재배치 + 인덱스 중복 방어 코드 추가",
+                            "상품 수정/복사 화면에서 대표이미지 표시 안됨 수정 — id 기반 → hash 기반 대표이미지 식별로 전환, 복사 모드 이미지 삭제 시 원본 보호 (ProductResource, ProductService, _partial_image_upload.json)",
+                            "상품 복사 등록 시 임시 이미지 정렬/썸네일 버그 수정 — linkTempImages()에서 sort_order 미설정(기존 이미지와 충돌) 및 is_thumbnail 미해제(이중 썸네일) 문제 해결 (ProductImageService)",
+                            "상품 이미지 filesChange 이벤트가 form.images를 pendingFiles로 덮어쓰는 버그 수정 — 복사 이미지 데이터 유실 방지, uploadComplete도 form.images 미수정으로 createImages/linkTempImages 이중 처리 해소 (_partial_image_upload.json)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.17.2",
+                "date": "2026-03-29",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문상세 일괄변경 시 toast에 번역 키(`no_items_selected`)가 원문 그대로 표시되는 버그 수정 — 누락된 다국어 키 추가 (ko/en)",
+                            "주문상세 일괄변경에서 \"선택 없음\"과 \"취소 가능 상품 없음\" 메시지를 동일 키로 사용하던 것을 `no_items_selected` / `no_cancellable_items`로 분리 (orderDetailHandlers)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.17.1",
+                "date": "2026-03-28",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "공통정보 추가 시 \"ko 언어의 값은 필수입니다\" 검증 오류 수정 — MultilingualInput의 setState에서 `$event` 전체 대신 `$event.target.value`로 다국어 값 객체만 저장",
+                            "공통정보 뷰 패널 \"기본값으로 설정\" 버튼 미동작 수정 — 모달 ID 불일치(`set_default_confirm_modal` → `modal_set_default_confirm`) 및 확인 모달에 기본값 설정 API 호출 추가"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.17.0",
+                "date": "2026-03-30",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "상품 상세 페이지에 1:1 문의 탭 추가",
+                            "문의 게시판이 설정된 경우에만 탭 노출",
+                            "비회원 포함 누구나 문의 목록 조회 가능, 로그인 사용자가 문의 작성/수정/삭제 가능",
+                            "비밀글 토글 필터 (전체 / 비밀글 제외) 제공",
+                            "관리자 권한 보유자가 문의에 답변 등록/수정/삭제 가능",
+                            "작성자명 마스킹, 비밀글 잠금 처리",
+                            "마이페이지에 내 문의내역 조회 API 추가 (답변 내용 포함)",
+                            "이커머스 환경설정에 1:1 문의게시판 설정 섹션 추가",
+                            "게시판 모듈과 연동하여 사용할 게시판을 지정할 수 있음",
+                            "게시판 모듈 미설치 시에도 이커머스 단독 운영 가능",
+                            "문의 접수/답변 완료 메일 템플릿 2종 추가 (`inquiry_received`, `inquiry_replied`)",
+                            "문의 작성 시 상품명 다국어 스냅샷 저장 (상품 삭제 후에도 문의 내역에서 상품명 표시 유지)",
+                            "기존 설치 환경을 위한 업그레이드 스텝 추가 (`Upgrade_0_9_0`)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "상품 복사 기능을 POST API 방식에서 navigate 패턴으로 전환 — 복사 옵션 선택 → 상품 등록 페이지로 이동하여 사전 입력 (역할 복사와 동일 UX)",
+                            "복사 옵션 11개로 확장: 이미지, 옵션, 카테고리, 판매정보, 상품설명, 상품정보제공고시, 공통정보, 기타정보, 배송정책, SEO, 식별코드",
+                            "수정/목록 페이지 복사/삭제 버튼을 setState 방식에서 openModal/closeModal 패턴으로 변경"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "문의 삭제 시 Action 훅이 트랜잭션 내부에서 실행되던 문제 수정 (롤백 시 부작용 방지)",
+                            "훅명 표준화: 엔티티 부분의 하이픈(`-`)을 언더스코어(`_`)로 변경",
+                            "마이페이지 문의 목록 조회 시 타입 불일치로 발생할 수 있는 오류 수정",
+                            "문의 가능 여부(`inquiry_available`) 판단 기준을 게시판 slug 존재 여부로 통일",
+                            "목록 페이지 복사 모달 제출 시 \"POST method not supported\" 에러 수정 — GET 라우트에 POST 요청 불일치 해결",
+                            "수정 페이지 복사/삭제 버튼 미동작 수정 — modals 섹션에서 setState 플래그 대신 openModal 핸들러 사용",
+                            "배송정책 목록 페이지에서 데이터 0건일 때 DataGrid와 Empty State가 동시 표시되는 버그 수정 — DataGrid, bulk_actions, table_header_bar, pagination에 조건부 렌더링 추가",
+                            "배송정책 복사 시 원본 데이터가 폼에 로드되지 않는 버그 수정 — copy_source data_source 추가 및 initShippingPolicyForm 핸들러에 isCopy 모드 처리",
+                            "배송정책 신규 등록/수정 시 is_default=true 설정 시 기존 기본 정책이 해제되지 않는 버그 수정 — create()/update()에 clearDefault() 호출 추가",
+                            "배송정책 목록 DataGrid subRow에서 `$t:` 번역 토큰이 원문 그대로 표시되는 버그 수정 — `{{}}` 표현식 내 문자열 리터럴에서 `$t()` 함수 호출로 변경",
+                            "배송정책 복사 모달이 실제 국가별 설정을 반영하지 않는 버그 수정 — 플랫 필드(배송방법, 운송사, 부과정책)에서 country_settings 기반 반복 렌더링으로 재설계"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.16.2",
+                "date": "2026-03-27",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "카테고리 크로스 depth 이동 시 parent_id가 null로 변경되지 않는 버그 수정 — `isset()`이 null에 대해 false를 반환하여 `array_key_exists()`로 교체 (CategoryService)",
+                            "이커머스 부모 메뉴 URL을 null로 변경 — 대응 라우트 없는 `/admin/ecommerce` URL이 404 발생 (module.php)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.16.1",
+                "date": "2026-03-26",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품 하위 라우트(form, copy, can-delete, logs) `whereNumber` 제약으로 product_code(영숫자) 404 발생 수정 — `where('product', '[0-9a-zA-Z]+')` 패턴으로 변경하여 ID/코드 둘 다 대응"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.16.0",
+                "date": "2026-03-26",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "ProductLog → ActivityLog 통합: 상품 처리로그를 표준 ActivityLog 시스템으로 전환",
+                            "ProductActivityLogListener: ActivityLog 표준 패턴 적용 (description_key, ChangeDetector)",
+                            "ActivityLogDescriptionResolver: product_id → 상품명 실시간 해석",
+                            "ProductController::logs(): 상품별 처리로그 API (OrderController::logs 패턴 동일)",
+                            "Bulk Update ChangeDetector 지원: 일괄 변경 시 필드별 old/new 변경 내역 기록",
+                            "OrderService: bulkUpdate, bulkUpdateStatus, bulkUpdateShipping에 스냅샷 캡처 + ChangeDetector 적용",
+                            "OrderOptionService: bulkChangeStatusWithQuantity에 스냅샷 캡처 + ChangeDetector 적용",
+                            "ProductOptionService: bulkUpdatePriceByMixedIds, bulkUpdateStockByMixedIds, bulkUpdate(통합)에 스냅샷 캡처 + ChangeDetector 적용",
+                            "EcommerceAdminActivityLogListener: `option.after_bulk_update` 훅 구독 추가 (통합 일괄 수정 로깅)",
+                            "ProductOptionRepositoryInterface: `findByIds()`, `getIdsByProductIds()` 메서드 추가",
+                            "Listener 레벨 Bulk 스냅샷/ChangeDetector 전수 적용 (13건)",
+                            "ProductActivityLogListener: bulk_update/bulk_price_update/bulk_stock_update before 스냅샷 + after ChangeDetector (6훅 추가)",
+                            "CouponActivityLogListener: before_bulk_status 스냅샷 캡처 + after ChangeDetector 연동 (1훅 추가)",
+                            "EcommerceAdminActivityLogListener: ExtraFeeTemplate bulk delete/toggle/create, ShippingPolicy bulk delete/toggle, ProductReview bulk delete 스냅샷 + ChangeDetector (9훅 추가)",
+                            "삭제 작업 시 deleted_items 스냅샷 보존 (ExtraFeeTemplate, ShippingPolicy, ProductReview)",
+                            "21개 모델에 $activityLogFields 정의 (코어 5개, 이커머스 11개, 게시판 4개, 페이지 1개)",
+                            "Upgrade_0_16_0: ecommerce_product_logs 테이블 DROP + 레이아웃 캐시 클리어",
+                            "활동 로그 Per-Item 로깅 전환: 모든 bulk 핸들러가 변경된 건별로 loggable_id 기록",
+                            "OrderActivityLogListener: bulk_update/bulk_status_update/bulk_shipping_update per-Order, bulk_option_status_change per-OrderOption 전환",
+                            "ProductActivityLogListener: bulk_update/bulk_price_update/bulk_stock_update per-Product 전환",
+                            "CouponActivityLogListener: bulk_status per-Coupon 전환",
+                            "EcommerceAdminActivityLogListener: ExtraFee/ShippingPolicy bulk toggle per-item, bulk_delete per-item (loggable_type/loggable_id 직접 지정) 전환",
+                            "ShippingPolicyActivityLogListener: 중복 bulk 훅 구독 2개 삭제 (EcommerceAdminActivityLogListener에 위임)",
+                            "EcommerceUserActivityLogListener: 사용자 주문생성(order.after_create) + 구매확인(order-option.after_confirm) 로그 추가",
+                            "ActivityLogHandler: 삭제된 엔티티용 loggable_type/loggable_id 직접 지정 지원"
+                        ]
+                    },
+                    {
+                        "name": "Removed",
+                        "items": [
+                            "ecommerce_product_logs 테이블 (ActivityLog로 대체)",
+                            "ProductLogService, ProductLogRepository, ProductLogController, ProductLog 모델 등 관련 코드 전량 삭제"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "처리로그 레이아웃: log.description → log.localized_description (ActivityLogResource 기준)",
+                            "Bulk Update 훅 시그니처: after_bulk_* 훅에 $allChanges 파라미터 추가 (하위 호환 유지)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.15.0",
+                "date": "2026-03-26",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "구매확정 기능 — 마이페이지 주문상세에서 옵션별 구매확정 API 및 UI",
+                            "`confirmed_at` 컬럼 추가 (ecommerce_order_options 테이블)",
+                            "OrderOption 모델: `confirmed_at` fillable/casts, `review()` HasOne 관계",
+                            "ConfirmOrderOptionRequest: 소유권, 상태, 중복 확정 검증",
+                            "OrderService.confirmOption(): 옵션 확정 + 전체 옵션 확정 시 주문도 CONFIRMED 전환",
+                            "User OrderController.confirmOption(): 구매확정 API 엔드포인트",
+                            "`sirsoft-ecommerce.order-option.before_confirm` / `after_confirm` 훅",
+                            "OrderConfirmPointListener: 구매확정 시 포인트 적립 더미 리스너",
+                            "리뷰 작성 기능 — 구매확정 후 리뷰 작성 모달 UI 및 이미지 순차 업로드",
+                            "userConfirmOrderHandlers.ts: 구매확정 커스텀 핸들러",
+                            "userReviewHandlers.ts: 리뷰 작성 + 이미지 순차 업로드 커스텀 핸들러",
+                            "구매확정/리뷰 작성 모달 레이아웃 (_modal_confirm_purchase.json, _modal_write_review.json)",
+                            "_items.json에 구매확정/리뷰작성/리뷰완료 버튼 조건부 렌더링 (PC + 모바일 동일)",
+                            "OrderOptionResource에 `can_confirm`, `can_write_review`, `has_review` 필드 추가",
+                            "환경설정: `confirmable_statuses` (주문설정), `review_settings` (리뷰설정) 추가",
+                            "사용자 권한: `user-orders.confirm`, `user-reviews.write` 등록 (module.php + Upgrade_0_15_0)",
+                            "리뷰 라우트에 `permission:user,sirsoft-ecommerce.user-reviews.write` 미들웨어 추가",
+                            "다국어 키 추가 (ko/en): 구매확정/리뷰 관련 메시지, 예외, 프론트엔드 번역"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "show.json: initLocal에 구매확정/리뷰 상태 변수 추가, modals에 구매확정/리뷰 모달 partial 등록",
+                            "handlers/index.ts: confirmOrderOption, submitReview 핸들러 등록"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품폼 처리로그 설명 미표시 — ProductLogResource는 `description` 필드를 반환하나 레이아웃이 `localized_description`을 참조하여 빈 값 표시 (v0.13.0 변경 시 오류)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.14.0",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "클래임 사유 관리 시스템 — DB 기반 환불 사유 관리 (ClaimReason 모델, Repository, Service, Controller, FormRequest, Resource)",
+                            "`ecommerce_claim_reasons` 테이블: type, code, name(다국어), fault_type, is_user_selectable, is_active, sort_order",
+                            "Admin API 7개: 목록/생성/상세/수정/삭제/상태토글/활성목록 (`/admin/claim-reasons`)",
+                            "User API 1개: 사용자 선택 가능 사유 목록 (`/user/claim-reasons`)",
+                            "ClaimReasonFaultTypeEnum (customer/seller/carrier), ClaimReasonTypeEnum (refund)",
+                            "쇼핑몰 환경설정 > 클래임 탭 — 환불 사유 인라인 편집 UI (배송사 관리 패턴)",
+                            "테이블 뷰(PC) + 카드 뷰(모바일) 반응형 레이아웃",
+                            "EcommerceSettingsController에 syncReasons() 연동",
+                            "업그레이드 스크립트 (Upgrade_0_14_0) — 기존 CancelReasonTypeEnum 7개 값을 DB 시드 데이터로 마이그레이션"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "주문 취소 사유를 하드코딩 Enum에서 DB 기반으로 전환",
+                            "CancelReasonTypeEnum 삭제 → ClaimReason DB 조회로 대체",
+                            "CancelOrderRequest (Admin/User): `Rule::in(enum)` → `Rule::exists(ecommerce_claim_reasons, code)`",
+                            "OrderCancel 모델: Enum cast 제거, getRefundReasonLabel() 헬퍼 추가",
+                            "OrderCancellationService: Enum 참조 제거, 단순 string 저장",
+                            "관리자/사용자 취소 모달 — 하드코딩 Option에서 동적 iteration으로 변경",
+                            "Admin 모달: refundReasons 데이터소스 + iteration 기반 동적 렌더링",
+                            "User 모달: 동일 패턴 적용 (user/claim-reasons API 사용)"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "활동 로그 description 표시 시 번역 키가 원문 그대로 노출되는 문제 수정",
+                            "ActivityLogDescriptionResolver 추가 — 표시 시점에 ID를 엔티티 이름으로 해석 (HookManager 필터 훅)",
+                            "src/lang/{ko,en}/activity_log.php 번역 파일 동기화 (TranslationServiceProvider 로딩 경로 일치)",
+                            "OrderActivityLogListener: handleOrderAfterSendEmail/handleOrderOptionAfterStatusChange description_params 불일치 수정",
+                            "OrderOption의 product_option_name, option_name, option_value 미저장 및 다국어 미지원 수정 (OrderProcessingService, OrderOption)",
+                            "createOrderOptions()에서 product_option_name/option_value 누락 → ProductOption 다국어 원본 직접 저장",
+                            "3개 컬럼 varchar(255) → JSON 마이그레이션 + 모델 array cast 추가",
+                            "Resource 3개(OrderOptionResource, OrderListResource, UserOrderListResource)에서 로케일 변환 추가",
+                            "기존 문자열 데이터 하위호환 (is_array 체크)",
+                            "StoreEcommerceSettingsRequest: claim/review_settings 탭 저장 실패 수정 — `_tab` validation 및 `validatedSettings()` 누락 보완",
+                            "FormRequest 로케일 하드코딩 수정 — `name.ko` 직접 검증을 `LocaleRequiredTranslatable` Rule로 교체 (StoreEcommerceSettingsRequest, StoreProductRequest)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.13.8",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "옵션 레벨 promotions_applied_snapshot이 camelCase로 저장되는 버그 수정 — DTO `toArray()` 호출 누락으로 PHP 프로퍼티명이 그대로 직렬화됨 (OrderProcessingService)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.13.7",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "취소 모달 debounce 타이머에서 __g7ActionContext 미복원으로 모달 상태 업데이트 실패 수정 (cancelOrderHandlers, userCancelOrderHandlers)",
+                            "debounce 콜백 실행 시 ActionDispatcher의 try/finally가 이미 __g7ActionContext를 복원하여 모달의 actionContext 사라짐",
+                            "캡처/복원 패턴 적용으로 setLocal()이 모달의 actionContext.setState()를 정상 호출"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "OrderActivityLogListener에서 명시적 log_type 지정 제거 — 코어 resolveLogType() 요청 경로 기반 판별로 대체 (6개 핸들러)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.13.6",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "toPreviewArray() refund_total 배송비 이중 계산: refundAmount에 이미 배송비 차이가 내포되어 있는데 shippingDifference를 별도 가산하여 환불 예정액 과다 표시 (AdjustmentResult)"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "refund_total 정합성 검증 테스트 4건: 부분취소 무료→유료 전환, 전체취소 배송비 포함, 쿠폰+배송비 복합 시나리오 (OrderAdjustmentServiceTest G-1~G-4)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.13.5",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품금액 정액 쿠폰 수량 미반영 수정: 정액 할인이 수량과 무관하게 1회만 적용되던 결함 → 적용 대상 옵션의 수량만큼 할인 적용 (OrderCalculationService.calculateCouponDiscount)",
+                            "OrderSeeder 정액 상품쿠폰 수량 미반영 수정: 시더에서도 target_scope별 적용 대상 수량 계산하여 할인 적용 (OrderSeeder.getTargetQuantity)"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "부분취소 시 쿠폰 조건 미달로 결제금액 증가 시 취소 차단: validateRefundNotNegative 검증 + cancel_blocked 플래그 (OrderCancellationService, AdjustmentResult)",
+                            "Admin/User 취소 모달에 취소 불가 경고 배너 + 취소 버튼 비활성화 (_modal_cancel_order.json, _modal_cancel.json)",
+                            "수량별 정액 할인 테스트 16개 + cancel_blocked 테스트 4개 (OrderCalculationServiceTest, OrderAdjustmentServiceTest)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.13.4",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "쿠폰 수정 화면 적용 상품 테이블 데이터 미표시: CouponResource의 included_products/excluded_products에 product_code, name_localized, selling_price_formatted 필드 추가 (CouponResource.php)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.13.3",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "관리자 취소 모달 수량 변경 시 비교 테이블 미갱신 결함 수정: updateCancelQuantity 핸들러에 value 파라미터 누락 추가 (_modal_cancel_order.json)",
+                            "관리자 취소 모달 onMount setState로 인한 모달/페이지 scope 단절 해소: onMount 제거 + 초기화 핸들러에서 상태 설정 및 estimateRefundAmount 호출 패턴으로 전환 (orderDetailHandlers.ts, _modal_cancel_order.json)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.13.2",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품수량(item_count) 스냅샷이 고유 상품 수(distinct)가 아닌 총 수량 합계로 계산되도록 수정 (captureOrderSnapshot)",
+                            "상품쿠폰 최대할인금액 초과 결함 수정: 아이템별 할인 산출 후 글로벌 cap 비례 안분 적용 (applyProductCoupons 3단계 리팩토링)",
+                            "CouponApplication 기록 시 존재하지 않는 필드($coupon->max_discount_amount) 대신 실제 DB 컬럼($coupon->discount_max_amount) 사용하도록 수정 (4곳)",
+                            "buildCouponSnapshotsFromOrder()에 max_discount_amount 필드 추가하여 취소 재계산 시 쿠폰 최대할인 정보 보존"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.13.1",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "취소 모달 주문금액 비교 테이블: 취소 전/후 금액 비교 표시 (상품수량, 총 정가금액, 상품/주문/배송비쿠폰 할인, 할인코드 할인, 기본/추가배송비, 포인트 사용, 과세금액, 부가세, 실결제금액, 적립예정포인트)",
+                            "쿠폰 상세 표시: 상품쿠폰/주문쿠폰/배송비쿠폰별 적용 쿠폰명 + 할인금액 표시 (original_coupons, recalculated_coupons)",
+                            "다통화 금액 표시: 총 정가금액/실결제금액 셀 하단에 다통화 금액 인라인 표시 (mc_original_snapshot, mc_recalculated_snapshot)",
+                            "스냅샷 필드 확장: captureOrderSnapshot/captureRecalcSnapshot에 5개 필드 추가 (total_product_coupon_discount_amount, total_order_coupon_discount_amount, total_vat_amount, total_earned_points_amount, item_count)",
+                            "AdjustmentResult DTO: mcOriginalSnapshot, mcRecalculatedSnapshot, originalCoupons, recalculatedCoupons 프로퍼티 추가",
+                            "상품 소계 표시: 단가 × 수량 = 소계 형태로 변경 (Admin/User 모달 공통)",
+                            "Admin 취소 모달 크기 1.5배 확대 (750px → 1125px), User 모달 크기 조정 (lg → 750px)",
+                            "다국어 키 18개 추가 (ko/en, Admin ecommerce + User sirsoft-basic)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "취소 모달 \"환불 예정금액\" 섹션을 \"주문금액 비교\" 테이블로 전면 교체 (Admin/User 공통)",
+                            "변경된 금액에 적색 하이라이트 적용 (text-red-600 dark:text-red-400 font-semibold)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.13.0",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "ActivityLog 리스너 전면 구현:",
+                            "OrderActivityLogListener (주문 CUD + 상태변경 + 일괄처리 + 배송 + 이메일 + 취소/부분취소/환불)",
+                            "CouponActivityLogListener (쿠폰 CUD + 일괄 상태변경)",
+                            "ShippingPolicyActivityLogListener (배송정책 CUD + 토글 + 일괄처리)",
+                            "CategoryActivityLogListener (카테고리 CUD + 순서변경 + 상태전환)",
+                            "EcommerceAdminActivityLogListener (브랜드/라벨/공통정보/고시정보/추가비용/배송업체/상품옵션/상품이미지/리뷰 통합)",
+                            "EcommerceUserActivityLogListener (장바구니/위시리스트/쿠폰사용/마일리지 — ActivityLogType::User)",
+                            "활동 로그 다국어 키 100개 정의 (resources/lang/ko/activity_log.php, en/activity_log.php)",
+                            "$activityLogFields 메타데이터: Product, Order, Coupon, ShippingPolicy 모델",
+                            "ActivityLog 샘플 시더 (database/seeders/ActivityLogSampleSeeder.php)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "ProductActivityLogListener: ActivityLogService 호출 → Log::channel('activity') 직접 호출로 전환",
+                            "주문상세 로그 탭 레이아웃: log.description → log.localized_description",
+                            "상품폼 로그 섹션 레이아웃: log.description → log.localized_description"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.12.6",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "OrderSeeder: 쿠폰 적용 주문 생성 — CouponIssue 테이블 조회 기반, 상품금액/주문금액 쿠폰 배분, promotions_applied_snapshot 스냅샷, 약 40% 주문에 쿠폰 적용",
+                            "OrderSeeder: 주문 삭제 시 쿠폰 발급 상태 자동 복원 (used → available)",
+                            "OrderSeeder: 배송비 쿠폰(shipping_fee) 적용 — 배송 레코드에 shipping_discount_amount 배분, 주문 합계에 배송 할인 반영",
+                            "OrderSeeder: 결제완료 이상 상태 쿠폰 적용 비율 80%로 상향, 쿠폰 우선 배정 상태를 먼저 생성하여 쿠폰 재고 확보",
+                            "OrderSeeder: payment_complete 비율 15→20%로 상향, 쿠폰 우선 상태의 비회원 비율 절반으로 축소"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "OrderSeeder: 주문 합계 재계산 시 쿠폰별 할인 필드(product_coupon, order_coupon, coupon, code) 정확히 합산하도록 개선",
+                            "OrderSeeder: 주문 합계의 base_shipping_amount, shipping_discount_amount가 배송 레코드 실값을 반영하도록 수정",
+                            "OrderSeeder: orders.promotions_applied_snapshot 저장 누락 수정 — 부분취소 시 쿠폰 재적용 불가 문제 해결 (coupon_issue_ids, product_promotions, order_promotions 구조)",
+                            "OrderSeeder: 쿠폰 복원을 주문 삭제 전으로 이동 — order_id FK ON DELETE SET NULL로 인한 고아 쿠폰(status=used, order_id=null) 방지",
+                            "OrderAdjustmentService: 복원 쿠폰 정보에서 다국어 쿠폰명(JSON 배열)을 문자열로 변환하지 않아 React 렌더링 오류 발생 — getLocalizedName() 사용으로 수정"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.12.5",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "시더/팩토리 유령 할인 제거 — 출처 없는 랜덤 할인이 환불 재계산 시 잘못된 discount_difference 유발 (OrderSeeder, OrderOptionFactory, OrderFactory)",
+                            "OrderSeeder: 결제 완료 주문의 mc_total_paid_amount가 항상 0이던 다중통화 불일치 수정"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.12.4",
+                "date": "2026-03-25",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "사용자 주문 상품 선택 핸들러 추가 — toggleItemSelection, toggleSelectAllItems (userCancelOrderHandlers)",
+                            "initUserCancelItems: 선택된 상품(_local.selectedItemIds) 기반으로 취소 대상 필터링"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "사용자 주문 취소 모달이 열리지 않던 버그 수정 — modals 섹션 모달에 id 추가 및 openModal/closeModal 패턴으로 전환 (userCancelOrderHandlers, _modal_cancel.json)",
+                            "Upgrade_0_7_0: app(ModuleSettingsService::class) 직접 호출을 module_setting() 헬퍼로 교체"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.12.3",
+                "date": "2026-03-24",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "OrderResource(주문상세 API)에 can_cancel ability 누락 — 사용자 주문상세 화면에서 취소 버튼이 절대 표시되지 않던 버그 수정",
+                            "OrderResource에 resolveAbilities() override 추가 (상태 + 환경설정 + 권한 복합 조건)",
+                            "Resource/Request에서 app(EcommerceSettingsService::class) 직접 호출을 module_setting() 헬퍼로 교체 (4개 파일)"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "주문상세 API abilities 테스트 3건 추가 (can_cancel true/false/권한 없음)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.12.2",
+                "date": "2026-03-24",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문 취소 시 환경설정(cancellable_statuses)을 참조하지 않고 하드코딩된 기본값만 사용하던 버그 수정",
+                            "Admin/User CancelOrderRequest: EcommerceSettingsService에서 취소 가능 상태 조회",
+                            "UserOrderListResource: can_cancel 판정에 환경설정 반영",
+                            "OrderCancellationService: 상세 에러 메시지(현재 상태 + 취소 가능 상태 목록) 반환",
+                            "프론트엔드 취소 핸들러에서 API 상세 에러 메시지를 토스트에 표시하도록 개선",
+                            "주문 취소 시 취소 사유(reason) 미선택으로 검증 우회되던 버그 수정 (nullable → required)",
+                            "취소 모달에서 422 validation 에러가 PG 에러 영역에 잘못 표시되던 버그 수정",
+                            "422 → 필드별 에러 표시, 기타 에러 → PG 에러 영역으로 분리",
+                            "CancelOrderRequest failedValidation에 필드별 에러(errors) 미포함 수정",
+                            "취소 사유 필드 에러 메시지에 원시 필드명(reason) 노출 → 한국어 표시명(취소 사유) 적용"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "Order 모델에 getCancelDeniedReason(), getCancellableStatuses() 헬퍼 메서드 추가",
+                            "취소 불가 상세 에러 다국어 키 추가 (order_not_cancellable_detail, order_already_cancelled)",
+                            "환경설정 기반 취소 가능 상태 검증 테스트 4건 추가",
+                            "취소 사유 필수 검증 테스트 추가",
+                            "취소 모달 validation_error_title 다국어 키 추가 (ko/en)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "취소 모달 환불 우선순위 라디오: 마일리지 사용 주문 조건 제거 → 항상 표시"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.12.1",
+                "date": "2026-03-24",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "취소 모달 배송비 정책명이 번역 키 그대로 노출되던 버그 수정 (OrderAdjustmentService)",
+                            "OrderShipping에 shippingPolicy 관계 추가 (누락)",
+                            "buildFullCancelResult() / buildShippingDetails()에서 ShippingPolicy::getLocalizedName() 사용",
+                            "order.json에 default_shipping 번역 키 추가 (폴백용)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.12.0",
+                "date": "2026-03-24",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "배송비 계산 확장 훅: `sirsoft-ecommerce.shipping.calculate_fee` — 외부 확장이 배송비 계산을 오버라이드 가능",
+                            "프로모션 스냅샷 저장 훅: `sirsoft-ecommerce.calculation.filter_promotions_snapshot` — 주문 생성 시 스냅샷에 확장 데이터 주입 가능",
+                            "프로모션 스냅샷 복원 훅: `sirsoft-ecommerce.adjustment.filter_restore_promotions` — 환불 재계산 시 스냅샷에서 확장 데이터 해석/복원 가능",
+                            "AppliedShippingPolicy DTO: `hookOverridden` 플래그 — 훅 오버라이드 배송비 식별용",
+                            "스냅샷 기반 훅 오버라이드 배송비 보존: 환불 시 훅이 계산한 배송비를 스냅샷에서 복원 (훅 비활성 대응)",
+                            "PluginExtensibilityTest: 16개 테스트 (배송정책 6, 할인정책 7, 복합 시나리오 3)",
+                            "관리자/사용자 취소 모달 환불 예상금액 UI 확장: 배송비 정책별 상세, 잔여 PG/마일리지 잔액, 복원 쿠폰 목록, 총 환불액(PG+마일리지+배송비)",
+                            "`changeRefundPriority` / `changeUserRefundPriority` 커스텀 핸들러: 환불 우선순위 변경 → debounce 재계산 연동",
+                            "`refund_priority` 파라미터를 환불 예상금액 API에 전달 (관리자/사용자 공통)",
+                            "mc_* 다중통화 환불 테스트 5건: 기본 변환, null 스냅샷, 마일리지 변환, 배송비 변환, previewArray 포함 확인",
+                            "관리자 취소 모달 취소사유 라디오 7개 옵션 (CancelReasonTypeEnum 기반): order_mistake, changed_mind, reorder_other, delayed_delivery, product_info_different, admin_cancel, etc",
+                            "i18n 취소사유 키 중첩 구조 변경: `cancel_reason_type_label` + `reason.{type}` 형태 (ko/en)",
+                            "스냅샷 기반 환불 재계산 테스트 84건 추가 (B-1~B-7):",
+                            "OrderAdjustmentServiceTest +33건 (쿠폰 복원 감지, 환불 우선순위, 배송비 상세, mc_* 변환, 복합 시나리오)",
+                            "OrderCancellationServiceTest +17건 (쿠폰 복원 실행, 환불 처리, mc_* 레코드, 스냅샷 갱신)",
+                            "OrderCalculationServiceTest +11건 (스냅샷 모드 검증)",
+                            "OrderCalculationServiceMultiCurrencyTest +5건 (스냅샷 환율 변환)",
+                            "Admin/User Feature 테스트 +12건 (환불 예상 API, 쿠폰 복원 DB)",
+                            "프론트엔드 레이아웃 렌더링 테스트 +42건 (취소 모달 구조, 라디오, 조건부 렌더링)"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "`buildFullCancelResult`에 mc_* 다통화 변환, 배송비 상세, 복원 쿠폰 정보, 잔여 잔액, 환불 우선순위 누락 수정",
+                            "`buildFullCancelResult`에서 OrderShipping 컬럼명 오류 수정 (`base_shipping_fee` → `base_shipping_amount`, `extra_shipping_fee` → `extra_shipping_amount`)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.11.1",
+                "date": "2026-03-24",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "OrderShippingRepository: 배송 모델 Repository 인터페이스 + 구현체 신규 생성",
+                            "CouponIssueRepository: `update()`, `findByIds()`, `findByIdsWithRelations()` 메서드 추가",
+                            "SnapshotProduct, SnapshotProductOption DTO: 스냅샷 기반 환불 재계산용",
+                            "RefundPriorityEnum: 환불 우선순위 정의 (SHIPPING_DISCOUNT, ORDER_DISCOUNT, MILEAGE 등)",
+                            "CouponRestoreListener: 주문 취소 시 쿠폰 사용 상태 자동 복원",
+                            "OrderRefund 다통화 환불 컬럼 마이그레이션 (mc_refund_columns)",
+                            "스냅샷 기반 환불 재계산 로직 (OrderCalculationService snapshot_mode, OrderAdjustmentService)",
+                            "취소/환불 관련 예외 다국어 키 추가 (cancel_option_not_found, pg_refund_failed 등)",
+                            "취소/환불 관련 Enum 다국어 라벨 추가 (CancelStatusEnum, RefundStatusEnum 등)",
+                            "스냅샷 재계산 테스트 (SnapshotRecalculationTest), 쿠폰 복원 리스너 테스트 (CouponRestoreListenerTest)"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "Repository 패턴 위반 수정: 4개 서비스 + 1개 리스너의 직접 Eloquent 쿼리 → Repository 인터페이스 주입",
+                            "CurrencyConversionService 예외 메시지 하드코딩 → `__()` 다국어 처리"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "OrderAdjustmentService: CouponIssue 직접 접근 → CouponIssueRepositoryInterface 주입",
+                            "OrderCancellationService: OrderShipping 직접 접근 → OrderShippingRepositoryInterface 주입",
+                            "OrderOptionService: OrderShipping 직접 접근 → OrderShippingRepositoryInterface 주입",
+                            "ShippingCarrierService: OrderShipping 직접 접근 → OrderShippingRepositoryInterface 주입",
+                            "CouponRestoreListener: CouponIssue 직접 접근 → CouponIssueRepositoryInterface 주입",
+                            "EcommerceServiceProvider: OrderShippingRepository 바인딩 등록"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.11.0",
+                "date": "2026-03-24",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "주문 취소/환불 시스템: 관리자 전체취소·부분취소, 사용자 취소 요청, 환불 금액 산출",
+                            "주문 취소 관련 모델 추가 (OrderCancel, OrderCancelOption, OrderRefund, OrderRefundOption)",
+                            "주문 취소 Enum 추가 (CancelStatusEnum, CancelTypeEnum, CancelReasonTypeEnum, RefundStatusEnum, RefundMethodEnum 등)",
+                            "주문 취소 서비스 추가 (OrderCancellationService, OrderAdjustmentService)",
+                            "주문 취소 DTO 추가 (CancellationResult, CancellationAdjustment, OrderAdjustment, AdjustmentResult)",
+                            "관리자 주문 취소 API 엔드포인트 (estimate-refund, cancel)",
+                            "사용자 주문 취소 API 엔드포인트 (estimate-refund, cancel)",
+                            "관리자 주문상세 취소 모달 레이아웃 (_modal_cancel_order.json)",
+                            "사용자 마이페이지 주문 취소 모달 확장 (부분취소 지원)",
+                            "주문 취소 프론트엔드 핸들러 (cancelOrderHandlers, userCancelOrderHandlers)",
+                            "토스페이먼츠 환불 리스너 (PaymentRefundListener)",
+                            "관리자 환경설정 주문취소 가능 상태 다중 선택 UI (_tab_order_settings.json)",
+                            "관리자 주문상세 결제정보에 취소/환불 금액 표시 (_partial_payment_info.json)",
+                            "주문관리 목록 주문자(회원) 검색 필터: SearchableDropdown 기반 UUID 검색",
+                            "주문관리 DataGrid 주문자 클릭 시 회원/비회원 분기 검색 (회원: orderer_uuid, 비회원: search_keyword)",
+                            "관리자 주문상세 일괄변경에서 주문취소 선택 시 PG 결제 취소 체크박스 인라인 표시"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문 취소 모달: 환불 예상금액 미표시 수정 (isolated 모달 스코프 상태 불일치 해결)",
+                            "주문 취소 모달: 현재상태 컬럼에 enum 원시값 대신 다국어 라벨 표시",
+                            "주문 취소 모달: PG 체크박스/라벨 클릭 연동 (htmlFor 추가)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "취소 상태 Enum 재설계: PENDING→REQUESTED, FAILED 제거 (2단계: 신청/완료)",
+                            "환불 상태 Enum 재설계: 6단계 (신청/승인/처리중/보류/완료/반려), FAILED 제거",
+                            "Option 상태를 부모 상태와 동일하게 동기화",
+                            "OrderCancel 모델: isFailed() 메서드 제거",
+                            "OrderRefund 모델: isFailed()→isRejected() 변경",
+                            "PG 환불 실패 시 FAILED 상태 설정 대신 REQUESTED 유지 (에러 정보만 기록)",
+                            "OrderStatusEnum: 주문취소(CANCELLED) 상태 추가",
+                            "SequenceType: 취소(CANCEL), 환불(REFUND) 시퀀스 타입 추가",
+                            "Order 모델: 취소 관련 관계 및 메서드 추가 (cancels, refunds, isCancellable 등)",
+                            "OrderOption 모델: cancelled_quantity 컬럼 추가",
+                            "OrderProcessingService: 취소 처리 로직 연동",
+                            "관리자 OrderController: 취소/환불 산출 액션 추가",
+                            "사용자 OrderController: 취소 요청 액션 추가"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.10.6",
+                "date": "2026-03-24",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "상품목록 API: 비활성 옵션도 포함하여 로드 (관리자 화면에서 비활성 옵션 표시)",
+                            "상품상세 API: `includeInactive` 파라미터 추가 (관리자 수정 화면에서 비활성 옵션 포함)",
+                            "옵션 일괄 변경 `option_name` 검증 규칙: `string` → `array` (다국어 배열 지원)",
+                            "옵션 일괄 변경 `list_price` 검증 규칙 추가",
+                            "일괄 변경 확인 모달: 처리중 상태 표시 (spinner + 버튼 비활성화)",
+                            "상품 인라인 수정 필드 추적 확장 (`modifiedProductFields` 추가)",
+                            "상품목록 DataGrid 선택 개수 표시 비활성화",
+                            "주문목록 배송국가: 국가 코드(KR) → 다국어 국가명(한국) 표시 (OrderListResource, DataGrid)"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "시더(OrderAddressFactory)에서 `recipient_country_code` 기본값 누락으로 주문목록 배송국가 미표시 문제 수정",
+                            "관리자 주문 수정 시 배송국가(`recipient_country_code`) 변경 불가 문제 수정 (OrderService, UpdateOrderRequest)",
+                            "상품목록 리소스: `options` relation 로드 시 `option_stock_sum`, `options_count`가 빈 값으로 표시되는 문제 수정 (`relationLoaded` 분기 추가)",
+                            "상품옵션 일괄 변경 후 상품 재고(stock_quantity)가 동기화되지 않는 문제 수정 (`ProductOptionService::bulkUpdate`에 `syncStockFromOptions` 호출 추가)",
+                            "옵션 재고 합산 시 비활성 옵션이 포함되는 문제 수정 (프론트엔드 `updateOptionField`, `calculateTotalOptionStock` 핸들러에 `is_active` 필터 추가)",
+                            "일괄 변경 확인 모달: 인라인 수정 시 `{method}` 플레이스홀더가 리터럴로 표시되는 문제 수정 (인라인 전용 다국어 키 분리)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.10.5",
+                "date": "2026-03-23",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "상품수정 화면: 일부 미구현 탭 숨김 처리"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "UserAddressSeeder: name 필드에 다국어 배열 대입으로 인한 \"Array to string conversion\" 오류 수정 (단순 문자열로 변경)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.10.4",
+                "date": "2026-03-23",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "주문상세 활동 로그: Badge → 아바타 원형+이름 스타일로 변경, 처리자 클릭 시 ActionMenu(회원정보 보기) 추가 (PC+모바일)",
+                            "상품수정 활동 로그: \"작업\" 컬럼 제거, 처리자 클릭 시 ActionMenu(회원정보 보기) 추가 (PC+모바일)",
+                            "주문상세/상품수정 활동 로그 UI 일관성 통일"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품수정 활동 로그: Select $event → $event.target.value, refreshDataSource → refetchDataSource, Pagination type:pageChange → event:onPageChange, 빈 상태 조건 경로 수정, 데이터소스 sort_order/per_page 파라미터 추가",
+                            "주문상세 활동 로그: 동일 버그 6건 수정 (주문상세와 상품수정 패턴 통일)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.10.3",
+                "date": "2026-03-23",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "주문목록 주문상품 컬럼: 대표상품 썸네일, \"외 X건\" 표시, 상품수정 링크(새 창)",
+                            "OrderListResource: first_option에 product_code 필드 추가"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.10.2",
+                "date": "2026-03-23",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "주문상세 상품 이미지/상품명 클릭 시 상품수정 페이지로 이동 (새 창)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.10.1",
+                "date": "2026-03-23",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "API Resource: user.id → user.uuid 전환 (OrderResource, OrderListResource, CouponResource, CouponIssueResource, ProductReviewResource, ProductLogResource, UserAddressResource, ExtraFeeTemplateResource)",
+                            "user_id FK → user.uuid 전환 (CouponIssueResource, ProductReviewResource, UserAddressResource)",
+                            "ExtraFeeTemplate: created_by → creator.uuid 전환 (creator 관계 활용)",
+                            "쿠폰 관리 등록자 컬럼: eager-load에 uuid 컬럼 추가 (CouponRepository, ProductLogRepository)",
+                            "관리자 레이아웃: user.id → user.uuid 참조 전환 (4개 파일)",
+                            "orderHandlers.ts: localStorage 키에 user.uuid 사용",
+                            "FormRequest: 정수 검증 → UUID 검증 전환 (CouponListRequest, CouponIssuesListRequest)",
+                            "MergeCartOnLoginListener: Activity Log user_id → uuid 전환"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.10.0",
+                "date": "2026-03-22",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "주문상세 이메일 발송 기능 — `POST /orders/{order}/send-email` API + 모달 UI 연동",
+                            "SendOrderEmailRequest FormRequest — 이메일/메시지 검증",
+                            "OrderService.sendEmail() — `Mail::raw()` + `HookManager::doAction()` 패턴 (코어 `sendTestMail()` 참조)",
+                            "이메일 발송 다국어 메시지 (ko/en messages + validation + 프론트엔드 toast)"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "이메일 모달 보내기 버튼 무반응 — `actions` 배열 추가 (sequence: setState → apiCall → toast/closeModal)",
+                            "이메일 모달 Textarea 높이 미적용 — `min-h-[100px]` (빌드 CSS 미존재) → `min-h-32` (safelist 존재)",
+                            "이메일 모달 API 호출 시 `/undefined` 요청 — `params.endpoint` → `action.target` 수정",
+                            "이메일 발송 실패 시 에러 원인 미표시 — catch 블록에 `$e->getMessage()` 상세 포함"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "이메일 모달 `_global.isSending` → `_local.isSending` (모달 스코프 내 상태 관리)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.9.3",
+                "date": "2026-03-22",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "비회원 주문 Factory/Seeder 추가 — `OrderFactory::guest()` 상태, `OrderSeeder`에 비회원 주문 생성 로직",
+                            "OrderOptionResource에 `list_price`, `list_price_formatted`, `final_amount`, `final_amount_formatted` 필드 추가",
+                            "다국어 키 추가 — `phone_or_tel_hint` (ko/en)"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문상세 저장 버튼 미동작 — apiCall `params.endpoint` → `target` 속성, `auth_mode: \"required\"` 추가, onSuccess/onError 콜백 위치 수정",
+                            "주문상세 수취인 정보 미표시 — `orderDetailHandlers.ts` 데이터 접근 경로 수정 (`_context.data.data` 우선 접근)",
+                            "주문상세 수취인 정보 수정 값 미반영 — 폼 자동 바인딩 (`dataKey: \"form\"` + child `name`) 패턴 적용",
+                            "Validation error 적색 테두리 미표시 — `.input` 클래스에 border 없음, `border border-red-500 dark:border-red-500` 으로 수정"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "OrderService.update() 수취인 필드 저장 처리 추가 — shippingAddress 관계 업데이트",
+                            "주문상세 폼 데이터 바인딩을 `initLocal` 패턴으로 변경 — 커스텀 핸들러(`initOrderDetailForm`) → 데이터소스 `initLocal`",
+                            "UpdateOrderRequest validation 강화 — `recipient_name`, `recipient_zipcode`, `recipient_detail_address` 필수, `recipient_phone`/`recipient_tel` 택1 필수 (`required_without`)",
+                            "CreateOrderRequest validation 통일 — `recipient_phone` required → `required_without:recipient_tel`, `address_detail` nullable → required",
+                            "배송메시지 Textarea `textarea-sm` (80px), 관리자메모 Textarea `textarea-md` (128px) 크기 적용",
+                            "OrderOptionResource `mc_subtotal_discount_amount` 제거 — 존재하지 않는 DB 필드 참조"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.9.2",
+                "date": "2026-03-22",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "OrderResource에 `total_quantity`, `total_list_price`, `total_list_price_formatted` 필드 추가 — 합계행 백엔드 필드 기반 표시",
+                            "주문상세 합계행(footerCells) 및 개별행에 다통화(보조 통화) 표시 — iteration 패턴으로 판매가/소계 하단에 표시"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문상세 합계행 판매가/수량/할인/적립 합계가 실제 데이터와 불일치 — computed 전면 제거 후 백엔드 필드로 대체",
+                            "할인 0원에 마이너스 부호 표시(-0원) — 백엔드 `total_discount_amount > 0` 조건으로 수정",
+                            "개별행 실구매가격이 할인 전 금액 표시 — `subtotal_price_formatted` → `final_amount_formatted`(할인 후)로 변경",
+                            "OrderOptionResource의 `mc_subtotal_discount_amount` 버그 — 잘못된 필드(`mc_coupon_discount_amount`) 참조 수정"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "관리자 주문상세 라우트를 ID 기준에서 order_number 기준으로 변경 — URL이 `/admin/ecommerce/orders/ORD-xxx` 형태로 표시 (상품 수정의 product_code 패턴과 동일)",
+                            "Order 모델에 `resolveRouteBinding()` 추가 — 숫자는 ID, 문자열은 order_number로 자동 판별 (하위 호환)",
+                            "API 라우트 `whereNumber('order')` 제약 제거 — order_number(문자열) 수용",
+                            "주문 목록/상세/리뷰 레이아웃 및 커스텀 핸들러에서 navigate 경로를 order_number 기반으로 변경"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.9.1",
+                "date": "2026-03-21",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "상품리뷰 정렬 기준 validation 수정 — sort 파라미터 `latest,oldest` → `created_at_desc,created_at_asc`로 통일 (PublicReviewListRequest)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.9.0",
+                "date": "2026-03-21",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "주문상세 수량 단위 상태 변경 기능 — 주문상품옵션의 일부 수량만 선택하여 상태 변경 (예: 3개 중 2개만 배송중으로 변경)",
+                            "주문상품옵션 병합(Merge) 로직 — 분할 후 남은 수량을 같은 상태로 변경 시 자동 병합 (cascade 삭제 안전 처리 포함)",
+                            "일괄변경 확인 모달에 상품 목록 표시 — 썸네일, 상품명/옵션/SKU, 판매가, 수량 편집 Input, 현재상태 Badge",
+                            "updateChangeQuantityHandler 핸들러 추가 — 모달 내 수량 편집 시 1~최대수량 클램핑",
+                            "다국어 키 5종 추가 — product_col, price_col, change_quantity_col, current_status_col, quantity_note (ko/en)",
+                            "백엔드 테스트 15건 추가 — 금액 분할 정확성, 병합 로직, cascade 안전성, 스냅샷 보존, 순차 분할",
+                            "프론트엔드 핸들러 테스트 12건 추가 — bulkConfirmItems 구성, 수량 클램핑, changeQuantities 반영"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "금액 분할 계산 2배 오류 수정 — replicate() 후 원본+복제본 금액이 동일하여 ratio 적용 시 2배로 계산되던 버그 (원본 금액 사전 캡처 방식으로 수정)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "buildOrderDetailBulkConfirmDataHandler 개선 — 선택 상품의 상세 정보(bulkConfirmItems)와 수량 맵(changeQuantities)을 _local에 저장 후 모달 열기",
+                            "일괄변경 확인 모달 크기 lg로 확대 및 상품 목록 테이블 추가"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.8.3",
+                "date": "2026-03-21",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문목록/주문상세 모달 9개 규정 미준수 전면 수정 — btn 클래스 → 명시적 Tailwind 클래스, 푸터 gap/mt 규정 준수, Icon name 규정 준수 (pen-to-square, trash)",
+                            "모달 onError 핸들러 배열 형식 수정 — 객체 → 배열, error.message → $error.message (preset_save, preset_edit, preset_delete_confirm)",
+                            "모달 액션 버튼 스피너/비활성화 처리 추가 — _global.isProcessing/isSaving/isDeleting/isDownloading/isSending 상태 기반 로딩 UI",
+                            "Excel 다운로드 모달 meta.is_partial 누락 추가, 불필요한 props.id/closeOnOutsideClick/p-6 래퍼 제거"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.8.2",
+                "date": "2026-03-20",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "주문 일괄변경 드롭다운에서 pending_order(주문대기) 상태 제외 — 주문목록/주문상세 레이아웃 + 백엔드 FormRequest 검증 (BulkUpdateOrdersRequest)",
+                            "주문상세 일괄변경 드롭다운에 누락된 상태 추가 — pending_payment, shipping_hold, confirmed, cancelled (pending_order 제외 전체 상태 표시)",
+                            "주문 일괄변경 드롭다운 너비 확대(w-36 → w-44) — 주문목록/주문상세 공통, 한글 상태명 잘림 방지"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문상세 일괄변경 드롭다운 pending_payment 다국어 키 오류 수정 — order_status_options.pending_payment → order_status_options.payment_pending (enum 값과 다국어 키 불일치)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.8.1",
+                "date": "2026-03-20",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "OrderStatusEnum 배송 정보 필수 메서드 추가 — requiresShippingInfo(), shippingInfoRequiredStatuses(), shippingInfoRequiredValues()",
+                            "주문 일괄변경 배송 상태(shipping_ready/shipping/delivered) 선택 시 택배사/송장번호 필수 검증 — 프론트엔드 핸들러(toast 경고), 레이아웃 모달(버튼 비활성화 + 경고 메시지), 백엔드 FormRequest 3계층 검증",
+                            "BulkUpdateOrdersRequest carrier_id 존재 검증 추가 — Rule::exists(ShippingCarrier::class, 'id')",
+                            "주문상세/주문관리 일괄변경 확인 모달에 배송정보 누락 경고 메시지 추가 (적색 텍스트)",
+                            "다국어 키 추가 — carrier_required (ko/en), tracking_number_required (ko/en)",
+                            "OrderOptionBulkStatusTest 배송정보 필수 검증 테스트 3건 추가"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "processOrderDetailBulkChangeHandler/saveAdminMemoHandler API 호출 수정 — G7Core.api.call() → G7Core.api.patch() (존재하지 않는 메서드 호출 오류)",
+                            "processOrderDetailBulkChangeHandler 모달/디스패치 호출 수정 — G7Core.modal?.close?.() / G7Core.dispatch?.() 패턴 적용",
+                            "processOrderDetailBulkChangeHandler 상태 조회 방식 변경 — getLocal() → action.params 직접 전달 (stale 상태 방지)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "BulkUpdateOrdersRequest/BulkChangeOrderOptionStatusRequest 배송 상태 검증을 하드코딩 → OrderStatusEnum::shippingInfoRequiredValues() 메서드로 리팩토링"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.8.0",
+                "date": "2026-03-20",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "OrderOptionStatusEnum 제거 및 OrderStatusEnum으로 통일 — 주문옵션 상태를 주문 상태와 동일한 Enum으로 관리",
+                            "주문 일괄변경(bulkUpdate) 시 주문상품옵션 상태도 동일하게 일괄 변경 — 기존에는 orders 테이블만 업데이트"
+                        ]
+                    },
+                    {
+                        "name": "Removed",
+                        "items": [
+                            "OrderOptionStatusEnum 삭제 — OrderStatusEnum으로 완전 대체 (클레임 상태는 별도 모듈에서 지원 예정)",
+                            "다국어 order_option_status 섹션 제거 — order_status 키 공용 사용"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "OrderRepository::bulkUpdateOptionStatus() 메서드 추가 — 주문 ID 배열 기준 옵션 상태 일괄 변경",
+                            "OrderStatusEnum::isShipped() / shippedStatuses() 메서드 추가 — 발송 이후 상태 판별",
+                            "OrderOption::shipped_quantity 접근자 추가 — 자신 및 분할 자식 옵션의 발송 수량 합산",
+                            "업그레이드 스크립트 Upgrade_0_8_0 — option_status DB 값 변환 (pending→pending_order, shipped→shipping, 클레임→cancelled)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.7.6",
+                "date": "2026-03-20",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "주문상세 주문상품 레이아웃을 CSS Grid → DataGrid 컴포넌트로 전환 — Tailwind purge 미적용 문제 해결, selectable/footerCells/footerCardChildren 활용",
+                            "주문상세 합계 행을 DataGrid footerCells로 통합 — 기존 수동 CSS Grid 합계 영역 제거",
+                            "주문상세 일괄변경 영역 스타일을 주문관리 목록과 동일하게 통일 — composite Select → basic Select, 배경/테두리/버튼 스타일 일치",
+                            "주문상세 일괄변경 버튼을 buildOrderDetailBulkConfirmData 핸들러로 변경 — 검증(상태 미선택/상품 미선택) 후 모달 오픈 패턴 적용",
+                            "주문상세 DataGrid selectedCountText를 빈 문자열로 설정 — 기본 \"N개 선택됨\" 텍스트 비활성화"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문상세 0원 항목 표시 — 할인/과세/부가세/쿠폰/할인코드/마일리지/예치금 금액이 0인 항목에 `condition` 속성 추가하여 숨김 처리",
+                            "주문상세 합계 computed 문자열 연결 버그 — API 금액이 문자열(`\"4000.00\"`)로 반환되어 `reduce` 합산 시 문자열 연결 발생 → `Number()` 래핑으로 수정",
+                            "주문상세 0원 금액 마이너스 표기 방지 — 금액 0원 항목이 `-0원`으로 표시되던 문제, condition 기반 숨김으로 해결",
+                            "주문상세 일괄변경 버튼 클릭 무응답 — openModal 직접 호출 → buildOrderDetailBulkConfirmData 검증 핸들러로 교체",
+                            "주문상세 일괄변경 확인 모달 closeModal 패턴 수정 — `params.target` → `target` 직접 지정",
+                            "주문상세 DataGrid 셀 줄바꿈 방지 — 상품정보/헤더 제외 모든 셀과 footer에 whitespace-nowrap 적용"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "다국어 키 추가 — `no_products` (주문상품 없음) ko/en",
+                            "buildOrderDetailBulkConfirmDataHandler 핸들러 추가 — 상태/상품 미선택 시 경고 토스트, 검증 통과 시 확인 모달 오픈",
+                            "운송사/송장번호 입력 필드 조건부 표시 — 배송 관련 상태(shipping_ready/shipping/delivered) 선택 시에만 표시"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.7.5",
+                "date": "2026-03-20",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문상세 헤더 \"상태:\" 텍스트 누락 — Badge 앞에 상태 라벨 Span 추가",
+                            "주문상세 결제정보 금액 경로 오류 — `payment.*` 주문레벨 금액을 `order.data.*` 경로로 수정",
+                            "주문상세 처리로그 더미 데이터 표시 — `_local.dummyLogs` → `order_logs` API 데이터소스 연동",
+                            "주문상세 일괄변경 핸들러 변수명 불일치 — `batchCarrier` → `batchCarrierId`로 통일",
+                            "OrderPaymentResource 필드명 5종 DB 컬럼 불일치 수정 (pg_tid→transaction_id, paid_amount→paid_amount_local, vbank_num_masked→vbank_number, vbank_due_date→vbank_due_at, cash_receipt_number→cash_receipt_identifier)"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "주문 처리 로그 API 엔드포인트 추가 (`GET /admin/orders/{id}/logs`) — ActivityLogService 연동, 페이지네이션/정렬 지원",
+                            "Order 모델 payments HasMany 관계 추가 (기존 payment HasOne 유지)",
+                            "OrderResource 플래튼 필드 추가 — 주문자(orderer_name/phone/email), 수취인(recipient_name/phone/zipcode/address), user_login_id, payments(복수), 세금(total_vat_amount)",
+                            "OrderPaymentResource 추가 필드 — payment_type_label, payment_number, account_info, requested_at_formatted, due_date_formatted, vat_amount_formatted, card_approval_number, is_interest_free",
+                            "OrderOptionResource option_name alias 추가",
+                            "OrderService 활동 로그 기록 — update/bulkUpdate 시 ActivityLogService 연동",
+                            "total_vat_amount 컬럼 마이그레이션 추가",
+                            "처리로그 정렬/페이지당 옵션 변경 시 서버사이드 refetch 지원",
+                            "다국어 키 추가 — 처리로그 정렬(date_asc), 페이지당 옵션(per_page_option), 로그 메시지 5종 (ko/en)",
+                            "백엔드 테스트 3종 추가 (logs 엔드포인트 조회/페이지네이션/인증)",
+                            "프론트엔드 레이아웃 테스트 갱신 — order_logs/active_carriers 데이터소스 검증, 금액 경로 검증, batchCarrierId 반영"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.7.4",
+                "date": "2026-03-19",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문 목록 필터 5종 미작동 수정 — Repository 필터 키를 FormRequest 키와 정렬 (shipping_type, min_amount, max_amount, country_codes, order_device)",
+                            "주문 목록 페이지네이션/총건수 미작동 — `orders?.data?.current_page` → `orders?.data?.pagination?.current_page` 경로 수정",
+                            "배송국가 국기 미표시 — `row.country_code` → `row.address?.recipient_country_code` 경로 수정",
+                            "OrderRepositoryTest 가격 필터 테스트 OLD 키 수정 (min_price → min_amount, max_price → max_amount)"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "구매환경(디바이스) 컬럼 추가 — OrderListResource에 `order_device`, `order_device_label` 필드 추가 + DataGrid 컬럼",
+                            "첫구매 여부 표시 — OrderListResource에 `is_first_order` 필드 추가 + orderer 컬럼에 첫구매 뱃지",
+                            "상품카테고리 4단계 계층 필터 — categories API 데이터소스 + computed 옵션 바인딩",
+                            "배송국가 필터 동적화 — 하드코딩 6개국 → ecommerce_settings API 기반 iteration 렌더링",
+                            "결제수단 필터 동적화 — 하드코딩 6종 → ecommerce_settings API 기반 iteration 렌더링",
+                            "다국어 키 추가 — `column.device` (구매환경), `column.first_order` (첫구매) ko/en",
+                            "백엔드 테스트 7종 추가 — 금액/국가/디바이스/배송방법 필터 + 페이지네이션 구조 + 신규 필드 확인",
+                            "프론트엔드 레이아웃 테스트 29종 — 페이지네이션 경로, 필터 키, 컬럼, ActionMenu, 날짜 포맷, DataGrid 설정, 동적 필터, 클레임 제거 검증"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "페이지 헤더 아이콘 제거 (디자인 통일)",
+                            "기간 버튼 CSS `btn btn-xs` → `btn-date` 패턴 통일 (상품관리와 동일)",
+                            "NO 컬럼 기본 숨김 (visibleColumns에서 제거)",
+                            "주문자명 클릭 시 직접 navigate 제거 — 셀 레벨 ActionMenu로 변경 (쿠폰관리와 동일 패턴)",
+                            "주문일시 날짜 표기 ISO → formatted 형식으로 수정 (`ordered_at` → `ordered_at_formatted`)",
+                            "DataGrid 컬럼선택기 활성화 (`showColumnSelector: true`) + `responsiveBreakpoint: 768` 모바일 대응 추가"
+                        ]
+                    },
+                    {
+                        "name": "Removed",
+                        "items": [
+                            "클레임상태 필터 전체 제거 (state, data_sources params, init_actions, filter UI)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.7.3",
+                "date": "2026-03-18",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "`WishlistResource` + `WishlistCollection` 신규 생성 — 위시리스트 API에 표준 ResourceCollection 패턴 적용",
+                            "`EcommerceSettingsService::getPublicPaymentSettings()` 메서드 추가 — 은행명 매핑 로직을 Service로 이동"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "Public 컨트롤러 4개 `ResponseHelper` 패턴 일관성 수정 — `moduleSuccess`/`moduleError` 통일",
+                            "`WishlistController`: 이중 번역 버그(`__()` + `success()`) 7곳 수정",
+                            "`CartController`: `success('sirsoft-ecommerce::...')` → `moduleSuccess()` 10곳 수정",
+                            "`CheckoutController`: success/error 패턴 혼재 6곳 수정",
+                            "`WishlistController::index()` 인라인 `through()` 변환 → `WishlistCollection` 적용",
+                            "`EcommerceSettingsController::payment()` 은행명 매핑 로직 → `EcommerceSettingsService`로 이동",
+                            "`CartController`: `issueCartKey()`, `count()`에 `logApiUsage` 추가",
+                            "`EcommerceSettingsController`: 3개 메서드에 `logApiUsage` 추가",
+                            "`CheckoutController`: PHPDoc `@param` 타입 3곳 실제 FormRequest 타입으로 수정",
+                            "`CategoryImageController::download()` 리턴 타입 선언 추가"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.7.2",
+                "date": "2026-03-18",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "Public 상품 목록 API에 `ProductCollection` 패턴 적용 — 페이지네이션/abilities 포함 응답 구조 정상화",
+                            "`ProductCollection` 콜백에서 `toArray()` → `resolve()` 변경 — 중첩 Resource(MissingValue) 안전 해석"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "`TestingSeeder`에 `guest` 역할 및 사용자 타입 권한 추가 — Public API 테스트에서 PermissionMiddleware 통과 보장"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.7.1",
+                "date": "2026-03-18",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "SEO 설정 변경 리스너 (`SeoSettingsCacheListener`) — 이커머스 모듈 SEO 설정 변경 시 영향받는 레이아웃 캐시를 선별적으로 무효화"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "`SeoProductCacheListener` 보강 — 상품 수정 시 `home`/`search/index` 캐시 무효화 추가, 생성/수정 시 상세 페이지 캐시 즉시 재생성",
+                            "`SeoCategoryCacheListener` 보강 — `search/index` 캐시 무효화 추가",
+                            "배송지 `name` 필드를 다국어 JSON에서 단순 문자열로 변환 — 마이그레이션, 모델, 팩토리, 리포지토리, 서비스, FormRequest, 테스트 일괄 수정"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.7.0",
+                "date": "2026-03-17",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "SEO 설정 중 코어 범위 항목을 코어 환경설정으로 이관 (`seo_user_agents` → 코어 `seo.bot_user_agents`)",
+                            "이커머스 SEO 탭에서 메인화면 관련 설정 제거 (`meta_main_title`, `meta_main_description`, `seo_site_main`)",
+                            "이커머스 SEO 탭에서 User-Agent 관리 섹션 제거 (코어로 이관)"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "업그레이드 스텝 (`Upgrade_0_7_0`) — 기존 사용자 정의 User-Agent를 코어로 자동 이관"
+                        ]
+                    },
+                    {
+                        "name": "Removed",
+                        "items": [
+                            "`defaults.json`에서 `seo_user_agents`, `seo_site_main`, `meta_main_title`, `meta_main_description` 필드 제거",
+                            "`StoreEcommerceSettingsRequest`에서 제거된 필드의 검증 규칙 삭제",
+                            "SEO 탭 레이아웃에서 메인화면 메타 아코디언, 사이트 메인 체크박스, User-Agent 관리 섹션 제거"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.5.5",
+                "date": "2026-03-18",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "상품 리뷰 기능 구현",
+                            "DB: 리뷰 테이블, 리뷰 이미지 테이블 생성. 답변 수정일 컬럼 추가",
+                            "모델/서비스: 리뷰 작성 가능 여부 확인, 리뷰 생성·삭제, 상태 변경, 판매자 답변 등록·수정·삭제, 이미��� 업로드·삭제",
+                            "관리자 API: 리뷰 목록 조회(기간·별점·상태·포토리뷰·답변 여부 필터), 상태 변경, 삭제, 일괄 처리, 판매자 답변 CRUD",
+                            "유저 API: 리뷰 작성 가능 여부 확인, 리뷰 작성·삭제, 이미지 업로드·삭제 (최대 5장)",
+                            "공개 API: 상품별 리뷰 목록 (별점 통계, 옵션 필터 포함)",
+                            "관리자 레이아웃: 리뷰 목록 화면 (검색 필터, 답변 모달, 이미지 미리보기 모달, 일괄 처리)",
+                            "관리자 설정: 리뷰 작성 기한, 포토리뷰 최대 장수 설정 탭 추가",
+                            "권한 및 메뉴: 관리자 사이드바 \"상품 리뷰 관리\" 메뉴 등록",
+                            "다국어: 리뷰 관련 다국어 파일 추가 (한국어/영어)",
+                            "샘플 시더: 별점 분포·답변·포토리뷰·답변 수정일 랜덤 생성",
+                            "테스트: 관리자·유저·이미지 Feature 테스트 57개, 레이아웃 렌더링 테스트 94개",
+                            "상품 목록 API에 평균 별점, 리뷰수 필드 추가"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "리뷰 작성 가능 여부 확인 시 구매확정 상태 비교가 항상 실패하던 버그 수정",
+                            "리뷰 저장 시 옵션 스냅샷 배열 직렬화 오류 수정",
+                            "리뷰 이미지 업로드 검증 실패 시 응답 코드가 400으로 반환되던 버그 수정 (422으로 수정)",
+                            "리뷰 이미지 API 응답에 리뷰 ID 누락 수정"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.5.4",
+                "date": "2026-03-17",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "주문 상세 SMS/이메일 발송 버튼 openModal 핸들러 포맷 수정 (`params.target` → `target`)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.5.3",
+                "date": "2026-03-16",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "쿠폰 리스트 DataGrid `cellChildren` 액션에서 등록자 필터 검색 시 SearchableDropdown에 선택값이 표시되지 않는 버그 수정 — `setState(target: \"local\")`가 globalStateUpdater 경로로 실행되어 Form stale 값에 덮어쓰이는 문제 (템플릿 DataGrid componentContext 수정으로 해결)",
+                            "CouponResource에 카테고리 로케일 브레드크럼 경로 표시 추가",
+                            "쿠폰 1인당 발급 제한 `per_user_limit` null 오류 수정 — nullable 처리 및 검증 로직 보완",
+                            "쿠폰 할인율 검증 수정 — 정률 할인 시 100% 초과 방지, 정액 할인 시 할인율 검증 제거",
+                            "쿠폰 유효기간/발급기간 타임존 변환 구현 — `TimezoneHelper`를 통한 사용자 타임존 ↔ UTC 변환",
+                            "쿠폰 발급기간 `datetime-local` 입력 변환 및 `CouponResource` 타임존 출력 수정",
+                            "쿠폰 폼 레이아웃에서 `apiCall` 호출 시 `auth_mode` 누락 수정"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "쿠폰 폼 상품 검색을 무한스크롤 방식으로 개선",
+                            "쿠폰 폼 레이아웃에서 사용 조건 Partial 분리",
+                            "마이그레이션 통합 — 증분 마이그레이션을 테이블당 1개 create 마이그레이션으로 정리",
+                            "시더 디렉토리 분리 — 샘플 시더를 `Sample/` 하위로 이동",
+                            "라이선스 프로그램 명칭 정비",
+                            "쿠폰 폼 하단 버튼 영역 제거 — 상단 PageHeader 액션으로 통일"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.5.1",
+                "date": "2026-03-11",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "주문 취소 API 엔드포인트 추가 (`POST /user/orders/{id}/cancel`) + `user-orders.cancel` 권한 미들웨어 적용",
+                            "`CancelOrderRequest` — 주문 취소 요청 검증 (소유자 확인, 취소 가능 상태 검증)",
+                            "`UserOrderListResource` — `abilities` 키 추가 (`can_view`, `can_cancel` — 상태+권한 기반)",
+                            "`UserOrderCollection` — `abilities` 키 추가 (`can_create` — 권한 기반)",
+                            "`UserAddressResource` — `abilities` 키 추가 (`can_update`, `can_delete`, `can_set_default`)",
+                            "`UserAddressCollection` — `abilities` 키 추가 (`can_create`)",
+                            "`EcommerceUserAbilitiesTest` — 주문/배송지 abilities 및 주문 취소 API 테스트 13개",
+                            "manifest에 license 필드 및 LICENSE 파일 추가"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.5.0",
+                "date": "2026-03-11",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "사용자 권한 3개 추가 (블랙컨슈머 차단용)",
+                            "`sirsoft-ecommerce.user-products.read`: 상품 조회 권한",
+                            "`sirsoft-ecommerce.user-orders.create`: 주문하기 권한",
+                            "`sirsoft-ecommerce.user-orders.cancel`: 주문 취소 권한",
+                            "상품 조회 라우트에 `optional.sanctum` + `permission:user` 미들웨어 적용",
+                            "주문 생성 라우트에 `permission:user` 미들웨어 적용",
+                            "주문 배송지 변경 API (`PUT /user/orders/{id}/shipping-address`)",
+                            "주문 상세 배송지 변경 모달 (주문상세 화면)",
+                            "배송지명 중복 덮어쓰기 확인 모달",
+                            "업그레이드 스크립트 `Upgrade_0_5_0.php` (권한 생성 + 기존 역할 할당)",
+                            "업그레이드 스크립트 `Upgrade_0_6_0.php` (배송지명 컬럼 검증 + 캐시 클리어)",
+                            "사용자 권한 미들웨어 테스트 `EcommerceUserPermissionTest` (7개)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "배송지명(`name`) 필드 다국어 JSON → 단순 string 변환 (마이그레이션 포함)"
+                        ]
+                    },
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "마이페이지 배송지 관리 API 엔드포인트 및 필드명 불일치 수정",
+                            "체크아웃 배송지 모달 필드명 불일치 수정",
+                            "무통장입금(dbank) 주문 시 결제수단이 'card'로 잘못 전송되던 버그 수정",
+                            "도서산간 추가배송비 제주도 누락 수정",
+                            "배송지 변경 시 배송비 미재계산 수정",
+                            "배송지 모달 폼 전송 실패 수정",
+                            "주문 완료 후 장바구니 아이템이 삭제되지 않던 버그 수정 (재고 차감 타이밍과 동기화)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.4.2",
+                "date": "2026-03-10",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "권한 카테고리에 `resource_route_key`, `owner_key` 스코프 메타데이터 추가 (products, orders, brands, promotion-coupon, shipping-policies)",
+                            "라우트 미들웨어 `except:owner:*` 옵션 제거 (scope_type 데이터 기반 시스템으로 전환)",
+                            "Repository 목록 조회에 `PermissionHelper::applyPermissionScope()` 적용 (Product, Order, Brand, ShippingPolicy, Coupon)",
+                            "`PermissionBypassable` 인터페이스 및 `getBypassUserId()` 제거 (Product, Order, Brand, ShippingPolicy, Coupon 등 모델)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.4.1",
+                "date": "2026-03-08",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "API 리소스 권한 플래그 키 `permissions` → `abilities`로 변경 (코어 표준화)",
+                            "`permissionMap()` → `abilityMap()` 메서드명 변경 (11개 리소스)",
+                            "`BrandCollection`, `CategoryCollection`, `ShippingCarrierCollection`에 `HasAbilityCheck` 트레이트 적용",
+                            "컬렉션 레벨 권한 응답 키를 `abilities`로 통일",
+                            "관리자 레이아웃 JSON의 `permissions.can_*` 바인딩을 `abilities.can_*`로 변경"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.4.0",
+                "date": "2026-03-06",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "메일 템플릿 목록 API에 검색/필터/페이지네이션 지원 추가",
+                            "메일 템플릿 편집 모달 UX 개선 (blur_until_loaded, sticky footer, 함수형 body)",
+                            "`getDefaultTemplateData()`를 Controller에서 Service로 이동 (Service-Repository 패턴 준수)",
+                            "메일 템플릿 탭 UI를 코어 환경설정과 동일한 구조로 변경"
+                        ]
+                    },
+                    {
+                        "name": "Added",
+                        "items": [
+                            "메일 템플릿 미리보기(preview) API 엔드포인트 추가",
+                            "메일 템플릿 검색 기능 (제목/본문/전체)",
+                            "페이지당 항목 수 선택 및 페이지네이션",
+                            "메일 템플릿 관련 다국어 키 추가 (검색/필터/빈 상태/편집 모달)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.3.1",
+                "date": "2026-03-06",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "`CategoryService::deleteCategory()` — 카테고리 삭제 시 이미지(`images()`) 명시적 삭제 추가 (DB CASCADE 의존 제거)",
+                            "`OrderService::delete()` — 주문 삭제 시 관계 레코드 5건 명시적 삭제 추가 (`taxInvoices`, `shippings`, `addresses`, `payment`, `options`)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.3.0",
+                "date": "2026-03-06",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "사용자 쿠폰 다운로드 API (`UserCouponController`) — 다운로드 가능 쿠폰 목록 조회/다운로드",
+                            "상품별 다운로드 가능 쿠폰 공개 API (`PublicCouponController`) — 비로그인 사용자도 조회 가능",
+                            "`UserCouponService` — 쿠폰 다운로드 비즈니스 로직 (중복 다운로드 방지, 수량 검증)",
+                            "`CouponRepository`, `CouponIssueRepository` — 쿠폰 데이터 접근 계층",
+                            "`DownloadCouponRequest` — 쿠폰 다운로드 요청 검증",
+                            "쿠폰 다운로드 관련 다국어 메시지 (ko/en `messages.php`, `validation.php`)",
+                            "사용자 쿠폰 다운로드 Feature 테스트 14건 (UserCouponControllerTest + PublicCouponControllerTest)",
+                            "DB 기반 메일 템플릿 시스템 (5종: 주문 확인, 배송 시작, 구매 확정, 주문 취소, 관리자 신규 주문)",
+                            "`ecommerce_mail_templates` 테이블, EcommerceMailTemplate 모델/서비스/리포지토리/컨트롤러",
+                            "메일 템플릿 관리 API 및 환경설정 UI",
+                            "업그레이드 스텝 (`Upgrade_0_3_0`) — 기존 설치에 메일 템플릿 초기 시딩",
+                            "`getSeeders()`에 `EcommerceMailTemplateSeeder` 추가"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.2.1",
+                "date": "2026-03-03",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "도서산간 추가배송비 템플릿 시더 (`ExtraFeeTemplateSeeder`) — 34건 도서산간 우편번호 데이터",
+                            "도서산간 템플릿 모달 CRUD 기능 (생성/수정/삭제/일괄삭제/검색)",
+                            "템플릿 모달에서 전체 적용/선택 적용 기능",
+                            "백엔드 다국어 메시지 (`extra_fee_template` 섹션) 추가 (ko/en)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "도서산간 템플릿 모달 크기 `md` → `xl` 확대",
+                            "도서산간 템플릿 모달을 API 응답 구조에 맞게 전면 재설계",
+                            "`zipcode` 컬럼 `string(10)` → `string(20)` 확장 (범위 형식 지원)",
+                            "FormRequest zipcode 검증 `max:10` → `max:20` 변경",
+                            "부모 레이아웃에 템플릿 CRUD 상태 및 데이터소스 검색 params 추가"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.2.0",
+                "date": "2026-03-03",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "배송사 관리 기능 신설 (CRUD API + 관리 UI)",
+                            "배송사 마스터 테이블 (`ecommerce_shipping_carriers`) 생성",
+                            "배송 설정 탭에 배송사 관리 인라인 섹션 추가",
+                            "주문 배송 추적 URL 생성 (`OrderShipping.getTrackingUrl()`)",
+                            "해외배송 비활성화 확인 모달 추가",
+                            "배송가능국가 테이블에 국기 아이콘 표시",
+                            "업그레이드 스텝 (`Upgrade_0_2_0`) — 배송사 시딩 + 기존 주문 carrier_id 역매핑"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "해외배송 토글 수동 바인딩 전환 (해외배송 OFF 시 국가 추가/토글/삭제 비활성화)",
+                            "주문 레이아웃 배송사 옵션을 하드코딩에서 API 기반 동적 로딩으로 전환",
+                            "모듈 설치 시더에 `ShippingCarrierSeeder` 추가"
+                        ]
+                    },
+                    {
+                        "name": "Removed",
+                        "items": [
+                            "`CarrierEnum` 삭제 — 배송사를 하드코딩 Enum에서 DB 기반 동적 관리로 전환",
+                            "배송정책에서 carrier 필드 제거 (`shipping_policy_country_settings.carrier` 컬럼 삭제)",
+                            "배송정책 폼/목록에서 carrier Select 및 필터 UI 제거"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.1.7",
+                "date": "2026-02-27",
+                "categories": [
+                    {
+                        "name": "Fixed",
+                        "items": [
+                            "배송정책 수정 폼에서 가시성 플래그가 잘못 설정되는 버그 수정 (init_actions if 미지원 대응)",
+                            "구간별 배송비 정책 수정 시 구간 테이블 미표시 및 고정배송비 필드 오표시 문제 해결",
+                            "배송정책명(MultilingualInput) 수정 모드 미표시 문제 해결 (dataKey 패턴 적용)"
+                        ]
+                    },
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "배송정책 폼에 dataKey=\"form\" + debounce 패턴 적용 (상품 폼과 동일 구조)",
+                            "단순 setState 핸들러 제거 (shipping_method, currency_code → 자동 바인딩)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.1.2",
+                "date": "2026-02-25",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "모듈 라우트 admin/user 분기 서빙 적용 (routes.json → routes/admin.json 이동)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.1.1",
+                "date": "2026-02-24",
+                "categories": [
+                    {
+                        "name": "Changed",
+                        "items": [
+                            "버전 체계 조정 (정식 출시 전 0.x 체계로 변경)"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "0.1.0",
+                "date": "2026-02-23",
+                "categories": [
+                    {
+                        "name": "Added",
+                        "items": [
+                            "이커머스 모듈 초기 구현",
+                            "상품 관리: CRUD, 옵션(사이즈/색상), 라벨, SEO 메타, 이미지 갤러리",
+                            "상품 카테고리: 계층형 카테고리, 순서 관리, TreeView 편집",
+                            "브랜드 관리: CRUD, 로고, 설명",
+                            "쿠폰 시스템: 정액/정률 할인, 사용 조건 (최소 금액, 특정 상품), 유효기간, 사용 횟수 제한",
+                            "배송 정책: 무료/유료/조건부 배송",
+                            "공통 정보 관리: 배송/교환/환불 안내, 판매자 정보",
+                            "장바구니: 추가/수량 변경/삭제, 옵션별 관리",
+                            "체크아웃: 주소 입력, 결제수단 선택, 쿠폰 적용",
+                            "주문 관리: 주문 목록, 상태 변경, 상세 정보, 주문 타임라인",
+                            "주문 완료: 주문 번호, 결제 정보 요약",
+                            "결제 연동 인터페이스 (PaymentInterface)",
+                            "상품 상세 페이지: 이미지 갤러리, 옵션 선택, 수량 입력, 장바구니 담기",
+                            "상품 목록: 필터링 (카테고리/브랜드/가격), 정렬, 페이지네이션, 카드 그리드",
+                            "위시리스트: 찜하기/해제 기능",
+                            "상품 검색: 키워드 검색, 카테고리 필터 연동",
+                            "관리자 레이아웃 (상품, 주문, 카테고리, 브랜드, 쿠폰, 배송정책 관리)",
+                            "사용자 레이아웃 (상품 목록/상세, 장바구니, 체크아웃, 주문완료)",
+                            "권한 시스템 연동",
+                            "다국어 지원 (ko, en)"
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 특정 모듈의 변경 내역(CHANGELOG)을 조회합니다. `core.modules.read` 권한이 필요합니다. `source` 로 조회 출처를(active: 활성 설치본, bundled: 번들 원본, github: 원격 저장소) 선택하고, `from_version`·`to_version` 으로 버전 구간을 좁힐 수 있습니다. 업데이트 전 사용자에게 변경 사항을 안내하는 데 사용됩니다.
+
+
+### GET /api/admin/modules/{identifier}/dependent-templates
+<!-- @generated:start:api.admin.modules.dependent-templates -->
+- **라우트명**: `api.admin.modules.dependent-templates`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@dependentTemplates`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 리소스의 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/admin/modules/sirsoft-ecommerce/dependent-templates HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드._
+
+<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "의존 템플릿 정보를 성공적으로 조회했습니다.",
+    "data": {
+        "data": [],
+        "total": 0
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 이 모듈에 의존하는 템플릿 목록을 조회합니다. `core.modules.read` 권한이 필요합니다. 응답으로 의존 템플릿 배열과 총 개수를 반환하며, 모듈 비활성화·제거 전 영향을 받는 템플릿을 사용자에게 미리 알리는 데 사용됩니다.
+
+
+### GET /api/admin/modules/{identifier}/license
+<!-- @generated:start:api.admin.modules.license -->
+- **라우트명**: `api.admin.modules.license`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@license`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 리소스의 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/admin/modules/sirsoft-ecommerce/license HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| content | string | `프로그램 명칭 : 그누보드7용 이커머스 모듈 (sirsoft-eco…` | 본문 내용 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "모듈을 성공적으로 가져왔습니다.",
+    "data": {
+        "content": "프로그램 명칭 : 그누보드7용 이커머스 모듈 (sirsoft-ecommerce)\n\n저작자 : (주)에스아이알소프트\n\n----- MIT 라이선스 (한국어 번역) --------------------------------------------------------\n\nMIT 라이선스\n\nCopyright (c) 2026 (주)에스아이알소프트\n\n이 소프트웨어와 관련 문서 파일(이하 \"소프트웨어\")의 복사본을 취득하는 모든 사람에게\n소프트웨어를 제한 없이 사용, 복사, 수정, 병합, 출판, 배포, 서브라이선스 허여 및/또는\n판매할 수 있는 권리를 무상으로 부여합니다. 다만, 소프트웨어를 제공받은 사람은 다음\n조건을 따라야 합니다:\n\n위 저작권 고지와 본 허가 고지는 소프트웨어의 모든 복사본 또는 상당 부분에 포함되어야\n합니다.\n\n소프트웨어는 \"있는 그대로\" 제공되며, 명시적이든 묵시적이든 어떠한 종류의 보증도 하지\n않습니다. 여기에는 상품성, 특정 목적에의 적합성 및 비침해에 대한 보증이 포함되나 이에\n국한되지 않습니다. 어떠한 경우에도 저작자 또는 저작권자는 소프트웨어나 소프트웨어의\n사용 또는 기타 거래로 인해 발생하는 계약, 불법행위 또는 기타 청구, 손해 또는 기타\n책임에 대해 책임을 지지 않습니다.\n\n----- MIT License (English Original) --------------------------------------------------------\n\nThe MIT License (MIT)\n\nCopyright (c) 2026 SIRSOFT\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 모듈에 포함된 라이선스 파일의 원문 내용을 반환합니다. `core.modules.read` 권한이 필요합니다. `identifier` 는 소문자·숫자·하이픈·언더스코어 형식만 허용되며 형식에 맞지 않거나 라이선스 파일이 없으면 404 를 반환합니다. 라이선스 고지 화면에 전문을 표시하는 용도입니다.
+
+
+### GET /api/admin/modules/{moduleName}
+<!-- @generated:start:api.admin.modules.show -->
+- **라우트명**: `api.admin.modules.show`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@show`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| moduleName | path | string | 예 | — | 대상 module의 이름 (식별자) |
+
+**요청 예시**
+
+```http
+GET /api/admin/modules/{moduleName} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 특정 모듈의 상세 정보를 조회합니다. `core.modules.read` 권한이 필요합니다. 목록보다 자세한 `toDetailArray()` 형태를 반환하며, 이 모듈이 지원하는 번들 언어팩 정보가 함께 주입됩니다. 모듈을 찾을 수 없으면 404 를 반환합니다.
+
+
+### GET /api/admin/modules/{moduleName}/check-modified-layouts
+<!-- @generated:start:api.admin.modules.check-modified-layouts -->
+- **라우트명**: `api.admin.modules.check-modified-layouts`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@checkModifiedLayouts`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| moduleName | path | string | 예 | — | 대상 module의 이름 (식별자) |
+
+**요청 예시**
+
+```http
+GET /api/admin/modules/{moduleName}/check-modified-layouts HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.read`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 특정 모듈에서 사용자가 수정한 레이아웃이 있는지 확인합니다. `core.modules.read` 권한이 필요합니다. 업데이트 실행 전 이 정보를 조회하여 레이아웃 전략(overwrite: 새 버전으로 교체, keep: 사용자 수정본 유지) 선택을 안내하는 데 사용됩니다.
+
+
+### GET /api/admin/modules/{moduleName}/install-preview
+<!-- @generated:start:api.admin.modules.install-preview -->
+- **라우트명**: `api.admin.modules.install-preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@installPreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.install`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| moduleName | path | string | 예 | — | 대상 module의 이름 (식별자) |
+
+**요청 예시**
+
+```http
+GET /api/admin/modules/{moduleName}/install-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 모듈 설치 시 함께 처리될 cascade 후보(의존 확장 + 동반 가능한 번들 언어팩) 트리를 반환합니다. `core.modules.install` 권한이 필요합니다. 설치 모달 오픈 시 호출되어 사용자가 함께 설치할 항목을 선택하도록 노출하며, ZIP 업로드 기반의 `manifest-preview` 와 달리 이미 알려진 식별자에 대한 GET 조회입니다.
+
+
+### GET /api/admin/modules/{moduleName}/uninstall-info
+<!-- @generated:start:api.admin.modules.uninstall-info -->
+- **라우트명**: `api.admin.modules.uninstall-info`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@uninstallInfo`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.uninstall`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| moduleName | path | string | 예 | — | 대상 module의 이름 (식별자) |
+
+**요청 예시**
+
+```http
+GET /api/admin/modules/{moduleName}/uninstall-info HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.uninstall`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 모듈 제거 시 삭제될 데이터 정보를 조회합니다. `core.modules.uninstall` 권한이 필요합니다. 제거 확인 모달에서 사용자에게 어떤 데이터가 사라지는지 미리 보여주는 용도이며, 모듈을 찾을 수 없으면 404 를 반환합니다.
+
+
+### POST /api/admin/modules/{moduleName}/update
+<!-- @generated:start:api.admin.modules.update -->
+- **라우트명**: `api.admin.modules.update`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@performUpdate`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.install`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| moduleName | path | string | 예 | — | 대상 module의 이름 (식별자) |
+| layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 버전으로 교체, keep: 사용자 수정본 유지) |
+| vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
+| force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.perform_update_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/{moduleName}/update HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "layout_strategy": "overwrite",
+    "vendor_mode": "auto",
+    "force": true
+}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 특정 모듈을 최신 버전으로 업데이트합니다. `core.modules.install` 권한이 필요합니다. `layout_strategy` 로 레이아웃 처리 방식을(overwrite: 새 버전으로 교체, keep: 사용자 수정본 유지) 지정하며, `vendor_mode` 로 Composer 의존성 처리 방식을 선택합니다. 버전 제약·호환성 문제로 막힐 경우 `force: true` 로 강제 진행할 수 있습니다.
+
+
+### GET /api/modules/assets/{identifier}/{path}
+<!-- @generated:start:api.public.modules.assets -->
+- **라우트명**: `api.public.modules.assets`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\PublicModuleController@serveAsset`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 리소스의 식별자 |
+| path | path | string | 예 | — | 경로 |
+
+**요청 예시**
+
+```http
+GET /api/modules/assets/sirsoft-ecommerce/{path}?identifier=example-key HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 모듈의 개별 프론트엔드 에셋 파일(JS/CSS/이미지 등)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 경로·확장자 보안 검증은 FormRequest 에서 완료됩니다. 모듈 미존재·파일 미존재·허용되지 않은 파일 유형은 각각 404/404/403 으로 응답하고, 정상 파일은 ETag 와 1년 캐시 헤더를 붙여 반환합니다. 소스맵 등 개별 에셋을 직접 참조할 때 사용되며, 통합 로딩은 `bundle.js`/`bundle.css` 를 사용합니다.
+
+
+### GET /api/modules/bundle.css
+<!-- @generated:start:api.public.modules.bundle.css -->
+- **라우트명**: `api.public.modules.bundle.css`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\PublicModuleController@serveBundleCss`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/modules/bundle.css HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: http-200 — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: http-200 — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+_대표 에러 없음 (공개 조회). 활성 모듈 에셋이 없어도 빈 200 응답을 반환하므로 404 를 내지 않습니다._
+
+<!-- @generated:end -->
+
+**설명** 활성 모듈들의 프론트엔드 CSS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 global 모듈 에셋이 없으면 빈 200(text/css) 응답을 반환하고, 있으면 병합 파일을 ETag·환경별 Cache-Control 과 함께 서빙합니다. 페이지가 모듈 스타일을 요청 1건으로 로드하도록 합니다.
+
+
+### GET /api/modules/bundle.js
+<!-- @generated:start:api.public.modules.bundle.js -->
+- **라우트명**: `api.public.modules.bundle.js`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\PublicModuleController@serveBundleJs`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/modules/bundle.js HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: http-200 — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: http-200 — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+_대표 에러 없음 (공개 조회). 활성 모듈 에셋이 없어도 빈 200 응답을 반환하므로 404 를 내지 않습니다._
+
+<!-- @generated:end -->
+
+**설명** 활성 모듈들의 프론트엔드 IIFE JS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 global 모듈 에셋이 없으면 빈 200(text/javascript) 응답을 반환하고(프론트는 빈 스크립트 로드로 무해), 있으면 병합 파일을 ETag·환경별 Cache-Control 과 함께 서빙합니다. 프론트는 `G7Config.bundleUrls` 를 읽어 이 번들을 로드합니다.
+
+
+### GET /api/modules/{identifier}/components.json
+<!-- @generated:start:api.public.modules.components -->
+- **라우트명**: `api.public.modules.components`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\PublicModuleController@serveComponents`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 리소스의 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/components.json HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**응답 필드** (`data` 내부)
+
+
+
+<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "identifier": "sirsoft-ecommerce",
+    "version": "1.0.0-beta.5",
+    "components": {
+        "basic": [],
+        "composite": [],
+        "layout": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 모듈의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 편집 모드 부팅 시 ComponentRegistry 가 활성 확장 매니페스트를 네임스페이스 병합하기 위해 fetch 하며, 구버전 모듈처럼 파일이 없으면 빈 components 로 폴백합니다. 응답은 1시간 캐시됩니다. 모듈 미존재 시 404.
+
+
+### GET /api/modules/{identifier}/editor-spec
+<!-- @generated:start:api.public.modules.editor_spec -->
+- **라우트명**: `api.public.modules.editor_spec`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\PublicModuleController@serveEditorSpec`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 리소스의 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/editor-spec HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-ecommerce` | 모듈 고유 식별자 (vendor-module 형식) |
+| spec | object | `{"$schema":"https:\/\/json-schema.org\/draft\/2020-12\/sc…` | 스펙 정의 객체 (편집기/컴포넌트 선언 스키마 등) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "편집기 스펙을 조회했습니다.",
+    "data": {
+        "identifier": "sirsoft-ecommerce",
+        "spec": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "moduleId": "sirsoft-ecommerce",
+            "version": "1.0.0",
+            "description": "레이아웃 편집기 스펙 — 이커머스 모듈 도메인 sampleData/sampleGlobal/states. admin 레이아웃 data_source ID 전수 스캔 기반 도메인 ID 28종(상품·주문·브랜드·쿠폰·배송정책·정산·설정 등) byDataSourceId + 사용자 페이지(템플릿 렌더) byEndpointPattern. 공용 인프라(roles/availableChannels/identityProviders/ecommerceIdentity*/ecommerceNotificationDefinitions)는 admin 템플릿 스펙·코어 프리셋 폴백이 커버.",
+            "actionRecipes": {
+                "comment": "이커머스 모듈 소유 친화 액션 레시피. 코어 시드 위에 module 단계로 병합(__source:{kind:module,id:sirsoft-ecommerce}, 편집기 〔이커머스〕 배지). 라벨은 모듈 격리 네임스페이스($t:sirsoft-ecommerce.editor.action.*) — 편집기 t()가 모듈 lang 통짜 ko.json/en.json 의 editor.action 을 sirsoft-ecommerce.editor.action 으로 해석한다(코어/템플릿 editor 와 격리). 결제(PG) 진입은 커머스 도메인이라 코어가 아닌 모듈이 소유한다(provider-agnostic — 핸들러명을 백엔드 응답값으로 받음).",
+                "requestPgPayment": {
+                    "comment": "결제(PG) 진입 — provider-agnostic. 백엔드 응답이 호출할 결제 진입 핸들러 풀네임(pg_payment_handler)을 데이터 칩으로 연결하면 그 핸들러를 dispatch(특정 PG 하드코딩 없음). build.handler 가 {{paymentHandler}} placeholder 라 matchAction 이 placeholder-aware 로 역매칭한다. onSuccess 컨텍스트(chipContext=response)에서 결제 응답 칩 노출.",
+                    "label": "$t:sirsoft-ecommerce.editor.action.request_pg_payment.label",
+                    "params": [
+                        {
+                            "key": "paymentHandler",
+                            "label": "$t:sirsoft-ecommerce.editor.action.request_pg_payment.param_handler",
+                            "widget": "data-chip",
+                            "required": true
+                        },
+                        {
+                            "key": "pgPaymentData",
+                            "label": "$t:sirsoft-ecommerce.editor.action.request_pg_payment.param_data",
+                            "widget": "data-chip",
+                            "required": true
+                        }
+                    ],
+                    "build": {
+                        "handler": "{{paymentHandler}}",
+                        "params": {
+                            "pgPaymentData": "{{pgPaymentData}}"
+                        }
+                    }
+                }
+            },
+            "actionChipCandidates": {
+                "comment": "이커머스 도메인 응답 칩 후보 — 코어 기본 응답 칩(response.data/message) 뒤에 병합. 주문 생성 응답이 내려주는 PG 결제 진입 필드(pg_payment_handler/pg_payment_data)를 결제 진입 레시피의 데이터 칩으로 연결할 수 있게 노출한다. 코어는 PG 도메인을 모르고, 본 모듈이 자기 응답 필드를 선언한다(라벨은 모듈 격리 네임스페이스).",
+                "response": [
+                    {
+                        "path": "data.pg_payment_handler",
+                        "labelKey": "sirsoft-ecommerce.editor.action_chip.response_pg_handler",
+                        "shape": "scalar"
+                    },
+                    {
+                        "path": "data.pg_payment_data",
+                        "labelKey": "sirsoft-ecommerce.editor.action_chip.response_pg_data",
+                        "shape": "object"
+                    }
+                ]
+            },
+            "sampleGlobal": {
+                "comment": "이커머스 도메인 _global keyspace. 코어 keyspace(currentUser/settings)는 시드하지 않음(충돌 시 코어 우선). 헤더 통화/배송국가 셀렉터(header_currency 슬롯 주입)는 실사이트에서 init_actions 가 채우는 파생 상태(availableCurrencies/availableShippingCountries)와 modules['sirsoft-ecommerce'] 설정을 표시 조건으로 읽는다. 편집기 캔버스는 init_actions 를 실행하지 않으므로 이 키들을 직접 시드해 편집기에서도 셀렉터가 보이게 한다(양 템플릿 공용 — 헤더는 모듈 무지 유지).",
+                "cart": {
+                    "items": [],
+                    "count": 0,
+                    "total": 0
+                },
+                "wishlist": {
+                    "items": [],
+                    "count": 0
+                },
+                "recent_products": [],
+                "modules": {
+                    "sirsoft-ecommerce": {
+                        "comment": "헤더 통화/배송국가 셀렉터 표시 조건 소스. 실사이트 G7Config(window.__G7_MODULE_CONFIG) 미러 — 편집기 캔버스 전용 시드.",
+                        "language_currency": {
+                            "default_currency": "KRW",
+                            "currencies": [
+                                {
+                                    "code": "KRW",
+                                    "symbol": "₩",
+                                    "flag": "🇰🇷",
+                                    "exchange_rate": 1,
+                                    "is_default": true
+                                },
+                                {
+                                    "code": "USD",
+                                    "symbol": "$",
+                                    "flag": "🇺🇸",
+                                    "exchange_rate": 0.00073,
+                                    "is_default": false
+                                },
+                                {
+                                    "code": "JPY",
+                                    "symbol": "¥",
+                                    "flag": "🇯🇵",
+                                    "exchange_rate": 0.11,
+                                    "is_default": false
+                                }
+                            ]
+                        },
+                        "shipping": {
+                            "international_shipping_enabled": true,
+                            "default_country": "KR",
+                            "available_countries": [
+                                {
+                                    "code": "KR",
+                                    "name": {
+                                        "ko": "대한민국",
+                                        "en": "South Korea",
+                                        "ja": "韓国"
+                                    },
+                                    "is_active": true
+                                },
+                                {
+                                    "code": "US",
+                                    "name": {
+                                        "ko": "미국",
+                                        "en": "United States",
+                                        "ja": "アメリカ"
+                                    },
+                                    "is_active": true
+                                },
+                                {
+                                    "code": "JP",
+                                    "name": {
+                                        "ko": "일본",
+                                        "en": "Japan",
+                                        "ja": "日本"
+                                    },
+                                    "is_active": true
+                                }
+                            ]
+                        }
+                    }
+                },
+                "defaultCurrency": "KRW",
+                "preferredCurrency": "KRW",
+                "preferredShippingCountry": "KR",
+                "availableCurrencies": [
+                    {
+                        "code": "KRW",
+                        "symbol": "₩",
+                        "flag": "🇰🇷",
+                        "exchange_rate": 1,
+                        "is_default": true
+                    },
+                    {
+                        "code": "USD",
+                        "symbol": "$",
+                        "flag": "🇺🇸",
+                        "exchange_rate": 0.00073,
+                        "is_default": false
+                    },
+                    {
+                        "code": "JPY",
+                        "symbol": "¥",
+                        "flag": "🇯🇵",
+                        "exchange_rate": 0.11,
+                        "is_default": false
+                    }
+                ],
+                "availableShippingCountries": [
+                    {
+                        "code": "KR",
+                        "name": "대한민국"
+                    },
+                    {
+                        "code": "US",
+                        "name": "미국"
+                    },
+                    {
+                        "code": "JP",
+                        "name": "일본"
+                    }
+                ],
+                "mileageManual": [],
+                "mileageEdit": [],
+                "mileageExtend": []
+            },
+            "sampleData": {
+                "comment": "실제 모듈 레이아웃 data_source ID(admin: products/categories/orders/order/reviews 등) + 사용자 페이지(템플릿이 렌더, /api/modules/sirsoft-ecommerce/* 호출) byEndpointPattern. 계획서 추정과 실제 ID 차이 반영(데이터소스가 SSoT).",
+                "byDataSourceId": {
+                    "transactions": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 2001,
+                                    "user_id": 100,
+                                    "currency": "KRW",
+                                    "type": "earn",
+                                    "type_label": "적립",
+                                    "admin_badge_group": null,
+                                    "user_display_category": "수동 지급",
+                                    "amount": 10000,
+                                    "amount_formatted": "10,000",
+                                    "remaining_amount": 10000,
+                                    "remaining_amount_formatted": "10,000",
+                                    "balance_after": 65000,
+                                    "order_id": null,
+                                    "order_option_id": null,
+                                    "order_cancel_id": null,
+                                    "source_transaction_id": null,
+                                    "granted_by": 1,
+                                    "granted_by_name": "관리자",
+                                    "granted_by_uuid": "admin-uuid-1",
+                                    "user_name": "홍길동",
+                                    "user_uuid": "u-1001",
+                                    "order_number": null,
+                                    "description": "Admin earn",
+                                    "memo": "이벤트 보상",
+                                    "expires_at": "2027-06-21T00:00:00+09:00",
+                                    "expires_at_formatted": "Jun 21, 2027 12:00 AM",
+                                    "expires_at_date": "2027-06-21",
+                                    "expired_at": null,
+                                    "expired_at_formatted": null,
+                                    "created_at": "2026-06-20T10:00:00+09:00",
+                                    "created_at_formatted": "Jun 20, 2026 10:00 AM",
+                                    "created_at_date": "2026-06-20",
+                                    "is_earning": true,
+                                    "can_edit_expiry": true,
+                                    "expired_amount": 0,
+                                    "expired_amount_formatted": "0",
+                                    "expiry_state": "active",
+                                    "abilities": {
+                                        "can_manage": true
+                                    }
+                                },
+                                {
+                                    "id": 2002,
+                                    "user_id": 101,
+                                    "currency": "KRW",
+                                    "type": "deduct",
+                                    "type_label": "차감",
+                                    "admin_badge_group": null,
+                                    "user_display_category": "수동 차감",
+                                    "amount": -5000,
+                                    "amount_formatted": "-5,000",
+                                    "remaining_amount": 0,
+                                    "remaining_amount_formatted": "0",
+                                    "balance_after": 45000,
+                                    "order_id": null,
+                                    "order_option_id": null,
+                                    "order_cancel_id": null,
+                                    "source_transaction_id": null,
+                                    "granted_by": 1,
+                                    "granted_by_name": "관리자",
+                                    "granted_by_uuid": "admin-uuid-1",
+                                    "user_name": "김영희",
+                                    "user_uuid": "u-1002",
+                                    "order_number": null,
+                                    "description": null,
+                                    "memo": "잘못된 적립 차감",
+                                    "expires_at": null,
+                                    "expires_at_formatted": null,
+                                    "expires_at_date": null,
+                                    "expired_at": null,
+                                    "expired_at_formatted": null,
+                                    "created_at": "2026-06-19T15:30:00+09:00",
+                                    "created_at_formatted": "Jun 19, 2026 3:30 PM",
+                                    "created_at_date": "2026-06-19",
+                                    "is_earning": false,
+                                    "can_edit_expiry": false,
+                                    "expired_amount": 0,
+                                    "expired_amount_formatted": "0",
+                                    "expiry_state": "active",
+                                    "abilities": {
+                                        "can_manage": true
+                                    }
+                                }
+                            ],
+                            "abilities": {
+                                "can_manage": true
+                            },
+                            "currencies": [
+                                "KRW"
+                            ],
+                            "pagination": {
+                                "current_page": 1,
+                                "last_page": 1,
+                                "per_page": 20,
+                                "total": 2,
+                                "from": 1,
+                                "to": 2,
+                                "has_more_pages": false
+                            }
+                        }
+                    },
+                    "products": {
+                        "data": {
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true
+                            },
+                            "data": [
+                                {
+                                    "id": 101,
+                                    "name": {
+                                        "ko": "베이직 오버핏 코튼 티셔츠"
+                                    },
+                                    "name_localized": "베이직 오버핏 코튼 티셔츠",
+                                    "product_code": "TS-1001",
+                                    "sku": "TS-1001",
+                                    "thumbnail_url": "/images/placeholder.png",
+                                    "list_price": 29000,
+                                    "list_price_formatted": "29,000원",
+                                    "selling_price": 23200,
+                                    "selling_price_formatted": "23,200원",
+                                    "discount_rate": 20,
+                                    "multi_currency_list_price": {
+                                        "KRW": {
+                                            "price": 29000,
+                                            "formatted": "29,000원",
+                                            "is_default": true,
+                                            "editable": true
+                                        },
+                                        "USD": {
+                                            "price": 22.31,
+                                            "formatted": "$22.31",
+                                            "is_default": false,
+                                            "editable": false,
+                                            "exchange_rate": 1300
+                                        }
+                                    },
+                                    "multi_currency_selling_price": {
+                                        "KRW": {
+                                            "price": 23200,
+                                            "formatted": "23,200원",
+                                            "is_default": true,
+                                            "editable": true
+                                        },
+                                        "USD": {
+                                            "price": 17.85,
+                                            "formatted": "$17.85",
+                                            "is_default": false,
+                                            "editable": false,
+                                            "exchange_rate": 1300
+                                        }
+                                    },
+                                    "stock_quantity": 320,
+                                    "safe_stock_quantity": 10,
+                                    "is_below_safe_stock": false,
+                                    "option_stock_sum": 320,
+                                    "sales_status": "on_sale",
+                                    "sales_status_label": "판매중",
+                                    "sales_status_variant": "success",
+                                    "display_status": "visible",
+                                    "display_status_label": "노출",
+                                    "display_status_variant": "success",
+                                    "categories": [
+                                        {
+                                            "id": 11,
+                                            "name": "상의",
+                                            "is_primary": true
+                                        }
+                                    ],
+                                    "primary_category": "상의",
+                                    "categories_with_path": [
+                                        {
+                                            "id": 11,
+                                            "path": [
+                                                {
+                                                    "id": 1,
+                                                    "name": "패션의류"
+                                                },
+                                                {
+                                                    "id": 11,
+                                                    "name": "상의"
+                                                }
+                                            ],
+                                            "path_string": "패션의류 > 상의",
+                                            "is_primary": true
+                                        }
+                                    ],
+                                    "brand_name": "코지홈",
+                                    "shipping_policy_id": 1,
+                                    "shipping_policy_name": "기본 배송정책",
+                                    "min_purchase_qty": 1,
+                                    "max_purchase_qty": 0,
+                                    "has_options": true,
+                                    "options_count": 6,
+                                    "options": [],
+                                    "labels": [
+                                        {
+                                            "name": "BEST",
+                                            "color": "#ef4444"
+                                        }
+                                    ],
+                                    "review_count": 128,
+                                    "rating_avg": 4.7,
+                                    "created_at": "2026-05-20 14:30:00",
+                                    "updated_at": "2026-05-28 09:15:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 102,
+                                    "name": {
+                                        "ko": "데일리 와이드 슬랙스"
+                                    },
+                                    "name_localized": "데일리 와이드 슬랙스",
+                                    "product_code": "PT-2042",
+                                    "sku": "PT-2042",
+                                    "thumbnail_url": "/images/placeholder.png",
+                                    "list_price": 39000,
+                                    "list_price_formatted": "39,000원",
+                                    "selling_price": 39000,
+                                    "selling_price_formatted": "39,000원",
+                                    "discount_rate": 0,
+                                    "multi_currency_list_price": {
+                                        "KRW": {
+                                            "price": 39000,
+                                            "formatted": "39,000원",
+                                            "is_default": true,
+                                            "editable": true
+                                        },
+                                        "USD": {
+                                            "price": 30,
+                                            "formatted": "$30.00",
+                                            "is_default": false,
+                                            "editable": false,
+                                            "exchange_rate": 1300
+                                        }
+                                    },
+                                    "multi_currency_selling_price": {
+                                        "KRW": {
+                                            "price": 39000,
+                                            "formatted": "39,000원",
+                                            "is_default": true,
+                                            "editable": true
+                                        },
+                                        "USD": {
+                                            "price": 30,
+                                            "formatted": "$30.00",
+                                            "is_default": false,
+                                            "editable": false,
+                                            "exchange_rate": 1300
+                                        }
+                                    },
+                                    "stock_quantity": 85,
+                                    "safe_stock_quantity": 10,
+                                    "is_below_safe_stock": false,
+                                    "option_stock_sum": 85,
+                                    "sales_status": "on_sale",
+                                    "sales_status_label": "판매중",
+                                    "sales_status_variant": "success",
+                                    "display_status": "visible",
+                                    "display_status_label": "노출",
+                                    "display_status_variant": "success",
+                                    "categories": [
+                                        {
+                                            "id": 11,
+                                            "name": "상의",
+                                            "is_primary": true
+                                        }
+                                    ],
+                                    "primary_category": "상의",
+                                    "categories_with_path": [
+                                        {
+                                            "id": 11,
+                                            "path": [
+                                                {
+                                                    "id": 1,
+                                                    "name": "패션의류"
+                                                },
+                                                {
+                                                    "id": 11,
+                                                    "name": "상의"
+                                                }
+                                            ],
+                                            "path_string": "패션의류 > 상의",
+                                            "is_primary": true
+                                        }
+                                    ],
+                                    "brand_name": "어반핏",
+                                    "shipping_policy_id": 1,
+                                    "shipping_policy_name": "기본 배송정책",
+                                    "min_purchase_qty": 1,
+                                    "max_purchase_qty": 0,
+                                    "has_options": false,
+                                    "options_count": 0,
+                                    "options": [],
+                                    "labels": [],
+                                    "review_count": 42,
+                                    "rating_avg": 4.3,
+                                    "created_at": "2026-05-20 14:30:00",
+                                    "updated_at": "2026-05-28 09:15:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 103,
+                                    "name": {
+                                        "ko": "구스다운 경량 패딩 점퍼"
+                                    },
+                                    "name_localized": "구스다운 경량 패딩 점퍼",
+                                    "product_code": "OW-3310",
+                                    "sku": "OW-3310",
+                                    "thumbnail_url": "/images/placeholder.png",
+                                    "list_price": 189000,
+                                    "list_price_formatted": "189,000원",
+                                    "selling_price": 132300,
+                                    "selling_price_formatted": "132,300원",
+                                    "discount_rate": 30,
+                                    "multi_currency_list_price": {
+                                        "KRW": {
+                                            "price": 189000,
+                                            "formatted": "189,000원",
+                                            "is_default": true,
+                                            "editable": true
+                                        },
+                                        "USD": {
+                                            "price": 145.38,
+                                            "formatted": "$145.38",
+                                            "is_default": false,
+                                            "editable": false,
+                                            "exchange_rate": 1300
+                                        }
+                                    },
+                                    "multi_currency_selling_price": {
+                                        "KRW": {
+                                            "price": 132300,
+                                            "formatted": "132,300원",
+                                            "is_default": true,
+                                            "editable": true
+                                        },
+                                        "USD": {
+                                            "price": 101.77,
+                                            "formatted": "$101.77",
+                                            "is_default": false,
+                                            "editable": false,
+                                            "exchange_rate": 1300
+                                        }
+                                    },
+                                    "stock_quantity": 0,
+                                    "safe_stock_quantity": 10,
+                                    "is_below_safe_stock": true,
+                                    "option_stock_sum": 0,
+                                    "sales_status": "sold_out",
+                                    "sales_status_label": "품절",
+                                    "sales_status_variant": "danger",
+                                    "display_status": "hidden",
+                                    "display_status_label": "미노출",
+                                    "display_status_variant": "gray",
+                                    "categories": [
+                                        {
+                                            "id": 11,
+                                            "name": "상의",
+                                            "is_primary": true
+                                        }
+                                    ],
+                                    "primary_category": "상의",
+                                    "categories_with_path": [
+                                        {
+                                            "id": 11,
+                                            "path": [
+                                                {
+                                                    "id": 1,
+                                                    "name": "패션의류"
+                                                },
+                                                {
+                                                    "id": 11,
+                                                    "name": "상의"
+                                                }
+                                            ],
+                                            "path_string": "패션의류 > 상의",
+                                            "is_primary": true
+                                        }
+                                    ],
+                                    "brand_name": "노스벨리",
+                                    "shipping_policy_id": 1,
+                                    "shipping_policy_name": "기본 배송정책",
+                                    "min_purchase_qty": 1,
+                                    "max_purchase_qty": 0,
+                                    "has_options": true,
+                                    "options_count": 9,
+                                    "options": [],
+                                    "labels": [
+                                        {
+                                            "name": "BEST",
+                                            "color": "#ef4444"
+                                        }
+                                    ],
+                                    "review_count": 271,
+                                    "rating_avg": 4.9,
+                                    "created_at": "2026-05-20 14:30:00",
+                                    "updated_at": "2026-05-28 09:15:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ],
+                            "pagination": {
+                                "current_page": 1,
+                                "last_page": 4,
+                                "per_page": 20,
+                                "total": 73
+                            }
+                        }
+                    },
+                    "product": {
+                        "data": {
+                            "id": 101,
+                            "name": {
+                                "ko": "베이직 오버핏 코튼 티셔츠",
+                                "en": "Basic Overfit Cotton T-Shirt"
+                            },
+                            "product_code": "TS-1001",
+                            "sales_product_code": "SP-TS-1001",
+                            "abilities": {
+                                "can_update": true,
+                                "can_delete": true
+                            },
+                            "images": [
+                                {
+                                    "id": 5001,
+                                    "hash": "img5001",
+                                    "original_filename": "tshirt_main.jpg",
+                                    "download_url": "/images/placeholder.png",
+                                    "alt_text": "정면",
+                                    "is_thumbnail": true,
+                                    "sort_order": 0,
+                                    "order": 0,
+                                    "width": 1000,
+                                    "height": 1000,
+                                    "file_size": 184320,
+                                    "size": 184320,
+                                    "size_formatted": "180 KB",
+                                    "mime_type": "image/jpeg",
+                                    "is_image": true
+                                },
+                                {
+                                    "id": 5002,
+                                    "hash": "img5002",
+                                    "original_filename": "tshirt_back.jpg",
+                                    "download_url": "/images/placeholder.png",
+                                    "alt_text": "후면",
+                                    "is_thumbnail": false,
+                                    "sort_order": 1,
+                                    "order": 1,
+                                    "width": 1000,
+                                    "height": 1000,
+                                    "file_size": 176128,
+                                    "size": 176128,
+                                    "size_formatted": "172 KB",
+                                    "mime_type": "image/jpeg",
+                                    "is_image": true
+                                },
+                                {
+                                    "id": 5003,
+                                    "hash": "img5003",
+                                    "original_filename": "tshirt_detail.jpg",
+                                    "download_url": "/images/placeholder.png",
+                                    "alt_text": "디테일",
+                                    "is_thumbnail": false,
+                                    "sort_order": 2,
+                                    "order": 2,
+                                    "width": 1000,
+                                    "height": 1000,
+                                    "file_size": 158720,
+                                    "size": 158720,
+                                    "size_formatted": "155 KB",
+                                    "mime_type": "image/jpeg",
+                                    "is_image": true
+                                }
+                            ],
+                            "created_at": "2026-05-20 14:30:00",
+                            "updated_at": "2026-05-28 09:15:00"
+                        }
+                    },
+                    "categories": {
+                        "data": {
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true
+                            },
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": {
+                                        "ko": "패션의류"
+                                    },
+                                    "localized_name": "패션의류",
+                                    "description": null,
+                                    "parent_id": null,
+                                    "path": "1",
+                                    "depth": 0,
+                                    "sort_order": 1,
+                                    "is_active": true,
+                                    "slug": "fashion",
+                                    "url": "fashion",
+                                    "icon": "folder",
+                                    "meta_title": null,
+                                    "meta_description": null,
+                                    "created_at": "2026-04-01 10:00:00",
+                                    "updated_at": "2026-05-01 10:00:00",
+                                    "children": [
+                                        {
+                                            "id": 11,
+                                            "name": {
+                                                "ko": "상의"
+                                            },
+                                            "localized_name": "상의",
+                                            "description": null,
+                                            "parent_id": 1,
+                                            "path": "1/11",
+                                            "depth": 1,
+                                            "sort_order": 11,
+                                            "is_active": true,
+                                            "slug": "tops",
+                                            "url": "tops",
+                                            "icon": "folder",
+                                            "meta_title": null,
+                                            "meta_description": null,
+                                            "created_at": "2026-04-01 10:00:00",
+                                            "updated_at": "2026-05-01 10:00:00",
+                                            "children": [
+                                                {
+                                                    "id": 111,
+                                                    "name": {
+                                                        "ko": "티셔츠"
+                                                    },
+                                                    "localized_name": "티셔츠",
+                                                    "description": null,
+                                                    "parent_id": 11,
+                                                    "path": "11/111",
+                                                    "depth": 2,
+                                                    "sort_order": 111,
+                                                    "is_active": true,
+                                                    "slug": "tshirts",
+                                                    "url": "tshirts",
+                                                    "icon": "folder",
+                                                    "meta_title": null,
+                                                    "meta_description": null,
+                                                    "created_at": "2026-04-01 10:00:00",
+                                                    "updated_at": "2026-05-01 10:00:00",
+                                                    "children": []
+                                                },
+                                                {
+                                                    "id": 112,
+                                                    "name": {
+                                                        "ko": "셔츠/블라우스"
+                                                    },
+                                                    "localized_name": "셔츠/블라우스",
+                                                    "description": null,
+                                                    "parent_id": 11,
+                                                    "path": "11/112",
+                                                    "depth": 2,
+                                                    "sort_order": 112,
+                                                    "is_active": true,
+                                                    "slug": "shirts",
+                                                    "url": "shirts",
+                                                    "icon": "folder",
+                                                    "meta_title": null,
+                                                    "meta_description": null,
+                                                    "created_at": "2026-04-01 10:00:00",
+                                                    "updated_at": "2026-05-01 10:00:00",
+                                                    "children": []
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": 12,
+                                            "name": {
+                                                "ko": "하의"
+                                            },
+                                            "localized_name": "하의",
+                                            "description": null,
+                                            "parent_id": 1,
+                                            "path": "1/12",
+                                            "depth": 1,
+                                            "sort_order": 12,
+                                            "is_active": true,
+                                            "slug": "bottoms",
+                                            "url": "bottoms",
+                                            "icon": "folder",
+                                            "meta_title": null,
+                                            "meta_description": null,
+                                            "created_at": "2026-04-01 10:00:00",
+                                            "updated_at": "2026-05-01 10:00:00",
+                                            "children": [
+                                                {
+                                                    "id": 121,
+                                                    "name": {
+                                                        "ko": "슬랙스"
+                                                    },
+                                                    "localized_name": "슬랙스",
+                                                    "description": null,
+                                                    "parent_id": 12,
+                                                    "path": "12/121",
+                                                    "depth": 2,
+                                                    "sort_order": 121,
+                                                    "is_active": true,
+                                                    "slug": "slacks",
+                                                    "url": "slacks",
+                                                    "icon": "folder",
+                                                    "meta_title": null,
+                                                    "meta_description": null,
+                                                    "created_at": "2026-04-01 10:00:00",
+                                                    "updated_at": "2026-05-01 10:00:00",
+                                                    "children": []
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 2,
+                                    "name": {
+                                        "ko": "가방/잡화"
+                                    },
+                                    "localized_name": "가방/잡화",
+                                    "description": null,
+                                    "parent_id": null,
+                                    "path": "2",
+                                    "depth": 0,
+                                    "sort_order": 2,
+                                    "is_active": true,
+                                    "slug": "bags",
+                                    "url": "bags",
+                                    "icon": "folder",
+                                    "meta_title": null,
+                                    "meta_description": null,
+                                    "created_at": "2026-04-01 10:00:00",
+                                    "updated_at": "2026-05-01 10:00:00",
+                                    "children": [
+                                        {
+                                            "id": 21,
+                                            "name": {
+                                                "ko": "백팩"
+                                            },
+                                            "localized_name": "백팩",
+                                            "description": null,
+                                            "parent_id": 2,
+                                            "path": "2/21",
+                                            "depth": 1,
+                                            "sort_order": 21,
+                                            "is_active": true,
+                                            "slug": "backpack",
+                                            "url": "backpack",
+                                            "icon": "folder",
+                                            "meta_title": null,
+                                            "meta_description": null,
+                                            "created_at": "2026-04-01 10:00:00",
+                                            "updated_at": "2026-05-01 10:00:00",
+                                            "children": []
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 3,
+                                    "name": {
+                                        "ko": "아우터"
+                                    },
+                                    "localized_name": "아우터",
+                                    "description": null,
+                                    "parent_id": null,
+                                    "path": "3",
+                                    "depth": 0,
+                                    "sort_order": 3,
+                                    "is_active": true,
+                                    "slug": "outer",
+                                    "url": "outer",
+                                    "icon": "folder",
+                                    "meta_title": null,
+                                    "meta_description": null,
+                                    "created_at": "2026-04-01 10:00:00",
+                                    "updated_at": "2026-05-01 10:00:00",
+                                    "children": []
+                                }
+                            ]
+                        }
+                    },
+                    "orders": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 5101,
+                                    "no": 1,
+                                    "order_number": "20260601-0042",
+                                    "order_status": "preparing",
+                                    "order_status_label": "배송준비중",
+                                    "order_status_variant": "info",
+                                    "total_amount": 69500,
+                                    "total_amount_formatted": "69,500원",
+                                    "total_shipping_amount": 3000,
+                                    "total_shipping_amount_formatted": "3,000원",
+                                    "total_paid_amount": 69500,
+                                    "total_paid_amount_formatted": "69,500원",
+                                    "total_unpaid_amount": 0,
+                                    "total_unpaid_amount_formatted": "0원",
+                                    "ordered_at_formatted": "2026-06-01 19:30",
+                                    "order_device_label": "PC",
+                                    "is_first_order": false,
+                                    "options_count": 2,
+                                    "user": {
+                                        "uuid": "u-1001",
+                                        "name": "홍길동",
+                                        "email": "gildong@example.com"
+                                    },
+                                    "first_option": {
+                                        "product_name": "프리미엄 무선 이어버드 프로",
+                                        "product_option_name": "미드나잇 블랙 / 기본",
+                                        "product_code": "EARBUDS-PRO",
+                                        "quantity": 2,
+                                        "thumbnail_url": null
+                                    },
+                                    "address": {
+                                        "orderer_name": "홍길동",
+                                        "recipient_name": "홍길동",
+                                        "recipient_country_code": "KR",
+                                        "recipient_country_name": "대한민국"
+                                    },
+                                    "payment": {
+                                        "payment_method": "card",
+                                        "payment_method_label": "신용카드"
+                                    },
+                                    "shipping": {
+                                        "shipping_type": "parcel",
+                                        "shipping_type_label": "택배",
+                                        "shipping_method_label": "일반배송",
+                                        "carrier_name": "CJ대한통운",
+                                        "tracking_number": null
+                                    }
+                                },
+                                {
+                                    "id": 5102,
+                                    "no": 2,
+                                    "order_number": "20260530-0118",
+                                    "order_status": "shipping",
+                                    "order_status_label": "배송중",
+                                    "order_status_variant": "primary",
+                                    "total_amount": 42000,
+                                    "total_amount_formatted": "42,000원",
+                                    "total_shipping_amount": 0,
+                                    "total_shipping_amount_formatted": "0원",
+                                    "total_paid_amount": 42000,
+                                    "total_paid_amount_formatted": "42,000원",
+                                    "total_unpaid_amount": 0,
+                                    "total_unpaid_amount_formatted": "0원",
+                                    "ordered_at_formatted": "2026-05-30 13:05",
+                                    "order_device_label": "PC",
+                                    "is_first_order": false,
+                                    "options_count": 1,
+                                    "user": {
+                                        "uuid": "u-1002",
+                                        "name": "김영희",
+                                        "email": "younghee@example.com"
+                                    },
+                                    "first_option": {
+                                        "product_name": "휴대용 블루투스 스피커",
+                                        "product_option_name": "기본",
+                                        "product_code": "SPEAKER-MINI",
+                                        "quantity": 1,
+                                        "thumbnail_url": null
+                                    },
+                                    "address": {
+                                        "orderer_name": "김영희",
+                                        "recipient_name": "김영희",
+                                        "recipient_country_code": "KR",
+                                        "recipient_country_name": "대한민국"
+                                    },
+                                    "payment": {
+                                        "payment_method": "vbank",
+                                        "payment_method_label": "가상계좌"
+                                    },
+                                    "shipping": {
+                                        "shipping_type": "parcel",
+                                        "shipping_type_label": "택배",
+                                        "shipping_method_label": "일반배송",
+                                        "carrier_name": "CJ대한통운",
+                                        "tracking_number": "6123456789020"
+                                    }
+                                },
+                                {
+                                    "id": 5103,
+                                    "no": 3,
+                                    "order_number": "20260528-0096",
+                                    "order_status": "payment_pending",
+                                    "order_status_label": "입금대기",
+                                    "order_status_variant": "warning",
+                                    "total_amount": 128000,
+                                    "total_amount_formatted": "128,000원",
+                                    "total_shipping_amount": 3000,
+                                    "total_shipping_amount_formatted": "3,000원",
+                                    "total_paid_amount": 0,
+                                    "total_paid_amount_formatted": "0원",
+                                    "total_unpaid_amount": 128000,
+                                    "total_unpaid_amount_formatted": "128,000원",
+                                    "ordered_at_formatted": "2026-05-28 21:40",
+                                    "order_device_label": "PC",
+                                    "is_first_order": true,
+                                    "options_count": 1,
+                                    "user": {
+                                        "uuid": "u-1003",
+                                        "name": "John Smith",
+                                        "email": "john@example.com"
+                                    },
+                                    "first_option": {
+                                        "product_name": "스마트 워치 밴드",
+                                        "product_option_name": "브라운 / M",
+                                        "product_code": "WATCH-BAND",
+                                        "quantity": 1,
+                                        "thumbnail_url": null
+                                    },
+                                    "address": {
+                                        "orderer_name": "John Smith",
+                                        "recipient_name": "John Smith",
+                                        "recipient_country_code": "US",
+                                        "recipient_country_name": "United States"
+                                    },
+                                    "payment": {
+                                        "payment_method": "dbank",
+                                        "payment_method_label": "무통장입금"
+                                    },
+                                    "shipping": {
+                                        "shipping_type": "parcel",
+                                        "shipping_type_label": "택배",
+                                        "shipping_method_label": "일반배송",
+                                        "carrier_name": "CJ대한통운",
+                                        "tracking_number": null
+                                    }
+                                },
+                                {
+                                    "id": 5104,
+                                    "no": 4,
+                                    "order_number": "20260525-0071",
+                                    "order_status": "cancelled",
+                                    "order_status_label": "주문취소",
+                                    "order_status_variant": "danger",
+                                    "total_amount": 24000,
+                                    "total_amount_formatted": "24,000원",
+                                    "total_shipping_amount": 3000,
+                                    "total_shipping_amount_formatted": "3,000원",
+                                    "total_paid_amount": 0,
+                                    "total_paid_amount_formatted": "0원",
+                                    "total_unpaid_amount": 0,
+                                    "total_unpaid_amount_formatted": "0원",
+                                    "ordered_at_formatted": "2026-05-25 10:12",
+                                    "order_device_label": "PC",
+                                    "is_first_order": false,
+                                    "options_count": 1,
+                                    "user": {
+                                        "uuid": "u-1004",
+                                        "name": "이철수",
+                                        "email": "chulsoo@example.com"
+                                    },
+                                    "first_option": {
+                                        "product_name": "USB-C 멀티 어댑터",
+                                        "product_option_name": "실버",
+                                        "product_code": "ADAPTER-USBC",
+                                        "quantity": 1,
+                                        "thumbnail_url": null
+                                    },
+                                    "address": {
+                                        "orderer_name": "이철수",
+                                        "recipient_name": "이철수",
+                                        "recipient_country_code": "KR",
+                                        "recipient_country_name": "대한민국"
+                                    },
+                                    "payment": {
+                                        "payment_method": "card",
+                                        "payment_method_label": "신용카드"
+                                    },
+                                    "shipping": {
+                                        "shipping_type": "parcel",
+                                        "shipping_type_label": "택배",
+                                        "shipping_method_label": "일반배송",
+                                        "carrier_name": "CJ대한통운",
+                                        "tracking_number": null
+                                    }
+                                }
+                            ],
+                            "statistics": {
+                                "pending_payment": 1,
+                                "payment_complete": 0,
+                                "preparing": 1,
+                                "shipping": 1,
+                                "delivered": 0,
+                                "confirmed": 0,
+                                "cancelled": 1
+                            },
+                            "pagination": {
+                                "current_page": 1,
+                                "last_page": 1,
+                                "per_page": 20,
+                                "total": 4,
+                                "from": 1,
+                                "to": 4,
+                                "has_more_pages": false
+                            },
+                            "abilities": {
+                                "can_update": true
+                            }
+                        }
+                    },
+                    "order": {
+                        "data": {
+                            "id": 5101,
+                            "order_number": "20260601-0042",
+                            "order_status": "preparing",
+                            "order_status_label": "배송준비중",
+                            "order_status_variant": "info",
+                            "order_device": "pc",
+                            "order_device_label": "PC",
+                            "is_first_order": false,
+                            "abilities": {
+                                "can_read": true,
+                                "can_update": true,
+                                "can_cancel": true
+                            },
+                            "subtotal_amount": 76000,
+                            "subtotal_amount_formatted": "76,000원",
+                            "total_discount_amount": 9500,
+                            "total_discount_amount_formatted": "9,500원",
+                            "total_shipping_amount": 3000,
+                            "total_shipping_amount_formatted": "3,000원",
+                            "total_amount": 69500,
+                            "total_amount_formatted": "69,500원",
+                            "total_paid_amount": 69500,
+                            "total_paid_amount_formatted": "69,500원",
+                            "total_product_coupon_discount_amount": 5000,
+                            "total_product_coupon_discount_amount_formatted": "5,000원",
+                            "total_order_coupon_discount_amount": 2500,
+                            "total_order_coupon_discount_amount_formatted": "2,500원",
+                            "total_coupon_discount_amount": 7500,
+                            "total_coupon_discount_amount_formatted": "7,500원",
+                            "total_code_discount_amount": 2000,
+                            "total_code_discount_amount_formatted": "2,000원",
+                            "total_points_used_amount": 1000,
+                            "total_points_used_amount_formatted": "1,000원",
+                            "total_deposit_used_amount": 0,
+                            "total_deposit_used_amount_formatted": "0원",
+                            "total_earned_points_amount": 710,
+                            "total_earned_points_amount_formatted": "710원",
+                            "total_tax_amount": 6318,
+                            "total_tax_amount_formatted": "6,318원",
+                            "total_vat_amount": 6318,
+                            "total_vat_amount_formatted": "6,318원",
+                            "total_list_price": 82000,
+                            "total_list_price_formatted": "82,000원",
+                            "total_quantity": 3,
+                            "item_count": 2,
+                            "mc_subtotal_amount": {
+                                "KRW": {
+                                    "price": 76000,
+                                    "formatted": "76,000원",
+                                    "is_default": true
+                                },
+                                "USD": {
+                                    "price": 55.7,
+                                    "formatted": "$55.70",
+                                    "is_default": false
+                                }
+                            },
+                            "mc_total_discount_amount": {
+                                "KRW": {
+                                    "price": 9500,
+                                    "formatted": "9,500원",
+                                    "is_default": true
+                                },
+                                "USD": {
+                                    "price": 6.9,
+                                    "formatted": "$6.90",
+                                    "is_default": false
+                                }
+                            },
+                            "mc_total_shipping_amount": {
+                                "KRW": {
+                                    "price": 3000,
+                                    "formatted": "3,000원",
+                                    "is_default": true
+                                },
+                                "USD": {
+                                    "price": 2.2,
+                                    "formatted": "$2.20",
+                                    "is_default": false
+                                }
+                            },
+                            "mc_total_amount": {
+                                "KRW": {
+                                    "price": 69500,
+                                    "formatted": "69,500원",
+                                    "is_default": true
+                                },
+                                "USD": {
+                                    "price": 50.7,
+                                    "formatted": "$50.70",
+                                    "is_default": false
+                                }
+                            },
+                            "ordered_at_formatted": "2026-06-01 19:30",
+                            "paid_at_formatted": "2026-06-01 19:31",
+                            "delivered_at": null,
+                            "user_id": "u-1001",
+                            "user_login_id": "gildong",
+                            "orderer_name": "홍길동",
+                            "orderer_phone": "010-1234-5678",
+                            "orderer_tel": "02-555-1234",
+                            "orderer_email": "gildong@example.com",
+                            "recipient_name": "홍길동",
+                            "recipient_phone": "010-1234-5678",
+                            "recipient_zipcode": "06234",
+                            "recipient_address": "서울특별시 강남구 테헤란로 123",
+                            "recipient_detail_address": "4층 401호",
+                            "delivery_memo": "부재 시 경비실에 맡겨주세요",
+                            "shipping_address": {
+                                "recipient_name": "홍길동",
+                                "recipient_phone": "010-1234-5678",
+                                "zipcode": "06234",
+                                "address": "서울특별시 강남구 테헤란로 123",
+                                "address_detail": "4층 401호",
+                                "full_address": "서울특별시 강남구 테헤란로 123 4층 401호",
+                                "delivery_memo": "부재 시 경비실에 맡겨주세요"
+                            },
+                            "options": [
+                                {
+                                    "id": 9101,
+                                    "option_status": "preparing",
+                                    "option_status_label": "배송준비중",
+                                    "option_status_variant": "info",
+                                    "product_id": 1,
+                                    "product_option_id": 101,
+                                    "sku": "EARBUDS-PRO-BLK",
+                                    "product_name": "프리미엄 무선 이어버드 프로",
+                                    "product_option_name": "미드나잇 블랙 / 기본",
+                                    "option_name": "미드나잇 블랙 / 기본",
+                                    "quantity": 2,
+                                    "shipped_quantity": 0,
+                                    "unit_price": 29000,
+                                    "unit_price_formatted": "29,000원",
+                                    "subtotal_price": 58000,
+                                    "subtotal_price_formatted": "58,000원",
+                                    "subtotal_discount_amount": 7500,
+                                    "subtotal_discount_amount_formatted": "7,500원",
+                                    "list_price": 32000,
+                                    "list_price_formatted": "32,000원",
+                                    "final_amount": 50500,
+                                    "final_amount_formatted": "50,500원",
+                                    "product_coupon_discount_amount": 5000,
+                                    "product_coupon_discount_amount_formatted": "5,000원",
+                                    "order_coupon_discount_amount": 2500,
+                                    "order_coupon_discount_amount_formatted": "2,500원",
+                                    "coupon_discount_amount": 7500,
+                                    "coupon_discount_amount_formatted": "7,500원",
+                                    "code_discount_amount": 0,
+                                    "code_discount_amount_formatted": "0원",
+                                    "referral_discount_amount": 0,
+                                    "referral_discount_amount_formatted": "0원",
+                                    "subtotal_points_used_amount": 500,
+                                    "subtotal_points_used_amount_formatted": "500원",
+                                    "subtotal_deposit_used_amount": 0,
+                                    "subtotal_deposit_used_amount_formatted": "0원",
+                                    "subtotal_earned_points_amount": 530,
+                                    "subtotal_earned_points_amount_formatted": "530원",
+                                    "subtotal_tax_amount": 4818,
+                                    "subtotal_tax_amount_formatted": "4,818원",
+                                    "subtotal_vat_amount": 4818,
+                                    "subtotal_vat_amount_formatted": "4,818원",
+                                    "shipping_policy_name": "기본 배송 정책",
+                                    "shipping_type_label": "택배",
+                                    "shipping_amount": 3000,
+                                    "shipping_amount_formatted": "3,000원",
+                                    "carrier_name": "CJ대한통운",
+                                    "tracking_number": "6123456789012",
+                                    "thumbnail_url": null,
+                                    "product_snapshot": {
+                                        "product_code": "EARBUDS-PRO"
+                                    },
+                                    "mc_unit_price": {
+                                        "KRW": {
+                                            "price": 29000,
+                                            "formatted": "29,000원",
+                                            "is_default": true
+                                        },
+                                        "USD": {
+                                            "price": 21.3,
+                                            "formatted": "$21.30",
+                                            "is_default": false
+                                        }
+                                    },
+                                    "mc_subtotal_price": {
+                                        "KRW": {
+                                            "price": 58000,
+                                            "formatted": "58,000원",
+                                            "is_default": true
+                                        },
+                                        "USD": {
+                                            "price": 42.6,
+                                            "formatted": "$42.60",
+                                            "is_default": false
+                                        }
+                                    },
+                                    "confirmed_at": null,
+                                    "promotions_applied_snapshot": {
+                                        "coupons": [
+                                            {
+                                                "name": "이어버드 단독 10% 할인",
+                                                "total_discount_formatted": "5,000원"
+                                            }
+                                        ],
+                                        "discount_codes": [
+                                            {
+                                                "code": "WELCOME2000",
+                                                "name": "신규가입 2,000원 할인코드",
+                                                "total_discount_formatted": "2,000원"
+                                            }
+                                        ],
+                                        "events": []
+                                    }
+                                },
+                                {
+                                    "id": 9102,
+                                    "option_status": "preparing",
+                                    "option_status_label": "배송준비중",
+                                    "option_status_variant": "info",
+                                    "product_id": 2,
+                                    "product_option_id": 102,
+                                    "sku": "CABLE-15M-WHT",
+                                    "product_name": "고속 충전 케이블 1.5m",
+                                    "product_option_name": "1.5m",
+                                    "option_name": "1.5m",
+                                    "quantity": 1,
+                                    "shipped_quantity": 0,
+                                    "unit_price": 18000,
+                                    "unit_price_formatted": "18,000원",
+                                    "subtotal_price": 18000,
+                                    "subtotal_price_formatted": "18,000원",
+                                    "subtotal_discount_amount": 0,
+                                    "subtotal_discount_amount_formatted": "0원",
+                                    "list_price": 18000,
+                                    "list_price_formatted": "18,000원",
+                                    "final_amount": 18000,
+                                    "final_amount_formatted": "18,000원",
+                                    "product_coupon_discount_amount": 0,
+                                    "product_coupon_discount_amount_formatted": "0원",
+                                    "order_coupon_discount_amount": 0,
+                                    "order_coupon_discount_amount_formatted": "0원",
+                                    "coupon_discount_amount": 0,
+                                    "coupon_discount_amount_formatted": "0원",
+                                    "code_discount_amount": 0,
+                                    "code_discount_amount_formatted": "0원",
+                                    "referral_discount_amount": 0,
+                                    "referral_discount_amount_formatted": "0원",
+                                    "subtotal_points_used_amount": 0,
+                                    "subtotal_points_used_amount_formatted": "0원",
+                                    "subtotal_deposit_used_amount": 0,
+                                    "subtotal_deposit_used_amount_formatted": "0원",
+                                    "subtotal_earned_points_amount": 180,
+                                    "subtotal_earned_points_amount_formatted": "180원",
+                                    "subtotal_tax_amount": 1500,
+                                    "subtotal_tax_amount_formatted": "1,500원",
+                                    "subtotal_vat_amount": 1500,
+                                    "subtotal_vat_amount_formatted": "1,500원",
+                                    "shipping_policy_name": "무료 배송 정책",
+                                    "shipping_type_label": "택배",
+                                    "shipping_amount": 0,
+                                    "shipping_amount_formatted": "0원",
+                                    "carrier_name": "CJ대한통운",
+                                    "tracking_number": "6123456789013",
+                                    "thumbnail_url": null,
+                                    "product_snapshot": {
+                                        "product_code": "CABLE-15M"
+                                    },
+                                    "mc_unit_price": {
+                                        "KRW": {
+                                            "price": 18000,
+                                            "formatted": "18,000원",
+                                            "is_default": true
+                                        },
+                                        "USD": {
+                                            "price": 13.2,
+                                            "formatted": "$13.20",
+                                            "is_default": false
+                                        }
+                                    },
+                                    "mc_subtotal_price": {
+                                        "KRW": {
+                                            "price": 18000,
+                                            "formatted": "18,000원",
+                                            "is_default": true
+                                        },
+                                        "USD": {
+                                            "price": 13.2,
+                                            "formatted": "$13.20",
+                                            "is_default": false
+                                        }
+                                    },
+                                    "confirmed_at": null,
+                                    "promotions_applied_snapshot": {
+                                        "coupons": [],
+                                        "discount_codes": [],
+                                        "events": []
+                                    }
+                                }
+                            ],
+                            "payment": {
+                                "payment_method_label": "신용카드"
+                            },
+                            "payments": [
+                                {
+                                    "id": 8101,
+                                    "payment_status": "paid",
+                                    "payment_status_label": "결제완료",
+                                    "payment_status_variant": "success",
+                                    "payment_method": "card",
+                                    "payment_method_label": "신용카드",
+                                    "payment_type_label": "일반결제",
+                                    "payment_number": "PAY-20260601-0042",
+                                    "paid_amount_formatted": "69,500원",
+                                    "account_info": null,
+                                    "requested_at_formatted": "2026-06-01 19:30",
+                                    "paid_at_formatted": "2026-06-01 19:31",
+                                    "due_date_formatted": null,
+                                    "cancelled_amount": 0,
+                                    "cancelled_amount_formatted": "0원",
+                                    "refunded_amount": 0,
+                                    "refunded_amount_formatted": "0원",
+                                    "refund_status_label": null,
+                                    "refund_status_variant": null,
+                                    "refund_points_amount": 0,
+                                    "refund_points_amount_formatted": "0원",
+                                    "event_discount_amount": 0,
+                                    "event_discount_amount_formatted": "0원",
+                                    "referral_discount_amount": 0,
+                                    "referral_discount_amount_formatted": "0원"
+                                }
+                            ],
+                            "shippings": [],
+                            "promotions_applied_snapshot": {
+                                "product_promotions": {
+                                    "coupons": [
+                                        {
+                                            "coupon_id": 5001,
+                                            "name": "이어버드 단독 10% 할인",
+                                            "target_type": "product_amount",
+                                            "total_discount": 5000,
+                                            "total_discount_formatted": "5,000원"
+                                        }
+                                    ],
+                                    "discount_codes": [
+                                        {
+                                            "code_id": 7001,
+                                            "code": "WELCOME2000",
+                                            "name": "신규가입 2,000원 할인코드",
+                                            "total_discount": 2000,
+                                            "total_discount_formatted": "2,000원"
+                                        }
+                                    ],
+                                    "events": []
+                                },
+                                "order_promotions": {
+                                    "coupons": [
+                                        {
+                                            "coupon_id": 6001,
+                                            "name": "5만원 이상 5,000원 할인",
+                                            "target_type": "order_amount",
+                                            "total_discount": 5000,
+                                            "total_discount_formatted": "5,000원"
+                                        }
+                                    ],
+                                    "discount_codes": [],
+                                    "events": []
+                                }
+                            },
+                            "shipping_policy_applied_snapshot": {
+                                "policy_name": "기본 배송 정책",
+                                "shipping_amount": 3000
+                            }
+                        }
+                    },
+                    "reviews": {
+                        "data": {
+                            "abilities": {
+                                "can_update": true,
+                                "can_delete": true
+                            },
+                            "data": [
+                                {
+                                    "id": 9101,
+                                    "product_id": 101,
+                                    "user": {
+                                        "uuid": "u-aaa",
+                                        "name": "김민지",
+                                        "email": "minji@example.com"
+                                    },
+                                    "product": {
+                                        "id": 101,
+                                        "name": "베이직 오버핏 코튼 티셔츠",
+                                        "thumbnail_url": "/images/placeholder.png"
+                                    },
+                                    "option_snapshot_label": "블랙 / M",
+                                    "rating": 5,
+                                    "content": "핏이 정말 예쁘고 원단도 도톰해서 만족스러워요.",
+                                    "content_mode": "text",
+                                    "status": "visible",
+                                    "status_label": "노출",
+                                    "status_badge_color": "green",
+                                    "image_count": 2,
+                                    "has_reply": true,
+                                    "has_reply_label": "답변완료",
+                                    "has_reply_badge_color": "green",
+                                    "reply_content": "소중한 후기 감사합니다!",
+                                    "replied_at": "2026-05-27 09:10:00",
+                                    "created_at": "2026-05-26 11:20:00",
+                                    "updated_at": "2026-05-26 11:20:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 9102,
+                                    "product_id": 101,
+                                    "user": {
+                                        "uuid": "u-bbb",
+                                        "name": "이서준",
+                                        "email": "seojun@example.com"
+                                    },
+                                    "product": {
+                                        "id": 101,
+                                        "name": "베이직 오버핏 코튼 티셔츠",
+                                        "thumbnail_url": "/images/placeholder.png"
+                                    },
+                                    "option_snapshot_label": "화이트 / L",
+                                    "rating": 4,
+                                    "content": "색감 예쁘고 좋아요.",
+                                    "content_mode": "text",
+                                    "status": "visible",
+                                    "status_label": "노출",
+                                    "status_badge_color": "green",
+                                    "image_count": 0,
+                                    "has_reply": false,
+                                    "has_reply_label": "미답변",
+                                    "has_reply_badge_color": "gray",
+                                    "reply_content": null,
+                                    "replied_at": null,
+                                    "created_at": "2026-05-24 16:42:00",
+                                    "updated_at": "2026-05-24 16:42:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 9103,
+                                    "product_id": 102,
+                                    "user": {
+                                        "uuid": "u-ccc",
+                                        "name": "박도윤",
+                                        "email": "doyun@example.com"
+                                    },
+                                    "product": {
+                                        "id": 102,
+                                        "name": "데일리 와이드 슬랙스",
+                                        "thumbnail_url": "/images/placeholder.png"
+                                    },
+                                    "option_snapshot_label": "",
+                                    "rating": 2,
+                                    "content": "기대보다 별로였어요.",
+                                    "content_mode": "text",
+                                    "status": "hidden",
+                                    "status_label": "숨김",
+                                    "status_badge_color": "gray",
+                                    "image_count": 0,
+                                    "has_reply": false,
+                                    "has_reply_label": "미답변",
+                                    "has_reply_badge_color": "gray",
+                                    "reply_content": null,
+                                    "replied_at": null,
+                                    "created_at": "2026-05-22 10:05:00",
+                                    "updated_at": "2026-05-22 10:05:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ],
+                            "meta": {
+                                "current_page": 1,
+                                "last_page": 2,
+                                "per_page": 15,
+                                "total": 21
+                            }
+                        }
+                    },
+                    "brands": {
+                        "data": {
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true
+                            },
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": {
+                                        "ko": "코지홈"
+                                    },
+                                    "localized_name": "코지홈",
+                                    "slug": "cozyhome",
+                                    "url": "cozyhome",
+                                    "website": "https://cozyhome.example.com",
+                                    "sort_order": 1,
+                                    "is_active": true,
+                                    "icon": "tag",
+                                    "description": {
+                                        "ko": "데일리 베이직 의류 브랜드"
+                                    },
+                                    "products_count": 42,
+                                    "created_at": "2026-03-01 10:00:00",
+                                    "updated_at": "2026-05-01 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 2,
+                                    "name": {
+                                        "ko": "어반핏"
+                                    },
+                                    "localized_name": "어반핏",
+                                    "slug": "urbanfit",
+                                    "url": "urbanfit",
+                                    "website": null,
+                                    "sort_order": 2,
+                                    "is_active": true,
+                                    "icon": "tag",
+                                    "description": {
+                                        "ko": "모던 시티 캐주얼"
+                                    },
+                                    "products_count": 18,
+                                    "created_at": "2026-03-05 10:00:00",
+                                    "updated_at": "2026-05-02 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 3,
+                                    "name": {
+                                        "ko": "노스벨리"
+                                    },
+                                    "localized_name": "노스벨리",
+                                    "slug": "northvalley",
+                                    "url": "northvalley",
+                                    "website": "https://northvalley.example.com",
+                                    "sort_order": 3,
+                                    "is_active": false,
+                                    "icon": "tag",
+                                    "description": null,
+                                    "products_count": 7,
+                                    "created_at": "2026-03-10 10:00:00",
+                                    "updated_at": "2026-05-03 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "carriers": {
+                        "data": [
+                            {
+                                "id": 1,
+                                "name": "샘플 택배",
+                                "code": "sample",
+                                "enabled": true
+                            },
+                            {
+                                "id": 2,
+                                "name": "샘플 퀵",
+                                "code": "quick",
+                                "enabled": false
+                            }
+                        ]
+                    },
+                    "active_carriers": {
+                        "data": [
+                            {
+                                "id": 1,
+                                "name": "샘플 택배",
+                                "code": "sample"
+                            }
+                        ]
+                    },
+                    "coupons": {
+                        "data": {
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true
+                            },
+                            "data": [
+                                {
+                                    "id": 3001,
+                                    "name": {
+                                        "ko": "신규회원 10% 할인"
+                                    },
+                                    "localized_name": "신규회원 10% 할인",
+                                    "code": "WELCOME10",
+                                    "target_type": "order_amount",
+                                    "target_type_label": "주문금액",
+                                    "discount_type": "rate",
+                                    "discount_value": 10,
+                                    "benefit_formatted": "10% 할인",
+                                    "min_order_amount": 20000,
+                                    "max_discount_amount": 5000,
+                                    "is_active": true,
+                                    "issued_count": 1240,
+                                    "used_count": 318,
+                                    "valid_from": "2026-05-01 00:00:00",
+                                    "valid_to": "2026-06-30 23:59:59",
+                                    "created_at": "2026-04-25 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 3002,
+                                    "name": {
+                                        "ko": "5,000원 즉시할인"
+                                    },
+                                    "localized_name": "5,000원 즉시할인",
+                                    "code": "SAVE5000",
+                                    "target_type": "order_amount",
+                                    "target_type_label": "주문금액",
+                                    "discount_type": "fixed",
+                                    "discount_value": 5000,
+                                    "benefit_formatted": "5,000원 할인",
+                                    "min_order_amount": 30000,
+                                    "max_discount_amount": null,
+                                    "is_active": true,
+                                    "issued_count": 800,
+                                    "used_count": 145,
+                                    "valid_from": "2026-05-10 00:00:00",
+                                    "valid_to": "2026-06-15 23:59:59",
+                                    "created_at": "2026-05-08 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 3003,
+                                    "name": {
+                                        "ko": "무료배송 쿠폰"
+                                    },
+                                    "localized_name": "무료배송 쿠폰",
+                                    "code": "FREESHIP",
+                                    "target_type": "shipping_fee",
+                                    "target_type_label": "배송비",
+                                    "discount_type": "fixed",
+                                    "discount_value": 3000,
+                                    "benefit_formatted": "배송비 3,000원 할인",
+                                    "min_order_amount": 0,
+                                    "max_discount_amount": 3000,
+                                    "is_active": false,
+                                    "issued_count": 0,
+                                    "used_count": 0,
+                                    "valid_from": "2026-06-01 00:00:00",
+                                    "valid_to": "2026-07-31 23:59:59",
+                                    "created_at": "2026-05-20 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ],
+                            "pagination": {
+                                "current_page": 1,
+                                "last_page": 3,
+                                "per_page": 15,
+                                "total": 38
+                            }
+                        }
+                    },
+                    "coupon": {
+                        "data": {
+                            "id": 1,
+                            "name": {
+                                "ko": "신규회원 10% 할인",
+                                "en": "New Member 10% Off"
+                            },
+                            "localized_name": "신규회원 10% 할인",
+                            "description": {
+                                "ko": "신규 가입 회원 대상 주문금액 10% 할인 쿠폰",
+                                "en": "10% off for new members"
+                            },
+                            "localized_description": "신규 가입 회원 대상 주문금액 10% 할인 쿠폰",
+                            "target_type": "order_amount",
+                            "target_type_label": "주문금액",
+                            "target_type_badge_color": "blue",
+                            "discount_type": "rate",
+                            "discount_type_label": "정률",
+                            "discount_value": 10,
+                            "discount_max_amount": 20000,
+                            "min_order_amount": 30000,
+                            "benefit_formatted": "10% 할인 (최대 20,000원)",
+                            "issue_method": "download",
+                            "issue_method_label": "다운로드",
+                            "issue_method_badge_color": "green",
+                            "issue_condition": "manual",
+                            "issue_condition_label": "수동발급",
+                            "issue_condition_badge_color": "gray",
+                            "issue_status": "active",
+                            "issue_status_label": "발급중",
+                            "issue_status_badge_color": "green",
+                            "total_quantity": 1000,
+                            "issued_count": 342,
+                            "per_user_limit": 1,
+                            "issue_count_formatted": "342 / 1,000",
+                            "valid_type": "days",
+                            "valid_days": 30,
+                            "valid_from": null,
+                            "valid_to": null,
+                            "valid_period_formatted": "발급일로부터 30일",
+                            "issue_from": "2026-05-01T00:00",
+                            "issue_to": "2026-06-30T23:59",
+                            "issue_period_formatted": "2026-05-01 ~ 2026-06-30",
+                            "is_combinable": false,
+                            "target_scope": "all",
+                            "target_scope_label": "제한 없음",
+                            "is_issuable": true,
+                            "created_at": "2026-04-25 10:00",
+                            "updated_at": "2026-05-08 14:20",
+                            "created_by_name": "관리자",
+                            "included_products": [],
+                            "excluded_products": [],
+                            "included_categories": [],
+                            "excluded_categories": [],
+                            "issues_count": 342,
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true,
+                                "can_delete": true
+                            }
+                        }
+                    },
+                    "couponIssues": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 9001,
+                                    "coupon_id": 1,
+                                    "user_id": "u-1001",
+                                    "user_name": "홍길동",
+                                    "coupon_code": "WELCOME-A1B2",
+                                    "status": "used",
+                                    "status_label": "사용완료",
+                                    "status_badge_color": "gray",
+                                    "issued_at": "2026-05-02 10:15",
+                                    "expired_at": "2026-06-01 23:59",
+                                    "used_at": "2026-05-10 14:20",
+                                    "order_id": 5101,
+                                    "discount_amount": 7000,
+                                    "is_expired": false,
+                                    "is_usable": false
+                                },
+                                {
+                                    "id": 9002,
+                                    "coupon_id": 1,
+                                    "user_id": "u-1002",
+                                    "user_name": "김영희",
+                                    "coupon_code": "WELCOME-C3D4",
+                                    "status": "issued",
+                                    "status_label": "발급완료",
+                                    "status_badge_color": "green",
+                                    "issued_at": "2026-05-15 09:40",
+                                    "expired_at": "2026-06-14 23:59",
+                                    "used_at": null,
+                                    "order_id": null,
+                                    "discount_amount": 0,
+                                    "is_expired": false,
+                                    "is_usable": true
+                                },
+                                {
+                                    "id": 9003,
+                                    "coupon_id": 1,
+                                    "user_id": "u-1003",
+                                    "user_name": "이철수",
+                                    "coupon_code": "WELCOME-E5F6",
+                                    "status": "expired",
+                                    "status_label": "기간만료",
+                                    "status_badge_color": "red",
+                                    "issued_at": "2026-04-01 11:00",
+                                    "expired_at": "2026-05-01 23:59",
+                                    "used_at": null,
+                                    "order_id": null,
+                                    "discount_amount": 0,
+                                    "is_expired": true,
+                                    "is_usable": false
+                                }
+                            ],
+                            "pagination": {
+                                "current_page": 1,
+                                "last_page": 1,
+                                "per_page": 10,
+                                "total": 3
+                            }
+                        }
+                    },
+                    "policy": {
+                        "data": {
+                            "id": 1,
+                            "name": {
+                                "ko": "기본 배송정책",
+                                "en": "Standard Shipping"
+                            },
+                            "name_localized": "기본 배송정책",
+                            "is_active": true,
+                            "is_default": true,
+                            "sort_order": 0,
+                            "created_at": "2026-05-01 09:00",
+                            "updated_at": "2026-05-20 11:30",
+                            "fee_summary": "3,000원 (50,000원 이상 무료배송)",
+                            "countries_display": [
+                                {
+                                    "country_code": "KR",
+                                    "country_name": "대한민국",
+                                    "flag": "🇰🇷"
+                                },
+                                {
+                                    "country_code": "US",
+                                    "country_name": "미국",
+                                    "flag": "🇺🇸"
+                                }
+                            ],
+                            "country_settings": [
+                                {
+                                    "id": 11,
+                                    "country_code": "KR",
+                                    "shipping_method": "parcel",
+                                    "shipping_method_label": "택배",
+                                    "custom_shipping_name": null,
+                                    "currency_code": "KRW",
+                                    "charge_policy": "conditional_free",
+                                    "charge_policy_label": "조건부 무료",
+                                    "base_fee": 3000,
+                                    "free_threshold": 50000,
+                                    "ranges": null,
+                                    "api_endpoint": null,
+                                    "api_request_fields": null,
+                                    "api_response_fee_field": null,
+                                    "extra_fee_enabled": true,
+                                    "extra_fee_settings": [
+                                        {
+                                            "region": "제주특별자치도",
+                                            "zipcode": "63000-63644",
+                                            "fee": 3000
+                                        },
+                                        {
+                                            "region": "도서산간",
+                                            "zipcode": "",
+                                            "fee": 4000
+                                        }
+                                    ],
+                                    "extra_fee_multiply": false,
+                                    "is_active": true
+                                },
+                                {
+                                    "id": 12,
+                                    "country_code": "US",
+                                    "shipping_method": "express",
+                                    "shipping_method_label": "특송",
+                                    "custom_shipping_name": null,
+                                    "currency_code": "USD",
+                                    "charge_policy": "range_amount",
+                                    "charge_policy_label": "구간별(금액)",
+                                    "base_fee": 0,
+                                    "free_threshold": null,
+                                    "ranges": [
+                                        {
+                                            "min": 0,
+                                            "max": 100000,
+                                            "fee": 25000
+                                        },
+                                        {
+                                            "min": 100000,
+                                            "max": null,
+                                            "fee": 15000
+                                        }
+                                    ],
+                                    "api_endpoint": null,
+                                    "api_request_fields": null,
+                                    "api_response_fee_field": null,
+                                    "extra_fee_enabled": false,
+                                    "extra_fee_settings": null,
+                                    "extra_fee_multiply": false,
+                                    "is_active": true
+                                }
+                            ],
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true,
+                                "can_delete": true
+                            }
+                        }
+                    },
+                    "shipping_policies": {
+                        "data": {
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true,
+                                "can_delete": true
+                            },
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": {
+                                        "ko": "기본 배송정책"
+                                    },
+                                    "name_localized": "기본 배송정책",
+                                    "is_active": true,
+                                    "is_default": true,
+                                    "sort_order": 1,
+                                    "fee_summary": "3,000원 (50,000원 이상 무료배송)",
+                                    "countries_display": "🇰🇷 대한민국",
+                                    "country_settings": [
+                                        {
+                                            "id": 1,
+                                            "country_code": "KR",
+                                            "country_name": "대한민국",
+                                            "shipping_method": "parcel",
+                                            "charge_policy": "conditional_free",
+                                            "base_fee": 3000,
+                                            "base_fee_formatted": "3,000원",
+                                            "currency_code": "KRW",
+                                            "free_threshold": 50000,
+                                            "free_threshold_formatted": "50,000원",
+                                            "carrier_label": "CJ대한통운"
+                                        }
+                                    ],
+                                    "created_at": "2026-03-01 10:00:00",
+                                    "updated_at": "2026-05-01 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 2,
+                                    "name": {
+                                        "ko": "해외 배송정책"
+                                    },
+                                    "name_localized": "해외 배송정책",
+                                    "is_active": true,
+                                    "is_default": false,
+                                    "sort_order": 2,
+                                    "fee_summary": "국가별 차등 (25,000원~)",
+                                    "countries_display": "🇰🇷 🇺🇸 외 3개국",
+                                    "country_settings": [
+                                        {
+                                            "id": 1,
+                                            "country_code": "KR",
+                                            "country_name": "대한민국",
+                                            "shipping_method": "parcel",
+                                            "charge_policy": "conditional_free",
+                                            "base_fee": 3000,
+                                            "base_fee_formatted": "3,000원",
+                                            "currency_code": "KRW",
+                                            "free_threshold": 50000,
+                                            "free_threshold_formatted": "50,000원",
+                                            "carrier_label": "CJ대한통운"
+                                        },
+                                        {
+                                            "id": 2,
+                                            "country_code": "US",
+                                            "country_name": "미국",
+                                            "shipping_method": "express",
+                                            "charge_policy": "paid",
+                                            "base_fee": 25000,
+                                            "base_fee_formatted": "25,000원",
+                                            "currency_code": "KRW",
+                                            "free_threshold": null,
+                                            "free_threshold_formatted": null,
+                                            "carrier_label": "EMS"
+                                        }
+                                    ],
+                                    "created_at": "2026-03-02 10:00:00",
+                                    "updated_at": "2026-05-02 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 3,
+                                    "name": {
+                                        "ko": "무료배송 정책"
+                                    },
+                                    "name_localized": "무료배송 정책",
+                                    "is_active": false,
+                                    "is_default": false,
+                                    "sort_order": 3,
+                                    "fee_summary": "전 상품 무료배송",
+                                    "countries_display": "🇰🇷 대한민국",
+                                    "country_settings": [
+                                        {
+                                            "id": 1,
+                                            "country_code": "KR",
+                                            "country_name": "대한민국",
+                                            "shipping_method": "parcel",
+                                            "charge_policy": "free",
+                                            "base_fee": 0,
+                                            "base_fee_formatted": "0원",
+                                            "currency_code": "KRW",
+                                            "free_threshold": 0,
+                                            "free_threshold_formatted": "0원",
+                                            "carrier_label": "CJ대한통운"
+                                        }
+                                    ],
+                                    "created_at": "2026-03-03 10:00:00",
+                                    "updated_at": "2026-05-03 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ],
+                            "pagination": {
+                                "current_page": 1,
+                                "last_page": 1,
+                                "per_page": 20,
+                                "total": 3
+                            }
+                        }
+                    },
+                    "extra_fee_templates": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "description": "제주 도서산간 추가배송비",
+                                    "region": "제주특별자치도",
+                                    "zipcode": "63000-63644",
+                                    "fee": 3000,
+                                    "fee_formatted": "3,000원",
+                                    "is_active": true
+                                },
+                                {
+                                    "id": 2,
+                                    "description": "울릉도/독도 추가배송비",
+                                    "region": "경상북도 울릉군",
+                                    "zipcode": "40200-40240",
+                                    "fee": 5000,
+                                    "fee_formatted": "5,000원",
+                                    "is_active": true
+                                },
+                                {
+                                    "id": 3,
+                                    "description": "기타 도서산간 추가배송비",
+                                    "region": "전국 도서산간",
+                                    "zipcode": "",
+                                    "fee": 4000,
+                                    "fee_formatted": "4,000원",
+                                    "is_active": false
+                                }
+                            ]
+                        }
+                    },
+                    "presets": {
+                        "data": [
+                            {
+                                "id": 1,
+                                "name": "기본 프리셋",
+                                "config": []
+                            }
+                        ]
+                    },
+                    "product_labels": {
+                        "data": {
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true
+                            },
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": {
+                                        "ko": "BEST"
+                                    },
+                                    "color": "#ef4444",
+                                    "is_active": true,
+                                    "sort_order": 1,
+                                    "assignments_count": 12,
+                                    "created_at": "2026-03-01 10:00:00",
+                                    "updated_at": "2026-05-01 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 2,
+                                    "name": {
+                                        "ko": "NEW"
+                                    },
+                                    "color": "#3b82f6",
+                                    "is_active": true,
+                                    "sort_order": 2,
+                                    "assignments_count": 8,
+                                    "created_at": "2026-03-02 10:00:00",
+                                    "updated_at": "2026-05-02 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 3,
+                                    "name": {
+                                        "ko": "한정특가"
+                                    },
+                                    "color": "#f59e0b",
+                                    "is_active": false,
+                                    "sort_order": 3,
+                                    "assignments_count": 0,
+                                    "created_at": "2026-03-03 10:00:00",
+                                    "updated_at": "2026-05-03 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "notice_templates": {
+                        "data": {
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true
+                            },
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": {
+                                        "ko": "의류 상품정보제공고시"
+                                    },
+                                    "localized_name": "의류 상품정보제공고시",
+                                    "category": "clothing",
+                                    "fields": [
+                                        {
+                                            "key": "material",
+                                            "label": {
+                                                "ko": "제품 소재"
+                                            }
+                                        },
+                                        {
+                                            "key": "size",
+                                            "label": {
+                                                "ko": "치수"
+                                            }
+                                        },
+                                        {
+                                            "key": "manufacturer",
+                                            "label": {
+                                                "ko": "제조자"
+                                            }
+                                        }
+                                    ],
+                                    "fields_count": 3,
+                                    "is_active": true,
+                                    "sort_order": 1,
+                                    "icon": "file-alt",
+                                    "created_at": "2026-03-01 10:00:00",
+                                    "updated_at": "2026-05-01 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 2,
+                                    "name": {
+                                        "ko": "가공식품 상품정보제공고시"
+                                    },
+                                    "localized_name": "가공식품 상품정보제공고시",
+                                    "category": "food",
+                                    "fields": [
+                                        {
+                                            "key": "name",
+                                            "label": {
+                                                "ko": "제품명"
+                                            }
+                                        },
+                                        {
+                                            "key": "expiry",
+                                            "label": {
+                                                "ko": "소비기한"
+                                            }
+                                        }
+                                    ],
+                                    "fields_count": 2,
+                                    "is_active": true,
+                                    "sort_order": 2,
+                                    "icon": "file-alt",
+                                    "created_at": "2026-03-02 10:00:00",
+                                    "updated_at": "2026-05-02 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 3,
+                                    "name": {
+                                        "ko": "전자제품 상품정보제공고시"
+                                    },
+                                    "localized_name": "전자제품 상품정보제공고시",
+                                    "category": "electronics",
+                                    "fields": [
+                                        {
+                                            "key": "model",
+                                            "label": {
+                                                "ko": "모델명"
+                                            }
+                                        }
+                                    ],
+                                    "fields_count": 1,
+                                    "is_active": false,
+                                    "sort_order": 3,
+                                    "icon": "file-alt",
+                                    "created_at": "2026-03-03 10:00:00",
+                                    "updated_at": "2026-05-03 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "templates": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": "기본 안내문",
+                                    "body_html": "<p>샘플 상품 안내 템플릿</p>"
+                                }
+                            ],
+                            "meta": {
+                                "total": 1,
+                                "per_page": 20,
+                                "current_page": 1
+                            },
+                            "abilities": {
+                                "can_create": true
+                            }
+                        }
+                    },
+                    "common_infos": {
+                        "data": {
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true
+                            },
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": {
+                                        "ko": "기본 배송/교환/환불 안내"
+                                    },
+                                    "localized_name": "기본 배송/교환/환불 안내",
+                                    "content": {
+                                        "ko": "<p>주문 후 영업일 기준 1~2일 내 출고됩니다. 단순 변심 교환·반품은 수령 후 7일 이내 가능합니다.</p>"
+                                    },
+                                    "localized_content": "<p>주문 후 영업일 기준 1~2일 내 출고됩니다. 단순 변심 교환·반품은 수령 후 7일 이내 가능합니다.</p>",
+                                    "content_mode": "html",
+                                    "is_default": true,
+                                    "is_active": true,
+                                    "sort_order": 1,
+                                    "icon": "info-circle",
+                                    "products_count": 30,
+                                    "language_count": 1,
+                                    "created_at": "2026-03-01 10:00:00",
+                                    "updated_at": "2026-05-01 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 2,
+                                    "name": {
+                                        "ko": "식품 보관 안내"
+                                    },
+                                    "localized_name": "식품 보관 안내",
+                                    "content": {
+                                        "ko": "직사광선을 피해 서늘한 곳에 보관하세요."
+                                    },
+                                    "localized_content": "직사광선을 피해 서늘한 곳에 보관하세요.",
+                                    "content_mode": "text",
+                                    "is_default": false,
+                                    "is_active": true,
+                                    "sort_order": 2,
+                                    "icon": "info-circle",
+                                    "products_count": 5,
+                                    "language_count": 1,
+                                    "created_at": "2026-03-02 10:00:00",
+                                    "updated_at": "2026-05-02 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 3,
+                                    "name": {
+                                        "ko": "대형가전 설치 안내"
+                                    },
+                                    "localized_name": "대형가전 설치 안내",
+                                    "content": {
+                                        "ko": "<p>설치 기사 방문 일정은 별도 안내됩니다.</p>"
+                                    },
+                                    "localized_content": "<p>설치 기사 방문 일정은 별도 안내됩니다.</p>",
+                                    "content_mode": "html",
+                                    "is_default": false,
+                                    "is_active": true,
+                                    "sort_order": 3,
+                                    "icon": "info-circle",
+                                    "products_count": 2,
+                                    "language_count": 1,
+                                    "created_at": "2026-03-03 10:00:00",
+                                    "updated_at": "2026-05-03 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "commonInfos": {
+                        "data": {
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true
+                            },
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": {
+                                        "ko": "기본 배송/교환/환불 안내"
+                                    },
+                                    "localized_name": "기본 배송/교환/환불 안내",
+                                    "content": {
+                                        "ko": "<p>주문 후 영업일 기준 1~2일 내 출고됩니다. 단순 변심 교환·반품은 수령 후 7일 이내 가능합니다.</p>"
+                                    },
+                                    "localized_content": "<p>주문 후 영업일 기준 1~2일 내 출고됩니다. 단순 변심 교환·반품은 수령 후 7일 이내 가능합니다.</p>",
+                                    "content_mode": "html",
+                                    "is_default": true,
+                                    "is_active": true,
+                                    "sort_order": 1,
+                                    "icon": "info-circle",
+                                    "products_count": 30,
+                                    "language_count": 1,
+                                    "created_at": "2026-03-01 10:00:00",
+                                    "updated_at": "2026-05-01 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 2,
+                                    "name": {
+                                        "ko": "식품 보관 안내"
+                                    },
+                                    "localized_name": "식품 보관 안내",
+                                    "content": {
+                                        "ko": "직사광선을 피해 서늘한 곳에 보관하세요."
+                                    },
+                                    "localized_content": "직사광선을 피해 서늘한 곳에 보관하세요.",
+                                    "content_mode": "text",
+                                    "is_default": false,
+                                    "is_active": true,
+                                    "sort_order": 2,
+                                    "icon": "info-circle",
+                                    "products_count": 5,
+                                    "language_count": 1,
+                                    "created_at": "2026-03-02 10:00:00",
+                                    "updated_at": "2026-05-02 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                },
+                                {
+                                    "id": 3,
+                                    "name": {
+                                        "ko": "대형가전 설치 안내"
+                                    },
+                                    "localized_name": "대형가전 설치 안내",
+                                    "content": {
+                                        "ko": "<p>설치 기사 방문 일정은 별도 안내됩니다.</p>"
+                                    },
+                                    "localized_content": "<p>설치 기사 방문 일정은 별도 안내됩니다.</p>",
+                                    "content_mode": "html",
+                                    "is_default": false,
+                                    "is_active": true,
+                                    "sort_order": 3,
+                                    "icon": "info-circle",
+                                    "products_count": 2,
+                                    "language_count": 1,
+                                    "created_at": "2026-03-03 10:00:00",
+                                    "updated_at": "2026-05-03 10:00:00",
+                                    "is_owner": false,
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "order_logs": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 3001,
+                                    "created_at": "2026-06-03 09:12",
+                                    "localized_description": "주문 상태를 결제완료에서 배송준비중으로 변경했습니다",
+                                    "user": {
+                                        "uuid": "admin-1",
+                                        "name": "관리자"
+                                    },
+                                    "changes": [
+                                        {
+                                            "field": "order_status",
+                                            "label": "주문상태",
+                                            "old": "payment_complete",
+                                            "old_label": "결제완료",
+                                            "new": "preparing",
+                                            "new_label": "배송준비중"
+                                        }
+                                    ],
+                                    "bulk_changes": []
+                                },
+                                {
+                                    "id": 3002,
+                                    "created_at": "2026-06-01 19:31",
+                                    "localized_description": "결제가 완료되었습니다",
+                                    "user": null,
+                                    "changes": [
+                                        {
+                                            "field": "payment_status",
+                                            "label": "결제상태",
+                                            "old": "pending",
+                                            "old_label": "결제대기",
+                                            "new": "paid",
+                                            "new_label": "결제완료"
+                                        }
+                                    ],
+                                    "bulk_changes": []
+                                },
+                                {
+                                    "id": 3003,
+                                    "created_at": "2026-06-01 19:30",
+                                    "localized_description": "관리자 메모를 수정했습니다",
+                                    "user": {
+                                        "uuid": "admin-1",
+                                        "name": "관리자"
+                                    },
+                                    "changes": [
+                                        {
+                                            "field": "admin_memo",
+                                            "label": "관리자 메모",
+                                            "old": "",
+                                            "old_label": "(없음)",
+                                            "new": "VIP 고객 — 빠른 배송 요청",
+                                            "new_label": "VIP 고객 — 빠른 배송 요청"
+                                        },
+                                        {
+                                            "field": "delivery_memo",
+                                            "label": "배송 메모",
+                                            "old": "",
+                                            "old_label": "(없음)",
+                                            "new": "부재 시 경비실",
+                                            "new_label": "부재 시 경비실"
+                                        }
+                                    ],
+                                    "bulk_changes": []
+                                }
+                            ],
+                            "meta": {
+                                "current_page": 1,
+                                "last_page": 1,
+                                "per_page": 20,
+                                "total": 3
+                            }
+                        }
+                    },
+                    "activity_logs": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "log_type": "admin",
+                                    "log_type_label": "관리자",
+                                    "loggable_type": "Product",
+                                    "loggable_type_display": "상품",
+                                    "loggable_id": 101,
+                                    "action": "product.updated",
+                                    "action_label": "상품 수정",
+                                    "localized_description": "'베이직 오버핏 코튼 티셔츠' 상품을 수정했습니다.",
+                                    "description_key": "product.updated",
+                                    "properties": null,
+                                    "changes": [
+                                        {
+                                            "field": "selling_price",
+                                            "label": "판매가",
+                                            "old": 29000,
+                                            "new": 23200,
+                                            "old_label": "29,000원",
+                                            "new_label": "23,200원"
+                                        },
+                                        {
+                                            "field": "sales_status",
+                                            "label": "판매상태",
+                                            "old": "sold_out",
+                                            "new": "on_sale",
+                                            "old_label": "품절",
+                                            "new_label": "판매중"
+                                        }
+                                    ],
+                                    "bulk_changes": null,
+                                    "has_changes": true,
+                                    "actor_name": "관리자",
+                                    "user": {
+                                        "uuid": "admin-uuid-1",
+                                        "name": "관리자",
+                                        "email": "admin@example.com"
+                                    },
+                                    "ip_address": "127.0.0.1",
+                                    "created_at": "2026-05-28 09:15:00",
+                                    "is_owner": false
+                                },
+                                {
+                                    "id": 2,
+                                    "log_type": "admin",
+                                    "log_type_label": "관리자",
+                                    "loggable_type": "Product",
+                                    "loggable_type_display": "상품",
+                                    "loggable_id": 101,
+                                    "action": "product.created",
+                                    "action_label": "상품 등록",
+                                    "localized_description": "'베이직 오버핏 코튼 티셔츠' 상품을 등록했습니다.",
+                                    "description_key": "product.created",
+                                    "properties": null,
+                                    "changes": null,
+                                    "bulk_changes": null,
+                                    "has_changes": false,
+                                    "actor_name": "운영자",
+                                    "user": {
+                                        "uuid": "admin-uuid-2",
+                                        "name": "운영자",
+                                        "email": "manager@example.com"
+                                    },
+                                    "ip_address": "127.0.0.1",
+                                    "created_at": "2026-05-20 14:30:00",
+                                    "is_owner": false
+                                },
+                                {
+                                    "id": 3,
+                                    "log_type": "admin",
+                                    "log_type_label": "관리자",
+                                    "loggable_type": "Product",
+                                    "loggable_type_display": "상품",
+                                    "loggable_id": 101,
+                                    "action": "product.stock_adjusted",
+                                    "action_label": "재고 조정",
+                                    "localized_description": "재고를 조정했습니다.",
+                                    "description_key": "product.stock_adjusted",
+                                    "properties": null,
+                                    "changes": [
+                                        {
+                                            "field": "stock_quantity",
+                                            "label": "재고수량",
+                                            "old": 200,
+                                            "new": 320,
+                                            "old_label": "200",
+                                            "new_label": "320"
+                                        }
+                                    ],
+                                    "bulk_changes": null,
+                                    "has_changes": true,
+                                    "actor_name": "시스템",
+                                    "user": {
+                                        "name": "시스템"
+                                    },
+                                    "ip_address": null,
+                                    "created_at": "2026-05-25 03:00:00",
+                                    "is_owner": false
+                                }
+                            ],
+                            "meta": {
+                                "current_page": 1,
+                                "last_page": 1,
+                                "per_page": 10,
+                                "total": 3
+                            }
+                        }
+                    },
+                    "settings": {
+                        "data": {
+                            "general": {
+                                "shop_name": "샘플 쇼핑몰",
+                                "currency": "KRW"
+                            },
+                            "shipping": {
+                                "default_fee": 3000,
+                                "free_threshold": 50000
+                            },
+                            "inquiry": {
+                                "board_slug": "product-inquiry"
+                            },
+                            "abilities": {
+                                "can_update": true
+                            }
+                        }
+                    },
+                    "ecommerce_settings": {
+                        "data": {
+                            "basic_info": {
+                                "shop_name": "",
+                                "route_path": "shop",
+                                "no_route": false,
+                                "company_name": "",
+                                "business_number": "",
+                                "ceo_name": "",
+                                "business_type": "",
+                                "business_category": "",
+                                "zipcode": "",
+                                "base_address": "",
+                                "detail_address": "",
+                                "phone": "",
+                                "fax": "",
+                                "email": "",
+                                "privacy_officer": "",
+                                "privacy_officer_email": "",
+                                "mail_order_number": "",
+                                "telecom_number": ""
+                            },
+                            "language_currency": {
+                                "default_language": "ko",
+                                "default_currency": "KRW",
+                                "currencies": [
+                                    {
+                                        "code": "KRW",
+                                        "name": {
+                                            "ko": "KRW (원)",
+                                            "en": "KRW (Won)",
+                                            "ja": "KRW (ウォン)"
+                                        },
+                                        "exchange_rate": null,
+                                        "rounding_unit": "1",
+                                        "rounding_method": "floor",
+                                        "decimal_places": 0,
+                                        "is_default": true
+                                    },
+                                    {
+                                        "code": "USD",
+                                        "name": {
+                                            "ko": "USD (달러)",
+                                            "en": "USD (Dollar)",
+                                            "ja": "USD (ドル)"
+                                        },
+                                        "exchange_rate": 0.85,
+                                        "rounding_unit": "0.01",
+                                        "rounding_method": "round",
+                                        "decimal_places": 2,
+                                        "is_default": false
+                                    },
+                                    {
+                                        "code": "JPY",
+                                        "name": {
+                                            "ko": "JPY (엔)",
+                                            "en": "JPY (Yen)",
+                                            "ja": "JPY (円)"
+                                        },
+                                        "exchange_rate": 115,
+                                        "rounding_unit": "1",
+                                        "rounding_method": "floor",
+                                        "decimal_places": 0,
+                                        "is_default": false
+                                    },
+                                    {
+                                        "code": "CNY",
+                                        "name": {
+                                            "ko": "CNY (위안)",
+                                            "en": "CNY (Yuan)",
+                                            "ja": "CNY (人民元)"
+                                        },
+                                        "exchange_rate": 5.8,
+                                        "rounding_unit": "0.01",
+                                        "rounding_method": "round",
+                                        "decimal_places": 2,
+                                        "is_default": false
+                                    },
+                                    {
+                                        "code": "EUR",
+                                        "name": {
+                                            "ko": "EUR (유로)",
+                                            "en": "EUR (Euro)",
+                                            "ja": "EUR (ユーロ)"
+                                        },
+                                        "exchange_rate": 0.78,
+                                        "rounding_unit": "0.01",
+                                        "rounding_method": "round",
+                                        "decimal_places": 2,
+                                        "is_default": false
+                                    }
+                                ]
+                            },
+                            "order_settings": {
+                                "default_pg_provider": null,
+                                "payment_methods": [
+                                    {
+                                        "id": "card",
+                                        "pg_provider": null,
+                                        "sort_order": 1,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "신용카드",
+                                            "en": "Credit Card",
+                                            "ja": "クレジットカード"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "신용카드로 안전하게 결제",
+                                            "en": "Pay securely with credit card",
+                                            "ja": "クレジットカードで安全に決済"
+                                        },
+                                        "_cached_icon": "credit-card",
+                                        "_cached_source": "builtin"
+                                    },
+                                    {
+                                        "id": "vbank",
+                                        "pg_provider": null,
+                                        "sort_order": 2,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "가상계좌",
+                                            "en": "Virtual Account",
+                                            "ja": "バーチャル口座"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "가상계좌로 입금",
+                                            "en": "Pay via virtual account",
+                                            "ja": "バーチャル口座に入金"
+                                        },
+                                        "_cached_icon": "money-check",
+                                        "_cached_source": "builtin"
+                                    },
+                                    {
+                                        "id": "dbank",
+                                        "pg_provider": null,
+                                        "sort_order": 3,
+                                        "is_active": true,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "order_placed",
+                                        "_cached_name": {
+                                            "ko": "무통장입금",
+                                            "en": "Bank Transfer",
+                                            "ja": "銀行振込"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "지정 계좌로 직접 입금",
+                                            "en": "Direct bank transfer",
+                                            "ja": "指定口座に直接入金"
+                                        },
+                                        "_cached_icon": "building-columns",
+                                        "_cached_source": "builtin"
+                                    },
+                                    {
+                                        "id": "bank",
+                                        "pg_provider": null,
+                                        "sort_order": 4,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "계좌이체",
+                                            "en": "Account Transfer",
+                                            "ja": "口座振替"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "실시간 계좌이체",
+                                            "en": "Real-time bank transfer",
+                                            "ja": "リアルタイム口座振替"
+                                        },
+                                        "_cached_icon": "building-columns",
+                                        "_cached_source": "builtin"
+                                    },
+                                    {
+                                        "id": "phone",
+                                        "pg_provider": null,
+                                        "sort_order": 5,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "휴대폰결제",
+                                            "en": "Mobile Payment",
+                                            "ja": "携帯電話決済"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "휴대폰 소액결제",
+                                            "en": "Mobile phone payment",
+                                            "ja": "携帯電話小額決済"
+                                        },
+                                        "_cached_icon": "mobile-screen-button",
+                                        "_cached_source": "builtin"
+                                    },
+                                    {
+                                        "id": "kginicis_samsung_pay",
+                                        "pg_provider": null,
+                                        "sort_order": 6,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "삼성페이 (KG이니시스)",
+                                            "en": "Samsung Pay (KG Inicis)"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "삼성페이로 결제 — KG 이니시스를 통해 처리",
+                                            "en": "Pay with Samsung Pay via KG Inicis"
+                                        },
+                                        "_cached_icon": "mobile-screen-button",
+                                        "_cached_source": "plugin:sirsoft-pay_kginicis"
+                                    },
+                                    {
+                                        "id": "kginicis_naverpay",
+                                        "pg_provider": null,
+                                        "sort_order": 7,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "네이버페이 (KG이니시스)",
+                                            "en": "Naver Pay (KG Inicis)"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "네이버페이로 결제 — KG 이니시스를 통해 처리",
+                                            "en": "Pay with Naver Pay via KG Inicis"
+                                        },
+                                        "_cached_icon": "wallet",
+                                        "_cached_source": "plugin:sirsoft-pay_kginicis"
+                                    },
+                                    {
+                                        "id": "kginicis_lpay",
+                                        "pg_provider": null,
+                                        "sort_order": 8,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "L.pay (KG이니시스)",
+                                            "en": "L.pay (KG Inicis)"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "L.pay 로 결제 — KG 이니시스를 통해 처리",
+                                            "en": "Pay with L.pay via KG Inicis"
+                                        },
+                                        "_cached_icon": "mobile-screen-button",
+                                        "_cached_source": "plugin:sirsoft-pay_kginicis"
+                                    },
+                                    {
+                                        "id": "kginicis_kakaopay",
+                                        "pg_provider": null,
+                                        "sort_order": 9,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "카카오페이 (KG이니시스)",
+                                            "en": "Kakao Pay (KG Inicis)"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "카카오페이로 결제 — KG 이니시스를 통해 처리",
+                                            "en": "Pay with Kakao Pay via KG Inicis"
+                                        },
+                                        "_cached_icon": "mobile-screen-button",
+                                        "_cached_source": "plugin:sirsoft-pay_kginicis"
+                                    },
+                                    {
+                                        "id": "kginicis_japan_paypay",
+                                        "pg_provider": null,
+                                        "sort_order": 10,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "PayPay (일본 KG이니시스)",
+                                            "en": "PayPay (KG Inicis Japan)"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "일본 엔(JPY) 주문을 KG 이니시스 CBT PayPay로 결제",
+                                            "en": "Pay JPY orders with KG Inicis CBT PayPay"
+                                        },
+                                        "_cached_icon": "wallet",
+                                        "_cached_source": "plugin:sirsoft-pay_kginicis"
+                                    },
+                                    {
+                                        "id": "point",
+                                        "pg_provider": null,
+                                        "sort_order": 10,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "order_placed",
+                                        "_cached_name": {
+                                            "ko": "포인트결제",
+                                            "en": "Points",
+                                            "ja": "ポイント決済"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "적립 포인트로 결제",
+                                            "en": "Pay with points",
+                                            "ja": "積立ポイントで決済"
+                                        },
+                                        "_cached_icon": "coins",
+                                        "_cached_source": "builtin"
+                                    },
+                                    {
+                                        "id": "kginicis_japan_cvs",
+                                        "pg_provider": null,
+                                        "sort_order": 11,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "payment_complete",
+                                        "_cached_name": {
+                                            "ko": "일본 편의점결제 (KG이니시스)",
+                                            "en": "Japan Convenience Store (KG Inicis)"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "일본 엔(JPY) 주문을 KG 이니시스 CBT 편의점 결제로 접수",
+                                            "en": "Accept JPY orders with KG Inicis CBT convenience store payment"
+                                        },
+                                        "_cached_icon": "store",
+                                        "_cached_source": "plugin:sirsoft-pay_kginicis"
+                                    },
+                                    {
+                                        "id": "deposit",
+                                        "pg_provider": null,
+                                        "sort_order": 11,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "order_placed",
+                                        "_cached_name": {
+                                            "ko": "예치금결제",
+                                            "en": "Store Credit",
+                                            "ja": "預金決済"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "예치금으로 결제",
+                                            "en": "Pay with store credit",
+                                            "ja": "預金で決済"
+                                        },
+                                        "_cached_icon": "wallet",
+                                        "_cached_source": "builtin"
+                                    },
+                                    {
+                                        "id": "free",
+                                        "pg_provider": null,
+                                        "sort_order": 12,
+                                        "is_active": false,
+                                        "min_order_amount": 0,
+                                        "stock_deduction_timing": "order_placed",
+                                        "_cached_name": {
+                                            "ko": "무료",
+                                            "en": "Free",
+                                            "ja": "無料"
+                                        },
+                                        "_cached_description": {
+                                            "ko": "결제 없이 주문 완료",
+                                            "en": "Order without payment",
+                                            "ja": "決済なしで注文完了"
+                                        },
+                                        "_cached_icon": "gift",
+                                        "_cached_source": "builtin"
+                                    }
+                                ],
+                                "banks": [
+                                    {
+                                        "code": "004",
+                                        "name": {
+                                            "ko": "국민은행",
+                                            "en": "Kookmin Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "088",
+                                        "name": {
+                                            "ko": "신한은행",
+                                            "en": "Shinhan Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "020",
+                                        "name": {
+                                            "ko": "우리은행",
+                                            "en": "Woori Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "081",
+                                        "name": {
+                                            "ko": "하나은행",
+                                            "en": "Hana Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "003",
+                                        "name": {
+                                            "ko": "IBK기업은행",
+                                            "en": "IBK Industrial Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "011",
+                                        "name": {
+                                            "ko": "NH농협은행",
+                                            "en": "NH Nonghyup Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "071",
+                                        "name": {
+                                            "ko": "우체국",
+                                            "en": "Korea Post"
+                                        }
+                                    },
+                                    {
+                                        "code": "031",
+                                        "name": {
+                                            "ko": "DGB대구은행",
+                                            "en": "DGB Daegu Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "032",
+                                        "name": {
+                                            "ko": "BNK부산은행",
+                                            "en": "BNK Busan Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "034",
+                                        "name": {
+                                            "ko": "광주은행",
+                                            "en": "Kwangju Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "035",
+                                        "name": {
+                                            "ko": "제주은행",
+                                            "en": "Jeju Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "037",
+                                        "name": {
+                                            "ko": "전북은행",
+                                            "en": "Jeonbuk Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "039",
+                                        "name": {
+                                            "ko": "BNK경남은행",
+                                            "en": "BNK Kyongnam Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "045",
+                                        "name": {
+                                            "ko": "새마을금고",
+                                            "en": "MG Community Credit Cooperatives"
+                                        }
+                                    },
+                                    {
+                                        "code": "048",
+                                        "name": {
+                                            "ko": "신협",
+                                            "en": "KFCC"
+                                        }
+                                    },
+                                    {
+                                        "code": "090",
+                                        "name": {
+                                            "ko": "카카오뱅크",
+                                            "en": "Kakao Bank"
+                                        }
+                                    },
+                                    {
+                                        "code": "092",
+                                        "name": {
+                                            "ko": "토스뱅크",
+                                            "en": "Toss Bank"
+                                        }
+                                    }
+                                ],
+                                "bank_accounts": [
+                                    {
+                                        "bank_code": "004",
+                                        "account_number": "",
+                                        "account_holder": "",
+                                        "is_active": false,
+                                        "is_default": false
+                                    }
+                                ],
+                                "auto_cancel_expired": true,
+                                "auto_cancel_days": 3,
+                                "vbank_due_days": 3,
+                                "dbank_due_days": 7,
+                                "cart_expiry_days": 30,
+                                "stock_restore_on_cancel": true,
+                                "cancellable_statuses": [
+                                    "payment_complete"
+                                ],
+                                "confirmable_statuses": [
+                                    "shipping",
+                                    "delivered"
+                                ]
+                            },
+                            "shipping": {
+                                "default_country": "KR",
+                                "available_countries": [
+                                    {
+                                        "code": "KR",
+                                        "name": {
+                                            "ko": "대한민국",
+                                            "en": "South Korea",
+                                            "ja": "大韓民国"
+                                        },
+                                        "is_active": true
+                                    },
+                                    {
+                                        "code": "US",
+                                        "name": {
+                                            "ko": "미국",
+                                            "en": "United States",
+                                            "ja": "アメリカ"
+                                        },
+                                        "is_active": false
+                                    },
+                                    {
+                                        "code": "JP",
+                                        "name": {
+                                            "ko": "일본",
+                                            "en": "Japan",
+                                            "ja": "日本"
+                                        },
+                                        "is_active": false
+                                    },
+                                    {
+                                        "code": "CN",
+                                        "name": {
+                                            "ko": "중국",
+                                            "en": "China",
+                                            "ja": "中国"
+                                        },
+                                        "is_active": false
+                                    },
+                                    {
+                                        "code": "SG",
+                                        "name": {
+                                            "ko": "싱가포르",
+                                            "en": "Singapore",
+                                            "ja": "シンガポール"
+                                        },
+                                        "is_active": false
+                                    },
+                                    {
+                                        "code": "HK",
+                                        "name": {
+                                            "ko": "홍콩",
+                                            "en": "Hong Kong",
+                                            "ja": "香港"
+                                        },
+                                        "is_active": false
+                                    },
+                                    {
+                                        "code": "TW",
+                                        "name": {
+                                            "ko": "대만",
+                                            "en": "Taiwan",
+                                            "ja": "台湾"
+                                        },
+                                        "is_active": false
+                                    },
+                                    {
+                                        "code": "VN",
+                                        "name": {
+                                            "ko": "베트남",
+                                            "en": "Vietnam",
+                                            "ja": "ベトナム"
+                                        },
+                                        "is_active": false
+                                    },
+                                    {
+                                        "code": "TH",
+                                        "name": {
+                                            "ko": "태국",
+                                            "en": "Thailand",
+                                            "ja": "タイ"
+                                        },
+                                        "is_active": false
+                                    },
+                                    {
+                                        "code": "MY",
+                                        "name": {
+                                            "ko": "말레이시아",
+                                            "en": "Malaysia",
+                                            "ja": "マレーシア"
+                                        },
+                                        "is_active": false
+                                    }
+                                ],
+                                "international_shipping_enabled": false,
+                                "free_shipping_threshold": 50000,
+                                "free_shipping_enabled": true,
+                                "address_validation_enabled": false,
+                                "address_api_provider": "kakao",
+                                "carriers": [
+                                    {
+                                        "id": 1,
+                                        "code": "cj",
+                                        "name": {
+                                            "ko": "CJ대한통운",
+                                            "en": "CJ Logistics",
+                                            "ja": "CJ大韓通運"
+                                        },
+                                        "type": "domestic",
+                                        "tracking_url": "https://trace.cjlogistics.com/next/tracking.html?wblNo={tracking_number}",
+                                        "is_active": true,
+                                        "sort_order": 1
+                                    },
+                                    {
+                                        "id": 2,
+                                        "code": "hanjin",
+                                        "name": {
+                                            "ko": "한진택배",
+                                            "en": "Hanjin Express",
+                                            "ja": "韓進택배"
+                                        },
+                                        "type": "domestic",
+                                        "tracking_url": "https://www.hanjin.com/kor/CMS/DeliveryMgr/WaybillResult.do?wblnb={tracking_number}",
+                                        "is_active": true,
+                                        "sort_order": 2
+                                    },
+                                    {
+                                        "id": 3,
+                                        "code": "lotte",
+                                        "name": {
+                                            "ko": "롯데택배",
+                                            "en": "Lotte Global Logistics",
+                                            "ja": "ロッテ택배"
+                                        },
+                                        "type": "domestic",
+                                        "tracking_url": "https://www.lotteglogis.com/home/reservation/tracking/link498?InvNo={tracking_number}",
+                                        "is_active": true,
+                                        "sort_order": 3
+                                    },
+                                    {
+                                        "id": 4,
+                                        "code": "logen",
+                                        "name": {
+                                            "ko": "로젠택배",
+                                            "en": "Logen Logistics",
+                                            "ja": "ロジェン택배"
+                                        },
+                                        "type": "domestic",
+                                        "tracking_url": "https://www.ilogen.com/web/personal/trace/{tracking_number}",
+                                        "is_active": true,
+                                        "sort_order": 4
+                                    },
+                                    {
+                                        "id": 5,
+                                        "code": "ups",
+                                        "name": {
+                                            "ko": "UPS",
+                                            "en": "UPS",
+                                            "ja": "UPS"
+                                        },
+                                        "type": "international",
+                                        "tracking_url": "https://www.ups.com/track?tracknum={tracking_number}",
+                                        "is_active": true,
+                                        "sort_order": 5
+                                    },
+                                    {
+                                        "id": 6,
+                                        "code": "ems",
+                                        "name": {
+                                            "ko": "EMS",
+                                            "en": "EMS",
+                                            "ja": "EMS"
+                                        },
+                                        "type": "international",
+                                        "tracking_url": "https://service.epost.go.kr/trace.RetrieveEmsRi498.postal?POST_CODE={tracking_number}",
+                                        "is_active": true,
+                                        "sort_order": 6
+                                    },
+                                    {
+                                        "id": 7,
+                                        "code": "dhl",
+                                        "name": {
+                                            "ko": "DHL",
+                                            "en": "DHL",
+                                            "ja": "DHL"
+                                        },
+                                        "type": "international",
+                                        "tracking_url": "https://www.dhl.com/kr-ko/home/tracking/tracking-express.html?submit=1&tracking-id={tracking_number}",
+                                        "is_active": true,
+                                        "sort_order": 7
+                                    },
+                                    {
+                                        "id": 8,
+                                        "code": "fedex",
+                                        "name": {
+                                            "ko": "FedEx",
+                                            "en": "FedEx",
+                                            "ja": "FedEx"
+                                        },
+                                        "type": "international",
+                                        "tracking_url": "https://www.fedex.com/fedextrack/?tracknumbers={tracking_number}",
+                                        "is_active": true,
+                                        "sort_order": 8
+                                    },
+                                    {
+                                        "id": 9,
+                                        "code": "sf",
+                                        "name": {
+                                            "ko": "SF Express",
+                                            "en": "SF Express",
+                                            "ja": "SF Express"
+                                        },
+                                        "type": "international",
+                                        "tracking_url": null,
+                                        "is_active": true,
+                                        "sort_order": 9
+                                    },
+                                    {
+                                        "id": 10,
+                                        "code": "yamato",
+                                        "name": {
+                                            "ko": "야마토운수",
+                                            "en": "Yamato Transport",
+                                            "ja": "ヤマト運輸"
+                                        },
+                                        "type": "international",
+                                        "tracking_url": null,
+                                        "is_active": true,
+                                        "sort_order": 10
+                                    },
+                                    {
+                                        "id": 11,
+                                        "code": "sagawa",
+                                        "name": {
+                                            "ko": "사가와익스프레스",
+                                            "en": "Sagawa Express",
+                                            "ja": "佐川急便"
+                                        },
+                                        "type": "international",
+                                        "tracking_url": null,
+                                        "is_active": true,
+                                        "sort_order": 11
+                                    },
+                                    {
+                                        "id": 12,
+                                        "code": "other",
+                                        "name": {
+                                            "ko": "기타",
+                                            "en": "Other",
+                                            "ja": "その他"
+                                        },
+                                        "type": "domestic",
+                                        "tracking_url": null,
+                                        "is_active": true,
+                                        "sort_order": 99
+                                    }
+                                ],
+                                "types": [
+                                    {
+                                        "id": 1,
+                                        "code": "parcel",
+                                        "name": {
+                                            "ko": "택배",
+                                            "en": "Parcel",
+                                            "ja": "宅配便"
+                                        },
+                                        "category": "domestic",
+                                        "is_active": true,
+                                        "sort_order": 1
+                                    },
+                                    {
+                                        "id": 2,
+                                        "code": "direct",
+                                        "name": {
+                                            "ko": "직접배송",
+                                            "en": "Direct Delivery",
+                                            "ja": "直送"
+                                        },
+                                        "category": "domestic",
+                                        "is_active": true,
+                                        "sort_order": 2
+                                    },
+                                    {
+                                        "id": 3,
+                                        "code": "quick",
+                                        "name": {
+                                            "ko": "퀵서비스",
+                                            "en": "Quick Service",
+                                            "ja": "クイックサービス"
+                                        },
+                                        "category": "domestic",
+                                        "is_active": true,
+                                        "sort_order": 3
+                                    },
+                                    {
+                                        "id": 4,
+                                        "code": "freight",
+                                        "name": {
+                                            "ko": "화물배송",
+                                            "en": "Freight",
+                                            "ja": "貨物配送"
+                                        },
+                                        "category": "domestic",
+                                        "is_active": true,
+                                        "sort_order": 4
+                                    },
+                                    {
+                                        "id": 5,
+                                        "code": "pickup",
+                                        "name": {
+                                            "ko": "매장수령",
+                                            "en": "Store Pickup",
+                                            "ja": "店舗受取"
+                                        },
+                                        "category": "domestic",
+                                        "is_active": true,
+                                        "sort_order": 5
+                                    },
+                                    {
+                                        "id": 6,
+                                        "code": "express",
+                                        "name": {
+                                            "ko": "국내특급",
+                                            "en": "Express",
+                                            "ja": "国内特急"
+                                        },
+                                        "category": "domestic",
+                                        "is_active": false,
+                                        "sort_order": 6
+                                    },
+                                    {
+                                        "id": 7,
+                                        "code": "international_ems",
+                                        "name": {
+                                            "ko": "국제EMS",
+                                            "en": "International EMS",
+                                            "ja": "国際EMS"
+                                        },
+                                        "category": "international",
+                                        "is_active": false,
+                                        "sort_order": 7
+                                    },
+                                    {
+                                        "id": 8,
+                                        "code": "international_standard",
+                                        "name": {
+                                            "ko": "국제일반",
+                                            "en": "International Standard",
+                                            "ja": "国際通常"
+                                        },
+                                        "category": "international",
+                                        "is_active": false,
+                                        "sort_order": 8
+                                    },
+                                    {
+                                        "id": 9,
+                                        "code": "cvs",
+                                        "name": {
+                                            "ko": "편의점택배",
+                                            "en": "Convenience Store",
+                                            "ja": "コンビニ宅配便"
+                                        },
+                                        "category": "other",
+                                        "is_active": false,
+                                        "sort_order": 9
+                                    },
+                                    {
+                                        "id": 10,
+                                        "code": "digital",
+                                        "name": {
+                                            "ko": "디지털상품",
+                                            "en": "Digital",
+                                            "ja": "デジタル商品"
+                                        },
+                                        "category": "other",
+                                        "is_active": false,
+                                        "sort_order": 10
+                                    },
+                                    {
+                                        "id": 11,
+                                        "code": "custom",
+                                        "name": {
+                                            "ko": "직접입력",
+                                            "en": "Custom",
+                                            "ja": "直接入力"
+                                        },
+                                        "category": "domestic",
+                                        "is_active": true,
+                                        "sort_order": 99
+                                    }
+                                ]
+                            },
+                            "seo": {
+                                "meta_category_title": "{commerce_name} - {category_name}",
+                                "meta_category_description": "",
+                                "meta_search_title": "{commerce_name} - {keyword_name}",
+                                "meta_search_description": "",
+                                "meta_product_title": "{commerce_name} - {product_name}",
+                                "meta_product_description": "",
+                                "meta_shop_index_title": "{commerce_name}",
+                                "meta_shop_index_description": "",
+                                "seo_category": true,
+                                "seo_search_result": true,
+                                "seo_product_detail": true,
+                                "seo_shop_index": true
+                            },
+                            "review_settings": {
+                                "write_deadline_days": 90,
+                                "max_images": 5,
+                                "max_image_size_mb": 10
+                            },
+                            "inquiry": {
+                                "board_slug": null
+                            },
+                            "notifications": {
+                                "channels": [
+                                    {
+                                        "id": "mail",
+                                        "is_active": true,
+                                        "sort_order": 1
+                                    },
+                                    {
+                                        "id": "database",
+                                        "is_active": true,
+                                        "sort_order": 2
+                                    }
+                                ]
+                            },
+                            "claim": {
+                                "refund_reasons": [
+                                    {
+                                        "id": 1,
+                                        "type": "refund",
+                                        "code": "order_mistake",
+                                        "name": {
+                                            "ko": "주문 실수",
+                                            "en": "Order Mistake",
+                                            "ja": "注文ミス"
+                                        },
+                                        "localized_name": "주문 실수",
+                                        "fault_type": "customer",
+                                        "is_user_selectable": true,
+                                        "is_active": true,
+                                        "sort_order": 0
+                                    },
+                                    {
+                                        "id": 2,
+                                        "type": "refund",
+                                        "code": "changed_mind",
+                                        "name": {
+                                            "ko": "단순 변심",
+                                            "en": "Changed Mind",
+                                            "ja": "単純な心変わり"
+                                        },
+                                        "localized_name": "단순 변심",
+                                        "fault_type": "customer",
+                                        "is_user_selectable": true,
+                                        "is_active": true,
+                                        "sort_order": 1
+                                    },
+                                    {
+                                        "id": 3,
+                                        "type": "refund",
+                                        "code": "reorder_other",
+                                        "name": {
+                                            "ko": "다른 상품으로 재주문",
+                                            "en": "Reorder with Different Product",
+                                            "ja": "別の商品で再注文"
+                                        },
+                                        "localized_name": "다른 상품으로 재주문",
+                                        "fault_type": "customer",
+                                        "is_user_selectable": true,
+                                        "is_active": true,
+                                        "sort_order": 2
+                                    },
+                                    {
+                                        "id": 4,
+                                        "type": "refund",
+                                        "code": "delayed_delivery",
+                                        "name": {
+                                            "ko": "배송 지연",
+                                            "en": "Delayed Delivery",
+                                            "ja": "配送遅延"
+                                        },
+                                        "localized_name": "배송 지연",
+                                        "fault_type": "seller",
+                                        "is_user_selectable": true,
+                                        "is_active": true,
+                                        "sort_order": 3
+                                    },
+                                    {
+                                        "id": 5,
+                                        "type": "refund",
+                                        "code": "product_info_different",
+                                        "name": {
+                                            "ko": "상품 정보 상이",
+                                            "en": "Product Info Different",
+                                            "ja": "商品情報の相違"
+                                        },
+                                        "localized_name": "상품 정보 상이",
+                                        "fault_type": "seller",
+                                        "is_user_selectable": true,
+                                        "is_active": true,
+                                        "sort_order": 4
+                                    },
+                                    {
+                                        "id": 6,
+                                        "type": "refund",
+                                        "code": "admin_cancel",
+                                        "name": {
+                                            "ko": "관리자 취소",
+                                            "en": "Admin Cancel",
+                                            "ja": "管理者キャンセル"
+                                        },
+                                        "localized_name": "관리자 취소",
+                                        "fault_type": "seller",
+                                        "is_user_selectable": false,
+                                        "is_active": true,
+                                        "sort_order": 5
+                                    },
+                                    {
+                                        "id": 7,
+                                        "type": "refund",
+                                        "code": "etc",
+                                        "name": {
+                                            "ko": "기타",
+                                            "en": "Etc",
+                                            "ja": "その他"
+                                        },
+                                        "localized_name": "기타",
+                                        "fault_type": "customer",
+                                        "is_user_selectable": true,
+                                        "is_active": true,
+                                        "sort_order": 6
+                                    }
+                                ]
+                            },
+                            "available_pg_providers": [
+                                {
+                                    "id": "kginicis",
+                                    "name": "KG 이니시스",
+                                    "icon": "credit-card",
+                                    "supported_methods": [
+                                        "card",
+                                        "bank_transfer",
+                                        "virtual_account",
+                                        "mobile"
+                                    ]
+                                }
+                            ],
+                            "abilities": {
+                                "can_update": true
+                            }
+                        }
+                    },
+                    "seoStats": {
+                        "data": {
+                            "count": 0,
+                            "size_bytes": 0,
+                            "size_formatted": "0 B"
+                        }
+                    },
+                    "copy_source": {
+                        "data": {
+                            "id": 102,
+                            "name": {
+                                "ko": "데일리 와이드 슬랙스",
+                                "en": "Daily Wide Slacks"
+                            },
+                            "product_code": "PT-2042",
+                            "selling_price": 39000,
+                            "thumbnail_url": "/images/placeholder.png",
+                            "images": [
+                                {
+                                    "id": 5101,
+                                    "hash": "img5101",
+                                    "original_filename": "slacks_main.jpg",
+                                    "download_url": "/images/placeholder.png",
+                                    "alt_text": "정면",
+                                    "is_thumbnail": true,
+                                    "sort_order": 0,
+                                    "order": 0,
+                                    "width": 1000,
+                                    "height": 1000,
+                                    "file_size": 172000,
+                                    "size": 172000,
+                                    "size_formatted": "168 KB",
+                                    "mime_type": "image/jpeg",
+                                    "is_image": true
+                                },
+                                {
+                                    "id": 5102,
+                                    "hash": "img5102",
+                                    "original_filename": "slacks_detail.jpg",
+                                    "download_url": "/images/placeholder.png",
+                                    "alt_text": "디테일",
+                                    "is_thumbnail": false,
+                                    "sort_order": 1,
+                                    "order": 1,
+                                    "width": 1000,
+                                    "height": 1000,
+                                    "file_size": 165000,
+                                    "size": 165000,
+                                    "size_formatted": "161 KB",
+                                    "mime_type": "image/jpeg",
+                                    "is_image": true
+                                }
+                            ]
+                        }
+                    },
+                    "refundReasons": {
+                        "data": [
+                            {
+                                "id": 1,
+                                "reason": "단순 변심",
+                                "code": "change_mind"
+                            },
+                            {
+                                "id": 2,
+                                "reason": "상품 불량",
+                                "code": "defective"
+                            }
+                        ]
+                    },
+                    "availableChannels": {
+                        "data": {
+                            "channels": [
+                                {
+                                    "id": "mail",
+                                    "name": "이메일",
+                                    "icon": "fas fa-envelope",
+                                    "source": "core",
+                                    "source_label": "코어"
+                                },
+                                {
+                                    "id": "sms",
+                                    "name": "SMS",
+                                    "icon": "fas fa-comment-sms",
+                                    "source": "core",
+                                    "source_label": "코어"
+                                },
+                                {
+                                    "id": "push",
+                                    "name": "푸시",
+                                    "icon": "fas fa-bell",
+                                    "source": "core",
+                                    "source_label": "코어"
+                                }
+                            ]
+                        }
+                    },
+                    "identityProviders": {
+                        "data": [
+                            {
+                                "id": "kginicis",
+                                "label": "KG이니시스"
+                            },
+                            {
+                                "id": "nice",
+                                "label": "나이스"
+                            }
+                        ]
+                    },
+                    "ecommerceIdentityPurposes": {
+                        "data": [
+                            {
+                                "id": "signup",
+                                "label": "회원가입",
+                                "source_identifier": "sirsoft-ecommerce",
+                                "description": "회원가입 시 본인인증",
+                                "allowed_channels": [
+                                    "mobile"
+                                ]
+                            },
+                            {
+                                "id": "sensitive_action",
+                                "label": "민감 작업",
+                                "source_identifier": "core",
+                                "description": "민감 작업 시 본인인증",
+                                "allowed_channels": [
+                                    "mobile",
+                                    "ipin"
+                                ]
+                            }
+                        ]
+                    },
+                    "ecommerceIdentityPolicies": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "key": "shop.signup",
+                                    "scope": "route",
+                                    "target": "/shop/signup",
+                                    "purpose": "signup",
+                                    "provider_id": "kginicis",
+                                    "grace_minutes": 0,
+                                    "enabled": true,
+                                    "source_type": "admin",
+                                    "abilities": {
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ],
+                            "meta": {
+                                "total": 1,
+                                "current_page": 1,
+                                "last_page": 1,
+                                "per_page": 20
+                            },
+                            "abilities": {
+                                "can_create": true
+                            }
+                        }
+                    },
+                    "ecommerceNotificationDefinitions": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "type": "order.paid",
+                                    "is_active": true,
+                                    "is_default": true,
+                                    "variables": [
+                                        {
+                                            "key": "order_no"
+                                        }
+                                    ],
+                                    "templates": [
+                                        {
+                                            "id": 11,
+                                            "channel": "mail",
+                                            "is_active": true,
+                                            "is_default": true,
+                                            "subject": {
+                                                "ko": "결제 완료 안내",
+                                                "en": "Payment completed"
+                                            },
+                                            "body": {
+                                                "ko": "<p>결제가 완료되었습니다.</p>",
+                                                "en": "<p>Payment completed.</p>"
+                                            },
+                                            "recipients": [
+                                                {
+                                                    "type": "trigger_user"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "pagination": {
+                                "total": 1,
+                                "current_page": 1,
+                                "last_page": 1
+                            },
+                            "abilities": {
+                                "can_update": true
+                            }
+                        }
+                    },
+                    "roles": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "identifier": "super_admin",
+                                    "name": "최고 관리자",
+                                    "display_name": "최고 관리자",
+                                    "description": "전체 권한",
+                                    "is_system": true
+                                },
+                                {
+                                    "id": 2,
+                                    "identifier": "manager",
+                                    "name": "운영자",
+                                    "display_name": "운영자",
+                                    "description": "운영 권한",
+                                    "is_system": false
+                                },
+                                {
+                                    "id": 3,
+                                    "identifier": "member",
+                                    "name": "일반 회원",
+                                    "display_name": "일반 회원",
+                                    "description": "기본 회원",
+                                    "is_system": true
+                                }
+                            ]
+                        }
+                    },
+                    "category": {
+                        "data": {
+                            "breadcrumb": [
+                                "샘플"
+                            ],
+                            "children": [
+                                "샘플"
+                            ],
+                            "description": "<p>샘플 설명입니다.</p>",
+                            "description_localized": "샘플 description_localized",
+                            "images": [
+                                "샘플"
+                            ],
+                            "name": "샘플 name",
+                            "name_localized": "샘플 name_localized"
+                        }
+                    },
+                    "qna": {
+                        "data": {
+                            "items": [
+                                "샘플"
+                            ],
+                            "meta": {
+                                "abilities": {
+                                    "can_delete": true,
+                                    "can_update": true
+                                },
+                                "board_settings": "샘플",
+                                "current_page": 3,
+                                "last_page": 3,
+                                "total": 10000
+                            }
+                        }
+                    },
+                    "productDownloadableCoupons": {
+                        "data": {
+                            "data": "샘플"
+                        }
+                    },
+                    "cartItems": {
+                        "data": {
+                            "calculation": {
+                                "items": [
+                                    "샘플"
+                                ],
+                                "summary": {
+                                    "base_shipping_total": 10000,
+                                    "code_discount": 10000,
+                                    "discount_formatted": "10,000원",
+                                    "extra_shipping_total": 10000,
+                                    "final_amount_formatted": "10,000원",
+                                    "mileage_formatted": "10,000원",
+                                    "multi_currency": "샘플",
+                                    "order_coupon_discount": 10000,
+                                    "payment_amount_formatted": "10,000원",
+                                    "points_earning": 10000,
+                                    "product_coupon_discount": 10000,
+                                    "shipping_discount": 10000,
+                                    "shipping_fee_formatted": "10,000원",
+                                    "subtotal_formatted": "10,000원",
+                                    "tax_free_amount": 10000,
+                                    "taxable_amount": 10000,
+                                    "total_discount": 10000,
+                                    "total_shipping": 10000
+                                }
+                            },
+                            "item_count": 3,
+                            "items": [
+                                "샘플"
+                            ]
+                        }
+                    },
+                    "checkoutData": {
+                        "data": {
+                            "available_coupons": [
+                                "샘플"
+                            ],
+                            "calculation": {
+                                "items": [
+                                    "샘플"
+                                ],
+                                "promotions": {
+                                    "order_promotions": {
+                                        "coupons": [
+                                            "샘플"
+                                        ]
+                                    },
+                                    "product_promotions": {
+                                        "coupons": [
+                                            "샘플"
+                                        ]
+                                    }
+                                },
+                                "summary": {
+                                    "base_shipping_total": 10000,
+                                    "code_discount": 10000,
+                                    "code_discount_formatted": "10,000원",
+                                    "extra_shipping_total": 10000,
+                                    "final_amount": 10000,
+                                    "final_amount_formatted": "10,000원",
+                                    "mileage_formatted": "10,000원",
+                                    "multi_currency": "샘플",
+                                    "order_coupon_discount": 10000,
+                                    "order_coupon_discount_formatted": "10,000원",
+                                    "payment_amount_formatted": "10,000원",
+                                    "points_earning": 10000,
+                                    "points_used": 10000,
+                                    "points_used_formatted": "10,000원",
+                                    "product_coupon_discount": 10000,
+                                    "shipping_discount": 10000,
+                                    "shipping_discount_formatted": "10,000원",
+                                    "subtotal_formatted": "10,000원",
+                                    "tax_free_amount": 10000,
+                                    "taxable_amount": 10000,
+                                    "total_discount": 10000,
+                                    "total_discount_formatted": "10,000원",
+                                    "total_shipping": 10000,
+                                    "total_shipping_formatted": "10,000원"
+                                }
+                            },
+                            "items": [
+                                "샘플"
+                            ],
+                            "mileage": {
+                                "balance": 10000,
+                                "balance_formatted": "10,000원",
+                                "max_usable": "샘플",
+                                "max_usable_formatted": "10,000원"
+                            },
+                            "temp_order_id": 1
+                        }
+                    },
+                    "userAddresses": {
+                        "data": {
+                            "addresses": {
+                                "data": "샘플"
+                            }
+                        }
+                    },
+                    "paymentSettings": {
+                        "data": {
+                            "order_settings": {
+                                "bank_accounts": [
+                                    "샘플"
+                                ],
+                                "dbank_due_days": 3,
+                                "payment_methods": "샘플",
+                                "vbank_due_days": 3
+                            }
+                        }
+                    },
+                    "orderData": {
+                        "data": {
+                            "mc_subtotal_amount": 10000,
+                            "mc_total_amount": 10000,
+                            "mc_total_discount_amount": 10000,
+                            "mc_total_shipping_amount": 10000,
+                            "options": [
+                                "샘플"
+                            ],
+                            "order_number": 3,
+                            "payment": {
+                                "dbank_account": "샘플",
+                                "dbank_holder": "샘플 dbank_holder",
+                                "dbank_name": "샘플 dbank_name",
+                                "deposit_due_at_formatted": "10,000원",
+                                "depositor_name": "샘플 depositor_name",
+                                "payment_method": "card",
+                                "vbank_due_at": "2026-05-24 09:32:38",
+                                "vbank_holder": "샘플 vbank_holder",
+                                "vbank_name": "샘플 vbank_name",
+                                "vbank_number": 3
+                            },
+                            "shipping_address": {
+                                "address": "샘플 address",
+                                "address_detail": "샘플 address_detail",
+                                "city": "샘플",
+                                "recipient_country_code": "KR",
+                                "recipient_name": "샘플 recipient_name",
+                                "recipient_phone": "010-1234-5678",
+                                "state": "sample",
+                                "zipcode": "sample"
+                            },
+                            "subtotal_amount_formatted": "10,000원",
+                            "total_amount_formatted": "10,000원",
+                            "total_discount_amount": 10000,
+                            "total_discount_amount_formatted": "10,000원",
+                            "total_shipping_amount": 10000,
+                            "total_shipping_amount_formatted": "10,000원"
+                        }
+                    },
+                    "wishlist": {
+                        "data": {
+                            "data": [
+                                "샘플"
+                            ],
+                            "pagination": {
+                                "current_page": 3,
+                                "last_page": 3,
+                                "total": 10000
+                            }
+                        }
+                    },
+                    "addresses": {
+                        "data": {
+                            "addresses": {
+                                "data": "샘플"
+                            }
+                        }
+                    },
+                    "myInquiries": {
+                        "data": {
+                            "items": [
+                                "샘플"
+                            ],
+                            "meta": {
+                                "board_settings": "샘플",
+                                "current_page": 3,
+                                "last_page": 3,
+                                "total": 10000
+                            }
+                        }
+                    },
+                    "board_list_for_inquiry": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": "공지사항",
+                                    "slug": "notice",
+                                    "is_active": true,
+                                    "type": "basic",
+                                    "description": "공지사항 게시판입니다.",
+                                    "per_page": 20,
+                                    "per_page_mobile": 15,
+                                    "order_by": "created_at",
+                                    "order_direction": "DESC",
+                                    "categories": [],
+                                    "show_view_count": true,
+                                    "secret_mode": "{MASKED}",
+                                    "use_comment": true,
+                                    "use_reply": true,
+                                    "max_reply_depth": 5,
+                                    "use_report": false,
+                                    "comment_order": "ASC",
+                                    "max_comment_depth": 10,
+                                    "min_title_length": 2,
+                                    "max_title_length": 200,
+                                    "min_content_length": 2,
+                                    "max_content_length": 10000,
+                                    "min_comment_length": 2,
+                                    "max_comment_length": 1000,
+                                    "blocked_keywords": [],
+                                    "use_file_upload": false,
+                                    "max_file_size": 10,
+                                    "max_file_count": 5,
+                                    "allowed_extensions": [
+                                        "jpg",
+                                        "jpeg",
+                                        "png",
+                                        "gif",
+                                        "webp",
+                                        "pdf",
+                                        "doc",
+                                        "docx",
+                                        "xls",
+                                        "xlsx",
+                                        "ppt",
+                                        "pptx",
+                                        "hwp",
+                                        "txt",
+                                        "zip"
+                                    ],
+                                    "new_display_hours": 24,
+                                    "board_managers": [
+                                        {
+                                            "uuid": "00000000-0000-4000-8000-000000000001",
+                                            "name": "관리자",
+                                            "email": "admin@example.com"
+                                        }
+                                    ],
+                                    "board_steps": [],
+                                    "board_manager_ids": [
+                                        "00000000-0000-4000-8000-000000000001"
+                                    ],
+                                    "board_step_ids": [],
+                                    "notify_author": true,
+                                    "notify_admin_on_post": true,
+                                    "created_at": "2026-05-26 02:41:23",
+                                    "updated_at": "2026-05-26 02:41:23",
+                                    "permissions": null,
+                                    "category_post_counts": null,
+                                    "posts_count": 0,
+                                    "user_abilities": null,
+                                    "abilities": {
+                                        "can_create": true,
+                                        "can_update": true,
+                                        "can_delete": true
+                                    }
+                                }
+                            ],
+                            "pagination": {
+                                "current_page": 1,
+                                "last_page": 1,
+                                "per_page": 20,
+                                "total": 1,
+                                "from": 1,
+                                "to": 1,
+                                "has_more_pages": false
+                            },
+                            "abilities": {
+                                "can_create": true,
+                                "can_update": true,
+                                "can_delete": true
+                            }
+                        }
+                    },
+                    "notifications": {
+                        "channels": [
+                            {
+                                "key": "email",
+                                "label": "이메일",
+                                "enabled": true
+                            },
+                            {
+                                "key": "push",
+                                "label": "푸시",
+                                "enabled": true
+                            }
+                        ],
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "type": "comment",
+                                    "title": "샘플 알림",
+                                    "message": "샘플 알림 내용입니다.",
+                                    "is_read": false,
+                                    "created_at": "2026-05-24 09:32:38",
+                                    "link": "/"
+                                }
+                            ],
+                            "pagination": {
+                                "current_page": 1,
+                                "last_page": 1,
+                                "total": 1,
+                                "has_more_pages": false
+                            },
+                            "unread_count": 2
+                        }
+                    },
+                    "mileage_balance": {
+                        "data": {
+                            "mileage": {
+                                "available": 50000,
+                                "pending": 10000,
+                                "total_earned": 150000,
+                                "expiring_soon": 5000,
+                                "enabled": true
+                            }
+                        }
+                    },
+                    "mileage_history": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1001,
+                                    "user_id": 100,
+                                    "currency": "KRW",
+                                    "type": "earn",
+                                    "type_label": "적립",
+                                    "admin_badge_group": null,
+                                    "user_display_category": "주문 완료",
+                                    "amount": 5000,
+                                    "amount_formatted": "5,000",
+                                    "remaining_amount": 5000,
+                                    "remaining_amount_formatted": "5,000",
+                                    "balance_after": 55000,
+                                    "order_id": null,
+                                    "order_option_id": null,
+                                    "order_cancel_id": null,
+                                    "source_transaction_id": null,
+                                    "granted_by": null,
+                                    "granted_by_name": null,
+                                    "granted_by_uuid": null,
+                                    "user_name": "홍길동",
+                                    "user_uuid": "u-1001",
+                                    "order_number": "20260601-0042",
+                                    "description": "Order reward",
+                                    "memo": null,
+                                    "expires_at": "2027-06-01T00:00:00+09:00",
+                                    "expires_at_formatted": "Jun 1, 2027 12:00 AM",
+                                    "expires_at_date": "2027-06-01",
+                                    "expired_at": null,
+                                    "expired_at_formatted": null,
+                                    "created_at": "2026-06-01T14:30:00+09:00",
+                                    "created_at_formatted": "Jun 1, 2026 2:30 PM",
+                                    "created_at_date": "2026-06-01",
+                                    "is_earning": true,
+                                    "can_edit_expiry": true,
+                                    "expired_amount": 0,
+                                    "expired_amount_formatted": "0",
+                                    "expiry_state": "active",
+                                    "abilities": {
+                                        "can_manage": false
+                                    }
+                                },
+                                {
+                                    "id": 1002,
+                                    "user_id": 100,
+                                    "currency": "KRW",
+                                    "type": "use",
+                                    "type_label": "사용",
+                                    "admin_badge_group": null,
+                                    "user_display_category": "주문",
+                                    "amount": -3000,
+                                    "amount_formatted": "-3,000",
+                                    "remaining_amount": 0,
+                                    "remaining_amount_formatted": "0",
+                                    "balance_after": 52000,
+                                    "order_id": null,
+                                    "order_option_id": null,
+                                    "order_cancel_id": null,
+                                    "source_transaction_id": null,
+                                    "granted_by": null,
+                                    "granted_by_name": null,
+                                    "granted_by_uuid": null,
+                                    "user_name": "홍길동",
+                                    "user_uuid": "u-1001",
+                                    "order_number": "20260530-0118",
+                                    "description": null,
+                                    "memo": null,
+                                    "expires_at": null,
+                                    "expires_at_formatted": null,
+                                    "expires_at_date": null,
+                                    "expired_at": null,
+                                    "expired_at_formatted": null,
+                                    "created_at": "2026-05-30T13:05:00+09:00",
+                                    "created_at_formatted": "May 30, 2026 1:05 PM",
+                                    "created_at_date": "2026-05-30",
+                                    "is_earning": false,
+                                    "can_edit_expiry": false,
+                                    "expired_amount": 0,
+                                    "expired_amount_formatted": "0",
+                                    "expiry_state": "active",
+                                    "abilities": {
+                                        "can_manage": false
+                                    }
+                                }
+                            ],
+                            "abilities": {
+                                "can_manage": false
+                            },
+                            "currencies": [
+                                "KRW"
+                            ],
+                            "pagination": {
+                                "current_page": 1,
+                                "last_page": 1,
+                                "per_page": 20,
+                                "total": 2,
+                                "from": 1,
+                                "to": 2,
+                                "has_more_pages": false
+                            }
+                        }
+                    },
+                    "reviewSettings": {
+                        "data": {
+                            "review_settings": {
+                                "max_images": 5,
+                                "max_image_size_mb": 10,
+                                "write_deadline_days": 30
+                            }
+                        }
+                    }
+                },
+                "byEndpointPattern": {
+                    "/api/modules/sirsoft-ecommerce/products*": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": "샘플 상품 1",
+                                    "price": 29000,
+                                    "sale_price": 24000,
+                                    "thumbnail": null,
+                                    "stock_status": "in_stock",
+                                    "rating": 4.5
+                                },
+                                {
+                                    "id": 2,
+                                    "name": "샘플 상품 2",
+                                    "price": 15000,
+                                    "sale_price": null,
+                                    "thumbnail": null,
+                                    "stock_status": "in_stock",
+                                    "rating": 4
+                                },
+                                {
+                                    "id": 3,
+                                    "name": "샘플 상품 3 (품절)",
+                                    "price": 42000,
+                                    "sale_price": null,
+                                    "thumbnail": null,
+                                    "stock_status": "out_of_stock",
+                                    "rating": 3.5
+                                }
+                            ],
+                            "meta": {
+                                "total": 3,
+                                "per_page": 20,
+                                "current_page": 1
+                            }
+                        }
+                    },
+                    "/api/modules/sirsoft-ecommerce/cart*": {
+                        "data": {
+                            "items": [
+                                {
+                                    "product_id": 1,
+                                    "name": "샘플 상품 1",
+                                    "thumbnail": null,
+                                    "price": 24000,
+                                    "quantity": 2,
+                                    "options": "블랙"
+                                },
+                                {
+                                    "product_id": 2,
+                                    "name": "샘플 상품 2",
+                                    "thumbnail": null,
+                                    "price": 15000,
+                                    "quantity": 1,
+                                    "options": null
+                                }
+                            ],
+                            "total": 63000,
+                            "discount": 0,
+                            "shipping_fee": 3000
+                        }
+                    },
+                    "/api/modules/sirsoft-ecommerce/checkout*": {
+                        "data": {
+                            "items": [
+                                {
+                                    "product_id": 1,
+                                    "name": "샘플 상품 1",
+                                    "price": 24000,
+                                    "quantity": 2
+                                }
+                            ],
+                            "addresses": [
+                                {
+                                    "id": 1,
+                                    "recipient": "샘플 수령인",
+                                    "address": "서울시 샘플구 샘플로 1",
+                                    "is_default": true
+                                }
+                            ],
+                            "payment_methods": [
+                                {
+                                    "code": "card",
+                                    "name": "신용카드"
+                                },
+                                {
+                                    "code": "vbank",
+                                    "name": "무통장입금"
+                                }
+                            ],
+                            "coupons": [],
+                            "points": 1250
+                        }
+                    },
+                    "/api/modules/sirsoft-ecommerce/wishlist*": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "name": "샘플 찜 상품 1",
+                                    "price": 29000,
+                                    "thumbnail": null,
+                                    "stock_status": "in_stock"
+                                },
+                                {
+                                    "id": 2,
+                                    "name": "샘플 찜 상품 2",
+                                    "price": 15000,
+                                    "thumbnail": null,
+                                    "stock_status": "in_stock"
+                                }
+                            ],
+                            "meta": {
+                                "total": 2,
+                                "per_page": 20,
+                                "current_page": 1
+                            }
+                        }
+                    },
+                    "/api/modules/sirsoft-ecommerce/user/orders*": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "order_no": "20260529-0001",
+                                    "created_at": "2026-05-29",
+                                    "status": "paid",
+                                    "total": 48000,
+                                    "first_item_name": "샘플 상품 1",
+                                    "item_count": 2
+                                }
+                            ],
+                            "meta": {
+                                "total": 1,
+                                "per_page": 20,
+                                "current_page": 1
+                            }
+                        }
+                    },
+                    "/api/modules/sirsoft-ecommerce/user/addresses*": {
+                        "data": [
+                            {
+                                "id": 1,
+                                "recipient": "샘플 수령인",
+                                "phone": "010-0000-0000",
+                                "zip": "00000",
+                                "address": "서울시 샘플구 샘플로 1",
+                                "detail": "101동 101호",
+                                "is_default": true,
+                                "label": "집"
+                            }
+                        ]
+                    },
+                    "/api/modules/sirsoft-ecommerce/user/inquiries*": {
+                        "data": {
+                            "data": [
+                                {
+                                    "id": 1,
+                                    "product": {
+                                        "id": 1,
+                                        "name": "샘플 상품 1"
+                                    },
+                                    "title": "배송 문의",
+                                    "body": "언제 배송되나요?",
+                                    "answer": "내일 발송 예정입니다.",
+                                    "created_at": "2026-05-25",
+                                    "status": "answered"
+                                }
+                            ],
+                            "meta": {
+                                "total": 1,
+                                "per_page": 20,
+                                "current_page": 1
+                            }
+                        }
+                    }
+                }
+            },
+            "states": {
+                "comment": "이커머스 도메인 변종. 사용자 shop/* 라우트(템플릿 sirsoft-basic 소속이나 코어 concat 으로 일원화)와 관리자 라우트(*/admin/ecommerce/*) 변종을 모두 포함한다. shop/* scope.match 는 편집기가 동적 path 를 'shop' 으로 평가한 selectedRoute.path 와 일치한다(Chrome MCP 실측).",
+                "groups": [
+                    {
+                        "comment": "shop/show — product.data.sales_status 값(on_sale/sold_out/suspended/coming_soon)으로 판매 상태 배지·버튼을 if 분기한다(본문 line 388/406). 재고는 stock 으로 분기.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "/shop/products/:id"
+                        },
+                        "items": [
+                            {
+                                "id": "in_stock",
+                                "label": "$t:editor.state.in_stock",
+                                "default": true
+                            },
+                            {
+                                "id": "out_of_stock",
+                                "label": "$t:editor.state.out_of_stock",
+                                "sampleDataOverrides": {
+                                    "byEndpointPattern": {
+                                        "/api/modules/sirsoft-ecommerce/products/*": {
+                                            "data": {
+                                                "id": 101,
+                                                "name": {
+                                                    "ko": "베이직 오버핏 코튼 티셔츠",
+                                                    "en": "Basic Overfit Cotton T-Shirt"
+                                                },
+                                                "name_localized": "베이직 오버핏 코튼 티셔츠",
+                                                "product_code": "TS-1001",
+                                                "sku": "TS-1001-BLK",
+                                                "categories": [
+                                                    {
+                                                        "id": 1,
+                                                        "name": {
+                                                            "ko": "패션의류",
+                                                            "en": "Fashion"
+                                                        },
+                                                        "name_localized": "패션의류",
+                                                        "breadcrumb": "패션의류",
+                                                        "path": "1",
+                                                        "is_primary": false
+                                                    },
+                                                    {
+                                                        "id": 11,
+                                                        "name": {
+                                                            "ko": "상의",
+                                                            "en": "Tops"
+                                                        },
+                                                        "name_localized": "상의",
+                                                        "breadcrumb": "패션의류 > 상의",
+                                                        "path": "1/11",
+                                                        "is_primary": true
+                                                    }
+                                                ],
+                                                "category_name": "상의",
+                                                "list_price": 29000,
+                                                "list_price_formatted": "29,000원",
+                                                "selling_price": 23200,
+                                                "selling_price_formatted": "23,200원",
+                                                "discount_rate": 20,
+                                                "multi_currency_list_price": {
+                                                    "KRW": {
+                                                        "price": 29000,
+                                                        "formatted": "29,000원",
+                                                        "is_default": true,
+                                                        "editable": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 22.31,
+                                                        "formatted": "$22.31",
+                                                        "is_default": false,
+                                                        "editable": false,
+                                                        "exchange_rate": 1300
+                                                    }
+                                                },
+                                                "multi_currency_selling_price": {
+                                                    "KRW": {
+                                                        "price": 23200,
+                                                        "formatted": "23,200원",
+                                                        "is_default": true,
+                                                        "editable": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 17.85,
+                                                        "formatted": "$17.85",
+                                                        "is_default": false,
+                                                        "editable": false,
+                                                        "exchange_rate": 1300
+                                                    }
+                                                },
+                                                "stock_quantity": 0,
+                                                "min_purchase_qty": 1,
+                                                "max_purchase_qty": 10,
+                                                "sales_status": "on_sale",
+                                                "sales_status_label": "판매중",
+                                                "brand_name": "코지홈",
+                                                "labels": [
+                                                    {
+                                                        "name": "BEST",
+                                                        "color": "#ef4444"
+                                                    },
+                                                    {
+                                                        "name": "한정특가",
+                                                        "color": "#f59e0b"
+                                                    }
+                                                ],
+                                                "additional_options": [
+                                                    {
+                                                        "id": 9001,
+                                                        "name": "이니셜 자수 추가",
+                                                        "is_required": false
+                                                    },
+                                                    {
+                                                        "id": 9002,
+                                                        "name": "선물 포장",
+                                                        "is_required": false
+                                                    }
+                                                ],
+                                                "shipping_policy_id": 1,
+                                                "free_shipping": false,
+                                                "shipping_fee_formatted": "3,000원 (50,000원 이상 무료)",
+                                                "shipping_policy": {
+                                                    "name": "기본 배송정책",
+                                                    "charge_policy": "conditional_free",
+                                                    "charge_policy_label": "조건부 무료",
+                                                    "base_fee": 3000,
+                                                    "base_fee_formatted": "3,000원",
+                                                    "free_threshold": 50000,
+                                                    "free_threshold_formatted": "50,000원",
+                                                    "fee_summary": "3,000원 (50,000원 이상 무료배송)"
+                                                },
+                                                "short_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "short_description_localized": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "description": {
+                                                    "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
+                                                },
+                                                "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                                                "description_mode": "html",
+                                                "images": [
+                                                    {
+                                                        "id": 5001,
+                                                        "hash": "img5001",
+                                                        "original_filename": "tshirt_main.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "정면",
+                                                        "alt_text_current": "베이직 오버핏 티셔츠 정면",
+                                                        "is_thumbnail": true,
+                                                        "sort_order": 0,
+                                                        "order": 0,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 184320,
+                                                        "size": 184320,
+                                                        "size_formatted": "180 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    },
+                                                    {
+                                                        "id": 5002,
+                                                        "hash": "img5002",
+                                                        "original_filename": "tshirt_back.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "후면",
+                                                        "alt_text_current": "베이직 오버핏 티셔츠 후면",
+                                                        "is_thumbnail": false,
+                                                        "sort_order": 1,
+                                                        "order": 1,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 176128,
+                                                        "size": 176128,
+                                                        "size_formatted": "172 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    },
+                                                    {
+                                                        "id": 5003,
+                                                        "hash": "img5003",
+                                                        "original_filename": "tshirt_detail.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "디테일",
+                                                        "alt_text_current": "소매 디테일 컷",
+                                                        "is_thumbnail": false,
+                                                        "sort_order": 2,
+                                                        "order": 2,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 158720,
+                                                        "size": 158720,
+                                                        "size_formatted": "155 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    }
+                                                ],
+                                                "thumbnail_url": "/images/placeholder.png",
+                                                "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
+                                                "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "meta_keywords": [
+                                                    "티셔츠",
+                                                    "오버핏",
+                                                    "코튼"
+                                                ],
+                                                "has_options": true,
+                                                "option_groups": [
+                                                    {
+                                                        "name": {
+                                                            "ko": "색상",
+                                                            "en": "Color"
+                                                        },
+                                                        "name_localized": "색상",
+                                                        "values": [
+                                                            {
+                                                                "ko": "블랙",
+                                                                "en": "Black"
+                                                            },
+                                                            {
+                                                                "ko": "화이트",
+                                                                "en": "White"
+                                                            },
+                                                            {
+                                                                "ko": "네이비",
+                                                                "en": "Navy"
+                                                            }
+                                                        ],
+                                                        "values_localized": [
+                                                            "블랙",
+                                                            "화이트",
+                                                            "네이비"
+                                                        ]
+                                                    },
+                                                    {
+                                                        "name": {
+                                                            "ko": "사이즈",
+                                                            "en": "Size"
+                                                        },
+                                                        "name_localized": "사이즈",
+                                                        "values": [
+                                                            {
+                                                                "ko": "S",
+                                                                "en": "S"
+                                                            },
+                                                            {
+                                                                "ko": "M",
+                                                                "en": "M"
+                                                            },
+                                                            {
+                                                                "ko": "L",
+                                                                "en": "L"
+                                                            }
+                                                        ],
+                                                        "values_localized": [
+                                                            "S",
+                                                            "M",
+                                                            "L"
+                                                        ]
+                                                    }
+                                                ],
+                                                "options": [
+                                                    {
+                                                        "id": 7001,
+                                                        "option_code": "OPT-BLK-S",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "블랙"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "S"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "블랙",
+                                                            "S"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "블랙 / S"
+                                                        },
+                                                        "option_name_localized": "블랙 / S",
+                                                        "price_adjustment": 0,
+                                                        "price_adjustment_formatted": "+0원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 29000,
+                                                        "list_price_formatted": "29,000원",
+                                                        "selling_price": 23200,
+                                                        "selling_price_formatted": "23,200원",
+                                                        "final_price": 23200,
+                                                        "final_price_formatted": "23,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 22.31,
+                                                                "formatted": "$22.31",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 23200,
+                                                                "formatted": "23,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 17.85,
+                                                                "formatted": "$17.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 0,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": true,
+                                                        "is_default": true,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-BLK-S",
+                                                        "sort_order": 0
+                                                    },
+                                                    {
+                                                        "id": 7002,
+                                                        "option_code": "OPT-BLK-M",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "블랙"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "M"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "블랙",
+                                                            "M"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "블랙 / M"
+                                                        },
+                                                        "option_name_localized": "블랙 / M",
+                                                        "price_adjustment": 0,
+                                                        "price_adjustment_formatted": "+0원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 29000,
+                                                        "list_price_formatted": "29,000원",
+                                                        "selling_price": 23200,
+                                                        "selling_price_formatted": "23,200원",
+                                                        "final_price": 23200,
+                                                        "final_price_formatted": "23,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 22.31,
+                                                                "formatted": "$22.31",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 23200,
+                                                                "formatted": "23,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 17.85,
+                                                                "formatted": "$17.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 0,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": true,
+                                                        "is_default": false,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-BLK-M",
+                                                        "sort_order": 1
+                                                    },
+                                                    {
+                                                        "id": 7003,
+                                                        "option_code": "OPT-WHT-L",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "화이트"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "L"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "화이트",
+                                                            "L"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "화이트 / L"
+                                                        },
+                                                        "option_name_localized": "화이트 / L",
+                                                        "price_adjustment": 2000,
+                                                        "price_adjustment_formatted": "+2,000원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 31000,
+                                                        "list_price_formatted": "31,000원",
+                                                        "selling_price": 25200,
+                                                        "selling_price_formatted": "25,200원",
+                                                        "final_price": 25200,
+                                                        "final_price_formatted": "25,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 31000,
+                                                                "formatted": "31,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 23.85,
+                                                                "formatted": "$23.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 25200,
+                                                                "formatted": "25,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 19.38,
+                                                                "formatted": "$19.38",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 0,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": true,
+                                                        "is_default": false,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-WHT-L",
+                                                        "sort_order": 2
+                                                    }
+                                                ],
+                                                "notice": {
+                                                    "template_name": "의류 상품정보제공고시",
+                                                    "values": [
+                                                        {
+                                                            "label": "제품 소재",
+                                                            "value": "면 100%"
+                                                        },
+                                                        {
+                                                            "label": "색상",
+                                                            "value": "블랙, 화이트, 네이비"
+                                                        },
+                                                        {
+                                                            "label": "치수",
+                                                            "value": "S, M, L (상세 사이즈표 참고)"
+                                                        },
+                                                        {
+                                                            "label": "제조자",
+                                                            "value": "코지홈"
+                                                        },
+                                                        {
+                                                            "label": "제조국",
+                                                            "value": "대한민국"
+                                                        },
+                                                        {
+                                                            "label": "취급 시 주의사항",
+                                                            "value": "찬물 단독 손세탁 권장"
+                                                        },
+                                                        {
+                                                            "label": "품질보증기준",
+                                                            "value": "관련 법 및 소비자분쟁해결기준에 따름"
+                                                        },
+                                                        {
+                                                            "label": "A/S 책임자와 전화번호",
+                                                            "value": "코지홈 고객센터 1588-0000"
+                                                        }
+                                                    ]
+                                                },
+                                                "common_info": {
+                                                    "name": "배송/교환/환불 안내",
+                                                    "content": "<p>주문 후 영업일 기준 1~2일 내 출고됩니다. 단순 변심 교환·반품은 수령 후 7일 이내 가능하며, 왕복 배송비가 부과됩니다.</p>",
+                                                    "content_mode": "html"
+                                                },
+                                                "is_wishlisted": false
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "id": "sold_out",
+                                "label": "$t:editor.state.sold_out",
+                                "sampleDataOverrides": {
+                                    "byEndpointPattern": {
+                                        "/api/modules/sirsoft-ecommerce/products/*": {
+                                            "data": {
+                                                "id": 101,
+                                                "name": {
+                                                    "ko": "베이직 오버핏 코튼 티셔츠",
+                                                    "en": "Basic Overfit Cotton T-Shirt"
+                                                },
+                                                "name_localized": "베이직 오버핏 코튼 티셔츠",
+                                                "product_code": "TS-1001",
+                                                "sku": "TS-1001-BLK",
+                                                "categories": [
+                                                    {
+                                                        "id": 1,
+                                                        "name": {
+                                                            "ko": "패션의류",
+                                                            "en": "Fashion"
+                                                        },
+                                                        "name_localized": "패션의류",
+                                                        "breadcrumb": "패션의류",
+                                                        "path": "1",
+                                                        "is_primary": false
+                                                    },
+                                                    {
+                                                        "id": 11,
+                                                        "name": {
+                                                            "ko": "상의",
+                                                            "en": "Tops"
+                                                        },
+                                                        "name_localized": "상의",
+                                                        "breadcrumb": "패션의류 > 상의",
+                                                        "path": "1/11",
+                                                        "is_primary": true
+                                                    }
+                                                ],
+                                                "category_name": "상의",
+                                                "list_price": 29000,
+                                                "list_price_formatted": "29,000원",
+                                                "selling_price": 23200,
+                                                "selling_price_formatted": "23,200원",
+                                                "discount_rate": 20,
+                                                "multi_currency_list_price": {
+                                                    "KRW": {
+                                                        "price": 29000,
+                                                        "formatted": "29,000원",
+                                                        "is_default": true,
+                                                        "editable": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 22.31,
+                                                        "formatted": "$22.31",
+                                                        "is_default": false,
+                                                        "editable": false,
+                                                        "exchange_rate": 1300
+                                                    }
+                                                },
+                                                "multi_currency_selling_price": {
+                                                    "KRW": {
+                                                        "price": 23200,
+                                                        "formatted": "23,200원",
+                                                        "is_default": true,
+                                                        "editable": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 17.85,
+                                                        "formatted": "$17.85",
+                                                        "is_default": false,
+                                                        "editable": false,
+                                                        "exchange_rate": 1300
+                                                    }
+                                                },
+                                                "stock_quantity": 0,
+                                                "min_purchase_qty": 1,
+                                                "max_purchase_qty": 10,
+                                                "sales_status": "sold_out",
+                                                "sales_status_label": "품절",
+                                                "brand_name": "코지홈",
+                                                "labels": [
+                                                    {
+                                                        "name": "BEST",
+                                                        "color": "#ef4444"
+                                                    },
+                                                    {
+                                                        "name": "한정특가",
+                                                        "color": "#f59e0b"
+                                                    }
+                                                ],
+                                                "additional_options": [
+                                                    {
+                                                        "id": 9001,
+                                                        "name": "이니셜 자수 추가",
+                                                        "is_required": false
+                                                    },
+                                                    {
+                                                        "id": 9002,
+                                                        "name": "선물 포장",
+                                                        "is_required": false
+                                                    }
+                                                ],
+                                                "shipping_policy_id": 1,
+                                                "free_shipping": false,
+                                                "shipping_fee_formatted": "3,000원 (50,000원 이상 무료)",
+                                                "shipping_policy": {
+                                                    "name": "기본 배송정책",
+                                                    "charge_policy": "conditional_free",
+                                                    "charge_policy_label": "조건부 무료",
+                                                    "base_fee": 3000,
+                                                    "base_fee_formatted": "3,000원",
+                                                    "free_threshold": 50000,
+                                                    "free_threshold_formatted": "50,000원",
+                                                    "fee_summary": "3,000원 (50,000원 이상 무료배송)"
+                                                },
+                                                "short_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "short_description_localized": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "description": {
+                                                    "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
+                                                },
+                                                "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                                                "description_mode": "html",
+                                                "images": [
+                                                    {
+                                                        "id": 5001,
+                                                        "hash": "img5001",
+                                                        "original_filename": "tshirt_main.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "정면",
+                                                        "alt_text_current": "베이직 오버핏 티셔츠 정면",
+                                                        "is_thumbnail": true,
+                                                        "sort_order": 0,
+                                                        "order": 0,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 184320,
+                                                        "size": 184320,
+                                                        "size_formatted": "180 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    },
+                                                    {
+                                                        "id": 5002,
+                                                        "hash": "img5002",
+                                                        "original_filename": "tshirt_back.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "후면",
+                                                        "alt_text_current": "베이직 오버핏 티셔츠 후면",
+                                                        "is_thumbnail": false,
+                                                        "sort_order": 1,
+                                                        "order": 1,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 176128,
+                                                        "size": 176128,
+                                                        "size_formatted": "172 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    },
+                                                    {
+                                                        "id": 5003,
+                                                        "hash": "img5003",
+                                                        "original_filename": "tshirt_detail.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "디테일",
+                                                        "alt_text_current": "소매 디테일 컷",
+                                                        "is_thumbnail": false,
+                                                        "sort_order": 2,
+                                                        "order": 2,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 158720,
+                                                        "size": 158720,
+                                                        "size_formatted": "155 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    }
+                                                ],
+                                                "thumbnail_url": "/images/placeholder.png",
+                                                "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
+                                                "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "meta_keywords": [
+                                                    "티셔츠",
+                                                    "오버핏",
+                                                    "코튼"
+                                                ],
+                                                "has_options": true,
+                                                "option_groups": [
+                                                    {
+                                                        "name": {
+                                                            "ko": "색상",
+                                                            "en": "Color"
+                                                        },
+                                                        "name_localized": "색상",
+                                                        "values": [
+                                                            {
+                                                                "ko": "블랙",
+                                                                "en": "Black"
+                                                            },
+                                                            {
+                                                                "ko": "화이트",
+                                                                "en": "White"
+                                                            },
+                                                            {
+                                                                "ko": "네이비",
+                                                                "en": "Navy"
+                                                            }
+                                                        ],
+                                                        "values_localized": [
+                                                            "블랙",
+                                                            "화이트",
+                                                            "네이비"
+                                                        ]
+                                                    },
+                                                    {
+                                                        "name": {
+                                                            "ko": "사이즈",
+                                                            "en": "Size"
+                                                        },
+                                                        "name_localized": "사이즈",
+                                                        "values": [
+                                                            {
+                                                                "ko": "S",
+                                                                "en": "S"
+                                                            },
+                                                            {
+                                                                "ko": "M",
+                                                                "en": "M"
+                                                            },
+                                                            {
+                                                                "ko": "L",
+                                                                "en": "L"
+                                                            }
+                                                        ],
+                                                        "values_localized": [
+                                                            "S",
+                                                            "M",
+                                                            "L"
+                                                        ]
+                                                    }
+                                                ],
+                                                "options": [
+                                                    {
+                                                        "id": 7001,
+                                                        "option_code": "OPT-BLK-S",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "블랙"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "S"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "블랙",
+                                                            "S"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "블랙 / S"
+                                                        },
+                                                        "option_name_localized": "블랙 / S",
+                                                        "price_adjustment": 0,
+                                                        "price_adjustment_formatted": "+0원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 29000,
+                                                        "list_price_formatted": "29,000원",
+                                                        "selling_price": 23200,
+                                                        "selling_price_formatted": "23,200원",
+                                                        "final_price": 23200,
+                                                        "final_price_formatted": "23,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 22.31,
+                                                                "formatted": "$22.31",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 23200,
+                                                                "formatted": "23,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 17.85,
+                                                                "formatted": "$17.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 0,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": true,
+                                                        "is_default": true,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-BLK-S",
+                                                        "sort_order": 0
+                                                    },
+                                                    {
+                                                        "id": 7002,
+                                                        "option_code": "OPT-BLK-M",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "블랙"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "M"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "블랙",
+                                                            "M"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "블랙 / M"
+                                                        },
+                                                        "option_name_localized": "블랙 / M",
+                                                        "price_adjustment": 0,
+                                                        "price_adjustment_formatted": "+0원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 29000,
+                                                        "list_price_formatted": "29,000원",
+                                                        "selling_price": 23200,
+                                                        "selling_price_formatted": "23,200원",
+                                                        "final_price": 23200,
+                                                        "final_price_formatted": "23,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 22.31,
+                                                                "formatted": "$22.31",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 23200,
+                                                                "formatted": "23,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 17.85,
+                                                                "formatted": "$17.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 0,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": true,
+                                                        "is_default": false,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-BLK-M",
+                                                        "sort_order": 1
+                                                    },
+                                                    {
+                                                        "id": 7003,
+                                                        "option_code": "OPT-WHT-L",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "화이트"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "L"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "화이트",
+                                                            "L"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "화이트 / L"
+                                                        },
+                                                        "option_name_localized": "화이트 / L",
+                                                        "price_adjustment": 2000,
+                                                        "price_adjustment_formatted": "+2,000원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 31000,
+                                                        "list_price_formatted": "31,000원",
+                                                        "selling_price": 25200,
+                                                        "selling_price_formatted": "25,200원",
+                                                        "final_price": 25200,
+                                                        "final_price_formatted": "25,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 31000,
+                                                                "formatted": "31,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 23.85,
+                                                                "formatted": "$23.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 25200,
+                                                                "formatted": "25,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 19.38,
+                                                                "formatted": "$19.38",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 0,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": true,
+                                                        "is_default": false,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-WHT-L",
+                                                        "sort_order": 2
+                                                    }
+                                                ],
+                                                "notice": {
+                                                    "template_name": "의류 상품정보제공고시",
+                                                    "values": [
+                                                        {
+                                                            "label": "제품 소재",
+                                                            "value": "면 100%"
+                                                        },
+                                                        {
+                                                            "label": "색상",
+                                                            "value": "블랙, 화이트, 네이비"
+                                                        },
+                                                        {
+                                                            "label": "치수",
+                                                            "value": "S, M, L (상세 사이즈표 참고)"
+                                                        },
+                                                        {
+                                                            "label": "제조자",
+                                                            "value": "코지홈"
+                                                        },
+                                                        {
+                                                            "label": "제조국",
+                                                            "value": "대한민국"
+                                                        },
+                                                        {
+                                                            "label": "취급 시 주의사항",
+                                                            "value": "찬물 단독 손세탁 권장"
+                                                        },
+                                                        {
+                                                            "label": "품질보증기준",
+                                                            "value": "관련 법 및 소비자분쟁해결기준에 따름"
+                                                        },
+                                                        {
+                                                            "label": "A/S 책임자와 전화번호",
+                                                            "value": "코지홈 고객센터 1588-0000"
+                                                        }
+                                                    ]
+                                                },
+                                                "common_info": {
+                                                    "name": "배송/교환/환불 안내",
+                                                    "content": "<p>주문 후 영업일 기준 1~2일 내 출고됩니다. 단순 변심 교환·반품은 수령 후 7일 이내 가능하며, 왕복 배송비가 부과됩니다.</p>",
+                                                    "content_mode": "html"
+                                                },
+                                                "is_wishlisted": false
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "id": "suspended",
+                                "label": "$t:editor.state.suspended",
+                                "sampleDataOverrides": {
+                                    "byEndpointPattern": {
+                                        "/api/modules/sirsoft-ecommerce/products/*": {
+                                            "data": {
+                                                "id": 101,
+                                                "name": {
+                                                    "ko": "베이직 오버핏 코튼 티셔츠",
+                                                    "en": "Basic Overfit Cotton T-Shirt"
+                                                },
+                                                "name_localized": "베이직 오버핏 코튼 티셔츠",
+                                                "product_code": "TS-1001",
+                                                "sku": "TS-1001-BLK",
+                                                "categories": [
+                                                    {
+                                                        "id": 1,
+                                                        "name": {
+                                                            "ko": "패션의류",
+                                                            "en": "Fashion"
+                                                        },
+                                                        "name_localized": "패션의류",
+                                                        "breadcrumb": "패션의류",
+                                                        "path": "1",
+                                                        "is_primary": false
+                                                    },
+                                                    {
+                                                        "id": 11,
+                                                        "name": {
+                                                            "ko": "상의",
+                                                            "en": "Tops"
+                                                        },
+                                                        "name_localized": "상의",
+                                                        "breadcrumb": "패션의류 > 상의",
+                                                        "path": "1/11",
+                                                        "is_primary": true
+                                                    }
+                                                ],
+                                                "category_name": "상의",
+                                                "list_price": 29000,
+                                                "list_price_formatted": "29,000원",
+                                                "selling_price": 23200,
+                                                "selling_price_formatted": "23,200원",
+                                                "discount_rate": 20,
+                                                "multi_currency_list_price": {
+                                                    "KRW": {
+                                                        "price": 29000,
+                                                        "formatted": "29,000원",
+                                                        "is_default": true,
+                                                        "editable": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 22.31,
+                                                        "formatted": "$22.31",
+                                                        "is_default": false,
+                                                        "editable": false,
+                                                        "exchange_rate": 1300
+                                                    }
+                                                },
+                                                "multi_currency_selling_price": {
+                                                    "KRW": {
+                                                        "price": 23200,
+                                                        "formatted": "23,200원",
+                                                        "is_default": true,
+                                                        "editable": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 17.85,
+                                                        "formatted": "$17.85",
+                                                        "is_default": false,
+                                                        "editable": false,
+                                                        "exchange_rate": 1300
+                                                    }
+                                                },
+                                                "stock_quantity": 320,
+                                                "min_purchase_qty": 1,
+                                                "max_purchase_qty": 10,
+                                                "sales_status": "suspended",
+                                                "sales_status_label": "판매중지",
+                                                "brand_name": "코지홈",
+                                                "labels": [
+                                                    {
+                                                        "name": "BEST",
+                                                        "color": "#ef4444"
+                                                    },
+                                                    {
+                                                        "name": "한정특가",
+                                                        "color": "#f59e0b"
+                                                    }
+                                                ],
+                                                "additional_options": [
+                                                    {
+                                                        "id": 9001,
+                                                        "name": "이니셜 자수 추가",
+                                                        "is_required": false
+                                                    },
+                                                    {
+                                                        "id": 9002,
+                                                        "name": "선물 포장",
+                                                        "is_required": false
+                                                    }
+                                                ],
+                                                "shipping_policy_id": 1,
+                                                "free_shipping": false,
+                                                "shipping_fee_formatted": "3,000원 (50,000원 이상 무료)",
+                                                "shipping_policy": {
+                                                    "name": "기본 배송정책",
+                                                    "charge_policy": "conditional_free",
+                                                    "charge_policy_label": "조건부 무료",
+                                                    "base_fee": 3000,
+                                                    "base_fee_formatted": "3,000원",
+                                                    "free_threshold": 50000,
+                                                    "free_threshold_formatted": "50,000원",
+                                                    "fee_summary": "3,000원 (50,000원 이상 무료배송)"
+                                                },
+                                                "short_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "short_description_localized": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "description": {
+                                                    "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
+                                                },
+                                                "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                                                "description_mode": "html",
+                                                "images": [
+                                                    {
+                                                        "id": 5001,
+                                                        "hash": "img5001",
+                                                        "original_filename": "tshirt_main.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "정면",
+                                                        "alt_text_current": "베이직 오버핏 티셔츠 정면",
+                                                        "is_thumbnail": true,
+                                                        "sort_order": 0,
+                                                        "order": 0,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 184320,
+                                                        "size": 184320,
+                                                        "size_formatted": "180 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    },
+                                                    {
+                                                        "id": 5002,
+                                                        "hash": "img5002",
+                                                        "original_filename": "tshirt_back.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "후면",
+                                                        "alt_text_current": "베이직 오버핏 티셔츠 후면",
+                                                        "is_thumbnail": false,
+                                                        "sort_order": 1,
+                                                        "order": 1,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 176128,
+                                                        "size": 176128,
+                                                        "size_formatted": "172 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    },
+                                                    {
+                                                        "id": 5003,
+                                                        "hash": "img5003",
+                                                        "original_filename": "tshirt_detail.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "디테일",
+                                                        "alt_text_current": "소매 디테일 컷",
+                                                        "is_thumbnail": false,
+                                                        "sort_order": 2,
+                                                        "order": 2,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 158720,
+                                                        "size": 158720,
+                                                        "size_formatted": "155 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    }
+                                                ],
+                                                "thumbnail_url": "/images/placeholder.png",
+                                                "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
+                                                "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "meta_keywords": [
+                                                    "티셔츠",
+                                                    "오버핏",
+                                                    "코튼"
+                                                ],
+                                                "has_options": true,
+                                                "option_groups": [
+                                                    {
+                                                        "name": {
+                                                            "ko": "색상",
+                                                            "en": "Color"
+                                                        },
+                                                        "name_localized": "색상",
+                                                        "values": [
+                                                            {
+                                                                "ko": "블랙",
+                                                                "en": "Black"
+                                                            },
+                                                            {
+                                                                "ko": "화이트",
+                                                                "en": "White"
+                                                            },
+                                                            {
+                                                                "ko": "네이비",
+                                                                "en": "Navy"
+                                                            }
+                                                        ],
+                                                        "values_localized": [
+                                                            "블랙",
+                                                            "화이트",
+                                                            "네이비"
+                                                        ]
+                                                    },
+                                                    {
+                                                        "name": {
+                                                            "ko": "사이즈",
+                                                            "en": "Size"
+                                                        },
+                                                        "name_localized": "사이즈",
+                                                        "values": [
+                                                            {
+                                                                "ko": "S",
+                                                                "en": "S"
+                                                            },
+                                                            {
+                                                                "ko": "M",
+                                                                "en": "M"
+                                                            },
+                                                            {
+                                                                "ko": "L",
+                                                                "en": "L"
+                                                            }
+                                                        ],
+                                                        "values_localized": [
+                                                            "S",
+                                                            "M",
+                                                            "L"
+                                                        ]
+                                                    }
+                                                ],
+                                                "options": [
+                                                    {
+                                                        "id": 7001,
+                                                        "option_code": "OPT-BLK-S",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "블랙"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "S"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "블랙",
+                                                            "S"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "블랙 / S"
+                                                        },
+                                                        "option_name_localized": "블랙 / S",
+                                                        "price_adjustment": 0,
+                                                        "price_adjustment_formatted": "+0원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 29000,
+                                                        "list_price_formatted": "29,000원",
+                                                        "selling_price": 23200,
+                                                        "selling_price_formatted": "23,200원",
+                                                        "final_price": 23200,
+                                                        "final_price_formatted": "23,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 22.31,
+                                                                "formatted": "$22.31",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 23200,
+                                                                "formatted": "23,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 17.85,
+                                                                "formatted": "$17.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 80,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": false,
+                                                        "is_default": true,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-BLK-S",
+                                                        "sort_order": 0
+                                                    },
+                                                    {
+                                                        "id": 7002,
+                                                        "option_code": "OPT-BLK-M",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "블랙"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "M"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "블랙",
+                                                            "M"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "블랙 / M"
+                                                        },
+                                                        "option_name_localized": "블랙 / M",
+                                                        "price_adjustment": 0,
+                                                        "price_adjustment_formatted": "+0원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 29000,
+                                                        "list_price_formatted": "29,000원",
+                                                        "selling_price": 23200,
+                                                        "selling_price_formatted": "23,200원",
+                                                        "final_price": 23200,
+                                                        "final_price_formatted": "23,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 22.31,
+                                                                "formatted": "$22.31",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 23200,
+                                                                "formatted": "23,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 17.85,
+                                                                "formatted": "$17.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 120,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": false,
+                                                        "is_default": false,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-BLK-M",
+                                                        "sort_order": 1
+                                                    },
+                                                    {
+                                                        "id": 7003,
+                                                        "option_code": "OPT-WHT-L",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "화이트"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "L"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "화이트",
+                                                            "L"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "화이트 / L"
+                                                        },
+                                                        "option_name_localized": "화이트 / L",
+                                                        "price_adjustment": 2000,
+                                                        "price_adjustment_formatted": "+2,000원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 31000,
+                                                        "list_price_formatted": "31,000원",
+                                                        "selling_price": 25200,
+                                                        "selling_price_formatted": "25,200원",
+                                                        "final_price": 25200,
+                                                        "final_price_formatted": "25,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 31000,
+                                                                "formatted": "31,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 23.85,
+                                                                "formatted": "$23.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 25200,
+                                                                "formatted": "25,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 19.38,
+                                                                "formatted": "$19.38",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 5,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": true,
+                                                        "is_default": false,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-WHT-L",
+                                                        "sort_order": 2
+                                                    }
+                                                ],
+                                                "notice": {
+                                                    "template_name": "의류 상품정보제공고시",
+                                                    "values": [
+                                                        {
+                                                            "label": "제품 소재",
+                                                            "value": "면 100%"
+                                                        },
+                                                        {
+                                                            "label": "색상",
+                                                            "value": "블랙, 화이트, 네이비"
+                                                        },
+                                                        {
+                                                            "label": "치수",
+                                                            "value": "S, M, L (상세 사이즈표 참고)"
+                                                        },
+                                                        {
+                                                            "label": "제조자",
+                                                            "value": "코지홈"
+                                                        },
+                                                        {
+                                                            "label": "제조국",
+                                                            "value": "대한민국"
+                                                        },
+                                                        {
+                                                            "label": "취급 시 주의사항",
+                                                            "value": "찬물 단독 손세탁 권장"
+                                                        },
+                                                        {
+                                                            "label": "품질보증기준",
+                                                            "value": "관련 법 및 소비자분쟁해결기준에 따름"
+                                                        },
+                                                        {
+                                                            "label": "A/S 책임자와 전화번호",
+                                                            "value": "코지홈 고객센터 1588-0000"
+                                                        }
+                                                    ]
+                                                },
+                                                "common_info": {
+                                                    "name": "배송/교환/환불 안내",
+                                                    "content": "<p>주문 후 영업일 기준 1~2일 내 출고됩니다. 단순 변심 교환·반품은 수령 후 7일 이내 가능하며, 왕복 배송비가 부과됩니다.</p>",
+                                                    "content_mode": "html"
+                                                },
+                                                "is_wishlisted": false
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "id": "coming_soon",
+                                "label": "$t:editor.state.coming_soon",
+                                "sampleDataOverrides": {
+                                    "byEndpointPattern": {
+                                        "/api/modules/sirsoft-ecommerce/products/*": {
+                                            "data": {
+                                                "id": 101,
+                                                "name": {
+                                                    "ko": "베이직 오버핏 코튼 티셔츠",
+                                                    "en": "Basic Overfit Cotton T-Shirt"
+                                                },
+                                                "name_localized": "베이직 오버핏 코튼 티셔츠",
+                                                "product_code": "TS-1001",
+                                                "sku": "TS-1001-BLK",
+                                                "categories": [
+                                                    {
+                                                        "id": 1,
+                                                        "name": {
+                                                            "ko": "패션의류",
+                                                            "en": "Fashion"
+                                                        },
+                                                        "name_localized": "패션의류",
+                                                        "breadcrumb": "패션의류",
+                                                        "path": "1",
+                                                        "is_primary": false
+                                                    },
+                                                    {
+                                                        "id": 11,
+                                                        "name": {
+                                                            "ko": "상의",
+                                                            "en": "Tops"
+                                                        },
+                                                        "name_localized": "상의",
+                                                        "breadcrumb": "패션의류 > 상의",
+                                                        "path": "1/11",
+                                                        "is_primary": true
+                                                    }
+                                                ],
+                                                "category_name": "상의",
+                                                "list_price": 29000,
+                                                "list_price_formatted": "29,000원",
+                                                "selling_price": 23200,
+                                                "selling_price_formatted": "23,200원",
+                                                "discount_rate": 20,
+                                                "multi_currency_list_price": {
+                                                    "KRW": {
+                                                        "price": 29000,
+                                                        "formatted": "29,000원",
+                                                        "is_default": true,
+                                                        "editable": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 22.31,
+                                                        "formatted": "$22.31",
+                                                        "is_default": false,
+                                                        "editable": false,
+                                                        "exchange_rate": 1300
+                                                    }
+                                                },
+                                                "multi_currency_selling_price": {
+                                                    "KRW": {
+                                                        "price": 23200,
+                                                        "formatted": "23,200원",
+                                                        "is_default": true,
+                                                        "editable": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 17.85,
+                                                        "formatted": "$17.85",
+                                                        "is_default": false,
+                                                        "editable": false,
+                                                        "exchange_rate": 1300
+                                                    }
+                                                },
+                                                "stock_quantity": 320,
+                                                "min_purchase_qty": 1,
+                                                "max_purchase_qty": 10,
+                                                "sales_status": "coming_soon",
+                                                "sales_status_label": "판매예정",
+                                                "brand_name": "코지홈",
+                                                "labels": [
+                                                    {
+                                                        "name": "BEST",
+                                                        "color": "#ef4444"
+                                                    },
+                                                    {
+                                                        "name": "한정특가",
+                                                        "color": "#f59e0b"
+                                                    }
+                                                ],
+                                                "additional_options": [
+                                                    {
+                                                        "id": 9001,
+                                                        "name": "이니셜 자수 추가",
+                                                        "is_required": false
+                                                    },
+                                                    {
+                                                        "id": 9002,
+                                                        "name": "선물 포장",
+                                                        "is_required": false
+                                                    }
+                                                ],
+                                                "shipping_policy_id": 1,
+                                                "free_shipping": false,
+                                                "shipping_fee_formatted": "3,000원 (50,000원 이상 무료)",
+                                                "shipping_policy": {
+                                                    "name": "기본 배송정책",
+                                                    "charge_policy": "conditional_free",
+                                                    "charge_policy_label": "조건부 무료",
+                                                    "base_fee": 3000,
+                                                    "base_fee_formatted": "3,000원",
+                                                    "free_threshold": 50000,
+                                                    "free_threshold_formatted": "50,000원",
+                                                    "fee_summary": "3,000원 (50,000원 이상 무료배송)"
+                                                },
+                                                "short_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "short_description_localized": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "description": {
+                                                    "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
+                                                },
+                                                "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+                                                "description_mode": "html",
+                                                "images": [
+                                                    {
+                                                        "id": 5001,
+                                                        "hash": "img5001",
+                                                        "original_filename": "tshirt_main.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "정면",
+                                                        "alt_text_current": "베이직 오버핏 티셔츠 정면",
+                                                        "is_thumbnail": true,
+                                                        "sort_order": 0,
+                                                        "order": 0,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 184320,
+                                                        "size": 184320,
+                                                        "size_formatted": "180 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    },
+                                                    {
+                                                        "id": 5002,
+                                                        "hash": "img5002",
+                                                        "original_filename": "tshirt_back.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "후면",
+                                                        "alt_text_current": "베이직 오버핏 티셔츠 후면",
+                                                        "is_thumbnail": false,
+                                                        "sort_order": 1,
+                                                        "order": 1,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 176128,
+                                                        "size": 176128,
+                                                        "size_formatted": "172 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    },
+                                                    {
+                                                        "id": 5003,
+                                                        "hash": "img5003",
+                                                        "original_filename": "tshirt_detail.jpg",
+                                                        "download_url": "/images/placeholder.png",
+                                                        "alt_text": "디테일",
+                                                        "alt_text_current": "소매 디테일 컷",
+                                                        "is_thumbnail": false,
+                                                        "sort_order": 2,
+                                                        "order": 2,
+                                                        "width": 1000,
+                                                        "height": 1000,
+                                                        "file_size": 158720,
+                                                        "size": 158720,
+                                                        "size_formatted": "155 KB",
+                                                        "mime_type": "image/jpeg",
+                                                        "is_image": true
+                                                    }
+                                                ],
+                                                "thumbnail_url": "/images/placeholder.png",
+                                                "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
+                                                "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
+                                                "meta_keywords": [
+                                                    "티셔츠",
+                                                    "오버핏",
+                                                    "코튼"
+                                                ],
+                                                "has_options": true,
+                                                "option_groups": [
+                                                    {
+                                                        "name": {
+                                                            "ko": "색상",
+                                                            "en": "Color"
+                                                        },
+                                                        "name_localized": "색상",
+                                                        "values": [
+                                                            {
+                                                                "ko": "블랙",
+                                                                "en": "Black"
+                                                            },
+                                                            {
+                                                                "ko": "화이트",
+                                                                "en": "White"
+                                                            },
+                                                            {
+                                                                "ko": "네이비",
+                                                                "en": "Navy"
+                                                            }
+                                                        ],
+                                                        "values_localized": [
+                                                            "블랙",
+                                                            "화이트",
+                                                            "네이비"
+                                                        ]
+                                                    },
+                                                    {
+                                                        "name": {
+                                                            "ko": "사이즈",
+                                                            "en": "Size"
+                                                        },
+                                                        "name_localized": "사이즈",
+                                                        "values": [
+                                                            {
+                                                                "ko": "S",
+                                                                "en": "S"
+                                                            },
+                                                            {
+                                                                "ko": "M",
+                                                                "en": "M"
+                                                            },
+                                                            {
+                                                                "ko": "L",
+                                                                "en": "L"
+                                                            }
+                                                        ],
+                                                        "values_localized": [
+                                                            "S",
+                                                            "M",
+                                                            "L"
+                                                        ]
+                                                    }
+                                                ],
+                                                "options": [
+                                                    {
+                                                        "id": 7001,
+                                                        "option_code": "OPT-BLK-S",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "블랙"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "S"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "블랙",
+                                                            "S"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "블랙 / S"
+                                                        },
+                                                        "option_name_localized": "블랙 / S",
+                                                        "price_adjustment": 0,
+                                                        "price_adjustment_formatted": "+0원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 29000,
+                                                        "list_price_formatted": "29,000원",
+                                                        "selling_price": 23200,
+                                                        "selling_price_formatted": "23,200원",
+                                                        "final_price": 23200,
+                                                        "final_price_formatted": "23,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 22.31,
+                                                                "formatted": "$22.31",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 23200,
+                                                                "formatted": "23,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 17.85,
+                                                                "formatted": "$17.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 80,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": false,
+                                                        "is_default": true,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-BLK-S",
+                                                        "sort_order": 0
+                                                    },
+                                                    {
+                                                        "id": 7002,
+                                                        "option_code": "OPT-BLK-M",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "블랙"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "M"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "블랙",
+                                                            "M"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "블랙 / M"
+                                                        },
+                                                        "option_name_localized": "블랙 / M",
+                                                        "price_adjustment": 0,
+                                                        "price_adjustment_formatted": "+0원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 29000,
+                                                        "list_price_formatted": "29,000원",
+                                                        "selling_price": 23200,
+                                                        "selling_price_formatted": "23,200원",
+                                                        "final_price": 23200,
+                                                        "final_price_formatted": "23,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 22.31,
+                                                                "formatted": "$22.31",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 23200,
+                                                                "formatted": "23,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 17.85,
+                                                                "formatted": "$17.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 120,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": false,
+                                                        "is_default": false,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-BLK-M",
+                                                        "sort_order": 1
+                                                    },
+                                                    {
+                                                        "id": 7003,
+                                                        "option_code": "OPT-WHT-L",
+                                                        "option_values": [
+                                                            {
+                                                                "key": {
+                                                                    "ko": "색상"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "화이트"
+                                                                }
+                                                            },
+                                                            {
+                                                                "key": {
+                                                                    "ko": "사이즈"
+                                                                },
+                                                                "value": {
+                                                                    "ko": "L"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "option_values_localized": [
+                                                            "화이트",
+                                                            "L"
+                                                        ],
+                                                        "option_name": {
+                                                            "ko": "화이트 / L"
+                                                        },
+                                                        "option_name_localized": "화이트 / L",
+                                                        "price_adjustment": 2000,
+                                                        "price_adjustment_formatted": "+2,000원",
+                                                        "price_adjustment_type": "increase",
+                                                        "list_price": 31000,
+                                                        "list_price_formatted": "31,000원",
+                                                        "selling_price": 25200,
+                                                        "selling_price_formatted": "25,200원",
+                                                        "final_price": 25200,
+                                                        "final_price_formatted": "25,200원",
+                                                        "multi_currency_list_price": {
+                                                            "KRW": {
+                                                                "price": 31000,
+                                                                "formatted": "31,000원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 23.85,
+                                                                "formatted": "$23.85",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "multi_currency_selling_price": {
+                                                            "KRW": {
+                                                                "price": 25200,
+                                                                "formatted": "25,200원",
+                                                                "is_default": true,
+                                                                "editable": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 19.38,
+                                                                "formatted": "$19.38",
+                                                                "is_default": false,
+                                                                "editable": false,
+                                                                "exchange_rate": 1300
+                                                            }
+                                                        },
+                                                        "stock_quantity": 5,
+                                                        "safe_stock_quantity": 10,
+                                                        "is_below_safe_stock": true,
+                                                        "is_default": false,
+                                                        "is_active": true,
+                                                        "sku": "TS-1001-WHT-L",
+                                                        "sort_order": 2
+                                                    }
+                                                ],
+                                                "notice": {
+                                                    "template_name": "의류 상품정보제공고시",
+                                                    "values": [
+                                                        {
+                                                            "label": "제품 소재",
+                                                            "value": "면 100%"
+                                                        },
+                                                        {
+                                                            "label": "색상",
+                                                            "value": "블랙, 화이트, 네이비"
+                                                        },
+                                                        {
+                                                            "label": "치수",
+                                                            "value": "S, M, L (상세 사이즈표 참고)"
+                                                        },
+                                                        {
+                                                            "label": "제조자",
+                                                            "value": "코지홈"
+                                                        },
+                                                        {
+                                                            "label": "제조국",
+                                                            "value": "대한민국"
+                                                        },
+                                                        {
+                                                            "label": "취급 시 주의사항",
+                                                            "value": "찬물 단독 손세탁 권장"
+                                                        },
+                                                        {
+                                                            "label": "품질보증기준",
+                                                            "value": "관련 법 및 소비자분쟁해결기준에 따름"
+                                                        },
+                                                        {
+                                                            "label": "A/S 책임자와 전화번호",
+                                                            "value": "코지홈 고객센터 1588-0000"
+                                                        }
+                                                    ]
+                                                },
+                                                "common_info": {
+                                                    "name": "배송/교환/환불 안내",
+                                                    "content": "<p>주문 후 영업일 기준 1~2일 내 출고됩니다. 단순 변심 교환·반품은 수령 후 7일 이내 가능하며, 왕복 배송비가 부과됩니다.</p>",
+                                                    "content_mode": "html"
+                                                },
+                                                "is_wishlisted": false
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "id": "reviews_tab",
+                                "label": "$t:editor.state.product_reviews_tab",
+                                "comment": "상품상세 리뷰 탭은 _local.activeTab === 'reviews' 게이트 뒤라 기본('info') 상태 캔버스에 미렌더. activeTab 시드 + reviews 를 유저 탭 shape(reviews.data.reviews.data + rating_stats + option_filters + total_count)로 override. base reviews 샘플은 admin 리뷰관리 shape(reviews.data.data[])라 SSoT 분리(copy_source 패턴).",
+                                "initialState": {
+                                    "local": {
+                                        "activeTab": "reviews"
+                                    }
+                                },
+                                "sampleDataOverrides": {
+                                    "byDataSourceId": {
+                                        "reviews": {
+                                            "data": {
+                                                "total_count": 37,
+                                                "rating_stats": {
+                                                    "1": {
+                                                        "count": 1,
+                                                        "percent": 3
+                                                    },
+                                                    "2": {
+                                                        "count": 2,
+                                                        "percent": 5
+                                                    },
+                                                    "3": {
+                                                        "count": 4,
+                                                        "percent": 11
+                                                    },
+                                                    "4": {
+                                                        "count": 8,
+                                                        "percent": 22
+                                                    },
+                                                    "5": {
+                                                        "count": 22,
+                                                        "percent": 59
+                                                    },
+                                                    "avg": 4.3
+                                                },
+                                                "option_filters": [
+                                                    {
+                                                        "key": "색상",
+                                                        "values": [
+                                                            {
+                                                                "value": "블랙",
+                                                                "count": 18
+                                                            },
+                                                            {
+                                                                "value": "화이트",
+                                                                "count": 12
+                                                            },
+                                                            {
+                                                                "value": "네이비",
+                                                                "count": 7
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "key": "사이즈",
+                                                        "values": [
+                                                            {
+                                                                "value": "S",
+                                                                "count": 6
+                                                            },
+                                                            {
+                                                                "value": "M",
+                                                                "count": 19
+                                                            },
+                                                            {
+                                                                "value": "L",
+                                                                "count": 12
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "reviews": {
+                                                    "data": [
+                                                        {
+                                                            "id": 9101,
+                                                            "user": {
+                                                                "name": "김민지",
+                                                                "avatar": null
+                                                            },
+                                                            "rating": 5,
+                                                            "content": "핏이 정말 예쁘고 원단도 도톰해서 가을에 입기 딱 좋아요. 세탁 후에도 변형이 없어서 만족합니다.",
+                                                            "option_snapshot": {
+                                                                "option_values": [
+                                                                    {
+                                                                        "key": {
+                                                                            "ko": "색상"
+                                                                        },
+                                                                        "value": {
+                                                                            "ko": "블랙"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "key": {
+                                                                            "ko": "사이즈"
+                                                                        },
+                                                                        "value": {
+                                                                            "ko": "M"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "image_count": 2,
+                                                            "images": [
+                                                                {
+                                                                    "download_url": "/images/placeholder.png"
+                                                                },
+                                                                {
+                                                                    "download_url": "/images/placeholder.png"
+                                                                }
+                                                            ],
+                                                            "has_reply": true,
+                                                            "reply_content": "소중한 후기 감사합니다! 앞으로도 좋은 상품으로 보답하겠습니다.",
+                                                            "replied_at": "2026-05-27 09:10",
+                                                            "created_at": "2026-05-26 11:20"
+                                                        },
+                                                        {
+                                                            "id": 9102,
+                                                            "user": {
+                                                                "name": "이서준",
+                                                                "avatar": null
+                                                            },
+                                                            "rating": 4,
+                                                            "content": "색감 예쁘고 무난하게 입기 좋습니다. 다만 생각보다 살짝 얇은 느낌이에요.",
+                                                            "option_snapshot": {
+                                                                "option_values": [
+                                                                    {
+                                                                        "key": {
+                                                                            "ko": "색상"
+                                                                        },
+                                                                        "value": {
+                                                                            "ko": "화이트"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "key": {
+                                                                            "ko": "사이즈"
+                                                                        },
+                                                                        "value": {
+                                                                            "ko": "L"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "image_count": 0,
+                                                            "images": [],
+                                                            "has_reply": false,
+                                                            "reply_content": null,
+                                                            "replied_at": null,
+                                                            "created_at": "2026-05-24 16:42"
+                                                        },
+                                                        {
+                                                            "id": 9103,
+                                                            "user": {
+                                                                "name": "박도윤",
+                                                                "avatar": null
+                                                            },
+                                                            "rating": 5,
+                                                            "content": "재구매했어요. 데일리로 입기 좋고 색상별로 사고 싶네요. 배송도 빨랐습니다.",
+                                                            "option_snapshot": {
+                                                                "option_values": [
+                                                                    {
+                                                                        "key": {
+                                                                            "ko": "색상"
+                                                                        },
+                                                                        "value": {
+                                                                            "ko": "네이비"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "key": {
+                                                                            "ko": "사이즈"
+                                                                        },
+                                                                        "value": {
+                                                                            "ko": "S"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "image_count": 5,
+                                                            "images": [
+                                                                {
+                                                                    "download_url": "/images/placeholder.png"
+                                                                },
+                                                                {
+                                                                    "download_url": "/images/placeholder.png"
+                                                                },
+                                                                {
+                                                                    "download_url": "/images/placeholder.png"
+                                                                },
+                                                                {
+                                                                    "download_url": "/images/placeholder.png"
+                                                                },
+                                                                {
+                                                                    "download_url": "/images/placeholder.png"
+                                                                }
+                                                            ],
+                                                            "has_reply": true,
+                                                            "reply_content": "재구매 감사합니다! 네이비 색상도 곧 재입고 예정입니다.",
+                                                            "replied_at": "2026-05-21 10:00",
+                                                            "created_at": "2026-05-20 19:05"
+                                                        },
+                                                        {
+                                                            "id": 9104,
+                                                            "user": {
+                                                                "name": "최예린",
+                                                                "avatar": null
+                                                            },
+                                                            "rating": 3,
+                                                            "content": "무난해요. 기본템으로는 괜찮은데 특별하진 않네요.",
+                                                            "option_snapshot": {
+                                                                "option_values": [
+                                                                    {
+                                                                        "key": {
+                                                                            "ko": "색상"
+                                                                        },
+                                                                        "value": {
+                                                                            "ko": "블랙"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "key": {
+                                                                            "ko": "사이즈"
+                                                                        },
+                                                                        "value": {
+                                                                            "ko": "M"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "image_count": 0,
+                                                            "images": [],
+                                                            "has_reply": false,
+                                                            "reply_content": null,
+                                                            "replied_at": null,
+                                                            "created_at": "2026-05-18 08:33"
+                                                        }
+                                                    ],
+                                                    "meta": {
+                                                        "current_page": 1,
+                                                        "last_page": 4,
+                                                        "per_page": 10,
+                                                        "total": 37
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "id": "qna_tab",
+                                "label": "$t:editor.state.product_qna_tab",
+                                "comment": "상품상세 문의 탭은 _local.activeTab === 'qna' && _global.modules['sirsoft-ecommerce'].inquiry.board_slug 게이트 + 탭 hiddenTabIds 가 board_slug 없으면 qna 탭 숨김. activeTab + global modules.inquiry.board_slug 시드 + qna 를 유저 shape(items[] + meta)로 override(기존 stub items:['샘플'] 해소).",
+                                "initialState": {
+                                    "local": {
+                                        "activeTab": "qna"
+                                    },
+                                    "global": {
+                                        "modules": {
+                                            "sirsoft-ecommerce": {
+                                                "inquiry": {
+                                                    "board_slug": "product-qna"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "shop/index — 목록 유무 + 접근 제한. _local.productAccessDenied=true 시 접근 제한 화면을 if 분기한다(본문 line 192).",
+                        "scope": {
+                            "kind": "route",
+                            "match": "/shop/products"
+                        },
+                        "items": [
+                            {
+                                "id": "with_data",
+                                "label": "$t:editor.state.with_data",
+                                "default": true
+                            },
+                            {
+                                "id": "empty_data",
+                                "label": "$t:editor.state.empty_data",
+                                "sampleDataOverrides": {
+                                    "byEndpointPattern": {
+                                        "/api/modules/sirsoft-ecommerce/products*": {
+                                            "data": {
+                                                "data": [],
+                                                "meta": {
+                                                    "total": 0,
+                                                    "per_page": 20,
+                                                    "current_page": 1
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "id": "access_denied",
+                                "label": "$t:editor.state.shop_access_denied",
+                                "initialState": {
+                                    "local": {
+                                        "productAccessDenied": true
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "shop/cart — 담긴 상품 유무 + 주문 처리 중(_local.isOrdering 시 오버레이 잠금, 본문 line 115).",
+                        "scope": {
+                            "kind": "route",
+                            "match": "/shop/cart"
+                        },
+                        "items": [
+                            {
+                                "id": "with_items",
+                                "label": "$t:editor.state.cart_with_items",
+                                "default": true
+                            },
+                            {
+                                "id": "empty_cart",
+                                "label": "$t:editor.state.cart_empty",
+                                "sampleDataOverrides": {
+                                    "byDataSourceId": {
+                                        "cartItems": {
+                                            "data": {
+                                                "items": [],
+                                                "item_ids": [],
+                                                "item_count": 0,
+                                                "calculation": {
+                                                    "items": [],
+                                                    "promotions": {
+                                                        "product_promotions": {
+                                                            "coupons": [],
+                                                            "discount_codes": [],
+                                                            "events": []
+                                                        },
+                                                        "order_promotions": {
+                                                            "coupons": [],
+                                                            "discount_codes": [],
+                                                            "events": []
+                                                        }
+                                                    },
+                                                    "validation_errors": [],
+                                                    "summary": {
+                                                        "subtotal": 0,
+                                                        "subtotal_formatted": "0원",
+                                                        "total_discount": 0,
+                                                        "discount_formatted": "0원",
+                                                        "total_shipping": 0,
+                                                        "shipping_fee_formatted": "0원",
+                                                        "final_amount": 0,
+                                                        "final_amount_formatted": "0원",
+                                                        "payment_amount_formatted": "0원",
+                                                        "points_earning": 0,
+                                                        "multi_currency": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "id": "ordering",
+                                "label": "$t:editor.state.cart_ordering",
+                                "initialState": {
+                                    "local": {
+                                        "isOrdering": true
+                                    }
+                                }
+                            },
+                            {
+                                "id": "summary_tax_expanded",
+                                "label": "$t:editor.state.cart_summary_details",
+                                "comment": "장바구니 요약의 세금 상세는 (1) 금액 영역이 _local.selectedItems.length>0 게이트(_cart_summary.json line 75), (2) 세금 상세가 _local.showTaxDetails 토글 게이트(line 128)로 이중 중첩. 둘 다 시드(selectedItems=[1,2,3] + showTaxDetails:true)해 과세/면세 금액(multi_currency) breakdown 을 노출. 편집기는 정적 시뮬레이션이라 체크박스 클릭·토글 클릭 불가.",
+                                "initialState": {
+                                    "local": {
+                                        "showTaxDetails": true,
+                                        "selectedItems": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "shop/checkout — 정상/결제오류(_local.orderError·query.error, 본문 line 45/194)/구매불가(_local.unavailableModal, line 102)/입력검증실패 분기. 검증 실패는 주문자/배송지 입력칸별 인라인 에러를 _local.errors 의 점 포함 flat 키(예 'orderer.name')로 읽는다(_checkout_orderer.json line 99/101, _checkout_shipping.json) — formErrors 키를 대괄호 표기로 지정한다.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "/shop/checkout"
+                        },
+                        "items": [
+                            {
+                                "id": "normal",
+                                "label": "$t:editor.state.checkout_normal",
+                                "default": true,
+                                "comment": "빈 local 패치 — sampleGlobal._local baseline(받는분/주소/배송메모 시드)을 캔버스에 force-inject 하는 트리거. 패치가 없으면 편집기가 _localInit 을 주입하지 않아 레이아웃 자체 initLocal 이 baseline 을 덮어쓴다. 시드 데이터는 sampleGlobal._local 1곳에만 존재(상태별 중복 없음).",
+                                "initialState": {
+                                    "local": []
+                                }
+                            },
+                            {
+                                "id": "payment_error",
+                                "label": "$t:editor.state.checkout_payment_error",
+                                "initialState": {
+                                    "local": {
+                                        "orderError": true,
+                                        "orderErrorMessage": "결제 처리 중 오류가 발생했습니다"
+                                    },
+                                    "query": {
+                                        "error": "confirm_failed"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "validation_failed",
+                                "label": "$t:editor.state.checkout_validation_failed",
+                                "formErrors": {
+                                    "_local.errors['orderer.name']": [
+                                        "주문자 이름을 입력해 주세요"
+                                    ],
+                                    "_local.errors['orderer.phone']": [
+                                        "연락처를 입력해 주세요"
+                                    ],
+                                    "_local.errors['orderer.email']": [
+                                        "올바른 이메일 형식이 아닙니다"
+                                    ],
+                                    "_local.errors['shipping.recipient_name']": [
+                                        "받는 분 이름을 입력해 주세요"
+                                    ],
+                                    "_local.errors['shipping.recipient_phone']": [
+                                        "받는 분 연락처를 입력해 주세요"
+                                    ],
+                                    "_local.errors['shipping.zipcode']": [
+                                        "우편번호를 입력해 주세요"
+                                    ],
+                                    "_local.errors['shipping.address']": [
+                                        "주소를 입력해 주세요"
+                                    ]
+                                }
+                            },
+                            {
+                                "id": "summary_details_expanded",
+                                "label": "$t:editor.state.checkout_summary_details",
+                                "comment": "결제금액 요약의 세금/할인 상세는 _local.showTaxDetails / showDiscountDetails 토글 게이트 뒤(_checkout_summary.json line 93/161)라 기본 상태 미렌더. 두 토글 ON 으로 과세/면세 금액·상품/주문/배송 쿠폰 할인 breakdown(multi_currency 전 경로) 노출. base checkoutData 가 풍부하므로 override 불요.",
+                                "initialState": {
+                                    "local": {
+                                        "showTaxDetails": true,
+                                        "showDiscountDetails": true
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "shop/order_complete — orderData.data.payment.payment_method 값(card/vbank/dbank)으로 결제수단별 안내를 if 분기한다(본문 line 52/95/138/229). card 는 base sampleData(=card)가 흐르므로 오버라이드 없음, vbank/dbank 는 byDataSourceId.orderData 통째 교체.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "/shop/orders/:id/complete"
+                        },
+                        "items": [
+                            {
+                                "id": "card",
+                                "label": "$t:editor.state.payment_card",
+                                "default": true
+                            },
+                            {
+                                "id": "vbank",
+                                "label": "$t:editor.state.payment_vbank",
+                                "sampleDataOverrides": {
+                                    "byDataSourceId": {
+                                        "orderData": {
+                                            "data": {
+                                                "id": 5001,
+                                                "order_number": "20260603-0001",
+                                                "order_status": "payment_pending",
+                                                "order_status_label": "입금대기",
+                                                "order_status_variant": "warning",
+                                                "options": [
+                                                    {
+                                                        "id": 9001,
+                                                        "option_status": "preparing",
+                                                        "option_status_label": "배송준비중",
+                                                        "option_status_variant": "info",
+                                                        "product_id": 1,
+                                                        "product_option_id": 101,
+                                                        "sku": "EARBUDS-PRO-BLK",
+                                                        "product_name": "프리미엄 무선 이어버드 프로",
+                                                        "product_option_name": "미드나잇 블랙 / 기본",
+                                                        "option_name": "미드나잇 블랙 / 기본",
+                                                        "quantity": 2,
+                                                        "shipped_quantity": 0,
+                                                        "unit_price": 29000,
+                                                        "unit_price_formatted": "29,000원",
+                                                        "subtotal_price": 58000,
+                                                        "subtotal_price_formatted": "58,000원",
+                                                        "subtotal_discount_amount": 5000,
+                                                        "subtotal_discount_amount_formatted": "5,000원",
+                                                        "list_price": 32000,
+                                                        "list_price_formatted": "32,000원",
+                                                        "final_amount": 53000,
+                                                        "final_amount_formatted": "53,000원",
+                                                        "thumbnail_url": null,
+                                                        "mc_unit_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 21.3,
+                                                                "formatted": "$21.30",
+                                                                "is_default": false
+                                                            }
+                                                        },
+                                                        "mc_subtotal_price": {
+                                                            "KRW": {
+                                                                "price": 58000,
+                                                                "formatted": "58,000원",
+                                                                "is_default": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 42.6,
+                                                                "formatted": "$42.60",
+                                                                "is_default": false
+                                                            }
+                                                        },
+                                                        "confirmed_at": null,
+                                                        "can_confirm": false,
+                                                        "can_write_review": false,
+                                                        "has_review": false
+                                                    },
+                                                    {
+                                                        "id": 9002,
+                                                        "option_status": "preparing",
+                                                        "option_status_label": "배송준비중",
+                                                        "option_status_variant": "info",
+                                                        "product_id": 2,
+                                                        "product_option_id": 102,
+                                                        "sku": "CABLE-15M-WHT",
+                                                        "product_name": "고속 충전 케이블 1.5m",
+                                                        "product_option_name": "1.5m",
+                                                        "option_name": "1.5m",
+                                                        "quantity": 1,
+                                                        "shipped_quantity": 0,
+                                                        "unit_price": 18000,
+                                                        "unit_price_formatted": "18,000원",
+                                                        "subtotal_price": 18000,
+                                                        "subtotal_price_formatted": "18,000원",
+                                                        "subtotal_discount_amount": 0,
+                                                        "subtotal_discount_amount_formatted": "0원",
+                                                        "list_price": 18000,
+                                                        "list_price_formatted": "18,000원",
+                                                        "final_amount": 18000,
+                                                        "final_amount_formatted": "18,000원",
+                                                        "thumbnail_url": null,
+                                                        "mc_unit_price": {
+                                                            "KRW": {
+                                                                "price": 18000,
+                                                                "formatted": "18,000원",
+                                                                "is_default": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 13.2,
+                                                                "formatted": "$13.20",
+                                                                "is_default": false
+                                                            }
+                                                        },
+                                                        "mc_subtotal_price": {
+                                                            "KRW": {
+                                                                "price": 18000,
+                                                                "formatted": "18,000원",
+                                                                "is_default": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 13.2,
+                                                                "formatted": "$13.20",
+                                                                "is_default": false
+                                                            }
+                                                        },
+                                                        "confirmed_at": null,
+                                                        "can_confirm": false,
+                                                        "can_write_review": false,
+                                                        "has_review": false
+                                                    }
+                                                ],
+                                                "payment": {
+                                                    "id": 8001,
+                                                    "payment_status": "pending",
+                                                    "payment_status_label": "입금대기",
+                                                    "payment_status_variant": "warning",
+                                                    "payment_method": "vbank",
+                                                    "payment_method_label": "가상계좌",
+                                                    "payment_type_label": "일반결제",
+                                                    "pg_provider": "kginicis",
+                                                    "payment_number": "PAY-20260603-0002",
+                                                    "paid_amount_formatted": "102,000원",
+                                                    "card_name": null,
+                                                    "card_number_masked": null,
+                                                    "card_installment_months": 0,
+                                                    "is_interest_free": false,
+                                                    "paid_at_formatted": null,
+                                                    "dbank_name": null,
+                                                    "dbank_account": null,
+                                                    "dbank_holder": null,
+                                                    "depositor_name": null,
+                                                    "deposit_due_at_formatted": null,
+                                                    "vbank_name": "국민은행",
+                                                    "vbank_number": "901234-56-789012",
+                                                    "vbank_holder": "(주)지세븐커머스",
+                                                    "vbank_due_at": "2026-06-05T23:59:59+09:00"
+                                                },
+                                                "shipping_address": {
+                                                    "id": 7001,
+                                                    "address_type": "shipping",
+                                                    "recipient_name": "홍길동",
+                                                    "recipient_phone": "010-1234-5678",
+                                                    "recipient_country_code": "KR",
+                                                    "zipcode": "06234",
+                                                    "address": "서울특별시 강남구 테헤란로 123",
+                                                    "address_detail": "4층 401호",
+                                                    "city": "",
+                                                    "state": "",
+                                                    "full_address": "서울특별시 강남구 테헤란로 123 4층 401호",
+                                                    "delivery_memo": "부재 시 경비실에 맡겨주세요"
+                                                },
+                                                "subtotal_amount": 76000,
+                                                "subtotal_amount_formatted": "76,000원",
+                                                "total_discount_amount": 5000,
+                                                "total_discount_amount_formatted": "5,000원",
+                                                "total_shipping_amount": 0,
+                                                "total_shipping_amount_formatted": "0원",
+                                                "total_amount": 102000,
+                                                "total_amount_formatted": "102,000원",
+                                                "mc_subtotal_amount": {
+                                                    "KRW": {
+                                                        "price": 76000,
+                                                        "formatted": "76,000원",
+                                                        "is_default": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 55.7,
+                                                        "formatted": "$55.70",
+                                                        "is_default": false
+                                                    }
+                                                },
+                                                "mc_total_discount_amount": {
+                                                    "KRW": {
+                                                        "price": 5000,
+                                                        "formatted": "5,000원",
+                                                        "is_default": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 3.65,
+                                                        "formatted": "$3.65",
+                                                        "is_default": false
+                                                    }
+                                                },
+                                                "mc_total_shipping_amount": {
+                                                    "KRW": {
+                                                        "price": 0,
+                                                        "formatted": "0원",
+                                                        "is_default": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 0,
+                                                        "formatted": "$0.00",
+                                                        "is_default": false
+                                                    }
+                                                },
+                                                "mc_total_amount": {
+                                                    "KRW": {
+                                                        "price": 102000,
+                                                        "formatted": "102,000원",
+                                                        "is_default": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 74.5,
+                                                        "formatted": "$74.50",
+                                                        "is_default": false
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "id": "dbank",
+                                "label": "$t:editor.state.payment_dbank",
+                                "sampleDataOverrides": {
+                                    "byDataSourceId": {
+                                        "orderData": {
+                                            "data": {
+                                                "id": 5001,
+                                                "order_number": "20260603-0001",
+                                                "order_status": "payment_pending",
+                                                "order_status_label": "입금대기",
+                                                "order_status_variant": "warning",
+                                                "options": [
+                                                    {
+                                                        "id": 9001,
+                                                        "option_status": "preparing",
+                                                        "option_status_label": "배송준비중",
+                                                        "option_status_variant": "info",
+                                                        "product_id": 1,
+                                                        "product_option_id": 101,
+                                                        "sku": "EARBUDS-PRO-BLK",
+                                                        "product_name": "프리미엄 무선 이어버드 프로",
+                                                        "product_option_name": "미드나잇 블랙 / 기본",
+                                                        "option_name": "미드나잇 블랙 / 기본",
+                                                        "quantity": 2,
+                                                        "shipped_quantity": 0,
+                                                        "unit_price": 29000,
+                                                        "unit_price_formatted": "29,000원",
+                                                        "subtotal_price": 58000,
+                                                        "subtotal_price_formatted": "58,000원",
+                                                        "subtotal_discount_amount": 5000,
+                                                        "subtotal_discount_amount_formatted": "5,000원",
+                                                        "list_price": 32000,
+                                                        "list_price_formatted": "32,000원",
+                                                        "final_amount": 53000,
+                                                        "final_amount_formatted": "53,000원",
+                                                        "thumbnail_url": null,
+                                                        "mc_unit_price": {
+                                                            "KRW": {
+                                                                "price": 29000,
+                                                                "formatted": "29,000원",
+                                                                "is_default": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 21.3,
+                                                                "formatted": "$21.30",
+                                                                "is_default": false
+                                                            }
+                                                        },
+                                                        "mc_subtotal_price": {
+                                                            "KRW": {
+                                                                "price": 58000,
+                                                                "formatted": "58,000원",
+                                                                "is_default": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 42.6,
+                                                                "formatted": "$42.60",
+                                                                "is_default": false
+                                                            }
+                                                        },
+                                                        "confirmed_at": null,
+                                                        "can_confirm": false,
+                                                        "can_write_review": false,
+                                                        "has_review": false
+                                                    },
+                                                    {
+                                                        "id": 9002,
+                                                        "option_status": "preparing",
+                                                        "option_status_label": "배송준비중",
+                                                        "option_status_variant": "info",
+                                                        "product_id": 2,
+                                                        "product_option_id": 102,
+                                                        "sku": "CABLE-15M-WHT",
+                                                        "product_name": "고속 충전 케이블 1.5m",
+                                                        "product_option_name": "1.5m",
+                                                        "option_name": "1.5m",
+                                                        "quantity": 1,
+                                                        "shipped_quantity": 0,
+                                                        "unit_price": 18000,
+                                                        "unit_price_formatted": "18,000원",
+                                                        "subtotal_price": 18000,
+                                                        "subtotal_price_formatted": "18,000원",
+                                                        "subtotal_discount_amount": 0,
+                                                        "subtotal_discount_amount_formatted": "0원",
+                                                        "list_price": 18000,
+                                                        "list_price_formatted": "18,000원",
+                                                        "final_amount": 18000,
+                                                        "final_amount_formatted": "18,000원",
+                                                        "thumbnail_url": null,
+                                                        "mc_unit_price": {
+                                                            "KRW": {
+                                                                "price": 18000,
+                                                                "formatted": "18,000원",
+                                                                "is_default": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 13.2,
+                                                                "formatted": "$13.20",
+                                                                "is_default": false
+                                                            }
+                                                        },
+                                                        "mc_subtotal_price": {
+                                                            "KRW": {
+                                                                "price": 18000,
+                                                                "formatted": "18,000원",
+                                                                "is_default": true
+                                                            },
+                                                            "USD": {
+                                                                "price": 13.2,
+                                                                "formatted": "$13.20",
+                                                                "is_default": false
+                                                            }
+                                                        },
+                                                        "confirmed_at": null,
+                                                        "can_confirm": false,
+                                                        "can_write_review": false,
+                                                        "has_review": false
+                                                    }
+                                                ],
+                                                "payment": {
+                                                    "id": 8001,
+                                                    "payment_status": "pending",
+                                                    "payment_status_label": "입금대기",
+                                                    "payment_status_variant": "warning",
+                                                    "payment_method": "dbank",
+                                                    "payment_method_label": "무통장입금",
+                                                    "payment_type_label": "일반결제",
+                                                    "pg_provider": "kginicis",
+                                                    "payment_number": "PAY-20260603-0003",
+                                                    "paid_amount_formatted": "102,000원",
+                                                    "card_name": null,
+                                                    "card_number_masked": null,
+                                                    "card_installment_months": 0,
+                                                    "is_interest_free": false,
+                                                    "paid_at_formatted": null,
+                                                    "dbank_name": "신한은행",
+                                                    "dbank_account": "110-123-456789",
+                                                    "dbank_holder": "(주)지세븐커머스",
+                                                    "depositor_name": "홍길동",
+                                                    "deposit_due_at_formatted": "2026-06-05 23:59",
+                                                    "vbank_name": null,
+                                                    "vbank_number": null,
+                                                    "vbank_holder": null,
+                                                    "vbank_due_at": null
+                                                },
+                                                "shipping_address": {
+                                                    "id": 7001,
+                                                    "address_type": "shipping",
+                                                    "recipient_name": "홍길동",
+                                                    "recipient_phone": "010-1234-5678",
+                                                    "recipient_country_code": "KR",
+                                                    "zipcode": "06234",
+                                                    "address": "서울특별시 강남구 테헤란로 123",
+                                                    "address_detail": "4층 401호",
+                                                    "city": "",
+                                                    "state": "",
+                                                    "full_address": "서울특별시 강남구 테헤란로 123 4층 401호",
+                                                    "delivery_memo": "부재 시 경비실에 맡겨주세요"
+                                                },
+                                                "subtotal_amount": 76000,
+                                                "subtotal_amount_formatted": "76,000원",
+                                                "total_discount_amount": 5000,
+                                                "total_discount_amount_formatted": "5,000원",
+                                                "total_shipping_amount": 0,
+                                                "total_shipping_amount_formatted": "0원",
+                                                "total_amount": 102000,
+                                                "total_amount_formatted": "102,000원",
+                                                "mc_subtotal_amount": {
+                                                    "KRW": {
+                                                        "price": 76000,
+                                                        "formatted": "76,000원",
+                                                        "is_default": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 55.7,
+                                                        "formatted": "$55.70",
+                                                        "is_default": false
+                                                    }
+                                                },
+                                                "mc_total_discount_amount": {
+                                                    "KRW": {
+                                                        "price": 5000,
+                                                        "formatted": "5,000원",
+                                                        "is_default": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 3.65,
+                                                        "formatted": "$3.65",
+                                                        "is_default": false
+                                                    }
+                                                },
+                                                "mc_total_shipping_amount": {
+                                                    "KRW": {
+                                                        "price": 0,
+                                                        "formatted": "0원",
+                                                        "is_default": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 0,
+                                                        "formatted": "$0.00",
+                                                        "is_default": false
+                                                    }
+                                                },
+                                                "mc_total_amount": {
+                                                    "KRW": {
+                                                        "price": 102000,
+                                                        "formatted": "102,000원",
+                                                        "is_default": true
+                                                    },
+                                                    "USD": {
+                                                        "price": 74.5,
+                                                        "formatted": "$74.50",
+                                                        "is_default": false
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "shop/reorder — _local.status 값(pending/success/error)으로 재주문 진행 화면을 if 분기한다(본문 line 72/99/225).",
+                        "scope": {
+                            "kind": "route",
+                            "match": "/shop/reorder/:id"
+                        },
+                        "items": [
+                            {
+                                "id": "pending",
+                                "label": "$t:editor.state.reorder_pending",
+                                "default": true,
+                                "initialState": {
+                                    "local": {
+                                        "status": "pending"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "success_partial",
+                                "label": "$t:editor.state.reorder_success_partial",
+                                "initialState": {
+                                    "local": {
+                                        "status": "success",
+                                        "skipped": [
+                                            {
+                                                "name": "품절 상품"
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "id": "error",
+                                "label": "$t:editor.state.reorder_error",
+                                "initialState": {
+                                    "local": {
+                                        "status": "error"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 상품 폼 — route.itemCode 유무로 수정/신규, query.copy_id 로 복사 생성을 분기한다(본문 line 9/32/75). 검증 오류는 _local.errors.{field} 경로.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/products/:itemCode/edit"
+                        },
+                        "items": [
+                            {
+                                "id": "edit_mode",
+                                "label": "$t:editor.state.edit_existing",
+                                "default": true
+                            },
+                            {
+                                "id": "create_mode",
+                                "label": "$t:editor.state.create_mode",
+                                "initialState": {
+                                    "route": {
+                                        "itemCode": null
+                                    }
+                                }
+                            },
+                            {
+                                "id": "validation_failed",
+                                "label": "$t:editor.state.validation_failed",
+                                "formErrors": {
+                                    "_local.errors.name": [
+                                        "필수 입력 항목입니다"
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 쿠폰 폼 — route.id 유무로 수정/신규 분기(본문 line 9/74). 검증 오류는 _local.errors.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/promotion-coupons/:id/edit"
+                        },
+                        "items": [
+                            {
+                                "id": "edit_mode",
+                                "label": "$t:editor.state.edit_existing",
+                                "default": true,
+                                "initialState": {
+                                    "local": {
+                                        "form": {
+                                            "target_type": "order_amount",
+                                            "name": {
+                                                "ko": "신규회원 10% 할인",
+                                                "en": "New Member 10% Off"
+                                            },
+                                            "description": {
+                                                "ko": "신규 가입 회원 대상 주문금액 10% 할인 쿠폰",
+                                                "en": "10% off for new members"
+                                            },
+                                            "issue_method": "download",
+                                            "issue_condition": "manual",
+                                            "discount_type": "rate",
+                                            "discount_value": 10,
+                                            "discount_max_amount": 20000,
+                                            "min_order_amount": 30000,
+                                            "valid_type": "days",
+                                            "valid_days": 30,
+                                            "valid_from": null,
+                                            "valid_to": null,
+                                            "total_quantity": 1000,
+                                            "issue_from": "2026-05-01T00:00",
+                                            "issue_to": "2026-06-30T23:59",
+                                            "per_user_limit": 1,
+                                            "is_combinable": false,
+                                            "target_scope": "all"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "id": "create_mode",
+                                "label": "$t:editor.state.create_mode",
+                                "initialState": {
+                                    "route": {
+                                        "id": null
+                                    }
+                                }
+                            },
+                            {
+                                "id": "validation_failed",
+                                "label": "$t:editor.state.validation_failed",
+                                "formErrors": {
+                                    "_local.errors.name": [
+                                        "필수 입력 항목입니다"
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 배송 정책 폼 — route.id 유무로 수정/신규, query.copy_id 로 복사 분기(본문 line 9/60/98). 검증 오류는 _local.errors.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/shipping-policies/:id/edit"
+                        },
+                        "items": [
+                            {
+                                "id": "edit_mode",
+                                "label": "부과정책: 조건부 무료",
+                                "default": true,
+                                "initialState": {
+                                    "local": {
+                                        "form": {
+                                            "name": {
+                                                "ko": "기본 배송정책",
+                                                "en": "Standard Shipping"
+                                            },
+                                            "is_active": true,
+                                            "is_default": true,
+                                            "country_settings": [
+                                                {
+                                                    "country_code": "KR",
+                                                    "shipping_method": "parcel",
+                                                    "custom_shipping_name": null,
+                                                    "carrier": null,
+                                                    "currency_code": "KRW",
+                                                    "charge_policy": "conditional_free",
+                                                    "base_fee": 3000,
+                                                    "free_threshold": 50000,
+                                                    "ranges": null,
+                                                    "api_endpoint": null,
+                                                    "api_request_fields": null,
+                                                    "api_response_fee_field": null,
+                                                    "extra_fee_enabled": true,
+                                                    "extra_fee_settings": [
+                                                        {
+                                                            "region": "제주특별자치도",
+                                                            "zipcode": "63000-63644",
+                                                            "fee": 3000
+                                                        },
+                                                        {
+                                                            "region": "도서산간",
+                                                            "zipcode": "",
+                                                            "fee": 4000
+                                                        }
+                                                    ],
+                                                    "extra_fee_multiply": false,
+                                                    "is_active": true
+                                                },
+                                                {
+                                                    "country_code": "US",
+                                                    "shipping_method": "parcel",
+                                                    "custom_shipping_name": null,
+                                                    "carrier": null,
+                                                    "currency_code": "USD",
+                                                    "charge_policy": "range_amount",
+                                                    "base_fee": 0,
+                                                    "free_threshold": null,
+                                                    "ranges": {
+                                                        "type": "amount",
+                                                        "tiers": [
+                                                            {
+                                                                "min": 0,
+                                                                "max": 50000,
+                                                                "fee": 3000
+                                                            },
+                                                            {
+                                                                "min": 50000,
+                                                                "max": 100000,
+                                                                "fee": 1500
+                                                            },
+                                                            {
+                                                                "min": 100000,
+                                                                "max": null,
+                                                                "fee": 0
+                                                            }
+                                                        ]
+                                                    },
+                                                    "api_endpoint": null,
+                                                    "api_request_fields": null,
+                                                    "api_response_fee_field": null,
+                                                    "extra_fee_enabled": false,
+                                                    "extra_fee_settings": [],
+                                                    "extra_fee_multiply": false,
+                                                    "is_active": true
+                                                }
+                                            ]
+                                        },
+                                        "activeCountryTab": 0,
+                                        "rangeErrors": [],
+                                        "showBaseFee": true,
+                                        "showFreeThreshold": true,
+                                        "showRanges": false,
+                                        "showApiSettings": false,
+                                        "showUnitValue": false
+                                    }
+                                }
+                            },
+                            {
+                                "id": "charge_fixed",
+                                "label": "부과정책: 고정",
+                                "default": false,
+                                "initialState": {
+                                    "local": {
+                                        "form": {
+                                            "name": {
+                                                "ko": "기본 배송정책",
+                                                "en": "Standard Shipping"
+                                            },
+                                            "is_active": true,
+                                            "is_default": false,
+                                            "country_settings": [
+                                                {
+                                                    "country_code": "KR",
+                                                    "shipping_method": "parcel",
+                                                    "custom_shipping_name": null,
+                                                    "carrier": null,
+                                                    "currency_code": "KRW",
+                                                    "charge_policy": "fixed",
+                                                    "base_fee": 3000,
+                                                    "free_threshold": null,
+                                                    "ranges": null,
+                                                    "api_endpoint": null,
+                                                    "api_request_fields": null,
+                                                    "api_response_fee_field": null,
+                                                    "extra_fee_enabled": false,
+                                                    "extra_fee_settings": [],
+                                                    "extra_fee_multiply": false,
+                                                    "is_active": true
+                                                }
+                                            ]
+                                        },
+                                        "activeCountryTab": 0,
+                                        "rangeErrors": [],
+                                        "showBaseFee": true,
+                                        "showFreeThreshold": false,
+                                        "showRanges": false,
+                                        "showApiSettings": false,
+                                        "showUnitValue": false
+                                    }
+                                }
+                            },
+                            {
+                                "id": "charge_range",
+                                "label": "부과정책: 구간별(금액)",
+                                "default": false,
+                                "initialState": {
+                                    "local": {
+                                        "form": {
+                                            "name": {
+                                                "ko": "기본 배송정책",
+                                                "en": "Standard Shipping"
+                                            },
+                                            "is_active": true,
+                                            "is_default": false,
+                                            "country_settings": [
+                                                {
+                                                    "country_code": "KR",
+                                                    "shipping_method": "parcel",
+                                                    "custom_shipping_name": null,
+                                                    "carrier": null,
+                                                    "currency_code": "KRW",
+                                                    "charge_policy": "range_amount",
+                                                    "base_fee": 0,
+                                                    "free_threshold": null,
+                                                    "ranges": {
+                                                        "type": "amount",
+                                                        "tiers": [
+                                                            {
+                                                                "min": 0,
+                                                                "max": 50000,
+                                                                "fee": 3000
+                                                            },
+                                                            {
+                                                                "min": 50000,
+                                                                "max": 100000,
+                                                                "fee": 1500
+                                                            },
+                                                            {
+                                                                "min": 100000,
+                                                                "max": null,
+                                                                "fee": 0
+                                                            }
+                                                        ]
+                                                    },
+                                                    "api_endpoint": null,
+                                                    "api_request_fields": null,
+                                                    "api_response_fee_field": null,
+                                                    "extra_fee_enabled": false,
+                                                    "extra_fee_settings": [],
+                                                    "extra_fee_multiply": false,
+                                                    "is_active": true
+                                                }
+                                            ]
+                                        },
+                                        "activeCountryTab": 0,
+                                        "rangeErrors": [],
+                                        "showBaseFee": false,
+                                        "showFreeThreshold": false,
+                                        "showRanges": true,
+                                        "showApiSettings": false,
+                                        "showUnitValue": false
+                                    }
+                                }
+                            },
+                            {
+                                "id": "charge_per_weight",
+                                "label": "부과정책: 무게당",
+                                "default": false,
+                                "initialState": {
+                                    "local": {
+                                        "form": {
+                                            "name": {
+                                                "ko": "기본 배송정책",
+                                                "en": "Standard Shipping"
+                                            },
+                                            "is_active": true,
+                                            "is_default": false,
+                                            "country_settings": [
+                                                {
+                                                    "country_code": "KR",
+                                                    "shipping_method": "parcel",
+                                                    "custom_shipping_name": null,
+                                                    "carrier": null,
+                                                    "currency_code": "KRW",
+                                                    "charge_policy": "per_weight",
+                                                    "base_fee": 2500,
+                                                    "free_threshold": null,
+                                                    "ranges": {
+                                                        "type": "weight",
+                                                        "unit_value": 5
+                                                    },
+                                                    "api_endpoint": null,
+                                                    "api_request_fields": null,
+                                                    "api_response_fee_field": null,
+                                                    "extra_fee_enabled": false,
+                                                    "extra_fee_settings": [],
+                                                    "extra_fee_multiply": false,
+                                                    "is_active": true
+                                                }
+                                            ]
+                                        },
+                                        "activeCountryTab": 0,
+                                        "rangeErrors": [],
+                                        "showBaseFee": true,
+                                        "showFreeThreshold": false,
+                                        "showRanges": false,
+                                        "showApiSettings": false,
+                                        "showUnitValue": true
+                                    }
+                                }
+                            },
+                            {
+                                "id": "charge_free",
+                                "label": "부과정책: 무료",
+                                "default": false,
+                                "initialState": {
+                                    "local": {
+                                        "form": {
+                                            "name": {
+                                                "ko": "기본 배송정책",
+                                                "en": "Standard Shipping"
+                                            },
+                                            "is_active": true,
+                                            "is_default": false,
+                                            "country_settings": [
+                                                {
+                                                    "country_code": "KR",
+                                                    "shipping_method": "parcel",
+                                                    "custom_shipping_name": null,
+                                                    "carrier": null,
+                                                    "currency_code": "KRW",
+                                                    "charge_policy": "free",
+                                                    "base_fee": 0,
+                                                    "free_threshold": null,
+                                                    "ranges": null,
+                                                    "api_endpoint": null,
+                                                    "api_request_fields": null,
+                                                    "api_response_fee_field": null,
+                                                    "extra_fee_enabled": false,
+                                                    "extra_fee_settings": [],
+                                                    "extra_fee_multiply": false,
+                                                    "is_active": true
+                                                }
+                                            ]
+                                        },
+                                        "activeCountryTab": 0,
+                                        "rangeErrors": [],
+                                        "showBaseFee": false,
+                                        "showFreeThreshold": false,
+                                        "showRanges": false,
+                                        "showApiSettings": false,
+                                        "showUnitValue": false
+                                    }
+                                }
+                            },
+                            {
+                                "id": "charge_api",
+                                "label": "부과정책: 계산 API",
+                                "default": false,
+                                "initialState": {
+                                    "local": {
+                                        "form": {
+                                            "name": {
+                                                "ko": "기본 배송정책",
+                                                "en": "Standard Shipping"
+                                            },
+                                            "is_active": true,
+                                            "is_default": false,
+                                            "country_settings": [
+                                                {
+                                                    "country_code": "KR",
+                                                    "shipping_method": "parcel",
+                                                    "custom_shipping_name": null,
+                                                    "carrier": null,
+                                                    "currency_code": "KRW",
+                                                    "charge_policy": "api",
+                                                    "base_fee": 0,
+                                                    "free_threshold": null,
+                                                    "ranges": null,
+                                                    "api_endpoint": "https://shipping.example.com/api/quote",
+                                                    "api_request_fields": [
+                                                        "zipcode",
+                                                        "weight"
+                                                    ],
+                                                    "api_response_fee_field": "fee",
+                                                    "extra_fee_enabled": false,
+                                                    "extra_fee_settings": [],
+                                                    "extra_fee_multiply": false,
+                                                    "is_active": true
+                                                }
+                                            ]
+                                        },
+                                        "activeCountryTab": 0,
+                                        "rangeErrors": [],
+                                        "showBaseFee": false,
+                                        "showFreeThreshold": false,
+                                        "showRanges": false,
+                                        "showApiSettings": true,
+                                        "showUnitValue": false
+                                    }
+                                }
+                            },
+                            {
+                                "id": "create_mode",
+                                "label": "$t:editor.state.create_mode",
+                                "initialState": {
+                                    "route": {
+                                        "id": null
+                                    }
+                                }
+                            },
+                            {
+                                "id": "validation_failed",
+                                "label": "$t:editor.state.validation_failed",
+                                "formErrors": {
+                                    "_local.errors.name": [
+                                        "필수 입력 항목입니다"
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 이커머스 설정 — {{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}} 으로 9개 탭 화면을 if 분기한다(본문 line 303/344~). query.tab + 우선 키 함께 주입.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/settings"
+                        },
+                        "items": [
+                            {
+                                "id": "tab_basic_info",
+                                "label": "$t:editor.state.tab.basic_info",
+                                "initialState": {
+                                    "query": {
+                                        "tab": "basic_info"
+                                    },
+                                    "global": {
+                                        "activeEcommerceSettingsTab": "basic_info"
+                                    }
+                                },
+                                "default": true
+                            },
+                            {
+                                "id": "tab_language_currency",
+                                "label": "$t:editor.state.tab.language_currency",
+                                "initialState": {
+                                    "query": {
+                                        "tab": "language_currency"
+                                    },
+                                    "global": {
+                                        "activeEcommerceSettingsTab": "language_currency"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "tab_seo",
+                                "label": "$t:editor.state.tab.seo",
+                                "initialState": {
+                                    "query": {
+                                        "tab": "seo"
+                                    },
+                                    "global": {
+                                        "activeEcommerceSettingsTab": "seo"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "tab_order_settings",
+                                "label": "$t:editor.state.tab.order_settings",
+                                "initialState": {
+                                    "query": {
+                                        "tab": "order_settings"
+                                    },
+                                    "global": {
+                                        "activeEcommerceSettingsTab": "order_settings"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "tab_claim",
+                                "label": "$t:editor.state.tab.claim",
+                                "initialState": {
+                                    "query": {
+                                        "tab": "claim"
+                                    },
+                                    "global": {
+                                        "activeEcommerceSettingsTab": "claim"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "tab_shipping",
+                                "label": "$t:editor.state.tab.shipping",
+                                "initialState": {
+                                    "query": {
+                                        "tab": "shipping"
+                                    },
+                                    "global": {
+                                        "activeEcommerceSettingsTab": "shipping"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "tab_review_settings",
+                                "label": "$t:editor.state.tab.review_settings",
+                                "initialState": {
+                                    "query": {
+                                        "tab": "review_settings"
+                                    },
+                                    "global": {
+                                        "activeEcommerceSettingsTab": "review_settings"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "tab_notification_definitions",
+                                "label": "$t:editor.state.tab.notification_definitions",
+                                "initialState": {
+                                    "query": {
+                                        "tab": "notification_definitions"
+                                    },
+                                    "global": {
+                                        "activeEcommerceSettingsTab": "notification_definitions"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "tab_identity_policies",
+                                "label": "$t:editor.state.tab.identity_policies",
+                                "initialState": {
+                                    "query": {
+                                        "tab": "identity_policies"
+                                    },
+                                    "global": {
+                                        "activeEcommerceSettingsTab": "identity_policies"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 마일리지/예치금 설정 — _local.activeTab(mileage/deposit)으로 탭을 분기한다(본문 line 130/165).",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/mileage-deposit-settings"
+                        },
+                        "items": [
+                            {
+                                "id": "tab_mileage",
+                                "label": "$t:editor.state.tab.mileage",
+                                "default": true,
+                                "initialState": {
+                                    "local": {
+                                        "activeTab": "mileage"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "tab_deposit",
+                                "label": "$t:editor.state.tab.deposit",
+                                "initialState": {
+                                    "local": {
+                                        "activeTab": "deposit"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "shop/guest_order_form — 비회원 주문 조회 폼. 본문이 _global.currentUser.uuid 유무로 양분된다(slots.content[0] 회원→마이페이지 리다이렉트 안내 / content[1] 비회원→조회 폼). 편집기 sampleGlobal 은 로그인 상태(currentUser 시드)라 비회원 조회 폼이 기본 미표시이므로, currentUser 를 null 로 패치한 비회원 상태를 기본으로 노출해 폼을 편집 가능하게 한다.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "/shop/guest/orders"
+                        },
+                        "items": [
+                            {
+                                "id": "guest",
+                                "label": "$t:editor.state.guest_order_form_guest",
+                                "default": true,
+                                "comment": "비회원 상태 — currentUser 를 null 로 덮어 content[1] 조회 폼을 캔버스에 노출한다.",
+                                "initialState": {
+                                    "global": {
+                                        "currentUser": null
+                                    }
+                                }
+                            },
+                            {
+                                "id": "member",
+                                "label": "$t:editor.state.guest_order_form_member",
+                                "comment": "회원 로그인 상태 — currentUser.uuid 를 명시 시드해 content[0] 마이페이지 리다이렉트 안내 분기를 활성화한다. sampleGlobal 은 코어 keyspace(currentUser)를 시드하지 않으므로(코어 우선) 빈 패치로는 guest(null) 와 다른 결과를 만들지 못한다 — 로그인 상태를 명시 패치해야 양분 분기가 회원 쪽으로 전환되고 캔버스가 실제로 달라진다.",
+                                "initialState": {
+                                    "global": {
+                                        "currentUser": {
+                                            "uuid": "editor-sample-member-uuid"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 마일리지 거래내역 목록 — transactions 데이터소스 목록 유무. 마일리지 시스템.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/mileage-transactions"
+                        },
+                        "items": [
+                            {
+                                "id": "with_data",
+                                "label": "$t:editor.state.with_data",
+                                "default": true
+                            },
+                            {
+                                "id": "empty_data",
+                                "label": "$t:editor.state.empty_data",
+                                "sampleDataOverrides": {
+                                    "byEndpointPattern": {
+                                        "/api/modules/sirsoft-ecommerce/admin/mileage-transactions*": {
+                                            "data": {
+                                                "data": [],
+                                                "meta": {
+                                                    "total": 0,
+                                                    "per_page": 20,
+                                                    "current_page": 1
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 쿠폰 목록 — coupons 데이터소스 목록 유무. 쿠폰 관리.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/promotion-coupons"
+                        },
+                        "items": [
+                            {
+                                "id": "with_data",
+                                "label": "$t:editor.state.with_data",
+                                "default": true
+                            },
+                            {
+                                "id": "empty_data",
+                                "label": "$t:editor.state.empty_data",
+                                "sampleDataOverrides": {
+                                    "byEndpointPattern": {
+                                        "/api/modules/sirsoft-ecommerce/admin/promotion-coupons*": {
+                                            "data": {
+                                                "data": [],
+                                                "meta": {
+                                                    "total": 0,
+                                                    "per_page": 20,
+                                                    "current_page": 1
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 쿠폰 생성 — promotion-coupon-create 라우트(route.id 없음 = 신규 작성 폼). 쿠폰 관리. 검증 오류는 _local.errors.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/promotion-coupon-create"
+                        },
+                        "items": [
+                            {
+                                "id": "create_mode",
+                                "label": "$t:editor.state.create_mode",
+                                "default": true,
+                                "initialState": {
+                                    "route": {
+                                        "id": null
+                                    }
+                                }
+                            },
+                            {
+                                "id": "validation_failed",
+                                "label": "$t:editor.state.validation_failed",
+                                "formErrors": {
+                                    "_local.errors.name": [
+                                        "필수 입력 항목입니다"
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 주문 목록 — orders 데이터소스 목록 유무.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/orders"
+                        },
+                        "items": [
+                            {
+                                "id": "with_data",
+                                "label": "$t:editor.state.with_data",
+                                "default": true
+                            },
+                            {
+                                "id": "empty_data",
+                                "label": "$t:editor.state.empty_data",
+                                "sampleDataOverrides": {
+                                    "byEndpointPattern": {
+                                        "/api/modules/sirsoft-ecommerce/admin/orders*": {
+                                            "data": {
+                                                "data": [],
+                                                "meta": {
+                                                    "total": 0,
+                                                    "per_page": 20,
+                                                    "current_page": 1
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "admin 주문 상세 — order 데이터소스 + 부분취소 분기(본문 if order.data.is_partially_cancelled). 주문 항목상태 전이.",
+                        "scope": {
+                            "kind": "route",
+                            "match": "*/admin/ecommerce/orders/:orderNumber"
+                        },
+                        "items": [
+                            {
+                                "id": "default",
+                                "label": "$t:editor.state.order_detail_default",
+                                "default": true
+                            },
+                            {
+                                "id": "partially_cancelled",
+                                "label": "$t:editor.state.order_detail_partially_cancelled",
+                                "comment": "부분취소 상태 — order.data.is_partially_cancelled=true 로 취소 표시 분기를 캔버스에 노출.",
+                                "sampleDataOverrides": {
+                                    "byEndpointPattern": {
+                                        "/api/modules/sirsoft-ecommerce/admin/orders/*": {
+                                            "data": {
+                                                "is_partially_cancelled": true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 모듈의 레이아웃 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 모듈만 대상으로 하며 활성 디렉토리 → `_bundled` 폴백 순으로 읽어 `data.spec` 형태로 반환합니다. 비활성·미존재 모듈은 404 이고, 편집기 스펙 파일을 작성하지 않은 경우 spec=null 로 정상 응답합니다.
+
+

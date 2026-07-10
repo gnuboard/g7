@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [Unreleased]
+
+### Added
+
+- 주문 설정 화면의 KG 이니시스 테스트모드 경고(`kginicis_test_mode_status`, `test_mode_settings_warning_*`) 일본어 번역 추가 — 테스트결제 상태 안내와 실결제 설정 이동 버튼이 일본어 로케일에서 자연스럽게 표시됩니다.
+
 ## [1.0.0] - 2026-07-01
 
 ### Added

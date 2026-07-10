@@ -58,7 +58,7 @@
                   "props": {
                     "value": "{{_local.form?.shipping?.default_country ?? 'KR'}}",
                     "className": "w-full",
-                    "options": "{{(_local.form?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({value: c.code, label: $localized(c.name)}))}}",
+                    "options": "{{(_local.form?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code)}))}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   },
                   "actions": [
@@ -216,19 +216,13 @@
               },
               "actions": [
                 {
+                  "comment": "신규 국가의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. 언어팩이 추가되면 입력칸도 함께 늘어나야 하므로 로케일을 리터럴로 열거하지 않는다.",
                   "type": "click",
                   "handler": "setState",
                   "params": {
                     "target": "local",
                     "isAddingCountry": true,
-                    "newCountry": {
-                      "code": "",
-                      "name": {
-                        "ko": "",
-                        "en": ""
-                      },
-                      "is_active": true
-                    }
+                    "newCountry": "{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), is_active: true } }}"
                   }
                 }
               ],
@@ -305,24 +299,31 @@
                   ]
                 },
                 {
+                  "comment": "국가명 입력칸은 활성 언어팩($locales) 마다 하나씩 생성된다. iteration 은 이 Div 자신을 로케일 수만큼 복제하므로, 부모(flex flex-wrap)가 입력칸들을 가로로 흘린다. 언어팩이 추가되면 입력칸도 자동으로 늘어난다 — 로케일 리터럴 열거 금지.",
                   "type": "basic",
                   "name": "Div",
+                  "iteration": {
+                    "source": "{{$locales ?? []}}",
+                    "item_var": "loc"
+                  },
                   "children": [
                     {
+                      "comment": "라벨 = 로케일 표시명(예: 한국어 / English / 日本語). appConfig.localeNames 부재 시 로케일 코드로 폴백.",
                       "type": "basic",
                       "name": "Label",
                       "props": {
                         "className": "text-tertiary block font-medium mb-1"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_name_ko"
+                      "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                     },
                     {
+                      "comment": "setState 는 params 키의 표현식을 해석하지 않는다(엔진 제약). 따라서 `newCountry.name.<loc>` 같은 동적 키 대신 name 객체를 통째로 재구성해 넣는다.",
                       "type": "basic",
                       "name": "Input",
                       "props": {
-                        "value": "{{_local.newCountry?.name?.ko ?? ''}}",
+                        "value": "{{_local.newCountry?.name?.[loc] ?? ''}}",
                         "className": "w-40",
-                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.name_ko_placeholder",
+                        "placeholder": "{{$t('sirsoft-ecommerce.admin.settings.shipping.countries.country_name') + ' (' + (_global.appConfig?.localeNames?.[loc] ?? loc) + ')'}}",
                         "disabled": "{{_computed.isReadOnly}}"
                       },
                       "actions": [
@@ -331,41 +332,7 @@
                           "handler": "setState",
                           "params": {
                             "target": "local",
-                            "newCountry.name.ko": "{{$event.target.value}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "text-tertiary block font-medium mb-1"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_name_en"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "value": "{{_local.newCountry?.name?.en ?? ''}}",
-                        "className": "w-40",
-                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.name_en_placeholder",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "newCountry.name.en": "{{$event.target.value}}"
+                            "newCountry.name": "{{ { ...(_local.newCountry?.name ?? {}), [loc]: $event.target.value } }}"
                           }
                         }
                       ]
@@ -380,11 +347,12 @@
                   },
                   "children": [
                     {
+                      "comment": "활성 조건: 국가코드 + 최소 하나의 로케일 이름. StoreEcommerceSettingsRequest 의 available_countries.*.name 규칙이 array 만 요구하고 특정 로케일 키를 강제하지 않으므로, 프론트도 ko 를 필수로 두지 않는다.",
                       "type": "basic",
                       "name": "Button",
                       "props": {
                         "type": "button",
-                        "disabled": "{{_computed.isReadOnly || !_local.newCountry?.code || !_local.newCountry?.name?.ko}}",
+                        "disabled": "{{_computed.isReadOnly || !(_local.newCountry?.code ?? '').trim() || !Object.values(_local.newCountry?.name ?? {}).some(v => (v ?? '').trim() !== '')}}",
                         "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       },
                       "actions": [
@@ -393,10 +361,11 @@
                           "handler": "sequence",
                           "actions": [
                             {
+                              "comment": "입력하지 않은 로케일의 빈 문자열은 저장본에 남기지 않는다 — 부재 로케일은 언어팩(settings.countries.{code}.name)이 보강하거나, 운영자가 나중에 채운다.",
                               "handler": "setState",
                               "params": {
                                 "target": "local",
-                                "form.shipping.available_countries": "{{[...(_local.form?.shipping?.available_countries ?? []), { code: _local.newCountry.code, name: _local.newCountry.name, is_active: true }]}}",
+                                "form.shipping.available_countries": "{{[...(_local.form?.shipping?.available_countries ?? []), { code: _local.newCountry.code.trim().toUpperCase(), name: Object.fromEntries(Object.entries(_local.newCountry?.name ?? {}).filter(e => (e[1] ?? '').trim() !== '').map(e => [e[0], e[1].trim()])), is_active: true }]}}",
                                 "isAddingCountry": false,
                                 "newCountry": null,
                                 "hasChanges": true

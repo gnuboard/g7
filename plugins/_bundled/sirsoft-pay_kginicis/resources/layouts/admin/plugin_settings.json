@@ -61,7 +61,11 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "alert-danger"
+                            "id": "kginicis_settings_validation_error",
+                            "role": "alert",
+                            "aria-live": "assertive",
+                            "tabIndex": -1,
+                            "className": "alert-danger scroll-mt-32"
                         },
                         "children": [
                             {
@@ -2688,7 +2692,17 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "errors": "{{$error.errors}}"
+                                                            "errors": "{{error.errors ?? { _general: error.message }}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "scrollIntoView",
+                                                        "params": {
+                                                            "selector": "#kginicis_settings_validation_error",
+                                                            "behavior": "smooth",
+                                                            "block": "start",
+                                                            "waitForElement": true,
+                                                            "timeout": 2000
                                                         }
                                                     },
                                                     {

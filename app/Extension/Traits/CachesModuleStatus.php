@@ -6,6 +6,7 @@ use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Models\Module;
+use App\Support\InstallerContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -63,8 +64,6 @@ trait CachesModuleStatus
     /**
      * 모듈 상태 캐시를 무효화합니다.
      * 모듈 상태 변경 시 (install, activate, deactivate, uninstall) 호출해야 합니다.
-     *
-     * @return void
      */
     public static function invalidateModuleStatusCache(): void
     {
@@ -79,10 +78,14 @@ trait CachesModuleStatus
      * 설치 완료 상태(`config('app.installer_completed')`)일 때는 테이블 존재를
      * 전제로 하여 `Schema::hasTable()` 호출을 건너뜁니다. 인스톨러 이전 환경이나
      * 테스트에서는 기존 체크 경로로 폴백합니다.
+     *
+     * 단, 마이그레이션 계열 명령 실행 중에는 `INSTALLER_COMPLETED=true` 라도 테이블이
+     * 아직 없을 수 있으므로(빈 DB 새 서버에 .env 복사 후 migrate 전) fast-path 를
+     * 신뢰하지 않고 실제 `Schema::hasTable()` 폴백으로 진입합니다.
      */
     private static function isExtensionTableReady(string $table): bool
     {
-        if (config('app.installer_completed')) {
+        if (! InstallerContext::isSchemaMutatingCommand() && config('app.installer_completed')) {
             return true;
         }
 

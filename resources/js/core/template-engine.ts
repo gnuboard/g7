@@ -24,6 +24,7 @@ import { DataSourceManager } from './template-engine/DataSourceManager';
 import { ModalDataSourceWrapper } from './template-engine/ModalDataSourceWrapper';
 import { ParentContextProvider } from './template-engine/ParentContextProvider';
 import { TemplateNotFoundError } from './template-engine/TemplateEngineError';
+import { mergeLocalInitSlot } from './template-engine/localInitSlot';
 import { ErrorDisplay } from './template-engine/ErrorDisplay';
 import { TemplateApp, initTemplateApp } from './TemplateApp';
 import { createLogger } from './utils/Logger';
@@ -749,11 +750,20 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
       ...(data._global || {}),
     };
 
+    // _localInit도 얕은 스프레드로 교체하면 안 됨 (engine-v1.52.2)
+    // progressive 데이터소스가 둘 이상이면 각자 독립적으로 updateTemplateData를 호출하는데,
+    // 소비부(DynamicRenderer의 useEffect)는 React commit 이후에 실행된다.
+    // 두 호출이 같은 commit 사이에 들어오면 나중 payload가 슬롯을 통째로 교체하여
+    // 먼저 도착한 소스의 initLocal이 한 번도 관측되지 않고 사라진다.
+    // → 아직 관측되지 않은(unconsumed) 슬롯만 누적 병합한다. 상세: localInitSlot.ts
+    const mergedLocalInit = mergeLocalInitSlot(state.currentDataContext._localInit, data._localInit);
+
     state.currentDataContext = {
       ...globalVariables,           // 전역 변수 (낮은 우선순위)
       ...state.currentDataContext,  // 기존 데이터
       ...data,                       // 새 데이터 (높은 우선순위)
       _global: mergedGlobalState,   // _global은 명시적으로 깊은 병합된 값 사용
+      _localInit: mergedLocalInit,  // _localInit은 소비 전이면 누적 병합된 값 사용
     };
 
     // _local 및 _computed는 _global의 값을 canonical source로 동기화

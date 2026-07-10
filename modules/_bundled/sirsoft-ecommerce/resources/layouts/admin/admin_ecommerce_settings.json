@@ -268,6 +268,7 @@
             ]
           },
           {
+            "comment": "className 은 sticky-tab-nav-responsive 를 쓴다 — 이 화면의 콘텐츠 래퍼가 admin-page-content-responsive(p-4 sm:p-6 lg:p-8) 라 뷰포트마다 좌우 패딩이 다르기 때문. 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)를 쓰면 폰(p-4=16px)에서 좌우로 8px 씩 과다 bleed 되어 콘텐츠 영역을 넘친다.",
             "id": "tab_navigation",
             "type": "composite",
             "name": "TabNavigation",
@@ -316,7 +317,7 @@
               ],
               "activeTabId": "{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}",
               "variant": "default",
-              "className": "sticky-tab-nav"
+              "className": "sticky-tab-nav-responsive"
             },
             "actions": [
               {
@@ -380,7 +381,7 @@
                         "name": "Icon",
                         "props": {
                           "name": "triangle-exclamation",
-                          "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                          "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                         }
                       },
                       {

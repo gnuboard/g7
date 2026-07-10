@@ -30,7 +30,7 @@ return [
         'japan_contact_email_required' => '운영 일본 결제창에 표시할 문의 이메일이 필요합니다.',
         'japan_contact_phone_required' => '운영 일본 결제창에 표시할 문의 전화번호가 필요합니다.',
         'japan_contact_opening_hours_required' => '운영 일본 결제창에 표시할 문의 영업시간이 필요합니다.',
-        'replace_sample_value' => '운영 모드에서는 샘플값 대신 실제 계약 정보를 입력하세요.',
+        'replace_sample_value' => '운영 모드에서는 일본 가맹점 표시 정보의 샘플값을 실제 계약 정보로 변경하세요.',
     ],
     'defaults' => [
         'good_name' => '상품',

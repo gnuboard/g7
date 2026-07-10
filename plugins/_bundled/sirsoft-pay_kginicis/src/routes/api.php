@@ -9,6 +9,7 @@ use Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtTestProductController;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminEscrowDeliveryController;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminEscrowDenyConfirmController;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminOrderListController;
+use Plugins\Sirsoft\PayKginicis\Controllers\AdminSettingsStatusController;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminTransactionController;
 use Plugins\Sirsoft\PayKginicis\Controllers\CbtCheckoutTokenController;
 use Plugins\Sirsoft\PayKginicis\Controllers\CbtHashDataController;
@@ -65,6 +66,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         ]);
     })->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('vbank.notify.url');
+
+    Route::get('/settings/test-mode-status', [AdminSettingsStatusController::class, 'testMode'])
+        ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+        ->name('settings.test-mode-status');
 
     // 어드민 주문 목록의 테스트 결제 배지 표시용 맵 (auto_fetch)
     Route::get('/orders/test-mode-map', [AdminOrderListController::class, 'testModeMap'])

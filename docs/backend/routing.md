@@ -68,7 +68,8 @@
 | 코어 | `/admin/[기능명]` | `/admin/users` |
 | 모듈 | `/admin/[vendor-module]/[기능명]` | `/admin/sirsoft-ecommerce/products` |
 | 플러그인 | `/admin/[vendor-plugin]/[기능명]` | `/admin/sirsoft-payment/settings` |
-| 공개 API | `/api/[vendor-module]/[기능명]` | `/api/sirsoft-ecommerce/products` |
+| 모듈 공개 API | `/api/modules/[vendor-module]/[기능명]` | `/api/modules/sirsoft-ecommerce/products` |
+| 플러그인 공개 API | `/api/plugins/[vendor-plugin]/[기능명]` | `/api/plugins/sirsoft-gdpr/consent` |
 
 ### 리소스 URL 규칙
 
@@ -149,32 +150,35 @@ sirsoft-ecommerce.products.delete
 ### 모듈 라우트 파일
 
 ```php
-// modules/sirsoft-ecommerce/src/routes/api.php
+// modules/_bundled/sirsoft-ecommerce/src/routes/api.php
 
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Ecommerce\Controllers\Api\Admin\ProductController;
 
-Route::prefix('admin/sirsoft-ecommerce')->middleware(['auth:sanctum', 'admin'])->group(function () {
-    // 상품 관리 (권한 체크 포함)
+// ModuleRouteServiceProvider 가 URL prefix('api/modules/sirsoft-ecommerce')와
+// name prefix('api.modules.sirsoft-ecommerce.')를 자동 적용한다.
+// 라우트 파일 내부 group 에는 관리자 세그먼트('admin')만 두고, 접두는 중복 입력하지 않는다.
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    // 상품 관리 (권한 체크 포함) → 최종 URL: /api/modules/sirsoft-ecommerce/admin/products
     Route::get('/products', [ProductController::class, 'index'])
         ->middleware('permission:sirsoft-ecommerce.products.view')
-        ->name('api.sirsoft-ecommerce.products.index');
+        ->name('products.index'); // 최종 name: api.modules.sirsoft-ecommerce.products.index
 
     Route::post('/products', [ProductController::class, 'store'])
         ->middleware('permission:sirsoft-ecommerce.products.create')
-        ->name('api.sirsoft-ecommerce.products.store');
+        ->name('products.store');
 
     Route::get('/products/{id}', [ProductController::class, 'show'])
         ->middleware('permission:sirsoft-ecommerce.products.view')
-        ->name('api.sirsoft-ecommerce.products.show');
+        ->name('products.show');
 
     Route::put('/products/{id}', [ProductController::class, 'update'])
         ->middleware('permission:sirsoft-ecommerce.products.edit')
-        ->name('api.sirsoft-ecommerce.products.update');
+        ->name('products.update');
 
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])
         ->middleware('permission:sirsoft-ecommerce.products.delete')
-        ->name('api.sirsoft-ecommerce.products.destroy');
+        ->name('products.destroy');
 });
 ```
 
@@ -253,17 +257,20 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
 ### 공개 API 라우트
 
 ```php
-// modules/sirsoft-ecommerce/src/routes/api.php
+// modules/_bundled/sirsoft-ecommerce/src/routes/api.php
 
 use Modules\Sirsoft\Ecommerce\Controllers\Api\Public\ProductController;
 
-Route::prefix('api/sirsoft-ecommerce')->group(function () {
-    // 공개 상품 API (인증 불필요)
-    Route::get('/products', [ProductController::class, 'index'])
-        ->name('api.sirsoft-ecommerce.public.products.index');
+// ModuleRouteServiceProvider 가 URL prefix('api/modules/sirsoft-ecommerce')와
+// name prefix('api.modules.sirsoft-ecommerce.')를 자동 적용한다.
+// 라우트 파일에서 prefix/name 접두를 중복 입력하지 않는다.
+Route::prefix('products')->group(function () {
+    // 공개 상품 API (인증 불필요) → 최종 URL: /api/modules/sirsoft-ecommerce/products
+    Route::get('/', [ProductController::class, 'index'])
+        ->name('public.products.index'); // 최종 name: api.modules.sirsoft-ecommerce.public.products.index
 
-    Route::get('/products/{id}', [ProductController::class, 'show'])
-        ->name('api.sirsoft-ecommerce.public.products.show');
+    Route::get('/{id}', [ProductController::class, 'show'])
+        ->name('public.products.show');
 });
 ```
 

@@ -9,13 +9,19 @@
   "props": {
     "className": "flex items-center justify-between mb-6"
   },
+  "responsive": {
+    "mobile": {
+      "comment": "모바일(0~767px)에서는 게시판명을 자기 줄로 올리고(order-first w-full) 아래 줄에 목록/이전글/다음글만 남긴다. 한 줄에 셋을 밀어넣으면 게시판명이 길수록 flex 가 좌우 버튼을 압착했다 (390px 실측: '이전글' 폭 5자 87px → 11자 73px → 21자 62px, chevron 과 텍스트가 겹침). 버튼 3개 고정폭 261px + 21자 제목 자연폭 323px = 584px 이므로 태블릿(768px+, 콘텐츠 735px)은 한 줄로 충분하다 — portable 이 아니라 mobile 로 한정한다.",
+      "props": { "className": "flex flex-wrap items-center justify-between gap-y-3 mb-6" }
+    }
+  },
   "children": [
     {
-      "comment": "목록으로 버튼 — 상세 URL 에 실린 목록 상태(category/search/page/del/filters)를 그대로 목록으로 복귀 (45-1)",
+      "comment": "목록으로 버튼 — 상세 URL 에 실린 목록 상태(category/search/page/del/filters)를 그대로 목록으로 복귀 (45-1). shrink-0: 게시판명이 길어도 눌리지 않는다.",
       "type": "basic",
       "name": "Button",
       "props": {
-        "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
+        "className": "shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
       },
       "actions": [
         {
@@ -51,13 +57,20 @@
       "props": {
         "className": "text-lg font-semibold text-gray-900 dark:text-white"
       },
+      "responsive": {
+        "mobile": {
+          "comment": "order-first + w-full 로 첫 줄 전체를 차지. 이 노드가 형제를 압착하던 원인이므로 폭 경쟁에서 아예 빼낸다.",
+          "props": { "className": "order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white" }
+        }
+      },
       "text": "{{post?.data?.board?.name ?? ''}}"
     },
     {
+      "comment": "이전글/다음글 그룹. shrink-0: 게시판명이 길어도 눌리지 않는다.",
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "flex items-center gap-2"
+        "className": "shrink-0 flex items-center gap-2"
       },
       "children": [
         {

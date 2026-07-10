@@ -65,30 +65,24 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     {
         $kgInicisMethods = [];
 
-        $this->appendIfEnabled($kgInicisMethods, 'kginicis_samsung_pay',
-            $this->buildEntry(
-                id: 'kginicis_samsung_pay',
-                nameKey: 'sirsoft-pay_kginicis::payment_methods.samsung_pay.name',
-                descriptionKey: 'sirsoft-pay_kginicis::payment_methods.samsung_pay.description',
-                icon: 'mobile-screen-button',
-            )
+        $kgInicisMethods[] = $this->buildDomesticEntry(
+            id: 'kginicis_samsung_pay',
+            nameKey: 'sirsoft-pay_kginicis::payment_methods.samsung_pay.name',
+            descriptionKey: 'sirsoft-pay_kginicis::payment_methods.samsung_pay.description',
+            icon: 'mobile-screen-button',
         );
-        $this->appendIfEnabled($kgInicisMethods, 'kginicis_naverpay', $this->buildNaverPayEntry());
-        $this->appendIfEnabled($kgInicisMethods, 'kginicis_lpay',
-            $this->buildEntry(
-                id: 'kginicis_lpay',
-                nameKey: 'sirsoft-pay_kginicis::payment_methods.lpay.name',
-                descriptionKey: 'sirsoft-pay_kginicis::payment_methods.lpay.description',
-                icon: 'mobile-screen-button',
-            )
+        $kgInicisMethods[] = $this->buildNaverPayEntry();
+        $kgInicisMethods[] = $this->buildDomesticEntry(
+            id: 'kginicis_lpay',
+            nameKey: 'sirsoft-pay_kginicis::payment_methods.lpay.name',
+            descriptionKey: 'sirsoft-pay_kginicis::payment_methods.lpay.description',
+            icon: 'mobile-screen-button',
         );
-        $this->appendIfEnabled($kgInicisMethods, 'kginicis_kakaopay',
-            $this->buildEntry(
-                id: 'kginicis_kakaopay',
-                nameKey: 'sirsoft-pay_kginicis::payment_methods.kakaopay.name',
-                descriptionKey: 'sirsoft-pay_kginicis::payment_methods.kakaopay.description',
-                icon: 'mobile-screen-button',
-            )
+        $kgInicisMethods[] = $this->buildDomesticEntry(
+            id: 'kginicis_kakaopay',
+            nameKey: 'sirsoft-pay_kginicis::payment_methods.kakaopay.name',
+            descriptionKey: 'sirsoft-pay_kginicis::payment_methods.kakaopay.description',
+            icon: 'mobile-screen-button',
         );
 
         if ($this->settingEnabled('japan_enabled')) {
@@ -127,6 +121,21 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     }
 
     /**
+     * 국내 간편결제 entry 는 항상 등록해 이커머스 주문설정에서 켜고 끌 수 있게 한다.
+     * 기존 플러그인 설정값은 신규 저장값이 없을 때 사용할 기본 활성 상태로만 반영한다.
+     */
+    private function buildDomesticEntry(string $id, string $nameKey, string $descriptionKey, string $icon): array
+    {
+        return $this->buildEntry(
+            id: $id,
+            nameKey: $nameKey,
+            descriptionKey: $descriptionKey,
+            icon: $icon,
+            isActive: $this->domesticMethodEnabled($id),
+        );
+    }
+
+    /**
      * 브랜드 버튼 옵션은 표시 메타데이터만 바꾸고 결제수단 ID는 유지한다.
      */
     private function buildNaverPayEntry(): array
@@ -138,6 +147,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
                 ? 'sirsoft-pay_kginicis::payment_methods.naverpay_brand.description'
                 : 'sirsoft-pay_kginicis::payment_methods.naverpay.description',
             icon: 'wallet',
+            isActive: $this->domesticMethodEnabled('kginicis_naverpay'),
         );
     }
 
@@ -152,21 +162,16 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     }
 
     /**
-     * 플러그인 설정에서 활성화된 국내 간편결제 수단만 목록에 추가합니다.
+     * 기존 플러그인 설정의 국내 간편결제 활성값을 읽습니다.
      *
-     * @param  array<int, array<string, mixed>>  $methods
      * @param  string  $id
-     * @param  array<string, mixed>  $entry
-     * @return void
+     * @return bool
      */
-    private function appendIfEnabled(array &$methods, string $id, array $entry): void
+    private function domesticMethodEnabled(string $id): bool
     {
         $settingKey = self::DOMESTIC_EASY_PAY_SETTINGS[$id] ?? null;
-        if ($settingKey === null || ! $this->settingEnabled($settingKey)) {
-            return;
-        }
 
-        $methods[] = $entry;
+        return $settingKey !== null && $this->settingEnabled($settingKey);
     }
 
     /**
@@ -187,7 +192,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     /**
      * 결제수단 entry 1건 빌더 — EcommerceSettingsService 의 getBuiltinPaymentMethods 와 동일 형식.
      */
-    private function buildEntry(string $id, string $nameKey, string $descriptionKey, string $icon): array
+    private function buildEntry(string $id, string $nameKey, string $descriptionKey, string $icon, bool $isActive = false): array
     {
         return [
             'id' => $id,
@@ -205,7 +210,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
                 // PG 선택 불필요 — orderResponseInterceptor 가 prefix 'kginicis_' 를 인식해
                 // 기본 PG 사 설정과 무관하게 KG 이니시스 결제 흐름으로 강제.
                 'pg_provider' => null,
-                'is_active' => false,
+                'is_active' => $isActive,
                 'min_order_amount' => 0,
                 'stock_deduction_timing' => 'payment_complete',
             ],

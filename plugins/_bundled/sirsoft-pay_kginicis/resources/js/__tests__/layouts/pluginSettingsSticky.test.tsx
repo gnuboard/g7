@@ -49,6 +49,21 @@ function collectClassNames(node: unknown, classNames: string[] = []): string[] {
   return classNames;
 }
 
+function collectNodes(node: unknown, predicate: (value: Record<string, unknown>) => boolean, nodes: Record<string, unknown>[] = []): Record<string, unknown>[] {
+  if (!node || typeof node !== 'object') {
+    return nodes;
+  }
+  const value = node as Record<string, unknown>;
+  if (predicate(value)) {
+    nodes.push(value);
+  }
+  for (const child of Object.values(value)) {
+    collectNodes(child, predicate, nodes);
+  }
+
+  return nodes;
+}
+
 describe('plugin_settings 하단 버튼 sticky 고정', () => {
   it('footer_buttons 에 sticky bottom 고정 클래스가 존재해야 한다', () => {
     const footer = findById(pluginSettingsLayout, 'footer_buttons');
@@ -79,5 +94,58 @@ describe('plugin_settings 하단 버튼 sticky 고정', () => {
       expect(className).not.toContain('sticky-footer-buttons');
       expect(className).not.toContain('row-stack');
     }
+  });
+
+  it('저장 실패 시 apiCall onError 에서 validation errors 를 error 컨텍스트에서 읽어야 한다', () => {
+    const saveActions = collectNodes(pluginSettingsLayout, (node) => {
+      return node.handler === 'apiCall'
+        && typeof node.target === 'string'
+        && node.target.includes('/api/admin/plugins/')
+        && node.target.includes('/settings');
+    });
+
+    expect(saveActions).toHaveLength(1);
+
+    const onError = saveActions[0].onError as Record<string, unknown>[] | undefined;
+    expect(onError).toBeDefined();
+    expect(onError?.[0]?.handler).toBe('setState');
+
+    const params = (onError?.[0]?.params ?? {}) as Record<string, unknown>;
+    expect(params.errors).toBe('{{error.errors ?? { _general: error.message }}}');
+  });
+
+  it('저장 실패 시 상단 검증 오류 영역으로 자동 스크롤해야 한다', () => {
+    const validationError = collectNodes(pluginSettingsLayout, (node) => {
+      return node.id === 'validation_error';
+    })[0];
+
+    expect(validationError).toBeDefined();
+
+    const validationErrorProps = (validationError.props ?? {}) as Record<string, unknown>;
+    expect(validationErrorProps.id).toBe('kginicis_settings_validation_error');
+    expect(validationErrorProps.role).toBe('alert');
+    expect(String(validationErrorProps.className)).toContain('scroll-mt-32');
+
+    const saveActions = collectNodes(pluginSettingsLayout, (node) => {
+      return node.handler === 'apiCall'
+        && typeof node.target === 'string'
+        && node.target.includes('/api/admin/plugins/')
+        && node.target.includes('/settings');
+    });
+
+    expect(saveActions).toHaveLength(1);
+
+    const onError = saveActions[0].onError as Record<string, unknown>[] | undefined;
+    const scrollAction = onError?.find((action) => action.handler === 'scrollIntoView');
+
+    expect(scrollAction).toBeDefined();
+
+    const params = (scrollAction?.params ?? {}) as Record<string, unknown>;
+    expect(params).toMatchObject({
+      selector: '#kginicis_settings_validation_error',
+      behavior: 'smooth',
+      block: 'start',
+      waitForElement: true,
+    });
   });
 });

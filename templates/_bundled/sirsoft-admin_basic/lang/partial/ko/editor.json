@@ -1408,6 +1408,8 @@
     "param_field_b": "두 번째 값 경로"
   },
   "state": {
+    "admin_base_default": "기본",
+    "sidebar_open": "모바일 메뉴 펼침",
     "with_data": "데이터 있음",
     "empty_data": "데이터 없음",
     "edit_existing": "기존 수정",

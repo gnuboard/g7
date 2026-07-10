@@ -15,6 +15,8 @@ use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
+use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
+use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\MobileCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
@@ -33,6 +35,8 @@ class MobileCallbackController
     use PreventsReplayCallback;
     use ResolvesEasyPaySelection;
     use SanitizesPgResponse;
+    use SerializesPaymentCallbacks;
+    use ValidatesCbtOrderContext;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
 
@@ -172,6 +176,7 @@ class MobileCallbackController
         // cancelPayment 를 호출해 PG 잔존 승인을 해제한다 (사용자 환불 보장).
         $approvedTid = null;
         $approvedTotPrice = 0;
+        $callbackLock = null;
 
         try {
             $order = $this->orderService->findByOrderNumber($moid);
@@ -181,6 +186,8 @@ class MobileCallbackController
 
                 return redirect($this->resolveFailUrl(['error' => 'order_not_found', 'orderId' => $moid]));
             }
+
+            $callbackLock = $this->acquireOrderCallbackLock('mobileAuthCallback', $moid);
 
             // 서버 승인 요청: POST P_REQ_URL with P_MID + P_TID
             $result = $this->apiService->authorizeMobilePayment($reqUrl, $pTid);
@@ -227,6 +234,21 @@ class MobileCallbackController
             $approvedTid = $tid;
             $approvedTotPrice = $totPrice;
             $embeddedPgProvider = $this->resolveEmbeddedPgProvider($selectedEasyPayMethod);
+
+            $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($order, 'mobile_auth_callback', [
+                'tid' => $tid,
+                'received_amount' => $totPrice,
+            ]);
+            if ($expectedAmount === null) {
+                $this->autoCancelIfApproved($approvedTid, $moid, $approvedTotPrice, 'invalid_payment_currency');
+
+                return redirect($this->resolveFailUrl(['error' => 'invalid_payment_currency', 'orderId' => $moid]));
+            }
+            if ($expectedAmount > 0 && $totPrice !== $expectedAmount) {
+                $this->autoCancelIfApproved($approvedTid, $moid, $approvedTotPrice, 'amount_mismatch');
+
+                return redirect($this->resolveFailUrl(['error' => 'amount_mismatch', 'orderId' => $moid]));
+            }
 
             Log::info('KG Inicis mobile: completing card payment', [
                 'P_OID' => $moid,
@@ -298,6 +320,8 @@ class MobileCallbackController
                 'message' => $e->getMessage(),
                 'orderId' => $moid,
             ]));
+        } finally {
+            $this->releaseOrderCallbackLock($callbackLock);
         }
     }
 

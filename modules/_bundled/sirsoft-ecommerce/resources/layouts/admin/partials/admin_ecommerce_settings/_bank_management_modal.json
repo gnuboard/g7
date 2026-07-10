@@ -119,11 +119,11 @@
           ]
         },
         {
-          "comment": "은행 목록 테이블 (스크롤 영역)",
+          "comment": "은행 목록 테이블 (스크롤 영역). overflow-x-auto 명시 필수 — 좁은 뷰포트에서 표(413px)가 컨테이너(356px)를 넘는다. overflow-y 만 선언해도 CSS Overflow 명세상 다른 축이 visible 로 남을 수 없어 computed 값이 auto 가 되지만, 그 의존은 암묵적이다. 누군가 overflow-y-visible 로 바꾸는 순간 표가 잘리므로 의도를 코드에 고정한다.",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg"
+            "className": "max-h-96 overflow-y-auto overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg"
           },
           "children": [
             {
@@ -207,13 +207,14 @@
                           },
                           "children": [
                             {
+                              "comment": "min-w-[80px] 필수 — 표가 table-layout:auto 이고 td 의 min-width 가 0 이라, 좁은 뷰포트에서 은행명 열이 은행코드 열을 56px 로 압착하면 input 이 24px(= 좌우 padding 12+12)로 줄어 텍스트 영역이 0px 이 된다(입력한 값이 보이지 않음). width 지정은 auto 레이아웃이 무시하므로 하한(min-width)을 고정해야 한다. 숫자 스케일 min-w-16 등은 safelist 에 없어 CSS 가 생성되지 않으므로 쓰면 무효다.",
                               "type": "basic",
                               "name": "Input",
                               "props": {
                                 "type": "text",
                                 "value": "{{bank.code ?? ''}}",
                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.code_placeholder",
-                                "className": "{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code'] ? 'input input-error' : 'input'}}",
+                                "className": "{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code'] ? 'input input-error min-w-[80px]' : 'input min-w-[80px]'}}",
                                 "disabled": "{{$parent._computed.isReadOnly}}"
                               },
                               "actions": [

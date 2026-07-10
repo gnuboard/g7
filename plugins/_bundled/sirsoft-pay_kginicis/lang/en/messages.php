@@ -30,7 +30,7 @@ return [
         'japan_contact_email_required' => 'Contact email for the live Japan payment window is required.',
         'japan_contact_phone_required' => 'Contact phone for the live Japan payment window is required.',
         'japan_contact_opening_hours_required' => 'Contact opening hours for the live Japan payment window are required.',
-        'replace_sample_value' => 'Replace sample values with your real contract information in live mode.',
+        'replace_sample_value' => 'Replace the sample Japan merchant display information with your real contract information in live mode.',
     ],
     'defaults' => [
         'good_name' => 'Goods',

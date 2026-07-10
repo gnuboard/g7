@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DataBindingEngine, DataBindingError } from '../DataBindingEngine';
 
 describe('DataBindingEngine', () => {
@@ -566,17 +566,101 @@ describe('DataBindingEngine', () => {
       expect(result).toBe('');
     });
 
-    it('$locale 없으면 ko 기본값 사용', () => {
+    it('$locale 없고 앱도 미초기화면 ko 기본값 사용', () => {
       const context = {
         _global: {
           selectedModule: {
             name: { ko: '게시판 모듈', en: 'Board Module' },
           },
         },
-        // $locale 없음
+        // $locale 없음 — window.__templateApp 도 없는 순수 환경
       };
       const result = engine.evaluateExpression('$localized(_global.selectedModule.name)', context);
       expect(result).toBe('게시판 모듈');
+    });
+
+    /**
+     * ActionDispatcher 경로($locale 미주입)에서의 로케일 회수.
+     *
+     * `init_actions` / `actions` 로 실행되는 표현식의 data context 는 `$locale` 을 담지
+     * 않는다(ActionDispatcher 가 빌드하는 컨텍스트라 렌더 컨텍스트와 다르다). 이때
+     * `$localized` 가 `'ko'` 로 하드코딩 폴백하면, en/ja 로케일에서도 한국어 값이 나온다.
+     *
+     * `$t` 는 engine-v1.38.2 에서 동일 함정을 `window.__templateApp.getConfig()` 회수로
+     * 이미 해결했다. `$localized` 도 같은 회수 경로를 공유해야 한다.
+     *
+     * 회귀 배경(#459): 헤더 배송국가 셀렉터가 `init_actions` 파생이라, 서버가 en/ja 이름을
+     * 내려줘도 화면에는 늘 한국어 국가명이 표시됐다.
+     */
+    describe('$locale 미주입 시 window.__templateApp 로케일 회수 (ActionDispatcher 경로)', () => {
+      const name = { ko: '대한민국', en: 'South Korea', ja: '大韓民国' };
+
+      afterEach(() => {
+        delete (window as any).__templateApp;
+      });
+
+      it('앱 로케일이 en 이면 en 값을 반환한다', () => {
+        (window as any).__templateApp = {
+          getConfig: () => ({ templateId: 'sirsoft-admin_basic', locale: 'en' }),
+        };
+        // $locale 없음 — ActionDispatcher 컨텍스트 모사
+        const result = engine.evaluateExpression('$localized(_global.country.name)', {
+          _global: { country: { name } },
+        });
+        expect(result).toBe('South Korea');
+      });
+
+      it('앱 로케일이 ja 이면 ja 값을 반환한다', () => {
+        (window as any).__templateApp = {
+          getConfig: () => ({ templateId: 'sirsoft-basic', locale: 'ja' }),
+        };
+        const result = engine.evaluateExpression('$localized(_global.country.name)', {
+          _global: { country: { name } },
+        });
+        expect(result).toBe('大韓民国');
+      });
+
+      it('컨텍스트의 $locale 이 앱 설정보다 우선한다', () => {
+        (window as any).__templateApp = {
+          getConfig: () => ({ templateId: 'sirsoft-basic', locale: 'ja' }),
+        };
+        const result = engine.evaluateExpression('$localized(_global.country.name)', {
+          _global: { country: { name } },
+          $locale: 'en',
+        });
+        expect(result).toBe('South Korea');
+      });
+
+      it('map() 콜백 안에서도 회수된 로케일이 적용된다 (파생 목록 생성 패턴)', () => {
+        (window as any).__templateApp = {
+          getConfig: () => ({ templateId: 'sirsoft-admin_basic', locale: 'en' }),
+        };
+        const result = engine.evaluateExpression(
+          '(_global.countries ?? []).map(c => ({ code: c.code, name: $localized(c.name) }))',
+          {
+            _global: {
+              countries: [
+                { code: 'KR', name },
+                { code: 'US', name: { ko: '미국', en: 'United States', ja: 'アメリカ' } },
+              ],
+            },
+          }
+        );
+        expect(result).toEqual([
+          { code: 'KR', name: 'South Korea' },
+          { code: 'US', name: 'United States' },
+        ]);
+      });
+
+      it('앱 설정에 locale 이 없으면 ko 로 폴백한다', () => {
+        (window as any).__templateApp = {
+          getConfig: () => ({ templateId: 'sirsoft-basic' }),
+        };
+        const result = engine.evaluateExpression('$localized(_global.country.name)', {
+          _global: { country: { name } },
+        });
+        expect(result).toBe('대한민국');
+      });
     });
 
     it('resolveBindings에서 $localized 사용', () => {

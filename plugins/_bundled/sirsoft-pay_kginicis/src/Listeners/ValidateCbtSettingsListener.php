@@ -36,12 +36,15 @@ class ValidateCbtSettingsListener implements HookListenerInterface
         'japan_contact_opening_hours' => '10:00-18:00',
     ];
 
+    private const SAMPLE_VALUE_ERROR_FIELD = 'japan_contract_info';
+
     public static function getSubscribedHooks(): array
     {
         return [
             'core.plugin_settings.before_save' => [
                 'method' => 'validateBeforeSave',
                 'priority' => 10,
+                'sync' => true,
             ],
         ];
     }
@@ -73,10 +76,10 @@ class ValidateCbtSettingsListener implements HookListenerInterface
                 }
             }
 
-            foreach (self::SAMPLE_VALUES as $field => $sampleValue) {
-                if (trim((string) ($settings[$field] ?? '')) === $sampleValue) {
-                    $errors[$field][] = __('sirsoft-pay_kginicis::messages.settings_validation.replace_sample_value');
-                }
+            if ($this->hasSampleDisplayValue($settings)) {
+                $errors[self::SAMPLE_VALUE_ERROR_FIELD][] = __(
+                    'sirsoft-pay_kginicis::messages.settings_validation.replace_sample_value'
+                );
             }
         }
 
@@ -102,5 +105,16 @@ class ValidateCbtSettingsListener implements HookListenerInterface
     private function blank(mixed $value): bool
     {
         return trim((string) $value) === '';
+    }
+
+    private function hasSampleDisplayValue(array $settings): bool
+    {
+        foreach (self::SAMPLE_VALUES as $field => $sampleValue) {
+            if (trim((string) ($settings[$field] ?? '')) === $sampleValue) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

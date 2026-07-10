@@ -6,13 +6,14 @@
 
 <!-- AUTO-GENERATED-START: docs-quick-reference -->
 
-### 백엔드 [backend/](docs/backend/) (31개)
+### 백엔드 [backend/](docs/backend/) (32개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
 | [activity-log-hooks.md](docs/backend/activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 이커머스 92훅 + 게시판 32훅 + 페이지 8훅 = 총 198훅 |
 | [activity-log.md](docs/backend/activity-log.md) | 활동 로그 시스템 (Activity Log System) | Monolog 기반: Service 훅 → Listener → Log::channel('activity... |
 | [admin-settings-access.md](docs/backend/admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) | 동기화 SSoT: storage/app/settings/*.json → SettingsServicePr... |
+| [api-documentation.md](docs/backend/api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) | 모든 API 엔드포인트는 레퍼런스 문서 필수 — 메서드/URI/파라미터/응답 필드 + 요청·응답 예시 ... |
 | [api-resources.md](docs/backend/api-resources.md) | API 리소스 | Resource: BaseApiResource 상속 필수 / Collection: BaseApiColl... |
 | [authentication.md](docs/backend/authentication.md) | 인증 및 세션 처리 | Laravel Sanctum 토큰 전용 인증 (Bearer 토큰만 사용) |
 | [broadcasting.md](docs/backend/broadcasting.md) | Broadcasting (실시간 이벤트) | Laravel Reverb 사용 (WebSocket) |
@@ -116,7 +117,7 @@
 | [module-i18n.md](docs/extension/module-i18n.md) | 모듈 다국어 시스템 | 백엔드: /lang/{locale}/*.php → __('vendor-module::key') |
 | [module-identity-settings.md](docs/extension/module-identity-settings.md) | 모듈/플러그인 본인인증(IDV) 설정 통합 가이드 | 정책/목적/메시지: module.php::getIdentity{Policies,Purposes,Mess... |
 | [module-layouts.md](docs/extension/module-layouts.md) | 모듈 레이아웃 시스템 | 위치: modules/_bundled/vendor-module/resources/layouts/admi... |
-| [module-routing.md](docs/extension/module-routing.md) | 모듈 라우트 규칙 | URL prefix 자동: /api/admin/[vendor-module]/... |
+| [module-routing.md](docs/extension/module-routing.md) | 모듈 라우트 규칙 | URL prefix 자동: /api/modules/[vendor-module]/... |
 | [module-settings.md](docs/extension/module-settings.md) | 모듈 환경설정 시스템 개발 가이드 | - |
 | [permissions.md](docs/extension/permissions.md) | 권한 시스템 | 구조: User → Role → Permission (기능 레벨) |
 | [plugin-development.md](docs/extension/plugin-development.md) | 플러그인 개발 가이드 | 디렉토리: plugins/vendor-plugin (예: sirsoft-payment) |
@@ -141,6 +142,32 @@
 | [requirements.md](docs/requirements.md) | 그누보드7 시스템 요구사항 (System Requirements) | PHP 8.2+ 필수 |
 | [testing-guide.md](docs/testing-guide.md) | 그누보드7 테스트 가이드 | 테스트 통과 = 작업 완료 (작성만으로 불충분!) |
 | [e2e-testing.md](docs/testing/e2e-testing.md) | 그누보드7 Playwright E2E 테스트 가이드 | - |
+
+
+### API 레퍼런스 진입점
+
+> 엔드포인트별 요청 파라미터·응답 필드·요청/응답 예시. 공통 규약(Bearer 토큰 인증, 응답 봉투, 페이지네이션, 401/403/422/428)은 진입점 문서 상단에 정리되어 있다.
+
+| 대상 | 진입점 | 문서/엔드포인트 |
+|------|--------|----------------|
+| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 35 / 291 |
+
+
+### 확장 API 레퍼런스 (9개 확장, 자동 스캔)
+
+> 각 확장이 소유하는 API 문서 목차. `php artisan api:docgen` 이 생성하며, 이 표는 `{modules,plugins}/_bundled/*/docs/api/README.md` 를 패턴 스캔해 자동 편입된다(확장명 하드코딩 없음).
+
+| 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
+|------|------|--------------|----------------|
+| `gnuboard7-hello_module` | 모듈 | [docs/api/](modules/_bundled/gnuboard7-hello_module/docs/api/README.md) | 1 / 2 |
+| `sirsoft-board` | 모듈 | [docs/api/](modules/_bundled/sirsoft-board/docs/api/README.md) | 10 / 80 |
+| `sirsoft-ecommerce` | 모듈 | [docs/api/](modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 33 / 231 |
+| `sirsoft-page` | 모듈 | [docs/api/](modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
+| `sirsoft-ckeditor5` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 2 / 2 |
+| `sirsoft-gdpr` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
+| `sirsoft-marketing` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
+| `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 22 |
+| `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 1 / 1 |
 
 
 <!-- AUTO-GENERATED-END: docs-quick-reference -->
@@ -221,10 +248,21 @@
 
 | 금지 | 올바른 사용 |
 |------|------------|
-| `Icon className="w-4 h-4"` | `Icon size="sm"` 또는 `className="text-sm"` |
+| `Icon className="w-4 h-4"` | `className="text-base"` (아래 등가표) 또는 `size` prop |
 | `Select valueKey/labelKey` | computed로 `{ value, label }` 변환 |
 | Form 내 `Button` type 없음 | `type="button"` 명시 (submit 방지) |
 | `options={{options}}` | `options={{options ?? []}}` (fallback) |
+
+Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 박스만 정하고 글리프는 부모 `font-size` 를 상속하므로 어긋난다. 기존 `w-N h-N` 을 옮길 때는 아래 등가표를 쓴다 (Chrome 실측).
+
+| `w-N h-N` | px | 등가 `className` |
+|---|---|---|
+| `w-3 h-3` | 12 | `text-xs` |
+| `w-3.5 h-3.5` | 14 | `text-sm` |
+| `w-4 h-4` | 16 | `text-base` |
+| `w-5 h-5` | 20 | `text-xl` |
+
+`size` prop 은 Font Awesome `fa-*` 클래스로 매핑되며 등가가 아니다 — `size="sm"` → `fa-sm` → `font-size: 0.875em`(상대값) + `line-height` 붕괴로 16px 이 12.25×0.88px 이 된다. 새 아이콘에는 써도 되지만, 기존 `w-N h-N` 의 치환용으로는 쓰지 않는다.
 
 ### 상태 관리
 
@@ -914,7 +952,7 @@ php artisan migrate:rollback
 
 | 수정 대상 파일 패턴 | 작업 전 필수 참조 |
 | ------------------- | ------------------ |
-| `app/Http/Controllers/**` | [controllers.md](docs/backend/controllers.md) |
+| `app/Http/Controllers/**` | [controllers.md](docs/backend/controllers.md), [api-documentation.md](docs/backend/api-documentation.md) |
 | `app/Services/**` | [service-repository.md](docs/backend/service-repository.md) |
 | `app/Http/Requests/**` | [validation.md](docs/backend/validation.md) |
 | `app/Repositories/**` | [service-repository.md](docs/backend/service-repository.md) |

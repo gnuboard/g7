@@ -6,6 +6,7 @@ use App\Enums\ExtensionStatus;
 use App\Extension\ExtensionManager;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Models\Module;
+use App\Support\InstallerContext;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -52,7 +53,12 @@ class ModuleRouteServiceProvider extends ServiceProvider
 
         // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 쿼리 제거).
         // 인스톨러 이전 환경에서는 기존 체크 경로로 폴백.
-        if (! config('app.installer_completed')) {
+        //
+        // 단, 마이그레이션 계열 명령 실행 중에는 INSTALLER_COMPLETED=true 라도 테이블이
+        // 아직 없을 수 있으므로(빈 DB 새 서버에 .env 복사 후 migrate 전) fast-path 를
+        // 무력화하고 hasTable 검증 경로로 진입한다. 빈 DB 면 여기서 early return 하여
+        // 아래 무방비 pluck 이 table not found 로 부팅을 깨뜨리는 것을 막는다.
+        if (! config('app.installer_completed') || InstallerContext::isSchemaMutatingCommand()) {
             try {
                 if (! Schema::hasTable('modules')) {
                     return;
