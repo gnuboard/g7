@@ -465,7 +465,7 @@ Content-Type: application/json
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| url | body | string | 예 | max 500 | URL |
+| url | body | string | 예 | max 500 | 언어팩 ZIP 다운로드 URL. `https` 만 허용하며, 내부 네트워크 주소(사설 IP·루프백·`localhost`·`*.internal` 등)와 userinfo(`https://a@b/`) 위장 주소는 422 로 거부됩니다 — 서버가 대신 내려받는 요청이므로 내부망 접근을 막기 위함(SSRF). 원격 코드를 가져오는 경로라 `security.allow_internal_outbound_urls` 설정을 켜도 내부 주소는 계속 차단됩니다 |
 | checksum | body | string | 아니오 | — | 무결성 검증 체크섬 (SHA-256) |
 | auto_activate | body | boolean | 아니오 | — | 설치 후 자동 활성화 여부 |
 

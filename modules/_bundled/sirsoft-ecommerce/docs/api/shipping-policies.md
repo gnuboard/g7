@@ -372,7 +372,7 @@ Content-Type: application/json
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| endpoint | body | string | 예 | max 500 | 테스트로 호출할 외부 배송비 계산 API 엔드포인트 URL |
+| endpoint | body | string | 예 | max 500 | 테스트로 호출할 외부 배송비 계산 API 엔드포인트 URL. 내부 네트워크 주소(사설 IP·루프백·`localhost`·`*.internal` 등)와 userinfo(`https://a@b/`) 위장 주소는 422 로 거부됩니다 — 이 주소는 쇼핑몰 서버가 대신 호출하므로 내부망 접근을 막기 위함(SSRF). 사내 배송비 계산 서버를 쓰려면 코어 환경설정의 `security.allow_internal_outbound_urls` 를 켜세요 |
 | request_fields | body | array | 아니오 | — | 요청에 실어 보낼 필드명 목록 (후보 SSoT ShippingApiRequestField 5종) |
 | config | body | array | 아니오 | — | API 호출 고급 설정 (HTTP 메서드·인증방식·필드 매핑·응답 형식/경로 등) |
 | sample | body | array | 아니오 | — | 테스트 계산에 사용할 샘플 주문 데이터 (무게/금액/수량 등) |

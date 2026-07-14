@@ -99,7 +99,7 @@ class InicisIdentityProviderWithConfigTest extends TestCase
             ['is_test_mode' => true, 'test_mid' => 'INIiasTest', 'duplicate_field' => 'di'],
         );
 
-        $cloned = $provider->withConfig(['is_test_mode' => false, 'live_mid' => 'SRA1234567']);
+        $cloned = $provider->withConfig(['is_test_mode' => false, 'live_mid' => 'SRB1234567']);
 
         $reflection = new \ReflectionClass($cloned);
         foreach (['gateway', 'mappingRepository', 'recordRepository', 'cache', 'config'] as $prop) {
@@ -113,7 +113,7 @@ class InicisIdentityProviderWithConfigTest extends TestCase
 
         $this->assertSame(false, $injectedConfig['is_test_mode']);
         $this->assertSame('INIiasTest', $injectedConfig['test_mid']);
-        $this->assertSame('SRA1234567', $injectedConfig['live_mid']);
+        $this->assertSame('SRB1234567', $injectedConfig['live_mid']);
         $this->assertSame('di', $injectedConfig['duplicate_field']);
 
         $gatewayProp = $reflection->getProperty('gateway');

@@ -8,7 +8,7 @@ return [
     ],
     'settings' => [
         'test_mode' => 'テストモード',
-        'live_mid' => 'ライブMID（SRAプレフィックス）',
+        'live_mid' => 'ライブMID（SRBプレフィックス）',
         'live_api_key' => 'ライブAPIキー',
         'duplicate_field' => '同一人識別基準',
         'duplicate_block_enabled' => [

@@ -3,8 +3,10 @@
 namespace Plugins\Sirsoft\PayKginicis\Tests\Feature\Controllers;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
+use App\Services\PluginSettingsService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -19,6 +21,21 @@ class PaymentCallbackControllerTest extends PluginTestCase
     private const TEST_MID = 'INIpayTest';
 
     private const TEST_SIGN_KEY = 'SU5JTElURV9UUklQTEVERVNfS0VZU1RS';
+
+    /**
+     * 애플리케이션 로그를 spy 로 감시하되 `activity` 채널은 실제 로거로 유지합니다.
+     *
+     * `Log::spy()` 단독 사용 시 `Log::channel('activity')` 가 null 을 반환하고,
+     * 결제 완료 훅이 태우는 활동 로그가 null 에 `info()` 를 호출해 \Error 로 죽는다.
+     * (`ResolvesActivityLogType::logActivity` 의 catch 는 \Exception 만 잡아 통과시킴)
+     */
+    private function spyApplicationLogKeepingActivityChannel(): void
+    {
+        $activityChannel = Log::channel('activity');
+
+        Log::spy();
+        Log::shouldReceive('channel')->with('activity')->andReturn($activityChannel);
+    }
 
     private function makeAuthorizeResponse(string $tid, string $moid, int $amount, string $resultCode = '0000', array $overrides = []): array
     {
@@ -46,7 +63,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
 
         $order = OrderFactory::new()->create([
             'user_id' => $user->id,
-            'order_number' => 'ORD-TEST-' . random_int(10000, 99999),
+            'order_number' => 'ORD-TEST-'.random_int(10000, 99999),
             'order_status' => OrderStatusEnum::PENDING_ORDER,
             'currency' => 'KRW',
             'currency_snapshot' => self::krwCurrencySnapshot(),
@@ -97,11 +114,11 @@ class PaymentCallbackControllerTest extends PluginTestCase
             'redirect_fail_url' => '/shop/checkout',
         ];
 
-        $settingsMock = $this->createMock(\App\Services\PluginSettingsService::class);
+        $settingsMock = $this->createMock(PluginSettingsService::class);
         $settingsMock->method('get')
             ->willReturn(array_merge($defaults, $overrides));
 
-        $this->app->instance(\App\Services\PluginSettingsService::class, $settingsMock);
+        $this->app->instance(PluginSettingsService::class, $settingsMock);
     }
 
     private function makeCallbackParams(string $moid, int $totPrice, array $overrides = []): array
@@ -109,7 +126,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         return array_merge([
             'resultCode' => '0000',
             'resultMsg' => '성공',
-            'authToken' => 'AUTH_TOKEN_' . uniqid(),
+            'authToken' => 'AUTH_TOKEN_'.uniqid(),
             'authUrl' => 'https://fcstdpay.inicis.com/api/payAuth',
             // idc_name 은 KG 이니시스가 success 콜백에 항상 포함시키는 IDC 식별자.
             // 컨트롤러가 isValidIdcAuthUrl 화이트리스트 검증에 사용 (SSRF 방어).
@@ -127,7 +144,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $order = $this->createTestOrder(50000);
         $this->mockPluginSettings();
 
-        $tid = 'TID_' . uniqid();
+        $tid = 'TID_'.uniqid();
         $params = $this->makeCallbackParams($order->order_number, 50000);
 
         Http::fake([
@@ -163,7 +180,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $order = $this->createTestOrder(50000);
         $this->mockPluginSettings();
 
-        $tid = 'TID_EASYPAY_' . uniqid();
+        $tid = 'TID_EASYPAY_'.uniqid();
         $params = $this->makeCallbackParams($order->order_number, 50000);
 
         Http::fake([
@@ -306,7 +323,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $order = $this->createTestOrder(50000);
         $this->mockPluginSettings();
 
-        $tid = 'TID_POST_COMMIT_' . uniqid();
+        $tid = 'TID_POST_COMMIT_'.uniqid();
         $params = $this->makeCallbackParams($order->order_number, 50000);
 
         $orderService = $this->createMock(OrderProcessingService::class);
@@ -316,7 +333,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $orderService->expects($this->once())
             ->method('completePayment')
             ->willReturnCallback(function (Order $callbackOrder, array $paymentData, ?int $paidAmount) use ($tid): void {
-                \Illuminate\Support\Facades\DB::transaction(function () use ($callbackOrder, $paymentData, $paidAmount, $tid): void {
+                DB::transaction(function () use ($callbackOrder, $paymentData, $paidAmount, $tid): void {
                     $callbackOrder->forceFill([
                         'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
                         'total_paid_amount' => $paidAmount,
@@ -477,7 +494,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->markVbankIssued($order, 'VBANK_TID_LOG', '1234567890');
         $this->mockPluginSettings();
 
-        Log::spy();
+        $this->spyApplicationLogKeepingActivityChannel();
 
         $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/vbank-notify', $this->makeVbankNotifyPayload([
             'no_tid' => 'VBANK_TID_LOG',
@@ -500,7 +517,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $order = $this->createTestOrder(50000);
         $this->mockPluginSettings();
 
-        $tid = 'MOBILE_TID_' . uniqid();
+        $tid = 'MOBILE_TID_'.uniqid();
 
         Http::fake([
             'fcmobile.inicis.com/smart/payReq.ini' => Http::response(http_build_query([
@@ -521,7 +538,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
             ]), 200),
         ]);
 
-        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/mobile/callback?' . http_build_query([
+        $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/mobile/callback?'.http_build_query([
             'orderId' => $order->order_number,
             'selectedPaymentMethod' => 'kginicis_naverpay',
         ]), [
@@ -560,7 +577,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $order = $this->createTestOrder(50000);
         $this->mockPluginSettings();
 
-        $tid = 'MOBILE_TID_POST_COMMIT_' . uniqid();
+        $tid = 'MOBILE_TID_POST_COMMIT_'.uniqid();
 
         $orderService = $this->createMock(OrderProcessingService::class);
         $orderService->method('findByOrderNumber')
@@ -569,7 +586,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $orderService->expects($this->once())
             ->method('completePayment')
             ->willReturnCallback(function (Order $callbackOrder, array $paymentData, ?int $paidAmount) use ($tid): void {
-                \Illuminate\Support\Facades\DB::transaction(function () use ($callbackOrder, $paymentData, $paidAmount, $tid): void {
+                DB::transaction(function () use ($callbackOrder, $paymentData, $paidAmount, $tid): void {
                     $callbackOrder->forceFill([
                         'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
                         'total_paid_amount' => $paidAmount,
@@ -660,7 +677,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
         $this->markVbankIssued($order, 'MOBILE_VBANK_TID_LOG', '1234567890');
         $this->mockPluginSettings();
 
-        Log::spy();
+        $this->spyApplicationLogKeepingActivityChannel();
 
         $response = $this->post('/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify', [
             'P_STATUS' => '02',
@@ -731,16 +748,16 @@ class PaymentCallbackControllerTest extends PluginTestCase
     private function makeVbankNotifyPayload(array $overrides = []): array
     {
         return array_merge([
-            'no_tid'       => 'VBANK_TID_' . uniqid(),
-            'no_oid'       => 'ORD-TEST-VBANK',
-            'id_merchant'  => 'INIpayTest',
-            'dt_trans'     => now()->format('Ymd'),
-            'tm_trans'     => now()->format('His'),
-            'cd_bank'      => '04',
-            'no_vacct'     => '1234567890',
-            'amt_input'    => '30000',
+            'no_tid' => 'VBANK_TID_'.uniqid(),
+            'no_oid' => 'ORD-TEST-VBANK',
+            'id_merchant' => 'INIpayTest',
+            'dt_trans' => now()->format('Ymd'),
+            'tm_trans' => now()->format('His'),
+            'cd_bank' => '04',
+            'no_vacct' => '1234567890',
+            'amt_input' => '30000',
             'nm_inputbank' => '국민은행',
-            'nm_input'     => '홍길동',
+            'nm_input' => '홍길동',
         ], $overrides);
     }
 

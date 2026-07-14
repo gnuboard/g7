@@ -107,6 +107,65 @@
               ]
             },
             {
+              "id": "toggle_allow_internal_outbound_urls",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-heading"
+                          },
+                          "text": "$t:admin.settings.security.allow_internal_outbound_urls"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-label-subtle"
+                      },
+                      "text": "$t:admin.settings.security.allow_internal_outbound_urls_desc"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['security.allow_internal_outbound_urls']}}",
+                      "props": {
+                        "className": "form-error"
+                      },
+                      "text": "{{_local.errors?.['security.allow_internal_outbound_urls']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "security.allow_internal_outbound_urls",
+                    "size": "md",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
               "id": "toggle_login_attempt",
               "type": "basic",
               "name": "Div",

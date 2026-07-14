@@ -189,6 +189,39 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertStringContainsString('sourceMappingURL=/api/modules/assets/ext-a/dist/js/a.js.map', $js);
     }
 
+    public function test_prod_strips_css_source_mapping_url(): void
+    {
+        $this->app['env'] = 'production';
+        app()->detectEnvironment(fn () => 'production');
+
+        // CSS 는 JS 와 주석 문법이 달라 블록 주석으로 맵을 참조한다.
+        $css = $this->writeFixture('a.css', ".a{color:red}\n/*# sourceMappingURL=a.css.map */");
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-a' => $this->fakeExtension('ext-a', 10, null, $css),
+        ]);
+
+        $bundle = $this->service()->buildCssBundle('module');
+
+        $this->assertStringNotContainsString('sourceMappingURL', $bundle);
+        // 스타일 본문은 보존되어야 한다 (주석만 제거)
+        $this->assertStringContainsString('.a{color:red}', $bundle);
+    }
+
+    public function test_dev_keeps_css_source_mapping_url(): void
+    {
+        // 기본 testing 환경 = 비프로덕션 → 개발 디버깅을 위해 원본 유지
+        $css = $this->writeFixture('a.css', ".a{color:red}\n/*# sourceMappingURL=a.css.map */");
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-a' => $this->fakeExtension('ext-a', 10, null, $css),
+        ]);
+
+        $bundle = $this->service()->buildCssBundle('module');
+
+        $this->assertStringContainsString('sourceMappingURL', $bundle);
+    }
+
     public function test_per_extension_fault_tolerance_skips_missing_file(): void
     {
         $good = $this->writeFixture('good.js', '(function(){window.GOOD=1})()');

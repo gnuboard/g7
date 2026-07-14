@@ -20,9 +20,6 @@ class AllowedModuleFileType implements ValidationRule
         // Data
         'json',
 
-        // Source Maps
-        'map',
-
         // Images
         'png', 'jpg', 'jpeg', 'svg', 'webp', 'gif', 'ico',
 

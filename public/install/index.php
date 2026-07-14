@@ -5,18 +5,18 @@
  * @author sirsoft
  */
 
-require_once __DIR__ . '/includes/config.php';
-require_once __DIR__ . '/includes/functions.php';
-require_once __DIR__ . '/includes/session.php';
-require_once __DIR__ . '/includes/installer-state.php';
-require_once __DIR__ . '/includes/request-handler.php';
-require_once __DIR__ . '/api/_guard.php';
+require_once __DIR__.'/includes/config.php';
+require_once __DIR__.'/includes/functions.php';
+require_once __DIR__.'/includes/session.php';
+require_once __DIR__.'/includes/installer-state.php';
+require_once __DIR__.'/includes/request-handler.php';
+require_once __DIR__.'/api/_guard.php';
 installer_guard_or_410();
 
 $currentLang = getCurrentLanguage();
 
 // 세션 기반 단계 관리 (URL 파라미터 무시)
-if (!isset($_SESSION['installer_current_step'])) {
+if (! isset($_SESSION['installer_current_step'])) {
     // 세션이 없으면 state.json에서 현재 step 가져오기
     $state = getInstallationState();
 
@@ -33,10 +33,10 @@ $currentStep = $_SESSION['installer_current_step'];
 
 // URL 파라미터로 step 접근 시 알림 후 리다이렉트
 if (isset($_GET['step'])) {
-    $urlStep = (int)$_GET['step'];
+    $urlStep = (int) $_GET['step'];
 
     // 번역 로드
-    if (!isset($translations)) {
+    if (! isset($translations)) {
         $translations = loadTranslations($currentLang);
     }
 
@@ -46,14 +46,14 @@ if (isset($_GET['step'])) {
             lang('url_parameter_not_supported'),
             lang('url_parameter_redirect_message', [
                 'requested' => $urlStep,
-                'current' => $currentStep
+                'current' => $currentStep,
             ]),
-            INSTALLER_BASE_URL . '/'
+            INSTALLER_BASE_URL.'/'
         );
     }
 
     // 같은 경우에도 깔끔한 URL로 리다이렉트
-    header('Location: ' . INSTALLER_BASE_URL . '/');
+    header('Location: '.INSTALLER_BASE_URL.'/');
     exit;
 }
 
@@ -65,11 +65,18 @@ $error = null;
 // Step 3 기본값 설정
 if ($currentStep === 3) {
     $defaults = DEFAULT_INSTALL_CONFIG;
-    $defaults['app_url'] = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
+    $defaults['app_url'] = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'];
     $defaults['admin_language'] = getCurrentLanguage();
-    // state.json에서 비밀번호 제외된 config 복원 (세션에서 비밀번호를 사전 입력하지 않음)
+    // state.json에서 비밀번호 제외된 config 복원 (폼에 비밀번호를 사전 입력하지 않음).
+    // state 에는 이미 비밀이 기록되지 않지만(이슈 #465), 레거시 state.json 이 남아 있는
+    // 환경에서도 평문이 HTML 로 렌더되지 않도록 프리필 단계에서 다시 제거한다.
     $savedConfig = $state['config'] ?? $defaults;
-    unset($savedConfig['db_write_password'], $savedConfig['db_read_password']);
+    unset(
+        $savedConfig['db_write_password'],
+        $savedConfig['db_read_password'],
+        $savedConfig['admin_password'],
+        $savedConfig['admin_password_confirm']
+    );
     $formData = array_merge($defaults, $savedConfig);
 }
 
@@ -82,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 번역 로드
-if (!isset($translations)) {
+if (! isset($translations)) {
     $translations = loadTranslations($currentLang);
 }
 
@@ -91,7 +98,7 @@ if ($currentStep < 0 || $currentStep > 6) {
     $currentStep = 0;
 }
 
-$stepFile = __DIR__ . '/views/' . $currentStep . '-' . (STEP_FILE_MAP[$currentStep] ?? 'welcome') . '.php';
+$stepFile = __DIR__.'/views/'.$currentStep.'-'.(STEP_FILE_MAP[$currentStep] ?? 'welcome').'.php';
 ?>
 <!DOCTYPE html>
 <html lang="<?= $currentLang ?>">
@@ -119,7 +126,7 @@ $stepFile = __DIR__ . '/views/' . $currentStep . '-' . (STEP_FILE_MAP[$currentSt
     <link rel="stylesheet" href="<?= INSTALLER_BASE_URL ?>/assets/css/installer.css?v=<?= time() ?>">
 </head>
 <body>
-    <?php if ($currentStep > 0): ?>
+    <?php if ($currentStep > 0) { ?>
     <!-- Installer Header Bar -->
     <div class="installer-header-bar">
         <div class="installer-header-content">
@@ -142,7 +149,7 @@ $stepFile = __DIR__ . '/views/' . $currentStep . '-' . (STEP_FILE_MAP[$currentSt
             </div>
         </div>
     </div>
-    <?php endif; ?>
+    <?php } ?>
 
     <!-- Main Content -->
     <?php
@@ -151,7 +158,7 @@ $stepFile = __DIR__ . '/views/' . $currentStep . '-' . (STEP_FILE_MAP[$currentSt
     } else {
         showStepFileNotFoundError($currentStep);
     }
-    ?>
+?>
 
     <!-- Installer Footer -->
     <footer class="installer-footer">

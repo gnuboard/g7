@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.1] - 2026-07-14
+
+### Changed
+
+- 라이브 가맹점 MID 프리픽스 표기를 이니시스 정책 변경에 맞춰 SRB 로 갱신했습니다 (라이브 MID 라벨·입력 안내 문구).
+
 ## [1.0.0] - 2026-07-01
 
 ### Added

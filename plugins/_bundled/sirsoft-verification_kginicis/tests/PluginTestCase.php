@@ -4,7 +4,9 @@ namespace Plugins\Sirsoft\VerificationKginicis\Tests;
 
 use App\Extension\HookListenerRegistrar;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\AssertNoDuplicateInicisIdentity;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserWithdraw;
@@ -25,6 +27,9 @@ abstract class PluginTestCase extends TestCase
 {
     use RefreshDatabase;
 
+    /** 테스트 격리용 임시 plugins 스토리지 루트 (setUp 에서 생성, tearDown 에서 제거). */
+    private ?string $isolatedPluginsRoot = null;
+
     protected function migrateFreshUsing(): array
     {
         return [
@@ -41,6 +46,8 @@ abstract class PluginTestCase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->isolatePluginStorage();
 
         $this->registerPluginAutoload();
 
@@ -82,6 +89,54 @@ abstract class PluginTestCase extends TestCase
 
         $this->registerPluginRoutes();
         $this->registerPluginHookListeners();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->restorePluginStorage();
+
+        parent::tearDown();
+    }
+
+    /**
+     * 플러그인 스토리지('plugins' 디스크)를 테스트 전용 임시 디렉토리로 격리한다.
+     *
+     * 설정 저장 테스트(PluginSettingsService::save)는 코어 'plugins' 디스크
+     * (root = storage_path('app/plugins'))에 setting.json 을 쓴다. 격리하지 않으면
+     * 테스트가 실제 로컬 런타임 설정 파일을 덮어써 라이브 모드/자격증명이 오염된다
+     * (RefreshDatabase 는 DB 만 롤백하고 파일시스템은 되돌리지 않음). 디스크 root 를
+     * 임시 경로로 바꾸고 resolved 인스턴스를 purge 하여 실제 파일을 원천적으로 못
+     * 건드리게 한다.
+     */
+    private function isolatePluginStorage(): void
+    {
+        // Laravel 이 테스트용 쓰기 공간으로 보장하는 storage/framework/testing 하위를 사용한다.
+        // sys_get_temp_dir() 은 CI/컨테이너/open_basedir 제약 환경에서 위치가 다르거나
+        // 쓰기 불가일 수 있어 프로젝트 내부의 격리 경로를 쓴다 (Laravel 규약 준수).
+        $this->isolatedPluginsRoot = storage_path(
+            'framework/testing/plugin-storage-'.uniqid('', true)
+        );
+
+        File::ensureDirectoryExists($this->isolatedPluginsRoot);
+
+        config(['filesystems.disks.plugins.root' => $this->isolatedPluginsRoot]);
+
+        // 이미 resolve 된 'plugins' 디스크 인스턴스를 폐기해 새 root 로 재생성되게 한다.
+        Storage::forgetDisk('plugins');
+    }
+
+    /**
+     * 격리 임시 디렉토리를 제거한다 (테스트 간 잔여 파일 격리).
+     */
+    private function restorePluginStorage(): void
+    {
+        if ($this->isolatedPluginsRoot !== null && is_dir($this->isolatedPluginsRoot)) {
+            File::deleteDirectory($this->isolatedPluginsRoot);
+        }
+
+        $this->isolatedPluginsRoot = null;
+
+        Storage::forgetDisk('plugins');
     }
 
     /**

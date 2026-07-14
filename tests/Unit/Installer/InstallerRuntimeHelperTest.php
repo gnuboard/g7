@@ -408,6 +408,35 @@ ENV;
         $this->assertStringContainsString('DB_WRITE_HOST=user-input.com', $merged);
     }
 
+    /**
+     * 이슈 #465 불변식 — runtime.php 의 admin 섹션은 절대 `.env` 로 새어나가지 않는다.
+     *
+     * mergeRuntimeIntoEnv 는 db/app.key 만 명시 치환하는 화이트리스트 방식이다.
+     * 이후 누군가 "runtime 배열을 통째로 .env 로 덤프" 하는 방식으로 리팩터링하면
+     * 관리자 평문 비밀번호가 .env 에 영구 기록되므로, 그 회귀를 여기서 차단한다.
+     */
+    public function test_merge_runtime_into_env_never_writes_admin_section(): void
+    {
+        $envContent = "APP_KEY=\nDB_WRITE_PASSWORD=\n";
+
+        $runtime = [
+            'db' => [
+                'write' => ['host' => 'h', 'port' => '3306', 'database' => 'd', 'username' => 'u', 'password' => 'dbpw'],
+            ],
+            'app' => ['key' => 'base64:'.base64_encode(str_repeat('k', 32))],
+            'admin' => ['password' => 'super-secret-admin-pw'],
+        ];
+
+        $merged = mergeRuntimeIntoEnv($envContent, $runtime);
+
+        $this->assertStringNotContainsString('super-secret-admin-pw', $merged, '관리자 평문이 .env 로 유출되면 안 됨');
+        $this->assertStringNotContainsString('ADMIN', $merged, 'ADMIN 계열 키가 .env 에 기록되면 안 됨');
+
+        // db/app.key 는 정상 기록 (화이트리스트가 좁아지지 않았음을 함께 고정)
+        $this->assertStringContainsString('DB_WRITE_PASSWORD="dbpw"', $merged);
+        $this->assertStringContainsString('APP_KEY=base64:', $merged);
+    }
+
     public function test_merge_escapes_password_with_special_characters(): void
     {
         $envContent = "DB_WRITE_PASSWORD=\n";

@@ -37,6 +37,15 @@ class InicisIdentityProvider implements IdentityVerificationInterface
     public const PROVIDER_ID = 'inicis';
 
     /**
+     * 라이브 가맹점 MID 프리픽스 (이니시스 정책값).
+     *
+     * 라이브 MID = 이 프리픽스 + 운영자 입력값 (예: SRB1234567).
+     * 이니시스 프리픽스 정책 변경 시 이 상수 1곳만 갱신하면 런타임 로직 전체에 반영된다.
+     * (UI Span·언어팩 힌트 같은 정적 표시 문자열은 상수 참조가 불가하므로 값만 함께 교체)
+     */
+    public const LIVE_MID_PREFIX = 'SRB';
+
+    /**
      * 성인인증 purpose 키 (Plugin::getIdentityPurposes 선언값과 동일 — 단일 출처).
      *
      * 이 purpose 로 발행된 challenge 는 verify 시 만 19세 이상만 통과시킨다.
@@ -143,7 +152,7 @@ class InicisIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * 운영 가능 여부 — 모드별 MID/API key + 라이브 모드의 SRA 프리픽스 검증.
+     * 운영 가능 여부 — 모드별 MID/API key + 라이브 모드의 프리픽스 검증.
      *
      * @return bool
      */
@@ -157,7 +166,7 @@ class InicisIdentityProvider implements IdentityVerificationInterface
 
         return $liveMid !== ''
             && ! empty($this->config['live_api_key'])
-            && str_starts_with($liveMid, 'SRA');
+            && str_starts_with($liveMid, self::LIVE_MID_PREFIX);
     }
 
     /**
@@ -500,7 +509,7 @@ class InicisIdentityProvider implements IdentityVerificationInterface
                 'default' => 'TGdxb2l3enJDWFRTbTgvREU3MGYwUT09',
             ],
             'live_mid' => [
-                'label' => 'Live MID (SRA prefix)',
+                'label' => 'Live MID (SRB prefix)',
                 'type' => 'text',
                 'default' => '',
             ],
@@ -568,13 +577,13 @@ class InicisIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * 라이브 MID 에 SRA 프리픽스를 보장한다.
+     * 라이브 MID 에 프리픽스(self::LIVE_MID_PREFIX)를 보장한다.
      *
-     * 운영자가 settings UI 에서 SRA 분리형 input 으로 입력하므로 일반적으로 SRA 미포함 값이
-     * 들어오지만, 직접 SRA 포함하여 입력한 경우에도 안전하게 처리한다.
+     * 운영자가 settings UI 에서 프리픽스 분리형 input 으로 입력하므로 일반적으로 프리픽스
+     * 미포함 값이 들어오지만, 직접 프리픽스를 포함하여 입력한 경우에도 안전하게 처리한다.
      *
      * @param  string  $value  운영자 입력 값
-     * @return string SRA 가 보장된 라이브 MID
+     * @return string 프리픽스가 보장된 라이브 MID
      */
     protected function buildLiveMid(string $value): string
     {
@@ -583,7 +592,7 @@ class InicisIdentityProvider implements IdentityVerificationInterface
             return '';
         }
 
-        return str_starts_with($value, 'SRA') ? $value : 'SRA'.$value;
+        return str_starts_with($value, self::LIVE_MID_PREFIX) ? $value : self::LIVE_MID_PREFIX.$value;
     }
 
     /**

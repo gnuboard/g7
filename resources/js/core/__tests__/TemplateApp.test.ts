@@ -79,6 +79,21 @@ describe('TemplateApp', () => {
   let localStorageMock: { [key: string]: string };
 
   beforeEach(() => {
+    // fetch 기본 스텁 — 공용 setup 의 `global.fetch = vi.fn()` 은 구현이 없어 `undefined` 를
+    // 동기 반환한다. 그러면 호출부의 `.then(response => response.ok)` 가 `undefined.ok` 로
+    // 터지는데, 이는 `fetch` 의 계약(`Promise<Response>`)과 다르다. 본 파일의 테스트들은
+    // init() 의 성공 여부에 관심이 없고(그래서 응답을 모킹하지 않았다) init() 은 내부
+    // try/catch 로 실패를 흡수하지만, 계약을 어긴 스텁 탓에 체인 중간에서 관측되지 않는
+    // rejection 이 남아 Vitest 가 unhandled 로 보고한다(= false positive 위험).
+    // 실제 `fetch` 처럼 Response 를 resolve 하게 두어 실패가 의도된 `!response.ok` 경로로
+    // 흐르게 한다. 응답이 필요한 테스트는 각자 mockResolvedValueOnce 로 덮어쓴다.
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      json: async () => ({ success: false }),
+    } as unknown as Response);
+
     // localStorage mock
     localStorageMock = {};
     originalLocalStorage = global.localStorage;

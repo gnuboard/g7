@@ -447,7 +447,9 @@
     "save_error": "알림 설정 저장에 실패했습니다.",
     "types": {
       "order_confirmed": "주문 확인",
+      "order_pending_deposit": "무통장 입금 안내",
       "order_shipped": "배송 시작",
+      "order_delivered": "배송 완료",
       "order_completed": "구매 확정",
       "order_cancelled": "주문 취소",
       "new_order_admin": "신규 주문 (관리자)",

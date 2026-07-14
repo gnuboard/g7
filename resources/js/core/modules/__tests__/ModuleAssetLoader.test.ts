@@ -271,4 +271,69 @@ describe('ModuleAssetLoader', () => {
             expect(() => new Function(iifeA + '\n;\n' + iifeB)()).not.toThrow();
         });
     });
+
+    /**
+     * 번들 로드 실패의 표면화 (#463)
+     *
+     * `onerror` 가 `resolve()` 하면 실패가 성공으로 위장되어 상위 try/catch 가
+     * 무력화되고, 앱은 한참 뒤 엉뚱한 곳(미등록 핸들러)에서 죽는다.
+     *
+     * @since engine-v1.53.0
+     */
+    describe('번들 로드 실패 표면화 (JS reject / CSS resolve)', () => {
+        /**
+         * appendChild 를 가로채 시도별 결과를 발화시킨다.
+         *
+         * @param outcomes 시도 순서대로의 결과
+         * @return 생성된 element 목록
+         */
+        function stubAssetLoading(outcomes: Array<'error' | 'load'>): HTMLElement[] {
+            const created: HTMLElement[] = [];
+
+            vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+                if (node.tagName === 'SCRIPT' || node.tagName === 'LINK') {
+                    created.push(node);
+                    document.body.appendChild(node);
+
+                    const outcome = outcomes[created.length - 1] ?? 'load';
+                    queueMicrotask(() => {
+                        if (outcome === 'error') {
+                            node.onerror?.(new Event('error'));
+                        } else {
+                            node.onload?.(new Event('load'));
+                        }
+                    });
+                }
+                return node;
+            }) as any);
+
+            return created;
+        }
+
+        it('번들 JS 가 3회 모두 실패하면 reject 한다 (실패를 resolve 로 은폐하지 않는다)', async () => {
+            stubAssetLoading(['error', 'error', 'error']);
+
+            await expect(
+                loader.loadBundle('module', '/api/modules/bundle.js', null)
+            ).rejects.toThrow();
+        });
+
+        it('번들 JS 가 1회 실패 후 성공하면 최종 resolve 한다 (재시도 복구)', async () => {
+            const created = stubAssetLoading(['error', 'load']);
+
+            await expect(
+                loader.loadBundle('module', '/api/modules/bundle.js', null)
+            ).resolves.toBeUndefined();
+
+            expect(created).toHaveLength(2);
+        });
+
+        it('번들 CSS 실패는 resolve 를 유지한다 (스타일 부재는 앱을 죽이지 않음 — 과잉 적용 경계)', async () => {
+            stubAssetLoading(['error']);
+
+            await expect(
+                loader.loadBundle('module', null, '/api/modules/bundle.css')
+            ).resolves.toBeUndefined();
+        });
+    });
 });

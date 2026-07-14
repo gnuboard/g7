@@ -63,7 +63,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "circle-info",
-                                            "className": "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -98,7 +98,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -203,7 +203,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -297,7 +297,7 @@
                                                                 "props": {
                                                                     "className": "inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none"
                                                                 },
-                                                                "text": "SRA"
+                                                                "text": "SRB"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -305,6 +305,7 @@
                                                                 "props": {
                                                                     "type": "text",
                                                                     "name": "live_mid",
+                                                                    "autoComplete": "one-time-code",
                                                                     "placeholder": "1234567",
                                                                     "className": "flex-1 font-mono outline-none border-0"
                                                                 }
@@ -353,7 +354,7 @@
                                                         "props": {
                                                             "type": "password",
                                                             "name": "live_api_key",
-                                                            "autoComplete": "off",
+                                                            "autoComplete": "new-password",
                                                             "placeholder": "••••••••••••••••",
                                                             "className": "{{_local.errors?.live_api_key ? 'dark:focus:ring-red-400 font-mono border border-red-500 dark:border-red-500 focus:ring-red-500' : 'dark:focus:ring-blue-400 focus:border-transparent font-mono'}}"
                                                         }

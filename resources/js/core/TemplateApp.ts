@@ -28,6 +28,7 @@ import { createLogger, Logger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
+import { fetchWithRetry, installUnloadGuard, isDocumentUnloading } from './template-engine/networkResilience';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
@@ -443,6 +444,10 @@ export class TemplateApp {
             Logger.getInstance().setDebug(this.config.debug);
             logger.log('Initializing with config:', this.config);
 
+            // 문서 이탈 감지 가드 설치 — 새로고침으로 버려지는 문서의 요청 실패에
+            // 에러 화면을 그리지 않기 위함 (@since engine-v1.53.0)
+            installUnloadGuard();
+
             // 1. 템플릿 엔진 초기화, ComponentRegistry, routes.json, 사용자 정보를 병렬 로딩
             const componentRegistry = ComponentRegistry.getInstance();
             const authManager = AuthManager.getInstance();
@@ -465,7 +470,11 @@ export class TemplateApp {
                     this.config.templateType
                 ),
                 // routes.json 로딩 (저장된 캐시 버전 사용)
-                fetch(`/api/templates/${this.config.templateId}/routes.json${storedCacheVersion > 0 ? `?v=${storedCacheVersion}` : ''}`)
+                // 네트워크 일시 실패(응답 없음)에만 재시도한다. HTTP 에러는 아래 체인이 종전대로 throw.
+                fetchWithRetry(
+                    `/api/templates/${this.config.templateId}/routes.json${storedCacheVersion > 0 ? `?v=${storedCacheVersion}` : ''}`,
+                    { label: 'routes.json' }
+                )
                     .then(response => {
                         if (!response.ok) {
                             throw new Error(`Failed to load routes: ${response.statusText}`);
@@ -522,7 +531,10 @@ export class TemplateApp {
                 if (previousVersion !== null && previousVersion !== this.extensionCacheVersion) {
                     logger.log('Cache version changed, reloading routes...');
                     // routes.json을 새 캐시 버전으로 다시 로드
-                    const newRoutesData = await fetch(`/api/templates/${this.config.templateId}/routes.json?v=${this.extensionCacheVersion}`)
+                    const newRoutesData = await fetchWithRetry(
+                        `/api/templates/${this.config.templateId}/routes.json?v=${this.extensionCacheVersion}`,
+                        { label: 'routes.json (reload)' }
+                    )
                         .then(response => {
                             if (!response.ok) {
                                 throw new Error(`Failed to reload routes: ${response.statusText}`);
@@ -2088,8 +2100,21 @@ export class TemplateApp {
 
     /**
      * 초기화 에러 화면 표시
+     *
+     * 문서 이탈 중(새로고침으로 버려지는 문서)에는 렌더하지 않는다. 사용자가 이미
+     * 떠난 화면에 에러를 그려봐야 다음 문서가 그 위를 덮을 뿐이고, 새로고침 연타 시
+     * "초기화 실패" 가 번쩍이는 원인이 된다.
+     *
+     * @param error 초기화 중 발생한 에러
+     * @return void
+     * @since engine-v1.53.0 (이탈 가드 추가)
      */
     private showInitError(error: Error): void {
+        if (isDocumentUnloading()) {
+            logger.warn('Init failed while document is unloading — skipping error screen', error);
+            return;
+        }
+
         // Error를 TemplateEngineError로 변환
         const templateError = toTemplateEngineError(error);
 
@@ -4133,9 +4158,15 @@ export class TemplateApp {
      *
      * 모듈/플러그인 핸들러는 에셋 로드 후에 등록되므로, init_actions 실행 전에 대기합니다.
      *
+     * 확장 번들 로드가 이미 **실패로 확정**된 경우에는 기다리지 않고 즉시 반환한다.
+     * 그 확장의 핸들러는 영원히 등록되지 않으므로, `maxWait` 만큼 폴링하는 것은 순수한
+     * 낭비이며 그 시간 동안 렌더가 시작되지 않아 사용자에게는 백지로 보인다.
+     * (@since engine-v1.53.0)
+     *
      * @param actionDispatcher ActionDispatcher 인스턴스
      * @param handlerNames 대기할 핸들러 이름 목록
      * @param maxWait 최대 대기 시간 (ms)
+     * @return Promise<void>
      */
     private async waitForHandlers(
         actionDispatcher: any,
@@ -4155,6 +4186,40 @@ export class TemplateApp {
         if (allHandlersRegistered()) {
             logger.log('All module handlers already registered');
             return;
+        }
+
+        // 대기 중인 핸들러를 실어올 JS 가 **실패로 확정**됐다면 그 핸들러는 영원히 오지 않는다.
+        // 오지 않을 것을 기다리지 않는다 (5초 백지 제거).
+        //
+        // 실패 키는 두 형태다:
+        //   - 병합 번들 경로: 'module' / 'plugin'  (확장 전체가 한 파일)
+        //   - 개별 로딩 경로: 확장 식별자 (예: 'sirsoft-ecommerce')
+        // 핸들러 이름은 `{확장식별자}.{핸들러}` 이므로, 개별 로딩 실패는 접두사로 대조한다.
+        // 병합 번들이 죽으면 그 번들에 속한 확장을 여기서 알 수 없으므로 전체 포기가 맞다
+        // (그 파일 하나가 통째로 없다).
+        //
+        // 반대로 실패를 특정 핸들러에 귀속시킬 수 없으면 **기다린다** — 무관한 확장의 실패로
+        // 정상 로드 중인 확장의 핸들러 대기까지 포기하면 멀쩡한 기능이 조용히 사라진다.
+        // (@since engine-v1.53.0)
+        const failedAssets = getModuleAssetLoader().getFailedJsAssets();
+        if (failedAssets.length > 0) {
+            const bundleFailed = failedAssets.some(key => key === 'module' || key === 'plugin');
+            const pending = handlerNames.filter(
+                name => !actionDispatcher.customHandlers?.has(name)
+            );
+            const allPendingAreDead =
+                pending.length > 0 &&
+                pending.every(name =>
+                    failedAssets.some(key => name.startsWith(`${key}.`))
+                );
+
+            if (bundleFailed || allPendingAreDead) {
+                logger.warn(
+                    'Extension asset load failed — not waiting for handlers that will never register:',
+                    { pending, failedAssets }
+                );
+                return;
+            }
         }
 
         logger.log('Waiting for module handlers:', handlerNames);

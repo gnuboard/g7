@@ -11,17 +11,16 @@
  * 실패 시: runtime.php 보존 → InstallerRuntimeServiceProvider 가 계속 동작
  *          → 앱은 정상 (관리자 재호출 또는 다음 부팅 시 재시도 경로 확보).
  *
- * @package G7\Installer
  * @see https://github.com/gnuboard/g7/issues/23
  */
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/installer-runtime.php';
-require_once __DIR__ . '/../includes/installer-state.php';
-require_once __DIR__ . '/_guard.php';
+require_once __DIR__.'/../includes/config.php';
+require_once __DIR__.'/../includes/functions.php';
+require_once __DIR__.'/../includes/installer-runtime.php';
+require_once __DIR__.'/../includes/installer-state.php';
+require_once __DIR__.'/_guard.php';
 // finalize 전용 가드 — `.env` 의 INSTALLER_COMPLETED=true 단독으로만 차단한다.
 // 일반 인스톨러 엔드포인트의 `installer_guard_or_410()` 은 `g7_installed` 락 파일도
 // 차단 사유로 삼는데, 그 락 파일은 finalize 호출 직전 단계의 complete_flag task 가
@@ -41,7 +40,7 @@ ignore_user_abort(true);
 $accepted = json_encode(['accepted' => true]);
 
 header('Content-Type: application/json; charset=utf-8');
-header('Content-Length: ' . strlen($accepted));
+header('Content-Length: '.strlen($accepted));
 header('Connection: close');
 
 echo $accepted;
@@ -68,11 +67,12 @@ try {
         return;
     }
 
-    $envPath = BASE_PATH . '/.env';
+    $envPath = BASE_PATH.'/.env';
     $envBase = generateEnvContent();
 
     if ($envBase === null) {
         addLog('[finalize-env] generateEnvContent() returned null — .env.example missing');
+
         return;
     }
 
@@ -98,6 +98,7 @@ try {
             $envPath,
             $lastError['message'] ?? 'unknown',
         ));
+
         return;
     }
 
@@ -134,8 +135,14 @@ try {
 
     // state.json 삭제 — setInstallationCompleteSSE 가 본 단계로 위임함
     // (finalize 가 generateEnvContent() 호출 시 state.config 가 필요했기 때문)
+    //
+    // 삭제 실패 또는 DELETE_INSTALLER_AFTER_COMPLETE=false 로 파일이 남는 모든 경로에서는
+    // 비밀 필드를 제거한 뒤 재저장한다 (이슈 #465). .env 머지가 이미 성공한 뒤이므로
+    // state.config 가 더 이상 필요하지 않아 순서상 안전하다.
+    $stateFilePath = BASE_PATH.'/storage/installer-state.json';
+    $stateDeleted = false;
+
     if (defined('DELETE_INSTALLER_AFTER_COMPLETE') && DELETE_INSTALLER_AFTER_COMPLETE) {
-        $stateFilePath = BASE_PATH . '/storage/installer-state.json';
         if (is_file($stateFilePath)) {
             if (@unlink($stateFilePath) === false) {
                 addLog(sprintf(
@@ -144,11 +151,22 @@ try {
                     (error_get_last()['message'] ?? 'unknown'),
                 ));
             } else {
+                $stateDeleted = true;
                 addLog('[finalize-env] state.json 삭제 완료');
             }
+        } else {
+            $stateDeleted = true;
         }
     }
-} catch (\Throwable $e) {
+
+    if (! $stateDeleted && is_file($stateFilePath)) {
+        if (saveInstallationState(redactInstallationStateSecrets(getInstallationState()))) {
+            addLog('[finalize-env] state.json 잔존 — 비밀 필드 redact 완료');
+        } else {
+            addLog('[finalize-env] state.json redact 재저장 FAILED — 수동 삭제 권장: '.$stateFilePath);
+        }
+    }
+} catch (Throwable $e) {
     // 예외 시 runtime.php 보존 → Provider 가 계속 config 주입 → 앱 정상 동작.
-    addLog('[finalize-env] unexpected exception: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+    addLog('[finalize-env] unexpected exception: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
 }

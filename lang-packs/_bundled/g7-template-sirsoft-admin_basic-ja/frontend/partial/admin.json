@@ -1089,7 +1089,8 @@
     "errors": {
       "system_role_delete": "システムロールは削除できません。",
       "delete_failed": "ロール削除に失敗しました。"
-    }
+    },
+    "refresh": "更新"
   },
   "schedules": {
     "page_title": "スケジュール管理",
@@ -1445,7 +1446,9 @@
       "app_key_desc": "暗号化に使用されるアプリケーションキーを管理します。",
       "current_app_key": "現在のキー",
       "regenerate_key": "キー 再生成",
-      "app_key_warning": "キーを変更すると、既存の暗号化されたデータにアクセスできなくなる可能性があります。"
+      "app_key_warning": "キーを変更すると、既存の暗号化されたデータにアクセスできなくなる可能性があります。",
+      "allow_internal_outbound_urls": "内部ネットワークアドレス呼び出し許可",
+      "allow_internal_outbound_urls_desc": "外部API連携·スケジュールURL呼び出しなどで、プライベートIPやlocalhostなどの内部アドレスを使用できるようにします。社内サーバーを呼び出す必要がある場合のみ有効にしてください。有効にするとサーバーが内部ネットワークにリクエストを送信できるようになるため、デフォルトは無効です。"
     },
     "identity": {
       "sub_tabs": {

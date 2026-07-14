@@ -34,6 +34,7 @@ return [
         'downgrade_blocked' => '다운그레이드가 차단되었습니다 (:from → :to).',
         'protected_pack' => '보호된 언어팩은 비활성화/제거할 수 없습니다.',
         'download_failed' => 'URL(:url) 에서 언어팩을 다운로드하지 못했습니다: :error',
+        'download_url_not_public' => '내부 네트워크 주소(사설 IP·localhost 등)에서는 언어팩을 내려받을 수 없습니다. 외부에서 접속 가능한 https 주소를 사용해주세요.',
         'checksum_mismatch' => '체크섬이 일치하지 않습니다.',
         'update_no_source' => '업데이트 소스 정보가 없습니다 (GitHub 소스 언어팩만 업데이트 가능).',
         'update_already_latest' => '이미 최신 버전입니다.',

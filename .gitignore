@@ -136,3 +136,10 @@ playwright-report/
 test-results/
 # Playwright MCP 세션 아티팩트(스냅샷/콘솔 로그) — 커밋 대상 아님
 .playwright-mcp/
+
+# ===== 소스맵 =====
+# 소스맵은 원본 코드 전문(sourcesContent)을 담고 있어 배포 대상이 아니다.
+# 로컬 개발 빌드에서는 생성되지만(디버깅용) 저장소에는 유입되지 않는다.
+# 배포용 빌드는 `--production` 이 G7_BUILD_SOURCEMAP=0 을 주입해 생성 자체를 막는다.
+# 경로 한정 시 새 확장이 추가될 때 조용히 누락되므로 전역 규칙으로 둔다.
+*.map

@@ -1,0 +1,66 @@
+# audit:allow test-scenario-coverage reason: 프로덕션 소스맵 노출 차단(하드닝). 입력 axis(빌드 모드·확장 종류·에셋 종류) cross-product 는 test_files 의 Unit/Feature 가 cover 하고, effects 는 3중 방어선(생성 차단 / 서빙 차단 / 저장소 유입 차단)과 브라우저 실측(맵 요청 부재·렌더 정상)을 enumerate.
+
+feature: 프로덕션 소스맵 노출 차단 (코어 + 전 확장)
+
+description: |
+  소스맵(.map)은 sourcesContent 에 원본 TS/TSX 전문(주석 포함)을 담는다. 기존에는
+  모든 vite config 가 sourcemap: true 를 하드코딩하고 `--production` 플래그가 실효가
+  없어, 배포 산출물에 맵이 그대로 실리고 익명 요청으로 서빙됐다.
+
+  3중 방어선으로 차단한다:
+    - 생성 차단: `--production` → Build{Core,Module,Plugin,Template}Command 가
+      G7_BUILD_SOURCEMAP=0 을 npm 프로세스 env 로 주입 → 각 vite config 의 인라인
+      판정식이 sourcemap:false → 맵 파일도, sourceMappingURL 주석도 생성되지 않음
+    - 서빙 차단: 모듈/플러그인 허용 확장자에서 map 제거 (템플릿은 원래 미허용)
+      → 3종 정책 일치. 디스크에 맵이 실재해도 서빙 거부
+    - 유입 차단: .gitignore 전역 `*.map` + 기존 추적 맵 13개 제거
+      → 공개 release 배포판에 맵이 실리지 않음
+
+  개발 경험은 보존한다: 환경변수 미설정(로컬 `npm run build`, --watch)이면 기본값
+  true 로 맵이 생성된다.
+
+axes:
+  build_mode: [production, non_production, watch]
+  extension_type: [core, module, plugin, template]
+  asset_kind: [js, css]
+  sourcemap_env: [unset, zero, false_literal]
+  map_file_on_disk: [present, absent]
+  serving_target: [module_asset, plugin_asset, template_asset, core_webroot]
+  bundle_environment: [production, non_production]
+
+exclusions:
+  - { build_mode: watch, sourcemap_env: zero, reason: "감시 모드에는 억제를 주입하지 않는다 — 개발 중 디버깅 필요" }
+  - { extension_type: core, serving_target: module_asset, reason: "코어 번들은 웹루트 직접 서빙 — 확장 에셋 라우트를 타지 않음" }
+
+effects:
+  # 생성 차단 (빌드)
+  - production_build_injects_sourcemap_off_env
+  - non_production_build_injects_nothing
+  - watch_mode_does_not_inject_sourcemap_off
+  - run_npm_command_accepts_env_and_merges_with_parent_environment
+  - vite_config_defaults_to_sourcemap_on_when_env_unset
+  # 서빙 차단
+  - module_sourcemap_asset_request_rejected_even_when_file_exists
+  - plugin_sourcemap_asset_request_rejected_even_when_file_exists
+  - sourcemap_content_never_present_in_rejection_response
+  - allowed_file_types_aligned_across_module_plugin_template
+  # 번들 서비스
+  - prod_strips_js_source_mapping_url
+  - prod_strips_css_source_mapping_url
+  - dev_keeps_css_source_mapping_url
+  - css_style_body_preserved_when_stripping_comment
+  # 저장소 유입 차단
+  - no_sourcemap_files_tracked_by_git
+  - gitignore_actually_ignores_sourcemap_files
+  - tracked_build_output_has_no_source_mapping_url
+  # 브라우저 실측
+  - no_sourcemap_requests_from_loaded_bundles
+  - page_renders_without_map_related_console_errors
+
+test_files:
+  - tests/Unit/Extension/BuildCommandSourcemapEnvTest.php
+  - tests/Unit/Extension/NoSourcemapArtifactsTest.php
+  - tests/Unit/Services/ExtensionBundleServiceTest.php
+  - tests/Feature/Module/ModuleAssetServingTest.php
+  - tests/Feature/Plugin/PluginAssetServingTest.php
+  - tests/Playwright/specs/production-sourcemap-exposure.spec.ts

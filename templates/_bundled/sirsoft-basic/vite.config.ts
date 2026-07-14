@@ -33,7 +33,9 @@ export default defineConfig({
     emptyOutDir: true,
 
     // 소스맵 생성
-    sourcemap: true,
+    // 배포용 빌드(--production)는 G7_BUILD_SOURCEMAP=0 을 주입해 소스맵을 생성하지 않는다.
+    // 미설정(로컬 npm run build)이면 생성 — 개발 디버깅 경험을 유지한다.
+    sourcemap: !['0', 'false'].includes(process.env.G7_BUILD_SOURCEMAP ?? ''),
 
     // 외부 종속성 (번들에 포함하지 않음)
     rollupOptions: {

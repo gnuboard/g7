@@ -10,8 +10,9 @@ use App\Enums\ScheduleType;
 use App\Extension\HookManager;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
+use App\Support\OutboundUrlValidator;
+use App\Support\ScheduleCommandValidator;
 use Exception;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 class ScheduleService
 {
@@ -205,10 +207,13 @@ class ScheduleService
                 'output' => $result['output'] ?? null,
             ]);
 
-            // 스케줄 상태 업데이트
+            // 스케줄 상태 업데이트 (다음 실행 시각은 모델이 계산, 영속화는 Repository 경유)
             $schedule->last_result = ScheduleResultStatus::Success;
             $schedule->calculateNextRunAt();
-            $schedule->save();
+            $this->scheduleRepository->update($schedule, [
+                'last_result' => ScheduleResultStatus::Success,
+                'next_run_at' => $schedule->next_run_at,
+            ]);
 
             // after_run 훅 실행
             HookManager::doAction('core.schedule.after_run', $schedule, $history);
@@ -224,10 +229,13 @@ class ScheduleService
                 'error_output' => $e->getMessage(),
             ]);
 
-            // 스케줄 상태 업데이트
+            // 스케줄 상태 업데이트 (다음 실행 시각은 모델이 계산, 영속화는 Repository 경유)
             $schedule->last_result = ScheduleResultStatus::Failed;
             $schedule->calculateNextRunAt();
-            $schedule->save();
+            $this->scheduleRepository->update($schedule, [
+                'last_result' => ScheduleResultStatus::Failed,
+                'next_run_at' => $schedule->next_run_at,
+            ]);
 
             Log::error('Schedule execution failed', [
                 'schedule_id' => $schedule->id,
@@ -245,12 +253,18 @@ class ScheduleService
      *
      * @param  Schedule  $schedule  스케줄
      * @return array 실행 결과
+     *
+     * @throws Exception 차단목록에 걸린 명령일 때
      */
     private function executeArtisanCommand(Schedule $schedule): array
     {
-        $output = '';
+        // 저장 시점 검증 도입 이전 데이터나 DB 직접 수정으로 들어온 값을 방어한다
+        // (isUrlCallAllowed 와 동일 사유 — 실행 직전이 마지막 방어선).
+        if (! ScheduleCommandValidator::isArtisanCommandAllowed($schedule->command)) {
+            throw new Exception(__('schedule.artisan_not_allowed'));
+        }
 
-        Artisan::call($schedule->command, [], new \Symfony\Component\Console\Output\BufferedOutput);
+        Artisan::call($schedule->command, [], new BufferedOutput);
 
         return [
             'output' => Artisan::output(),
@@ -268,9 +282,19 @@ class ScheduleService
      */
     private function executeShellCommand(Schedule $schedule): array
     {
+        // 저장 시점 검증 도입 이전 데이터나 DB 직접 수정으로 들어온 값을 방어한다
+        // (isUrlCallAllowed 와 동일 사유 — 실행 직전이 마지막 방어선).
+        $arguments = ScheduleCommandValidator::tokenizeShellCommand($schedule->command);
+
+        if ($arguments === null || ! ScheduleCommandValidator::isShellCommandAllowed($schedule->command)) {
+            throw new Exception(__('schedule.shell_not_allowed'));
+        }
+
         $timeout = $schedule->timeout ?? 60;
 
-        $result = Process::timeout($timeout)->run($schedule->command);
+        // 문자열이 아닌 인자 배열로 넘겨 `/bin/sh -c` 를 경유하지 않는다 —
+        // 파이프·`;`·`$()` 같은 셸 메타문자가 명령으로 해석될 여지를 없앤다.
+        $result = Process::timeout($timeout)->run($arguments);
 
         if ($result->failed()) {
             throw new Exception($result->errorOutput() ?: __('schedule.shell_command_failed'), $result->exitCode());
@@ -292,6 +316,12 @@ class ScheduleService
      */
     private function executeUrlCall(Schedule $schedule): array
     {
+        // 저장된 URL 이 그대로 서버의 outbound 목적지가 되므로, 실행 직전에도 내부망 주소를 차단한다
+        // (저장 시점 검증 도입 이전 데이터나 DB 직접 수정으로 들어온 값 방어).
+        if (! $this->isUrlCallAllowed($schedule->command)) {
+            throw new Exception(__('schedule.url_not_public'));
+        }
+
         $timeout = $schedule->timeout ?? 30;
 
         $response = Http::timeout($timeout)->get($schedule->command);
@@ -304,6 +334,27 @@ class ScheduleService
             'output' => 'HTTP Status: '.$response->status()."\n".$response->body(),
             'exit_code' => 0,
         ];
+    }
+
+    /**
+     * 스케줄의 URL 호출이 허용되는 목적지인지 판정합니다.
+     *
+     * 사설 IP·localhost 등 내부 네트워크 주소는 기본 차단하되, 사내 엔드포인트를 주기 호출하는
+     * 정당한 운영을 위해 `security.allow_internal_outbound_urls` 로 허용할 수 있습니다.
+     * 허용하더라도 userinfo 위장·비 HTTP scheme 은 계속 거부합니다.
+     *
+     * @param  string  $url  스케줄에 저장된 호출 URL
+     * @return bool 호출을 허용하면 true
+     */
+    private function isUrlCallAllowed(string $url): bool
+    {
+        $options = ['schemes' => ['http', 'https']];
+
+        if ((bool) g7_core_settings('security.allow_internal_outbound_urls', false)) {
+            return OutboundUrlValidator::isStructurallySafeUrl($url, $options);
+        }
+
+        return OutboundUrlValidator::isPublicHttpUrl($url, $options);
     }
 
     /**

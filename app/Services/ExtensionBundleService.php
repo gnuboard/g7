@@ -166,6 +166,7 @@ class ExtensionBundleService
     public function buildCssBundle(string $type): string
     {
         $ordered = $this->getOrderedGlobalAssetPaths($type);
+        $isProduction = app()->environment('production');
         $segments = [];
 
         foreach ($ordered as $identifier => $paths) {
@@ -197,7 +198,7 @@ class ExtensionBundleService
                     continue;
                 }
 
-                $segments[] = $content;
+                $segments[] = $this->processCssSourceMap($content, $isProduction);
             } catch (\Throwable $e) {
                 Log::warning('확장 CSS 번들 병합 중 오류, 해당 확장 skip', [
                     'type' => $type,
@@ -415,6 +416,29 @@ class ExtensionBundleService
 
             return '//# sourceMappingURL=/api/'.$typeSegment.'/assets/'.$identifier.'/dist/js/'.basename($mapFile);
         }, $content) ?? $content;
+    }
+
+    /**
+     * CSS 소스맵 주석을 환경에 맞게 처리합니다.
+     *
+     * CSS 는 JS 와 주석 문법이 달라 소스맵 참조를 블록 주석으로 표기하므로
+     * processJsSourceMap() 의 `//#` 패턴으로는 검출되지 않는다.
+     *
+     * prod: 주석 strip(맵 참조 제거). dev: 원본 유지.
+     * 병합 번들에서는 개별 맵 URL 이 어차피 어긋나므로 dev rewrite 는 하지 않는다.
+     *
+     * @param  string  $content  원본 CSS 내용
+     * @param  bool  $isProduction  프로덕션 여부
+     * @return string 처리된 내용
+     */
+    private function processCssSourceMap(string $content, bool $isProduction): string
+    {
+        if (! $isProduction) {
+            return $content;
+        }
+
+        // 구분자로 `~` 사용 — 패턴에 `/`, `#` 가 포함됨
+        return preg_replace('~/\*#\s*sourceMappingURL=\S+?\s*\*/~', '', $content) ?? $content;
     }
 
     /**

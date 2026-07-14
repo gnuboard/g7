@@ -55,9 +55,10 @@ describe('LayoutLoader', () => {
       const result = await loader.loadLayout('admin-template', 'dashboard');
 
       expect(result).toEqual(mockLayoutData);
-      expect(global.fetch).toHaveBeenCalledWith('/api/layouts/admin-template/dashboard.json', {
-        headers: { Accept: 'application/json' },
-      });
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/layouts/admin-template/dashboard.json',
+        expect.objectContaining({ headers: { Accept: 'application/json' } })
+      );
     });
 
     it('API 응답 실패 시 LayoutLoaderError를 던진다', async () => {
@@ -412,7 +413,7 @@ describe('LayoutLoader', () => {
 
       expect(global.fetch).toHaveBeenCalledWith(
         '/api/layouts/admin-template/dashboard.json?v=1735000000',
-        { headers: { Accept: 'application/json' } }
+        expect.objectContaining({ headers: { Accept: 'application/json' } })
       );
     });
 
@@ -433,9 +434,10 @@ describe('LayoutLoader', () => {
 
       await loader.loadLayout('admin-template', 'dashboard');
 
-      expect(global.fetch).toHaveBeenCalledWith('/api/layouts/admin-template/dashboard.json', {
-        headers: { Accept: 'application/json' },
-      });
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/layouts/admin-template/dashboard.json',
+        expect.objectContaining({ headers: { Accept: 'application/json' } })
+      );
     });
 
     it('캐시 버전 변경 시 기존 캐시가 클리어된다', async () => {
@@ -471,7 +473,7 @@ describe('LayoutLoader', () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
       expect(global.fetch).toHaveBeenLastCalledWith(
         '/api/layouts/admin-template/dashboard.json?v=1735000000',
-        { headers: { Accept: 'application/json' } }
+        expect.objectContaining({ headers: { Accept: 'application/json' } })
       );
     });
 
@@ -518,9 +520,10 @@ describe('LayoutLoader', () => {
 
       await loader.loadLayout('admin-template', 'dashboard');
 
-      expect(global.fetch).toHaveBeenCalledWith('/api/layouts/admin-template/dashboard.json', {
-        headers: { Accept: 'application/json' },
-      });
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/layouts/admin-template/dashboard.json',
+        expect.objectContaining({ headers: { Accept: 'application/json' } })
+      );
     });
 
     it('토큰이 있으면 Authorization 헤더를 포함하여 요청한다', async () => {
@@ -543,12 +546,12 @@ describe('LayoutLoader', () => {
 
       expect(global.fetch).toHaveBeenCalledWith(
         '/api/layouts/sirsoft-admin_basic/admin_dashboard.json',
-        {
+        expect.objectContaining({
           headers: {
             Accept: 'application/json',
             Authorization: 'Bearer test-bearer-token',
           },
-        }
+        })
       );
     });
 
@@ -569,9 +572,10 @@ describe('LayoutLoader', () => {
 
       await loader.loadLayout('admin-template', 'dashboard');
 
-      expect(global.fetch).toHaveBeenCalledWith('/api/layouts/admin-template/dashboard.json', {
-        headers: { Accept: 'application/json' },
-      });
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/layouts/admin-template/dashboard.json',
+        expect.objectContaining({ headers: { Accept: 'application/json' } })
+      );
     });
   });
 
@@ -620,21 +624,21 @@ describe('LayoutLoader', () => {
       expect(global.fetch).toHaveBeenNthCalledWith(
         1,
         '/api/layouts/sirsoft-admin_basic/admin_login.json',
-        {
+        expect.objectContaining({
           headers: {
             Accept: 'application/json',
             Authorization: 'Bearer invalid-token',
           },
-        }
+        })
       );
 
       // 두 번째 호출: 토큰 없음
       expect(global.fetch).toHaveBeenNthCalledWith(
         2,
         '/api/layouts/sirsoft-admin_basic/admin_login.json',
-        {
+        expect.objectContaining({
           headers: { Accept: 'application/json' },
-        }
+        })
       );
 
       // 결과 확인

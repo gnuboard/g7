@@ -836,6 +836,7 @@ return [
         'websocket_host_required' => 'WebSocketホストは必須です。',
         'websocket_port_required' => 'WebSocketポートは必須です。',
         'websocket_scheme_required' => 'WebSocketプロトコルを選択してください。',
+        'allow_internal_outbound_urls_boolean' => '内部ネットワークアドレス呼び出し許可は true または false 値である必要があります。',
     ],
     'identity_policy' => [
         'key_required' => 'ポリシーキーを入力してください。',
@@ -1013,5 +1014,13 @@ return [
             'integer' => '多言語キーIDは整数である必要があります。',
             'exists' => '存在しない多言語キーが含まれています。',
         ],
+    ],
+    'outbound_url' => [
+        'invalid' => '正しい形式のURLではありません。http または https で始まるアドレスを入力してください。',
+        'internal_not_allowed' => '内部ネットワークアドレス(プライベートIP·localhost など)は使用できません。外部からアクセス可能なアドレスを入力してください。',
+    ],
+    'schedule_command' => [
+        'shell_not_allowed' => '許可されていないシェルコマンドです。サーバーに登録された実行ファイルのみ使用でき、パイプ(|)・セミコロン(;)などの特殊文字は使用できません。',
+        'artisan_denied' => 'このArtisanコマンドはセキュリティ上、スケジュールで実行することはできません。',
     ],
 ];

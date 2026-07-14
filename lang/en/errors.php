@@ -38,4 +38,11 @@ return [
         'plugins' => 'Plugins',
         'contact_admin' => 'If the problem persists, please contact the administrator.',
     ],
+
+    // 화면 구성에 필요한 스크립트를 끝내 불러오지 못했을 때 (코어 엔진 / 템플릿 컴포넌트 번들)
+    'bootstrap' => [
+        'title' => 'Failed to load the page',
+        'message' => 'Your network connection may be unstable. Please refresh and try again.',
+        'reload' => 'Refresh',
+    ],
 ];

@@ -28,6 +28,9 @@ return [
     'copy' => '복사본',
     'shell_command_failed' => '쉘 명령 실행에 실패했습니다.',
     'http_request_failed' => 'HTTP 요청 실패 (상태: :status)',
+    'url_not_public' => '내부 네트워크 주소(사설 IP·localhost 등)는 호출할 수 없습니다. 사내 주소를 호출해야 한다면 환경설정 > 보안에서 "내부 네트워크 주소 호출 허용"을 켜주세요.',
+    'shell_not_allowed' => '허용되지 않은 쉘 명령입니다. 서버에 등록된 실행 파일만 스케줄로 실행할 수 있습니다.',
+    'artisan_not_allowed' => '이 Artisan 명령은 보안상 스케줄로 실행할 수 없습니다.',
 
     // 작업 유형
     'type' => [

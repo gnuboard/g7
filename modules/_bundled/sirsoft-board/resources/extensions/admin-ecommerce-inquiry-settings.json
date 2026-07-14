@@ -6,6 +6,7 @@
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/admin/boards",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'basic_info'}}",
       "auto_fetch": true,
       "auth_required": true,
       "params": {

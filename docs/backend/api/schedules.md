@@ -170,7 +170,7 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | description | body | string | 아니오 | max 1000 | 설명 |
 | type | body | string | 예 | `artisan`, `shell`, `url` | 작업 유형: artisan(Artisan 커맨드 실행), shell(쉘 명령 실행), url(URL 호출) |
-| command | body | string | 예 | max 2000 | 실행할 아티즌 커맨드 |
+| command | body | string | 예 | max 2000 | 실행할 명령 (`type` 에 따라 Artisan 커맨드 / 쉘 명령 / 호출할 URL). `type=url` 이면 내부 네트워크 주소(사설 IP·루프백·`localhost`·`*.internal` 등)는 거부되어 422 로 응답합니다 — 서버가 내부망으로 요청을 보내는 것을 막기 위함(SSRF). 사내 엔드포인트를 호출해야 하면 환경설정의 `security.allow_internal_outbound_urls` 를 켜세요. 이 설정을 켜도 userinfo(`https://a@b/`) 위장과 http/https 이외 scheme 은 계속 거부됩니다.<br>`type=shell` 이면 기본적으로 모든 명령이 거부되어 422 로 응답합니다 — 스케줄 권한만 위임받은 계정이 서버에서 임의 OS 명령을 실행하는 것을 막기 위함입니다. 실행하려면 서버의 `.env` 에서 `SCHEDULE_SHELL_ENABLED=true` 로 게이트를 열고 `SCHEDULE_SHELL_ALLOWED_BINARIES` 에 허용할 실행 파일명을 등록해야 합니다(관리자 화면에서는 넓힐 수 없는 코드 소유 정책). 허용된 실행 파일이라도 셸 메타문자(`|`, `;`, `$`, 백틱, 리다이렉션, 따옴표 등)가 포함되면 거부되며, 실행 시 셸을 경유하지 않습니다. 복합 명령이 필요하면 래퍼 스크립트를 만들어 화이트리스트에 등록하세요.<br>`type=artisan` 이면 `tinker`·`db:wipe`·`migrate:fresh`·`migrate:reset`·`migrate:rollback`·`schedule:run`·`schedule:work`·`env:decrypt`·`key:generate` 같은 코드 실행형·파괴적 명령이 거부되어 422 로 응답합니다 |
 | expression | body | string | 예 | max 100 | 실행 시각을 정의하는 Cron 표현식 (예: `0 3 * * *`, 다음 실행 시각 next_run_at 계산의 기준) |
 | frequency | body | string | 예 | `everyMinute`, `hourly`, `daily`, `weekly`, `monthly`, `custom` | 실행 주기 |
 | without_overlapping | body | boolean | 아니오 | — | 중복 실행 방지 여부 |
@@ -680,7 +680,7 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | description | body | string | 아니오 | max 1000 | 설명 |
 | type | body | string | 예 | `artisan`, `shell`, `url` | 작업 유형: artisan(Artisan 커맨드 실행), shell(쉘 명령 실행), url(URL 호출) |
-| command | body | string | 예 | max 2000 | 실행할 아티즌 커맨드 |
+| command | body | string | 예 | max 2000 | 실행할 명령 (`type` 에 따라 Artisan 커맨드 / 쉘 명령 / 호출할 URL). `type=url` 이면 내부 네트워크 주소(사설 IP·루프백·`localhost`·`*.internal` 등)는 거부되어 422 로 응답합니다 — 서버가 내부망으로 요청을 보내는 것을 막기 위함(SSRF). 사내 엔드포인트를 호출해야 하면 환경설정의 `security.allow_internal_outbound_urls` 를 켜세요. 이 설정을 켜도 userinfo(`https://a@b/`) 위장과 http/https 이외 scheme 은 계속 거부됩니다.<br>`type=shell` 이면 기본적으로 모든 명령이 거부되어 422 로 응답합니다 — 스케줄 권한만 위임받은 계정이 서버에서 임의 OS 명령을 실행하는 것을 막기 위함입니다. 실행하려면 서버의 `.env` 에서 `SCHEDULE_SHELL_ENABLED=true` 로 게이트를 열고 `SCHEDULE_SHELL_ALLOWED_BINARIES` 에 허용할 실행 파일명을 등록해야 합니다(관리자 화면에서는 넓힐 수 없는 코드 소유 정책). 허용된 실행 파일이라도 셸 메타문자(`|`, `;`, `$`, 백틱, 리다이렉션, 따옴표 등)가 포함되면 거부되며, 실행 시 셸을 경유하지 않습니다. 복합 명령이 필요하면 래퍼 스크립트를 만들어 화이트리스트에 등록하세요.<br>`type=artisan` 이면 `tinker`·`db:wipe`·`migrate:fresh`·`migrate:reset`·`migrate:rollback`·`schedule:run`·`schedule:work`·`env:decrypt`·`key:generate` 같은 코드 실행형·파괴적 명령이 거부되어 422 로 응답합니다 |
 | expression | body | string | 예 | max 100 | 실행 시각을 정의하는 Cron 표현식 (예: `0 3 * * *`, 다음 실행 시각 next_run_at 계산의 기준) |
 | frequency | body | string | 예 | `everyMinute`, `hourly`, `daily`, `weekly`, `monthly`, `custom` | 실행 주기 |
 | without_overlapping | body | boolean | 아니오 | — | 중복 실행 방지 여부 |

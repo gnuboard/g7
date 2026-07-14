@@ -181,8 +181,13 @@ class BuildTemplateCommand extends Command
             $this->info("🔨 빌드 시작: {$identifier}".($productionMode ? ' (프로덕션)' : ''));
         }
 
-        // 빌드 실행
-        $result = $this->runNpmCommand($buildCommand, $buildPath, ! $watchMode);
+        // 빌드 실행 (감시 모드에는 소스맵 억제를 주입하지 않는다 — 개발 중 디버깅 필요)
+        $result = $this->runNpmCommand(
+            $buildCommand,
+            $buildPath,
+            ! $watchMode,
+            $watchMode ? [] : $this->buildEnv($productionMode)
+        );
 
         if ($result === Command::SUCCESS && ! $watchMode) {
             $this->info("✅ 빌드 완료: {$identifier}");
@@ -286,14 +291,29 @@ class BuildTemplateCommand extends Command
     }
 
     /**
+     * 빌드 프로세스에 주입할 환경변수를 구성합니다.
+     *
+     * 프로덕션 빌드에서는 소스맵을 생성하지 않습니다. 배포 산출물에 원본 코드가
+     * 포함되는 것을 막기 위함이며, 각 vite config 가 이 값을 읽습니다.
+     *
+     * @param  bool  $productionMode  프로덕션 빌드 여부
+     * @return array<string, string> Process 에 주입할 환경변수
+     */
+    private function buildEnv(bool $productionMode): array
+    {
+        return $productionMode ? ['G7_BUILD_SOURCEMAP' => '0'] : [];
+    }
+
+    /**
      * npm 명령 실행
      *
      * @param  array  $command  실행할 명령
      * @param  string  $cwd  작업 디렉토리
      * @param  bool  $waitForCompletion  완료 대기 여부
+     * @param  array<string, string>  $env  추가로 주입할 환경변수 (부모 환경에 병합됨)
      * @return int 명령 실행 결과 코드
      */
-    private function runNpmCommand(array $command, string $cwd, bool $waitForCompletion = true): int
+    private function runNpmCommand(array $command, string $cwd, bool $waitForCompletion = true, array $env = []): int
     {
         // Windows 환경에서는 cmd /c 사용
         if (PHP_OS_FAMILY === 'Windows') {
@@ -302,6 +322,11 @@ class BuildTemplateCommand extends Command
 
         $process = new Process($command);
         $process->setWorkingDirectory($cwd);
+
+        // Symfony Process 는 지정한 env 를 부모 환경에 병합하므로(PATH 등 유지) 추가분만 넘긴다.
+        if ($env !== []) {
+            $process->setEnv($env);
+        }
         $process->setTimeout(null); // 타임아웃 없음
 
         if ($waitForCompletion) {

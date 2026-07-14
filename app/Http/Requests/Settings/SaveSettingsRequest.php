@@ -231,6 +231,8 @@ class SaveSettingsRequest extends FormRequest
             'security.auth_token_lifetime' => $this->getSecurityTabAuthTokenRules($tab),
             'security.max_login_attempts' => ['nullable', 'integer', 'min:0', 'max:100'],
             'security.login_lockout_time' => ['nullable', 'integer', 'min:0', 'max:1440'],
+            // 신규 설정이므로 미전송(기존 클라이언트)을 허용한다 — 미전송 시 기본값 false 유지
+            'security.allow_internal_outbound_urls' => ['nullable', 'boolean'],
 
             // 캐시 설정 (advanced 탭)
             'advanced.cache_enabled' => $this->getTabRules($tab, 'advanced', 'boolean'),
@@ -614,6 +616,7 @@ class SaveSettingsRequest extends FormRequest
             'security.auth_token_lifetime.integer' => __('validation.settings.auth_token_lifetime_integer'),
             'security.auth_token_lifetime.min' => __('validation.settings.auth_token_lifetime_min'),
             'security.auth_token_lifetime.max' => __('validation.settings.auth_token_lifetime_max'),
+            'security.allow_internal_outbound_urls.boolean' => __('validation.settings.allow_internal_outbound_urls_boolean'),
             'security.max_login_attempts.integer' => __('validation.settings.max_login_attempts_integer'),
             'security.max_login_attempts.min' => __('validation.settings.max_login_attempts_min'),
             'security.max_login_attempts.max' => __('validation.settings.max_login_attempts_max'),

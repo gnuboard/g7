@@ -207,6 +207,11 @@ class StateManagementApi
         $state['manual_commands'] = null;
         $state['last_updated'] = gmdate('Y-m-d\TH:i:s\Z');
 
+        // 보존되는 config 에서 비밀 제거 (이슈 #465) — 초기화 후 무기한 잔존 가능하므로
+        // 평문이 남지 않아야 한다. 비밀번호는 runtime.php 에 있고, 재설치 시 Step 3
+        // 재입력 또는 runtime 폴백으로 복원된다.
+        $state = redactInstallationStateSecrets($state);
+
         // 상태 저장
         $saved = saveInstallationState($state);
 
@@ -310,6 +315,9 @@ class StateManagementApi
             ];
         }
         // 세션도 Step 5를 유지 (중단 화면 표시)
+
+        // 중단 상태는 무기한 잔존 가능 — 보존되는 config 에서 비밀 제거 (이슈 #465)
+        $state = redactInstallationStateSecrets($state);
 
         $saveResult = saveInstallationState($state);
         addLog(lang('abort_api_save_result', ['result' => $saveResult ? 'success' : 'failed']));

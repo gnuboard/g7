@@ -1,6 +1,3 @@
-// e2e:allow(기반 인프라) — spec/엔진/훅만 변경, 브라우저 가시 UI 무변경.
-// 페이지 설정 탭·셸·진입점 + Playwright E2E 는 세션 D 에서 추가(계획서).
-// (세션 D 가 page-settings E2E spec 을 추가하면 본 면제 주석은 제거 대상.)
 /**
  * LayoutEditorChrome.tsx
  *
@@ -78,6 +75,20 @@ import { buildCoreActionRecipeSeed } from './spec/coreActionRecipes';
 import { registerCoreWidgets } from './spec/registerCoreWidgets';
 import { registerCoreEditors } from './spec/registerCoreEditors';
 import { exposeLayoutEditorGlobals } from './spec/exposeLayoutEditorGlobals';
+
+/**
+ * 편집기 셸 최소 너비(px) — 이 아래로는 셸을 압착하지 않고 브라우저 가로 스크롤로 흡수한다.
+ *
+ * 레이아웃 편집기는 대화면 전용 도구다. 셸 안에는 축약 불가능한 요소가 나란히 놓인다:
+ * 라우트 트리(280px 고정) + 캔버스(디바이스 미리보기 프레임) + 툴바(라벨 있는 버튼 10여 개).
+ * 창 너비에 맞춰 이들을 압착하면 툴바 라벨이 글자 단위로 줄바꿈되고("요 소 추 가") 캔버스
+ * 실측 폭이 뷰포트에 종속돼 디바이스 미리보기의 의미 자체가 사라진다. 편집기 UI 를 반응형으로
+ * 재배치하지 않고 최소 너비를 유지하는 이유다.
+ *
+ * 값 1280 = 툴바 한 줄이 줄바꿈 없이 들어가는 폭. 디바이스 미리보기 프레임이 남는 캔버스 폭보다
+ * 넓을 때는 종전대로 줌 슬라이더로 축소해 본다(프레임 폭은 별도 SSoT — deviceList.ts).
+ */
+export const EDITOR_MIN_WIDTH = 1280;
 
 // 코어 위젯 등록 — 셸 모듈 로드 시 1회(멱등). 속성 편집 모달의 widgetRegistry
 // 디스패치가 동작하려면 segmented/slider/select/toggle/color/image/tag-input 위젯이
@@ -822,6 +833,12 @@ function LayoutEditorChromeBody({
         // 편집기 라우트에서는 `#app` 의 유일한 자식이라 호스트 콘텐츠와 겹치지 않는다.
         position: 'static',
         minHeight: '100vh',
+        // 레이아웃 편집기는 대화면 전용 도구다(좌: 라우트 트리 280px, 우: 실측 캔버스,
+        // 상단: 축약 불가 툴바 10여 개). 창이 좁아도 이들을 압착해 반응형으로 재배치하지
+        // 않고 최소 너비를 유지하며, 모자란 만큼은 브라우저 가로 스크롤로 흡수한다.
+        // 압착을 허용하면 툴바 라벨이 글자 단위로 줄바꿈되고 캔버스 실측 폭이 뷰포트에
+        // 종속돼 디바이스 미리보기(데스크톱 1280 등)의 의미가 사라진다.
+        minWidth: EDITOR_MIN_WIDTH,
         background: '#f8fafc',
         color: '#0f172a',
         fontFamily:

@@ -7,6 +7,7 @@
  */
 
 import { createLogger } from '../utils/Logger';
+import { loadScriptWithRetry } from '../template-engine/networkResilience';
 
 const logger = createLogger('ModuleAssetLoader');
 
@@ -61,13 +62,49 @@ export class ModuleAssetLoader {
     private loadingPromises: Map<string, Promise<void>> = new Map();
 
     /**
+     * 로드에 최종 실패한 JS 번들/확장 식별자 집합
+     *
+     * 실패가 확정된 확장의 핸들러는 영원히 등록되지 않는다. `waitForHandlers` 가
+     * 이 집합을 보고 오지 않을 핸들러를 기다리지 않도록 하기 위한 사실 기록이다.
+     *
+     * @since engine-v1.53.0
+     */
+    private failedJsAssets: Set<string> = new Set();
+
+    /**
+     * JS 에셋 로드에 최종 실패한 확장이 하나라도 있는지 반환합니다.
+     *
+     * @return bool 실패한 JS 번들/확장이 있으면 true
+     * @since engine-v1.53.0
+     */
+    hasFailedJsAssets(): boolean {
+        return this.failedJsAssets.size > 0;
+    }
+
+    /**
+     * JS 에셋 로드에 최종 실패한 식별자 목록을 반환합니다.
+     *
+     * @return string[] 실패한 번들 키/확장 식별자 목록
+     * @since engine-v1.53.0
+     */
+    getFailedJsAssets(): string[] {
+        return [...this.failedJsAssets];
+    }
+
+    /**
      * 활성화된 모듈들의 에셋을 로드합니다.
      *
      * CSS/JS 모두 병렬 fetch로 로드합니다. JS는 `script.async = false` +
      * 정렬된 DOM append 순서로 **실행 순서는 priority 정렬대로** 보장됩니다.
      * (HTML 사양: async=false 스크립트는 삽입 순서대로 실행)
      *
+     * 확장 하나의 로드 실패가 나머지 확장을 함께 죽이지 않도록 `allSettled` 로 모은다.
+     * 실패한 확장은 `failedJsAssets` 에 기록되어 `waitForHandlers` 가 오지 않을
+     * 핸들러를 기다리지 않게 한다. (개별 로딩은 확장별로 독립이므로 부분 열화가 옳다.
+     * 반면 병합 번들은 확장 전체가 한 파일이라 실패 시 reject 로 표면화한다.)
+     *
      * @param extensions 모듈 에셋 배열
+     * @return Promise<void>
      */
     async loadActiveExtensionAssets(extensions: ModuleAsset[]): Promise<void> {
         if (!extensions || extensions.length === 0) {
@@ -91,7 +128,16 @@ export class ModuleAssetLoader {
             .filter(ext => ext.js)
             .map(ext => this.loadJS(ext.identifier, ext.js!));
 
-        await Promise.all([...cssPromises, ...jsPromises]);
+        const results = await Promise.allSettled([...cssPromises, ...jsPromises]);
+
+        const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+        if (failures.length > 0) {
+            logger.warn(
+                `Some module assets failed to load (${failures.length}/${results.length}); continuing with the rest`,
+                this.getFailedJsAssets()
+            );
+            return;
+        }
 
         logger.log('All module assets loaded successfully');
     }
@@ -168,8 +214,16 @@ export class ModuleAssetLoader {
     /**
      * 병합 JS 번들을 단일 `<script async=false>` 로 로드합니다(중복 가드).
      *
+     * 네트워크 일시 실패에 재시도하고, 3회 시도 후에도 실패하면 **reject** 한다.
+     * 종전에는 `onerror` 가 `resolve()` 하여 실패가 성공으로 위장됐고, 상위
+     * `loadExtensionAssets` 의 try/catch 가 무력화되어 앱은 한참 뒤 미등록 핸들러
+     * 지점에서 죽었다. 실패는 발생 지점에서 표면화해야 한다.
+     *
      * @param key 번들 구분 키
      * @param url 병합 JS URL
+     * @return Promise<void> 로드 성공 시 resolve
+     * @throws Error 재시도 소진 후에도 로드에 실패한 경우
+     * @since engine-v1.53.0 (실패 계약 변경: resolve → reject)
      */
     private async loadBundleJs(key: string, url: string): Promise<void> {
         const elementId = `ext-bundle-js-${key}`;
@@ -185,27 +239,21 @@ export class ModuleAssetLoader {
             return existingPromise;
         }
 
-        const loadPromise = new Promise<void>((resolve) => {
-            const script = document.createElement('script');
-            script.src = url;
-            script.id = elementId;
-            script.async = false; // 번들 내부 물리 순서로 실행 보장
-
-            script.onload = () => {
+        const loadPromise = loadScriptWithRetry(url, { id: elementId }, { label: `bundle JS: ${key}` })
+            .then(() => {
                 logger.log(`Bundle JS loaded: ${key}`);
-                this.registerLoadedAsset(`bundle-${key}`, { type: 'js', element: script });
+                const script = document.getElementById(elementId);
+                if (script) {
+                    this.registerLoadedAsset(`bundle-${key}`, { type: 'js', element: script });
+                }
                 this.loadingPromises.delete(elementId);
-                resolve();
-            };
-
-            script.onerror = () => {
-                logger.warn(`Failed to load bundle JS: ${key} (${url})`);
+            })
+            .catch((error) => {
+                logger.warn(`Failed to load bundle JS: ${key} (${url})`, error);
+                this.failedJsAssets.add(key);
                 this.loadingPromises.delete(elementId);
-                resolve();
-            };
-
-            document.head.appendChild(script);
-        });
+                throw error;
+            });
 
         this.loadingPromises.set(elementId, loadPromise);
         return loadPromise;
@@ -273,28 +321,21 @@ export class ModuleAssetLoader {
             return existingPromise;
         }
 
-        const loadPromise = new Promise<void>((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = url;
-            script.id = elementId;
-            script.async = false; // 순차적 로드를 위해 async 비활성화
-
-            script.onload = () => {
+        const loadPromise = loadScriptWithRetry(url, { id: elementId }, { label: `JS: ${identifier}` })
+            .then(() => {
                 logger.log(`JS loaded: ${identifier}`);
-                this.registerLoadedAsset(identifier, { type: 'js', element: script });
+                const script = document.getElementById(elementId);
+                if (script) {
+                    this.registerLoadedAsset(identifier, { type: 'js', element: script });
+                }
                 this.loadingPromises.delete(identifier);
-                resolve();
-            };
-
-            script.onerror = () => {
-                logger.warn(`Failed to load JS: ${identifier} (${url})`);
+            })
+            .catch((error) => {
+                logger.warn(`Failed to load JS: ${identifier} (${url})`, error);
+                this.failedJsAssets.add(identifier);
                 this.loadingPromises.delete(identifier);
-                // JS 로드 실패는 경고만 출력하고 계속 진행
-                resolve();
-            };
-
-            document.head.appendChild(script);
-        });
+                throw error;
+            });
 
         this.loadingPromises.set(identifier, loadPromise);
         return loadPromise;

@@ -57,6 +57,7 @@ return [
         'composer_not_available' => 'Composer를 실행할 수 없는 환경입니다. 번들 모드를 사용하세요.',
         'composer_not_available_for_build' => 'vendor-bundle 빌드는 Composer 실행이 필요합니다. 개발 환경에서 Composer를 설치/설정한 후 다시 시도하세요.',
         'bundle_build_composer_failed' => 'vendor-bundle 빌드 중 composer install 실행 실패 (exit :exit): :message',
+        'bundle_build_promote_failed' => 'vendor-bundle 빌드 결과를 최종 경로로 반영하지 못했습니다 (:from → :to)',
         'composer_execution_failed' => 'Composer 실행에 실패했습니다: :message',
         'bundle_zip_missing' => 'vendor-bundle.zip 파일을 찾을 수 없습니다: :path',
         'bundle_manifest_missing' => 'vendor-bundle.json 파일을 찾을 수 없습니다: :path',

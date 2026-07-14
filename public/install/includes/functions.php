@@ -1031,33 +1031,40 @@ function loadLicenseFile(string $lang): string
     return lang('license_not_found');
 }
 
-/**
- * .env 값 이스케이프
- *
- * 특수 문자가 포함된 값을 .env 파일에 안전하게 기록할 수 있도록 큰따옴표로 감싸고
- * 내부 큰따옴표와 백슬래시를 이스케이프합니다.
- *
- * @param  string  $value  이스케이프할 값
- * @return string 큰따옴표로 감싸고 내부 큰따옴표와 백슬래시를 이스케이프한 값
- */
-function escapeEnvValue(string $value): string
-{
-    // 개행 문자는 .env 라인 구분자이므로 사용자 입력에 포함되면 추가 변수 라인이 주입될 수 있다.
-    // CR/LF 모두 제거 — DB 비밀번호·바이너리 경로·토큰 등 정상 값에는 개행이 들어갈 일이 없다.
-    if ($value !== '') {
-        $value = str_replace(["\r", "\n"], '', $value);
+if (! function_exists('escapeEnvValue')) {
+    /**
+     * .env 값 이스케이프
+     *
+     * 특수 문자가 포함된 값을 .env 파일에 안전하게 기록할 수 있도록 큰따옴표로 감싸고
+     * 내부 큰따옴표와 백슬래시를 이스케이프합니다.
+     *
+     * installer-runtime.php 가 동일 함수를 polyfill 로 선언하므로 function_exists
+     * 가드가 필수다. 가드가 없으면 installer-runtime.php 가 functions.php 보다 먼저
+     * 로드되는 엔드포인트(install-process.php)에서 "Cannot redeclare" fatal 이 발생해
+     * JSON 응답이 통째로 유실된다 (설치 시작 즉시 실패).
+     *
+     * @param  string  $value  이스케이프할 값
+     * @return string 큰따옴표로 감싸고 내부 큰따옴표와 백슬래시를 이스케이프한 값
+     */
+    function escapeEnvValue(string $value): string
+    {
+        // 개행 문자는 .env 라인 구분자이므로 사용자 입력에 포함되면 추가 변수 라인이 주입될 수 있다.
+        // CR/LF 모두 제거 — DB 비밀번호·바이너리 경로·토큰 등 정상 값에는 개행이 들어갈 일이 없다.
+        if ($value !== '') {
+            $value = str_replace(["\r", "\n"], '', $value);
+        }
+
+        // 빈 값은 빈 따옴표로
+        if ($value === '') {
+            return '""';
+        }
+
+        // 큰따옴표와 백슬래시를 이스케이프
+        $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
+
+        // 큰따옴표로 감싸기
+        return '"'.$escaped.'"';
     }
-
-    // 빈 값은 빈 따옴표로
-    if ($value === '') {
-        return '""';
-    }
-
-    // 큰따옴표와 백슬래시를 이스케이프
-    $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
-
-    // 큰따옴표로 감싸기
-    return '"'.$escaped.'"';
 }
 
 /**

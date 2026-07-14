@@ -14,7 +14,7 @@
     "live_mode_warning_body": "ライブモードは実際の加盟店MIDで本人認証を実行します。ライブMIDとAPIキーを入力してから運用してください。",
     "section_live_keys": "ライブ資格情報",
     "live_mid": "ライブMID",
-    "live_mid_hint": "イニシスライブ加盟店MIDはSRAで始まります (例:SRA1234567)。運用モード使用前に必須入力です。",
+    "live_mid_hint": "イニシスライブ加盟店MIDはSRBで始まります (例:SRB1234567)。運用モード使用前に必須入力です。",
     "live_api_key": "ライブAPIキー",
     "section": {
       "duplicate_field": "同一人識別"

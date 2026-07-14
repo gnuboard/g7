@@ -60,6 +60,7 @@ return [
         'no_composer_lock' => 'composer.lockファイルが必要です。まずcomposer installを実行してください: :path',
         'vendor_dir_not_found' => 'vendor/ディレクトリが存在しません。まずcomposer installを実行してください: :path',
         'composer_binary_not_found' => 'Composerバイナリが見つかりません。COMPOSER_BINARY環境変数を設定するか、composerをPATHに追加してください。',
+        'bundle_build_promote_failed' => 'vendor-bundle ビルド結果を最終パスに反映できませんでした (:from → :to)',
     ],
     'concurrent_modification' => '別のユーザーが先に保存しました。(リソース: :resource、現在のバージョン: :current、送信されたバージョン: :expected)',
 ];

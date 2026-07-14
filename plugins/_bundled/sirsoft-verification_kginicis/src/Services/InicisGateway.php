@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\VerificationKginicis\Services;
 
+use App\Support\OutboundUrlValidator;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\VerificationKginicis\Exceptions\DecryptException;
 use Plugins\Sirsoft\VerificationKginicis\Exceptions\InvalidAuthUrlException;
@@ -23,10 +24,10 @@ class InicisGateway implements InicisGatewayInterface
     /** STEP3 호출 timeout (초) */
     private const STEP3_TIMEOUT = 10;
 
-    /** 이니시스 표준 도메인 화이트리스트 (위조 차단) */
-    private const ALLOWED_DOMAINS = [
-        'https://kssa.inicis.com',
-        'https://fcsa.inicis.com',
+    /** 이니시스 표준 host 화이트리스트 (위조 차단) */
+    private const ALLOWED_HOSTS = [
+        'kssa.inicis.com',
+        'fcsa.inicis.com',
     ];
 
     /** STEP3 응답 중 SEED CBC 로 암호화된 PII 필드 키 */
@@ -42,18 +43,16 @@ class InicisGateway implements InicisGatewayInterface
     /**
      * 이니시스 콜백의 authRequestUrl 이 표준 도메인인지 검증한다.
      *
+     * 콜백은 인증 없이 외부에서 들어오고 이 URL 이 그대로 STEP3 POST 의 목적지가 되므로,
+     * host 를 완전 일치로 검증한다. 접두사 매칭은 `…@127.0.0.1` (userinfo) 이나
+     * `....attacker.com` (접미사 확장) 형태의 위조 목적지를 통과시킨다.
+     *
      * @param  string  $url  콜백으로 수신한 authRequestUrl
      * @return bool 표준 도메인 여부
      */
     public function validateAuthUrl(string $url): bool
     {
-        foreach (self::ALLOWED_DOMAINS as $allowed) {
-            if (str_starts_with($url, $allowed)) {
-                return true;
-            }
-        }
-
-        return false;
+        return OutboundUrlValidator::isHostAllowed($url, self::ALLOWED_HOSTS);
     }
 
     /**

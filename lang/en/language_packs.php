@@ -34,6 +34,7 @@ return [
         'downgrade_blocked' => 'Downgrade blocked (:from → :to).',
         'protected_pack' => 'Protected language packs cannot be deactivated or removed.',
         'download_failed' => 'Failed to download from URL: :url',
+        'download_url_not_public' => 'Language packs cannot be downloaded from internal network addresses (private IPs, localhost, etc.). Use a publicly reachable https address.',
         'checksum_mismatch' => 'Checksum mismatch.',
         'update_no_source' => 'No update source available (only GitHub-sourced packs can be updated).',
         'update_already_latest' => 'Already on the latest version.',

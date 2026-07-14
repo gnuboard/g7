@@ -12,9 +12,9 @@ return [
 
     'settings' => [
         'test_mode' => '테스트 모드',
-        'live_mid' => '라이브 MID (SRA 프리픽스)',
+        'live_mid' => '라이브 MID (SRB 프리픽스)',
         'live_api_key' => '라이브 API 키',
-        // 검증 에러 메시지의 필드 이름용 짧은 라벨 (화면 라벨의 부가 설명 "(SRA 프리픽스)" 제외)
+        // 검증 에러 메시지의 필드 이름용 짧은 라벨 (화면 라벨의 부가 설명 "(SRB 프리픽스)" 제외)
         'live_mid_attribute' => '라이브 MID',
         'live_api_key_attribute' => '라이브 API 키',
         'duplicate_field' => '동일인 식별 기준',
