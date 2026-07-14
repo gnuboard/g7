@@ -24,7 +24,8 @@
             "login_lockout_time": 5,
             "two_factor_auth": false,
             "password_min_length": 8,
-            "require_password_special_char": false
+            "require_password_special_char": false,
+            "allow_internal_outbound_urls": false
         },
         "mail": {
             "mailer": "smtp",

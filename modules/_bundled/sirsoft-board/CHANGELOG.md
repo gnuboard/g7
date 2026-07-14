@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-07-14
+
+### Fixed
+
+- 게시판 설정 화면의 상단 고정 영역이 좌우 여백과 어긋나 내용이 가로로 밀려 보일 수 있던 문제를 수정했습니다.
+
 ## [1.0.1] - 2026-07-08
 
 ### Added

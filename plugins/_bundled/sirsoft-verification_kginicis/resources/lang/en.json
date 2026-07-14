@@ -20,7 +20,7 @@
         "live_mode_warning_body": "Live mode performs verification with your real merchant MID. Enter your Live MID and API key before going live.",
         "section_live_keys": "Live Credentials",
         "live_mid": "Live MID",
-        "live_mid_hint": "Inicis live merchant MIDs start with SRA (e.g., SRA1234567). Required before switching to Live mode.",
+        "live_mid_hint": "Inicis live merchant MIDs start with SRB (e.g., SRB1234567). Required before switching to Live mode.",
         "live_api_key": "Live API Key",
         "section": {
             "duplicate_field": "Duplicate Check Basis"

@@ -481,6 +481,7 @@
       },
       "children": [
         {
+          "id": "advanced_filters_toggle",
           "type": "basic",
           "name": "Button",
           "props": {

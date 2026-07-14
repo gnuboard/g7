@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Storage;
 use Plugins\Sirsoft\VerificationKginicis\Plugin;
 use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
 
@@ -219,9 +220,11 @@ class InicisLiveModeSettingsValidationTest extends PluginTestCase
         ])->assertStatus(200);
 
         // 저장 파일에 평문이 남지 않아야 한다 (sensitive 암호화).
-        $settingsPath = storage_path('app/plugins/'.self::IDENTIFIER.'/settings/setting.json');
-        $this->assertFileExists($settingsPath);
-        $raw = file_get_contents($settingsPath);
+        // PluginTestCase 가 'plugins' 디스크를 임시 디렉토리로 격리하므로 실제 storage_path 를
+        // 하드코딩하지 않고 격리된 디스크를 통해 파일을 확인한다.
+        $settingsFile = self::IDENTIFIER.'/settings/setting.json';
+        $this->assertTrue(Storage::disk('plugins')->exists($settingsFile));
+        $raw = Storage::disk('plugins')->get($settingsFile);
         $this->assertStringNotContainsString('live-secret-key', $raw);
 
         // 복호화 왕복은 원문과 일치해야 한다.

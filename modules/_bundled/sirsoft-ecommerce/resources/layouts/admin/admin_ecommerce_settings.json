@@ -56,6 +56,7 @@
       "type": "api",
       "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings/seo-cache-info",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'seo'}}",
       "auto_fetch": true,
       "auth_required": true
     },
@@ -65,6 +66,7 @@
       "type": "api",
       "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'shipping'}}",
       "auto_fetch": true,
       "auth_required": true,
       "errorHandling": {
@@ -82,6 +84,7 @@
       "type": "api",
       "endpoint": "/api/admin/notification-definitions?extension_type=module&extension_identifier=sirsoft-ecommerce",
       "method": "GET",
+      "if": "{{['notification_definitions', 'mileage'].includes(query.tab || _global.activeEcommerceSettingsTab || 'basic_info')}}",
       "auto_fetch": true,
       "auth_required": true,
       "params": {
@@ -117,6 +120,7 @@
       "type": "api",
       "endpoint": "/api/admin/notification-channels",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'notification_definitions'}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {
@@ -131,6 +135,7 @@
       "type": "api",
       "endpoint": "/api/admin/identity/policies",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
       "auto_fetch": true,
       "auth_required": true,
       "params": {
@@ -155,6 +160,7 @@
       "type": "api",
       "endpoint": "/api/identity/purposes",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {
@@ -167,6 +173,7 @@
       "type": "api",
       "endpoint": "/api/admin/identity/providers",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {

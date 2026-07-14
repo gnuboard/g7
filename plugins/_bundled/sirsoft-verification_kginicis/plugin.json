@@ -5,7 +5,7 @@
         "ko": "KG이니시스 본인인증",
         "en": "KG Inicis Identity Verification"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "description": {
         "ko": "KG이니시스 통합인증의 본인확인(reqSvcCd=03)을 G7 코어 IDV 인프라에 Provider 로 등록하는 플러그인",

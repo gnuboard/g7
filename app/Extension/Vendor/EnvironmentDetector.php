@@ -71,7 +71,7 @@ class EnvironmentDetector
      *           → PATH 검색 → composer.phar
      *
      * @param  string|null  $hint  바이너리 경로 힌트 (null 이면 config/ENV/PATH 순으로 자동 탐색)
-     * @return string|null  발견된 composer 바이너리 경로. 없으면 null
+     * @return string|null 발견된 composer 바이너리 경로. 없으면 null
      */
     public function findComposerBinary(?string $hint = null): ?string
     {
@@ -120,7 +120,7 @@ class EnvironmentDetector
      * proc_open 사용 가능 + composer 바이너리 발견 + `composer --version` 종료 코드 0.
      *
      * @param  string|null  $hint  composer 바이너리 경로 힌트 (캐시 우회용)
-     * @return bool  composer 가 현재 환경에서 실행 가능한지 여부
+     * @return bool composer 가 현재 환경에서 실행 가능한지 여부
      */
     public function canExecuteComposer(?string $hint = null): bool
     {
@@ -178,7 +178,7 @@ class EnvironmentDetector
      * 지정 경로에 쓰기 가능한지 확인.
      *
      * @param  string  $targetPath  vendor 디렉토리 경로 (존재하지 않아도 부모 디렉토리 쓰기 권한 검사)
-     * @return bool  부모 디렉토리가 존재하고 쓰기 가능한지 여부
+     * @return bool 부모 디렉토리가 존재하고 쓰기 가능한지 여부
      */
     public function canWriteVendor(string $targetPath): bool
     {
@@ -254,9 +254,15 @@ class EnvironmentDetector
     /**
      * composer 실행 명령 문자열 구성.
      *
-     * @param  array<int, string>  $args
+     * 반환된 문자열은 `proc_open(..., ['bypass_shell' => true])` 와 함께 사용해야 한다.
+     * Windows 에서 `bypass_shell` 없이 실행하면 `cmd.exe` 가 따옴표로 시작하는 `.bat`
+     * 경로의 앞뒤 따옴표를 벗겨 첫 인자(`install` 등)를 실행 파일로 오인한다.
+     *
+     * @param  string  $binary  composer 바이너리 경로 (findComposerBinary 반환값)
+     * @param  array<int, string>  $args  composer 하위 명령과 옵션 (예: ['install', '--no-dev'])
+     * @return string proc_open 에 넘길 실행 명령 문자열
      */
-    private function buildComposerCommand(string $binary, array $args): string
+    public function buildComposerCommand(string $binary, array $args): string
     {
         $escaped = array_map('escapeshellarg', $args);
 

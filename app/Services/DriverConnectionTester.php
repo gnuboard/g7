@@ -2,8 +2,13 @@
 
 namespace App\Services;
 
+use App\Support\OutboundUrlValidator;
+use Aws\S3\Exception\S3Exception;
+use Aws\S3\S3Client;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Predis\Client;
 
 /**
  * 드라이버 연결 테스트 서비스
@@ -89,7 +94,7 @@ class DriverConnectionTester
             }
 
             // AWS SDK가 설치되어 있는지 확인
-            if (! class_exists(\Aws\S3\S3Client::class)) {
+            if (! class_exists(S3Client::class)) {
                 return [
                     'success' => false,
                     'message' => __('settings.s3_sdk_missing'),
@@ -98,7 +103,7 @@ class DriverConnectionTester
 
             $startTime = microtime(true);
 
-            $client = new \Aws\S3\S3Client([
+            $client = new S3Client([
                 'version' => 'latest',
                 'region' => $region,
                 'credentials' => [
@@ -121,7 +126,7 @@ class DriverConnectionTester
                 'message' => __('settings.s3_test_success'),
                 'latency' => $latency.'ms',
             ];
-        } catch (\Aws\S3\Exception\S3Exception $e) {
+        } catch (S3Exception $e) {
             $errorMessage = match ($e->getAwsErrorCode()) {
                 'NoSuchBucket' => __('settings.s3_bucket_not_found'),
                 'AccessDenied' => __('settings.s3_access_denied'),
@@ -165,7 +170,7 @@ class DriverConnectionTester
             // PHP Redis 확장 확인
             if (! extension_loaded('redis')) {
                 // Predis 사용 시도
-                if (! class_exists(\Predis\Client::class)) {
+                if (! class_exists(Client::class)) {
                     return [
                         'success' => false,
                         'message' => __('settings.redis_extension_missing'),
@@ -177,7 +182,7 @@ class DriverConnectionTester
 
             $startTime = microtime(true);
 
-            $redis = new \Redis();
+            $redis = new \Redis;
             $connected = @$redis->connect($host, $port, 3.0);
 
             if (! $connected) {
@@ -259,7 +264,7 @@ class DriverConnectionTester
                 $options['password'] = $password;
             }
 
-            $client = new \Predis\Client($options);
+            $client = new Client($options);
             $pong = $client->ping();
 
             if ($pong->getPayload() !== 'PONG') {
@@ -307,7 +312,7 @@ class DriverConnectionTester
 
             $startTime = microtime(true);
 
-            $memcached = new \Memcached();
+            $memcached = new \Memcached;
             $memcached->setOption(\Memcached::OPT_CONNECT_TIMEOUT, 3000);
             $memcached->addServer($host, $port);
 
@@ -376,6 +381,17 @@ class DriverConnectionTester
             // Reverb 서버 상태 확인 (기본 HTTP 엔드포인트)
             $url = sprintf('%s://%s:%d', $scheme, $host, $port);
 
+            // Reverb 는 통상 localhost·사내 IP 에서 동작하므로 사설 주소 자체는 정상 구성이다.
+            // 다만 이 진단 요청을 임의 목적지 탐색에 전용하지 못하도록, 정상 설정에서는 나올 수
+            // 없는 값(userinfo 위장, http/https 이외 scheme, 제어문자 주입)은 거부한다.
+            if (! OutboundUrlValidator::isStructurallySafeUrl($url, ['schemes' => ['http', 'https']])) {
+                return [
+                    'success' => false,
+                    'message' => __('settings.websocket_test_failed'),
+                    'error' => __('settings.websocket_invalid_host'),
+                ];
+            }
+
             $startTime = microtime(true);
 
             // HTTP 요청으로 서버 응답 확인
@@ -402,7 +418,7 @@ class DriverConnectionTester
                 'message' => __('settings.websocket_test_failed'),
                 'error' => "HTTP {$response->status()}",
             ];
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             return [
                 'success' => false,
                 'message' => __('settings.websocket_connection_refused'),

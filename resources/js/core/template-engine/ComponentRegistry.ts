@@ -12,6 +12,7 @@
 
 import React, { type ComponentType } from 'react';
 import { createLogger } from '../utils/Logger';
+import { fetchWithRetry } from './networkResilience';
 
 const logger = createLogger('ComponentRegistry');
 
@@ -244,8 +245,10 @@ export class ComponentRegistry {
       }
 
       // 캐시 미스 - API에서 로드
+      // 네트워크 일시 실패(응답 없음)에만 재시도. HTTP 에러는 아래 !ok 분기가 종전대로 처리.
+      // @since engine-v1.53.0
       const manifestUrl = `/api/templates/${this.templateId}/components.json`;
-      const response = await fetch(manifestUrl);
+      const response = await fetchWithRetry(manifestUrl, { label: 'components.json' });
 
       if (!response.ok) {
         throw new ComponentRegistryError(

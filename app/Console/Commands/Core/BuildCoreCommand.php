@@ -94,9 +94,12 @@ class BuildCoreCommand extends Command
             return $this->runWatchBundles($projectPath);
         }
 
+        // 3개 번들을 npm 스크립트로 순차 호출하므로 빌드 환경변수를 세 곳 모두에 주입한다.
+        $buildEnv = $this->buildEnv($productionMode);
+
         // ── 1) 템플릿 엔진 번들 (편집기 코드 제외) ──────────────────────────────
         $this->info('🔨 코어 빌드 시작 (템플릿 엔진)'.($productionMode ? ' (프로덕션)' : ''));
-        $engineResult = $this->runNpmCommand(['npm', 'run', 'build:core'], $projectPath, true);
+        $engineResult = $this->runNpmCommand(['npm', 'run', 'build:core'], $projectPath, true, $buildEnv);
 
         if ($engineResult !== Command::SUCCESS) {
             return $engineResult;
@@ -104,7 +107,7 @@ class BuildCoreCommand extends Command
 
         // ── 2) 레이아웃 편집기 번들 (lazy, /admin/layout-editor/* 진입 시 로드) ──
         $this->info('🔨 코어 빌드 시작 (레이아웃 편집기)'.($productionMode ? ' (프로덕션)' : ''));
-        $editorResult = $this->runNpmCommand(['npm', 'run', 'build:core-editor'], $projectPath, true);
+        $editorResult = $this->runNpmCommand(['npm', 'run', 'build:core-editor'], $projectPath, true, $buildEnv);
 
         if ($editorResult !== Command::SUCCESS) {
             $this->error('❌ 레이아웃 편집기 번들 빌드 실패');
@@ -114,7 +117,7 @@ class BuildCoreCommand extends Command
 
         // ── 3) DevTools 번들 (lazy, 디버그 모드에서만 로드) ──
         $this->info('🔨 코어 빌드 시작 (DevTools)'.($productionMode ? ' (프로덕션)' : ''));
-        $devtoolsResult = $this->runNpmCommand(['npm', 'run', 'build:core-devtools'], $projectPath, true);
+        $devtoolsResult = $this->runNpmCommand(['npm', 'run', 'build:core-devtools'], $projectPath, true, $buildEnv);
 
         if ($devtoolsResult !== Command::SUCCESS) {
             $this->error('❌ DevTools 번들 빌드 실패');
@@ -197,7 +200,13 @@ class BuildCoreCommand extends Command
             $this->info('🔨 코어 빌드 시작 (전체)'.($productionMode ? ' (프로덕션)' : ''));
         }
 
-        $result = $this->runNpmCommand($buildCommand, $projectPath, ! $watchMode);
+        // 감시 모드에는 소스맵 억제를 주입하지 않는다 — 개발 중 디버깅 필요
+        $result = $this->runNpmCommand(
+            $buildCommand,
+            $projectPath,
+            ! $watchMode,
+            $watchMode ? [] : $this->buildEnv($productionMode)
+        );
 
         if ($result === Command::SUCCESS && ! $watchMode) {
             $this->info('✅ 코어 빌드 완료 (전체)');
@@ -312,14 +321,29 @@ class BuildCoreCommand extends Command
     }
 
     /**
+     * 빌드 프로세스에 주입할 환경변수를 구성합니다.
+     *
+     * 프로덕션 빌드에서는 소스맵을 생성하지 않습니다. 배포 산출물에 원본 코드가
+     * 포함되는 것을 막기 위함이며, 각 vite config 가 이 값을 읽습니다.
+     *
+     * @param  bool  $productionMode  프로덕션 빌드 여부
+     * @return array<string, string> Process 에 주입할 환경변수
+     */
+    private function buildEnv(bool $productionMode): array
+    {
+        return $productionMode ? ['G7_BUILD_SOURCEMAP' => '0'] : [];
+    }
+
+    /**
      * npm 명령 실행
      *
      * @param  array  $command  실행할 명령
      * @param  string  $cwd  작업 디렉토리
      * @param  bool  $waitForCompletion  완료 대기 여부
+     * @param  array<string, string>  $env  추가로 주입할 환경변수 (부모 환경에 병합됨)
      * @return int 명령 실행 결과 코드
      */
-    private function runNpmCommand(array $command, string $cwd, bool $waitForCompletion = true): int
+    private function runNpmCommand(array $command, string $cwd, bool $waitForCompletion = true, array $env = []): int
     {
         // Windows 환경에서는 cmd /c 사용
         if (PHP_OS_FAMILY === 'Windows') {
@@ -328,6 +352,11 @@ class BuildCoreCommand extends Command
 
         $process = new Process($command);
         $process->setWorkingDirectory($cwd);
+
+        // Symfony Process 는 지정한 env 를 부모 환경에 병합하므로(PATH 등 유지) 추가분만 넘긴다.
+        if ($env !== []) {
+            $process->setEnv($env);
+        }
         $process->setTimeout(null); // 타임아웃 없음
 
         if ($waitForCompletion) {

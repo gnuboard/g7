@@ -249,6 +249,14 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
             $appKey = generateAppKeyInline();
         }
 
+        // state.config 에는 더 이상 비밀번호가 기록되지 않으므로(이슈 #465), 세션이 유실된
+        // 재개/재시도 경로에서는 기존 runtime.php 의 값을 보존해야 한다. app.key 보존과
+        // 동일한 패턴.
+        $writePassword = (string) ($stateConfig['db_write_password'] ?? ($stateConfig['db_password'] ?? ''));
+        if ($writePassword === '') {
+            $writePassword = (string) ($existing['db']['write']['password'] ?? '');
+        }
+
         $runtime = [
             'db' => [
                 'write' => [
@@ -256,7 +264,7 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
                     'port' => $stateConfig['db_write_port'] ?? ($stateConfig['db_port'] ?? '3306'),
                     'database' => $stateConfig['db_write_database'] ?? ($stateConfig['db_database'] ?? ''),
                     'username' => $stateConfig['db_write_username'] ?? ($stateConfig['db_username'] ?? ''),
-                    'password' => $stateConfig['db_write_password'] ?? ($stateConfig['db_password'] ?? ''),
+                    'password' => $writePassword,
                 ],
                 'prefix' => $stateConfig['db_prefix'] ?? '',
             ],
@@ -266,6 +274,13 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
             'created_at' => date('c'),
         ];
 
+        // admin 비밀번호는 db_seed 가 소비할 때까지 runtime 에 보존한다. 호출자
+        // (install-process.php) 가 세션 값으로 덮어쓰는 경우를 제외하면, 재시도/재개 시
+        // 기존 runtime 의 값이 유실되지 않아야 한다 (유실 시 db_seed 재실행 불가).
+        if (isset($existing['admin']) && is_array($existing['admin'])) {
+            $runtime['admin'] = $existing['admin'];
+        }
+
         // Read 커넥션은 use_read_db 플래그가 켜진 경우에만 포함한다 (판정 SSoT).
         // 플래그가 꺼져 있으면 db_read_host 에 잔존 값이 있어도 무시 → runtime 에 read 키
         // 미생성 → 하류(mergeRuntimeIntoEnv / InstallerRuntimeServiceProvider)가 write 로
@@ -273,15 +288,65 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
         if (! empty($stateConfig['use_read_db'])
             && ! empty($stateConfig['db_read_host'])
             && $stateConfig['db_read_host'] !== ($stateConfig['db_write_host'] ?? null)) {
+            // read 비밀번호 폴백 순서: state.config → 기존 runtime 의 read 비밀번호 →
+            // write 비밀번호. 기존 runtime 을 건너뛰고 write 값으로 대체하면 read 전용
+            // 계정의 비밀번호가 write 값으로 오염된다 (이슈 #465 부수 수정).
+            $readPassword = (string) ($stateConfig['db_read_password'] ?? '');
+            if ($readPassword === '') {
+                $readPassword = (string) ($existing['db']['read']['password'] ?? '');
+            }
+            if ($readPassword === '') {
+                $readPassword = (string) $runtime['db']['write']['password'];
+            }
+
             $runtime['db']['read'] = [
                 'host' => $stateConfig['db_read_host'],
                 'port' => $stateConfig['db_read_port'] ?? $runtime['db']['write']['port'],
                 'database' => $stateConfig['db_read_database'] ?? $runtime['db']['write']['database'],
                 'username' => $stateConfig['db_read_username'] ?? $runtime['db']['write']['username'],
-                'password' => $stateConfig['db_read_password'] ?? $runtime['db']['write']['password'],
+                'password' => $readPassword,
             ];
         }
 
         return $runtime;
+    }
+}
+
+if (! function_exists('hydrateDbSecretsFromRuntime')) {
+    /**
+     * state.config 에서 제거된 DB 비밀번호를 runtime.php 값으로 채운다 (이슈 #465).
+     *
+     * state.json 은 더 이상 DB 비밀번호를 보관하지 않으므로, state.config 로 DB 에
+     * 접속하던 소비처(db_cleanup / 롤백 seed truncate) 는 이 헬퍼로 자격증명을 복원해야
+     * 한다. 두 소비처 모두 env_update 태스크 이후에 실행되므로 runtime.php 는 항상 존재.
+     *
+     * runtime 부재 또는 config 에 이미 비밀번호가 있으면 원본을 그대로 반환.
+     *
+     * @param  array<string, mixed>  $config  state.config (비밀번호 결손 가능)
+     * @return array<string, mixed> DB 비밀번호가 복원된 config
+     */
+    function hydrateDbSecretsFromRuntime(array $config): array
+    {
+        $runtime = readInstallerRuntime();
+
+        if ($runtime === null) {
+            return $config;
+        }
+
+        if (empty($config['db_write_password'])) {
+            $writePassword = $runtime['db']['write']['password'] ?? '';
+            if ($writePassword !== '') {
+                $config['db_write_password'] = $writePassword;
+            }
+        }
+
+        if (empty($config['db_read_password'])) {
+            $readPassword = $runtime['db']['read']['password'] ?? '';
+            if ($readPassword !== '') {
+                $config['db_read_password'] = $readPassword;
+            }
+        }
+
+        return $config;
     }
 }

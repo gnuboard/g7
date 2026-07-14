@@ -12,9 +12,9 @@ return [
 
     'settings' => [
         'test_mode' => 'Test Mode',
-        'live_mid' => 'Live MID (SRA prefix)',
+        'live_mid' => 'Live MID (SRB prefix)',
         'live_api_key' => 'Live API Key',
-        // Short field labels for validation error messages (without "(SRA prefix)" hint).
+        // Short field labels for validation error messages (without "(SRB prefix)" hint).
         'live_mid_attribute' => 'Live MID',
         'live_api_key_attribute' => 'Live API Key',
         'duplicate_field' => 'Duplicate Identifier',

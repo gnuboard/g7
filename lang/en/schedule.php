@@ -28,6 +28,9 @@ return [
     'copy' => 'Copy',
     'shell_command_failed' => 'Shell command execution failed.',
     'http_request_failed' => 'HTTP request failed with status: :status',
+    'url_not_public' => 'Internal network addresses (private IPs, localhost, etc.) cannot be called. To call an address inside your network, enable "Allow internal network addresses" under Settings > Security.',
+    'shell_not_allowed' => 'This shell command is not allowed. Only executables registered on the server can be run as a schedule.',
+    'artisan_not_allowed' => 'This Artisan command cannot be run as a schedule for security reasons.',
 
     // Task types
     'type' => [

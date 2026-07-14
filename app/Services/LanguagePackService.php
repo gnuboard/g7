@@ -6,6 +6,7 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
+use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\GithubHelper;
@@ -16,6 +17,7 @@ use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackBaseLocales;
 use App\Services\LanguagePack\LanguagePackManifestValidator;
 use App\Services\LanguagePack\LanguagePackRegistry;
+use App\Support\OutboundUrlValidator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -25,7 +27,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use App\Exceptions\LanguagePackOperationException;
 use RuntimeException;
 use Throwable;
 
@@ -340,7 +341,6 @@ class LanguagePackService
      *
      * @param  LanguagePack  $pack  가상 행
      * @param  array<string, mixed>  $filters  필터
-     * @return bool
      */
     private function matchesBuiltInFilters(LanguagePack $pack, array $filters): bool
     {
@@ -600,7 +600,7 @@ class LanguagePackService
             ZipInstallHelper::extractZip($zipPath, $extractPath);
 
             return $this->finalizeInstall($extractPath, 'zip', $file->getClientOriginalName(), $autoActivate, $installedBy);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->cleanupPending($extractPath);
             throw $e;
         }
@@ -632,7 +632,7 @@ class LanguagePackService
             ZipInstallHelper::extractZip($zipPath, $extractPath);
 
             return $this->finalizeInstall($extractPath, 'github', $githubUrl, $autoActivate, $installedBy, $force);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->cleanupPending($extractPath);
             File::deleteDirectory($tempPath);
             throw $e;
@@ -653,6 +653,11 @@ class LanguagePackService
      */
     public function installFromUrl(string $url, ?string $checksum, bool $autoActivate = false, ?int $installedBy = null, bool $force = false): LanguagePack
     {
+        // 서버가 이 URL 을 대신 내려받으므로, 내부 네트워크 주소가 목적지가 되지 않도록 차단한다.
+        if (! OutboundUrlValidator::isPublicHttpUrl($url)) {
+            throw new LanguagePackOperationException('language_packs.errors.download_url_not_public');
+        }
+
         $this->assertInstallDirectoriesWritable();
 
         $tempId = (string) Str::uuid();
@@ -679,7 +684,7 @@ class LanguagePackService
             ZipInstallHelper::extractZip($zipPath, $extractPath);
 
             return $this->finalizeInstall($extractPath, 'url', $url, $autoActivate, $installedBy, $force);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->cleanupPending($extractPath);
             File::deleteDirectory($tempPath);
             throw $e;
@@ -718,7 +723,7 @@ class LanguagePackService
             File::copyDirectory($bundledPath, $extractPath);
 
             return $this->finalizeInstall($extractPath, 'bundled', $identifier, $autoActivate, $installedBy, $force);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->cleanupPending($extractPath);
             throw $e;
         }
@@ -901,6 +906,7 @@ class LanguagePackService
             $pack = $this->repository->findById((int) $id);
             if (! $pack) {
                 $failed[] = ['id' => $id, 'reason' => 'not_found'];
+
                 continue;
             }
             try {
@@ -955,7 +961,6 @@ class LanguagePackService
      *
      * @param  LanguagePack  $pack  대상 언어팩
      * @param  bool  $cascade  코어 제거 시 하위(module/plugin/template) 동일 locale 팩도 함께 제거
-     * @return void
      */
     public function uninstall(LanguagePack $pack, bool $cascade = false): void
     {
@@ -1000,7 +1005,6 @@ class LanguagePackService
      * 슬롯 비활성화 후 다음 후보를 active 로 승격합니다.
      *
      * @param  LanguagePack  $pack  방금 비활성화된 언어팩
-     * @return void
      */
     private function promoteSlotSuccessor(LanguagePack $pack): void
     {
@@ -1056,7 +1060,6 @@ class LanguagePackService
      *
      * @param  string  $packageRoot  패키지 루트 디렉토리
      * @param  array<string, mixed>  $manifest  manifest 데이터
-     * @return void
      *
      * @throws RuntimeException 보안 위반 발견 시
      */
@@ -1103,7 +1106,6 @@ class LanguagePackService
      * 모듈/플러그인/템플릿 install 과 동일 수준의 가드 — 권한 부족 시 chmod 안내 메시지가
      * 포함된 `RuntimeException` 을 던집니다. 컨트롤러는 본 예외를 422 응답으로 변환합니다.
      *
-     * @return void
      *
      * @throws RuntimeException 디렉토리 미존재/쓰기 불가 시
      */
@@ -1126,7 +1128,6 @@ class LanguagePackService
      * 의존성 검증 — depends_on_core_locale 이 true 면 코어 언어팩 active 여부 확인.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
-     * @return void
      *
      * @throws RuntimeException 의존성 미충족 시
      */
@@ -1146,7 +1147,6 @@ class LanguagePackService
      * 모듈/플러그인 시스템과 동일한 강도로 — 비활성 확장에도 언어팩이 들러붙지 않게 차단합니다.
      *
      * @param  array<string, mixed>  $manifest  manifest 데이터
-     * @return void
      *
      * @throws RuntimeException 대상 확장 미설치/비활성 시
      */
@@ -1256,7 +1256,6 @@ class LanguagePackService
      *
      * @param  LanguagePack  $existing  기존 언어팩
      * @param  array<string, mixed>  $manifest  새 manifest
-     * @return void
      *
      * @throws RuntimeException 다운그레이드 시도 시
      */
@@ -1301,7 +1300,6 @@ class LanguagePackService
      * _pending 임시 디렉토리를 정리합니다.
      *
      * @param  string  $path  정리 대상 경로
-     * @return void
      */
     private function cleanupPending(string $path): void
     {
@@ -1309,7 +1307,7 @@ class LanguagePackService
             if (File::isDirectory($path)) {
                 File::deleteDirectory($path);
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('lang-pack pending cleanup failed', ['path' => $path, 'error' => $e->getMessage()]);
         }
     }
@@ -1421,17 +1419,31 @@ class LanguagePackService
         $manifest = $pack->manifest;
         if (is_array($manifest)) {
             $manifestUrl = $manifest['github_url'] ?? null;
-            if (is_string($manifestUrl) && Str::startsWith($manifestUrl, 'https://github.com/')) {
+            if (is_string($manifestUrl) && self::isGithubUrl($manifestUrl)) {
                 return $manifestUrl;
             }
         }
 
         $sourceUrl = (string) $pack->source_url;
-        if (Str::startsWith($sourceUrl, 'https://github.com/')) {
+        if (self::isGithubUrl($sourceUrl)) {
             return $sourceUrl;
         }
 
         return null;
+    }
+
+    /**
+     * URL 이 실제 GitHub host 를 가리키는지 판정합니다.
+     *
+     * 접두사 매칭은 `https://github.com@evil.example/` 같은 userinfo 위장을 통과시키므로
+     * host 를 완전 일치로 검증합니다.
+     *
+     * @param  string  $url  판정 대상 URL
+     * @return bool GitHub URL 이면 true
+     */
+    private static function isGithubUrl(string $url): bool
+    {
+        return OutboundUrlValidator::isHostAllowed($url, ['github.com', 'www.github.com']);
     }
 
     /**

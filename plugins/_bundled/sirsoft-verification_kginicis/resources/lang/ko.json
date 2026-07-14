@@ -20,7 +20,7 @@
         "live_mode_warning_body": "라이브 모드는 실제 가맹점 MID 로 본인인증을 수행합니다. 라이브 MID 와 API 키를 입력한 뒤 운영하세요.",
         "section_live_keys": "라이브 자격증명",
         "live_mid": "라이브 MID",
-        "live_mid_hint": "이니시스 라이브 가맹점 MID 는 SRA 로 시작합니다 (예: SRA1234567). 운영 모드 사용 전 필수 입력.",
+        "live_mid_hint": "이니시스 라이브 가맹점 MID 는 SRB 로 시작합니다 (예: SRB1234567). 운영 모드 사용 전 필수 입력.",
         "live_api_key": "라이브 API 키",
         "section": {
             "duplicate_field": "동일인 식별"

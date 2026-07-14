@@ -114,7 +114,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 
         {/* 액션 버튼 또는 children */}
         {children ? (
-          <Div className="page-actions">{children}</Div>
+          <Div className="flex-center page-actions">{children}</Div>
         ) : actions && actions.length > 0 ? (
           <Div className="page-actions">
             {actions.map((action) => (

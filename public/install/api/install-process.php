@@ -7,15 +7,21 @@
  * 실제 설치 작업은 install-worker.php가 SSE를 통해 실행합니다.
  *
  * @method POST
+ *
  * @response JSON {"status": "started", "message": "설치가 시작되었습니다"}
  */
 
 // 필수 파일 포함 (config.php가 BASE_PATH를 정의함)
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/session.php';
-require_once __DIR__ . '/../includes/installer-state.php';
-require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/_guard.php';
+require_once __DIR__.'/../includes/config.php';
+require_once __DIR__.'/../includes/session.php';
+require_once __DIR__.'/../includes/installer-state.php';
+// functions.php 를 installer-runtime.php 보다 먼저 로드한다 — 다른 인스톨러
+// 엔드포인트(finalize-env.php / task-runner.php)와 동일한 순서.
+// installer-runtime.php 는 escapeEnvValue() 를 function_exists 가드와 함께
+// polyfill 로 선언하므로, functions.php 가 먼저 와야 그 가드가 제 역할을 한다.
+require_once __DIR__.'/../includes/functions.php';
+require_once __DIR__.'/../includes/installer-runtime.php';
+require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
 // 다국어 로드
@@ -74,7 +80,6 @@ try {
         'app_url',
         'admin_name',
         'admin_email',
-        'admin_password',
     ];
 
     $missingFields = [];
@@ -84,7 +89,24 @@ try {
         }
     }
 
-    if (!empty($missingFields)) {
+    /**
+     * admin_password 는 state.config 에 기록되지 않으므로(이슈 #465) 3중 출처로 판정한다.
+     *
+     *  1. 세션 config — 일반 경로 (Step 3 입력 직후)
+     *  2. runtime.php 의 admin 섹션 — 세션 유실 후 재시도/재개
+     *  3. db_seed 완료 마커 — 이미 관리자 계정이 생성되어 비밀번호가 더 이상 불필요
+     *
+     * 셋 다 없으면 Step 3 재입력이 필요한 상태 (의도된 안전 실패).
+     */
+    $hasAdminPassword = ! empty($config['admin_password'])
+        || ! empty(readInstallerRuntime()['admin']['password'] ?? '')
+        || in_array('db_seed', getInstallationState()['completed_tasks'] ?? [], true);
+
+    if (! $hasAdminPassword) {
+        $missingFields[] = 'admin_password';
+    }
+
+    if (! empty($missingFields)) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
@@ -97,11 +119,11 @@ try {
      * 필수 파일 존재 여부 사전 체크
      */
     $missingRequiredFiles = [];
-    if (!file_exists(BASE_PATH . '/.env')) {
+    if (! file_exists(BASE_PATH.'/.env')) {
         $missingRequiredFiles[] = '.env';
     }
 
-    if (!empty($missingRequiredFiles)) {
+    if (! empty($missingRequiredFiles)) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
@@ -124,7 +146,7 @@ try {
      */
     $requestBody = [];
     $rawInput = file_get_contents('php://input');
-    if (!empty($rawInput)) {
+    if (! empty($rawInput)) {
         $decoded = json_decode($rawInput, true);
         if (is_array($decoded)) {
             $requestBody = $decoded;
@@ -134,7 +156,7 @@ try {
     $installationMode = $requestBody['installation_mode']
         ?? $_POST['installation_mode']
         ?? 'sse';
-    if (!in_array($installationMode, ['sse', 'polling'], true)) {
+    if (! in_array($installationMode, ['sse', 'polling'], true)) {
         $installationMode = 'sse';
     }
 
@@ -146,7 +168,7 @@ try {
     $existingDbAction = $requestBody['existing_db_action']
         ?? $_POST['existing_db_action']
         ?? 'skip';
-    if (!in_array($existingDbAction, ['skip', 'drop_tables'], true)) {
+    if (! in_array($existingDbAction, ['skip', 'drop_tables'], true)) {
         $existingDbAction = 'skip';
     }
 
@@ -166,11 +188,30 @@ try {
     $isRetry = isset($state['installation_status']) &&
                in_array($state['installation_status'], ['running', 'failed', 'aborted']);
 
+    /**
+     * 비밀 채널 일원화 (이슈 #465)
+     *
+     * DB/관리자 비밀번호는 state.json(0664, 실패 시 무기한 잔존) 이 아니라
+     * storage/installer/runtime.php(0600, finalize 시 삭제) 로만 전달한다.
+     * SSE 워커는 세션에 접근할 수 없으므로 파일 경유가 불가피하며, 세션을 보유한
+     * 유일한 공통 시작점인 본 엔드포인트가 이송 지점이다 (SSE/폴링 공통, 재시도 포함).
+     *
+     * buildInstallerRuntimeFromState() 가 기존 runtime 의 비밀번호/APP_KEY 를 보존하므로
+     * 세션 유실 후 재개 시에도 자격증명이 유지된다.
+     */
+    $runtime = buildInstallerRuntimeFromState($config);
+    if (! empty($config['admin_password'])) {
+        $runtime['admin'] = ['password' => $config['admin_password']];
+    }
+    if (! writeInstallerRuntime($runtime)) {
+        throw new Exception(lang('state_save_failed'));
+    }
+
     $state['current_step'] = 5;  // Step 5 = Installation (Step 4 = Extension Selection)
     $state['installation_status'] = 'running';
     $state['completed_tasks'] = $isRetry ? ($state['completed_tasks'] ?? []) : [];
     $state['current_task'] = null;
-    $state['config'] = $config;
+    $state['config'] = sanitizeConfigForState($config);
     $state['error'] = null;
     $state['installation_mode'] = $installationMode;
 
@@ -185,8 +226,8 @@ try {
      * Step 4 -> Step 5로 새로 진입하는 경우 이전 로그를 초기화합니다.
      * 재시도/재개인 경우에는 기존 로그를 유지합니다.
      */
-    if (!$isRetry) {
-        $logFilePath = BASE_PATH . '/storage/logs/installation.log';
+    if (! $isRetry) {
+        $logFilePath = BASE_PATH.'/storage/logs/installation.log';
         if (file_exists($logFilePath)) {
             @unlink($logFilePath);
         }
@@ -197,7 +238,7 @@ try {
      */
     $saved = saveInstallationState($state);
 
-    if (!$saved) {
+    if (! $saved) {
         throw new Exception(lang('state_save_failed'));
     }
 
@@ -263,7 +304,7 @@ try {
         // 응답 헤더 — 브라우저가 응답 완료를 인식하도록 Content-Length + Connection: close
         http_response_code(200);
         header('Content-Type: application/json; charset=UTF-8');
-        header('Content-Length: ' . strlen($responseJson));
+        header('Content-Length: '.strlen($responseJson));
         header('Connection: close');
 
         echo $responseJson;
@@ -290,7 +331,7 @@ try {
         error_reporting(E_ALL);
 
         addLog('=== Install Worker Polling Started ===');
-        addLog('Client IP: ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+        addLog('Client IP: '.($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
 
         // 클라이언트가 SSE 호환성 사전 체크 후 폴링 모드를 명시 선택한 흐름이다.
         // SSE 워커가 동시 실행되지 않으므로 takeover 로직 불필요 — 일반 lock 획득.
@@ -301,13 +342,13 @@ try {
         }
 
         $workerId = $lockResult['worker_id'];
-        addLog('Worker lock acquired: ' . $workerId . ' (reason: ' . $lockResult['reason'] . ')');
+        addLog('Worker lock acquired: '.$workerId.' (reason: '.$lockResult['reason'].')');
 
         register_shutdown_function('releaseWorkerLock', $workerId);
 
         // 폴링 모드 — NullEmitter 등록 후 task runner 실행
-        require_once __DIR__ . '/../includes/progress-emitter.php';
-        require_once __DIR__ . '/../includes/task-runner.php';
+        require_once __DIR__.'/../includes/progress-emitter.php';
+        require_once __DIR__.'/../includes/task-runner.php';
 
         setProgressEmitter(new NullEmitter($workerId));
         runInstallationTasks();

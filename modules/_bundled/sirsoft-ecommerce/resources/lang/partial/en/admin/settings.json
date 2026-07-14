@@ -447,7 +447,9 @@
     "save_error": "Failed to save notification settings.",
     "types": {
       "order_confirmed": "Order Confirmed",
+      "order_pending_deposit": "Bank Transfer Payment Guide",
       "order_shipped": "Order Shipped",
+      "order_delivered": "Order Delivered",
       "order_completed": "Purchase Completed",
       "order_cancelled": "Order Cancelled",
       "new_order_admin": "New Order (Admin)",

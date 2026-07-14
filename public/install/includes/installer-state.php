@@ -146,6 +146,82 @@ function saveInstallationState(array $state): bool
     return true;
 }
 
+if (! function_exists('installerSecretConfigKeys')) {
+    /**
+     * state.json 에 절대 기록해서는 안 되는 config 비밀 키 목록.
+     *
+     * 이 키들의 값은 storage/installer/runtime.php (0600) 로만 전달한다.
+     * state.json 은 0664 라 웹 서버 그룹 전체가 읽을 수 있고, 설치 실패/중단 시
+     * 무기한 잔존하므로 평문 비밀의 보관처로 부적합하다 (이슈 #465).
+     *
+     * @return array<int, string> 비밀 config 키 목록
+     */
+    function installerSecretConfigKeys(): array
+    {
+        return [
+            'db_write_password',
+            'db_read_password',
+            'admin_password',
+            'admin_password_confirm',
+        ];
+    }
+}
+
+if (! function_exists('sanitizeConfigForState')) {
+    /**
+     * state.json 에 저장하기 전 config 배열을 정제한다.
+     *
+     * 1) 비밀 4종 제거 (이슈 #465)
+     * 2) use_read_db 미사용 시 read 접속 필드 잔존값 제거 (이슈 #63 2단계 방어)
+     *    — use_read_db=false 인데 db_read_host 등이 남아 있으면 하류
+     *      (installer-runtime.php) 로 유입되어 잘못된 read 커넥션을 만들 수 있다.
+     *
+     * @param  array<string, mixed>  $config  폼/세션에서 온 원본 config
+     * @return array<string, mixed> state 저장용 안전 config
+     */
+    function sanitizeConfigForState(array $config): array
+    {
+        foreach (installerSecretConfigKeys() as $secretKey) {
+            unset($config[$secretKey]);
+        }
+
+        if (empty($config['use_read_db'])) {
+            unset(
+                $config['db_read_host'],
+                $config['db_read_port'],
+                $config['db_read_database'],
+                $config['db_read_username']
+            );
+        }
+
+        return $config;
+    }
+}
+
+if (! function_exists('redactInstallationStateSecrets')) {
+    /**
+     * 이미 기록된 state 배열에서 비밀 4종만 제거한다 (레거시/실패 경로 방어).
+     *
+     * sanitizeConfigForState 와 달리 read 접속 필드(비밀 아님) 는 건드리지 않는다 —
+     * 롤백/db_cleanup 이 그 값을 사용하기 때문.
+     *
+     * @param  array<string, mixed>  $state  현재 인스톨러 state
+     * @return array<string, mixed> 비밀이 제거된 state
+     */
+    function redactInstallationStateSecrets(array $state): array
+    {
+        if (! isset($state['config']) || ! is_array($state['config'])) {
+            return $state;
+        }
+
+        foreach (installerSecretConfigKeys() as $secretKey) {
+            unset($state['config'][$secretKey]);
+        }
+
+        return $state;
+    }
+}
+
 /**
  * 설치 완료 여부 확인
  *

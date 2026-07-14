@@ -89,12 +89,11 @@
                         "children": [
                             {
                                 "id": "refresh_button",
-                                "type": "composite",
-                                "name": "IconButton",
+                                "type": "basic",
+                                "name": "Button",
                                 "props": {
-                                    "iconName": "refresh",
-                                    "variant": "outline",
-                                    "size": "md"
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:admin.roles.refresh"
                                 },
                                 "actions": [
                                     {
@@ -102,6 +101,17 @@
                                         "handler": "refetchDataSource",
                                         "params": {
                                             "dataSourceId": "roles"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "id": "refresh_icon",
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "size": "md"
                                         }
                                     }
                                 ]

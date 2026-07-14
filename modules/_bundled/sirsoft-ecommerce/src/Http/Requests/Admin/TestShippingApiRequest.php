@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
+use App\Rules\PublicOutboundUrl;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
@@ -34,7 +35,7 @@ class TestShippingApiRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'endpoint' => ['required', 'url', 'max:500'],
+            'endpoint' => ['required', 'url', 'max:500', new PublicOutboundUrl],
             'request_fields' => ['nullable', 'array'],
             'request_fields.*' => ['string', Rule::in(ShippingApiRequestField::values())],
 

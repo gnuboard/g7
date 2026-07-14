@@ -387,6 +387,9 @@ describe('유효기간 / 소멸 알림 카드', () => {
     expect(empty).toBeTruthy();
   });
 
+  // URL 갱신은 navigate + replace:true 로 수행한다 — updateQueryParams 를 거쳐야
+  // 데이터소스의 `if` 가 재평가되어 알림 탭 전용 소스가 로드된다.
+  // 가드: admin-ecommerce-settings-tab-scoped-datasources.test.tsx
   it('알림 설정으로 이동 버튼이 환경설정 알림 탭으로 전환한다', () => {
     const btn = findById(notificationCard, 'go_to_notification_settings');
     const seq = btn.actions[0];
@@ -394,6 +397,7 @@ describe('유효기간 / 소멸 알림 카드', () => {
     const navigate = seq.params.actions.find((a: any) => a.handler === 'navigate');
     expect(navigate.params.path).toBe('/admin/ecommerce/settings');
     expect(navigate.params.query.tab).toBe('notification_definitions');
+    expect(navigate.params.replace).toBe(true);
     const setGlobal = seq.params.actions.find((a: any) => a.handler === 'setState');
     expect(setGlobal.params.activeEcommerceSettingsTab).toBe('notification_definitions');
   });

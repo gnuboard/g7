@@ -82,7 +82,7 @@ class VendorBundler
      * 코어는 소스 = 출력 경로가 base_path() 로 동일합니다.
      *
      * @param  bool  $force  manifest 해시 일치 여부와 무관하게 강제 재빌드
-     * @return VendorBundleResult  번들 생성 결과 (zip 경로, manifest 경로, 패키지 수 등)
+     * @return VendorBundleResult 번들 생성 결과 (zip 경로, manifest 경로, 패키지 수 등)
      */
     public function buildForCore(bool $force = false): VendorBundleResult
     {
@@ -106,7 +106,7 @@ class VendorBundler
      * @param  string  $type  확장 타입 ('module' 또는 'plugin')
      * @param  string  $identifier  확장 식별자 (vendor-name 형식, 예: 'sirsoft-ecommerce')
      * @param  bool  $force  manifest 해시 일치 여부와 무관하게 강제 재빌드
-     * @return VendorBundleResult  번들 생성 결과 (활성 디렉토리 부재 시 skipped=true)
+     * @return VendorBundleResult 번들 생성 결과 (활성 디렉토리 부재 시 skipped=true)
      */
     public function buildForExtension(string $type, string $identifier, bool $force = false): VendorBundleResult
     {
@@ -164,14 +164,17 @@ class VendorBundler
      *
      * @param  string  $sourcePath  composer.json/lock 을 읽을 경로 (활성 디렉토리)
      * @param  string|null  $outputPath  번들 출력 경로 (null 이면 sourcePath 와 동일 — 코어 케이스)
-     * @return bool  번들이 stale 한지 여부 (해시 불일치 또는 manifest 부재). 외부 의존성이 없으면 항상 false
+     * @return bool 번들이 stale 한지 여부 (해시 불일치 또는 manifest 부재). 외부 의존성이 없으면 항상 false
      */
     public function isStale(string $sourcePath, ?string $outputPath = null): bool
     {
         $outputPath ??= $sourcePath;
 
-        $composerJsonPath = $sourcePath.DIRECTORY_SEPARATOR.'composer.json';
-        if (file_exists($composerJsonPath) && ! $this->hasExternalDependencies($composerJsonPath)) {
+        // 의존성 판정도 build() 와 같은 파일을 본다 (출력 우선, 없으면 소스 폴백).
+        // 소스만 보면 _bundled 에 외부 패키지를 처음 추가한 상태를 "의존성 없음" 으로
+        // 오판해 재빌드가 필요 없다고 답한다.
+        $composerJsonPath = $this->resolveHashTarget($sourcePath, $outputPath, 'composer.json');
+        if ($composerJsonPath !== null && ! $this->hasExternalDependencies($composerJsonPath)) {
             return false;
         }
 
@@ -187,22 +190,54 @@ class VendorBundler
             return true;
         }
 
-        if (file_exists($composerJsonPath)) {
-            $currentHash = $this->integrityChecker->computeFileHash($composerJsonPath);
+        // 해시 비교 대상은 manifest 가 놓인 출력 디렉토리 기준 ({@see build()} 참조).
+        // 소스만 검사하면 _bundled 의 composer.json 변경을 up-to-date 로 오보한다.
+        $hashJsonPath = $this->resolveHashTarget($sourcePath, $outputPath, 'composer.json');
+        if ($hashJsonPath !== null) {
+            $currentHash = $this->integrityChecker->computeFileHash($hashJsonPath);
             if (($manifest['composer_json_sha256'] ?? null) !== $currentHash) {
                 return true;
             }
         }
 
-        $composerLockPath = $sourcePath.DIRECTORY_SEPARATOR.'composer.lock';
-        if (file_exists($composerLockPath)) {
-            $currentHash = $this->integrityChecker->computeFileHash($composerLockPath);
+        $hashLockPath = $this->resolveHashTarget($sourcePath, $outputPath, 'composer.lock');
+        if ($hashLockPath !== null) {
+            $currentHash = $this->integrityChecker->computeFileHash($hashLockPath);
             if (($manifest['composer_lock_sha256'] ?? null) !== $currentHash) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * manifest 해시 비교 기준이 될 파일 경로를 결정합니다.
+     *
+     * manifest 와 zip 은 출력 디렉토리(_bundled)에 함께 저장되어 그대로 배포되며,
+     * 런타임 검증({@see VendorIntegrityChecker::verify()})은 zip 이 놓인 디렉토리
+     * (_bundled 또는 설치/업데이트 시 그 복사본인 _pending/staging)의 composer.json 을
+     * 대조합니다. 따라서 해시도 그 디렉토리를 기준으로 계산해야 생성자와 검증자의
+     * 기준이 일치합니다.
+     *
+     * 출력 디렉토리에 파일이 없으면 소스(활성 디렉토리)로 폴백합니다.
+     * 코어는 소스와 출력이 동일하므로 어느 쪽을 골라도 같은 경로가 됩니다.
+     *
+     * @param  string  $sourcePath  composer.json/lock 과 vendor/ 를 읽는 경로 (활성 디렉토리)
+     * @param  string  $outputPath  manifest 와 zip 을 쓰는 경로 (_bundled, 코어는 소스와 동일)
+     * @param  string  $filename  'composer.json' 또는 'composer.lock'
+     * @return string|null 해시 대상 파일의 절대 경로. 양쪽 모두 없으면 null
+     */
+    private function resolveHashTarget(string $sourcePath, string $outputPath, string $filename): ?string
+    {
+        $outputFile = $outputPath.DIRECTORY_SEPARATOR.$filename;
+        if (file_exists($outputFile)) {
+            return $outputFile;
+        }
+
+        $sourceFile = $sourcePath.DIRECTORY_SEPARATOR.$filename;
+
+        return file_exists($sourceFile) ? $sourceFile : null;
     }
 
     /**
@@ -215,12 +250,20 @@ class VendorBundler
      */
     private function build(string $sourcePath, string $outputPath, string $target, bool $force): VendorBundleResult
     {
-        // 전제 조건 검증
-        $composerJsonPath = $sourcePath.DIRECTORY_SEPARATOR.'composer.json';
-        if (! file_exists($composerJsonPath)) {
+        // 빌드가 사용하는 composer.json/lock 은 **출력(_bundled) 우선, 없으면 소스 폴백** 이다
+        // ({@see resolveHashTarget()}). 설치 입력·해시 기준·런타임 검증이 모두 같은 파일을
+        // 보아야 한다.
+        //
+        // 개발자는 규정상 `_bundled` 에서만 작업하므로 새 패키지를 추가하면 `_bundled` 의
+        // composer.json/lock 에만 반영되고 활성 디렉토리는 구버전으로 남는다. 설치 입력만
+        // 활성에서 가져오면 구버전 lock 으로 install 한 zip 에 신버전 해시가 붙어, 무결성은
+        // 통과하는데 새 패키지가 번들에서 누락된다 (런타임에 클래스 not found).
+        // 코어는 source == output 이므로 항상 같은 파일이다.
+        $composerJsonPath = $this->resolveHashTarget($sourcePath, $outputPath, 'composer.json');
+        if ($composerJsonPath === null) {
             throw new VendorInstallException(
                 errorKey: 'composer_json_not_found',
-                context: ['path' => $composerJsonPath],
+                context: ['path' => $sourcePath.DIRECTORY_SEPARATOR.'composer.json'],
             );
         }
 
@@ -258,26 +301,33 @@ class VendorBundler
             );
         }
 
-        // 기존 파일 제거
-        if (file_exists($zipPath)) {
-            @unlink($zipPath);
-        }
-        if (file_exists($manifestPath)) {
-            @unlink($manifestPath);
-        }
-
         // === 스테이징 빌드 ===
         // 개발 머신의 vendor/ 를 직접 사용하지 않고, composer install --no-dev 를
         // 스테이징 디렉토리에서 새로 실행하여 dev 의존성과 완전히 분리된 번들을 생성한다.
+        //
+        // 새 zip/manifest 는 임시 경로(.tmp)에 먼저 쓰고, 빌드가 성공한 뒤에만 원본을
+        // 교체한다. 기존 파일을 빌드 전에 삭제하면 composer install 실패 시 새 파일이
+        // 생성되지 못한 채 원본만 유실되어 이후 module:update 가 번들 부재로 실패한다.
         $stagingDir = storage_path('app/vendor-bundle-staging/'.uniqid('build-', true));
         File::ensureDirectoryExists($stagingDir, 0755);
+
+        $tmpZipPath = $zipPath.'.tmp';
+        $tmpManifestPath = $manifestPath.'.tmp';
+        if (file_exists($tmpZipPath)) {
+            @unlink($tmpZipPath);
+        }
+        if (file_exists($tmpManifestPath)) {
+            @unlink($tmpManifestPath);
+        }
+
+        // 설치 입력 = 해시 기준과 동일한 파일 (출력 우선, 없으면 소스 폴백).
+        $composerLockPath = $this->resolveHashTarget($sourcePath, $outputPath, 'composer.lock');
 
         try {
             // 1. composer.json + composer.lock 을 스테이징으로 복사
             File::copy($composerJsonPath, $stagingDir.DIRECTORY_SEPARATOR.'composer.json');
-            $sourceLockPath = $sourcePath.DIRECTORY_SEPARATOR.'composer.lock';
-            if (file_exists($sourceLockPath)) {
-                File::copy($sourceLockPath, $stagingDir.DIRECTORY_SEPARATOR.'composer.lock');
+            if ($composerLockPath !== null) {
+                File::copy($composerLockPath, $stagingDir.DIRECTORY_SEPARATOR.'composer.lock');
             }
 
             // 2. 스테이징에서 composer install --no-dev 실행
@@ -292,8 +342,8 @@ class VendorBundler
                 );
             }
 
-            // 4. zip 생성 (EXCLUDE_PATTERNS 만 적용 — 화이트리스트 불필요)
-            [$zipSize, $fileCount] = $this->writeZip($stagedVendor, $zipPath);
+            // 4. zip 생성 — 임시 경로에 먼저 쓴다 (EXCLUDE_PATTERNS 만 적용)
+            [$zipSize, $fileCount] = $this->writeZip($stagedVendor, $tmpZipPath);
 
             // 5. manifest 작성 — 스테이징의 composer.lock 을 기준으로 패키지 목록 추출
             $stagedLockPath = $stagingDir.DIRECTORY_SEPARATOR.'composer.lock';
@@ -301,19 +351,19 @@ class VendorBundler
                 ? $this->collectPackages($stagedLockPath)
                 : [];
 
+            // manifest 의 해시는 설치 입력과 **동일한** composer.json/lock 기준 (출력 우선).
+            // manifest·zip·composer.json 이 함께 배포되는 곳이 출력 디렉토리이며,
+            // 런타임 검증도 그 디렉토리를 대조한다 ({@see resolveHashTarget()}).
             $manifest = [
                 'schema_version' => self::SCHEMA_VERSION,
                 'generated_at' => date('c'),
                 'generator' => 'g7 vendor-bundle:build',
                 'target' => $target,
-                // manifest 의 해시는 **소스** 의 composer.json/lock 기준 — 런타임에서
-                // 소스 디렉토리(또는 번들과 함께 배포된) composer.json 과 비교하여
-                // stale 여부를 감지한다.
                 'composer_json_sha256' => $this->integrityChecker->computeFileHash($composerJsonPath),
-                'composer_lock_sha256' => file_exists($sourceLockPath)
-                    ? $this->integrityChecker->computeFileHash($sourceLockPath)
+                'composer_lock_sha256' => $composerLockPath !== null
+                    ? $this->integrityChecker->computeFileHash($composerLockPath)
                     : null,
-                'zip_sha256' => $this->integrityChecker->computeFileHash($zipPath),
+                'zip_sha256' => $this->integrityChecker->computeFileHash($tmpZipPath),
                 'zip_size' => $zipSize,
                 'package_count' => count($packages),
                 'php_requirement' => $this->extractPhpRequirement($composerJsonPath),
@@ -321,7 +371,12 @@ class VendorBundler
                 'packages' => $packages,
             ];
 
-            File::put($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            File::put($tmpManifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+            // 6. 원자적 교체 — 여기까지 성공했으므로 임시 파일을 최종 경로로 옮긴다.
+            //    이 지점 이전에 실패하면 기존 번들이 그대로 보존된다.
+            $this->promoteAtomic($tmpZipPath, $zipPath);
+            $this->promoteAtomic($tmpManifestPath, $manifestPath);
 
             Log::info('Vendor 번들 빌드 완료', [
                 'target' => $target,
@@ -340,10 +395,42 @@ class VendorBundler
                 reason: 'built',
             );
         } finally {
-            // 스테이징 정리 (실패/성공 무관)
+            // 스테이징 및 미승격 임시 파일 정리 (실패/성공 무관)
             if (File::isDirectory($stagingDir)) {
                 File::deleteDirectory($stagingDir);
             }
+            if (file_exists($tmpZipPath)) {
+                @unlink($tmpZipPath);
+            }
+            if (file_exists($tmpManifestPath)) {
+                @unlink($tmpManifestPath);
+            }
+        }
+    }
+
+    /**
+     * 임시 파일을 최종 경로로 원자적으로 교체합니다.
+     *
+     * Windows 에서 `rename()` 은 대상이 이미 존재하면 실패하므로, 기존 파일을 먼저
+     * 제거한 뒤 이동한다. 이 메서드는 빌드가 성공적으로 완료된 뒤에만 호출되므로,
+     * 여기서 기존 파일을 제거해도 (제거 후 이동 실패 확률이 극히 낮아) 안전하다.
+     *
+     * @param  string  $tmpPath  임시 파일 경로 (성공적으로 생성 완료된 상태)
+     * @param  string  $finalPath  최종 경로
+     *
+     * @throws VendorInstallException 이동 실패 시
+     */
+    private function promoteAtomic(string $tmpPath, string $finalPath): void
+    {
+        if (file_exists($finalPath)) {
+            @unlink($finalPath);
+        }
+
+        if (! @rename($tmpPath, $finalPath)) {
+            throw new VendorInstallException(
+                errorKey: 'bundle_build_promote_failed',
+                context: ['from' => $tmpPath, 'to' => $finalPath],
+            );
         }
     }
 
@@ -377,30 +464,37 @@ class VendorBundler
             );
         }
 
-        $phpBinary = config('process.php_binary', 'php');
-
-        if (str_contains($binary, ' ')) {
-            $composerCmd = $binary;
-        } elseif (str_ends_with(strtolower($binary), '.phar')) {
-            $composerCmd = escapeshellarg($phpBinary).' '.escapeshellarg($binary);
-        } else {
-            $composerCmd = escapeshellarg($binary);
-        }
-
-        $command = $composerCmd.' install --no-dev --no-scripts --prefer-dist --no-interaction --no-progress 2>&1';
+        // 명령 조립과 실행 옵션은 canExecuteComposer 와 동일한 방식으로 통일한다.
+        // buildComposerCommand + bypass_shell:true 를 함께 써야 Windows 에서 .bat
+        // 경로가 cmd.exe 의 따옴표 처리로 깨지지 않는다.
+        $command = $detector->buildComposerCommand($binary, [
+            'install', '--no-dev', '--no-scripts', '--prefer-dist', '--no-interaction', '--no-progress',
+        ]);
 
         Log::info('vendor-bundle 빌드: composer install 시작', [
             'target' => $target,
             'staging' => $stagingDir,
         ]);
 
-        $descriptors = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
+        // stdout/stderr 는 파이프가 아닌 파일 descriptor 로 받는다.
+        // (Windows 회귀) composer 는 autoload dump 단계에서 임시 추출물을
+        // `rmdir /S /Q` async `cmd.exe` 손자 프로세스로 정리하는데, stdout/stderr 를
+        // 파이프로 열면 이 손자들이 부모 파이프 핸들을 상속받아 붙잡은 채 종료하지 않아
+        // 부모(php)의 read/proc_close 가 자식 완료 신호를 영영 받지 못하고 무한 대기한다.
+        // 파일 descriptor 는 손자에게 상속될 열린 파이프 핸들이 없어 이 교착을 원천 차단한다
+        // (실측: 파이프=행, 파일=140s 완주 EXIT 0 + autoload 정상 생성).
+        $outPath = $stagingDir.DIRECTORY_SEPARATOR.'_composer_stdout.log';
+        $errPath = $stagingDir.DIRECTORY_SEPARATOR.'_composer_stderr.log';
+        $descriptors = self::composerOutputDescriptors($outPath, $errPath);
 
-        $process = @proc_open($command, $descriptors, $pipes, $stagingDir, EnvironmentDetector::buildComposerEnv());
+        $process = @proc_open(
+            $command,
+            $descriptors,
+            $pipes,
+            $stagingDir,
+            EnvironmentDetector::buildComposerEnv(),
+            ['bypass_shell' => true],
+        );
 
         if (! is_resource($process)) {
             throw new VendorInstallException(
@@ -409,11 +503,16 @@ class VendorBundler
             );
         }
 
-        fclose($pipes[0]);
-        $output = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
+        // stdin(파이프)만 즉시 닫고, stdout/stderr 는 파일이므로 배수 불필요 —
+        // proc_close 가 자식 종료까지 블록 대기한다.
+        if (isset($pipes[0]) && is_resource($pipes[0])) {
+            fclose($pipes[0]);
+        }
         $exitCode = proc_close($process);
+
+        $stdout = is_file($outPath) ? (string) @file_get_contents($outPath) : '';
+        $stderr = is_file($errPath) ? (string) @file_get_contents($errPath) : '';
+        $output = trim($stdout.\PHP_EOL.$stderr);
 
         if ($exitCode !== 0) {
             throw new VendorInstallException(
@@ -429,12 +528,33 @@ class VendorBundler
     }
 
     /**
+     * composer install 의 stdout/stderr 를 받을 proc_open descriptor 배열을 구성합니다.
+     *
+     * stdout/stderr 를 파이프가 아닌 파일로 여는 이유는 runComposerInstall 주석 참조 —
+     * Windows 에서 composer autoload dump 의 async 손자 프로세스가 상속받는 파이프 핸들로
+     * 인한 무한 대기(행)를 원천 차단한다. 이 메서드는 순수 함수로, descriptor 구조를
+     * 회귀 테스트로 고정하기 위해 분리했다.
+     *
+     * @param  string  $outPath  stdout 로그 파일 경로
+     * @param  string  $errPath  stderr 로그 파일 경로
+     * @return array<int, array<int, string>> proc_open 2번째 인자용 descriptor 배열
+     */
+    public static function composerOutputDescriptors(string $outPath, string $errPath): array
+    {
+        return [
+            0 => ['pipe', 'r'],
+            1 => ['file', $outPath, 'w'],
+            2 => ['file', $errPath, 'w'],
+        ];
+    }
+
+    /**
      * vendor/ 디렉토리를 재귀적으로 zip에 쓰기.
      *
      * 스테이징에서 composer install --no-dev 로 새로 생성된 vendor/ 를 대상으로 하므로
      * 화이트리스트 필터링은 불필요하며, EXCLUDE_PATTERNS (tests/, docs/ 등) 만 적용한다.
      *
-     * @return array{0: int, 1: int}  [zipSize, fileCount]
+     * @return array{0: int, 1: int} [zipSize, fileCount]
      */
     private function writeZip(string $vendorPath, string $zipPath): array
     {

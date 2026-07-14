@@ -4,6 +4,20 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-07-14
+
+### Added
+
+- 화면 구성에 필요한 스크립트를 끝내 불러오지 못했을 때 표시되는 안내 문구 일본어 번역 추가 (`errors.bootstrap.*`) — 네트워크 문제로 페이지를 열지 못한 경우의 안내와 새로고침 버튼이 일본어 로케일에서 자연스럽게 표시됩니다.
+- 내부 네트워크 주소 호출 차단 관련 안내 문구 일본어 번역 추가 (`validation.outbound_url.*`, `schedule.url_not_public`, `language_packs.errors.download_url_not_public`, `settings.websocket_invalid_host`) — 예약 작업·언어팩 설치·웹소켓 설정에서 내부 주소가 거부될 때의 안내가 일본어 로케일에서 자연스럽게 표시됩니다.
+- 아직 공개하지 않은 예약 작업 기능의 쉘·Artisan 명령 실행 제한 안내 문구 일본어 번역 추가 (`schedule.shell_not_allowed`, `schedule.artisan_not_allowed`, `validation.schedule_command.*`) — 향후 정식 공개에 대비한 것으로, 허용되지 않은 쉘 명령이나 위험한 Artisan 명령이 거부될 때의 안내가 일본어 로케일에서 자연스럽게 표시됩니다.
+
+## [1.0.3] - 2026-07-11
+
+### Added
+
+- vendor-bundle 빌드 결과 반영 실패 안내 메시지 일본어 번역 추가 (`exceptions.vendor.bundle_build_promote_failed`) — 빌드 산출물을 최종 경로로 원자적 교체하는 데 실패했을 때의 안내가 일본어 로케일에서 자연스럽게 표시됩니다.
+
 ## [1.0.2] - 2026-07-08
 
 ### Added

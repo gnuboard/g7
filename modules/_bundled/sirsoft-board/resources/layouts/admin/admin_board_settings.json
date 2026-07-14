@@ -80,6 +80,7 @@
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/admin/boards?per_page=999&fields=id,title",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {
@@ -94,6 +95,7 @@
       "type": "api",
       "endpoint": "/api/admin/roles/active",
       "method": "GET",
+      "if": "{{['basic_defaults', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {
@@ -106,6 +108,7 @@
       "type": "api",
       "endpoint": "/api/modules/sirsoft-board/admin/board-types",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {
@@ -118,6 +121,7 @@
       "type": "api",
       "endpoint": "/api/admin/notification-definitions?extension_type=module&extension_identifier=sirsoft-board",
       "method": "GET",
+      "if": "{{['notification_definitions', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}",
       "auto_fetch": true,
       "auth_required": true,
       "params": {
@@ -145,6 +149,7 @@
       "type": "api",
       "endpoint": "/api/admin/notification-channels",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'notification_definitions'}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {
@@ -159,6 +164,7 @@
       "type": "api",
       "endpoint": "/api/admin/identity/policies",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
       "auto_fetch": true,
       "auth_required": true,
       "params": {
@@ -182,6 +188,7 @@
       "type": "api",
       "endpoint": "/api/identity/purposes",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {
@@ -194,6 +201,7 @@
       "type": "api",
       "endpoint": "/api/admin/identity/providers",
       "method": "GET",
+      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
       "auto_fetch": true,
       "auth_required": true,
       "fallback": {
@@ -243,7 +251,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-              "className": "sticky-tab-nav-responsive"
+              "className": "sticky-section-header"
             },
             "children": [
               {
@@ -339,11 +347,13 @@
                               }
                             },
                             {
-                              "handler": "replaceUrl",
+                              "handler": "navigate",
                               "params": {
+                                "path": "/admin/boards/settings",
                                 "query": {
                                   "tab": "{{$args[0]}}"
-                                }
+                                },
+                                "replace": true
                               }
                             },
                             {

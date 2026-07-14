@@ -43,6 +43,7 @@ return [
         'directory_not_writable' => '言語パックインストールディレクトリ(:path)への書き込み権限がありません。Webサーバーユーザー(例: www-data)に書き込み権限を付与してください。(例: sudo chgrp www-data :path && sudo chmod g+w :path)',
         'identifier_not_found' => '言語パックが見つかりません (:identifier)。',
         'unsupported_source' => 'サポートされていないソース(:source) — bundled、github、urlのいずれかを使用してください。',
+        'download_url_not_public' => '内部ネットワークアドレス(プライベートIP·localhost等)では言語パックをダウンロードできません。外部からアクセス可能なhttpsアドレスを使用してください。',
     ],
     'validation' => [
         'file_required' => '言語パックZIPファイルをアップロードしてください。',

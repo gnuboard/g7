@@ -16,6 +16,15 @@ function validateInstallationFlow(int $currentStep, array $state): void
 {
     // 설치 완료 시 홈으로 리다이렉트
     if (isInstallationCompleted()) {
+        // 세션에 남은 설치 config (DB/관리자 비밀번호 포함) 를 정리한다 (이슈 #465).
+        // 설치가 끝나면 세션 config 는 소비처가 없으므로 세션 파일에 평문이 잔존할 이유가
+        // 없다. 완료 후 인스톨러에 재접근하는 모든 경로가 이 지점을 통과한다.
+        unset(
+            $_SESSION['install_config'],
+            $_SESSION['db_write_tested'],
+            $_SESSION['db_read_tested']
+        );
+
         $translations = loadTranslations(getCurrentLanguage());
         showInstallationCompletedAlert();
     }
@@ -192,23 +201,15 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
 
     // 검증 통과 시 다음 단계로 이동
     if (empty($errors)) {
-        $_SESSION['install_config'] = $formData;
+        // 세션에는 비밀번호를 유지한다 (install-process.php 가 runtime.php 로 이송).
+        // 단 admin_password_confirm 은 검증 이후 소비처가 전무한 순수 잔여물이므로 제거.
+        $sessionConfig = $formData;
+        unset($sessionConfig['admin_password_confirm']);
+        $_SESSION['install_config'] = $sessionConfig;
 
-        // state.json에는 비밀번호를 저장하지 않음 (보안)
-        $safeFormData = $formData;
-        unset($safeFormData['db_write_password'], $safeFormData['db_read_password']);
-
-        // Read DB 미사용 시 read 필드 잔존값을 제거한다 (이슈 #63 2단계 방어).
-        // use_read_db=false 인데 db_read_host 등이 남아 있으면 하류(installer-runtime.php)
-        // 로 유입되어 잘못된 read 커넥션을 만들 수 있으므로 원천 차단한다.
-        if (empty($safeFormData['use_read_db'])) {
-            unset(
-                $safeFormData['db_read_host'],
-                $safeFormData['db_read_port'],
-                $safeFormData['db_read_database'],
-                $safeFormData['db_read_username']
-            );
-        }
+        // state.json 에는 비밀(DB/관리자 비밀번호) 을 저장하지 않는다 (이슈 #465).
+        // read 필드 정리(이슈 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
+        $safeFormData = sanitizeConfigForState($formData);
 
         updateStepStatus(3, 4, [
             'config' => $safeFormData,

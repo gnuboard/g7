@@ -460,6 +460,17 @@ export interface ActionResult {
  * 액션 에러 클래스
  */
 export class ActionError extends Error {
+  /**
+   * 미등록 핸들러로 인한 에러 여부
+   *
+   * 확장 번들이 로드되지 않아 그 확장 소유 핸들러가 등록되지 않은 경우가 대표적이다.
+   * 사용자가 조치할 수 있는 일이 아니고 내부 식별자를 노출하게 되므로, 표시 계층은
+   * 이 플래그를 보고 errorHandling 정책(토스트 등)을 태우지 않는다.
+   *
+   * @since engine-v1.53.0
+   */
+  public unknownHandler = false;
+
   constructor(
     message: string,
     public action?: ActionDefinition,
@@ -2608,6 +2619,22 @@ export class ActionDispatcher {
         // 코어 toast 핸들러가 IDV 가드 토스트를 코드로 식별해 중복 억제하는 데 사용.
         error_code: responseData.error_code ?? apiResponse.error_code,
       };
+
+      // 미등록 핸들러는 표시 계층으로 내보내지 않는다.
+      //
+      // 확장 번들이 로드되지 않으면 그 확장 소유 핸들러(예: sirsoft-ecommerce.initPreferredCurrency)
+      // 가 등록되지 않는다. 이때 errorHandling 정책을 태우면 `Unknown action handler: {내부식별자}`
+      // 라는 raw 영문 문구가 토스트로 사용자에게 노출된다. 사용자가 조치할 수 있는 일이 아니며
+      // 내부 식별자 노출 자체가 결함이다. 확장 부재는 조용한 기능 열화로 끝내고 warn 만 남긴다.
+      // (throw 는 그대로 유지되어 호출부의 기존 흐름은 바뀌지 않는다.)
+      // @since engine-v1.53.0
+      if (actionError.unknownHandler) {
+        logger.warn(
+          `Unknown action handler "${action.handler}" — skipped (extension not loaded?). ` +
+            'Not surfaced to the user.'
+        );
+        throw actionError;
+      }
 
       // 에러 핸들링 우선순위:
       // 1. action.errorHandling[코드] → action.errorHandling[default]
@@ -6192,10 +6219,15 @@ export class ActionDispatcher {
         return undefined;
       }
 
-      throw new ActionError(
+      // throw 는 유지한다 (호출부의 기존 try/catch 흐름 보존). 다만 미등록 핸들러임을
+      // 표시해 표시 계층이 raw 내부 식별자를 사용자에게 노출하지 않도록 한다.
+      // @since engine-v1.53.0
+      const unknownHandlerError = new ActionError(
         `Unknown action handler: ${action.handler}`,
         action
       );
+      unknownHandlerError.unknownHandler = true;
+      throw unknownHandlerError;
     }
 
     return await handler(action, context);

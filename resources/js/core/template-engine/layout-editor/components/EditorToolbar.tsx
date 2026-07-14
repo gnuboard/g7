@@ -506,8 +506,17 @@ export function EditorToolbar(props: EditorToolbarProps = {}): React.ReactElemen
         boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
       }}
     >
-      {/* 저장 스피너 회전 keyframe — 인라인 style 로는 @keyframes 표현 불가. */}
-      <style>{'@keyframes g7le-spin { to { transform: rotate(360deg); } }'}</style>
+      {/* 저장 스피너 회전 keyframe — 인라인 style 로는 @keyframes 표현 불가.
+          + 툴바 압착 차단: 툴바는 flex row 라 기본값(flex-shrink:1)이면 창이 좁을 때
+          모든 항목의 폭이 깎이고 라벨이 글자 단위로 줄바꿈된다("요 소 추 가").
+          직접 자식 **전체**에 적용해야 한다 — 버튼마다 인라인 style 로 붙이면
+          자체 style 을 가진 하위 컴포넌트(TemplateSwitcher/LocaleSwitcher)와 이후 추가될
+          항목이 빠져 같은 결함이 재발한다. 셸 최소 너비(EDITOR_MIN_WIDTH) 안에서 각 항목은
+          자연 폭을 유지하고, 넘치는 만큼은 셸 가로 스크롤이 흡수한다. */}
+      <style>
+        {'@keyframes g7le-spin { to { transform: rotate(360deg); } }' +
+          '.g7le-toolbar > * { flex-shrink: 0; white-space: nowrap; }'}
+      </style>
       <button
         type="button"
         className="g7le-toolbar__route-tree-toggle"

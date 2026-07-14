@@ -304,8 +304,11 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(innerActions[1].handler).toBe('setState');
         expect(innerActions[1].params.target).toBe('global');
 
-        // replaceUrl - URL 업데이트
-        expect(innerActions[2].handler).toBe('replaceUrl');
+        // navigate(replace:true) - URL 업데이트 + 데이터소스 `if` 재평가
+        // replaceUrl 은 history 만 교체하므로 탭 전용 데이터소스가 로드되지 않는다.
+        // 가드: admin-board-settings-tab-scoped-datasources.test.tsx
+        expect(innerActions[2].handler).toBe('navigate');
+        expect(innerActions[2].params.replace).toBe(true);
         expect(innerActions[2].params.query.tab).toBeDefined();
 
         // scrollIntoView - 탭 변경 후 본문 상단으로 스크롤 (#369)

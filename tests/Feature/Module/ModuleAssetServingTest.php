@@ -12,6 +12,7 @@ class ModuleAssetServingTest extends TestCase
     use RefreshDatabase;
 
     private Module $activeModule;
+
     private string $testModulePath;
 
     protected function setUp(): void
@@ -26,10 +27,10 @@ class ModuleAssetServingTest extends TestCase
 
         // 테스트용 모듈 디렉토리 생성
         $this->testModulePath = base_path('modules/test-module');
-        if (!file_exists($this->testModulePath.'/dist/js')) {
+        if (! file_exists($this->testModulePath.'/dist/js')) {
             mkdir($this->testModulePath.'/dist/js', 0755, true);
         }
-        if (!file_exists($this->testModulePath.'/dist/css')) {
+        if (! file_exists($this->testModulePath.'/dist/css')) {
             mkdir($this->testModulePath.'/dist/css', 0755, true);
         }
     }
@@ -49,11 +50,11 @@ class ModuleAssetServingTest extends TestCase
      */
     private function deleteDirectory(string $dir): bool
     {
-        if (!file_exists($dir)) {
+        if (! file_exists($dir)) {
             return true;
         }
 
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return unlink($dir);
         }
 
@@ -62,7 +63,7 @@ class ModuleAssetServingTest extends TestCase
                 continue;
             }
 
-            if (!$this->deleteDirectory($dir.DIRECTORY_SEPARATOR.$item)) {
+            if (! $this->deleteDirectory($dir.DIRECTORY_SEPARATOR.$item)) {
                 return false;
             }
         }
@@ -405,19 +406,31 @@ class ModuleAssetServingTest extends TestCase
     }
 
     /**
-     * Source Map 파일 서빙 테스트
+     * Source Map 파일 서빙 거부 테스트
+     *
+     * 소스맵은 원본 코드 전문을 담고 있어 배포 환경에서 노출되면 안 된다.
+     * 파일이 디스크에 실재하더라도(= 파일 부재로 인한 실패가 아님) 허용 확장자
+     * 목록에서 제외되어 서빙이 거부되어야 한다.
      */
-    public function test_serves_sourcemap_file(): void
+    public function test_rejects_sourcemap_file(): void
     {
-        // Arrange
+        // Arrange: 맵 파일이 실제로 존재하는 상태를 만든다
         $mapPath = $this->testModulePath.'/dist/js/module.iife.js.map';
         file_put_contents($mapPath, '{"version":3,"sources":[],"mappings":""}');
+        $this->assertFileExists($mapPath);
 
-        // Act
-        $response = $this->get('/api/modules/assets/test-module/dist/js/module.iife.js.map');
+        // Act: JSON 클라이언트 (에러 본문 확인용)
+        $json = $this->getJson('/api/modules/assets/test-module/dist/js/module.iife.js.map');
 
-        // Assert
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'application/json');
+        // Assert: 허용 확장자 검증에서 거부 — 맵 내용이 절대 응답에 실리지 않는다
+        $json->assertStatus(422);
+        $json->assertJsonValidationErrors('path');
+        $this->assertStringNotContainsString('mappings', $json->getContent());
+
+        // Act: 브라우저 요청 (Accept 헤더 없음) — 서빙되지 않음을 확인
+        $browser = $this->get('/api/modules/assets/test-module/dist/js/module.iife.js.map');
+
+        // Assert: 200 서빙이 아니어야 한다 (검증 실패 → 리다이렉트)
+        $this->assertNotSame(200, $browser->getStatusCode());
     }
 }

@@ -458,7 +458,9 @@
       "new_order_admin": "新規注文(管理者)",
       "inquiry_received": "商品問い合わせ受け取り(管理者)",
       "inquiry_replied": "商品問い合わせ回答",
-      "mileage_expiring_soon": "マイレージ失効予定"
+      "mileage_expiring_soon": "マイレージ失効予定",
+      "order_pending_deposit": "銀行振込のご案内",
+      "order_delivered": "配送完了"
     },
     "btn_search": "検索",
     "btn_reset_filter": "初期化",

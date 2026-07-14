@@ -103,6 +103,7 @@ return [
     // Websocket test messages
     'websocket_test_success' => 'Successfully connected to Websocket server.',
     'websocket_test_failed' => 'Failed to connect to Websocket server.',
+    'websocket_invalid_host' => 'The Websocket host setting is invalid. Enter the address only — credentials (@) and protocols other than http/https are not allowed.',
     'websocket_connection_refused' => 'Could not connect to Websocket server. Please check if the server is running.',
 
     // Test mail related messages

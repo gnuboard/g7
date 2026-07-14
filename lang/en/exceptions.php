@@ -57,6 +57,7 @@ return [
         'composer_not_available' => 'Composer cannot be executed in this environment. Use bundled mode instead.',
         'composer_not_available_for_build' => 'Building vendor-bundle requires Composer execution. Install/configure Composer in the development environment and retry.',
         'bundle_build_composer_failed' => 'composer install failed while building vendor-bundle (exit :exit): :message',
+        'bundle_build_promote_failed' => 'failed to move vendor-bundle build result to its final path (:from → :to)',
         'composer_execution_failed' => 'Composer execution failed: :message',
         'bundle_zip_missing' => 'vendor-bundle.zip not found: :path',
         'bundle_manifest_missing' => 'vendor-bundle.json not found: :path',

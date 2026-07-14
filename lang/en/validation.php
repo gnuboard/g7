@@ -504,6 +504,18 @@ return [
         'dangerous_scheme_detected' => 'Dangerous URI scheme detected: :scheme',
     ],
 
+    // Outbound URL (external API, schedule, etc.) validation messages
+    'outbound_url' => [
+        'invalid' => 'This is not a valid URL. Enter an address starting with http or https.',
+        'internal_not_allowed' => 'Internal network addresses (private IPs, localhost, etc.) are not allowed. Enter a publicly reachable address.',
+    ],
+
+    // Schedule command (shell/Artisan) validation messages — these run on the server
+    'schedule_command' => [
+        'shell_not_allowed' => 'This shell command is not allowed. Only executables registered on the server may be used, and special characters such as pipes (|) or semicolons (;) are not permitted.',
+        'artisan_denied' => 'This Artisan command cannot be run as a schedule for security reasons.',
+    ],
+
     // Component existence validation messages
     'component' => [
         'template_id_required' => 'template_id is required for component validation.',
@@ -824,6 +836,7 @@ return [
         // Security settings
         'force_https_required' => 'Please select the Force HTTPS setting.',
         'force_https_boolean' => 'Force HTTPS must be true or false.',
+        'allow_internal_outbound_urls_boolean' => 'Allow internal network address calls must be true or false.',
         'login_attempt_enabled_required' => 'Please select the login attempt limit setting.',
         'login_attempt_enabled_boolean' => 'Login attempt limit must be true or false.',
         'auth_token_lifetime_integer' => 'Auth token lifetime must be an integer.',

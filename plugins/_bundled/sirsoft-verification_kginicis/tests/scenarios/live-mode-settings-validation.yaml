@@ -59,7 +59,7 @@ design_rationale: |
    - 채택: (a) 스키마를 plugin.php 로 이전(결제 플러그인 동형 + sensitive) + (b) 라이브 조건부
      required 는 코어가 이미 발행하는 core.plugin_settings.update_rules 필터로 주입. 코어 무수정.
    - 라이브 검증 기준은 InicisIdentityProvider::isAvailable()(live_mid + live_api_key 비어있지 않음)
-     과 일치. live_mid 의 SRA 프리픽스는 buildLiveMid() 가 자동 부착하므로 별도 형식 검증 미도입.
+     과 일치. live_mid 의 SRB 프리픽스는 buildLiveMid() 가 자동 부착하므로 별도 형식 검증 미도입.
    - (라벨 로케일 보강) ServiceProvider 의 validation.attributes 라벨 등록이 ['ko','en'] 하드코딩이라
      ja 로케일에서 일본어 라벨이 노출되지 않던 결함을 config('app.supported_locales') 동적 처리로 정정.
      ja 번역(ライブ MID 등)은 이미 언어팩에 존재했으나 등록 로케일 누락으로 미사용 상태였다.

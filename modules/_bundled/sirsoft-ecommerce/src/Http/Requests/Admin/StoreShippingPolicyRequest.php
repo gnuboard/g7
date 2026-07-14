@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Extension\HookManager;
 use App\Rules\LocaleRequiredTranslatable;
+use App\Rules\PublicOutboundUrl;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -67,7 +68,7 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.ranges.tiers.*.fee' => ['required', 'numeric', 'min:0'],
 
             // API 설정
-            'country_settings.*.api_endpoint' => ['nullable', 'url', 'max:500'],
+            'country_settings.*.api_endpoint' => ['nullable', 'url', 'max:500', new PublicOutboundUrl],
             'country_settings.*.api_request_fields' => ['nullable', 'array'],
             // 후보 5종 SSoT(ShippingApiRequestField) 외 필드명 거부 — silent drop 차단
             'country_settings.*.api_request_fields.*' => ['string', 'max:100', Rule::in(ShippingApiRequestField::values())],

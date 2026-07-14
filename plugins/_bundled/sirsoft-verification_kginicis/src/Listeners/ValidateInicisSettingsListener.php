@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Lang;
  * 자격증명에 required 규칙을 동적 부여한다.
  *
  * 검증 기준은 InicisIdentityProvider::isAvailable() 의 라이브 운영 가능 조건
- * (live_mid 비어있지 않음 + live_api_key 비어있지 않음) 과 일치시킨다. live_mid 의 SRA
+ * (live_mid 비어있지 않음 + live_api_key 비어있지 않음) 과 일치시킨다. live_mid 의 SRB
  * 프리픽스는 buildLiveMid() 가 자동 부착하므로 별도 형식 검증은 두지 않는다.
  *
  * @since 1.0.0-beta.1

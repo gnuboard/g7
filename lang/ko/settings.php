@@ -103,6 +103,7 @@ return [
     // Websocket 테스트 메시지
     'websocket_test_success' => 'Websocket 서버에 성공적으로 연결되었습니다.',
     'websocket_test_failed' => 'Websocket 서버 연결에 실패했습니다.',
+    'websocket_invalid_host' => 'Websocket 호스트 설정이 올바르지 않습니다. 호스트에는 주소만 입력하고 계정 정보(@)나 http/https 이외의 프로토콜은 사용할 수 없습니다.',
     'websocket_connection_refused' => 'Websocket 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.',
 
     // 테스트 메일 관련 메시지

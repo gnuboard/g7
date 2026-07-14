@@ -931,7 +931,9 @@ if (! function_exists('cleanupExistingTablesSSE')) {
             return ['success' => true];
         }
 
-        $config = $state['config'] ?? [];
+        // state.config 에는 DB 비밀번호가 기록되지 않으므로(이슈 #465) runtime.php 에서
+        // 자격증명을 복원한다. db_cleanup 은 env_update 이후 실행되어 runtime 이 항상 존재.
+        $config = hydrateDbSecretsFromRuntime($state['config'] ?? []);
 
         try {
             $pdo = getDatabaseConnection($config, false);
@@ -1000,22 +1002,69 @@ if (! function_exists('runDatabaseSeedingSSE')) {
         $state = getInstallationState();
         $config = $state['config'] ?? [];
 
-        if (empty($config['admin_email']) || empty($config['admin_password'])) {
+        // 관리자 비밀번호는 runtime.php(0600) 가 SSoT (이슈 #465). state.config 폴백은
+        // 이 수정 이전에 시작된 설치(레거시 state) 를 위한 한시 경로.
+        $adminPassword = readInstallerRuntime()['admin']['password'] ?? ($config['admin_password'] ?? '');
+
+        if (empty($config['admin_email']) || empty($adminPassword)) {
             return ['success' => false, 'error' => '관리자 이메일과 비밀번호가 설정되지 않았습니다.'];
         }
 
+        // 이름/이메일/언어는 비밀이 아니므로 state.config 에 그대로 둔다.
         putenv('INSTALLER_ADMIN_NAME='.($config['admin_name'] ?? 'Administrator'));
         putenv('INSTALLER_ADMIN_EMAIL='.$config['admin_email']);
-        putenv('INSTALLER_ADMIN_PASSWORD='.$config['admin_password']);
+        putenv('INSTALLER_ADMIN_PASSWORD='.$adminPassword);
         putenv('INSTALLER_ADMIN_LANGUAGE='.($config['admin_language'] ?? $state['g7_locale'] ?? 'ko'));
 
-        return executeDbCommandSSE(
+        $result = executeDbCommandSSE(
             artisanCommand: 'db:seed --force',
             taskId: 'db_seed',
             taskNameKey: 'task_db_seed',
             successMsgKey: 'log_db_seed_success',
             errorMsgKey: 'error_db_seed_failed'
         );
+
+        if (($result['success'] ?? false) === true) {
+            purgeAdminPasswordAfterSeeding();
+        }
+
+        return $result;
+    }
+}
+
+if (! function_exists('purgeAdminPasswordAfterSeeding')) {
+    /**
+     * db_seed 성공 직후 관리자 비밀번호의 모든 잔존처를 제거한다 (이슈 #465).
+     *
+     * 시딩이 끝나면 관리자 계정이 DB 에 해시로 존재하므로 평문은 더 이상 필요 없다.
+     * 노출 창을 최소화하기 위해 소비 즉시 삭제한다:
+     *
+     *   1. runtime.php 의 admin 섹션 (0600 이지만 finalize 까지 잔존)
+     *   2. state.json 의 비밀 4종 (이 수정 이전에 시작된 레거시 설치 대비)
+     *   3. process ENV — 해제하지 않으면 이후 모든 exec() 자식(확장 설치 artisan 전부)
+     *      이 평문을 상속받는다
+     *
+     * 재시도 안전성: db_seed 는 completed_tasks 마커로 스킵된다. drop_tables 재시도로
+     * 마커가 제거되는 경로는 반드시 install-process.php 를 다시 거치므로 세션 또는
+     * runtime 에서 비밀번호가 재주입된다.
+     */
+    function purgeAdminPasswordAfterSeeding(): void
+    {
+        $runtime = readInstallerRuntime();
+        if (is_array($runtime) && isset($runtime['admin'])) {
+            unset($runtime['admin']);
+            writeInstallerRuntime($runtime);
+        }
+
+        // executeDbCommandSSE 가 markTaskCompleted 로 state 를 갱신했으므로 재로드 후
+        // redact 한다 (스냅샷을 덮어쓰면 completed 마커가 유실됨).
+        saveInstallationState(redactInstallationStateSecrets(getInstallationState()));
+
+        // 값 없이 키만 전달 → 해제. 자식 프로세스 ENV 상속 차단.
+        putenv('INSTALLER_ADMIN_PASSWORD');
+        putenv('INSTALLER_ADMIN_NAME');
+        putenv('INSTALLER_ADMIN_EMAIL');
+        putenv('INSTALLER_ADMIN_LANGUAGE');
     }
 }
 
@@ -1705,6 +1754,9 @@ if (! function_exists('setInstallationCompleteSSE')) {
             $state['step_status']['5'] = 'completed';
             $state['installation_status'] = 'completed';
             $state['installation_completed_at'] = date('Y-m-d\TH:i:s\Z');
+            // 완료 시점 이중 방어 (이슈 #465) — Phase 1/2 가 정상 동작하면 no-op.
+            // 레거시 state 로 시작된 설치가 이 코드로 완료되는 경우를 커버한다.
+            $state = redactInstallationStateSecrets($state);
             saveInstallationState($state);
             sendSSEEvent('log', ['message' => lang('log_state_updated')]);
 

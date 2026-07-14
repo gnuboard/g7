@@ -5,12 +5,13 @@
  *  - 셸이 같은 React tree 안에 마운트됨 (Provider 트리 안에서 동작)
  *  - g7le- CSS 프리픽스 강제 (19.3 격리)
  *  - 툴바 + 디바이스 미리보기 툴바 + 라우트 트리 패널 + 프리뷰 캔버스 통합
+ *  - 대화면 전용 최소 너비(좁은 창에서 압착 대신 가로 스크롤)
  */
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { LayoutEditorChrome } from '../../LayoutEditorChrome';
+import { LayoutEditorChrome, EDITOR_MIN_WIDTH } from '../../LayoutEditorChrome';
 import { TranslationProvider } from '../../../TranslationContext';
 import { TranslationEngine } from '../../../TranslationEngine';
 
@@ -61,6 +62,31 @@ describe('LayoutEditorChrome', () => {
   it('템플릿 식별자 라벨 표시', () => {
     renderShell();
     expect(screen.getByTestId('g7le-toolbar-template-label').textContent).toBe('sirsoft-admin_basic');
+  });
+});
+
+describe('LayoutEditorChrome — 대화면 전용 최소 너비 (좁은 창 압착 차단)', () => {
+  // 회귀 배경: 셸에 최소 너비가 없어 좁은 창에서 툴바 버튼이 flex-shrink 로 깎이고
+  // 라벨이 글자 단위로 줄바꿈됐다("요 소 추 가"). 편집기는 대화면 전용 도구이므로
+  // 반응형 재배치 대신 최소 너비를 유지하고 모자란 폭은 브라우저 가로 스크롤로 흡수한다.
+
+  it('셸이 EDITOR_MIN_WIDTH 최소 너비를 갖는다 (압착 대신 가로 스크롤)', () => {
+    renderShell();
+    const chrome = screen.getByTestId('g7le-chrome') as HTMLElement;
+    expect(chrome.style.minWidth).toBe(`${EDITOR_MIN_WIDTH}px`);
+  });
+
+  it('툴바 직접 자식 전체가 축소·줄바꿈되지 않는다 (flex-shrink:0 + nowrap)', () => {
+    // 버튼마다 인라인 style 로 붙이면 자체 style 을 가진 하위 컴포넌트
+    // (TemplateSwitcher/LocaleSwitcher)와 이후 추가 항목이 빠져 결함이 재발한다.
+    // 직접 자식 전체를 덮는 CSS 규칙이어야 한다 — 그 규칙의 존재를 잠근다.
+    renderShell();
+    const toolbar = screen.getByTestId('g7le-toolbar');
+    expect(toolbar.children.length).toBeGreaterThan(1);
+    const styleEl = toolbar.querySelector('style');
+    expect(styleEl?.textContent).toContain('.g7le-toolbar > *');
+    expect(styleEl?.textContent).toContain('flex-shrink: 0');
+    expect(styleEl?.textContent).toContain('white-space: nowrap');
   });
 });
 

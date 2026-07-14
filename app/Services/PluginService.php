@@ -708,7 +708,6 @@ class PluginService
             'mjs' => 'application/javascript',
             'css' => 'text/css',
             'json' => 'application/json',
-            'map' => 'application/json',
             'png' => 'image/png',
             'jpg' => 'image/jpeg',
             'jpeg' => 'image/jpeg',

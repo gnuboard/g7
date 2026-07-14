@@ -153,4 +153,5 @@ return [
     'restore_success' => '設定が正常に復元されました。',
     'restore_failed' => '設定の復元に失敗しました。',
     'restore_error' => '設定の復元中にエラーが発生しました。',
+    'websocket_invalid_host' => 'Websocketホスト設定が正しくありません。ホストにはアドレスのみを入力し、アカウント情報(@)やhttp/https以外のプロトコルは使用できません。',
 ];

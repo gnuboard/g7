@@ -5,6 +5,49 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.53.1] - 2026-07-12
+
+### Fixed
+
+#### 좁은 창에서 레이아웃 편집기가 압착되던 문제
+
+- `LayoutEditorChrome.tsx` — 편집기 셸에 최소 너비(`EDITOR_MIN_WIDTH` = 1280px)를 부여했다. 레이아웃 편집기는 라우트 트리(280px 고정) + 디바이스 미리보기 캔버스 + 라벨 있는 툴바 버튼 10여 개가 나란히 놓이는 대화면 전용 도구다. 종전에는 셸에 하한이 없어 창을 좁히면 이들이 창 너비에 맞춰 압착됐다. 이제 최소 너비 아래로는 압착하지 않고 부족한 폭을 브라우저 가로 스크롤로 흡수한다(반응형 재배치 아님 — 편집기 UI 는 축약 대상이 아니다).
+- `EditorToolbar.tsx` — 툴바 직접 자식 전체에 `flex-shrink: 0` + `white-space: nowrap` 규칙을 적용했다. 툴바는 flex row 라 기본값(`flex-shrink: 1`)에서는 폭이 모자랄 때 각 항목이 깎이고 라벨이 글자 단위로 줄바꿈됐다("요 소 추 가"). 버튼마다 인라인 style 로 붙이는 대신 직접 자식 전체를 덮는 단일 규칙으로 뒀다 — 자체 style 을 가진 하위 컴포넌트(템플릿 전환기·언어 전환기)와 이후 추가될 항목까지 자동으로 포함된다.
+- 디바이스 미리보기 프레임이 남는 캔버스 폭보다 넓을 때는 종전대로 줌 슬라이더로 축소해 본다(프레임 폭 SSoT 인 `deviceList.ts` 는 변경 없음).
+
+## [engine-v1.53.0] - 2026-07-11
+
+### Fixed
+
+#### 페이지 로드 요청 1건의 일시 실패가 앱 전체를 죽이던 문제
+
+- `networkResilience.ts`(신규) — 네트워크 레벨 실패에만 지수 백오프로 재시도하는 `fetchWithRetry` / `loadScriptWithRetry` 와 문서 이탈 가드를 제공한다. `fetch` 는 4xx/5xx 로 reject 하지 않고 `Response.ok=false` 로 resolve 하므로, `TypeError: Failed to fetch` 는 **응답 자체가 없었다**(요청 취소·커넥션 유실)는 뜻이다. 그 경우만 재시도(2회, 총 3시도)하고 **HTTP 응답은 그대로 호출부에 넘겨** 기존 상태코드 분기(`LayoutLoader` 의 401 재시도 등)와 이중으로 겹치지 않게 했다. 외부 `signal` 의 AbortError 는 즉시 rethrow 하고 내부 timeout 이 발화시킨 abort 만 재시도한다.
+- `TemplateApp.ts` / `ComponentRegistry.ts` / `LayoutLoader.ts` — `routes.json`·`components.json`·레이아웃 JSON fetch 를 재시도 래퍼로 전환했다. 종전에는 이 요청 중 1건만 취소돼도 재시도 없이 곧장 rethrow 되어 전면 "초기화 실패" / "페이지 로딩 실패" 화면으로 끝났다. 모바일 회선은 요청이 떠 있는 창이 수백 ms 라 새로고침 연타가 그 창에 꽂혀 간헐 재현됐다(로컬은 왕복이 수 ms 라 미재현).
+- `LayoutLoader.ts` — 실패한 promise 가 `layoutCache` 에 남아 이후 모든 재요청이 그 rejection 을 재사용하던 문제를 함께 고쳤다. 네트워크가 복구돼도 다시 시도할 기회가 없었다.
+- `TemplateApp.ts` — 문서 이탈(`pagehide`) 중 발생한 초기화 실패에는 에러 화면을 렌더하지 않는다. 새로고침으로 버려질 문서에 "초기화 실패" 를 그려봐야 다음 문서가 덮을 뿐이고, 연타 시 에러가 번쩍이는 원인이 된다. bfcache 복귀(`pageshow{persisted:true}`) 시 가드를 해제하므로 뒤로가기로 돌아온 문서가 "이탈 중" 으로 오판되지 않는다. `visibilitychange`/`hidden` 은 의도적으로 쓰지 않는다 — 탭 전환으로도 발화해 백그라운드의 정상적 초기화 실패까지 삼키면 영구 빈 화면이 된다.
+
+#### 확장 번들 부재 시 5초 백지 + 내부 식별자 raw 노출
+
+- `TemplateApp.ts::waitForHandlers` — 확장 JS 번들 로드가 **실패로 확정**된 경우 `maxWait`(5000ms) 를 기다리지 않고 즉시 반환한다. 종전에는 레이아웃 `init_actions` 가 참조하는 확장 소유 핸들러가 영원히 등록되지 않는데도 5초간 폴링했고, 그동안 렌더가 시작되지 않아 사용자에게는 백지로 보였다. 판정은 실패 키 단위로 한다 — 병합 번들(`module`/`plugin`) 이 죽으면 그 파일에 속한 확장을 알 수 없으므로 대기를 포기하고, 개별 로딩 실패는 `{확장식별자}.{핸들러}` 접두사로 대조해 **그 확장의 핸들러만** 포기한다. 실패를 특정 핸들러에 귀속시킬 수 없으면 기다린다 — 무관한 확장의 실패로 정상 로드 중인 확장의 기능까지 조용히 사라지면 안 된다.
+- `ActionDispatcher.ts` — 미등록 핸들러로 인한 `ActionError` 에 `unknownHandler` 플래그를 부여하고, 표시 계층에서 `errorHandling` 정책(토스트 등)을 태우지 않는다. 확장 번들이 없으면 `Unknown action handler: sirsoft-ecommerce.initPreferredCurrency` 같은 **내부 식별자가 담긴 raw 영문 문구**가 사용자에게 토스트로 노출됐다. 확장 부재는 사용자가 조치할 수 있는 일이 아니므로 조용한 기능 열화로 끝낸다. `throw` 자체는 유지해 호출부의 기존 흐름은 바뀌지 않으며, 이 완화는 미등록 핸들러에 한정하고 다른 액션 실패는 종전대로 표시한다.
+
+### Changed
+
+#### 확장 에셋 로더의 실패 계약 (`resolve` → `reject`)
+
+- `modules/ModuleAssetLoader.ts` — JS 에셋의 `onerror` 가 `resolve()` 하던 것을 **`reject`** 로 바꿨다. 실패가 성공으로 위장되면 상위 `loadExtensionAssets` 의 try/catch 가 무력화되어 실패 사실이 어디에도 기록되지 않고, 앱은 한참 뒤 미등록 핸들러 지점에서 죽는다 — 증상 지점과 원인 지점이 멀어 디버깅이 어려웠다. 실패는 발생 지점에서 표면화한다.
+- 로드에 최종 실패한 확장을 `failedJsAssets` 에 기록해 `waitForHandlers` 가 "오지 않을 핸들러" 를 판별할 수 있게 했다(위 5초 백지 수정의 근거).
+- **CSS(`loadBundleCss`/`loadCSS`)는 `resolve()` 를 유지한다** — 스타일 부재는 앱을 죽이지 않는다(과잉 적용 경계).
+- 개별 확장 로딩(`loadActiveExtensionAssets`)은 `Promise.all` → **`Promise.allSettled`** 로 바꿨다. 확장 하나의 실패가 나머지 확장을 함께 죽이면 안 된다(부분 열화). 반면 병합 번들은 확장 전체가 한 파일이므로 실패 시 reject 로 표면화한다.
+- `<script>` 재시도 시 기존 element 를 제거하고 새로 만든다 — 남겨두면 IIFE 번들이 두 번 실행되어 핸들러가 중복 등록된다.
+
+#### 정상 경로 성능 계약
+
+- 재시도는 **실패했을 때만** 발동한다. `fetchWithRetry` 는 성공 시 루프 첫 회에 곧장 반환하므로 백오프 코드가 실행되지 않으며, 추가 비용은 시도별 timeout 용 `AbortController` 1개뿐이다(실측: 취소 없는 정상 로드 7회에서 대상 리소스 5종 모두 정확히 회당 1회 요청).
+- 코어/컴포넌트 번들의 `<script src>` 는 **정적 태그로 유지**하고 `onerror` 에서만 동적 재시도를 건다. 브라우저 프리로드 스캐너는 HTML 파싱 중 정적 `<script src>` 를 미리 발견해 선행 로드하는데, 이를 `createElement('script')` 로 바꾸면 스캐너가 보지 못해 인라인 스크립트 실행 이후로 요청이 밀린다(실측: 코어 번들 요청 시작 352ms → 568ms, 렌더 중앙값 +273ms). 재시도는 예외 경로이므로 스캐너 이점을 잃어도 무방하다.
+
+> 사용자 영향: 모바일에서 새로고침을 연타할 때 간헐적으로 뜨던 전면 "초기화 실패" 화면이 사라진다. 요청 1건의 일시적 실패는 재시도로 조용히 복구되어 사용자가 인지하지 못하고, 번들이 끝내 로드되지 않는 경우에도 백지나 내부 식별자 노출 대신 새로고침 버튼이 있는 안내 화면으로 끝난다. 정상적으로 로드되는 경우의 페이지 속도는 종전과 같다.
+
 ## [engine-v1.52.2] - 2026-07-10
 
 ### Fixed

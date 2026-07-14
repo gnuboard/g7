@@ -65,34 +65,24 @@
 
         @include('partials.template-externals-scripts', ['position' => 'before-core'])
 
-        <!-- 코어 렌더링 엔진 -->
-        <script src="{{ asset('build/core/template-engine.min.js') }}?v={{ filemtime(public_path('build/core/template-engine.min.js')) }}"></script>
-
-        @include('partials.template-externals-scripts', ['position' => 'before-template'])
-
-        <!-- 템플릿 컴포넌트 번들 (IIFE) -->
-        <script src="/api/templates/assets/{{ $activeUserTemplate }}/js/components.iife.js?v={{ $extensionCacheVersion }}"></script>
-
-        <!-- 템플릿 엔진 초기화 (TemplateApp 사용) -->
-        <script>
-            // TemplateApp을 통한 초기화 (DOMContentLoaded 이벤트에서 자동으로 초기화됨)
-            if (window.G7Core && window.G7Core.initTemplateApp) {
-                window.G7Core.initTemplateApp({
-                    templateId: '{{ $activeUserTemplate }}',
-                    templateType: 'user',
-                    locale: '{{ app()->getLocale() }}',
-                    debug: {{ config('app.debug') ? 'true' : 'false' }}@if(config('broadcasting.connections.reverb.key')),
-                    websocket: {
-                        appKey: '{{ config('broadcasting.connections.reverb.key') }}',
-                        host: '{{ config('g7.websocket.client.host', config('broadcasting.connections.reverb.options.host', 'localhost')) }}',
-                        port: {{ config('g7.websocket.client.port', config('broadcasting.connections.reverb.options.port', 80)) }},
-                        scheme: '{{ config('g7.websocket.client.scheme', config('broadcasting.connections.reverb.options.scheme', 'https')) }}'
-                    }@endif
-                });
-            } else {
-                console.error('[User] G7Core.initTemplateApp is not available');
-            }
-        </script>
+        {{-- 코어 엔진 + 템플릿 컴포넌트 번들 로드 → 초기화 (재시도 + 폴백 UI) --}}
+        @include('partials.bootstrap-scripts', [
+            'templateType' => 'user',
+            'coreEngineSrc' => asset('build/core/template-engine.min.js') . '?v=' . filemtime(public_path('build/core/template-engine.min.js')),
+            'componentsSrc' => '/api/templates/assets/' . $activeUserTemplate . '/js/components.iife.js?v=' . $extensionCacheVersion,
+            'initConfig' => array_filter([
+                'templateId' => $activeUserTemplate,
+                'templateType' => 'user',
+                'locale' => app()->getLocale(),
+                'debug' => (bool) config('app.debug'),
+                'websocket' => config('broadcasting.connections.reverb.key') ? [
+                    'appKey' => config('broadcasting.connections.reverb.key'),
+                    'host' => config('g7.websocket.client.host', config('broadcasting.connections.reverb.options.host', 'localhost')),
+                    'port' => (int) config('g7.websocket.client.port', config('broadcasting.connections.reverb.options.port', 80)),
+                    'scheme' => config('g7.websocket.client.scheme', config('broadcasting.connections.reverb.options.scheme', 'https')),
+                ] : null,
+            ], fn ($value) => $value !== null),
+        ])
 
         @include('partials.template-externals-scripts', ['position' => 'body-end'])
         @endif

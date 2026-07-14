@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Support\OutboundUrlValidator;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -2149,6 +2150,17 @@ class OrderCalculationService
      */
     protected function dispatchApiRequest(string $endpoint, array $requestData, array $config): ?Response
     {
+        // 이 호출은 공개 체크아웃 트래픽으로도 유발되므로, 저장된 엔드포인트가 내부망을
+        // 가리키면 요청 자체를 보내지 않는다. 저장 시점 검증(FormRequest) 도입 이전에
+        // 기록된 값이나 DB 직접 수정으로 들어온 값을 여기서 막는다.
+        if (! $this->isEndpointAllowed($endpoint)) {
+            Log::warning('배송비 계산 API 엔드포인트가 내부 네트워크를 가리켜 호출을 차단했습니다', [
+                'host' => parse_url($endpoint, PHP_URL_HOST),
+            ]);
+
+            return null;
+        }
+
         $request = Http::timeout(10)->withoutRedirecting();
 
         // 인증 헤더 부착
@@ -2168,6 +2180,27 @@ class OrderCalculationService
         return $method === ShippingApiHttpMethod::GET->value
             ? $request->get($endpoint, $requestData)
             : $request->post($endpoint, $requestData);
+    }
+
+    /**
+     * 배송비 계산 API 엔드포인트가 호출 가능한 주소인지 판정합니다.
+     *
+     * 사설 IP·localhost 등 내부 네트워크 주소는 기본 차단합니다. 사내 서버를 배송비 API 로
+     * 쓰는 운영 환경을 위해 관리자 환경설정의 `security.allow_internal_outbound_urls` 로
+     * 허용할 수 있으며, 그 경우에도 userinfo 위장·비 HTTP scheme 은 계속 거부합니다.
+     *
+     * @param  string  $endpoint  API 엔드포인트 URL
+     * @return bool 호출을 허용하면 true
+     */
+    protected function isEndpointAllowed(string $endpoint): bool
+    {
+        $options = ['schemes' => ['http', 'https']];
+
+        if ((bool) g7_core_settings('security.allow_internal_outbound_urls', false)) {
+            return OutboundUrlValidator::isStructurallySafeUrl($endpoint, $options);
+        }
+
+        return OutboundUrlValidator::isPublicHttpUrl($endpoint, $options);
     }
 
     /**
