@@ -29,19 +29,11 @@ class UploadBatchAttachmentRequest extends FormRequest
      */
     public function rules(): array
     {
-        // config/attachment.max_file_size 는 KB 단위 (관리자 설정 MB → KB 변환은 SettingsServiceProvider 담당)
-        $maxSize = (int) config('attachment.max_file_size', 10240);
-        $extensions = $this->allowedExtensions();
-
-        $fileRules = ['file', 'max:'.$maxSize];
-        // 목록이 비면 확장자 제한 없음 (탈출구) — 빈 규칙을 붙이면 전 파일이 거부된다
-        if ($extensions !== []) {
-            $fileRules[] = 'extensions:'.implode(',', $extensions);
-        }
+        $maxSize = config('attachment.max_size', 10) * 1024; // MB to KB
 
         $rules = [
             'files' => ['required', 'array', 'min:1'],
-            'files.*' => $fileRules,
+            'files.*' => ['file', 'max:' . $maxSize],
             'attachmentable_type' => ['nullable', 'string', 'max:255'],
             'attachmentable_id' => ['nullable', 'integer', 'min:1'],
             'collection' => ['sometimes', 'string', 'max:100'],
@@ -65,8 +57,7 @@ class UploadBatchAttachmentRequest extends FormRequest
             'files.array' => __('attachment.validation.files_array'),
             'files.min' => __('attachment.validation.files_min'),
             'files.*.file' => __('attachment.validation.file_invalid'),
-            'files.*.max' => __('attachment.validation.file_max', ['max' => (int) config('attachment.max_file_size', 10240) / 1024]),
-            'files.*.extensions' => __('attachment.validation.file_extension_invalid', ['extensions' => implode(', ', $this->allowedExtensions())]),
+            'files.*.max' => __('attachment.validation.file_max', ['max' => config('attachment.max_size', 10)]),
             'attachmentable_type.string' => __('attachment.validation.type_invalid'),
             'attachmentable_id.integer' => __('attachment.validation.id_invalid'),
         ];
@@ -74,6 +65,8 @@ class UploadBatchAttachmentRequest extends FormRequest
 
     /**
      * 검증 전 데이터 준비
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -81,26 +74,5 @@ class UploadBatchAttachmentRequest extends FormRequest
             'collection' => $this->collection ?? 'default',
             'source_type' => $this->source_type ?? AttachmentSourceType::Core->value,
         ]);
-    }
-
-    /**
-     * 허용 확장자 목록을 반환합니다 (소문자 정규화 + 확장 훅 적용).
-     *
-     * 빈 배열은 "확장자 제한 없음" 을 의미합니다.
-     *
-     * @return array<int, string> 허용 확장자 목록
-     */
-    protected function allowedExtensions(): array
-    {
-        $extensions = (array) config('attachment.allowed_extensions', []);
-
-        $extensions = array_values(array_filter(array_map(
-            static fn ($ext) => strtolower(trim(ltrim((string) $ext, '.'))),
-            $extensions
-        )));
-
-        return array_values(array_unique(
-            (array) HookManager::applyFilters('core.attachment.allowed_extensions', $extensions, $this)
-        ));
     }
 }

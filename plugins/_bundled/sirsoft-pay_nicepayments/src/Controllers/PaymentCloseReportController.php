@@ -40,7 +40,7 @@ class PaymentCloseReportController
 
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
-            return ResponseHelper::error('common.failed', 429, [
+            return ResponseHelper::error('messages.failed', 429, [
                 'message' => ['Too many NicePayments payment close reports. Please try again later.'],
             ]);
         }
@@ -48,13 +48,13 @@ class PaymentCloseReportController
 
         $order = $this->orderService->findByOrderNumber($oid);
         if (! $order) {
-            return ResponseHelper::error('common.failed', 404, [
+            return ResponseHelper::error('messages.failed', 404, [
                 'message' => ['Order not found.'],
             ]);
         }
 
         if (! $this->requestMatchesOrderBuyer($request, $order)) {
-            return ResponseHelper::error('common.failed', 403, [
+            return ResponseHelper::error('messages.failed', 403, [
                 'message' => ['Order buyer verification failed.'],
             ]);
         }
@@ -65,13 +65,13 @@ class PaymentCloseReportController
             'ip' => $request->ip(),
         ]);
         if ($expectedPrice === null) {
-            return ResponseHelper::error('common.failed', 422, [
+            return ResponseHelper::error('messages.failed', 422, [
                 'message' => ['Payment currency is not chargeable.'],
             ]);
         }
 
         if ($price !== $expectedPrice) {
-            return ResponseHelper::error('common.failed', 422, [
+            return ResponseHelper::error('messages.failed', 422, [
                 'message' => ['Payment amount does not match the order amount.'],
             ]);
         }
@@ -84,25 +84,25 @@ class PaymentCloseReportController
         );
 
         if (($result['status'] ?? null) === 'amount_mismatch') {
-            return ResponseHelper::error('common.failed', 422, [
+            return ResponseHelper::error('messages.failed', 422, [
                 'message' => ['Payment amount does not match the order amount.'],
             ]);
         }
 
         if (($result['status'] ?? null) === 'invalid_payment_currency') {
-            return ResponseHelper::error('common.failed', 422, [
+            return ResponseHelper::error('messages.failed', 422, [
                 'message' => ['Payment currency is not chargeable.'],
             ]);
         }
 
         if (($result['status'] ?? null) === 'ignored') {
-            return ResponseHelper::success('common.success', [
+            return ResponseHelper::success('messages.success', [
                 'status' => 'ignored',
                 'reason' => $result['reason'] ?? 'order_not_payable',
             ]);
         }
 
-        return ResponseHelper::success('common.success', [
+        return ResponseHelper::success('messages.success', [
             'status' => 'recorded',
         ]);
     }
@@ -118,7 +118,6 @@ class PaymentCloseReportController
     private function recordCloseReportWithLock(string $oid, int $price, string $closeReason): array
     {
         return DB::transaction(function () use ($oid, $price, $closeReason): array {
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $lockedOrder = Order::query()
                 ->where('order_number', $oid)
                 ->lockForUpdate()

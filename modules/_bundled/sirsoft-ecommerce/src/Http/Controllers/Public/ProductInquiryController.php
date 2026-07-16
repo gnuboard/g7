@@ -6,8 +6,6 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Ecommerce\Exceptions\ProductInquiryOperationException;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Public\ProductInquiryListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\StoreInquiryRequest;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\ProductInquiryService;
@@ -27,18 +25,16 @@ class ProductInquiryController extends PublicBaseController
     /**
      * 상품 문의 목록 조회
      *
-     * @param  ProductInquiryListRequest  $request  목록 조회 요청 (페이지네이션 상·하한 검증)
      * @param  Product  $product  라우트 바인딩된 상품 (product_code 또는 id)
      * @return JsonResponse 문의 목록 및 board_settings 메타 JSON 응답
      */
-    public function index(ProductInquiryListRequest $request, Product $product): JsonResponse
+    public function index(Product $product): JsonResponse
     {
         try {
             $this->logApiUsage('inquiry.index');
-            $validated = $request->validated();
-            $perPage = (int) ($validated['per_page'] ?? 10);
-            $page = (int) ($validated['page'] ?? 1);
-            $excludeSecret = filter_var($validated['exclude_secret'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $perPage = (int) (request()->query('per_page', 10));
+            $page = (int) (request()->query('page', 1));
+            $excludeSecret = filter_var(request()->query('exclude_secret', false), FILTER_VALIDATE_BOOLEAN);
 
             $result = $this->inquiryService->getProductInquiries($product->id, $perPage, $page, $excludeSecret);
 
@@ -75,19 +71,11 @@ class ProductInquiryController extends PublicBaseController
                 ['id' => $inquiry->id],
                 201
             );
-        } catch (ProductInquiryOperationException $e) {
-            // 실패 사유(문의 게시판 미설정·게시판 모듈 불가 등)를 그대로 보여준다.
-            // 일반 문구만 남기면 서버 기록을 봐야만 원인을 알 수 있다 — 같은 기능의
-            // 수정·답변 경로는 이미 사유를 노출하고 있어 안내 수준을 맞춘다.
-            //
-            // 종전에는 `\RuntimeException` 을 잡아서, 도메인 사유가 아닌 인프라 예외까지
-            // 422 로 뭉개고 그 원문을 사유 자리에 실어 보냈다.
+        } catch (\RuntimeException $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
-                'messages.inquiries.operation_failed_reason',
-                422,
-                null,
-                ['reason' => __($e->getMessageKey(), $e->getMessageParams())]
+                'messages.inquiries.create_failed',
+                422
             );
         } catch (Exception $e) {
             return ResponseHelper::moduleError(

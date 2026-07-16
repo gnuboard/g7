@@ -423,8 +423,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "form-hint block",
-                                                            "data-testid": "page-slug-hint"
+                                                            "className": "form-hint block"
                                                         },
                                                         "text": "$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug || 'example'}}"
                                                     },
@@ -957,17 +956,14 @@
                                 "name": "Button",
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-secondary",
-                                    "data-testid": "page-form-cancel"
+                                    "className": "btn btn-secondary"
                                 },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}",
-                                            "mergeQuery": true,
-                                            "query": {}
+                                            "path": "{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}"
                                         }
                                     }
                                 ],
@@ -1062,9 +1058,7 @@
                                                             {
                                                                 "handler": "navigate",
                                                                 "params": {
-                                                                    "path": "/admin/pages/{{route?.id ?? response.data.id}}",
-                                                                    "mergeQuery": true,
-                                                                    "query": {}
+                                                                    "path": "/admin/pages/{{route?.id ?? response.data.id}}"
                                                                 }
                                                             }
                                                         ],
@@ -1081,7 +1075,7 @@
                                                                 "handler": "toast",
                                                                 "params": {
                                                                     "type": "error",
-                                                                    "message": "{{error.message ?? '$t:sirsoft-page.admin.page.form.validation_error'}}"
+                                                                    "message": "$t:sirsoft-page.admin.page.form.validation_error"
                                                                 }
                                                             }
                                                         ]

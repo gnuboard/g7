@@ -29,12 +29,9 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefundOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
  * 주문 취소 서비스
@@ -56,9 +53,6 @@ class OrderCancellationService
      * @param  OrderCancelOptionRepositoryInterface  $orderCancelOptionRepository  주문 취소 옵션 Repository
      * @param  OrderRefundRepositoryInterface  $orderRefundRepository  주문 환불 Repository
      * @param  OrderRefundOptionRepositoryInterface  $orderRefundOptionRepository  주문 환불 옵션 Repository
-     * @param  CashReceiptService  $cashReceiptService  현금영수증 발급/취소 서비스
-     * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 Repository
-     * @param  OrderRepositoryInterface  $orderRepository  주문 Repository
      */
     public function __construct(
         protected OrderAdjustmentService $adjustmentService,
@@ -72,71 +66,7 @@ class OrderCancellationService
         protected OrderCancelOptionRepositoryInterface $orderCancelOptionRepository,
         protected OrderRefundRepositoryInterface $orderRefundRepository,
         protected OrderRefundOptionRepositoryInterface $orderRefundOptionRepository,
-        protected CashReceiptService $cashReceiptService,
-        protected OrderPaymentRepositoryInterface $orderPaymentRepository,
-        protected OrderRepositoryInterface $orderRepository,
     ) {}
-
-    /**
-     * 관리자가 취소 모달에서 입력한 환불 계좌를 결제행에 반영합니다.
-     *
-     * 미입력이면 기존 값(주문 시 입력분)을 그대로 둔다 — 취소 요청이 계좌를 지우지 않는다.
-     * 가상계좌 입금완료 건의 미입력은 CancelOrderRequest 가 이미 422 로 막는다.
-     *
-     * @param  Order  $order  대상 주문
-     * @param  array|null  $refundBankInfo  환불 계좌 (bank_code/account_number/holder)
-     */
-    protected function applyRefundBank(Order $order, ?array $refundBankInfo): void
-    {
-        if ($refundBankInfo === null) {
-            return;
-        }
-
-        $order->loadMissing('payment');
-
-        if (! $order->payment) {
-            return;
-        }
-
-        $this->orderPaymentRepository->updateRefundBank(
-            $order->payment,
-            $refundBankInfo['bank_code'],
-            $this->settingsService->resolveBankName($refundBankInfo['bank_code']),
-            $refundBankInfo['account_number'],
-            $refundBankInfo['holder'],
-        );
-    }
-
-    /**
-     * 취소 확정 후 현금영수증을 현재 금액에 맞춰 동기화합니다.
-     *
-     * 발급 이력이 없으면 no-op 이고, 잔여 발급액이 0 이면 전액취소만 수행하며,
-     * 그 외에는 전체취소 후 잔여 과세금액 기준으로 재발급한다 (부분취소 API 미사용).
-     *
-     * 어떤 실패도 호출부로 전파하지 않는다 — 환불은 이미 DB 에 확정됐고 되돌릴 수 없다.
-     * 실패는 이력 테이블(issue_status=FAILED)과 로그에 남아 관리자 수동 재발급으로 복구된다.
-     *
-     * 로그 레벨이 error 인 이유 — CashReceiptService 는 예상 가능한 실패(프로바이더가 success=false
-     * 반환, 복호화 불가)를 스스로 삼키고 warning + FAILED 이력으로 남긴다. 따라서 여기까지 예외가
-     * 올라왔다면 리스너가 계약을 어긴 것이고, 프로바이더 쪽 영수증이 실제로 취소됐는지조차 알 수 없다
-     * (국세청 기록과 DB 가 어긋날 수 있는 상태). 취소/재고/쿠폰 복원 실패(warning)와 달리 즉시
-     * 사람이 개입해야 하므로 PG 환불 실패와 같은 error 로 둔다.
-     *
-     * @param  Order  $order  취소가 반영된 주문
-     * @param  string|null  $reason  취소 사유
-     */
-    protected function syncCashReceipt(Order $order, ?string $reason): void
-    {
-        try {
-            $this->cashReceiptService->syncFromOrder($order, $reason);
-        } catch (\Throwable $e) {
-            // 식별번호·PG raw 응답은 담지 않는다 (개인정보 로그 미노출).
-            Log::error('현금영수증 동기화 실패 — 주문 취소는 확정됨 (관리자 수동 재발급 필요)', [
-                'order_id' => $order->id,
-                'message' => $e->getMessage(),
-            ]);
-        }
-    }
 
     /**
      * 전체 주문을 취소합니다.
@@ -147,7 +77,6 @@ class OrderCancellationService
      * @param  int|null  $cancelledBy  취소 요청자 ID
      * @param  bool  $cancelPg  PG 결제 취소 여부
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
-     * @param  array|null  $refundBankInfo  환불 계좌 (bank_code/account_number/holder, 미입력 시 null)
      * @return CancellationResult 취소 결과
      *
      * @throws \Exception 취소 불가 또는 PG 환불 실패 시
@@ -159,7 +88,6 @@ class OrderCancellationService
         ?int $cancelledBy = null,
         bool $cancelPg = true,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
-        ?array $refundBankInfo = null,
     ): CancellationResult {
         $order->loadMissing(['options', 'payment', 'shippings']);
 
@@ -184,7 +112,6 @@ class OrderCancellationService
             cancelledBy: $cancelledBy,
             cancelPg: $cancelPg,
             refundPriority: $refundPriority,
-            refundBankInfo: $refundBankInfo,
         );
     }
 
@@ -198,7 +125,6 @@ class OrderCancellationService
      * @param  int|null  $cancelledBy  취소 요청자 ID
      * @param  bool  $cancelPg  PG 결제 취소 여부
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
-     * @param  array|null  $refundBankInfo  환불 계좌 (bank_code/account_number/holder, 미입력 시 null)
      * @return CancellationResult 취소 결과
      *
      * @throws \Exception 취소 불가 또는 PG 환불 실패 시
@@ -211,7 +137,6 @@ class OrderCancellationService
         ?int $cancelledBy = null,
         bool $cancelPg = true,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
-        ?array $refundBankInfo = null,
     ): CancellationResult {
         $order->loadMissing(['options', 'payment', 'shippings']);
 
@@ -229,7 +154,6 @@ class OrderCancellationService
             cancelledBy: $cancelledBy,
             cancelPg: $cancelPg,
             refundPriority: $refundPriority,
-            refundBankInfo: $refundBankInfo,
         );
     }
 
@@ -262,7 +186,6 @@ class OrderCancellationService
      * @param  int|null  $cancelledBy  요청자 ID
      * @param  bool  $cancelPg  PG 취소 여부
      * @param  RefundPriorityEnum  $refundPriority  환불 우선순위
-     * @param  array|null  $refundBankInfo  환불 계좌 (bank_code/account_number/holder, 미입력 시 null)
      * @return CancellationResult 취소 결과
      *
      * @throws \Exception
@@ -276,15 +199,10 @@ class OrderCancellationService
         ?int $cancelledBy,
         bool $cancelPg,
         RefundPriorityEnum $refundPriority = RefundPriorityEnum::PG_FIRST,
-        ?array $refundBankInfo = null,
     ): CancellationResult {
         // ① 검증
         $this->validateCancellable($order);
         $this->validateCancelItems($order, $cancelItems);
-
-        // 환불 계좌 갱신 — PG 환불(executePgRefund)이 이 컬럼을 읽어 refundReceiveAccount 를
-        // 구성하므로 환불 실행 전에 반영해야 한다. 관리자가 취소 모달에서 입력/수정한 값이다.
-        $this->applyRefundBank($order, $refundBankInfo);
 
         // 결제 취소 전 본인인증(IDV) 정책 가드 지점 (관리자/사용자 — payment.cancel purpose).
         // EnforceIdentityPolicyListener 가 'sirsoft-ecommerce.payment.cancel' 정책이 활성이고
@@ -317,12 +235,6 @@ class OrderCancellationService
             $cancelledBy, $cancelPg, $adjustmentResult,
             &$orderCancel, &$orderRefund,
         ) {
-            // ③-0. 누적 컬럼 갱신 전 주문·결제 행을 잠그고 커밋된 값으로 되읽는다.
-            // total_cancelled_amount / cancellation_count / cancelled_amount / cancel_history 는
-            // 현재 값을 읽어 더하거나 덧붙이는 컬럼이라, 동시 부분취소 두 건이 같은 값을 읽으면
-            // 후행이 선행을 덮어써 취소 총액이 과소 기록되고 PG 환불 기준이 어긋난다.
-            $this->lockAccumulatorRows($order);
-
             $now = Carbon::now();
             $isFullCancel = $cancelType === CancelTypeEnum::FULL;
             $isPaid = ! $order->order_status->isBeforePayment();
@@ -379,19 +291,7 @@ class OrderCancellationService
             $this->finalizeStatus($orderCancel, $orderRefund, $cancelledBy);
         });
 
-        // ④ 현금영수증 동기화 — 취소가 DB 에 확정된 뒤에 수행한다.
-        //
-        // 트랜잭션 안에서 부르지 않는 이유:
-        //   (a) 재발급 실패 이력(issue_status=FAILED)은 관리자 화면의 경고 배지 근거이자 국세청 신고
-        //       누락을 막는 원장이다. 롤백에 휩쓸려 사라지면 안 된다.
-        //   (b) 프로바이더 취소·재발급은 외부 API 2회 왕복이다. DB 잠금을 그동안 붙들 수 없고,
-        //       실제 영수증은 이미 취소됐는데 트랜잭션만 롤백되면 DB 와 국세청 기록이 어긋난다.
-        //
-        // syncFromOrder 는 내부에서 실패를 삼키고 FAILED 이력으로 남기지만, 프로바이더 리스너가
-        // 예외를 던질 가능성까지 감안해 방어한다 — 환불은 이미 끝났고 되돌릴 수 없다.
-        $this->syncCashReceipt($order->fresh(), $reason);
-
-        // ⑤ after_cancel 훅 (취소 스냅샷 전달)
+        // ④ after_cancel 훅 (취소 스냅샷 전달)
         $hookName = $cancelType === CancelTypeEnum::FULL
             ? 'sirsoft-ecommerce.order.after_cancel'
             : 'sirsoft-ecommerce.order.after_partial_cancel';
@@ -572,7 +472,7 @@ class OrderCancellationService
     protected function buildShippingSnapshot(Order $order, array $cancelItems): array
     {
         $orderSnapshot = $order->shipping_policy_applied_snapshot ?? [];
-        $address = ShippingPolicySnapshot::address($orderSnapshot);
+        $address = $orderSnapshot['address'] ?? [];
 
         // 주문 스냅샷에 배송지가 없으면 현재 배송주소에서 폴백 복원(과거 주문 호환).
         if (empty($address['country_code'])) {
@@ -592,8 +492,13 @@ class OrderCancellationService
             }
         }
 
-        // 형태 판별은 ShippingPolicySnapshot 단일 출처에 위임 (구형 혼합 배열도 흡수).
-        $policies = ShippingPolicySnapshot::itemsForOptions($orderSnapshot, $cancelOptionIds);
+        $policies = [];
+        foreach ($orderSnapshot as $key => $entry) {
+            if (is_int($key) && isset($entry['product_option_id'], $entry['policy'])
+                && isset($cancelOptionIds[$entry['product_option_id']])) {
+                $policies[] = $entry;
+            }
+        }
 
         return [
             'country_code' => strtoupper((string) ($address['country_code'] ?? 'KR')),
@@ -742,32 +647,6 @@ class OrderCancellationService
     // ───────────────────────────────────────────────
     // ③-e. Order 합계 업데이트
     // ───────────────────────────────────────────────
-
-    /**
-     * 누적 컬럼을 가진 주문·결제 행을 잠그고 커밋된 값으로 되읽습니다.
-     *
-     * 관계(options/shippings 등)는 이 트랜잭션 안에서 이미 사용 중이므로 건드리지 않고,
-     * 누적 판단에 쓰이는 속성만 교체한다. 잠금은 커밋까지 유지되어 뒤따르는 취소 요청이
-     * 앞선 커밋을 본 뒤에 진행한다.
-     *
-     * @param  Order  $order  대상 주문 (속성이 최신 값으로 갱신됨)
-     * @return void
-     */
-    protected function lockAccumulatorRows(Order $order): void
-    {
-        $locked = $this->orderRepository->findByIdForUpdate($order->id);
-
-        if ($locked !== null) {
-            // 관계는 유지한 채 속성만 커밋된 값으로 교체
-            $order->setRawAttributes($locked->getAttributes(), true);
-        }
-
-        $lockedPayment = $this->orderPaymentRepository->findByOrderIdForUpdate($order->id);
-
-        if ($lockedPayment !== null && $order->relationLoaded('payment') && $order->payment !== null) {
-            $order->payment->setRawAttributes($lockedPayment->getAttributes(), true);
-        }
-    }
 
     /**
      * 주문 합계를 재계산 결과에 따라 갱신합니다.
@@ -1021,17 +900,13 @@ class OrderCancellationService
         $orderCurrency = $order->payment->currency ?: ($order->currency_snapshot['order_currency'] ?? null);
         $refundLocal = $this->resolveOrderCurrencyRefundAmount($result, $orderCurrency);
 
-        // $refund 는 이 환불 시도의 고유 레코드다. PG 리스너가 멱등키(Idempotency-Key)를 조립할 때
-        // 사용한다 — 네트워크 재시도로 같은 취소가 두 번 도달해도 PG 가 중복 청구를 차단한다.
-        // 인자 추가는 하위호환이다: 기존 리스너(5-파라미터)는 초과 인자를 그대로 무시한다.
         $pgResult = HookManager::applyFilters(
             'sirsoft-ecommerce.payment.refund',
             ['success' => false, 'error_code' => null, 'error_message' => null, 'transaction_id' => null],
             $order,
             $order->payment,
             $refundLocal,
-            $reason,
-            $refund
+            $reason
         );
 
         if (! empty($pgResult['success'])) {

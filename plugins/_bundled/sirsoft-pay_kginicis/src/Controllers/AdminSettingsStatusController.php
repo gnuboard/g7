@@ -21,7 +21,7 @@ class AdminSettingsStatusController
      */
     public function testMode(): JsonResponse
     {
-        return ResponseHelper::success('common.success', [
+        return ResponseHelper::success('messages.success', [
             'is_test_mode' => (bool) $this->settingsService->get(self::PLUGIN_IDENTIFIER, 'is_test_mode', true),
         ]);
     }

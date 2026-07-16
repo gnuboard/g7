@@ -7,7 +7,6 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
-use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
 use Illuminate\Support\Facades\File;
@@ -110,10 +109,6 @@ trait BundledExtensionUpdatePrompt
         // 확장별 전략 오버라이드
         $strategies = $this->collectPerExtensionStrategies($updates, $globalStrategy, $force);
 
-        // 검색 인덱스 재생성 여부 — 인덱스 잠금·재색인 비용이 있어 운영 중인 사이트에서는
-        // 기본값(아니오)을 유지하고 유지보수 시간에 별도로 수행하는 것이 안전하다.
-        $rebuildSearchIndex = $this->askRebuildSearchIndex($force);
-
         // 일괄 실행
         return $this->executeBulkUpdate(
             $moduleManager,
@@ -121,7 +116,6 @@ trait BundledExtensionUpdatePrompt
             $templateManager,
             $updates,
             $strategies,
-            $rebuildSearchIndex,
         );
     }
 
@@ -206,11 +200,8 @@ trait BundledExtensionUpdatePrompt
         TemplateManager $templateManager,
         array $updates,
         array $strategies,
-        bool $rebuildSearchIndex = false,
     ): array {
         $manifest = $this->buildBundledUpdateManifest($updates, $strategies);
-        // 운영자의 선택을 매니페스트에 실어 spawn 자식과 in-process fallback 이 같은 결정을 따르게 한다
-        $manifest['rebuild_search_index'] = $rebuildSearchIndex;
         if ($this->bundledManifestIsEmpty($manifest)) {
             return ['success' => 0, 'failed' => 0, 'skipped' => 0, 'has_updates' => false];
         }
@@ -237,7 +228,6 @@ trait BundledExtensionUpdatePrompt
             $templateManager,
             $updates,
             $strategies,
-            $rebuildSearchIndex,
         );
     }
 
@@ -330,10 +320,6 @@ trait BundledExtensionUpdatePrompt
             // ENV 합집합 (G7_UPDATE_IN_PROGRESS 등 핵심 플래그 자식에 전달)
             $env = array_merge(getenv(), $_ENV);
 
-            // audit:allow spawn-after-vendor-swap-clears-package-manifest 이 spawn 은 vendor 를 바꾸지 않고,
-            // 두 호출처가 모두 clearAllCaches() 뒤다 — CoreUpdateCommand Step 11(패키지 매니페스트 재생성)
-            // 다음의 Step 12, ExecuteUpgradeStepsCommand 단독 실행의 캐시 정리 다음 단계. 따라서 자식이
-            // 읽는 매니페스트는 이미 현재 vendor 기준으로 다시 만들어진 것이다.
             $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
             if (! is_resource($process)) {
                 return null;
@@ -399,7 +385,6 @@ trait BundledExtensionUpdatePrompt
         TemplateManager $templateManager,
         array $updates,
         array $strategies,
-        bool $rebuildSearchIndex = false,
     ): array {
         $success = 0;
         $failed = 0;
@@ -467,8 +452,6 @@ trait BundledExtensionUpdatePrompt
         $this->newLine();
         $this->info("업데이트 완료: 성공 {$success}, 실패 {$failed}");
 
-        $this->runSearchIndexRebuildIfRequested($rebuildSearchIndex);
-
         return [
             'success' => $success,
             'failed' => $failed,
@@ -477,60 +460,4 @@ trait BundledExtensionUpdatePrompt
         ];
     }
 
-    /**
-     * 검색 인덱스 재생성 여부를 운영자에게 확인합니다.
-     *
-     * 재생성은 인덱스 잠금 또는 전체 재색인을 유발하므로 기본값은 "아니오" 입니다.
-     * `--force` (무인 실행) 시에도 묻지 않고 수행하지 않습니다 — 무인 실행이
-     * 대용량 테이블을 잠그는 일이 없어야 합니다. 필요하면 `core:update
-     * --rebuild-search-index` 로 명시하거나 이후 `search:index --repair` 를 실행합니다.
-     *
-     * @param  bool  $force  강제(무인) 실행 여부
-     * @return bool 재생성 수행 여부
-     */
-    private function askRebuildSearchIndex(bool $force): bool
-    {
-        // 커맨드가 옵션으로 이미 선택을 받았으면 그대로 따른다
-        if ($this->hasOption('rebuild-search-index') && (bool) $this->option('rebuild-search-index')) {
-            return true;
-        }
-
-        if ($force) {
-            return false;
-        }
-
-        $manager = app(SearchIndexMaintenanceManager::class);
-
-        // 점검을 제공하지 않는 엔진에서는 물을 것이 없다
-        if (! $manager->hasMaintainer() || $manager->unavailableReason() !== null) {
-            return false;
-        }
-
-        $this->newLine();
-        $this->line('  '.__('search.index.rebuild_cost_warning'));
-
-        return $this->unifiedConfirm(__('search.index.rebuild_after_bulk_confirm'), false);
-    }
-
-    /**
-     * 요청이 있었으면 검색 인덱스를 재생성합니다.
-     *
-     * @param  bool  $requested  재생성 요청 여부
-     * @return void
-     */
-    private function runSearchIndexRebuildIfRequested(bool $requested): void
-    {
-        if (! $requested) {
-            return;
-        }
-
-        $report = app(SearchIndexMaintenanceManager::class)->repairStale();
-
-        $this->newLine();
-        $this->info('검색 인덱스: '.$report->summary());
-
-        foreach ($report->failed as $identifier => $message) {
-            $this->warn('  '.__('search.index.rebuild_failed_item', ['index' => $identifier, 'error' => $message]));
-        }
-    }
 }

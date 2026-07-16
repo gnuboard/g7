@@ -5,7 +5,6 @@ namespace App\Contracts\Repositories;
 use App\Models\NotificationLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface NotificationLogRepositoryInterface
@@ -41,17 +40,9 @@ interface NotificationLogRepositoryInterface
     public function bulkDelete(array $ids): int;
 
     /**
-     * 보존 기간이 지난 발송 이력을 삭제합니다.
-     *
-     * @param  int  $days  보존 기간 (일)
-     * @return int 삭제된 건수
-     */
-    public function deleteOlderThan(int $days): int;
-
-    /**
      * 페이지네이션 목록 조회.
      *
      * @param  User|null  $scopeUser  스코프 적용 대상 사용자 (null이면 스코프 미적용)
      */
-    public function getPaginated(array $filters = [], int $perPage = 20, ?User $scopeUser = null): LengthAwarePaginator|CursorPaginator;
+    public function getPaginated(array $filters = [], int $perPage = 20, ?User $scopeUser = null): LengthAwarePaginator;
 }

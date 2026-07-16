@@ -4,7 +4,6 @@ return [
     'consent' => [
         'granted' => 'Consent has been saved.',
         'granted_again' => 'Consent has been renewed.',
-        'rejected_saved' => 'Continuing without consent. Optional items will not be used.',
         'revoked' => 'Consent has been revoked.',
         'renew_all_success' => '{renewed} active consent item(s) renewed to the new policy version.',
         'granting' => 'Granting...',
@@ -29,16 +28,6 @@ return [
         'too_long_marketing' => 'Marketing — Domain cannot exceed 253 characters.',
         'must_be_array' => 'Each category must be an array of domain strings.',
     ],
-    'necessary_storage_allowlist' => [
-        'invalid_format_local_storage' => 'Local storage — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)',
-        'invalid_format_session_storage' => 'Session storage — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)',
-        'invalid_format_cookie' => 'Cookie — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)',
-        'too_long_local_storage' => 'Local storage — item cannot exceed 128 characters.',
-        'too_long_session_storage' => 'Session storage — item cannot exceed 128 characters.',
-        'too_long_cookie' => 'Cookie — item cannot exceed 128 characters.',
-        'must_be_array' => 'Each storage scope must be an array of item names.',
-        'invalid_scope' => 'Unknown storage scope: :scope (only local storage, session storage and cookies are allowed)',
-    ],
     'settings' => [
         'saved' => 'Settings have been saved.',
         'title' => 'GDPR Settings',
@@ -52,7 +41,6 @@ return [
             'cookie_categories' => 'Cookie Categories',
             'cookie_policy_version' => 'Cookie Policy Version',
             'auto_blocking' => 'Auto-blocking Policy',
-            'necessary_storage' => 'Strictly Necessary Storage',
             'auto_blocking_desc' => 'When the Cookie Banner is ON, external tracking resources matching the blocked-domain lists below are auto-blocked until the user consents. (No separate toggle — runs automatically with the banner.)',
         ],
         'nav' => [
@@ -89,7 +77,7 @@ return [
             ],
             'banner_enabled' => [
                 'label' => 'Show Cookie Banner',
-                'hint' => 'When enabled, the cookie consent banner and pre-consent auto-blocking are activated together. (Auto-blocking is the enforcement mechanism for GDPR Art.6 "no processing before consent" and is unified into a single toggle to prevent operators from disabling it independently.) The MyPage consent management card is independent of this toggle and always shows for members with consent/withdrawal history.',
+                'hint' => 'When enabled, the cookie consent banner, pre-consent auto-blocking, and the MyPage consent management card are activated together. (Auto-blocking is the enforcement mechanism for GDPR Art.6 "no processing before consent" and is unified into a single toggle to prevent operators from disabling it independently.)',
             ],
             'banner_position' => [
                 'label' => 'Banner Position',
@@ -112,9 +100,6 @@ return [
                     'analytics' => 'Analytics — Blocked Domains',
                     'marketing' => 'Marketing — Blocked Domains',
                 ],
-            ],
-            'necessary_storage_allowlist' => [
-                'label' => 'Strictly Necessary Storage Allowlist',
             ],
             'cookie_categories' => [
                 'description' => 'Open each card\'s [Show details] to see the purpose of the four cookie categories and the blocked-tool examples.',
@@ -152,9 +137,6 @@ return [
                     'snapshot_action' => 'Snapshot',
                 ],
             ],
-            'history_page_summary' => ':total total · page :current / :last',
-            'history_prev' => 'Previous',
-            'history_next' => 'Next',
             'snapshot_view_short' => 'View',
             'material_modal' => [
                 'title' => 'Publish new policy version + trigger re-consent',
@@ -207,15 +189,11 @@ return [
             'action' => [
                 'granted' => 'Granted',
                 'revoked' => 'Revoked',
-                'rejected' => 'Rejected',
             ],
             'source' => [
                 'banner' => 'Banner',
                 'preference_center' => 'Preferences',
-                'register' => 'Sign-up',
                 'mypage' => 'MyPage',
-                'mypage_renew_all' => 'MyPage bulk re-consent',
-                'withdraw' => 'Account withdrawal',
             ],
             'col' => [
                 'created_at' => 'Time',
@@ -232,7 +210,7 @@ return [
                 'categories_label' => 'Categories Snapshot',
                 'categories_hint' => "The member's category-by-category choices at the time of consent. This record stays immutable even after the policy is updated.",
                 'snapshot_granted' => 'Granted',
-                'snapshot_revoked' => 'Not Consented',
+                'snapshot_revoked' => 'Revoked',
             ],
         ],
     ],
@@ -250,21 +228,6 @@ return [
             'col_action' => 'Action',
             'consented' => 'Consented',
             'revoked' => 'Revoked',
-            'rejected_label' => 'Rejected',
-            // Issue #430 — per-item status verb chosen by the Resource (status_label) from status.
-            'status' => [
-                'granted' => 'Consented',
-                'consented' => 'Consented',
-                'revoked' => 'Revoked',
-                'rejected' => 'Rejected',
-            ],
-            // Issue #430 (button redesign) — status badge text. Resource(status_badge_label).
-            'badge' => [
-                'required' => 'Always on',
-                'consented' => 'Consented',
-                'rejected' => 'Declined',
-                'unset' => 'Not set',
-            ],
             'revoke' => 'Revoke',
             'grant' => 'Consent',
             'grant_again' => 'Consent Again',
@@ -292,9 +255,9 @@ return [
         'title' => 'Cookie Notice',
         'description' => 'This site uses cookies to improve user experience and for analytics. You can choose which cookies to allow.',
         'accept_all' => 'Accept All',
-        'reject_continue' => 'Continue without consent',
-        'preferences' => 'Select Consent',
-        'save' => 'Save Selection',
+        'reject_all' => 'Necessary Only',
+        'preferences' => 'Preferences',
+        'save' => 'Save Preferences',
         'policy_link' => 'Privacy Policy',
         'preferences_title' => 'Cookie Preferences',
         'preferences_description' => 'You can grant or revoke each category individually. Required categories cannot be turned off.',

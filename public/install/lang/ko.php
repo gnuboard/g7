@@ -1,5 +1,4 @@
 <?php
-
 // /install/lang/ko.php
 
 return [
@@ -53,7 +52,6 @@ return [
     'directory_permissions' => '디렉토리 권한',
     'disk_space' => '디스크 공간',
     'https' => 'HTTPS',
-    'opcache' => 'OPcache',
     'required' => '필수',
     'enabled' => '활성화됨',
     'not_enabled' => '비활성화됨',
@@ -173,7 +171,6 @@ return [
     'error_db_name_required' => '데이터베이스 이름은 필수입니다.',
     'error_db_username_required' => '데이터베이스 사용자명을 입력해주세요.',
     'error_db_credentials_required' => '데이터베이스명과 사용자명은 필수입니다.',
-    'error_db_username_privileged' => '보안상 :username 계정으로는 설치할 수 없습니다. 최고 권한 계정이 유출되면 데이터베이스 전체가 위험해집니다. G7 전용 데이터베이스 사용자를 새로 만들어 필요한 권한만 부여한 뒤 입력해주세요.',
     'error_db_prefix_too_long' => '테이블 접두사는 최대 :max자까지 가능합니다. (입력: :current자) 접두사가 길면 일부 테이블의 인덱스명이 데이터베이스 한도를 초과합니다.',
     'error_db_privileges_insufficient' => '데이터베이스에 필요한 권한이 부족합니다.',
     'error_db_not_tested' => '데이터베이스 연결 테스트를 먼저 수행해주세요.',
@@ -235,22 +232,6 @@ return [
     // HTTPS 메시지
     'https_enabled' => 'HTTPS가 활성화되어 있습니다. (권장)',
     'https_disabled' => 'HTTPS가 비활성화되어 있습니다. 보안을 위해 HTTPS 사용을 권장합니다.',
-    'https_behind_proxy' => '리버스 프록시 뒤에서 구동 중인 것으로 보입니다. 설치 후 .env 에 TRUSTED_PROXIES 를 지정하지 않으면 접속 주소와 방문자 IP 가 프록시 기준으로 인식됩니다. (https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md)',
-
-    // OPcache 메시지
-    'opcache_enabled' => 'OPcache가 활성화되어 있습니다. (권장)',
-    'opcache_disabled_short' => '비활성화됨 — 페이지가 몇 배 느려집니다',
-    'opcache_disabled_warning' => 'OPcache가 비활성화되어 있습니다. 이 상태에서는 방문자가 페이지를 열 때마다 사이트의 모든 PHP 코드를 처음부터 다시 해석합니다. 같은 서버, 같은 사양에서도 응답 속도가 몇 배까지 느려지며 방문자가 많을수록 격차가 커집니다. 설치는 이대로 진행할 수 있지만, 운영에 사용할 서버라면 php.ini에서 opcache.enable=1 을 켠 뒤 웹서버를 재시작하시기를 강력히 권장합니다.',
-    'opcache_unknown' => 'OPcache 상태를 확인할 수 없습니다. 서버에서 설정 조회가 제한되어 있습니다.',
-
-    // Composer 의존성 구성 메시지
-    'vendor_dev_packages' => 'Composer 의존성 구성',
-    'vendor_dev_packages_none_short' => '운영용 구성 (개발용 패키지 없음)',
-    'vendor_dev_packages_none' => 'vendor 에 개발용 패키지가 없습니다. (권장)',
-    'vendor_dev_packages_detected_short' => '개발용 패키지 :count개 포함 — 운영 사이트에는 권장하지 않음',
-    'vendor_dev_packages_detected_warning' => '이미 준비된 vendor 에 개발용(require-dev) 패키지 :count개가 포함되어 있습니다. 설치는 이대로 진행할 수 있지만, 운영에 사용할 서버라면 설치 후 프로젝트 루트에서 composer install --no-dev --optimize-autoloader 를 실행해 개발용 패키지를 제거하시기를 권장합니다. (설치 마법사는 vendor 가 없을 때만 운영용 구성으로 자동 설치합니다.)',
-    'vendor_dev_packages_unknown' => 'vendor 구성을 확인할 수 없습니다 (installed.json 없음 또는 형식 불명).',
-    'vendor_dev_packages_no_vendor' => 'vendor 없음 — 설치 마법사가 운영용 구성으로 자동 설치합니다.',
 
     // API 응답 메시지
     'api_method_not_allowed' => 'POST 요청만 허용됩니다.',
@@ -290,7 +271,6 @@ return [
     'task_create_settings_json' => '설정 파일 생성',
     'task_complete_flag' => '설치 완료 처리',
     'task_config_cache' => '설정 캐시 생성',
-    'task_static_publish' => '부트스트랩 리소스 정적 게시',
     'task_unknown' => '알 수 없는 작업',
 
     // 작업 그룹명
@@ -327,8 +307,6 @@ return [
     'log_composer_installing_from_lock' => 'composer.lock 파일을 사용하여 의존성을 설치합니다...',
     'log_composer_fresh_install' => '새로운 Composer 의존성을 설치합니다...',
     'log_composer_cache_cleared' => '이전 패키지 캐시를 삭제했습니다',
-    'log_composer_dev_packages_detected' => '기존 vendor 에 개발용 패키지 :count개가 포함되어 있습니다 (:packages)',
-    'warning_composer_dev_packages_kept' => '개발용 패키지가 포함된 vendor 를 그대로 사용합니다. 운영 사이트라면 설치 후 "composer install --no-dev --optimize-autoloader" 를 실행하세요 (설치는 계속 진행됩니다)',
 
     // 에러 메시지 - Worker (.env)
     'error_env_example_not_found' => '.env.example 파일을 찾을 수 없습니다',
@@ -391,17 +369,14 @@ return [
     'error_language_pack_install_failed' => '언어팩 설치에 실패했습니다',
     'log_language_pack_install_success' => '언어팩 설치 완료',
     'warning_language_pack_install_partial' => '언어팩 일부 설치에 실패했습니다: :identifier (계속 진행)',
-    'warning_best_effort_task_failed' => ':task 에 실패했습니다 (설치는 계속 진행됩니다)',
 
     // 에러 메시지 - Worker (Cache)
     'error_cache_clear_failed' => '캐시 클리어에 실패했습니다',
     'error_config_cache_failed' => '설정 캐시 생성에 실패했습니다',
-    'error_static_publish_failed' => '부트스트랩 리소스 정적 게시에 실패했습니다 (사이트는 API 경로로 정상 동작합니다)',
 
     // 로그 메시지 - Worker (Cache)
     'log_cache_clear_success' => '캐시 클리어 완료',
     'log_config_cache_success' => '설정 캐시 생성 완료',
-    'log_static_publish_success' => '부트스트랩 리소스 정적 게시 완료',
 
     // 에러 메시지 - Worker (Settings JSON)
     'error_settings_json_failed' => '설정 파일 생성에 실패했습니다',
@@ -441,7 +416,7 @@ return [
     'abort_rollback_success' => '[중단] 롤백 완료: :message',
     'abort_rollback_failed' => '[중단] 롤백 실패: :message (계속 진행)',
     'abort_no_rollback_needed' => '[중단] 롤백할 작업이 없습니다. (current_task가 null이거나 이미 완료됨)',
-    'abort_by_user' => '[중단] 사용자가 설치를 중단했습니다. (현재 작업: :task)',
+    'abort_by_user' => "[중단] 사용자가 설치를 중단했습니다. (현재 작업: :task)",
     'abort_installation_stopped' => '설치가 중단되었습니다.',
 
     // Worker 실패 시 롤백 관련 메시지
@@ -565,7 +540,7 @@ return [
     'validation_incomplete_title' => '다음 항목을 완료해주세요:',
     'confirm_leave_page' => '설정이 저장되지 않았습니다. 페이지를 나가시겠습니까?',
     'installation_in_progress_alert' => '설치가 진행 중입니다. 설정 페이지로 돌아가시겠습니까?',
-    'confirm_go_to_settings' => '설정 페이지로 이동하시겠습니까?',
+    'confirm_go_to_settings' => "설정 페이지로 이동하시겠습니까?",
     'confirm_go_to_settings_simple' => "설정 페이지로 이동하시겠습니까?\n\n설치 상태가 초기화되며, 모든 작업이 처음부터 다시 실행됩니다.\n\n⚠️ 데이터베이스에 생성된 테이블은 자동으로 삭제되지 않습니다.\n필요 시 phpMyAdmin 등을 통해 수동으로 정리해주세요.",
     'confirm_go_to_settings_title' => '설정 페이지로 이동',
     'confirm_go_to_settings_desc' => '설치 상태가 초기화되며, 모든 작업이 처음부터 다시 실행됩니다.\n\n⚠️ 데이터베이스에 생성된 테이블은 자동으로 삭제되지 않습니다. 필요 시 phpMyAdmin 등을 통해 수동으로 정리해주세요.',
@@ -704,10 +679,6 @@ ini_set(\'zlib.output_compression\', \'off\');
 
     // 설치 진행 중단 감지
     'error_installation_stuck' => '설치가 응답하지 않습니다. 서버 워커가 명령 실행 중 멈췄을 수 있습니다. 새로고침하거나 재시도하세요. 문제가 반복되면 storage/logs/installation.log 를 확인해주세요.',
-    // 서버가 본문 없는 응답을 돌려준 경우 (gnuboard/g7#62)
-    'error_empty_server_response' => '서버가 빈 응답을 반환했습니다. 서버 설정이나 계정 이름·경로에 사용된 문자로 인해 응답이 만들어지지 못했을 수 있습니다. storage/logs/installation.log 를 확인해주세요.',
-    'error_invalid_server_response' => '서버 응답을 해석할 수 없습니다. 응답에 오류 메시지나 경고문이 섞였을 수 있습니다. storage/logs/installation.log 를 확인해주세요.',
-    'error_polling_response_invalid' => '설치 진행 상황을 읽어오지 못했습니다. 서버가 올바른 형식의 응답을 반환하지 않고 있습니다. storage/logs/installation.log 를 확인한 뒤 다시 시도해주세요.',
     'extension_load_failed' => '확장 기능 목록을 불러오는데 실패했습니다.',
     'no_admin_template_error' => '관리자 템플릿이 필요하지만 찾을 수 없습니다. templates 디렉토리에 최소 1개 이상의 관리자 템플릿이 있는지 확인해주세요.',
     'selection_summary' => '선택 요약',
@@ -733,7 +704,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     'deselect_all' => '전체 해제',
 
     // install-worker.php 다국어 키
-    'db_task_abort_detected_before_start' => '[DB 작업] 시작 전 중단 상태 감지 - 작업을 건너뜁니다.',
+        'db_task_abort_detected_before_start' => '[DB 작업] 시작 전 중단 상태 감지 - 작업을 건너뜁니다.',
     'db_task_failed_rollback_start' => '[DB 작업] :task 실패 - 롤백을 시작합니다.',
     'db_task_abort_reason_connection' => '연결 끊김',
     'db_task_abort_reason_user' => '사용자 요청',
@@ -852,17 +823,6 @@ ini_set(\'zlib.output_compression\', \'off\');
     'core_update_settings' => '코어 업데이트 설정 (선택)',
     'core_update_pending_path' => '업데이트 대기 디렉토리 경로',
     'core_update_pending_path_help' => '비워두면 기본값(storage/app/core_pending)을 사용합니다. 외부 경로를 사용하려면 절대 경로 또는 그누보드7 루트 기준 상대 경로를 입력하세요.',
-
-    // 자산 URL 방식 (이슈 #486)
-    'asset_url_mode' => '에셋 파일 서빙 방식',
-    'asset_url_mode_extension' => '확장자 사용 (권장)',
-    'asset_url_mode_extensionless' => '확장자 미사용',
-    'asset_url_mode_help' => '서버 설정을 자동으로 감지해 선택합니다. 정적 파일 최적화 규칙(nginx의 location ~* \\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff2?)$ 블록 등)이 확장자 주소를 가로채면 화면이 뜨지 않는데, 그 경우 확장자 미사용을 선택하세요.',
-    'asset_url_mode_detected_extension' => '감지 결과: 확장자를 사용할 수 있는 환경입니다.',
-    'asset_url_mode_detected_extensionless' => '감지 결과: 정적 파일 최적화 규칙(nginx location ~* \\.(js|css|json|...)$ 블록 등)이 확장자 주소를 가로채고 있어 확장자 미사용을 선택했습니다.',
-    'asset_url_mode_detected_unavailable' => '확장자 있는 주소와 없는 주소 모두 응답하지 않아 서빙 방식을 감지하지 못했습니다. 에셋 방식 자체의 문제라기보다, 앱이 아직 이 주소에서 정상 응답하지 않거나(PHP·라우팅 설정) 프록시·보안 규칙(CSP 등)이 프로브 요청을 막고 있을 가능성이 큽니다. 이 항목은 설치를 막지 않으니 계속 진행할 수 있으며, 설치 후 화면이 비어 보이면 관리자 > 환경설정 > 일반에서 확장자 미사용으로 바꿔 보세요.',
-    'asset_url_mode_checking' => '확인 중…',
-    'asset_url_mode_unknown' => '확인 불가',
     'core_update_github_url' => 'GitHub 저장소 URL',
     'core_update_github_url_help' => '코어 업데이트를 확인할 GitHub 저장소 URL입니다.',
     'core_update_github_token' => 'GitHub 액세스 토큰',
@@ -873,8 +833,6 @@ ini_set(\'zlib.output_compression\', \'off\');
     'core_pending_path_ok' => '경로가 유효합니다.',
     'core_pending_info' => '소유자: :owner, 그룹: :group, 퍼미션: :permissions',
     'error_core_pending_not_directory' => '지정한 경로가 디렉토리가 아닙니다.',
-    'error_env_value_line_break' => '줄바꿈 문자는 사용할 수 없습니다.',
-    'error_env_value_invalid_url' => '올바른 주소 형식이 아닙니다 (:value). http:// 또는 https:// 로 시작하는 주소를 입력하세요.',
     'error_core_pending_not_writable' => '디렉토리(:path)에 쓰기 권한이 없습니다.',
     'error_core_pending_parent_not_writable' => '상위 디렉토리(:path)에 쓰기 권한이 없어 자동 생성이 불가합니다.',
     'error_path_required' => '경로를 입력해주세요.',
@@ -899,8 +857,6 @@ ini_set(\'zlib.output_compression\', \'off\');
     'error_php_path_empty' => 'PHP 바이너리 경로가 비어있습니다.',
     'error_php_path_not_exists' => '파일이 존재하지 않습니다: :path',
     'error_php_exec_failed' => 'PHP 실행 실패: :path',
-    'error_php_binary_path_not_allowed' => '사용할 수 없는 PHP 경로 형식입니다 (:path). 이 서버 안에 있는 실행 파일의 절대경로만 입력하세요 — 옵션(- 로 시작), 상대경로, .., 네트워크 경로(\\\\서버\\공유 또는 //서버/공유), scheme:// 형태는 쓸 수 없습니다.',
-    'error_composer_binary_path_not_allowed' => '사용할 수 없는 Composer 경로 형식입니다 (:path). 이 서버 안에 있는 composer 실행 파일의 절대경로만 입력하세요 — 파일 이름은 composer 계열(composer, composer.phar, composer2.phar 등)이어야 하고, 다른 이름의 .phar, 네트워크 경로(\\\\서버\\공유 또는 //서버/공유), scheme:// 형태는 쓸 수 없습니다. 멀티 PHP 환경은 "PHP절대경로 composer절대경로" 형식으로 입력할 수 있습니다.',
     'error_php_version_too_low' => ':path — PHP :version (최소 :min 필요)',
     'error_php_version_parse_failed' => 'PHP 버전을 파싱할 수 없습니다.',
     'error_php_cli_not_verified' => 'PHP CLI 경로가 확인되지 않았습니다. "버전 확인" 버튼을 클릭해주세요.',
@@ -951,3 +907,4 @@ ini_set(\'zlib.output_compression\', \'off\');
     // 상대경로 병기 안내
     'or_relative_path' => '또는 그누보드7 루트 디렉토리에서:',
 ];
+?>

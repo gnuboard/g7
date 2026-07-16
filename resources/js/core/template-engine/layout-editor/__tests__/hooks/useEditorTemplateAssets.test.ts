@@ -1,8 +1,3 @@
-// e2e:allow 이슈 #486 단위 A 는 서버 라우트 이중화 전용. 이 파일 변경은 편집기 CSS
-// 엔드포인트 개명(editor/components.css → component-styles.css)을 따라간 기대값 수정뿐이며
-// 브라우저 거동은 불변(URL 은 서버가 생성해 내려주고 hook 은 그대로 fetch).
-// 자산 URL 모드의 브라우저 시나리오 spec 은 자가 복구를 도입하는 단위 D 에서 추가한다.
-
 /**
  * useEditorTemplateAssets 회귀 테스트
  *
@@ -10,7 +5,6 @@
  * 템플릿의 IIFE 번들 + lang dictionary 를 격리 인스턴스에 부트스트랩하는
  * hook 의 동작을 가드.
  */
-
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -124,7 +118,7 @@ describe('useEditorTemplateAssets', () => {
   // 못 실어 500(Route[login])으로 떨어지므로, Bearer fetch → `<style>` 로 주입해야 한다.
   it('권한 가드 admin CSS 는 Bearer fetch → <style> 주입 (link 아님)', async () => {
     window.localStorage.setItem('auth_token', 'tok-css');
-    const adminCssUrl = '/api/admin/templates/sirsoft-basic/editor/component-styles.css?v=1';
+    const adminCssUrl = '/api/admin/templates/sirsoft-basic/editor/components.css?v=1';
     fetchSpy.mockImplementation(async (url: string) => {
       if (url.includes('/editor-assets')) {
         return {
@@ -134,7 +128,7 @@ describe('useEditorTemplateAssets', () => {
           }),
         };
       }
-      if (url.includes('/editor/component-styles.css')) {
+      if (url.includes('/editor/components.css')) {
         return { ok: true, text: async () => '.g7le-preview-dark .x{color:red}' };
       }
       if (url.includes('/components.json')) {
@@ -156,7 +150,7 @@ describe('useEditorTemplateAssets', () => {
     expect(styleEl?.textContent).toContain('.g7le-preview-dark');
 
     // CSS fetch 에 Bearer 헤더 부착
-    const cssCall = fetchSpy.mock.calls.find((c) => String(c[0]).includes('/editor/component-styles.css'));
+    const cssCall = fetchSpy.mock.calls.find((c) => String(c[0]).includes('/editor/components.css'));
     expect(cssCall?.[1]?.headers?.Authorization).toBe('Bearer tok-css');
   });
 
@@ -242,92 +236,5 @@ describe('useEditorTemplateAssets', () => {
     expect(result.current.translationEngine).not.toBeNull();
     const langCall = fetchSpy.mock.calls.find((c) => /\/lang\/en\.json/.test(String(c[0])));
     expect(langCall).toBeDefined();
-  });
-
-  /**
-   * 편집 자산 매니페스트가 지시하는 `js` 는 서버 응답이지만, 붙는 자리는 **관리자 document** 다.
-   * 확장 자산 재로드·프리뷰 캔버스와 같은 출처 게이트를 받아야 한다 — 이 경로만 게이트가
-   * 없으면 편집기 진입만으로 임의 원격 코드가 관리자 세션에서 실행된다.
-   */
-  describe('스크립트 주입 출처 게이트', () => {
-    /**
-     * 매니페스트가 주어진 js 목록을 돌려주도록 fetch 를 세운다.
-     *
-     * @param js 매니페스트 js 배열
-     * @return void
-     */
-    function mockManifest(js: string[]): void {
-      fetchSpy.mockImplementation(async (url: string) => {
-        if (url.includes('/editor-assets')) {
-          return {
-            ok: true,
-            json: async () => ({
-              data: { identifier: 'sirsoft-basic', js, css: [], manifest_present: true },
-            }),
-          };
-        }
-        if (url.includes('/config.json')) return { ok: true, json: async () => ({ cache_version: 1 }) };
-        if (url.includes('/components.json')) {
-          return {
-            ok: true,
-            json: async () => ({
-              version: '1.0.0',
-              templateId: 'sirsoft-basic',
-              components: { basic: [], composite: [], layout: [] },
-            }),
-          };
-        }
-        if (url.includes('/lang/')) return { ok: true, json: async () => ({}) };
-        return { ok: false, status: 404, json: async () => ({}) };
-      });
-    }
-
-    beforeEach(() => {
-      (window as any).G7Config = { trustedScriptHosts: [] };
-      // 주입된 태그가 영원히 pending 되지 않도록 즉시 load 를 발화시킨다
-      vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
-        if (node.tagName === 'SCRIPT' || node.tagName === 'LINK') {
-          document.body.appendChild(node);
-          queueMicrotask(() => node.dispatchEvent(new Event('load')));
-          return node;
-        }
-        return HTMLHeadElement.prototype.appendChild.call(document.head, node);
-      }) as any);
-    });
-
-    afterEach(() => {
-      vi.restoreAllMocks();
-      delete (window as any).G7Config;
-      document.querySelectorAll('[data-g7le-asset]').forEach((n) => n.remove());
-    });
-
-    it('미신뢰 외부 src 는 주입하지 않고 오류로 끝난다', async () => {
-      mockManifest(['https://cdn.evil.com/x.js']);
-
-      const { result } = renderHook(() => useEditorTemplateAssets('sirsoft-basic', 'en'));
-
-      await waitFor(() => expect(result.current.error).not.toBeNull(), { timeout: 3000 });
-      expect(
-        document.querySelectorAll('script[data-g7le-asset="https://cdn.evil.com/x.js"]').length,
-      ).toBe(0);
-    });
-
-    it('same-origin src 는 주입된다 (과차단 없음)', async () => {
-      mockManifest(['/api/templates/assets/sirsoft-basic/js/components.iife.js']);
-
-      renderHook(() => useEditorTemplateAssets('sirsoft-basic', 'en'));
-
-      // 게이트를 통과해 실제로 태그가 붙는지만 본다 — 그 뒤 부트스트랩(전역 확보 등)은
-      // 이 축의 관심사가 아니다.
-      await waitFor(
-        () =>
-          expect(
-            document.querySelectorAll(
-              'script[data-g7le-asset="/api/templates/assets/sirsoft-basic/js/components.iife.js"]',
-            ).length,
-          ).toBe(1),
-        { timeout: 3000 },
-      );
-    });
   });
 });

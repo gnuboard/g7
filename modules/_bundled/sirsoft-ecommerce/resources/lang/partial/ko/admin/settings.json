@@ -6,7 +6,7 @@
     "language_currency": "언어/통화",
     "seo": "SEO 설정",
     "order_settings": "주문설정",
-    "claim": "클레임",
+    "claim": "클래임",
     "shipping": "배송설정",
     "review_settings": "리뷰 설정",
     "notification_definitions": "알림 설정",
@@ -58,13 +58,6 @@
       "telecom_number": "부가통신 사업자번호",
       "telecom_number_placeholder": "부가통신 사업자번호",
       "postcode_plugin_required": "다음 우편번호 플러그인이 설치되지 않았거나 비활성화 상태입니다. 관리자 > 플러그인에서 활성화해주세요."
-    },
-    "public_asset_storage": {
-      "title": "공개 자산 스토리지",
-      "description": "상품·카테고리·리뷰 이미지 등 이 모듈의 완전 공개 자산 저장 디스크를 설정합니다.",
-      "disk": "공개 자산 디스크",
-      "follow_core": "코어 설정 따름",
-      "help": "이 모듈만 다른 디스크를 쓰려면 선택합니다. 비우면 코어 환경설정의 공개 자산 스토리지 설정을 따릅니다."
     },
     "inquiry_settings": {
       "title": "1:1 문의게시판 설정",
@@ -152,7 +145,6 @@
       "min_order_amount": "최소 주문금액",
       "is_active": "사용여부",
       "orphaned_badge": "플러그인 미설치",
-      "orphaned_pg_badge": "지정 PG 삭제됨",
       "remove_orphaned": "삭제",
       "pg_provider": "PG사",
       "pg_use_default": "기본 PG",
@@ -213,10 +205,7 @@
       "toggle_description": "입금대기 상태의 주문을 지정 기간 후 자동으로 취소합니다.",
       "toggle_hint": "비활성화하면 입금대기 주문이 자동 취소되지 않습니다.",
       "days_prefix": "입금대기 상태의 주문건은 주문일 포함",
-      "days_suffix": "일 이후 자동 취소됩니다.",
-      "pending_minutes_prefix": "결제창까지 갔으나 결제가 끝나지 않은 주문은",
-      "pending_minutes_suffix": "분 이후 자동 취소됩니다.",
-      "pending_minutes_hint": "0 으로 두면 이 부류는 자동 취소하지 않습니다. 최대 20160분(14일)."
+      "days_suffix": "일 이후 자동 취소됩니다."
     },
     "cart_expiry": {
       "title": "장바구니 유효기간",
@@ -230,27 +219,10 @@
       "restore_on_cancel": "주문 취소 시 재고 복구",
       "restore_on_cancel_description": "주문이 취소되면 차감된 재고를 자동으로 복구합니다.",
       "restore_on_cancel_hint": "반품/교환 처리 시에도 적용됩니다."
-    },
-    "cash_receipt": {
-      "title": "현금영수증",
-      "description": "현금영수증 발급 프로바이더와 배송비 과세 방식을 설정합니다.",
-      "provider_label": "현금영수증 프로바이더",
-      "provider_none": "(미사용)",
-      "provider_not_installed": "결제 플러그인을 활성화하면 발급 프로바이더를 선택할 수 있습니다.",
-      "provider_help": "결제에 사용하는 PG 와 별개로 선택할 수 있습니다.",
-      "shipping_fee_tax_label": "배송비 과세 방식",
-      "shipping_fee_tax_proportional": "안분 (기본)",
-      "shipping_fee_tax_taxable": "전액 과세",
-      "shipping_fee_tax_follow_main_item": "주된 재화 기준",
-      "shipping_fee_tax_help": "안분은 과세·면세 상품 금액 비율로 배송비를 나눕니다.",
-      "self_issue_label": "자진발급 사용",
-      "self_issue_help": "구매자가 신청하지 않은 무통장 입금 건도 자동으로 발급합니다 (소득공제용 전용).",
-      "self_issue_mandatory_help": "현금영수증 의무발행 업종은 구매자가 신청하지 않아도 발급 의무가 있습니다. 해당 업종이면 켜세요.",
-      "self_issue_mandatory_link": "국세청 의무발행 업종 안내"
     }
   },
   "claim": {
-    "title": "클레임 설정",
+    "title": "클래임 설정",
     "refund_reasons": {
       "section_title": "환불 사유 관리",
       "add_button": "사유 추가",

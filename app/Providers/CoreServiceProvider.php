@@ -2,14 +2,10 @@
 
 namespace App\Providers;
 
-use App\Benchmark\Axes\BatchAxisRunner;
-use App\Benchmark\Axes\ListAxisRunner;
-use App\Benchmark\Axes\ScreenAxisRunner;
-use App\Benchmark\Axes\WriteAxisRunner;
-use App\Console\Commands\BenchCommand;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
 use App\Contracts\Extension\HookListenerInterface;
+use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
@@ -36,7 +32,6 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
-use App\Contracts\Repositories\SeoCacheStatRepositoryInterface;
 use App\Contracts\Repositories\SystemConfigRepositoryInterface;
 use App\Contracts\Repositories\TemplateCustomTranslationRepositoryInterface;
 use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
@@ -84,7 +79,6 @@ use App\Repositories\PluginRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleHistoryRepository;
 use App\Repositories\ScheduleRepository;
-use App\Repositories\SeoCacheStatRepository;
 use App\Repositories\SystemConfigRepository;
 use App\Repositories\TemplateCustomTranslationRepository;
 use App\Repositories\TemplateLayoutAttachmentRepository;
@@ -95,11 +89,7 @@ use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Services\TemplateLayoutAttachmentService;
-use App\Services\TemplateService;
 use App\Services\UniqueIdService;
-use App\Support\CoreUpdateContext;
-use App\Support\ExtensionSettingsMirror;
-use App\Support\PrivilegedDatabaseAccounts;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -126,28 +116,7 @@ class CoreServiceProvider extends ServiceProvider
 
         $this->registerRepositoryBindings();
         $this->registerExtensionManagers();
-        $this->registerBenchmarkAxes();
         // ActivityLogManager 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
-    }
-
-    /**
-     * 성능 계측 축 실행기를 등록합니다.
-     *
-     * 축이 늘어날 때 `g7:bench` 커맨드를 고치지 않고 여기에 실행기만 추가하면 되도록
-     * 태그로 묶어 주입합니다. 실행기는 CLI 계측 시점에만 해석되므로 웹 요청 비용은 없습니다.
-     */
-    private function registerBenchmarkAxes(): void
-    {
-        $this->app->tag([
-            ListAxisRunner::class,
-            ScreenAxisRunner::class,
-            WriteAxisRunner::class,
-            BatchAxisRunner::class,
-        ], 'benchmark.axes');
-
-        $this->app->when(BenchCommand::class)
-            ->needs('$runners')
-            ->giveTagged('benchmark.axes');
     }
 
     /**
@@ -247,9 +216,6 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         $this->app->bind(NotificationTemplateRepositoryInterface::class, NotificationTemplateRepository::class);
 
-        // SEO Repository 바인딩
-        $this->app->bind(SeoCacheStatRepositoryInterface::class, SeoCacheStatRepository::class);
-
         // IdentityVerification Repository 바인딩
         $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);
         $this->app->bind(IdentityPolicyRepositoryInterface::class, IdentityPolicyRepository::class);
@@ -271,14 +237,14 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->when(AttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
-                return new CoreStorageDriver(config('attachment.disk', 'attachments'));
+                return new CoreStorageDriver(config('attachment.disk', 'local'));
             });
 
         // TemplateLayoutAttachmentService용 CoreStorageDriver 바인딩
         $this->app->when(TemplateLayoutAttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
-                return new CoreStorageDriver(config('attachment.disk', 'attachments'));
+                return new CoreStorageDriver(config('attachment.disk', 'local'));
             });
 
         // 코어 서비스용 CoreCacheDriver 바인딩
@@ -349,12 +315,6 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(TemplateManagerInterface::class, function ($app) {
             return $app->make(TemplateManager::class);
         });
-
-        // 템플릿 서비스도 공유 인스턴스로 등록한다.
-        // 미등록 상태에서는 주입 지점마다 새로 만들어지고, 그 생성자가 매번 템플릿
-        // 디렉토리를 재스캔했다. 요청 단위 상태는 라우트 병합 열화 플래그 하나뿐이며
-        // 그 플래그는 병합 진입 시 재설정되므로 공유해도 안전하다.
-        $this->app->singleton(TemplateService::class);
     }
 
     /**
@@ -373,9 +333,9 @@ class CoreServiceProvider extends ServiceProvider
             return;
         }
 
-        // DB 연결 유효성 검증 (최고권한 계정 접속 방지)
+        // DB 연결 유효성 검증 (root 사용자 접속 방지)
         if (! $this->isDatabaseConnectionValid()) {
-            Log::error('Database connection invalid: using a privileged database account or missing credentials. Skipping extension loading.');
+            Log::error('Database connection invalid: using root user or missing credentials. Skipping extension loading.');
 
             return;
         }
@@ -479,20 +439,30 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * 데이터베이스 연결이 유효한지 검증합니다.
      *
-     * DB 최고권한 계정으로 접속하거나 사용자명이 비어 있는 경우를 감지하여
+     * root 사용자로 접속하거나 비밀번호가 없는 경우를 감지하여
      * 잘못된 설정으로 인한 접속 오류를 방지합니다.
-     * 계정 판정은 `PrivilegedDatabaseAccounts` 가 SSoT 입니다.
      *
      * @return bool 연결이 유효하면 true
      */
     protected function isDatabaseConnectionValid(): bool
     {
         try {
-            // read/write 분리 설정의 우선순위 규칙까지 PrivilegedDatabaseAccounts 가 소유한다.
-            // 호출처마다 규칙이 달라지면 같은 설정에 서로 다른 판정이 나온다.
-            $username = PrivilegedDatabaseAccounts::resolveUsername(DB::connection()->getConfig());
+            $config = DB::connection()->getConfig();
 
-            return PrivilegedDatabaseAccounts::isUsable($username);
+            // read/write 분리 설정인 경우 read 설정 확인
+            $username = $config['username'] ?? null;
+
+            // read 설정이 배열로 있는 경우
+            if (isset($config['read']['username'])) {
+                $username = $config['read']['username'];
+            }
+
+            // root 사용자 또는 빈 username인 경우 무효
+            if (empty($username) || $username === 'root') {
+                return false;
+            }
+
+            return true;
         } catch (\Throwable $e) {
             Log::error('Database configuration check failed: '.$e->getMessage());
 
@@ -563,7 +533,7 @@ class CoreServiceProvider extends ServiceProvider
                     'type' => $type,
                     'identifier' => $identifier,
                     'required_version' => $requiredVersion,
-                    'core_version' => CoreVersionChecker::getCoreVersion(),
+                    'core_version' => config('app.version'),
                 ]);
             }
         }
@@ -628,21 +598,6 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     /**
-     * 현재 프로세스가 코어 업데이트 중인지 판정합니다.
-     *
-     * 판정은 `App\Support\CoreUpdateContext::isInProgress()` 가 단독으로 소유한다 — 같은
-     * 플래그가 확장 자동 비활성화 스킵 · 코어 버전의 env 우선 판독 · `bootstrap/app.php` 의
-     * 패키지 매니페스트 자가 치유를 함께 게이트하므로, 판정이 갈라지면 한 경로만 조용히
-     * 다르게 동작한다. 이 메서드는 기존 호출처(각 Manager)를 위한 위임으로 남는다.
-     *
-     * @return bool 업데이트 트리 안이면 true (version-based 자동 비활성화 스킵)
-     */
-    public static function isCoreUpdateInProgress(): bool
-    {
-        return CoreUpdateContext::isInProgress();
-    }
-
-    /**
      * 호환되지 않는 템플릿을 자동 비활성화합니다.
      *
      * 코어 버전 업데이트 후 템플릿이 새 코어 버전과 호환되지 않는 경우
@@ -650,6 +605,30 @@ class CoreServiceProvider extends ServiceProvider
      *
      * @param  TemplateManager  $templateManager  템플릿 매니저
      */
+    /**
+     * 현재 프로세스가 코어 업데이트 중인지 판정합니다.
+     *
+     * 판정 조건 (OR):
+     *   1. 환경변수 `G7_UPDATE_IN_PROGRESS=1` — 부모 CoreUpdateCommand 가 시작 시 설정,
+     *      spawn 자식에도 `$env` 로 전파
+     *   2. artisan command 이름이 `core:update` / `core:execute-upgrade-steps` — 1 이 전파되지
+     *      않은 극단 상황 대비 보조 판정
+     *
+     * 둘 중 하나라도 true 면 업데이트 컨텍스트로 간주하여 version-based 자동 비활성화 스킵.
+     */
+    public static function isCoreUpdateInProgress(): bool
+    {
+        $envFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS'] ?? getenv('G7_UPDATE_IN_PROGRESS');
+        if ($envFlag === '1' || $envFlag === 1 || $envFlag === true) {
+            return true;
+        }
+
+        $argv = $_SERVER['argv'] ?? [];
+        $command = $argv[1] ?? '';
+
+        return in_array($command, ['core:update', 'core:execute-upgrade-steps'], true);
+    }
+
     protected function validateAndDeactivateIncompatibleTemplates(TemplateManager $templateManager): void
     {
         // 업데이트 중 자동 비활성화 스킵 (validateAndDeactivateIncompatibleExtensions 와 동일 사유)
@@ -694,7 +673,7 @@ class CoreServiceProvider extends ServiceProvider
                     'type' => 'templates',
                     'identifier' => $identifier,
                     'required_version' => $requiredVersion,
-                    'core_version' => CoreVersionChecker::getCoreVersion(),
+                    'core_version' => config('app.version'),
                 ]);
             }
         }
@@ -722,7 +701,7 @@ class CoreServiceProvider extends ServiceProvider
         $alerts = $cache->get('ext.compatibility_alerts', []);
         $alerts[$type] = [
             'deactivated' => $deactivated,
-            'core_version' => CoreVersionChecker::getCoreVersion(),
+            'core_version' => config('app.version'),
             'timestamp' => now()->toIso8601String(),
         ];
         $cache->put('ext.compatibility_alerts', $alerts, 86400); // 24시간
@@ -738,8 +717,69 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function loadModuleSettingsToConfig(ModuleManager $moduleManager): void
     {
-        // 미러 채움 로직은 ExtensionSettingsMirror 가 단일 소유한다 (공개이슈 #109).
-        app(ExtensionSettingsMirror::class)->refreshAllModules();
+        $moduleSettings = [];
+
+        foreach (array_keys($moduleManager->getActiveModules()) as $identifier) {
+            try {
+                // 모듈별 환경설정 서비스 조회
+                $settingsService = $this->resolveModuleSettingsService($identifier);
+
+                if ($settingsService instanceof ModuleSettingsInterface) {
+                    $settings = $settingsService->getAllSettings();
+                    if (! empty($settings)) {
+                        $moduleSettings[$identifier] = $settings;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning("모듈 환경설정 로딩 실패: {$identifier}", [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Config::set('g7_settings.modules', $moduleSettings);
+    }
+
+    /**
+     * 모듈의 환경설정 서비스를 찾아 인스턴스화합니다.
+     *
+     * 다음 순서로 설정 서비스를 찾습니다:
+     * 1. 인터페이스 바인딩: Modules\Vendor\Module\Contracts\ModuleSettingsServiceInterface
+     * 2. 구체 클래스: Modules\Vendor\Module\Services\ModuleSettingsService
+     *
+     * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
+     * @return ModuleSettingsInterface|null 설정 서비스 인스턴스
+     */
+    protected function resolveModuleSettingsService(string $identifier): ?ModuleSettingsInterface
+    {
+        // vendor-module 형식을 네임스페이스로 변환
+        $parts = explode('-', $identifier);
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        $vendor = ucfirst($parts[0]);
+        $moduleName = ucfirst($parts[1]);
+
+        // 1. 인터페이스 바인딩 확인
+        $interfaceClass = "Modules\\{$vendor}\\{$moduleName}\\Contracts\\{$moduleName}SettingsServiceInterface";
+        if ($this->app->bound($interfaceClass)) {
+            $service = $this->app->make($interfaceClass);
+            if ($service instanceof ModuleSettingsInterface) {
+                return $service;
+            }
+        }
+
+        // 2. 구체 클래스 확인
+        $concreteClass = "Modules\\{$vendor}\\{$moduleName}\\Services\\{$moduleName}SettingsService";
+        if (class_exists($concreteClass)) {
+            $service = $this->app->make($concreteClass);
+            if ($service instanceof ModuleSettingsInterface) {
+                return $service;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -752,9 +792,28 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function loadPluginSettingsToConfig(PluginManager $pluginManager): void
     {
-        // 종전에는 setting.json 을 raw 로 읽어 defaults 병합·정규화가 빠지고 암호문이 그대로
-        // 실렸다 — 값의 형태가 전용 게터와 달랐다. 이제 미러 소유자에 위임한다 (공개이슈 #109).
-        app(ExtensionSettingsMirror::class)->refreshAllPlugins();
+        $pluginSettings = [];
+
+        foreach (array_keys($pluginManager->getActivePlugins()) as $identifier) {
+            try {
+                $settingsPath = storage_path("app/plugins/{$identifier}/settings/setting.json");
+
+                if (File::exists($settingsPath)) {
+                    $content = File::get($settingsPath);
+                    $settings = json_decode($content, true);
+
+                    if (json_last_error() === JSON_ERROR_NONE && ! empty($settings)) {
+                        $pluginSettings[$identifier] = $settings;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning("플러그인 환경설정 로딩 실패: {$identifier}", [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Config::set('g7_settings.plugins', $pluginSettings);
     }
 
     /**
@@ -807,8 +866,7 @@ class CoreServiceProvider extends ServiceProvider
                     $configKey = $driverRegistry->getConfigKey($category);
 
                     if ($configKey && $defaultDriver) {
-                        // log 카테고리의 적용 키(stack.channels)는 배열형 — 형태 변환은 레지스트리가 담당
-                        Config::set($configKey, $driverRegistry->getConfigValueForDriver($category, $defaultDriver));
+                        Config::set($configKey, $defaultDriver);
                     }
 
                     Log::warning("플러그인 드라이버 '{$selectedDriver}'가 '{$category}' 카테고리에서 사용 불가능합니다. 기본 드라이버 '{$defaultDriver}'로 폴백합니다.");
@@ -939,7 +997,7 @@ class CoreServiceProvider extends ServiceProvider
                 $listener = app($listenerClass);
                 $listener->registerDynamicHooks();
 
-                // 등록 성공은 로그로 남기지 않는다 — 요청마다 부팅되는 경로다. 실패만 아래에 남긴다.
+                Log::info('동적 훅 리스너 등록 완료', ['listener' => $listenerClass]);
             } catch (\Throwable $e) {
                 Log::warning('동적 훅 리스너 등록 실패', [
                     'listener' => $listenerClass,

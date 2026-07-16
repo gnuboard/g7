@@ -2,9 +2,6 @@
   "core": {
     "errors": {
       "$partial": "partial/en/errors.json"
-    },
-    "assets": {
-      "$partial": "partial/en/assets.json"
     }
   },
   "layout_editor": {

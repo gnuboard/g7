@@ -1,15 +1,13 @@
 {
     "name": "@plugins/sirsoft-gdpr",
-    "version": "1.0.4",
+    "version": "1.0.1",
     "private": true,
     "type": "module",
     "scripts": {
         "build": "vite build",
         "dev": "vite build --watch",
         "test": "vitest",
-        "test:run": "vitest run",
-        "test:e2e": "playwright test --config=tests/Playwright/playwright.config.ts",
-        "test:e2e:ui": "playwright test --config=tests/Playwright/playwright.config.ts --ui"
+        "test:run": "vitest run"
     },
     "devDependencies": {
         "@testing-library/jest-dom": "^6.5.0",

@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -221,9 +220,6 @@ class OrderOptionRepository implements OrderOptionRepositoryInterface
         return $this->model->newQuery()
             ->join($ordersTable, "{$ordersTable}.id", '=', "{$optionsTable}.order_id")
             ->whereNull("{$ordersTable}.deleted_at")
-            ->whereBetween("{$ordersTable}.ordered_at", [
-                CarbonImmutable::parse($date)->startOfDay(),
-                CarbonImmutable::parse($date)->endOfDay(),
-            ]);
+            ->whereDate("{$ordersTable}.ordered_at", $date);
     }
 }

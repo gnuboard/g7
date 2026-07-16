@@ -29,8 +29,6 @@ const TAB_SCOPED: Record<string, string[]> = {
   identityMessages: ['identity'],
   adminIdentityPolicies: ['identity'],
   policies: ['identity'],
-  sitemap_status: ['seo'],
-  staticCacheStatus: ['general'],
 };
 
 const sources: AnyJson[] = layout.data_sources;

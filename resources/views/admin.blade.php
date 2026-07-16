@@ -16,16 +16,9 @@
         @include('partials.error-fallback-styles')
         @endif
 
-        {{-- 자산 URL 자가 복구 헬퍼 — CSS <link> 의 onerror 보다 먼저 정의되어야 한다 --}}
-        @include('partials.asset-url-recovery')
-
         <!-- 템플릿 컴포넌트 스타일 -->
         @if(!empty($activeAdminTemplate))
-        {{-- onerror: 정적 최적화 서버에서 확장자 붙은 CSS 가 가로채였을 때
-             확장자 없는 형태로 1회 교체한다(무스타일 화면 방지). 링크당 1회. --}}
-        <link rel="stylesheet"
-              href="{{ \App\Support\AssetUrl::templateAsset($activeAdminTemplate, 'css/components.css', $extensionCacheVersion) }}"
-              onerror="window.__g7AssetUrl && window.__g7AssetUrl.recoverStylesheet(this);">
+        <link rel="stylesheet" href="/api/templates/assets/{{ $activeAdminTemplate }}/css/components.css?v={{ $extensionCacheVersion }}">
         @endif
     </head>
     <body>
@@ -47,13 +40,8 @@
                 moduleAssets: @json($moduleAssets ?? []),
                 pluginAssets: @json($pluginAssets ?? []),
                 bundleUrls: @json($bundleUrls ?? null),
-                customAssets: @json($customAssets ?? []),
-                {{-- 이번 렌더가 `?custom=off` 로 자산을 껐는지. URL 은 SPA 부팅이 다시 쓰면서
-                     쿼리를 잃을 수 있으므로, 화면은 URL 이 아니라 **서버가 실제로 한 일**을 본다. --}}
-                customAssetsDisabled: @json($customAssetsDisabled ?? false),
                 activeModules: @json($activeModulesMeta ?? []),
                 activePlugins: @json($activePluginsMeta ?? []),
-                trustedScriptHosts: @json($trustedScriptHosts ?? []),
                 appConfig: @json($appConfig ?? []),
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
@@ -66,19 +54,7 @@
                 // 키가 새 버전으로 전환되어 routes.json/lang 변경이 즉시 가시화된다.
                 // 미주입 시 클라이언트가 항상 `v0` 으로 호출 → `template:cache-clear` 가 v 와일드카드를
                 // 처리하지 못해 캐시가 영구 stale 되는 결함이 발생.
-                cache_version: {{ (int) ($extensionCacheVersion ?? 0) }},
-                @if(($staticExtBase = \App\Support\AssetUrl::staticExtBase()) !== null)
-                // 정적 게시(bake) 베이스 — 게이트(프로덕션·kill-switch·게시 완료) 통과 시에만
-                // 주입된다. 프론트 로더가 routes/lang/components 를 이 경로에서 우선 수신 (#122).
-                staticBase: '{{ $staticExtBase }}',
-                @endif
-                // 자산 URL 모드 — 'extension'(기본) | 'extensionless'.
-                // 정적 최적화 블록이 동적 응답을 가로채는 서버에서 확장자 없는 형태로 전환.
-                // 부트스트랩 자가 복구가 런타임에 뒤집으므로 최상위 키로 노출한다.
-                // 자가 복구가 <head> 에서 이미 전환을 확정했다면 그 값을 잇는다.
-                // 이 대입은 G7Config 객체를 통째로 교체하므로, 독립 전역을 읽지 않으면
-                // 복원/전환 결과가 여기서 덮여 사라진다.
-                assetUrlMode: window.__g7AssetUrlMode || '{{ \App\Support\AssetUrl::mode() }}'
+                cache_version: {{ (int) ($extensionCacheVersion ?? 0) }}
             };
             @if(isset($errorCode) && isset($errorLayout))
             // 에러 상태 정보 (503 의존성 미충족 등)
@@ -95,11 +71,8 @@
         {{-- 코어 엔진 + 템플릿 컴포넌트 번들 로드 → 초기화 (재시도 + 폴백 UI) --}}
         @include('partials.bootstrap-scripts', [
             'templateType' => 'admin',
-            {{-- 코어 엔진 번들은 public/ 의 실물 정적 파일이라 자산 URL 이중 모드 대상이 아니다.
-                 미빌드 상태에서 filemtime() 이 warning 을 내지 않도록 file_exists 가드
-                 (coreEditorAsset/coreDevToolsAsset 와 동일 패턴). --}}
-            'coreEngineSrc' => asset('build/core/template-engine.min.js') . '?v=' . (file_exists(public_path('build/core/template-engine.min.js')) ? filemtime(public_path('build/core/template-engine.min.js')) : 0),
-            'componentsSrc' => \App\Support\AssetUrl::templateAsset($activeAdminTemplate, 'js/components.iife.js', $extensionCacheVersion),
+            'coreEngineSrc' => asset('build/core/template-engine.min.js') . '?v=' . filemtime(public_path('build/core/template-engine.min.js')),
+            'componentsSrc' => '/api/templates/assets/' . $activeAdminTemplate . '/js/components.iife.js?v=' . $extensionCacheVersion,
             'initConfig' => array_filter([
                 'templateId' => $activeAdminTemplate,
                 'templateType' => 'admin',

@@ -8,10 +8,8 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
-use App\Extension\IdentityVerification\DTO\VerificationChallenge;
-use App\Extension\IdentityVerification\DTO\VerificationResult;
+use App\Models\ActivityLog;
 use App\Models\Attachment;
-use App\Models\IdentityVerificationLog;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -67,7 +65,6 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.auth.record_consents' => ['method' => 'handleAuthRecordConsents', 'priority' => 20],
             'core.auth.login_failed' => ['method' => 'handleAuthLoginFailed', 'priority' => 20],
             'core.auth.account_locked' => ['method' => 'handleAuthAccountLocked', 'priority' => 20],
-            'core.auth.account_unlocked' => ['method' => 'handleAuthAccountUnlocked', 'priority' => 20],
 
             // ─── IdentityVerification (IDV) ───
             // DTO(VerificationChallenge/VerificationResult) 를 인자로 받으므로 sync 실행 필수
@@ -130,7 +127,6 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.templates.after_uninstall' => ['method' => 'handleTemplateAfterUninstall', 'priority' => 20],
             'core.templates.after_version_update' => ['method' => 'handleTemplateAfterVersionUpdate', 'priority' => 20],
             'core.templates.after_refresh_layouts' => ['method' => 'handleTemplateAfterRefreshLayouts', 'priority' => 20],
-            'core.custom_assets.after_change' => ['method' => 'handleCustomAssetAfterChange', 'priority' => 20],
 
             // ─── Layout ───
             'core.layout.after_update' => ['method' => 'handleLayoutAfterUpdate', 'priority' => 20],
@@ -149,7 +145,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 훅 이벤트 처리 (기본 핸들러)
      *
-     * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @param mixed ...$args 훅에서 전달된 인수들
      */
     public function handle(...$args): void
     {
@@ -163,8 +159,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 사용자 생성 후 로그 기록
      *
-     * @param  User  $user  생성된 사용자
-     * @param  array  $originalData  원본 요청 데이터
+     * @param User $user 생성된 사용자
+     * @param array $originalData 원본 요청 데이터
      */
     public function handleUserAfterCreate(User $user, array $originalData): void
     {
@@ -179,9 +175,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 사용자 수정 후 로그 기록
      *
-     * @param  User  $user  수정된 사용자
-     * @param  array  $originalData  원본 요청 데이터
-     * @param  array|null  $snapshot  수정 전 스냅샷
+     * @param User $user 수정된 사용자
+     * @param array $originalData 원본 요청 데이터
+     * @param array|null $snapshot 수정 전 스냅샷
      */
     public function handleUserAfterUpdate(User $user, array $originalData, ?array $snapshot = null): void
     {
@@ -198,7 +194,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 사용자 삭제 후 로그 기록
      *
-     * @param  array  $userData  삭제된 사용자 데이터
+     * @param array $userData 삭제된 사용자 데이터
      */
     public function handleUserAfterDelete(array $userData): void
     {
@@ -217,7 +213,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 사용자 탈퇴 후 로그 기록
      *
-     * @param  User  $user  탈퇴한 사용자
+     * @param User $user 탈퇴한 사용자
      */
     public function handleUserAfterWithdraw(User $user): void
     {
@@ -231,7 +227,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 사용자 상세 조회 후 로그 기록
      *
-     * @param  User  $user  조회된 사용자
+     * @param User $user 조회된 사용자
      */
     public function handleUserAfterShow(User $user): void
     {
@@ -245,7 +241,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 사용자 목록 조회 후 로그 기록
      *
-     * @param  int  $count  조회된 총 사용자 수
+     * @param int $count 조회된 총 사용자 수
      */
     public function handleUserAfterList(int $count): void
     {
@@ -258,8 +254,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 사용자 검색 후 로그 기록
      *
-     * @param  string  $query  검색어
-     * @param  int  $count  검색 결과 수
+     * @param string $query 검색어
+     * @param int $count 검색 결과 수
      */
     public function handleUserAfterSearch(string $query, int $count): void
     {
@@ -272,10 +268,10 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 사용자 일괄 상태 변경 후 로그 기록
      *
-     * @param  array  $uuids  대상 UUID 목록
-     * @param  string  $status  변경된 상태
-     * @param  int  $updatedCount  변경된 수
-     * @param  array  $snapshots  변경 전 스냅샷 (uuid => snapshot)
+     * @param array $uuids 대상 UUID 목록
+     * @param string $status 변경된 상태
+     * @param int $updatedCount 변경된 수
+     * @param array $snapshots 변경 전 스냅샷 (uuid => snapshot)
      */
     public function handleUserAfterBulkUpdate(array $uuids, string $status, int $updatedCount, array $snapshots = []): void
     {
@@ -307,8 +303,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 관리자 로그인 후 로그 기록
      *
-     * @param  User  $user  로그인한 사용자
-     * @param  array  $loginData  로그인 데이터
+     * @param User $user 로그인한 사용자
+     * @param array $loginData 로그인 데이터
      */
     public function handleAuthAfterLogin(User $user, array $loginData): void
     {
@@ -322,7 +318,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 로그아웃 로그 기록
      *
-     * @param  User  $user  로그아웃한 사용자
+     * @param User $user 로그아웃한 사용자
      */
     public function handleAuthLogout(User $user): void
     {
@@ -336,8 +332,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 회원가입 후 로그 기록
      *
-     * @param  User  $user  등록된 사용자
-     * @param  array  $registrationData  등록 데이터
+     * @param User $user 등록된 사용자
+     * @param array $registrationData 등록 데이터
      */
     public function handleAuthRegister(User $user, array $registrationData): void
     {
@@ -351,7 +347,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 비밀번호 찾기 요청 로그 기록
      *
-     * @param  User  $user  요청한 사용자
+     * @param User $user 요청한 사용자
      */
     public function handleAuthForgotPassword(User $user): void
     {
@@ -365,7 +361,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 비밀번호 재설정 로그 기록
      *
-     * @param  User  $user  재설정한 사용자
+     * @param User $user 재설정한 사용자
      */
     public function handleAuthResetPassword(User $user): void
     {
@@ -379,10 +375,10 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 이용약관 동의 기록 로그
      *
-     * @param  User  $user  동의한 사용자
-     * @param  array  $data  동의 데이터
-     * @param  string|null  $agreedAt  동의 시각 (DispatchHookListenerJob 역직렬화 과정에서 null 가능)
-     * @param  string|null  $ip  IP 주소
+     * @param User $user 동의한 사용자
+     * @param array $data 동의 데이터
+     * @param string|null $agreedAt 동의 시각 (DispatchHookListenerJob 역직렬화 과정에서 null 가능)
+     * @param string|null $ip IP 주소
      */
     public function handleAuthRecordConsents(User $user, array $data, ?string $agreedAt = null, ?string $ip = null): void
     {
@@ -397,8 +393,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 로그인 실패 로그 기록 (사용자 존재 여부와 무관)
      *
-     * @param  string  $email  시도된 이메일
-     * @param  array  $context  IP/UA/시각 등 부가 정보
+     * @param string $email 시도된 이메일
+     * @param array $context IP/UA/시각 등 부가 정보
      */
     public function handleAuthLoginFailed(string $email, array $context = []): void
     {
@@ -412,40 +408,19 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 계정 잠금 로그 기록
      *
-     * @param  User  $user  잠긴 사용자
-     * @param  array  $context  attempts/locked_until/lockout_minutes/IP
+     * @param User $user 잠긴 사용자
+     * @param array $context attempts/locked_until/lockout_minutes/IP
      */
     public function handleAuthAccountLocked(User $user, array $context = []): void
     {
-        // 영구 잠금(무한대)은 차단 분(minutes)이 없으므로 별도 문구를 사용한다.
-        $permanent = ($context['permanent'] ?? false) || ($context['locked_until'] ?? null) === null;
-
         $this->logActivity('auth.account_locked', [
             'loggable' => $user,
-            'description_key' => $permanent
-                ? 'activity_log.description.auth_account_locked_permanently'
-                : 'activity_log.description.auth_account_locked',
+            'description_key' => 'activity_log.description.auth_account_locked',
             'description_params' => [
                 'attempts' => $context['attempts'] ?? null,
                 'minutes' => $context['lockout_minutes'] ?? null,
             ],
             'user_id' => $user->id,
-            'ip_address' => $context['ip_address'] ?? null,
-        ]);
-    }
-
-    /**
-     * 계정 잠금 해제 로그 기록 (관리자 수동 해제)
-     *
-     * @param  User  $user  잠금이 해제된 사용자
-     * @param  array  $context  IP 등 부가 정보
-     */
-    public function handleAuthAccountUnlocked(User $user, array $context = []): void
-    {
-        $this->logActivity('auth.account_unlocked', [
-            'loggable' => $user,
-            'description_key' => 'activity_log.description.auth_account_unlocked',
-            'description_params' => ['email' => $user->email],
             'ip_address' => $context['ip_address'] ?? null,
         ]);
     }
@@ -457,7 +432,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 역할 생성 후 로그 기록
      *
-     * @param  Model  $role  생성된 역할
+     * @param Model $role 생성된 역할
      */
     public function handleRoleAfterCreate(Model $role): void
     {
@@ -472,8 +447,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 역할 수정 후 로그 기록
      *
-     * @param  Model  $role  수정된 역할
-     * @param  array|null  $snapshot  수정 전 스냅샷
+     * @param Model $role 수정된 역할
+     * @param array|null $snapshot 수정 전 스냅샷
      */
     public function handleRoleAfterUpdate(Model $role, ?array $snapshot = null): void
     {
@@ -490,7 +465,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 역할 삭제 후 로그 기록
      *
-     * @param  int  $roleId  삭제된 역할 ID
+     * @param int $roleId 삭제된 역할 ID
      */
     public function handleRoleAfterDelete(int $roleId): void
     {
@@ -504,9 +479,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 역할 권한 동기화 후 로그 기록
      *
-     * @param  Model  $role  역할
-     * @param  array  $previousPermissions  이전 권한 목록
-     * @param  array  $currentPermissions  현재 권한 목록
+     * @param Model $role 역할
+     * @param array $previousPermissions 이전 권한 목록
+     * @param array $currentPermissions 현재 권한 목록
      */
     public function handleRoleAfterSyncPermissions(Model $role, array $previousPermissions, array $currentPermissions): void
     {
@@ -524,7 +499,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 역할 상태 전환 후 로그 기록
      *
-     * @param  Model  $role  역할
+     * @param Model $role 역할
      */
     public function handleRoleAfterToggleStatus(Model $role): void
     {
@@ -542,7 +517,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 메뉴 생성 후 로그 기록
      *
-     * @param  Model  $menu  생성된 메뉴
+     * @param Model $menu 생성된 메뉴
      */
     public function handleMenuAfterCreate(Model $menu): void
     {
@@ -557,8 +532,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 메뉴 수정 후 로그 기록
      *
-     * @param  Model  $menu  수정된 메뉴
-     * @param  array|null  $snapshot  수정 전 스냅샷
+     * @param Model $menu 수정된 메뉴
+     * @param array|null $snapshot 수정 전 스냅샷
      */
     public function handleMenuAfterUpdate(Model $menu, ?array $snapshot = null): void
     {
@@ -575,7 +550,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 메뉴 삭제 후 로그 기록
      *
-     * @param  int  $menuId  삭제된 메뉴 ID
+     * @param int $menuId 삭제된 메뉴 ID
      */
     public function handleMenuAfterDelete(int $menuId): void
     {
@@ -589,7 +564,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 메뉴 순서 변경 후 로그 기록
      *
-     * @param  array  $orderData  순서 데이터
+     * @param array $orderData 순서 데이터
      */
     public function handleMenuAfterUpdateOrder(array $orderData): void
     {
@@ -601,7 +576,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 메뉴 상태 전환 후 로그 기록
      *
-     * @param  Model  $menu  메뉴
+     * @param Model $menu 메뉴
      */
     public function handleMenuAfterToggleStatus(Model $menu): void
     {
@@ -615,9 +590,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 메뉴 역할 동기화 후 로그 기록
      *
-     * @param  Model  $menu  메뉴
-     * @param  array  $previousRoles  이전 역할 목록
-     * @param  array  $currentRoles  현재 역할 목록
+     * @param Model $menu 메뉴
+     * @param array $previousRoles 이전 역할 목록
+     * @param array $currentRoles 현재 역할 목록
      */
     public function handleMenuAfterSyncRoles(Model $menu, array $previousRoles, array $currentRoles): void
     {
@@ -639,9 +614,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 설정 저장 후 로그 기록
      *
-     * @param  string  $tab  설정 탭
-     * @param  array  $settings  저장된 설정
-     * @param  bool  $result  저장 결과
+     * @param string $tab 설정 탭
+     * @param array $settings 저장된 설정
+     * @param bool $result 저장 결과
      */
     public function handleSettingsAfterSave(string $tab, array $settings, bool $result): void
     {
@@ -654,9 +629,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 개별 설정 변경 후 로그 기록
      *
-     * @param  string  $key  설정 키
-     * @param  mixed  $value  설정 값
-     * @param  bool  $result  저장 결과
+     * @param string $key 설정 키
+     * @param mixed $value 설정 값
+     * @param bool $result 저장 결과
      */
     public function handleSettingsAfterSet(string $key, mixed $value, bool $result): void
     {
@@ -673,7 +648,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 스케줄 생성 후 로그 기록
      *
-     * @param  Model  $schedule  생성된 스케줄
+     * @param Model $schedule 생성된 스케줄
      */
     public function handleScheduleAfterCreate(Model $schedule): void
     {
@@ -687,8 +662,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 스케줄 수정 후 로그 기록
      *
-     * @param  Model  $schedule  수정된 스케줄
-     * @param  array|null  $snapshot  수정 전 스냅샷
+     * @param Model $schedule 수정된 스케줄
+     * @param array|null $snapshot 수정 전 스냅샷
      */
     public function handleScheduleAfterUpdate(Model $schedule, ?array $snapshot = null): void
     {
@@ -705,7 +680,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 스케줄 삭제 후 로그 기록
      *
-     * @param  int  $scheduleId  삭제된 스케줄 ID
+     * @param int $scheduleId 삭제된 스케줄 ID
      */
     public function handleScheduleAfterDelete(int $scheduleId): void
     {
@@ -719,8 +694,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 스케줄 수동 실행 후 로그 기록
      *
-     * @param  Model  $schedule  실행된 스케줄
-     * @param  Model  $history  실행 이력
+     * @param Model $schedule 실행된 스케줄
+     * @param Model $history 실행 이력
      */
     public function handleScheduleAfterRun(Model $schedule, Model $history): void
     {
@@ -734,10 +709,10 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 스케줄 일괄 상태 변경 후 로그 기록
      *
-     * @param  array  $ids  대상 ID 목록
-     * @param  bool  $isActive  활성화 여부
-     * @param  int  $updatedCount  변경된 수
-     * @param  array  $snapshots  변경 전 스냅샷 (id => snapshot)
+     * @param array $ids 대상 ID 목록
+     * @param bool $isActive 활성화 여부
+     * @param int $updatedCount 변경된 수
+     * @param array $snapshots 변경 전 스냅샷 (id => snapshot)
      */
     public function handleScheduleAfterBulkUpdate(array $ids, bool $isActive, int $updatedCount, array $snapshots = []): void
     {
@@ -765,9 +740,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 스케줄 일괄 삭제 후 로그 기록
      *
-     * @param  array  $ids  대상 ID 목록
-     * @param  int  $deletedCount  삭제된 수
-     * @param  array  $snapshots  삭제 전 스냅샷 (id => snapshot)
+     * @param array $ids 대상 ID 목록
+     * @param int $deletedCount 삭제된 수
+     * @param array $snapshots 삭제 전 스냅샷 (id => snapshot)
      */
     public function handleScheduleAfterBulkDelete(array $ids, int $deletedCount, array $snapshots = []): void
     {
@@ -794,7 +769,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 첨부파일 업로드 후 로그 기록
      *
-     * @param  Model  $attachment  업로드된 첨부파일
+     * @param Model $attachment 업로드된 첨부파일
      */
     public function handleAttachmentAfterUpload(Model $attachment): void
     {
@@ -807,7 +782,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 첨부파일 삭제 후 로그 기록
      *
-     * @param  Model|null  $attachment  삭제된 첨부파일 (DispatchHookListenerJob 역직렬화 과정에서 null 가능)
+     * @param Model|null $attachment 삭제된 첨부파일 (DispatchHookListenerJob 역직렬화 과정에서 null 가능)
      */
     public function handleAttachmentAfterDelete(?Model $attachment = null): void
     {
@@ -819,10 +794,10 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 첨부파일 일괄 삭제 후 로그 기록 (per-item)
      *
-     * @param  string  $identifier  식별자
-     * @param  int  $count  삭제된 수
-     * @param  array  $ids  삭제된 첨부파일 ID 목록
-     * @param  array  $snapshots  삭제 전 스냅샷 (keyBy id)
+     * @param string $identifier 식별자
+     * @param int $count 삭제된 수
+     * @param array $ids 삭제된 첨부파일 ID 목록
+     * @param array $snapshots 삭제 전 스냅샷 (keyBy id)
      */
     public function handleAttachmentAfterBulkDelete(string $identifier, int $count, array $ids = [], array $snapshots = []): void
     {
@@ -850,8 +825,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 모듈 설치 후 로그 기록
      *
-     * @param  string  $moduleName  모듈 식별자
-     * @param  array  $moduleInfo  모듈 정보
+     * @param string $moduleName 모듈 식별자
+     * @param array $moduleInfo 모듈 정보
      */
     public function handleModuleAfterInstall(string $moduleName, array $moduleInfo): void
     {
@@ -865,8 +840,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 모듈 활성화 후 로그 기록
      *
-     * @param  string  $moduleName  모듈 식별자
-     * @param  array  $moduleInfo  모듈 정보
+     * @param string $moduleName 모듈 식별자
+     * @param array $moduleInfo 모듈 정보
      */
     public function handleModuleAfterActivate(string $moduleName, array $moduleInfo): void
     {
@@ -879,7 +854,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 모듈 비활성화 후 로그 기록
      *
-     * @param  string  $moduleName  모듈 식별자
+     * @param string $moduleName 모듈 식별자
      */
     public function handleModuleAfterDeactivate(string $moduleName): void
     {
@@ -892,9 +867,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 모듈 제거 후 로그 기록
      *
-     * @param  string  $moduleName  모듈 식별자
-     * @param  array  $moduleInfo  모듈 정보
-     * @param  bool  $deleteData  데이터 삭제 여부
+     * @param string $moduleName 모듈 식별자
+     * @param array $moduleInfo 모듈 정보
+     * @param bool $deleteData 데이터 삭제 여부
      */
     public function handleModuleAfterUninstall(string $moduleName, array $moduleInfo, bool $deleteData): void
     {
@@ -908,9 +883,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 모듈 업데이트 후 로그 기록
      *
-     * @param  string  $moduleName  모듈 식별자
-     * @param  array  $result  업데이트 결과 배열 (['success' => bool, ...])
-     * @param  array  $moduleInfo  모듈 정보
+     * @param string $moduleName 모듈 식별자
+     * @param array $result 업데이트 결과 배열 (['success' => bool, ...])
+     * @param array $moduleInfo 모듈 정보
      */
     public function handleModuleAfterUpdate(string $moduleName, array $result, array $moduleInfo): void
     {
@@ -924,8 +899,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 모듈 레이아웃 갱신 후 로그 기록
      *
-     * @param  string  $moduleName  모듈 식별자
-     * @param  array  $result  갱신 결과
+     * @param string $moduleName 모듈 식별자
+     * @param array $result 갱신 결과
      */
     public function handleModuleAfterRefreshLayouts(string $moduleName, array $result): void
     {
@@ -942,8 +917,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 플러그인 설치 후 로그 기록
      *
-     * @param  string  $pluginName  플러그인 식별자
-     * @param  array  $pluginInfo  플러그인 정보
+     * @param string $pluginName 플러그인 식별자
+     * @param array $pluginInfo 플러그인 정보
      */
     public function handlePluginAfterInstall(string $pluginName, array $pluginInfo): void
     {
@@ -957,8 +932,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 플러그인 활성화 후 로그 기록
      *
-     * @param  string  $pluginName  플러그인 식별자
-     * @param  array  $pluginInfo  플러그인 정보
+     * @param string $pluginName 플러그인 식별자
+     * @param array $pluginInfo 플러그인 정보
      */
     public function handlePluginAfterActivate(string $pluginName, array $pluginInfo): void
     {
@@ -971,7 +946,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 플러그인 비활성화 후 로그 기록
      *
-     * @param  string  $pluginName  플러그인 식별자
+     * @param string $pluginName 플러그인 식별자
      */
     public function handlePluginAfterDeactivate(string $pluginName): void
     {
@@ -984,9 +959,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 플러그인 제거 후 로그 기록
      *
-     * @param  string  $pluginName  플러그인 식별자
-     * @param  bool  $deleteData  데이터 삭제 여부
-     * @param  bool  $result  제거 결과
+     * @param string $pluginName 플러그인 식별자
+     * @param bool $deleteData 데이터 삭제 여부
+     * @param bool $result 제거 결과
      */
     public function handlePluginAfterUninstall(string $pluginName, bool $deleteData, bool $result): void
     {
@@ -1000,9 +975,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 플러그인 업데이트 후 로그 기록
      *
-     * @param  string  $pluginName  플러그인 식별자
-     * @param  array  $result  업데이트 결과 배열 (['success' => bool, ...])
-     * @param  array  $pluginInfo  플러그인 정보
+     * @param string $pluginName 플러그인 식별자
+     * @param array $result 업데이트 결과 배열 (['success' => bool, ...])
+     * @param array $pluginInfo 플러그인 정보
      */
     public function handlePluginAfterUpdate(string $pluginName, array $result, array $pluginInfo): void
     {
@@ -1020,8 +995,8 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 템플릿 설치 후 로그 기록
      *
-     * @param  string  $identifier  템플릿 식별자
-     * @param  array  $templateInfo  템플릿 정보
+     * @param string $identifier 템플릿 식별자
+     * @param array $templateInfo 템플릿 정보
      */
     public function handleTemplateAfterInstall(string $identifier, array $templateInfo): void
     {
@@ -1035,7 +1010,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 템플릿 활성화 후 로그 기록
      *
-     * @param  array  $templateInfo  템플릿 정보
+     * @param array $templateInfo 템플릿 정보
      */
     public function handleTemplateAfterActivate(array $templateInfo): void
     {
@@ -1048,7 +1023,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 템플릿 비활성화 후 로그 기록
      *
-     * @param  string  $identifier  템플릿 식별자
+     * @param string $identifier 템플릿 식별자
      */
     public function handleTemplateAfterDeactivate(string $identifier): void
     {
@@ -1061,9 +1036,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 템플릿 제거 후 로그 기록
      *
-     * @param  string  $identifier  템플릿 식별자
-     * @param  array  $templateInfo  템플릿 정보
-     * @param  bool  $deleteData  데이터 삭제 여부
+     * @param string $identifier 템플릿 식별자
+     * @param array $templateInfo 템플릿 정보
+     * @param bool $deleteData 데이터 삭제 여부
      */
     public function handleTemplateAfterUninstall(string $identifier, array $templateInfo, bool $deleteData): void
     {
@@ -1077,9 +1052,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 템플릿 버전 업데이트 후 로그 기록
      *
-     * @param  string  $templateName  템플릿 식별자
-     * @param  array  $result  업데이트 결과
-     * @param  array  $templateInfo  템플릿 정보
+     * @param string $templateName 템플릿 식별자
+     * @param array $result 업데이트 결과
+     * @param array $templateInfo 템플릿 정보
      */
     public function handleTemplateAfterVersionUpdate(string $templateName, array $result, array $templateInfo): void
     {
@@ -1093,39 +1068,14 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 템플릿 레이아웃 갱신 후 로그 기록
      *
-     * @param  string  $identifier  템플릿 식별자
-     * @param  array  $result  갱신 결과
+     * @param string $identifier 템플릿 식별자
+     * @param array $result 갱신 결과
      */
     public function handleTemplateAfterRefreshLayouts(string $identifier, array $result): void
     {
         $this->logActivity('template.refresh_layouts', [
             'description_key' => 'activity_log.description.template_refresh_layouts',
             'description_params' => ['template_name' => $identifier],
-        ]);
-    }
-
-    /**
-     * 사용자 추가 에셋(`custom/`) 변경 후 로그 기록
-     *
-     * @param  string  $extensionType  확장 타입 (`templates` 등)
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $operation  수행한 작업 (`save` | `upload` | `delete`)
-     * @param  string  $path  `custom/` 기준 상대 경로
-     */
-    public function handleCustomAssetAfterChange(
-        string $extensionType,
-        string $identifier,
-        string $operation,
-        string $path
-    ): void {
-        $this->logActivity('custom_asset.'.$operation, [
-            'description_key' => 'activity_log.description.custom_asset_'.$operation,
-            'description_params' => ['identifier' => $identifier, 'path' => $path],
-            'properties' => [
-                'extension_type' => $extensionType,
-                'identifier' => $identifier,
-                'path' => $path,
-            ],
         ]);
     }
 
@@ -1136,10 +1086,10 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 레이아웃 수정 후 로그 기록
      *
-     * @param  Model  $layout  수정된 레이아웃
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @param  array  $data  수정 데이터
+     * @param Model $layout 수정된 레이아웃
+     * @param int $templateId 템플릿 ID
+     * @param string $name 레이아웃 이름
+     * @param array $data 수정 데이터
      */
     public function handleLayoutAfterUpdate(Model $layout, int $templateId, string $name, array $data): void
     {
@@ -1153,10 +1103,10 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 레이아웃 버전 복원 후 로그 기록
      *
-     * @param  Model  $newVersion  복원된 새 버전
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @param  int  $versionId  복원 대상 버전 ID
+     * @param Model $newVersion 복원된 새 버전
+     * @param int $templateId 템플릿 ID
+     * @param string $name 레이아웃 이름
+     * @param int $versionId 복원 대상 버전 ID
      */
     public function handleLayoutAfterVersionRestore(Model $newVersion, int $templateId, string $name, int $versionId): void
     {
@@ -1174,9 +1124,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 모듈 설정 저장 후 로그 기록
      *
-     * @param  string  $identifier  모듈 식별자
-     * @param  array  $settings  저장된 설정
-     * @param  bool  $result  저장 결과
+     * @param string $identifier 모듈 식별자
+     * @param array $settings 저장된 설정
+     * @param bool $result 저장 결과
      */
     public function handleModuleSettingsAfterSave(string $identifier, array $settings, bool $result): void
     {
@@ -1190,7 +1140,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 모듈 설정 초기화 후 로그 기록
      *
-     * @param  string  $identifier  모듈 식별자
+     * @param string $identifier 모듈 식별자
      */
     public function handleModuleSettingsAfterReset(string $identifier): void
     {
@@ -1207,9 +1157,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 플러그인 설정 저장 후 로그 기록
      *
-     * @param  string  $identifier  플러그인 식별자
-     * @param  array  $settings  저장된 설정
-     * @param  bool  $result  저장 결과
+     * @param string $identifier 플러그인 식별자
+     * @param array $settings 저장된 설정
+     * @param bool $result 저장 결과
      */
     public function handlePluginSettingsAfterSave(string $identifier, array $settings, bool $result): void
     {
@@ -1223,7 +1173,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 플러그인 설정 초기화 후 로그 기록
      *
-     * @param  string  $identifier  플러그인 식별자
+     * @param string $identifier 플러그인 식별자
      */
     public function handlePluginSettingsAfterReset(string $identifier): void
     {
@@ -1240,10 +1190,10 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 본인인증 challenge 요청 후 로그 기록.
      *
-     * @param  VerificationChallenge  $challenge  발급된 본인인증 challenge
-     * @param  string  $purpose  인증 목적 (IdentityVerificationPurpose 값)
-     * @param  User|array  $target  인증 대상 (회원 모델 또는 이메일/전화 배열)
-     * @param  array  $context  부가 컨텍스트 (IP 등)
+     * @param  \App\Extension\IdentityVerification\DTO\VerificationChallenge  $challenge
+     * @param  string  $purpose
+     * @param  \App\Models\User|array  $target
+     * @param  array  $context
      */
     public function handleIdentityRequested($challenge, string $purpose, $target, array $context = []): void
     {
@@ -1263,9 +1213,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 본인인증 검증 후 로그 기록 (성공·실패 공통 디스패치).
      *
-     * @param  VerificationResult  $result  검증 결과 DTO
-     * @param  IdentityVerificationLog|null  $log  검증 로그 (없을 수 있음)
-     * @param  array  $context  부가 컨텍스트 (IP 등)
+     * @param  \App\Extension\IdentityVerification\DTO\VerificationResult  $result
+     * @param  \App\Models\IdentityVerificationLog|null  $log
+     * @param  array  $context
      */
     public function handleIdentityVerified($result, $log, array $context = []): void
     {
@@ -1288,7 +1238,7 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 본인인증 challenge 만료 로그 기록.
      *
-     * @param  IdentityVerificationLog  $log
+     * @param  \App\Models\IdentityVerificationLog  $log
      */
     public function handleIdentityExpired($log): void
     {
@@ -1301,4 +1251,5 @@ class CoreActivityLogListener implements HookListenerInterface
             ],
         ]);
     }
+
 }

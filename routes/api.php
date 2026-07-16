@@ -1,10 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
-use App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController;
 use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
-// Admin Controllers
 use App\Http\Controllers\Api\Admin\AdminTemplateLayoutAttachmentController;
+// Admin Controllers
 use App\Http\Controllers\Api\Admin\AttachmentController as AdminAttachmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Api\Admin\BroadcastCatalogController;
@@ -34,11 +33,11 @@ use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettin
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Api\Admin\SeoBotPreviewController;
-// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Admin\SeoCacheController as AdminSeoCacheController;
+// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Admin\SeoCandidateController;
-// Identity Verification
 use App\Http\Controllers\Api\Admin\SeoOgPreviewController;
+// Identity Verification
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
@@ -48,7 +47,6 @@ use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
 use App\Http\Controllers\Api\Identity\IdentityVerificationController;
-use App\Http\Controllers\Api\Public\AssetProbeController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
@@ -79,29 +77,25 @@ use Illuminate\Support\Facades\Route;
 Route::group([], function () {
     // 템플릿 라우트 정보 조회
     Route::prefix('templates')->group(function () {
-        // 아래 dual* 매크로는 확장자 형태와 확장자 없는 형태를 동시에 등록한다.
-        // 정적 최적화 블록(location ~* \.(js|css|json)$)이 있는 서버에서 동적 응답이
-        // nginx 에 가로채이지 않도록 하기 위함. 상세: App\Support\Routing\DualExtensionRoute
-        Route::dualSuffix('{identifier}/routes', 'json', [PublicTemplateController::class, 'getRoutes'])
-            ->name('api.public.templates.routes');
+        Route::get('{identifier}/routes.json', [PublicTemplateController::class, 'getRoutes'])->name('api.public.templates.routes');
 
         // 템플릿 설정 파일 서빙 (error_config 등)
-        Route::dualSuffix('{identifier}/config', 'json', [PublicTemplateController::class, 'serveConfig'])
-            ->name('api.public.templates.config');
+        Route::get('{identifier}/config.json', [PublicTemplateController::class, 'serveConfig'])->name('api.public.templates.config');
 
         // 레이아웃 편집기 스펙 조회
         Route::get('{identifier}/editor-spec', [PublicTemplateController::class, 'serveEditorSpec'])->name('api.public.templates.editor_spec');
 
-        // 템플릿 정적 파일 서빙 (확장자 없는 형태는 ?file= 로 경로 수신)
-        Route::dualAsset('assets/{identifier}', [PublicTemplateController::class, 'serveAsset'])
+        // 템플릿 정적 파일 서빙
+        Route::get('assets/{identifier}/{path}', [PublicTemplateController::class, 'serveAsset'])
+            ->where('path', '.*')
             ->name('api.public.templates.assets');
 
         // 컴포넌트 정의 파일 서빙
-        Route::dualSuffix('{identifier}/components', 'json', [PublicTemplateController::class, 'serveComponents'])
+        Route::get('{identifier}/components.json', [PublicTemplateController::class, 'serveComponents'])
             ->name('api.public.templates.components');
 
         // 다국어 파일 서빙
-        Route::dualSuffix('{identifier}/lang/{locale}', 'json', [PublicTemplateController::class, 'serveLanguage'])
+        Route::get('{identifier}/lang/{locale}.json', [PublicTemplateController::class, 'serveLanguage'])
             ->where('locale', '[a-z]{2}(-[A-Z]{2})?')
             ->name('api.public.templates.language');
 
@@ -120,13 +114,11 @@ Route::group([], function () {
         ->group(function () {
             // 레이아웃 미리보기 서빙 (토큰 기반, 인증 불필요)
             // 주의: 일반 레이아웃 서빙보다 먼저 정의 (preview가 templateIdentifier로 매칭되는 것 방지)
-            Route::dualSuffix('preview/{token}', 'json', [LayoutPreviewController::class, 'serve'])
+            Route::get('preview/{token}.json', [LayoutPreviewController::class, 'serve'])
                 ->where('token', '[a-f0-9\-]{36}')
                 ->name('api.public.layouts.preview.serve');
 
-            // 주의: dualSuffix 는 확장자 형태를 먼저 등록한다. layoutName 정규식이 `.` 를
-            // 포함해 greedy 하므로, 확장자 없는 형태가 먼저 등록되면 `.json` 요청까지 삼킨다.
-            Route::dualSuffix('{templateIdentifier}/{layoutName}', 'json', [PublicLayoutController::class, 'serve'])
+            Route::get('{templateIdentifier}/{layoutName}.json', [PublicLayoutController::class, 'serve'])
                 ->where('layoutName', '[a-zA-Z0-9_/\.-]+')
                 ->name('api.public.layouts.serve');
         });
@@ -134,13 +126,13 @@ Route::group([], function () {
     // 모듈 에셋 서빙 API
     Route::prefix('modules')->group(function () {
         // 활성 모듈 프론트엔드 IIFE/CSS 병합 번들 (개별 assets 라우트보다 위에 명시 등록)
-        // 접미사가 js/css 를 구분하므로 제거 불가 — 세그먼트로 내린다 (bundle/js, bundle/css).
-        Route::dualSuffixSegment('bundle', 'js', [PublicModuleController::class, 'serveBundleJs'])
+        Route::get('bundle.js', [PublicModuleController::class, 'serveBundleJs'])
             ->name('api.public.modules.bundle.js');
-        Route::dualSuffixSegment('bundle', 'css', [PublicModuleController::class, 'serveBundleCss'])
+        Route::get('bundle.css', [PublicModuleController::class, 'serveBundleCss'])
             ->name('api.public.modules.bundle.css');
 
-        Route::dualAsset('assets/{identifier}', [PublicModuleController::class, 'serveAsset'])
+        Route::get('assets/{identifier}/{path}', [PublicModuleController::class, 'serveAsset'])
+            ->where('path', '.*')
             ->name('api.public.modules.assets');
 
         // 레이아웃 편집기 스펙 조회
@@ -148,19 +140,20 @@ Route::group([], function () {
             ->name('api.public.modules.editor_spec');
 
         // 컴포넌트 정의 파일 서빙 (module:build 산출물)
-        Route::dualSuffix('{identifier}/components', 'json', [PublicModuleController::class, 'serveComponents'])
+        Route::get('{identifier}/components.json', [PublicModuleController::class, 'serveComponents'])
             ->name('api.public.modules.components');
     });
 
     // 플러그인 에셋 서빙 API
     Route::prefix('plugins')->group(function () {
         // 활성 플러그인 프론트엔드 IIFE/CSS 병합 번들 (개별 assets 라우트보다 위에 명시 등록)
-        Route::dualSuffixSegment('bundle', 'js', [PublicPluginController::class, 'serveBundleJs'])
+        Route::get('bundle.js', [PublicPluginController::class, 'serveBundleJs'])
             ->name('api.public.plugins.bundle.js');
-        Route::dualSuffixSegment('bundle', 'css', [PublicPluginController::class, 'serveBundleCss'])
+        Route::get('bundle.css', [PublicPluginController::class, 'serveBundleCss'])
             ->name('api.public.plugins.bundle.css');
 
-        Route::dualAsset('assets/{identifier}', [PublicPluginController::class, 'serveAsset'])
+        Route::get('assets/{identifier}/{path}', [PublicPluginController::class, 'serveAsset'])
+            ->where('path', '.*')
             ->name('api.public.plugins.assets');
 
         // 레이아웃 편집기 스펙 조회
@@ -168,7 +161,7 @@ Route::group([], function () {
             ->name('api.public.plugins.editor_spec');
 
         // 컴포넌트 정의 파일 서빙 (plugin:build 산출물)
-        Route::dualSuffix('{identifier}/components', 'json', [PublicPluginController::class, 'serveComponents'])
+        Route::get('{identifier}/components.json', [PublicPluginController::class, 'serveComponents'])
             ->name('api.public.plugins.components');
     });
 
@@ -184,12 +177,6 @@ Route::group([], function () {
     // 활성 로케일 목록 — 언어팩 설치/활성화 직후 셀렉터 즉시 갱신용
     Route::get('locales/active', [PublicLocaleController::class, 'active'])
         ->name('api.public.locales.active');
-
-    // 자산 URL 모드 감지 프로브 — 정적 최적화 블록이 확장자 붙은 동적 응답을
-    // 가로채는지 쌍으로 판정한다. 매크로 자기적용(확장자 형태 + 대조군).
-    // DB 미접근·무인증·no-store. 상세: App\Http\Controllers\Api\Public\AssetProbeController
-    Route::dualSuffix('system/asset-probe', 'js', [AssetProbeController::class, 'probe'])
-        ->name('api.public.system.asset-probe');
 });
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)
@@ -252,13 +239,6 @@ Route::prefix('auth')->group(function () {
     // 로그인 라우트 (세션 생성 필요)
     Route::middleware(['throttle:auth-login', 'start.api.session'])->group(function () {
         Route::post('login', [UserAuthController::class, 'login'])->name('api.auth.login');
-        // 2단계 인증 확인 — 비밀번호 단계가 돌려준 challenge 로만 로그인이 완료된다.
-        // 로그인과 같은 제한을 적용해 코드 대입 시도를 함께 억제한다.
-        Route::post('login/two-factor', [UserAuthController::class, 'verifyTwoFactor'])
-            ->name('api.auth.login.two-factor');
-        // 인증번호 재발송 — 기존 challenge 를 취소하고 새로 발행한다.
-        Route::post('login/two-factor/resend', [UserAuthController::class, 'resendTwoFactor'])
-            ->name('api.auth.login.two-factor.resend');
     });
 
     // 공개 인증 라우트 (세션 불필요)
@@ -283,13 +263,6 @@ Route::prefix('auth')->group(function () {
         Route::post('login', [AdminAuthController::class, 'login'])
             ->middleware(['throttle:auth-login', 'start.api.session'])
             ->name('api.auth.admin.login');
-        // 관리자 2단계 인증 확인·재발송 — 사용자 경로와 같은 제한을 적용한다.
-        Route::post('login/two-factor', [AdminAuthController::class, 'verifyTwoFactor'])
-            ->middleware(['throttle:auth-login', 'start.api.session'])
-            ->name('api.auth.admin.login.two-factor');
-        Route::post('login/two-factor/resend', [AdminAuthController::class, 'resendTwoFactor'])
-            ->middleware(['throttle:auth-login', 'start.api.session'])
-            ->name('api.auth.admin.login.two-factor.resend');
     });
 });
 
@@ -369,10 +342,8 @@ Route::get('attachment/{hash}', [PublicAttachmentController::class, 'download'])
     ->where('hash', '[a-zA-Z0-9]{12}')
     ->name('api.attachment.download');
 
-// 통합 검색 API (공개 — Bearer 토큰이 있으면 회원으로 해석해 게시판별 열람 권한을
-// 검색 결과·available_boards 에 반영한다. 미들웨어가 없으면 $request->user() 가
-// 항상 null 이라 인증 회원도 guest 수준으로 필터된다.)
-Route::get('search', [PublicSearchController::class, 'search'])->middleware('optional.sanctum')->name('api.search');
+// 통합 검색 API (공개)
+Route::get('search', [PublicSearchController::class, 'search'])->name('api.search');
 
 // 관리자 API (인증 + 관리자 권한 필요, 속도 제한 적용)
 Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin', 'throttle:'.config('auth.throttle.admin')])->group(function () {
@@ -627,36 +598,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->where('type', 'plugin|module|template')
             ->middleware('permission:admin,core.plugins.activate')
             ->name('api.admin.extensions.dismiss');
-
-        // 사용자 추가 에셋(`custom/`) 관리 — 모듈·플러그인·템플릿 공통.
-        //
-        // 타입별로 나누면 같은 검증·문서·테스트가 세 벌로 갈리고, 그중 하나만 약해지면
-        // 그 경로가 조용한 우회로가 된다. 권한도 하나(`core.extensions.custom_assets.manage`)다 —
-        // 쪼개면 운영자가 셋을 다 부여해야 하고 "모듈 CSS 는 되는데 템플릿 CSS 는 안 되는"
-        // 상태가 실질적 의미 없이 생긴다.
-        //
-        // 레이아웃 편집 권한과는 분리한다: 여기서 올린 스크립트는 그 레이아웃 한 장이 아니라
-        // 사이트 전 화면에서 실행되므로, 레이아웃을 고칠 수 있다는 것이 곧 그 권한이 될 수 없다.
-        Route::get('{type}/{identifier}/custom-assets', [AdminExtensionCustomAssetController::class, 'index'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.index');
-        Route::get('{type}/{identifier}/custom-assets/content', [AdminExtensionCustomAssetController::class, 'show'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.show');
-        Route::put('{type}/{identifier}/custom-assets/content', [AdminExtensionCustomAssetController::class, 'store'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.store');
-        Route::post('{type}/{identifier}/custom-assets/upload', [AdminExtensionCustomAssetController::class, 'upload'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.upload');
-        Route::delete('{type}/{identifier}/custom-assets', [AdminExtensionCustomAssetController::class, 'destroy'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.destroy');
     });
 
     // 환경설정 관리
@@ -664,12 +605,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('/', [AdminSettingsController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.index');
         Route::post('/', [AdminSettingsController::class, 'store'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.store');
         Route::get('system-info', [AdminSettingsController::class, 'systemInfo'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.system-info');
-        // 읽기 전용 진단 (#124). 값 편집 엔드포인트는 두지 않는다 — 편집은 .env 전용.
-        // `{key}` 와일드카드보다 먼저 등록해야 그 라우트에 흡수되지 않는다.
-        Route::get('trusted-proxy', [AdminSettingsController::class, 'trustedProxy'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.trusted-proxy');
-        // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구 (#651). 상태는 `{key}` 와일드카드보다 먼저.
-        Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
-        Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
         Route::post('regenerate-app-key', [AdminSettingsController::class, 'regenerateAppKey'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.regenerate-app-key');
         Route::post('clear-cache', [AdminSettingsController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.clear-cache');
@@ -679,7 +614,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('restore', [AdminSettingsController::class, 'restore'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.restore');
         Route::post('test-mail', [AdminSettingsController::class, 'testMail'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-mail');
         Route::post('test-driver', [AdminSettingsController::class, 'testDriverConnection'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-driver');
-        Route::post('test-outbound-proxy', [AdminSettingsController::class, 'testOutboundProxy'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-outbound-proxy');
         Route::post('geoip/update', [AdminGeoIpController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.geoip.update');
         Route::get('{key}', [AdminSettingsController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.show');
         Route::put('{key}', [AdminSettingsController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.update');
@@ -761,8 +695,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{user}', [AdminUserController::class, 'show'])->middleware('permission:admin,core.users.read')->name('api.admin.users.show');
         Route::put('{user}', [AdminUserController::class, 'update'])->middleware('permission:admin,core.users.update')->name('api.admin.users.update');
         Route::delete('{user}', [AdminUserController::class, 'destroy'])->middleware('permission:admin,core.users.delete')->name('api.admin.users.destroy');
-        // 계정 잠금 해제 — 영구 잠금(무한대) 계정의 유일한 복구 경로
-        Route::post('{user}/unlock', [AdminUserController::class, 'unlock'])->middleware('permission:admin,core.users.update')->name('api.admin.users.unlock');
     });
 
     // 스케줄 관리
@@ -787,7 +719,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('clear-cache', [AdminSeoCacheController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.clear-cache');
         Route::post('warmup', [AdminSeoCacheController::class, 'warmup'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.warmup');
         Route::post('sitemap/regenerate', [AdminSeoCacheController::class, 'regenerateSitemap'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.sitemap.regenerate');
-        Route::get('sitemap/status', [AdminSeoCacheController::class, 'sitemapStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.sitemap.status');
         Route::get('cached-urls', [AdminSeoCacheController::class, 'cachedUrls'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.cached-urls');
     });
 
@@ -825,34 +756,32 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{identifier}/editor-assets', [AdminTemplateAssetController::class, 'getEditorAssets'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-assets');
-        Route::dualSuffix('{identifier}/editor/components', 'json', [AdminTemplateAssetController::class, 'serveComponents'])
+        Route::get('{identifier}/editor/components.json', [AdminTemplateAssetController::class, 'serveComponents'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-components');
-        Route::dualSuffix('{identifier}/editor/routes', 'json', [AdminTemplateAssetController::class, 'serveRoutes'])
+        Route::get('{identifier}/editor/routes.json', [AdminTemplateAssetController::class, 'serveRoutes'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-routes');
-        Route::dualSuffix('{identifier}/editor/editor-spec', 'json', [AdminTemplateAssetController::class, 'serveEditorSpec'])
+        Route::get('{identifier}/editor/editor-spec.json', [AdminTemplateAssetController::class, 'serveEditorSpec'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-spec');
-        Route::dualSuffix('{identifier}/editor/lang/{locale}', 'json', [AdminTemplateAssetController::class, 'serveLanguage'])
+        Route::get('{identifier}/editor/lang/{locale}.json', [AdminTemplateAssetController::class, 'serveLanguage'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-lang');
         // 표시 권한 후보 — 코어 + 활성 확장 권한 (속성 모달 표시 권한 TagInput).
         // 편집 권한 가드 하에서만 노출(전역 G7Config 상시 노출 회피).
-        Route::dualSuffix('{identifier}/editor/permission-candidates', 'json', [AdminTemplateAssetController::class, 'servePermissionCandidates'])
+        Route::get('{identifier}/editor/permission-candidates.json', [AdminTemplateAssetController::class, 'servePermissionCandidates'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-permission-candidates');
         // 편집기 프리뷰 전용 CSS — 다크 셀렉터를 프리뷰 마커(.g7le-preview-dark)로 치환해 서빙
         // 관리자 admin 의 html.dark 조상과 독립적으로 프리뷰 라이트/다크 격리.
-        // URI 가 `components` 가 아니라 `component-styles` 인 이유: 확장자를 떼면
-        // `editor/components.json` 의 확장자 없는 형태와 충돌한다.
-        Route::dualSuffix('{identifier}/editor/component-styles', 'css', [AdminTemplateAssetController::class, 'serveEditorCss'])
+        Route::get('{identifier}/editor/components.css', [AdminTemplateAssetController::class, 'serveEditorCss'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-css');
 
         // 페이지 설정 모달 — SEO 후보/미리보기 + 브로드캐스트 카탈로그.
         // 전부 편집 권한 가드 하 편집기 전용. {templateName} 동적 라우트보다 위에 둠.
-        Route::dualSuffix('{identifier}/editor/seo-candidates', 'json', [SeoCandidateController::class, 'index'])
+        Route::get('{identifier}/editor/seo-candidates.json', [SeoCandidateController::class, 'index'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-seo-candidates');
         Route::post('{identifier}/editor/seo-og-preview', [SeoOgPreviewController::class, 'show'])
@@ -861,7 +790,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('{identifier}/editor/seo-bot-preview', [SeoBotPreviewController::class, 'show'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-seo-bot-preview');
-        Route::dualSuffix('{identifier}/editor/broadcast-catalog', 'json', [BroadcastCatalogController::class, 'index'])
+        Route::get('{identifier}/editor/broadcast-catalog.json', [BroadcastCatalogController::class, 'index'])
             ->middleware('permission:admin,core.templates.layouts.edit')
             ->name('api.admin.templates.editor-broadcast-catalog');
 

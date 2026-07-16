@@ -1,5 +1,3 @@
-import { buildOrderRequestHeaders } from './guestOrderToken';
-
 const PLUGIN_ID = 'sirsoft-pay_nhnkcp';
 const FLAG = '__kcpOcReceiptInjectorInstalled';
 const BTN_ID = 'kcp-oc-receipt-btn';
@@ -13,16 +11,17 @@ type Payment = {
     [key: string]: unknown;
 };
 
+function getToken(): string | null {
+    return localStorage.getItem('auth_token');
+}
+
 async function fetchPayment(orderNumber: string): Promise<Payment | null> {
-    // 회원 토큰 또는 비회원 주문 조회 토큰 중 하나는 있어야 한다. 비회원 분기를 비우면
-    // 비회원 손님에게는 영수증 버튼이 아예 나타나지 않는다 (서버는 지원한다).
-    const headers = buildOrderRequestHeaders();
-    if (!headers) return null;
+    const token = getToken();
+    if (!token) return null;
 
     try {
         const res = await fetch(`/api/modules/sirsoft-ecommerce/user/orders/${orderNumber}`, {
-            headers,
-            credentials: 'same-origin',
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
         });
         if (!res.ok) return null;
         const data = (await res.json()) as { data?: { payment?: Payment } };
@@ -39,13 +38,12 @@ interface ReceiptInfo {
 }
 
 async function fetchReceiptUrl(orderNumber: string): Promise<ReceiptInfo | null> {
-    const headers = buildOrderRequestHeaders();
-    if (!headers) return null;
+    const token = getToken();
+    if (!token) return null;
 
     try {
         const res = await fetch(`/api/plugins/${PLUGIN_ID}/user/orders/${orderNumber}/receipt`, {
-            headers,
-            credentials: 'same-origin',
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
         });
         if (!res.ok) return null;
         return (await res.json()) as ReceiptInfo;

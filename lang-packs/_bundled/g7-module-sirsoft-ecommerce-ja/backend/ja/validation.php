@@ -26,7 +26,6 @@ return [
         'type_invalid' => '配送業者タイプは国内(domestic)または国際(international)のみ可能です。',
     ],
     'list' => [
-        'per_page_max' => '一度に取得できる最大件数は:max件です。',
         'page' => [
             'integer' => 'ページ番号は数字である必要があります。',
             'min' => 'ページ番号は1以上である必要があります。',
@@ -156,7 +155,6 @@ return [
             'array' => '配送国家は配列形式である必要があります。',
             'string' => '配送国家は文字列である必要があります。',
             'in' => '正しい配送国家を選択してください。',
-            'max' => '配送国コードは最大:max文字まで入力可能です。',
         ],
         'category_id' => [
             'integer' => 'カテゴリーIDは数字である必要があります。',
@@ -210,9 +208,6 @@ return [
         'shipping_policy_id' => [
             'integer' => '配送ポリシーIDは数字である必要があります。',
         ],
-        'with_options' => [
-            'boolean' => 'オプション含有の有無は true または false である必要があります。',
-        ],
     ],
     'category_required' => 'カテゴリを選択してください。',
     'category_min' => '最小1個以上のカテゴリを選択してください。',
@@ -222,9 +217,6 @@ return [
     'selling_price_lte_list' => '販売価格は定価より大きくすることはできません。',
     'option_selling_price_lte_list' => 'オプション販売価格は定価より大きくすることはできません。',
     'product' => [
-        'mileage_percent_max' => '定率のマイレージ付与率は100%を超えることはできません。',
-        'selling_price_lte_list' => '販売価格は定価より高くすることはできません。',
-        'price_min' => '価格は0より大きい必要があります。',
         'attributes' => [
             'name' => '商品名',
             'product_code' => '商品コード',
@@ -418,10 +410,6 @@ return [
         'slug_unique' => '既に使用中のスラッグです。',
         'slug_format' => 'スラッグは英文小文字で始まる必要があり、英文小文字/数字/ハイフン(-)のみ使用可能です。',
         'parent_not_found' => '親カテゴリが見つかりません。',
-        'parent_id' => [
-            'self' => '自分自身を親カテゴリに指定することはできません。',
-            'circular' => '下位カテゴリを親カテゴリに指定することはできません。',
-        ],
     ],
     'product_images' => [
         'file' => [
@@ -623,7 +611,7 @@ return [
             'requires_status' => '送り状番号を入力する場合は、配送ステータスも一緒に変更してください。',
         ],
         'admin_memo' => [
-            'max' => '管理者メモは最大2000文字まで入力可能です。',
+            'max' => '管理者メモは最大1000文字まで入力可能です。',
         ],
         'recipient_name' => [
             'required' => '受取人名を入力してください。',
@@ -716,17 +704,6 @@ return [
             'integer' => '最大金額は数字である必要があります。',
             'min' => '最大金額は0以上である必要があります。',
         ],
-        'min_shipping_amount' => [
-            'integer' => '最小送料は数字である必要があります。',
-            'min' => '最小送料は0以上である必要があります。',
-        ],
-        'max_shipping_amount' => [
-            'integer' => '最大送料は数字である必要があります。',
-            'min' => '最大送料は0以上である必要があります。',
-        ],
-        'shipping_policy_id' => [
-            'integer' => '配送ポリシーIDは数字である必要があります。',
-        ],
         'country_codes' => [
             'array' => '国別コードは配列形式である必要があります。',
             'string' => '国別コードは文字列である必要があります。',
@@ -787,7 +764,6 @@ return [
         ],
     ],
     'order' => [
-        'payment_method_unavailable' => '現在ご利用いただけない決済手段です。他の決済手段を選択してください。',
         'ids' => [
             'required' => '変更する注文を選択してください。',
             'array' => '注文IDは配列形式である必要があります。',
@@ -837,13 +813,6 @@ return [
         'guest_lookup_password_min' => '注文照会パスワードは8文字以上である必要があります。',
         'guest_lookup_password_confirmed' => '注文照会パスワードが一致しません。',
         'guest_lookup_password_confirmation_required' => '注文照会パスワード確認を入力してください。',
-        'cash_receipt_type_required' => '現金領収証の発行目的を選択してください。',
-        'cash_receipt_type_invalid' => '現金領収証の発行目的が正しくありません。',
-        'cash_receipt_identifier_type_required' => '現金領収証の発行方法を選択してください。',
-        'cash_receipt_identifier_type_invalid' => '現金領収証の発行方法が正しくありません。',
-        'cash_receipt_identifier_required' => '現金領収証の発行に使用する番号を入力してください。',
-        'refund_bank_required_with' => '返金口座は銀行·口座番号·預金者をすべて入力する必要があります。',
-        'refund_bank_required_for_vbank' => '入金が完了した仮想口座注文は返金口座が必要です。',
     ],
     'order_bulk' => [
         'ids_required' => '変更する注文を選択してください。',
@@ -863,26 +832,20 @@ return [
         ],
     ],
     'cart' => [
-        'quantity_limit_exceeded' => 'カートには商品ごとに最大:limit個まで追加できます。(リクエスト: :attempted個)',
         'product_id_required' => '商品を選択してください。',
         'product_not_found' => '存在しない商品です。',
         'option_id_required' => 'オプションを選択してください。',
         'option_not_found' => '存在しないオプションです。',
         'quantity_required' => '数量を入力してください。',
         'quantity_min' => '数量は1個以上である必要があります。',
-        'quantity_max' => '数量は最大:max個まで可能です。',
+        'quantity_max' => '数量は最大9,999個まで可能です。',
         'ids_required' => '削除する商品を選択してください。',
         'ids_array' => '商品IDは配列形式である必要があります。',
         'ids_min' => '最低1つ以上の商品を選択してください。',
         'item_not_found' => 'カート商品が見つかりません。',
         'items_required' => 'カートに追加する商品を選択してください。',
         'items_min' => '最低1つ以上の商品を選択してください。',
-        'selected_ids_array' => '選択されたカート商品IDは配列形式である必要があります。',
-        'selected_ids_integer' => '選択されたカート商品IDは数字である必要があります。',
-        'selected_ids_min' => '選択されたカート商品IDは1以上である必要があります。',
-        'cart_key_required' => '非会員カートキーが必要です。',
-        'invalid_cart_key' => '無効なカートキー形式です。',
-        'login_required' => 'ログインが必要です。',
+        'option_values_not_found' => '該当するオプション組み合わせが見つかりません。',
     ],
     'wishlist' => [
         'product_id_required' => '商品を選択してください。',
@@ -907,14 +870,6 @@ return [
         'region_max' => '地域は最大100文字まで入力可能です。',
         'city_max' => '都市は最大100文字まで入力可能です。',
         'address_max' => '住所は最大255文字まで入力可能です。',
-        'item_coupons_array' => '商品別クーポンは配列形式である必要があります。',
-        'item_coupons_max' => '商品ごとにクーポンは最大:max個まで適用できます。',
-        'item_coupon_integer' => '商品クーポンIDは数字である必要があります。',
-        'item_coupon_not_found' => '存在しない商品クーポンです。',
-        'order_coupon_integer' => '注文クーポンIDは数字である必要があります。',
-        'order_coupon_not_found' => '存在しない注文クーポンです。',
-        'shipping_coupon_integer' => '送料クーポンIDは数字である必要があります。',
-        'shipping_coupon_not_found' => '存在しない送料クーポンです。',
     ],
     'shipping_policy' => [
         'ids_required' => '変更する配送ポリシーを選択してください。',
@@ -936,14 +891,6 @@ return [
             'tier_min_non_negative' => '区間開始値は0以上である必要があります。',
             'tier_max_non_negative' => '区間終了値は0以上である必要があります。',
             'unit_value_min' => '区間単位値は0より大きくする必要があります。',
-            'tiers_required' => '区間別送料ポリシーは区間を1つ以上登録する必要があります。',
-            'middle_max_required' => '最後の区間を除く区間には終了値を入力する必要があります。',
-            'tier_value_integer' => '数量区間の開始値と終了値は整数である必要があります。',
-            'unit_value_required' => '単位当たり送料ポリシーは単位値を入力する必要があります。',
-        ],
-        'free_threshold_required' => '条件付き送料無料ポリシーは送料無料基準金額を入力する必要があります。',
-        'extra_fee' => [
-            'zipcode_format' => '郵便番号は「63000」「63000-63999」「63*」のいずれかの形式である必要があります。',
         ],
         'country_settings' => [
             'country_code' => [
@@ -1051,56 +998,15 @@ return [
         ],
         'rating' => [
             'in' => '正しい評価を選択してください。',
-            'required' => '評価を選択してください。',
-            'integer' => '評価は数字である必要があります。',
-            'min' => '評価は:min点以上である必要があります。',
-            'max' => '評価は:max点以下である必要があります。',
         ],
         'reply_status' => [
             'in' => '正しい返信ステータスを選択してください。',
-        ],
-        'product_id' => [
-            'required' => '商品を選択してください。',
-            'exists' => '存在しない商品です。',
-        ],
-        'order_option_id' => [
-            'required' => 'レビューを作成する注文商品を選択してください。',
-            'exists' => '存在しない注文商品です。',
-        ],
-        'content' => [
-            'required' => 'レビュー内容を入力してください。',
-            'min' => 'レビュー内容は最低:min文字以上入力してください。',
-            'max' => 'レビュー内容は最大:max文字まで入力可能です。',
-        ],
-        'content_mode' => [
-            'in' => '正しいレビュー内容形式を選択してください。',
-        ],
-        'reply_content' => [
-            'required' => '返信内容を入力してください。',
-            'min' => '返信内容は最低:min文字以上入力してください。',
-            'max' => '返信内容は最大:max文字まで入力可能です。',
-        ],
-        'reply_content_mode' => [
-            'in' => '正しい返信内容形式を選択してください。',
-        ],
-        'ids' => [
-            'required' => '処理するレビューを選択してください。',
-            'array' => 'レビューIDは配列形式である必要があります。',
-            'min' => '最低1つ以上のレビューを選択してください。',
-            'integer' => 'レビューIDは数字である必要があります。',
-            'exists' => '存在しないレビューです。',
-        ],
-        'action' => [
-            'required' => '処理方式を選択してください。',
-            'in' => '正しい処理方式を選択してください。',
         ],
         'has_photo' => [
             'boolean' => 'フォトレビュー フィルターは true または false である必要があります。',
         ],
         'status' => [
             'in' => '正しいレビュー ステータスを選択してください。',
-            'required' => 'レビューステータスを選択してください。',
-            'required_if' => 'ステータス変更を選択した場合はレビューステータスも選択してください。',
         ],
         'start_date' => [
             'date' => '開始日は日付形式である必要があります。',
@@ -1209,13 +1115,7 @@ return [
             'min' => '注文金額は 0 以上である必要があります。',
         ],
     ],
-    // 公開アセットディスク (コアカタログ照会による検証)
-    'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
-
     'attributes' => [
-        // 公開アセットストレージ
-        'basic_info.public_asset_disk' => '公開アセットディスク',
-
         'basic_info' => '基本情報',
         'basic_info.shop_name' => 'ショップ名',
         'basic_info.route_path' => 'ルートパス',
@@ -1281,7 +1181,6 @@ return [
         'order_settings.bank_accounts.*.is_default' => 'デフォルト口座',
         'order_settings.auto_cancel_expired' => '未決済自動キャンセル',
         'order_settings.auto_cancel_days' => '自動キャンセル期限（日）',
-        'order_settings.pending_order_expire_minutes' => '決済未完了注文の期限（分）',
         'order_settings.cart_expiry_days' => 'カート保管期間（日）',
         'order_settings.default_pg_provider' => 'デフォルトPG会社',
         'order_settings.payment_methods.*.pg_provider' => 'PG会社',
@@ -1322,8 +1221,6 @@ return [
         'mileage.currency_rules.*.use_unit' => '使用単位',
         'mileage.currency_rules.*.max_use_percent' => '最大使用率',
         'mileage.currency_rules.*.max_use_value' => '最大使用金額',
-        'mileage.currency_rules.*.earn_rounding_unit' => '積立端数処理単位',
-        'mileage.currency_rules.*.earn_rounding_method' => '積立端数処理方式',
         'mileage.expiry_days' => '有効期限',
         'mileage.expiry_notification_days_before' => '失効予定通知日',
         'country_settings' => '国別設定',
@@ -1350,14 +1247,6 @@ return [
         'country_settings.*.api_config.response_type' => 'レスポンス形式',
         'country_settings.*.api_config.response_path' => 'レスポンス配送料金パス',
         'language_currency.currencies.*.base_unit' => '基準単位',
-        'claim_reason_type' => 'クレーム区分',
-        'claim_reason_code' => 'クレーム理由コード',
-        'claim_reason_name' => 'クレーム理由名',
-        'claim_reason_fault_type' => '責任区分',
-        'claim_reason_is_user_selectable' => 'ユーザー選択可否',
-        'claim_reason_is_active' => '使用可否',
-        'claim_reason_sort_order' => '並び順',
-        'claim_reason_search' => '検索語',
     ],
     'custom' => [
         'basic_info' => [
@@ -1605,16 +1494,9 @@ return [
                 'boolean' => '未決済の自動キャンセルの可否は真偽値である必要があります。',
             ],
             'auto_cancel_days' => [
-                'required' => '自動キャンセルの期限を入力してください。',
                 'integer' => '自動キャンセルの期限は整数である必要があります。',
-                'min' => '自動キャンセルの期限は1日以上である必要があります。',
+                'min' => '自動キャンセルの期限は0日以上である必要があります。',
                 'max' => '自動キャンセルの期限は最大30日まで設定可能です。',
-            ],
-            'pending_order_expire_minutes' => [
-                'required' => '決済未完了注文の期限を入力してください。',
-                'integer' => '決済未完了注文の期限は整数である必要があります。',
-                'min' => '決済未完了注文の期限は0分以上である必要があります。（0 は整理しない）',
-                'max' => '決済未完了注文の期限は最大20160分（14日）まで設定可能です。',
             ],
             'cart_expiry_days' => [
                 'integer' => 'カートの保管期間は整数である必要があります。',
@@ -1625,17 +1507,9 @@ return [
                 'boolean' => 'キャンセル時の在庫復旧の可否は真偽値である必要があります。',
             ],
         ],
-        'claim' => [
-            'refund_reasons' => [
-                'duplicate_code' => '重複した返金理由コードがあります。',
-                'name_required' => '返金理由名は必須項目です。',
-            ],
-        ],
         'shipping' => [
             'default_country' => [
                 'must_exist_in_countries' => '既定の配送国は配送可能国の一覧に存在している必要があります。',
-                'string' => '既定の配送国は文字列である必要があります。',
-                'max' => '既定の配送国は最大10文字まで入力可能です。',
             ],
             'available_countries' => [
                 'array' => '配送可能国は配列形式である必要があります。',
@@ -1748,12 +1622,6 @@ return [
                     'numeric' => '1ポイント当たりの金額は数字である必要があります。',
                     'min' => '1ポイント当たりの金額は0より大きい必要があります。',
                 ],
-                'earn_rounding_unit' => [
-                    'in' => '積立端数処理単位は1、10、100のいずれかである必要があります。',
-                ],
-                'earn_rounding_method' => [
-                    'in' => '積立端数処理方式はfloor、round、ceilのいずれかである必要があります。',
-                ],
                 'max_use_value' => [
                     'integer' => '最大使用金額は整数である必要があります。',
                     'min' => '最大使用金額は0以上である必要があります。',
@@ -1803,15 +1671,5 @@ return [
         'currency_not_registered' => '登録されていない通貨(:currency)です。言語/通貨設定に先に追加してください。',
         'earn_rate_required_when_enabled' => 'マイレージを使用するには、基本積立率は0より大きい必要があります。',
         'expires_at_invalid' => '有効期限は正しい日付である必要があります。',
-    ],
-    'options_list' => [
-        'product_ids' => [
-            'required' => '閲覧する商品を選択してください。',
-            'array' => '商品 ID リストは配列である必要があります。',
-            'min' => '閲覧する商品を1つ以上指定してください。',
-            'max' => '一度に閲覧できる商品は最大 :max 個です。',
-            'integer' => '商品 ID は数字である必要があります。',
-            'item_min' => '商品 ID は1以上である必要があります。',
-        ],
     ],
 ];

@@ -110,7 +110,7 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "lock",
-                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0"
                                 }
                             },
                             {
@@ -210,7 +210,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -325,9 +325,7 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/boards",
-                                            "mergeQuery": true,
-                                            "query": {}
+                                            "path": "/admin/boards"
                                         }
                                     }
                                 ]
@@ -359,9 +357,7 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/boards",
-                                                    "mergeQuery": true,
-                                                    "query": {}
+                                                    "path": "/admin/boards"
                                                 }
                                             }
                                         ]
@@ -431,7 +427,7 @@
                                                                 },
                                                                 {
                                                                     "handler": "openWindow",
-                                                                    "if": "{{!route?.slug}}",
+                                                                    "condition": "{{!route?.slug}}",
                                                                     "params": {
                                                                         "path": "{{'/admin/boards/' + result.data.slug + '/edit'}}",
                                                                         "target": "_self"

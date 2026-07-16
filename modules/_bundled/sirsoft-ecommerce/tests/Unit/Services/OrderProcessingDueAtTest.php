@@ -25,8 +25,7 @@ abstract class OrderProcessingDueAtModuleStub implements ModuleInterface, Module
  * 입금 대기 due_at 산정 단일화 테스트 (A3)
  *
  * vbank_due_at / deposit_due_at 산정 출처가 단일 SSoT auto_cancel_days 로 통일되었는지,
- * 요청에 실린 due_days 는 무시되는지 검증 (E6 — 기한은 서버 정책이므로 클라이언트가
- * 늘릴 수 있으면 자동취소 배치를 우회할 수 있다).
+ * dbank 의 per-order due_days 명시 전달분이 우선순위를 유지하는지 검증.
  */
 class OrderProcessingDueAtTest extends ModuleTestCase
 {
@@ -104,11 +103,6 @@ class OrderProcessingDueAtTest extends ModuleTestCase
         $m->invoke($this->service, $order, $method, '홍길동', $dbankInfo, $this->makeCalculationResult(), []);
     }
 
-    /**
-     * @scenario payment_method=vbank
-     *
-     * @effects vbank_due_at_uses_auto_cancel_days
-     */
     public function test_vbank_due_at_uses_auto_cancel_days(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 6, 21, 12, 0, 0));
@@ -126,11 +120,6 @@ class OrderProcessingDueAtTest extends ModuleTestCase
         Carbon::setTestNow();
     }
 
-    /**
-     * @scenario payment_method=dbank_default
-     *
-     * @effects dbank_due_at_uses_auto_cancel_days
-     */
     public function test_dbank_due_at_uses_auto_cancel_days_when_no_per_order_override(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 6, 21, 12, 0, 0));
@@ -149,25 +138,19 @@ class OrderProcessingDueAtTest extends ModuleTestCase
         Carbon::setTestNow();
     }
 
-    /**
-     * @scenario payment_method=dbank_client_due_days
-     *
-     * @effects client_due_days_is_ignored
-     */
-    public function test_dbank_ignores_client_supplied_due_days(): void
+    public function test_dbank_per_order_due_days_takes_priority(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 6, 21, 12, 0, 0));
         $order = Order::factory()->create();
 
-        // 요청에 due_days=10 이 실려도 무시하고 서버 설정(auto_cancel_days=5)을 쓴다.
-        // 기한은 서버 정책이므로 클라이언트가 늘리면 자동취소 배치를 우회할 수 있다.
+        // per-order due_days=10 명시 → auto_cancel_days(5)보다 우선
         $this->invokeCreatePayment($order, 'dbank', [
             'bank_code' => '004', 'account_number' => '123', 'account_holder' => '홍길동', 'due_days' => 10,
         ]);
 
         $payment = $order->payment()->first();
         $this->assertSame(
-            Carbon::now()->addDays(5)->toDateString(),
+            Carbon::now()->addDays(10)->toDateString(),
             Carbon::parse($payment->deposit_due_at)->toDateString(),
         );
 

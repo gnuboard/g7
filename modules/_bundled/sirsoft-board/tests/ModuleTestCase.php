@@ -2,21 +2,9 @@
 
 namespace Modules\Sirsoft\Board\Tests;
 
-use App\Contracts\Extension\HookListenerInterface;
-use App\Enums\ExtensionStatus;
-use App\Extension\HookListenerRegistrar;
-use App\Extension\HookManager;
-use App\Extension\ModuleManager;
-use App\Http\Middleware\PermissionMiddleware;
-use App\Models\Module;
-use App\Models\Permission;
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
-use Modules\Sirsoft\Board\Providers\BoardServiceProvider;
 use Tests\TestCase;
 
 /**
@@ -74,7 +62,7 @@ abstract class ModuleTestCase extends TestCase
         $this->registerModuleAutoload();
 
         // 모듈 ServiceProvider 등록 (Repository 바인딩)
-        $this->app->register(BoardServiceProvider::class);
+        $this->app->register(\Modules\Sirsoft\Board\Providers\BoardServiceProvider::class);
 
         // 모듈 마이그레이션 실행 (boards 테이블 등)
         $this->runModuleMigrationIfNeeded();
@@ -85,7 +73,7 @@ abstract class ModuleTestCase extends TestCase
         // ModuleManager 메모리 맵에 sirsoft-board 로드 (테스트 환경)
         // CoreServiceProvider::boot()에서 loadModules()가 호출되지만,
         // 테스트 컨테이너에서 ModuleManager 싱글톤이 비어있는 경우를 대비해 명시적으로 재로드
-        $this->app->make(ModuleManager::class)->loadModules();
+        $this->app->make(\App\Extension\ModuleManager::class)->loadModules();
 
         // _bundled 디렉토리 모듈은 loadModules() 가 스캔하지 않아
         // 모듈 인스턴스 등록 + 훅 리스너 자동 등록이 누락된다.
@@ -103,7 +91,11 @@ abstract class ModuleTestCase extends TestCase
 
         // PermissionMiddleware::$guestRoleCache 초기화 — 이전 테스트에서 로드된 guest role/permissions 캐시가
         // DatabaseTransactions 롤백 후에도 남아있어 다음 테스트의 새 permission 설정이 반영되지 않는 문제 회피.
-        PermissionMiddleware::clearGuestRoleCache();
+        $middlewareRef = new \ReflectionClass(\App\Http\Middleware\PermissionMiddleware::class);
+        if ($middlewareRef->hasProperty('guestRoleCache')) {
+            $prop = $middlewareRef->getProperty('guestRoleCache');
+            $prop->setValue(null, null);
+        }
     }
 
     /**
@@ -121,7 +113,7 @@ abstract class ModuleTestCase extends TestCase
      */
     private function snapshotHookManager(): void
     {
-        $ref = new \ReflectionClass(HookManager::class);
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
         $this->hookSnapshot = [
             'hooks' => $ref->getProperty('hooks')->getValue(),
             'filters' => $ref->getProperty('filters')->getValue(),
@@ -138,7 +130,7 @@ abstract class ModuleTestCase extends TestCase
             return;
         }
 
-        $ref = new \ReflectionClass(HookManager::class);
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
         $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
         $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
         $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
@@ -167,7 +159,7 @@ abstract class ModuleTestCase extends TestCase
 
         // 모듈 마이그레이션 실행 (코어 테이블 생성 후)
         $this->artisan('migrate', [
-            '--path' => $this->getModuleBasePath().'/database/migrations',
+            '--path' => $this->getModuleBasePath() . '/database/migrations',
             '--realpath' => true,
         ]);
 
@@ -187,13 +179,13 @@ abstract class ModuleTestCase extends TestCase
         $moduleClass = \Modules\Sirsoft\Board\Module::class;
 
         if (! class_exists($moduleClass)) {
-            require_once $this->getModuleBasePath().'/module.php';
+            require_once $this->getModuleBasePath() . '/module.php';
         }
 
-        $module = new $moduleClass;
+        $module = new $moduleClass();
 
-        /** @var ModuleManager $manager */
-        $manager = $this->app->make(ModuleManager::class);
+        /** @var \App\Extension\ModuleManager $manager */
+        $manager = $this->app->make(\App\Extension\ModuleManager::class);
 
         // ModuleManager.modules 에 인스턴스 주입
         $reflection = new \ReflectionClass($manager);
@@ -211,11 +203,11 @@ abstract class ModuleTestCase extends TestCase
                 if (! class_exists($listenerClass)) {
                     continue;
                 }
-                if (! in_array(HookListenerInterface::class, class_implements($listenerClass), true)) {
+                if (! in_array(\App\Contracts\Extension\HookListenerInterface::class, class_implements($listenerClass), true)) {
                     continue;
                 }
                 try {
-                    HookListenerRegistrar::register($listenerClass, 'sirsoft-board');
+                    \App\Extension\HookListenerRegistrar::register($listenerClass, 'sirsoft-board');
                 } catch (\Throwable $e) {
                     // 중복 등록 등 무해한 예외는 무시 (snapshot/restore 패턴이 정리)
                 }
@@ -229,15 +221,15 @@ abstract class ModuleTestCase extends TestCase
     protected function registerModuleAsActive(): void
     {
         // 이미 등록되어 있으면 스킵
-        if (Module::where('identifier', 'sirsoft-board')->exists()) {
+        if (\App\Models\Module::where('identifier', 'sirsoft-board')->exists()) {
             return;
         }
 
-        Module::create([
+        \App\Models\Module::create([
             'identifier' => 'sirsoft-board',
             'vendor' => 'sirsoft',
             'name' => ['ko' => '게시판', 'en' => 'Board'],
-            'status' => ExtensionStatus::Active->value,
+            'status' => \App\Enums\ExtensionStatus::Active->value,
             'version' => '1.0.0',
             'config' => [],
         ]);
@@ -248,7 +240,7 @@ abstract class ModuleTestCase extends TestCase
      */
     protected function registerModuleAutoload(): void
     {
-        $moduleBasePath = $this->getModuleBasePath().'/src/';
+        $moduleBasePath = $this->getModuleBasePath() . '/src/';
 
         spl_autoload_register(function ($class) use ($moduleBasePath) {
             $prefix = 'Modules\\Sirsoft\\Board\\';
@@ -261,12 +253,8 @@ abstract class ModuleTestCase extends TestCase
             $relativeClass = substr($class, $len);
             $file = $moduleBasePath.str_replace('\\', '/', $relativeClass).'.php';
 
-            if (file_exists($file)
-                && ! class_exists($class, false) && ! interface_exists($class, false)
-                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
-                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
-                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
-                require_once $file;
+            if (file_exists($file)) {
+                require $file;
             }
         });
     }
@@ -276,10 +264,10 @@ abstract class ModuleTestCase extends TestCase
      */
     protected function registerModuleRoutes(): void
     {
-        $apiRoutesFile = $this->getModuleBasePath().'/src/routes/api.php';
+        $apiRoutesFile = $this->getModuleBasePath() . '/src/routes/api.php';
 
         if (file_exists($apiRoutesFile)) {
-            Route::prefix('api/modules/sirsoft-board')
+            \Illuminate\Support\Facades\Route::prefix('api/modules/sirsoft-board')
                 ->name('api.modules.sirsoft-board.')
                 ->middleware('api')
                 ->group($apiRoutesFile);
@@ -291,17 +279,17 @@ abstract class ModuleTestCase extends TestCase
      */
     protected function createDefaultRoles(): void
     {
-        Role::firstOrCreate(
+        \App\Models\Role::firstOrCreate(
             ['identifier' => 'admin'],
             ['name' => ['ko' => '관리자', 'en' => 'Administrator']]
         );
 
-        Role::firstOrCreate(
+        \App\Models\Role::firstOrCreate(
             ['identifier' => 'user'],
             ['name' => ['ko' => '일반 사용자', 'en' => 'User']]
         );
 
-        Role::firstOrCreate(
+        \App\Models\Role::firstOrCreate(
             ['identifier' => 'guest'],
             ['name' => ['ko' => '비회원', 'en' => 'Guest']]
         );
@@ -312,18 +300,18 @@ abstract class ModuleTestCase extends TestCase
      * 관리자 역할을 가진 사용자를 생성합니다.
      *
      * @param  array  $permissions  추가 권한 목록
-     * @return User
+     * @return \App\Models\User
      */
-    protected function createAdminUser(array $permissions = []): User
+    protected function createAdminUser(array $permissions = []): \App\Models\User
     {
-        $adminRole = Role::where('identifier', 'admin')->first();
-        $user = User::factory()->create();
+        $adminRole = \App\Models\Role::where('identifier', 'admin')->first();
+        $user = \App\Models\User::factory()->create();
         $user->roles()->attach($adminRole->id);
 
         // 추가 권한이 있으면 생성 및 할당
         if (! empty($permissions)) {
             foreach ($permissions as $permissionIdentifier) {
-                $permission = Permission::firstOrCreate(
+                $permission = \App\Models\Permission::firstOrCreate(
                     ['identifier' => $permissionIdentifier],
                     [
                         'name' => ['ko' => $permissionIdentifier, 'en' => $permissionIdentifier],
@@ -340,12 +328,12 @@ abstract class ModuleTestCase extends TestCase
     /**
      * 일반 사용자를 생성합니다.
      *
-     * @return User
+     * @return \App\Models\User
      */
-    protected function createUser(): User
+    protected function createUser(): \App\Models\User
     {
-        $userRole = Role::where('identifier', 'user')->first();
-        $user = User::factory()->create();
+        $userRole = \App\Models\Role::where('identifier', 'user')->first();
+        $user = \App\Models\User::factory()->create();
         $user->roles()->attach($userRole->id);
 
         return $user;

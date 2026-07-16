@@ -1,7 +1,5 @@
 <?php
 
-use Composer\Autoload\ClassLoader;
-
 /**
  * PHPUnit 테스트용 부트스트랩 파일
  *
@@ -74,65 +72,6 @@ if ($prodDbName !== null && $testDbName !== null && $prodDbName === $testDbName)
 
 /*
 |--------------------------------------------------------------------------
-| 개발자 .env 보호 안전망 (테스트가 삭제/변조해도 원상 복구)
-|--------------------------------------------------------------------------
-|
-| 일부 업그레이드/인스톨러 테스트는 실제 프로젝트 루트의 `.env` 를 삭제·재생성·머지하고
-| 자신의 tearDown 에서 되돌린다. 그런데 그 테스트가 fatal 로 죽으면 tearDown 이 실행되지
-| 않아 개발자의 `.env` 가 사라진 채 남는다. `.env` 는 Git 추적 대상이 아니라 복구 수단이
-| 없고, APP_KEY 를 잃으면 기존 암호화 데이터·세션이 전부 무효가 된다.
-|
-| 실제로 그렇게 유실된 적이 있어(2026-07-21), 개별 테스트의 복원 로직에 의존하지 않고
-| 프로세스 수준에서 한 번 더 막는다. 스냅샷은 메모리에만 두고, 셧다운 시점에 내용이
-| 달라졌거나 파일이 사라졌으면 바이트 단위로 되돌린다. register_shutdown_function 은
-| fatal error 에서도 실행되므로 개별 tearDown 보다 넓은 범위를 덮는다.
-|
-| 각 테스트가 자기 fixture 를 임시 base path 로 격리하는 것이 근본 해법이며, 이 안전망은
-| 그 격리가 누락되거나 새 테스트가 같은 실수를 반복할 때를 대비한 최후 방어선이다.
-|
-*/
-$realEnvPath = __DIR__.'/../.env';
-$realEnvSnapshot = file_exists($realEnvPath) ? file_get_contents($realEnvPath) : null;
-
-if ($realEnvSnapshot !== false && $realEnvSnapshot !== null) {
-    register_shutdown_function(static function () use ($realEnvPath, $realEnvSnapshot): void {
-        $current = file_exists($realEnvPath) ? file_get_contents($realEnvPath) : null;
-
-        if ($current === $realEnvSnapshot) {
-            return;
-        }
-
-        if (@file_put_contents($realEnvPath, $realEnvSnapshot) === false) {
-            fwrite(STDERR, "\n[테스트 안전망] .env 복원 실패 — 수동 확인 필요: {$realEnvPath}\n");
-
-            return;
-        }
-
-        fwrite(STDERR, "\n[테스트 안전망] 테스트가 변경한 .env 를 실행 전 상태로 복원했습니다.\n");
-    });
-}
-
-/*
-|--------------------------------------------------------------------------
-| 임시 upgrade 스텝 파일 잔재 정리
-|--------------------------------------------------------------------------
-|
-| 업그레이드 커맨드 테스트는 실제 `upgrades/` 에 임시 스텝 파일을 쓴다 — 그 디렉토리를
-| 스캔해야 스텝 발견 로직이 동작하기 때문이다. 각 테스트가 tearDown 에서 지우지만,
-| 스위트가 fatal 로 중단되면 개발 체크아웃에 정체불명의 upgrade 스텝이 남는다.
-|
-| 파일명에 `_test_` 가 들어가는 것은 이 임시 파일들뿐이므로(실제 스텝은 `Upgrade_7_0_4`
-| 처럼 버전만 갖는다) 그 패턴만 셧다운 시점에 쓸어낸다.
-|
-*/
-register_shutdown_function(static function (): void {
-    foreach (glob(__DIR__.'/../upgrades/Upgrade_*_test_*.php') ?: [] as $leftover) {
-        @unlink($leftover);
-    }
-});
-
-/*
-|--------------------------------------------------------------------------
 | Config 캐시 삭제 (테스트 환경 보장)
 |--------------------------------------------------------------------------
 |
@@ -144,68 +83,6 @@ $configCacheFile = __DIR__.'/../bootstrap/cache/config.php';
 if (file_exists($configCacheFile)) {
     unlink($configCacheFile);
 }
-
-/*
-|--------------------------------------------------------------------------
-| 라우트 캐시 격리 (테스트 환경 보장)
-|--------------------------------------------------------------------------
-|
-| 라우트 캐시가 있으면 `RouteServiceProvider::boot()` 이 캐시 로드로 분기해 **라우트 파일이
-| 아예 실행되지 않는다.** 그러면 테스트가 선언한 확장 allowlist(`requiredExtensions`)가
-| 라우트 축에서 통째로 무력화된다 — core-only 테스트인데도 굽던 시점에 활성이던 모든 확장의
-| 라우트가 등록된 채로 부팅한다. 실패는 그 사실을 단언하는 테스트에서만 드러나고, 나머지
-| 테스트는 격리가 깨진 줄 모르는 채 통과한다.
-|
-| 라우트 캐시는 확장 설치·활성화·업데이트마다 `RouteCacheHelper::rebuild()` 가 다시 굽기
-| 때문에, 개발 머신에서는 사실상 항상 존재한다.
-|
-| 삭제하지 않고 **경로를 돌린다.** 삭제하면 테스트를 한 번 돌릴 때마다 운영 중 사이트의
-| 라우트 캐시가 사라지고(재생성은 다음 확장 작업까지 일어나지 않는다), 그 사이 모든 요청이
-| 라우트 파일 스캔 경로로 떨어진다. 돌려놓은 경로의 파일은 만들지 않으므로
-| `routesAreCached()` 가 false 가 되어 라우트 파일이 정상 실행되고, 테스트 안에서
-| `route:cache` 를 굽더라도 그 산출물이 운영 캐시를 덮지 않는다.
-|
-| config 캐시(위)와 달리 삭제가 아니라 리다이렉트인 이유가 이것이다 — config 캐시는
-| `config:cache` 로 즉시 복구되지만 라우트 캐시는 복구 시점이 확장 작업에 묶여 있다.
-|
-*/
-$testingRoutesCache = 'storage/framework/testing/routes-v7.php';
-putenv('APP_ROUTES_CACHE='.$testingRoutesCache);
-$_ENV['APP_ROUTES_CACHE'] = $testingRoutesCache;
-$_SERVER['APP_ROUTES_CACHE'] = $testingRoutesCache;
-
-/*
-|--------------------------------------------------------------------------
-| 패키지 매니페스트 캐시 격리 (테스트 환경 보장)
-|--------------------------------------------------------------------------
-|
-| `bootstrap/cache/packages.php` · `services.php` 도 라우트 캐시와 같이 **경로를 돌린다.**
-| 코어 업데이트 흐름은 이 두 파일을 지우고 다시 만드는 코드를 여럿 갖고 있고(spawn 직전 선정리,
-| `bootstrap/app.php` 의 업데이트 트리 자가 치유, `clearAllCaches()` 의 `package:discover`), 그
-| 코드를 태우는 테스트 가운데 몇은 `proc_open` 으로 **진짜 자식 프로세스**를 띄운다. 자식은 부모의
-| 테스트 격리(임시 base path·목)를 하나도 물려받지 못하고 env 만 물려받으므로, 경로를 env 로
-| 돌려 두는 것이 부모와 자식을 한 번에 격리하는 유일한 수단이다. 돌리지 않으면 테스트를 한 번
-| 돌릴 때마다 개발 클론의 실제 매니페스트가 지워지고 다시 만들어진다 — 오늘은 재생성 내용이 같아
-| 무해하지만, 그 사이 다른 프로세스가 부팅하면 매번 재빌드를 겪고, 테스트가 실제 파일을 건드리는
-| 구조 자체가 `.env` 삭제 사고와 같은 부류다.
-|
-| 자기 경로를 따로 쓰는 테스트(`CoreUpdateCommandStalePackageManifestTest` 등)는 여기 값을
-| 원값으로 보관·복원하므로 그대로 동작한다.
-|
-*/
-$testingManifestDir = __DIR__.'/../storage/framework/testing';
-if (! is_dir($testingManifestDir)) {
-    @mkdir($testingManifestDir, 0777, true);
-}
-foreach ([
-    'APP_PACKAGES_CACHE' => 'storage/framework/testing/packages.php',
-    'APP_SERVICES_CACHE' => 'storage/framework/testing/services.php',
-] as $manifestEnvKey => $manifestRelativePath) {
-    putenv($manifestEnvKey.'='.$manifestRelativePath);
-    $_ENV[$manifestEnvKey] = $manifestRelativePath;
-    $_SERVER[$manifestEnvKey] = $manifestRelativePath;
-}
-unset($testingManifestDir, $manifestEnvKey, $manifestRelativePath);
 
 // Composer 오토로더 로드
 $loader = require __DIR__.'/../vendor/autoload.php';
@@ -400,100 +277,6 @@ if (file_exists($extensionAutoloadFile)) {
             }
         }
     }
-}
-
-/*
-|--------------------------------------------------------------------------
-| 확장 vendor(제3자 composer 패키지) 오토로드 등록
-|--------------------------------------------------------------------------
-|
-| `autoload-extensions.php` 의 `vendor_autoloads` 를 소비하는 진입점은 `public/index.php`
-| 와 `artisan` 뿐이라, PHPUnit 프로세스에서는 확장 전용 composer 패키지(`\HTMLPurifier` 등)가
-| 오토로드되지 않았다. 그 패키지를 쓰는 코드 경로가 통째로 테스트 불가였고, 그 결손은 아무도
-| 그 경로를 테스트하지 않는 동안 드러나지 않는다 (공개 #125).
-|
-| 확장 vendor 의 `autoload.php` 를 그대로 require 하지 않고 생성된 맵만 읽어 자체 로더를 만든다.
-| 그 오토로더를 그대로 쓰면 두 가지가 깨진다.
-|
-|  1. 확장 자신의 PSR-4 와 files 를 **활성 디렉토리**로 매핑하고 자신을 prepend 로 걸어, 위에서
-|     _bundled 를 prepend 한 등록을 이긴다 — 테스트가 `_bundled` 가 아니라 활성 디렉토리 사본을
-|     검증하게 되어 "_bundled 에서만 작업한다" 는 규율이 조용히 깨진다.
-|  2. Composer 로더는 `vendorDir` 를 갖고 자신을 `ClassLoader::getRegisteredLoaders()` 맨 앞에
-|     넣는데, `Illuminate\Foundation\Testing\TestCase::createApplication()` 이
-|     `Application::inferBasePath()` 로 그 첫 항목에서 base path 를 유추한다. 이후 테스트의 앱
-|     부팅이 `modules/{id}/bootstrap/app.php` 를 찾다 실패한다. (운영 진입점은 basePath 를 명시
-|     전달하므로 영향이 없다.)
-|
-| 그래서 `Modules\` / `Plugins\` 로 시작하는 항목은 전부 제외하고 — 확장 자기 코드는 위에서
-| 이미 등록했다 — `vendorDir` 없는 단일 로더로 제3자 패키지만 등록한다. 루트 오토로더가 먼저
-| 등록되어 있으므로 append 로 걸어 루트 vendor 가 우선하게 둔다(같은 패키지 중복 선언 방지).
-|
-*/
-$extensionVendorLoader = new ClassLoader;
-$extensionVendorClassMap = [];
-$extensionVendorFiles = [];
-$isExtensionOwnSymbol = static fn (string $symbol): bool => str_starts_with($symbol, 'Modules\\')
-    || str_starts_with($symbol, 'Plugins\\');
-
-foreach (['modules', 'plugins'] as $extensionType) {
-    foreach ([__DIR__.'/../'.$extensionType, __DIR__.'/../'.$extensionType.'/_bundled'] as $searchDir) {
-        if (! is_dir($searchDir)) {
-            continue;
-        }
-
-        foreach (scandir($searchDir) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..' || $entry === '_bundled' || $entry === '_pending') {
-                continue;
-            }
-
-            $vendorDir = $searchDir.'/'.$entry.'/vendor';
-            $classmapFile = $vendorDir.'/composer/autoload_classmap.php';
-
-            if (! is_dir($vendorDir) || ! file_exists($classmapFile)) {
-                continue;
-            }
-
-            // 먼저 발견한 것(활성 디렉토리)이 이긴다 — 같은 클래스를 뒤에서 덮어쓰지 않는다.
-            foreach (require $classmapFile as $fqcn => $path) {
-                if (! $isExtensionOwnSymbol($fqcn) && ! isset($extensionVendorClassMap[$fqcn])) {
-                    $extensionVendorClassMap[$fqcn] = $path;
-                }
-            }
-
-            $psr4File = $vendorDir.'/composer/autoload_psr4.php';
-            if (file_exists($psr4File)) {
-                foreach (require $psr4File as $prefix => $paths) {
-                    if (! $isExtensionOwnSymbol($prefix)) {
-                        $extensionVendorLoader->addPsr4($prefix, $paths);
-                    }
-                }
-            }
-
-            // 패키지가 요구하는 부트스트랩 파일(HTMLPurifier 의 HTMLPURIFIER_PREFIX 정의 등).
-            // vendor 디렉토리 바깥의 항목(확장 자신의 helpers)은 제외한다.
-            $filesFile = $vendorDir.'/composer/autoload_files.php';
-            if (file_exists($filesFile)) {
-                $vendorReal = realpath($vendorDir) ?: $vendorDir;
-
-                foreach (require $filesFile as $file) {
-                    if (str_starts_with(realpath($file) ?: $file, $vendorReal)) {
-                        $extensionVendorFiles[] = $file;
-                    }
-                }
-            }
-        }
-    }
-}
-
-if ($extensionVendorClassMap !== []) {
-    $extensionVendorLoader->addClassMap($extensionVendorClassMap);
-}
-
-// vendorDir 를 주지 않았으므로 register() 가 registeredLoaders 를 건드리지 않는다.
-$extensionVendorLoader->register();
-
-foreach ($extensionVendorFiles as $extensionVendorFile) {
-    require_once $extensionVendorFile;
 }
 
 // 모듈/플러그인 테스트 네임스페이스 등록 (tests/ 디렉토리)

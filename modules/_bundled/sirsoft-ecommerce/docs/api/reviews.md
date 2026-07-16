@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Reviews 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
-3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
+3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -65,7 +65,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | user_id | string | `a231747f-e82e-4cf2-9ae1-a261849dce40` | user 식별자 (연관 리소스 참조) |
 | user | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 작성자 정보 (uuid·name·email, `user` 관계 로드 시) |
 | product | object | `{"id":320,"name":"API 문서 샘플 상품","thumbnail_url":null}` | 리뷰 대상 상품 정보 (id·현지화 상품명·썸네일 URL) |
-| option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
+| option_snapshot | null | `null` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Molestiae repellendus accusantium omn…` | 리뷰 내용 |
@@ -79,12 +79,12 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | has_reply | boolean | `false` | reply 여부 |
 | has_reply_label | string | `미답변` | `has_reply` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | has_reply_badge_color | string | `gray` | 답변 여부 뱃지 색상 (답변완료=green / 미답변=gray) |
-| reply_content | string | `소중한 리뷰 감사드립니다! 항상 최선을 다하겠습니다.` | 판매자 답변 내용 (없으면 null) |
+| reply_content | null | `null` | 판매자 답변 내용 (없으면 null) |
 | reply_content_mode | string | `text` | 답변 콘텐츠 모드: text / html |
-| reply_admin_uuid | string | `a2397737-f8da-4451-a9c0-2616e7cd2002` | 답변 작성 관리자 UUID (`replyAdmin` 관계 로드 시) |
-| reply_admin | object | `{"uuid":"a2397737-f8da-4451-a9c0-2616e7cd2002","name":"관리…` | 답변 작성 관리자 정보 (uuid·name·email, `replyAdmin` 관계 로드 시) |
-| replied_at | string | `2026-07-06 19:08:45` | replied 일시 |
-| reply_updated_at | string | `2026-07-07 19:08:45` | reply updated 일시 |
+| reply_admin_uuid | null | `null` | 답변 작성 관리자 UUID (`replyAdmin` 관계 로드 시) |
+| reply_admin | null | `null` | 답변 작성 관리자 정보 (uuid·name·email, `replyAdmin` 관계 로드 시) |
+| replied_at | null | `null` | replied 일시 |
+| reply_updated_at | null | `null` | reply updated 일시 |
 | created_at | string | `2026-07-07 14:47:31` | 생성 일시 |
 | updated_at | string | `2026-07-07 14:47:31` | 최종 수정 일시 |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -100,7 +100,56 @@ HTTP/1.1 200
     "success": true,
     "message": "리뷰 목록을 조회했습니다.",
     "data": {
-        "data": [],
+        "data": [
+            {
+                "id": 1,
+                "product_id": 1,
+                "order_option_id": 1,
+                "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+                "user": {
+                    "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+                    "name": "API 문서 샘플 사용자",
+                    "email": "apidoc-sample-user@example.com"
+                },
+                "product": {
+                    "id": 1,
+                    "name": "API 문서 샘플 상품",
+                    "thumbnail_url": null
+                },
+                "option_snapshot": null,
+                "option_snapshot_label": "",
+                "rating": 5,
+                "content": "Alias quas iusto dolorem eum eveniet ad omnis. Id neque consequatur fuga ut. Enim cum mollitia nisi. Adipisci sunt tenetur et tempora tempora eius rerum.",
+                "content_mode": "text",
+                "status": "visible",
+                "status_label": "전시중",
+                "status_badge_color": "blue",
+                "images": [],
+                "image_count": 0,
+                "orderOption": {
+                    "id": 1,
+                    "order_id": 5,
+                    "order_number": "ORD-20260708-000002",
+                    "quantity": 2,
+                    "created_at": "2026-07-08 10:44:49"
+                },
+                "has_reply": false,
+                "has_reply_label": "미답변",
+                "has_reply_badge_color": "gray",
+                "reply_content": null,
+                "reply_content_mode": "text",
+                "reply_admin_uuid": null,
+                "reply_admin": null,
+                "replied_at": null,
+                "reply_updated_at": null,
+                "created_at": "2026-07-08 10:44:49",
+                "updated_at": "2026-07-08 10:44:49",
+                "abilities": {
+                    "can_update": true,
+                    "can_delete": true
+                }
+            }
+        ],
         "links": {
             "first": "https://api.example.com/api/modules/sirsoft-ecommerce/admin/reviews?page=1",
             "last": "https://api.example.com/api/modules/sirsoft-ecommerce/admin/reviews?page=1",
@@ -109,7 +158,7 @@ HTTP/1.1 200
         },
         "meta": {
             "current_page": 1,
-            "from": null,
+            "from": 1,
             "last_page": 1,
             "links": [
                 {
@@ -133,8 +182,8 @@ HTTP/1.1 200
             ],
             "path": "https://api.example.com/api/modules/sirsoft-ecommerce/admin/reviews",
             "per_page": 25,
-            "to": null,
-            "total": 0
+            "to": 1,
+            "total": 1
         }
     }
 }
@@ -189,38 +238,11 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드. `action` 값에 따라 반환 키가 달라집니다._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| deleted_count | integer | `3` | 삭제된 리뷰 건수 (`action=delete` 일 때만 반환) |
-| updated_count | integer | `3` | 상태가 변경된 리뷰 건수 (`action=change_status` 일 때만 반환) |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-`action=delete` (message: `messages.reviews.bulk_deleted`)
-
-```json
-{
-    "success": true,
-    "message": "선택한 리뷰가 삭제되었습니다.",
-    "data": {
-        "deleted_count": 3
-    }
-}
-```
-
-`action=change_status` (message: `messages.reviews.bulk_updated`)
-
-```json
-{
-    "success": true,
-    "message": "선택한 리뷰의 상태가 변경되었습니다.",
-    "data": {
-        "updated_count": 3
-    }
-}
-```
+<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -228,8 +250,7 @@ _단건 응답: `data` 객체의 필드. `action` 값에 따라 반환 키가 �
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`ids` 누락/빈 배열, `ids.*` 가 존재하지 않는 리뷰 ID, `action` 이 `delete`/`change_status` 외의 값, `action=change_status` 인데 `status` 누락, `status` 가 `visible`/`hidden` 외의 값) |
-| 500 | Internal Server Error | 일괄 처리 중 예외 발생 (`messages.reviews.bulk_failed` — "일괄 처리에 실패했습니다.") |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -251,7 +272,7 @@ _단건 응답: `data` 객체의 필드. `action` 값에 따라 반환 키가 �
 **요청 예시**
 
 ```http
-DELETE /api/modules/sirsoft-ecommerce/admin/reviews/{review} HTTP/1.1
+DELETE /api/modules/sirsoft-ecommerce/admin/reviews/1 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -259,11 +280,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: 삭제 성공 플래그만 반환한다 (Resource 로 감싸지 않는다)._
+_단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| deleted | boolean | `true` | 삭제 성공 여부. 성공 응답에서는 항상 `true` 이며, 실패는 `500` 으로 갈린다 |
+| deleted | boolean | `true` | 삭제 처리 성공 여부 (true 이면 리뷰와 첨부 이미지가 제거됨) |
 
 **응답 예시**
 
@@ -281,16 +302,13 @@ HTTP/1.1 200
 }
 ```
 
-> 삭제 전 컨트롤러가 `images` 관계를 로드한다 — 첨부 이미지 파일까지 함께 정리하기 위해서다. DB CASCADE 에 맡기지 않고 Service 가 명시적으로 삭제하므로 훅 발화와 파일 정리가 보장된다.
-
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.delete`)이 없는 경우 |
-| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
-| 500 | Internal Server Error | 삭제 처리 중 예외 발생 (`messages.reviews.delete_failed`) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -312,7 +330,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/admin/reviews/{review} HTTP/1.1
+GET /api/modules/sirsoft-ecommerce/admin/reviews/1 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -330,7 +348,7 @@ _단건 응답: `data` 객체의 필드._
 | user_id | string | `a231747f-e82e-4cf2-9ae1-a261849dce40` | 작성자 ID |
 | user | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 작성자 정보 (uuid·name·email, `user` 관계 로드 시) |
 | product | object | `{"id":320,"name":"API 문서 샘플 상품","thumbnail_url":null}` | 리뷰 대상 상품 정보 (id·현지화 상품명·썸네일 URL) |
-| option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
+| option_snapshot | null | `null` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Molestiae repellendus accusantium omn…` | 리뷰 내용 |
@@ -363,26 +381,26 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "리뷰를 조회했습니다.",
+    "message": "리뷰 목록을 조회했습니다.",
     "data": {
-        "id": 99,
-        "product_id": 320,
-        "order_option_id": 859,
-        "user_id": "a231747f-e82e-4cf2-9ae1-a261849dce40",
+        "id": 1,
+        "product_id": 1,
+        "order_option_id": 1,
+        "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
         "user": {
-            "uuid": "a231747f-e82e-4cf2-9ae1-a261849dce40",
+            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
             "name": "API 문서 샘플 사용자",
             "email": "apidoc-sample-user@example.com"
         },
         "product": {
-            "id": 320,
+            "id": 1,
             "name": "API 문서 샘플 상품",
             "thumbnail_url": null
         },
-        "option_snapshot": "{\"id\":104,\"option_code\":\"FWACBAVCBKCD\"}",
+        "option_snapshot": null,
         "option_snapshot_label": "",
         "rating": 5,
-        "content": "Molestiae repellendus accusantium omnis.",
+        "content": "Alias quas iusto dolorem eum eveniet ad omnis. Id neque consequatur fuga ut. Enim cum mollitia nisi. Adipisci sunt tenetur et tempora tempora eius rerum.",
         "content_mode": "text",
         "status": "visible",
         "status_label": "전시중",
@@ -390,11 +408,11 @@ HTTP/1.1 200
         "images": [],
         "image_count": 0,
         "orderOption": {
-            "id": 859,
-            "order_id": 455,
-            "order_number": "ORD-20260707-000123",
-            "quantity": 1,
-            "ordered_at": "2026-07-07 14:40:00"
+            "id": 1,
+            "order_id": 5,
+            "order_number": "ORD-20260708-000002",
+            "quantity": 2,
+            "created_at": "2026-07-08 10:44:49"
         },
         "has_reply": false,
         "has_reply_label": "미답변",
@@ -405,8 +423,8 @@ HTTP/1.1 200
         "reply_admin": null,
         "replied_at": null,
         "reply_updated_at": null,
-        "created_at": "2026-07-07 14:47:31",
-        "updated_at": "2026-07-07 14:47:31",
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-07-08 10:44:49",
         "abilities": {
             "can_update": true,
             "can_delete": true
@@ -421,8 +439,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.read`)이 없는 경우 |
-| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
-| 500 | Internal Server Error | 조회 중 예외 발생 (`messages.reviews.fetch_failed`) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -444,7 +461,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-DELETE /api/modules/sirsoft-ecommerce/admin/reviews/{review}/reply HTTP/1.1
+DELETE /api/modules/sirsoft-ecommerce/admin/reviews/1/reply HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -461,7 +478,7 @@ _단건 응답: `data` 객체의 필드._
 | order_option_id | integer | `1` | order option 식별자 (연관 리소스 참조) |
 | user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | user 식별자 (연관 리소스 참조) |
 | user | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
-| option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
+| option_snapshot | null | `null` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Alias quas iusto dolorem eum eveniet …` | 본문 내용 |
@@ -489,7 +506,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "판매자 답변이 삭제되었습니다.",
+    "message": "답변이 삭제되었습니다.",
     "data": {
         "id": 1,
         "product_id": 1,
@@ -500,10 +517,10 @@ HTTP/1.1 200
             "name": "API 문서 샘플 사용자",
             "email": "apidoc-sample-user@example.com"
         },
-        "option_snapshot": "{\"id\":104,\"option_code\":\"FWACBAVCBKCD\"}",
+        "option_snapshot": null,
         "option_snapshot_label": "",
         "rating": 5,
-        "content": "Alias quas iusto dolorem eum eveniet.",
+        "content": "Alias quas iusto dolorem eum eveniet ad omnis. Id neque consequatur fuga ut. Enim cum mollitia nisi. Adipisci sunt tenetur et tempora tempora eius rerum.",
         "content_mode": "text",
         "status": "visible",
         "status_label": "전시중",
@@ -516,7 +533,7 @@ HTTP/1.1 200
         "replied_at": null,
         "reply_updated_at": null,
         "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-08-16 01:30:00",
+        "updated_at": "2026-07-08 10:44:49",
         "abilities": {
             "can_update": true,
             "can_delete": true
@@ -525,16 +542,13 @@ HTTP/1.1 200
 }
 ```
 
-> 답변이 지워진 결과가 응답에 그대로 반영된다 — `has_reply` 는 `false`, `reply_content`·`replied_at`·`reply_updated_at` 은 `null` 로 비워진다. 리뷰 본문(`content`·`rating`·`status`)은 그대로 유지된다.
-
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.update`)이 없는 경우 |
-| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
-| 500 | Internal Server Error | 답변 삭제 처리 중 예외 발생 (`messages.reviews.reply_delete_failed`) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -560,7 +574,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/admin/reviews/{review}/reply HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/admin/reviews/1/reply HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -583,7 +597,7 @@ _단건 응답: `data` 객체의 필드._
 | order_option_id | integer | `1` | order option 식별자 (연관 리소스 참조) |
 | user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | user 식별자 (연관 리소스 참조) |
 | user | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
-| option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
+| option_snapshot | null | `null` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Alias quas iusto dolorem eum eveniet …` | 본문 내용 |
@@ -611,7 +625,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "판매자 답변이 저장되었습니다.",
+    "message": "답변이 저장되었습니다.",
     "data": {
         "id": 1,
         "product_id": 1,
@@ -622,10 +636,10 @@ HTTP/1.1 200
             "name": "API 문서 샘플 사용자",
             "email": "apidoc-sample-user@example.com"
         },
-        "option_snapshot": "{\"id\":104,\"option_code\":\"FWACBAVCBKCD\"}",
+        "option_snapshot": null,
         "option_snapshot_label": "",
         "rating": 5,
-        "content": "Alias quas iusto dolorem eum eveniet.",
+        "content": "Alias quas iusto dolorem eum eveniet ad omnis. Id neque consequatur fuga ut. Enim cum mollitia nisi. Adipisci sunt tenetur et tempora tempora eius rerum.",
         "content_mode": "text",
         "status": "visible",
         "status_label": "전시중",
@@ -633,12 +647,12 @@ HTTP/1.1 200
         "has_reply": true,
         "has_reply_label": "답변완료",
         "has_reply_badge_color": "green",
-        "reply_content": "소중한 후기 감사합니다. 앞으로도 좋은 상품으로 보답하겠습니다.",
+        "reply_content": "실측 예시값",
         "reply_content_mode": "text",
-        "replied_at": "2026-08-16 01:30:00",
-        "reply_updated_at": "2026-08-16 01:30:00",
+        "replied_at": "2026-07-08 15:00:32",
+        "reply_updated_at": null,
         "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-08-16 01:30:00",
+        "updated_at": "2026-07-08 15:00:32",
         "abilities": {
             "can_update": true,
             "can_delete": true
@@ -647,17 +661,14 @@ HTTP/1.1 200
 }
 ```
 
-> 답변 저장 결과가 응답에 반영된다 — `has_reply` 는 `true`, `has_reply_badge_color` 는 `green` 으로 바뀌고 `replied_at`·`reply_updated_at` 이 채워진다. 이미 답변이 있던 리뷰를 다시 호출하면 내용이 **갱신**되며(중복 답변이 생기지 않는다) `reply_updated_at` 만 새로 갱신된다. 답변 작성자는 요청한 관리자(`Auth::id()`)로 기록된다.
-
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.update`)이 없는 경우 |
-| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
-| 422 | Unprocessable Entity | `reply_content` 가 비었거나 1~2000자 범위를 벗어난 경우, `reply_content_mode` 가 `text`/`html` 이 아닌 경우 |
-| 500 | Internal Server Error | 답변 저장 중 예외 발생 (`messages.reviews.reply_save_failed`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -682,7 +693,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-PATCH /api/modules/sirsoft-ecommerce/admin/reviews/{review}/status HTTP/1.1
+PATCH /api/modules/sirsoft-ecommerce/admin/reviews/1/status HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -695,78 +706,11 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (상태가 변경된 리뷰 리소스). 컨트롤러가 관계를 추가로 로드하지 않으므로 `product`·`images`·`image_count`·`orderOption`·`reply_admin_uuid`·`reply_admin` 등 관계 의존 키는 응답에 포함되지 않습니다._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 리뷰 ID (기본 키) |
-| product_id | integer | `1` | 리뷰 대상 상품 ID |
-| order_option_id | integer | `1` | 리뷰가 연결된 주문 옵션 ID |
-| user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 작성자 UUID |
-| user | object | `{"uuid":"a234c2b1-...","name":"API 문서 샘플 사용자","email":"apidoc-sample-user@example.com"}` | 작성자 정보 (uuid·name·email, `user` 관계 로드 시) |
-| option_snapshot | object\|null | `null` | 주문 시점 옵션 스냅샷 (옵션명 보존용, 주문 옵션에서 복사) |
-| option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 |
-| rating | integer | `5` | 별점 (1~5) |
-| content | string | `Alias quas iusto dolorem eum eveniet …` | 리뷰 내용 |
-| content_mode | string | `text` | 콘텐츠 모드: text / html |
-| status | string | `hidden` | 변경된 리뷰 상태: `visible`(전시중) / `hidden`(숨김) |
-| status_label | string | `숨김` | 상태의 사람이 읽는 라벨 (ReviewStatus::label()) |
-| status_badge_color | string | `gray` | 상태 뱃지 색상 (visible=blue / hidden=gray) |
-| has_reply | boolean | `false` | 판매자 답변 존재 여부 (`reply_content` 유무) |
-| has_reply_label | string | `미답변` | `has_reply` 의 사람이 읽는 라벨 (답변완료 / 미답변) |
-| has_reply_badge_color | string | `gray` | 답변 여부 뱃지 색상 (답변완료=green / 미답변=gray) |
-| reply_content | string\|null | `null` | 판매자 답변 내용 (없으면 null) |
-| reply_content_mode | string | `text` | 답변 콘텐츠 모드: text / html |
-| replied_at | string\|null | `null` | 답변 최초 작성 일시 |
-| reply_updated_at | string\|null | `null` | 답변 최종 수정 일시 |
-| created_at | string | `2026-07-08 10:44:49` | 리뷰 생성 일시 |
-| updated_at | string | `2026-07-08 15:10:07` | 리뷰 최종 수정 일시 (상태 변경으로 갱신됨) |
-| abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리뷰에 수행 가능한 작업 불리언 맵 (can_update, can_delete) |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "리뷰가 수정되었습니다.",
-    "data": {
-        "id": 1,
-        "product_id": 1,
-        "order_option_id": 1,
-        "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-        "user": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 사용자",
-            "email": "apidoc-sample-user@example.com"
-        },
-        "option_snapshot": null,
-        "option_snapshot_label": "",
-        "rating": 5,
-        "content": "Alias quas iusto dolorem eum eveniet ad omnis. Id neque consequatur fuga ut.",
-        "content_mode": "text",
-        "status": "hidden",
-        "status_label": "숨김",
-        "status_badge_color": "gray",
-        "has_reply": false,
-        "has_reply_label": "미답변",
-        "has_reply_badge_color": "gray",
-        "reply_content": null,
-        "reply_content_mode": "text",
-        "replied_at": null,
-        "reply_updated_at": null,
-        "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-07-08 15:10:07",
-        "abilities": {
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -774,9 +718,8 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | `status` 누락 또는 `visible`/`hidden` 외의 값 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 상태 변경 중 예외 발생 (`messages.reviews.update_failed` — "리뷰 수정에 실패했습니다.") |
 
 <!-- @generated:end -->
 
@@ -821,72 +764,11 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (생성된 리뷰 리소스, HTTP 201). 서비스가 생성 직후의 모델을 그대로 반환하므로 `product`·`images`·`image_count`·`orderOption`·`reply_admin_uuid`·`reply_admin` 등 관계 의존 키는 응답에 포함되지 않습니다._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 생성된 리뷰 ID (기본 키) |
-| product_id | integer | `1` | 리뷰 대상 상품 ID (요청값 그대로) |
-| order_option_id | integer | `1` | 리뷰가 연결된 주문 옵션 ID (요청값 그대로) |
-| user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 작성자 UUID (로그인 사용자) |
-| option_snapshot | object\|null | `null` | 주문 시점 옵션 스냅샷 (주문 옵션의 `option_snapshot` 을 복사) |
-| option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 |
-| rating | integer | `5` | 별점 (1~5, 요청값 그대로) |
-| content | string | `예시 내용입니다.` | 리뷰 내용 (10~2000자, 요청값 그대로) |
-| content_mode | string | `text` | 콘텐츠 모드: text / html (미지정 시 text) |
-| status | string | `visible` | 생성 시 상태 — 항상 `visible`(전시중) |
-| status_label | string | `전시중` | 상태의 사람이 읽는 라벨 (ReviewStatus::label()) |
-| status_badge_color | string | `blue` | 상태 뱃지 색상 (visible=blue / hidden=gray) |
-| has_reply | boolean | `false` | 판매자 답변 존재 여부 (생성 직후는 항상 false) |
-| has_reply_label | string | `미답변` | `has_reply` 의 사람이 읽는 라벨 (답변완료 / 미답변) |
-| has_reply_badge_color | string | `gray` | 답변 여부 뱃지 색상 (답변완료=green / 미답변=gray) |
-| reply_content | null | `null` | 판매자 답변 내용 (생성 직후는 null) |
-| reply_content_mode | string | `text` | 답변 콘텐츠 모드: text / html |
-| replied_at | null | `null` | 답변 최초 작성 일시 (생성 직후는 null) |
-| reply_updated_at | null | `null` | 답변 최종 수정 일시 (생성 직후는 null) |
-| created_at | string | `2026-07-08 15:20:11` | 리뷰 생성 일시 |
-| updated_at | string | `2026-07-08 15:20:11` | 리뷰 최종 수정 일시 |
-| abilities | object | `{"can_update":false,"can_delete":false}` | 현재 사용자가 이 리뷰에 수행 가능한 작업 불리언 맵 (관리자 권한 `sirsoft-ecommerce.reviews.update`/`.delete` 기준이므로 일반 회원은 false) |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 201
-```
-
-```json
-{
-    "success": true,
-    "message": "리뷰가 작성되었습니다.",
-    "data": {
-        "id": 1,
-        "product_id": 1,
-        "order_option_id": 1,
-        "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-        "option_snapshot": null,
-        "option_snapshot_label": "",
-        "rating": 5,
-        "content": "예시 내용입니다. 배송도 빠르고 품질도 만족스럽습니다.",
-        "content_mode": "text",
-        "status": "visible",
-        "status_label": "전시중",
-        "status_badge_color": "blue",
-        "has_reply": false,
-        "has_reply_label": "미답변",
-        "has_reply_badge_color": "gray",
-        "reply_content": null,
-        "reply_content_mode": "text",
-        "replied_at": null,
-        "reply_updated_at": null,
-        "created_at": "2026-07-08 15:20:11",
-        "updated_at": "2026-07-08 15:20:11",
-        "abilities": {
-            "can_update": false,
-            "can_delete": false
-        }
-    }
-}
-```
+<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -894,8 +776,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-reviews.write`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 작성 자격 미충족 시 `ReviewNotWritableException`(RuntimeException) 이 발생해 사유 코드가 담긴 메시지로 응답 (`order_option_not_found` / `not_own_order` / `not_confirmed` / `deadline_passed` / `already_written`) |
-| 500 | Internal Server Error | 리뷰 생성 중 예외 발생 (`messages.reviews.create_failed` — "리뷰 작성에 실패했습니다.") |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -917,7 +798,7 @@ HTTP/1.1 201
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/user/reviews/can-write/{orderOptionId} HTTP/1.1
+GET /api/modules/sirsoft-ecommerce/user/reviews/can-write/1 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -925,26 +806,14 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: 작성 자격 판정 결과 (`ProductReviewService::canWrite()` 가 반환한 배열 — Resource 로 감싸지 않는다)._
+_단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| can_write | boolean | `true` | 이 주문 옵션에 리뷰를 쓸 수 있는지. 화면은 이 값으로 작성 버튼 노출을 결정한다 |
-| reason | string \| null | `null` | 쓸 수 없는 사유 키. `can_write` 가 `true` 면 `null` |
-
-`reason` 이 가질 수 있는 값:
-
-| 값 | 의미 |
-| --- | --- |
-| `order_option_not_found` | 해당 주문 옵션이 존재하지 않음 |
-| `not_own_order` | 본인 주문이 아님 |
-| `not_confirmed` | 구매확정(`CONFIRMED`) 상태가 아님 |
-| `deadline_passed` | 작성 가능 기간이 지남 (판정 규칙은 `ReviewWritePolicy` 단일 SSoT) |
-| `already_written` | 이 주문 옵션으로 이미 리뷰를 작성함 |
+| can_write | boolean | `false` | write 수행 가능 여부 (권한 기반) |
+| reason | string | `not_own_order` | 리뷰 작성 불가 사유 코드 (`can_write` 가 false 일 때만 값이 있고 가능하면 null. order_option_not_found 주문옵션 없음, not_own_order 본인 주문 아님, not_confirmed 구매확정 전, deadline_passed 작성 기한 초과, already_written 이미 작성함) |
 
 **응답 예시**
-
-작성 가능한 경우:
 
 ```http
 HTTP/1.1 200
@@ -955,33 +824,18 @@ HTTP/1.1 200
     "success": true,
     "message": "리뷰 작성 가능 여부를 확인했습니다.",
     "data": {
-        "can_write": true,
-        "reason": null
-    }
-}
-```
-
-작성 불가한 경우 (이미 작성함):
-
-```json
-{
-    "success": true,
-    "message": "리뷰 작성 가능 여부를 확인했습니다.",
-    "data": {
         "can_write": false,
-        "reason": "already_written"
+        "reason": "not_own_order"
     }
 }
 ```
-
-> 작성 불가는 **에러가 아니라 정상 응답**이다. 존재하지 않는 주문 옵션이나 남의 주문도 `404`/`403` 이 아니라 `200` + `can_write: false` 로 응답하므로, 이 엔드포인트로 주문 존재 여부를 탐색할 수 없다.
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 500 | Internal Server Error | 판정 중 예외 발생 (`messages.reviews.can_write_check_failed`) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -1003,7 +857,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-DELETE /api/modules/sirsoft-ecommerce/user/reviews/{review} HTTP/1.1
+DELETE /api/modules/sirsoft-ecommerce/user/reviews/1 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1011,11 +865,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: 삭제 성공 플래그만 반환한다 (관리자 삭제 엔드포인트와 같은 형태)._
+_단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| deleted | boolean | `true` | 삭제 성공 여부. 성공 응답에서는 항상 `true` |
+| deleted | boolean | `true` | 삭제 처리 성공 여부 (true 이면 리뷰와 첨부 이미지가 제거됨) |
 
 **응답 예시**
 
@@ -1033,16 +887,13 @@ HTTP/1.1 200
 }
 ```
 
-> 삭제 전 `images` 관계를 로드해 첨부 이미지 파일까지 함께 정리한다.
-
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-reviews.write`)이 없는 경우, 또는 **본인이 작성한 리뷰가 아닌 경우** (`messages.reviews.forbidden`) |
-| 404 | Not Found | 해당 `review` 의 리뷰가 없는 경우 (라우트 모델 바인딩이 해석에 실패) |
-| 500 | Internal Server Error | 삭제 처리 중 예외 발생 (`messages.reviews.delete_failed`) |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-reviews.write`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -1065,7 +916,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-ecommerce/user/reviews/{review}/images HTTP/1.1
+POST /api/modules/sirsoft-ecommerce/user/reviews/1/images HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1081,65 +932,20 @@ Content-Type: application/octet-stream
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (업로드된 리뷰 이미지 리소스, HTTP 201)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 리뷰 이미지 ID (기본 키) |
-| review_id | integer | `1` | 이미지가 속한 리뷰 ID |
-| hash | string | `9f3a1c7b20de` | URL 용 고유 해시 (12자, 생성 시 자동 부여) |
-| original_filename | string | `example.jpg` | 업로드된 원본 파일명 |
-| download_url | string | `/api/modules/sirsoft-ecommerce/review-image/9f3a1c7b20de` | 해시 기반 이미지 서빙 URL (`review-image/{hash}`) |
-| mime_type | string | `image/jpeg` | MIME 타입 (예: image/jpeg, image/webp) |
-| file_size | integer | `204800` | 파일 크기 (바이트) |
-| width | integer\|null | `1200` | 이미지 너비 (px, 이미지가 아니거나 판별 실패 시 null) |
-| height | integer\|null | `800` | 이미지 높이 (px, 이미지가 아니거나 판별 실패 시 null) |
-| alt_text | object\|null | `null` | 대체 텍스트 (다국어 JSON, 업로드 시점에는 설정하지 않으므로 null) |
-| is_thumbnail | boolean | `true` | 대표 이미지 여부 (해당 리뷰의 첫 이미지면 true) |
-| sort_order | integer | `1` | 정렬 순서 (기존 최대값 + 1) |
-| created_at | string | `2026-07-08 15:30:02` | 업로드 일시 |
-| abilities | object | `{"can_delete":false}` | 현재 사용자가 이 이미지에 수행 가능한 작업 불리언 맵 (관리자 권한 `sirsoft-ecommerce.reviews.delete` 기준이므로 일반 회원은 false) |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 201
-```
-
-```json
-{
-    "success": true,
-    "message": "리뷰 이미지가 업로드되었습니다.",
-    "data": {
-        "id": 1,
-        "review_id": 1,
-        "hash": "9f3a1c7b20de",
-        "original_filename": "example.jpg",
-        "download_url": "/api/modules/sirsoft-ecommerce/review-image/9f3a1c7b20de",
-        "mime_type": "image/jpeg",
-        "file_size": 204800,
-        "width": 1200,
-        "height": 800,
-        "alt_text": null,
-        "is_thumbnail": true,
-        "sort_order": 1,
-        "created_at": "2026-07-08 15:30:02",
-        "abilities": {
-            "can_delete": false
-        }
-    }
-}
-```
+<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-reviews.write`)이 없거나, 대상 리뷰가 로그인 사용자의 리뷰가 아닌 경우 (`messages.reviews.forbidden` — "권한이 없습니다.") |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-reviews.write`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | `image` 파일 누락·허용 형식/용량 위반 (`error.errors` 에 필드별 메시지) 또는 리뷰당 최대 첨부 개수 초과 시 `ReviewImageUploadLimitException`(RuntimeException) — 최대 개수는 리뷰 설정 `review_settings.max_images`(기본 5) 기준 |
-| 500 | Internal Server Error | 업로드 처리 중 예외 발생 (`messages.reviews.image_upload_failed` — "리뷰 이미지 업로드에 실패했습니다.") |
 
 <!-- @generated:end -->
 
@@ -1162,7 +968,7 @@ HTTP/1.1 201
 **요청 예시**
 
 ```http
-DELETE /api/modules/sirsoft-ecommerce/user/reviews/{review}/images/{image} HTTP/1.1
+DELETE /api/modules/sirsoft-ecommerce/user/reviews/1/images/{image} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1170,29 +976,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| deleted | boolean | `true` | 삭제 처리 성공 여부 (true 이면 리뷰와 첨부 이미지가 제거됨) |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-<!-- @probed -->
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "리뷰 이미지가 삭제되었습니다.",
-    "data": {
-        "deleted": true
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 

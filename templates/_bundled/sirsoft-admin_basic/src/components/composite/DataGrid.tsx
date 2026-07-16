@@ -43,18 +43,8 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:DataGrid')) ?? {
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
 
-/**
- * 반복 렌더 서브트리용 컴포넌트 맵 **폴백**.
- *
- * 정본은 템플릿 레지스트리(`G7Core.getComponentMap()`)다 — CardGrid 와 같은 출처를 쓴다.
- * 이 열거는 런타임 전역이 아직 없는 상황(단위 테스트 등)에서만 쓰인다.
- *
- * 종전에는 이 열거가 유일한 출처였고, 등록된 117개 중 29개만 담고 있어 나머지 88개가
- * `cellChildren`/`expandChildren`/`subRowChildren`/`footerCells` 안에서만 조용히 사라졌다.
- * 실측: `/admin/identity/logs` 확장 행의 `Pre`(부가 정보 JSON)가 라벨만 남고 미렌더 —
- * 같은 `Pre` 가 모달(DynamicRenderer 경로)에서는 정상 렌더돼 경로 비대칭이었다.
- */
-const FALLBACK_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
+// cellChildren 및 expandChildren 렌더링을 위한 컴포넌트 맵
+const componentMap: Record<string, React.ComponentType<any>> = {
   // basic 컴포넌트
   Div,
   Span,
@@ -87,22 +77,6 @@ const FALLBACK_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
   Badge,
   HtmlContent,
   ActionMenu,
-};
-
-/**
- * 반복 렌더 서브트리에 넘길 컴포넌트 맵을 반환합니다.
- *
- * 템플릿 레지스트리 전체를 쓰므로 `components.json` 에 등록된 컴포넌트는 단발 렌더 경로와
- * 반복 렌더 경로에서 **동일하게** 조회된다. 전역이 없으면 폴백 열거로 내려간다.
- *
- * @returns 컴포넌트명 → React 컴포넌트 맵
- */
-const getComponentMap = (): Record<string, React.ComponentType<any>> => {
-  const registry = (window as any).G7Core?.getComponentMap?.();
-  if (registry && Object.keys(registry).length > 0) {
-    return registry;
-  }
-  return FALLBACK_COMPONENT_MAP;
 };
 
 export interface DataGridCellChild {
@@ -216,18 +190,6 @@ export interface DataGridProps {
   selectedIds?: (string | number)[];
   onSelectionChange?: (ids: (string | number)[]) => void;
   idField?: string;
-  /**
-   * 선택의 유효 범위.
-   *
-   * - `'page'`: 선택은 지금 그려진 행에서만 유효하다. 검색·필터·페이지 이동으로
-   *   행이 목록에서 빠지면 그 행의 선택도 함께 버린다. 일괄 처리 버튼이 달린
-   *   목록 화면은 이 값을 쓴다 — 그래야 "보이지 않는 행이 일괄 처리 대상" 이
-   *   되는 상태가 만들어지지 않는다.
-   * - `'free'`(기본): 선택을 컴포넌트가 건드리지 않는다. 선택 자체가 저장 대상인
-   *   폼(쿠폰 적용 대상 고르기 등)처럼, 목록에 안 보이는 항목도 선택으로 남아야
-   *   하는 화면용.
-   */
-  selectionScope?: 'page' | 'free';
 
   // 컬럼 표시/숨김 기능
   showColumnSelector?: boolean;
@@ -248,20 +210,7 @@ export interface DataGridProps {
   // 서버 사이드 페이지네이션 (API에서 페이지네이션 처리 시)
   serverSidePagination?: boolean;
   serverCurrentPage?: number;
-  /**
-   * 서버가 알려준 마지막 페이지 번호
-   *
-   * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `null` 을 보낸다.
-   * 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하므로 null 을 그대로 흘려보낸다.
-   */
-  serverTotalPages?: number | null;
-  /**
-   * 다음 페이지 존재 여부 (총 건수를 모르는 목록에서 사용)
-   *
-   * 총 건수를 몰라도 서버는 이 값을 정확히 판정한다. 마지막 페이지를 계산할 수 없어도
-   * "다음" 이동은 이 값으로 끝까지 열어 둘 수 있다.
-   */
-  serverHasMorePages?: boolean;
+  serverTotalPages?: number;
   onPageChange?: (page: number) => void;
 
   // 다국어 지원 텍스트 (레이아웃 JSON에서 $t: 문법으로 전달)
@@ -487,11 +436,7 @@ const safeRenderValue = (value: any): React.ReactNode => {
 
 /**
  * subRow 컨테이너의 표시 조건을 평가합니다.
- *
- * 판정은 엔진(`G7Core.evaluateCondition`)에 위임합니다. 종전에는 이 파일이
- * `new Function('row', ...)` 로 자체 평가기를 두어, `_local`/`_global` 을 참조하는
- * 조건에서 예외가 나면 CardGrid 는 자식이 사라지고 DataGrid 는 항상 표시되는
- * **반대 방향** 결과가 났습니다. 엔진 위임으로 두 컴포넌트의 판정이 같아집니다.
+ * JSX 인라인 조건에서 사용되므로 엔진 위임 불가 — 직접 평가합니다.
  *
  * @param condition 조건 문자열 (예: "{{row.charge_policy !== 'free'}}")
  * @param row 현재 행 데이터
@@ -500,13 +445,21 @@ const safeRenderValue = (value: any): React.ReactNode => {
 const evaluateSubRowCondition = (condition: string | undefined, row: any): boolean => {
   if (!condition) return true;
 
-  const G7Core = (window as any).G7Core;
-  if (typeof G7Core?.evaluateCondition === 'function') {
-    return G7Core.evaluateCondition(condition, { row, item: row, $item: row });
-  }
+  // {{...}} 패턴 추출
+  const match = condition.match(/^\{\{(.+)\}\}$/);
+  if (!match) return true;
 
-  logger.warn('G7Core.evaluateCondition 미노출 — subRow 조건을 평가할 수 없습니다:', condition);
-  return true;
+  const expr = match[1].trim();
+
+  try {
+    // row 컨텍스트에서 표현식 평가
+    // eslint-disable-next-line no-new-func
+    const evaluator = new Function('row', `return ${expr}`);
+    return !!evaluator(row);
+  } catch (error) {
+    logger.warn('subRow 조건 평가 실패:', condition, error);
+    return true;
+  }
 };
 
 /**
@@ -533,7 +486,7 @@ const renderCellChildren = (
     return G7Core.renderItemChildren(
       cellChildren,
       context,
-      getComponentMap(),
+      componentMap,
       keyPrefix,
       componentContext ? { componentContext } : undefined
     );
@@ -541,39 +494,6 @@ const renderCellChildren = (
 
   logger.warn('G7Core.renderItemChildren을 사용할 수 없습니다.');
   return null;
-};
-
-/**
- * 푸터 셀의 `text` 를 렌더링합니다.
- *
- * `components.json` 의 `skipBindingKeys` 에 `footerCells` 가 들어가면서 DynamicRenderer 는
- * 이 키를 선평가하지 않는다 — 해석 책임이 반복 렌더 경로로 넘어왔다. 그런데 푸터 렌더는
- * `children` 만 `renderCellChildren` 으로 넘기고 `text` 는 원문을 그대로 출력해 왔고,
- * 그 결과 `{{order.data?.total_quantity ?? 0}}개` 같은 값이 화면에 노출됐다
- * (실측: `/admin/ecommerce/orders/:orderNumber` 합계 행 3셀).
- *
- * 바인딩/번역 토큰이 없는 순수 문자열은 그대로 돌려주어 불필요한 래핑을 만들지 않는다.
- *
- * @param text 푸터 셀 텍스트 (바인딩 표현식 포함 가능)
- * @param keyPrefix 키 접두사
- * @param componentContext 컴포넌트 컨텍스트 (state/setState)
- * @returns 해석된 React 노드
- */
-const renderFooterCellText = (
-  text: string | undefined,
-  keyPrefix: string,
-  componentContext?: { state?: any; setState?: (updates: any) => void }
-): React.ReactNode => {
-  if (!text) return '';
-  if (!text.includes('{{') && !text.includes('$t:')) return text;
-
-  return renderCellChildren(
-    [{ type: 'basic', name: 'Span', text }],
-    {},
-    null,
-    keyPrefix,
-    componentContext
-  );
 };
 
 /**
@@ -601,7 +521,7 @@ const renderSubRowChildren = (
     return G7Core.renderItemChildren(
       subRowChildren,
       context,
-      getComponentMap(),
+      componentMap,
       keyPrefix,
       componentContext ? { componentContext } : undefined
     );
@@ -660,7 +580,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
   selectedIds = [],
   onSelectionChange,
   idField = 'id',
-  selectionScope = 'free',
   // 컬럼 표시/숨김
   showColumnSelector = false,
   visibleColumns: initialVisibleColumns,
@@ -677,7 +596,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
   serverSidePagination = false,
   serverCurrentPage,
   serverTotalPages,
-  serverHasMorePages,
   onPageChange,
   // 다국어 텍스트
   prevText,
@@ -726,27 +644,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
   const resolvedRequiredText = requiredText ?? t('common.required');
   const resolvedSelectedCountText = selectedCountText ?? t('common.selected_count');
 
-  /**
-   * 선택 건수 문구의 파라미터 자리를 채웁니다.
-   *
-   * 치환은 번역 엔진에 맡깁니다 — G7 의 파라미터 표준은 `{{count}}` 이고, 엔진은
-   * `{{count}}` 를 먼저, `{count}` 를 그다음에 치환합니다. 컴포넌트가 자체 치환을
-   * 두면 표준 표기가 `{1}개 선택됨` 처럼 바깥 중괄호를 남긴 채 렌더됩니다
-   * (예외·경고 없이 화면에만 드러남).
-   *
-   * `selectedCountText` prop 으로 넘어온 문자열은 엔진을 거치지 않으므로 이때만
-   * 같은 순서로 직접 채웁니다.
-   */
-  const formatSelectedCount = (count: number): string => {
-    if (selectedCountText === undefined) {
-      return t('common.selected_count', { count });
-    }
-
-    return selectedCountText
-      .replace(/\{\{count\}\}/g, String(count))
-      .replace(/\{count\}/g, String(count));
-  };
-
   // G7Core.useControllableState 훅 참조 (Phase 2-2)
   const G7Core = (window as any).G7Core;
   const useControllableState = G7Core?.useControllableState as
@@ -763,21 +660,20 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // 정렬 상태 - useControllableState 적용
   // 외부 제어(externalSortField)가 있으면 Controlled, 없으면 Uncontrolled
-  //
-  // 정렬은 "컬럼 + 방향" 한 쌍이 하나의 의미 단위다. 두 상태의 onChange 콜백에서 각각
-  // onSortChange 를 부르면, 각 콜백이 자기 렌더의 클로저에 잡힌 **반대쪽 이전 값**을 함께
-  // 실어보내 잘못된 조합이 디스패치된다 (setSortField 는 이전 방향을, setSortDirection 은
-  // 이전 컬럼을 보낸다). 헤더 클릭 한 번에 두 콜백이 연달아 불리므로 나중 것이 이겨
-  // "이름 desc → 이메일 헤더 클릭" 이 sort_by=name&sort_order=asc 로 나가고, 헤더 표시만
-  // 이메일↑ 이 되어 표시와 실제 정렬 기준이 어긋난다.
-  // 따라서 상태 setter 는 화살표 표시용 낙관적 갱신만 담당하고, 서버 디스패치는
-  // handleSort 에서 새 값 한 쌍으로 단 한 번 수행한다.
   const [sortField, setSortField] = useControllableState
-    ? useControllableState<string | null>(externalSortField, null)
+    ? useControllableState<string | null>(externalSortField, null, (value: string | null) => {
+        if (value !== null) {
+          onSortChange?.(value, sortDirection);
+        }
+      })
     : [externalSortField ?? null, () => {}];
 
   const [sortDirection, setSortDirection] = useControllableState
-    ? useControllableState<'asc' | 'desc'>(externalSortDirection, 'asc')
+    ? useControllableState<'asc' | 'desc'>(externalSortDirection, 'asc', (value: 'asc' | 'desc') => {
+        if (sortField !== null) {
+          onSortChange?.(sortField, value);
+        }
+      })
     : [externalSortDirection ?? 'asc', () => {}];
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -935,20 +831,9 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // 값 비교 시 항상 앞으로 밀어 서버 ORDER BY 순서를 훼손한다.
   // onSortChange 가 없는 경우(uncontrolled)에만 컴포넌트가 단독 정렬 주체로서
   // 전달받은 로컬 데이터를 클라이언트에서 정렬한다.
-  // 헤더 클릭 정렬을 제공할 수 있는가.
-  //
-  // 서버 페이지네이션 목록에서 `onSortChange` 가 배선돼 있지 않으면 컴포넌트는 서버에
-  // 정렬을 요청할 방법이 없다. 그런데도 헤더를 누를 수 있게 두면 **현재 페이지 배열만**
-  // 정렬되고 화살표가 붙어, 전체 건수 기준으로 정렬된 것으로 오인된다 (#492 D-18).
-  // 정렬을 실제로 반영할 수 없는 화면에서는 정렬 가능한 척하지 않는다.
-  const headerSortEnabled = sortable && !(serverSidePagination && !onSortChange);
-
   const sortedData = useMemo(() => {
     if (!sortField || !sortable || !data) return data || [];
     if (onSortChange) return data;
-    // 서버 페이지네이션이면 data 는 "전체 중 이번 페이지" 다. 여기서 정렬하면 그 페이지
-    // 안에서만 순서가 바뀌는데 헤더 화살표는 전체 정렬처럼 보인다 (#492 D-18).
-    if (serverSidePagination) return data;
 
     return [...data].sort((a, b) => {
       const aValue = a[sortField];
@@ -959,7 +844,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
       const comparison = aValue > bValue ? 1 : -1;
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [data, sortField, sortDirection, sortable, onSortChange, serverSidePagination]);
+  }, [data, sortField, sortDirection, sortable, onSortChange]);
 
   // 페이지네이션 처리
   const paginatedData = useMemo(() => {
@@ -974,18 +859,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // 서버 사이드 페이지네이션인 경우 서버에서 전달된 값 사용
   const effectiveCurrentPage = serverSidePagination ? (serverCurrentPage || 1) : currentPage;
-  // 총 건수를 상한까지만 센 목록은 마지막 페이지가 null 로 온다. 1 로 채우면
-  // 페이저가 통째로 접혀 1페이지 밖 행에 도달할 방법이 사라지므로 null 을 보존한다.
-  const effectiveTotalPages: number | null = serverSidePagination
-    ? (serverTotalPages ?? null)
-    : Math.ceil((sortedData?.length || 0) / pageSize);
-
-  // 마지막 페이지를 모르더라도 "다음" 이 열려 있거나 이미 2페이지 이상이면 페이저는 필요하다.
-  const shouldShowPagination =
-    alwaysShowPagination ||
-    (effectiveTotalPages ?? 0) > 1 ||
-    serverHasMorePages === true ||
-    effectiveCurrentPage > 1;
+  const effectiveTotalPages = serverSidePagination ? (serverTotalPages || 1) : Math.ceil((sortedData?.length || 0) / pageSize);
 
   // 페이지 변경 핸들러
   const handlePageChange = useCallback((page: number) => {
@@ -998,19 +872,21 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // 정렬 토글 (Phase 2-2: useControllableState로 단순화)
   const handleSort = (field: string) => {
-    if (!headerSortEnabled) return;
+    if (!sortable) return;
 
     const column = columns.find((col) => col.field === field);
     if (column?.sortable === false) return;
 
     const newDirection: 'asc' | 'desc' = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
 
-    // 낙관적 갱신 — 헤더 화살표가 즉시 새 컬럼/방향을 가리키게 한다
-    setSortField(field);
-    setSortDirection(newDirection);
-
-    // 서버 디스패치는 새 값 한 쌍으로 정확히 한 번 (컬럼/방향이 섞이지 않는다)
-    onSortChange?.(field, newDirection);
+    // useControllableState 사용 시: setter가 onChange 콜백 자동 호출
+    // 폴백 시: 직접 onSortChange 호출
+    if (useControllableState) {
+      setSortField(field);
+      setSortDirection(newDirection);
+    } else if (onSortChange) {
+      onSortChange(field, newDirection);
+    }
   };
 
   // 전체 선택 처리
@@ -1041,28 +917,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
     },
     [selectedIds, onSelectionChange]
   );
-
-  // 목록에서 빠진 행의 선택 정리
-  //
-  // 선택 상태는 목록 화면 밖(전역/로컬 상태)에 있으므로 검색·필터·페이지 이동으로
-  // 행이 화면에서 사라져도 그대로 남는다. 그 상태에서 일괄 처리를 누르면 운영자가
-  // 보고 있지도, 체크하지도 않은 행이 대상이 된다 — 확인 모달은 건수만 말하므로
-  // 실행 전에 알아챌 방법이 없다. `selectionScope: 'page'` 인 목록은 지금 그려진
-  // 행에 없는 선택을 버려서, 대상이 언제나 "화면에 보이고 체크된 행" 이 되게 한다.
-  useEffect(() => {
-    // `selectable` 여부로 가르지 않는다 — 체크박스가 꺼진 화면에 남은 선택은
-    // 아예 눈에 띄지 않으므로 오히려 더 위험하다.
-    if (selectionScope !== 'page' || !onSelectionChange) return;
-    if (selectedIds.length === 0) return;
-
-    const visibleIds = new Set((paginatedData ?? []).map((row) => row[idField]));
-    const survivors = selectedIds.filter((id) => visibleIds.has(id));
-
-    // 길이가 같으면 버릴 것이 없다 — 여기서 끊지 않으면 setState 가 매 렌더 반복된다.
-    if (survivors.length === selectedIds.length) return;
-
-    onSelectionChange(survivors);
-  }, [selectionScope, selectable, paginatedData, selectedIds, onSelectionChange, idField]);
 
   // 컬럼 표시/숨김 토글
   const handleColumnToggle = useCallback(
@@ -1169,7 +1023,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
           row,
           expandContext,
           componentContext: __componentContext,
-          componentMap: getComponentMap(),
+          componentMap,
           keyPrefix: `expand-${row[idField]}`,
         });
       }
@@ -1326,7 +1180,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
         {/* 선택된 항목 수 표시 */}
         {selectable && selectedIds.length > 0 && resolvedSelectedCountText && (
           <Div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            {formatSelectedCount(selectedIds.length)}
+            {resolvedSelectedCountText.replace('{count}', String(selectedIds.length))}
           </Div>
         )}
 
@@ -1362,7 +1216,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                         <Span className={cell.className || 'text-gray-900 dark:text-gray-100'}>
                           {cell.children && cell.children.length > 0
                             ? renderCellChildren(cell.children, {}, null, `footer-mobile-${idx}`, __componentContext)
-                            : renderFooterCellText(cell.text, `footer-mobile-text-${idx}`, __componentContext)}
+                            : cell.text || ''}
                         </Span>
                       </Div>
                     );
@@ -1374,12 +1228,11 @@ export const DataGrid: React.FC<DataGridProps> = ({
         )}
 
         {/* 페이지네이션 */}
-        {pagination && shouldShowPagination && (
+        {pagination && (alwaysShowPagination || effectiveTotalPages > 1) && (
           <Div className="flex justify-center mt-4">
             <Pagination
               currentPage={effectiveCurrentPage}
               totalPages={effectiveTotalPages}
-              hasMorePages={serverSidePagination ? serverHasMorePages : undefined}
               onPageChange={handlePageChange}
               showFirstLast={showFirstLast}
               maxVisiblePages={5}
@@ -1446,7 +1299,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
       {/* 선택된 항목 수 표시 */}
       {selectable && selectedIds.length > 0 && resolvedSelectedCountText && (
         <Div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          {formatSelectedCount(selectedIds.length)}
+          {resolvedSelectedCountText.replace('{count}', String(selectedIds.length))}
         </Div>
       )}
 
@@ -1483,12 +1336,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
                 <Th
                   key={column.field}
                   className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${
-                    headerSortEnabled && column.sortable !== false
+                    sortable && column.sortable !== false
                       ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600'
                       : ''
                   }`}
                   style={{ width: column.width, minWidth: column.width }}
-                  onClick={headerSortEnabled ? () => handleSort(column.field) : undefined}
+                  onClick={() => handleSort(column.field)}
                 >
                   {column.header}
                   {sortField === column.field && (
@@ -1680,7 +1533,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                       >
                         {cell.children && cell.children.length > 0
                           ? renderCellChildren(cell.children, {}, null, `footer-${column.field}`, __componentContext)
-                          : renderFooterCellText(cell.text, `footer-text-${column.field}`, __componentContext)}
+                          : cell.text || ''}
                       </Td>
                     );
                   });
@@ -1695,12 +1548,11 @@ export const DataGrid: React.FC<DataGridProps> = ({
       </Div>
 
       {/* 페이지네이션 */}
-      {pagination && shouldShowPagination && (
+      {pagination && (alwaysShowPagination || effectiveTotalPages > 1) && (
         <Div className="flex justify-center mt-4">
           <Pagination
             currentPage={effectiveCurrentPage}
             totalPages={effectiveTotalPages}
-            hasMorePages={serverSidePagination ? serverHasMorePages : undefined}
             onPageChange={handlePageChange}
             showFirstLast={showFirstLast}
             maxVisiblePages={5}

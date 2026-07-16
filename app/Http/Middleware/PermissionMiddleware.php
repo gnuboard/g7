@@ -6,7 +6,6 @@ use App\Enums\PermissionType;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Models\Role;
-use App\Support\GuestRoleResolver;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -15,6 +14,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PermissionMiddleware
 {
+    /**
+     * guest role 캐시
+     *
+     * @var Role|null
+     */
+    protected static $guestRoleCache = null;
+
     /**
      * 특정 권한을 가진 사용자 또는 비회원(guest)의 접근을 허용합니다.
      *
@@ -119,9 +125,10 @@ class PermissionMiddleware
             return false;
         }
 
-        // 적재해 둔 권한 컬렉션에서 판정한다. permissions() 로 빌더를 다시 열면
-        // 캐시해 둔 의미가 사라져 판정마다 쿼리가 나간다.
-        return GuestRoleResolver::hasPermission($permission, $type);
+        return $guestRole->permissions()
+            ->where('identifier', $permission)
+            ->where('type', $type)
+            ->exists();
     }
 
     /**
@@ -131,7 +138,13 @@ class PermissionMiddleware
      */
     protected function getGuestRole(): ?Role
     {
-        return GuestRoleResolver::resolve();
+        if (self::$guestRoleCache === null) {
+            self::$guestRoleCache = Role::where('identifier', 'guest')
+                ->with('permissions')
+                ->first();
+        }
+
+        return self::$guestRoleCache;
     }
 
     /**
@@ -145,7 +158,7 @@ class PermissionMiddleware
      */
     public static function clearGuestRoleCache(): void
     {
-        GuestRoleResolver::flush();
+        self::$guestRoleCache = null;
     }
 
     /**

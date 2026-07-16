@@ -14,11 +14,10 @@ use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
-use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtCallbackRequest;
+use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Services\CbtReconciliationService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
-use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
 
 /**
  * KG 이니시스 CBT (Cross Border Trade) 일본 결제 콜백 컨트롤러
@@ -198,9 +197,8 @@ class CbtCallbackController
                     'result_msg' => $resultMsg,
                 ]);
 
-                // 승인이 성립하지 않았다 — 실제로 결제된 것이 없으므로 주문 상태를 바꾸지 않는다.
-                // 브라우저 실패(authResultCode)는 이미 무변경으로 하드닝되어 있으나, 서버 승인
-                // 실패 분기는 여전히 비인증 입력(sid + oid)으로 도달할 수 있어 같은 통로가 열려 있었다.
+                $this->orderService->failPayment($order, $resultCode, $resultMsg);
+
                 return redirect($this->resolveFailUrl($this->buildCbtFailureRedirectParams(
                     (string) $resultCode,
                     (string) $resultMsg,
@@ -695,15 +693,15 @@ class CbtCallbackController
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
+        $urlTemplate = $settings['redirect_success_url'] ?? '/shop/orders/{orderId}/complete';
 
-        return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        return $this->absolutize(str_replace('{orderId}', $orderId, $urlTemplate));
     }
 
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $this->absolutize(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = $this->absolutize($settings['redirect_fail_url'] ?? '/shop/checkout');
 
         if (empty($queryParams)) {
             return $baseUrl;

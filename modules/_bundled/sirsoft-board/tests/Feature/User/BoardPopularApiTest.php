@@ -5,9 +5,6 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
-use App\Http\Middleware\PermissionMiddleware;
-use App\Models\Permission;
-use App\Models\Role;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\PostStatus;
@@ -52,10 +49,6 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * 인기 게시글 API가 올바른 구조로 응답하는지 테스트
-     *
-     * @scenario case=popular_readable_filter
-     *
-     * @effects unreadable_board_titles_absent_for_caller
      */
     public function test_popular_returns_correct_structure(): void
     {
@@ -146,7 +139,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: view_count가 다른 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Post 1', 'content' => 'Content 1', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Post 2', 'content' => 'Content 2', 'view_count' => 300, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
@@ -172,7 +164,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 오늘과 어제 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Today Post', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Yesterday Post', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subDay(), 'updated_at' => now()->subDay()],
@@ -196,7 +187,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 최근 1주일과 2주 전 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'This Week', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subDays(3), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Two Weeks Ago', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subWeeks(2), 'updated_at' => now()],
@@ -221,7 +211,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 1년 이내/이전 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Recent', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Six Months Ago', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subMonths(6), 'updated_at' => now()],
@@ -240,37 +229,6 @@ class BoardPopularApiTest extends ModuleTestCase
         $this->assertContains('Recent', $titles);
         $this->assertContains('Six Months Ago', $titles);
         $this->assertNotContains('Over One Year', $titles);
-    }
-
-    /**
-     * 미지원 period 가 거부되지 않고 year 로 해석되며, 캐시 키도 정규화되는지 테스트
-     *
-     * 북마크 가능한 공개 URL 이라 미지원 값에 422 를 돌려주면 기존 링크가 깨진다.
-     * 동시에 period 는 캐시 키에 들어가므로, 원문을 그대로 쓰면 임의 문자열마다
-     * 캐시 엔트리가 생겨 키 공간이 무한히 늘어난다 (요청 값이 아니라 해석된 값으로 키를 만든다).
-     */
-    public function test_popular_unsupported_period_falls_back_to_year_and_normalizes_cache_key(): void
-    {
-        // Given: 1년 이내/이전 게시글 생성
-        $board = Board::factory()->create(['is_active' => true]);
-        $this->grantGuestRead($board);
-        DB::table('board_posts')->insert([
-            ['board_id' => $board->id, 'title' => 'Recent', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
-            ['board_id' => $board->id, 'title' => 'Over One Year', 'content' => 'Content', 'view_count' => 300, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subMonths(13), 'updated_at' => now()],
-        ]);
-
-        // When: 지원하지 않는 period 로 호출
-        $response = $this->getJson('/api/modules/sirsoft-board/boards/popular?period=nonsense&limit=5');
-
-        // Then: 422 가 아니라 200 이고, year 와 동일한 범위(1년 이내)로 해석된다
-        $response->assertStatus(200);
-        $titles = array_column($response->json('data'), 'title');
-        $this->assertContains('Recent', $titles);
-        $this->assertNotContains('Over One Year', $titles);
-
-        // Then: 캐시 키에는 요청 원문이 아니라 해석된 값이 들어간다
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_year_5'));
-        $this->assertFalse(Cache::has('g7:module.sirsoft-board:popular_posts_nonsense_5'));
     }
 
     /**
@@ -325,7 +283,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 게시글과 댓글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->grantGuestRead($board);
         // comments_count 컬럼에 직접 값 설정 (캐시 컬럼 방식)
         $postId = DB::table('board_posts')->insertGetId([
             'board_id' => $board->id,
@@ -356,7 +313,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 게스트가 작성한 게시글
         $board = Board::factory()->create(['is_active' => true]);
-        $this->grantGuestRead($board);
         DB::table('board_posts')->insert([
             'board_id' => $board->id,
             'title' => 'Guest Post',
@@ -396,7 +352,7 @@ class BoardPopularApiTest extends ModuleTestCase
         $response1->assertStatus(200);
 
         // 캐시 키 확인 (형식: g7:module.sirsoft-board:popular_posts_{period}_{limit})
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_week_5'));
+        $this->assertTrue(Cache::has("g7:module.sirsoft-board:popular_posts_week_5"));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/popular?limit=5&period=week');
@@ -457,8 +413,8 @@ class BoardPopularApiTest extends ModuleTestCase
     /**
      * 게시판을 생성하고 게시글을 삽입하는 헬퍼
      *
-     * @param  int  $postCount  생성할 게시글 수
-     * @param  Board|null  $board  기존 게시판 (null이면 새로 생성)
+     * @param int $postCount 생성할 게시글 수
+     * @param Board|null $board 기존 게시판 (null이면 새로 생성)
      * @return Board 생성된 게시판
      */
     private function createBoardWithPosts(int $postCount, ?Board $board = null): Board
@@ -468,10 +424,6 @@ class BoardPopularApiTest extends ModuleTestCase
                 'is_active' => true,
             ]);
         }
-
-        // 공개 인기글은 게시판별 열람 권한(posts.read)을 통과한 게시판만 노출한다.
-        // 프로덕션 공개 게시판과 동일하게 guest read 권한을 부여한다.
-        $this->grantGuestRead($board);
 
         for ($i = 0; $i < $postCount; $i++) {
             DB::table('board_posts')->insert([
@@ -488,29 +440,5 @@ class BoardPopularApiTest extends ModuleTestCase
         }
 
         return $board;
-    }
-
-    /**
-     * 게시판에 비회원(guest) 읽기 권한(posts.read)을 부여합니다.
-     *
-     * 공개 인기글 API 는 게시판별 열람 권한을 응답 시점에 적용하므로,
-     * 공개 노출을 기대하는 테스트 게시판은 프로덕션처럼 guest read 권한을 갖춰야 한다.
-     *
-     * @param  Board  $board  대상 게시판
-     */
-    private function grantGuestRead(Board $board): void
-    {
-        $guestRole = Role::where('identifier', 'guest')->first();
-        if (! $guestRole) {
-            return;
-        }
-
-        $perm = Permission::firstOrCreate(
-            ['identifier' => "sirsoft-board.{$board->slug}.posts.read"],
-            ['name' => ['ko' => 'read', 'en' => 'read'], 'type' => 'user']
-        );
-        $guestRole->permissions()->syncWithoutDetaching([$perm->id]);
-
-        PermissionMiddleware::clearGuestRoleCache();
     }
 }

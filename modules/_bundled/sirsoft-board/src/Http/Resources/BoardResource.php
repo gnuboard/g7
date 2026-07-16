@@ -56,7 +56,6 @@ class BoardResource extends BaseApiResource
             'use_comment' => $this->use_comment,
             'use_reply' => $this->use_reply,
             'max_reply_depth' => $this->max_reply_depth,
-            'reply_delete_policy' => $this->reply_delete_policy,
             'use_report' => $this->use_report,
             'comment_order' => $this->comment_order,
             'max_comment_depth' => $this->max_comment_depth,
@@ -144,35 +143,6 @@ class BoardResource extends BaseApiResource
     }
 
     /**
-     * 관리자 게시판 목록용 경량 배열로 변환합니다.
-     *
-     * 사용자 목록(`toListArray`)보다 표시 항목이 조금 더 많습니다 — 관리자 목록은 유형 뱃지·사용
-     * 여부·분류 개수를 함께 보여줍니다. 그렇다고 전체 표현(`toArray`)을 쓸 수는 없습니다.
-     * 전체 표현은 게시판마다 매니저/스텝 역할과 **그 역할에 속한 사용자 전원(uuid·이름·이메일)** 을
-     * 조회해 붙이는데, 목록 화면은 그 값을 쓰지 않으면서 행 수만큼 추가 쿼리와 개인정보를 싣게 됩니다.
-     * 역할 편집은 게시판 상세/설정 화면이 공급합니다.
-     *
-     * @param  Request|null  $request  HTTP 요청
-     * @return array<string, mixed> 관리자 목록용 배열
-     */
-    public function toAdminListArray(?Request $request = null): array
-    {
-        $request = $request ?? request();
-
-        return [
-            ...$this->toListArray($request),
-
-            'type' => $this->getValue('type'),
-            'is_active' => (bool) $this->getValue('is_active'),
-            'categories' => $this->getValue('categories') ?? [],
-
-            // 관리자 목록 화면은 「등록일」 컬럼을 그린다(admin_board_index.json). `toListArray` 에는
-            // 없는 값이라 여기서 명시적으로 싣는다 — 빠지면 예외도 오류도 없이 그 칸만 공란이 된다.
-            'created_at' => $this->formatDateTimeStringForUser($this->created_at),
-        ];
-    }
-
-    /**
      * 게시글 목록 API 응답에 포함할 게시판 정보를 반환합니다 (User용).
      *
      * PostCollection::withBoardInfo()에 전달할 데이터를 생성합니다.
@@ -193,7 +163,6 @@ class BoardResource extends BaseApiResource
                 'use_file_upload' => $this->use_file_upload,
                 'use_comment' => $this->use_comment,
                 'use_reply' => $this->use_reply,
-                'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
                 'secret_mode' => $this->secret_mode,
                 'show_view_count' => $this->show_view_count,
@@ -226,7 +195,6 @@ class BoardResource extends BaseApiResource
                 'use_file_upload' => $this->use_file_upload,
                 'use_comment' => $this->use_comment,
                 'use_reply' => $this->use_reply,
-                'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
                 'secret_mode' => $this->secret_mode,
                 'per_page' => $this->per_page,
@@ -404,7 +372,7 @@ class BoardResource extends BaseApiResource
         /** @var User|null $user */
         $user = Auth::user();
         $slug = $this->getValue('slug');
-        $isAdminRoute = $this->isAdminRequest($request);
+        $isAdminRoute = $this->isAdminRoute($request);
 
         // 컨텍스트에 맞는 permissionMap 구성 (PostResource.resolveAbilities()와 동일 키)
         $permissionMap = $isAdminRoute
@@ -492,5 +460,24 @@ class BoardResource extends BaseApiResource
         }
 
         return $guestRole->permissions()->where('permissions.id', $permission->id)->exists();
+    }
+
+    /**
+     * Admin 라우트 여부를 확인합니다.
+     *
+     * Controller 네임스페이스로 판단합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool Admin 라우트 여부
+     */
+    private function isAdminRoute(Request $request): bool
+    {
+        $controller = $request->route()?->getController();
+
+        if (! $controller) {
+            return false;
+        }
+
+        return str_contains(get_class($controller), '\\Admin\\');
     }
 }

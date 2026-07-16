@@ -3,17 +3,15 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\Concerns\HasUserOverrides;
-use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 
 /**
- * 클레임 사유 모델.
+ * 클래임 사유 모델.
  *
- * 환불/교환/반품 등 클레임 사유 템플릿을 관리합니다.
+ * 환불/교환/반품 등 클래임 사유 템플릿을 관리합니다.
  *
  * @since 7.0.0-beta.2 (HasUserOverrides 적용)
  */
@@ -65,28 +63,28 @@ class ClaimReason extends Model
     /**
      * 생성자 관계
      *
-     * @return BelongsTo 생성자 사용자 관계
+     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
     }
 
     /**
      * 수정자 관계
      *
-     * @return BelongsTo 수정자 사용자 관계
+     * @return BelongsTo
      */
     public function updater(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(\App\Models\User::class, 'updated_by');
     }
 
     /**
      * 현재 로케일의 사유명 반환
      *
-     * @param  string|null  $locale  로케일 (기본값: 현재 앱 로케일)
-     * @return string 현재 로케일의 사유명
+     * @param string|null $locale 로케일 (기본값: 현재 앱 로케일)
+     * @return string
      */
     public function getLocalizedName(?string $locale = null): string
     {
@@ -103,8 +101,8 @@ class ClaimReason extends Model
     /**
      * 활성 사유만 조회 스코프
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
     {
@@ -114,8 +112,8 @@ class ClaimReason extends Model
     /**
      * 정렬 순서대로 조회 스코프
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
     {
@@ -125,8 +123,8 @@ class ClaimReason extends Model
     /**
      * 고객 선택 가능한 사유만 조회 스코프
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUserSelectable($query)
     {
@@ -136,9 +134,9 @@ class ClaimReason extends Model
     /**
      * 사유 유형별 조회 스코프
      *
-     * @param  Builder  $query
-     * @param  string|ClaimReasonTypeEnum  $type  사유 유형
-     * @return Builder
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string|ClaimReasonTypeEnum $type 사유 유형
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string|ClaimReasonTypeEnum $type)
     {
@@ -150,9 +148,9 @@ class ClaimReason extends Model
     /**
      * 귀책 유형별 조회 스코프
      *
-     * @param  Builder  $query
-     * @param  string|ClaimReasonFaultTypeEnum  $faultType  귀책 유형
-     * @return Builder
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string|ClaimReasonFaultTypeEnum $faultType 귀책 유형
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfFaultType($query, string|ClaimReasonFaultTypeEnum $faultType)
     {

@@ -13,7 +13,7 @@ return [
         'deduct_exceeds_balance' => 'The mileage to deduct exceeds the available balance.',
         'below_min_use_amount' => 'The minimum usable amount is :amount points.',
         'invalid_use_unit' => 'Mileage can only be used in units of :unit points.',
-        'exceeds_max_use' => 'Exceeds the maximum usable limit. (up to :amount points)',
+        'exceeds_max_use' => 'Exceeds the maximum usable limit.',
         'base_currency_rule_missing' => 'Mileage cannot be used because the mileage usage unit for the base currency is not configured.',
     ],
 
@@ -32,10 +32,8 @@ return [
     'coupon_has_issues' => 'Cannot delete coupon because it has :count issued coupons.',
     'coupon_issue_not_found' => 'Coupon issue record not found.',
     'coupon_issue_not_cancellable' => 'Only unused issued coupons can be cancelled.',
-    'coupon_already_used' => 'This coupon has already been used. Please review your coupons and try again.',
     'label_not_found' => 'Label not found.',
     'product_notice_template_not_found' => 'Product notice template not found.',
-    'product_common_info_not_found' => 'Product common information not found.',
     'label_has_products' => 'Cannot delete label because it has :count products. Please change the label of products first.',
     'operation_failed' => 'An error occurred while processing the operation.',
     'product_image_limit_exceeded' => 'You can upload up to :max images.',
@@ -56,17 +54,13 @@ return [
     'order_not_found' => 'Order not found.',
     'unauthorized' => 'You do not have permission to access this order.',
     'order_not_cancellable' => 'This order cannot be cancelled in its current status.',
-    'order_cancel_not_allowed' => 'Only orders awaiting payment can be cancelled.',
     'order_not_cancellable_detail' => 'Cannot cancel order in current status (:current_status). (Cancellable: :allowed_statuses)',
     'order_already_cancelled' => 'This order has already been cancelled.',
     'order_already_paid' => 'This order has already been paid.',
     'order_option_not_found' => 'Order option not found.',
-    'order_option_not_in_order' => 'This order option does not belong to the specified order.',
-    'product_image_not_in_product' => 'This image does not belong to the specified product.',
     'order_option_already_cancelled' => 'This order option has already been cancelled.',
     'order_option_already_confirmed' => 'This order option has already been confirmed.',
     'order_option_cannot_confirm' => 'Cannot confirm purchase in current status.',
-    'order_option_not_confirmable' => 'This order option cannot be confirmed in its current status.',
     'cancel_quantity_exceeds' => 'Cancel quantity exceeds current quantity (:max).',
 
     // Order payment related
@@ -87,7 +81,6 @@ return [
     'order_cancel_failed' => 'Failed to cancel the order.',
     'order_estimate_refund_failed' => 'Failed to calculate the estimated refund amount.',
     'order_create_failed' => 'Failed to create the order.',
-    'order_shipping_address_update_failed' => 'Failed to update the shipping address.',
 
     // Currency related
     'unknown_currency' => 'Unsupported currency: :currency',
@@ -101,8 +94,4 @@ return [
     // Shipping Type related
     'shipping_type_not_found' => 'Shipping type not found.',
     'shipping_type_in_use' => 'Cannot delete shipping type (:name) in use by orders. (Used :count times)',
-
-    // Shipping Carrier related
-    'shipping_carrier_not_found' => 'Shipping carrier not found.',
-    'shipping_carrier_in_use' => 'Cannot delete a shipping carrier in use by orders. (Used :count times)',
 ];

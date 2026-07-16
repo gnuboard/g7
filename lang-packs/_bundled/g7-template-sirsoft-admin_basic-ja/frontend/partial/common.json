@@ -49,8 +49,6 @@
   "logout": "ログアウト",
   "expand_sidebar": "サイドバーを展開",
   "collapse_sidebar": "サイドバーを折りたたむ",
-  "expand": "展開",
-  "collapse": "折りたたむ",
   "module": "モジュール",
   "plugin": "プラグイン",
   "status_active": "有効化",
@@ -78,8 +76,5 @@
   "scope_type_role_desc": "同じロールのユーザーリソースのみ",
   "multilingual": {
     "add_language": "言語を追加"
-  },
-  "refresh": "更新",
-  "activate": "有効化",
-  "skip": "スキップ"
+  }
 }

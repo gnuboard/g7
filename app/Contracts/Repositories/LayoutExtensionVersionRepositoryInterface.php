@@ -14,10 +14,9 @@ interface LayoutExtensionVersionRepositoryInterface
      * @param  int  $extensionId  레이아웃 확장 ID
      * @param  array  $oldContent  이전 콘텐츠
      * @param  array|null  $newContent  새 콘텐츠 (null이면 현재 확장 content 사용)
-     * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
      * @return TemplateLayoutExtensionVersion 생성된 버전 모델
      */
-    public function saveVersion(int $extensionId, array $oldContent, ?array $newContent = null, ?int $createdBy = null): TemplateLayoutExtensionVersion;
+    public function saveVersion(int $extensionId, array $oldContent, ?array $newContent = null): TemplateLayoutExtensionVersion;
 
     /**
      * 특정 확장의 모든 버전 조회 (최신순)
@@ -25,20 +24,7 @@ interface LayoutExtensionVersionRepositoryInterface
      * @param  int  $extensionId  레이아웃 확장 ID
      * @return Collection 버전 컬렉션
      */
-    public function getVersions(int $extensionId, int $limit = 100): Collection;
-
-    /**
-     * 확장의 특정 버전 번호 조회 (본문 포함)
-     *
-     * 목록(getVersions)은 경량 조회라 `content` 를 담지 않고 건수 상한이 있다. 단건은 그
-     * 대체 경로이므로 반드시 전용 조회를 쓴다 — 목록 조회를 재사용하면 본문이 사라지고
-     * 상한 밖의 오래된 버전을 찾지 못한다.
-     *
-     * @param  int  $extensionId  레이아웃 확장 ID
-     * @param  int  $version  버전 번호
-     * @return TemplateLayoutExtensionVersion|null 찾은 버전 모델 또는 null
-     */
-    public function findVersionByNumber(int $extensionId, int $version): ?TemplateLayoutExtensionVersion;
+    public function getVersions(int $extensionId): Collection;
 
     /**
      * 확장 ID 목록의 현재(최신) 버전 번호 맵 조회

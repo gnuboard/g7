@@ -12,7 +12,6 @@ use App\Exceptions\CircularReferenceException;
 use App\Exceptions\ConcurrentModificationException;
 use App\Exceptions\LayoutIncludeException;
 use App\Extension\HookManager;
-use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Models\TemplateLayout;
 use App\Models\User;
@@ -22,8 +21,6 @@ use Illuminate\Support\Facades\Log;
 
 class LayoutService
 {
-    use ClearsTemplateCaches;
-
     /**
      * LayoutRepository, LayoutVersionRepository, TemplateRepository, LayoutResolverService 및 LayoutExtensionService 주입
      */
@@ -1135,9 +1132,7 @@ class LayoutService
         }
 
         $identifier = $template->identifier;
-        // 원시 키 읽기는 `cache:clear` 직후 0 을 돌려주어 `.v0` 키를 지우고 실제 키는 남긴다 —
-        // 트레이트 게터는 부재 시 재생성하므로 실제 서빙 키와 같은 버전을 본다.
-        $cacheVersion = self::getExtensionCacheVersion();
+        $cacheVersion = (int) $this->cache->get('ext.cache_version', 0);
 
         // PublicLayoutController::serve() 가 일반 응답과 편집 모드(`with_source_meta=1`) 응답을
         // 별도 캐시 키로 저장한다 (`.meta` 접미사). 본 PR Phase 3 S5a-1 에서 편집 모드 응답 캐시
@@ -1356,28 +1351,6 @@ class LayoutService
     }
 
     /**
-     * 목록 표시용 경량 레이아웃 행을 조회합니다.
-     *
-     * 본문을 반환에 담지 않으므로 파일 목록 화면이 편집 대상이 아닌 레이아웃의 본문까지
-     * 내려받는 일이 없다. 편집 대상 본문은 {@see getLayoutByName()} 이 제공한다.
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @return \Illuminate\Support\Collection<int, array> 목록 행 배열 컬렉션
-     */
-    public function getLayoutListByTemplateId(int $templateId)
-    {
-        // Before 훅 - 레이아웃 목록 조회 전
-        HookManager::doAction('core.layout.before_index', $templateId);
-
-        $rows = $this->layoutRepository->getListByTemplateId($templateId);
-
-        // After 훅 - 레이아웃 목록 조회 후
-        HookManager::doAction('core.layout.after_index', $rows, $templateId);
-
-        return $rows;
-    }
-
-    /**
      * 특정 레이아웃 조회 (이름으로)
      *
      * @param  int  $templateId  대상 템플릿 ID
@@ -1475,9 +1448,7 @@ class LayoutService
         // 프론트엔드 브라우저 캐시 무효화를 위해 ext.cache_version 증가
         // PublicLayoutController가 ?v={version} 기반 HTTP 캐시를 사용하므로
         // 버전 변경 시 브라우저가 새 URL로 인식하여 캐시를 우회합니다.
-        // 쓰기는 트레이트 단일 지점(고정 CoreCacheDriver + 메모이즈 스토어) 경유 —
-        // 주입 CacheInterface 직접 put 은 재바인딩/스토어 상이 시 read 와 어긋난다.
-        $this->incrementExtensionCacheVersion();
+        $this->cache->put('ext.cache_version', time());
 
         // After 훅 - 레이아웃 업데이트 후
         HookManager::doAction('core.layout.after_update', $layout, $templateId, $name, $data);
@@ -1486,17 +1457,13 @@ class LayoutService
     }
 
     /**
-     * 특정 레이아웃의 최근 버전 목록 조회 (최신순)
-     *
-     * 버전 행은 저장할 때마다 쌓이고 정리되지 않으므로 조회 건수에 상한을 둡니다.
-     * 더 오래된 이력이 필요하면 호출자가 `$limit` 을 넓힙니다.
+     * 특정 레이아웃의 모든 버전 조회
      *
      * @param  int  $templateId  대상 템플릿 ID
      * @param  string  $name  레이아웃 이름
-     * @param  int  $limit  조회할 최대 버전 수
      * @return Collection 버전 컬렉션
      */
-    public function getLayoutVersions(int $templateId, string $name, int $limit = 100)
+    public function getLayoutVersions(int $templateId, string $name)
     {
         // Before 훅 - 버전 목록 조회 전
         HookManager::doAction('core.layout.before_versions_index', $templateId, $name);
@@ -1511,7 +1478,7 @@ class LayoutService
         }
 
         // 버전 목록 조회
-        $versions = $this->layoutRepository->getVersionsByLayoutId($layout->id, $limit);
+        $versions = $this->layoutRepository->getVersionsByLayoutId($layout->id);
 
         // After 훅 - 버전 목록 조회 후
         HookManager::doAction('core.layout.after_versions_index', $versions, $templateId, $name);
@@ -1586,8 +1553,8 @@ class LayoutService
         // 캐시 무효화
         $this->clearDependentLayoutsCache($templateId, $name);
 
-        // 프론트엔드 브라우저 캐시 무효화 (트레이트 단일 지점 경유)
-        $this->incrementExtensionCacheVersion();
+        // 프론트엔드 브라우저 캐시 무효화
+        $this->cache->put('ext.cache_version', time());
 
         // After 훅 - 버전 복원 후
         HookManager::doAction('core.layout.after_version_restore', $newVersion, $templateId, $name, $versionId);

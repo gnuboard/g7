@@ -4,8 +4,6 @@ namespace App\Http\Requests\Public\Template;
 
 use App\Rules\AllowedTemplateFileType;
 use App\Rules\SafeTemplatePath;
-use App\Support\CustomAssets;
-use App\Support\Routing\DualExtensionRoute;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ServeTemplateAssetRequest extends FormRequest
@@ -14,8 +12,6 @@ class ServeTemplateAssetRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
-     *
-     * @return bool 항상 true (권한은 미들웨어 책임)
      */
     public function authorize(): bool
     {
@@ -24,28 +20,12 @@ class ServeTemplateAssetRequest extends FormRequest
 
     /**
      * 요청에 적용할 검증 규칙
-     *
-     * @return array<string, mixed> 검증 규칙 배열
      */
-    // audit:allow core-formrequest-hook-filter reason: 자산 서빙 경로 검증은 파일시스템
-    // 화이트리스트(SafeTemplatePath + AllowedTemplateFileType)가 유일한 방어선이다.
-    // 확장이 필터로 규칙을 대체할 수 있으면 경로 탈출·임의 파일 읽기가 열린다.
-    // 확장 가능한 "동적 필드" 가 없는 요청이라 룰의 취지(필드 확장)도 해당하지 않는다.
     public function rules(): array
     {
-        // 템플릿 식별자로부터 기준 경로 구성.
-        //
-        // 컨테인먼트 기준은 **실제로 읽는 디렉토리**여야 한다. 템플릿 자산은 `dist/` 이하가
-        // 기본이지만 운영자 소유 디렉토리(`custom/`)만은 그 밖에 있고, 서빙측
-        // `TemplateService::getAssetFilePath()` 가 그 분기를 갖는다. 기준을 `dist` 로
-        // 고정하면 `custom/**` 은 realpath 가 실패해 문자열 접두 비교로만 통과하므로,
-        // 검증한 경로와 읽는 경로가 서로 다른 상태가 된다. 두 곳의 분기를 같은 조건으로
-        // 맞춰 둔다 — 한쪽만 바뀌면 custom 서빙이 조용히 깨지거나 검증이 헐거워진다.
+        // 템플릿 식별자로부터 기준 경로 구성
         $identifier = $this->route('identifier');
-        $requestedPath = (string) $this->input('path');
-        $basePath = str_starts_with($requestedPath, CustomAssets::DIRECTORY.'/')
-            ? base_path("templates/{$identifier}")
-            : base_path("templates/{$identifier}/dist");
+        $basePath = base_path("templates/{$identifier}/dist");
 
         return [
             'identifier' => ['required', 'string'],
@@ -53,7 +33,7 @@ class ServeTemplateAssetRequest extends FormRequest
                 'required',
                 'string',
                 new SafeTemplatePath($basePath),
-                new AllowedTemplateFileType,
+                new AllowedTemplateFileType(),
             ],
         ];
     }
@@ -63,13 +43,10 @@ class ServeTemplateAssetRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // 라우트 파라미터를 검증 데이터에 병합.
-        // 확장자 없는 모드에서는 파일 경로가 경로 세그먼트가 아니라 `?file=` 쿼리로 온다
-        // (nginx 정적 최적화 블록이 URL 경로의 확장자만 보고 가로채는 것을 회피).
-        // 어느 형태로 오든 컨트롤러는 동일하게 `path` 만 본다.
+        // 라우트 파라미터를 검증 데이터에 병합
         $this->merge([
             'identifier' => $this->route('identifier'),
-            'path' => $this->route('path') ?? $this->query(DualExtensionRoute::FILE_QUERY_PARAM),
+            'path' => $this->route('path'),
         ]);
     }
 

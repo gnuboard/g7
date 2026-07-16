@@ -259,52 +259,25 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Div",
+                  "name": "Input",
                   "props": {
-                    "className": "flex items-center gap-2"
+                    "type": "number",
+                    "className": "input",
+                    "value": "{{_computed.activeCountrySetting?.ranges?.unit_value ?? 1}}",
+                    "min": 0.01,
+                    "step": 0.01,
+                    "disabled": "{{_computed.isReadOnly}}"
                   },
-                  "children": [
+                  "actions": [
                     {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "number",
-                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ? 'input input-error' : 'input'}}",
-                        "value": "{{_computed.activeCountrySetting?.ranges?.unit_value ?? ''}}",
-                        "min": 0.01,
-                        "step": 0.01,
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "sirsoft-ecommerce.updateUnitValue",
-                          "debounce": 300,
-                          "params": {
-                            "value": "{{$event.target.value}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{!!_computed.perUnitLabel}}",
-                      "props": {
-                        "className": "text-tertiary whitespace-nowrap"
-                      },
-                      "text": "{{_computed.perUnitLabel ?? ''}}"
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.updateUnitValue",
+                      "debounce": 300,
+                      "params": {
+                        "value": "{{$event.target.value}}"
+                      }
                     }
                   ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value']}}",
-                  "props": {
-                    "className": "form-error-xs"
-                  },
-                  "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ?? [])[0] ?? ''}}"
                 },
                 {
                   "type": "basic",
@@ -401,12 +374,12 @@
                             {
                               "type": "basic",
                               "name": "Th",
-                              "text": "{{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_min') + (_computed.rangeUnitLabel ? ' (' + _computed.rangeUnitLabel + ')' : '')}}"
+                              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min"
                             },
                             {
                               "type": "basic",
                               "name": "Th",
-                              "text": "{{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_max') + (_computed.rangeUnitLabel ? ' (' + _computed.rangeUnitLabel + ')' : '')}}"
+                              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_max"
                             },
                             {
                               "type": "basic",
@@ -429,7 +402,7 @@
                       "name": "Tbody",
                       "children": [
                         {
-                          "id": "range_tier_row_{{tierIdx}}",
+                          "id": "range_tier_row",
                           "type": "basic",
                           "name": "Tr",
                           "iteration": {
@@ -447,13 +420,25 @@
                                   "name": "Input",
                                   "props": {
                                     "type": "number",
-                                    "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error bg-gray-100 dark:bg-gray-700' : 'input bg-gray-100 dark:bg-gray-700'}}",
-                                    "value": "{{tier.min ?? ''}}",
-                                    "readOnly": true,
-                                    "tabIndex": -1,
-                                    "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min_auto",
+                                    "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error' : 'input'}}",
+                                    "value": "{{tier.min ?? 0}}",
+                                    "min": 0,
+                                    "placeholder": "0",
                                     "disabled": "{{_computed.isReadOnly}}"
-                                  }
+                                  },
+                                  "actions": [
+                                    {
+                                      "type": "change",
+                                      "handler": "sirsoft-ecommerce.updateRangeTierField",
+                                      "debounce": 300,
+                                      "params": {
+                                        "countryIndex": "{{_local.activeCountryTab ?? 0}}",
+                                        "tierIndex": "{{tierIdx}}",
+                                        "field": "min",
+                                        "value": "{{parseFloat($event.target.value) || 0}}"
+                                      }
+                                    }
+                                  ]
                                 },
                                 {
                                   "type": "basic",
@@ -490,7 +475,7 @@
                                         "countryIndex": "{{_local.activeCountryTab ?? 0}}",
                                         "tierIndex": "{{tierIdx}}",
                                         "field": "max",
-                                        "value": "{{$event.target.value}}"
+                                        "value": "{{$event.target.value ? parseFloat($event.target.value) : null}}"
                                       }
                                     }
                                   ]
@@ -516,7 +501,7 @@
                                   "props": {
                                     "type": "number",
                                     "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'input input-error' : 'input'}}",
-                                    "value": "{{tier.fee ?? ''}}",
+                                    "value": "{{tier.fee ?? 0}}",
                                     "min": 0,
                                     "step": 100,
                                     "disabled": "{{_computed.isReadOnly}}"
@@ -530,7 +515,7 @@
                                         "countryIndex": "{{_local.activeCountryTab ?? 0}}",
                                         "tierIndex": "{{tierIdx}}",
                                         "field": "fee",
-                                        "value": "{{$event.target.value}}"
+                                        "value": "{{parseFloat($event.target.value) || 0}}"
                                       }
                                     }
                                   ]
@@ -601,15 +586,6 @@
                   "type": "basic",
                   "name": "Span",
                   "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.no_ranges"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{!!_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max}}",
-                  "props": {
-                    "className": "form-error-xs block"
-                  },
-                  "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max ?? ''}}"
                 }
               ]
             }
@@ -1173,7 +1149,7 @@
                       "props": {
                         "className": "text-green-600 dark:text-green-400 font-semibold"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee_formatted ?? _global.apiTestResult?.extracted_fee ?? '-'}}"
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee ?? '-'}}"
                     },
                     {
                       "type": "basic",

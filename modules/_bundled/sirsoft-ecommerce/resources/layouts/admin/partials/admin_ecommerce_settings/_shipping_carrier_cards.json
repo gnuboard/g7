@@ -8,7 +8,7 @@
   "name": "Div",
   "children": [
     {
-      "id": "carrier_card_{{$cIdx}}",
+      "id": "carrier_card",
       "type": "basic",
       "name": "Div",
       "iteration": {
@@ -69,7 +69,7 @@
               },
               "children": [
                 {
-                  "type": "composite",
+                  "type": "basic",
                   "name": "Toggle",
                   "props": {
                     "checked": "{{$carrier.is_active ?? false}}",

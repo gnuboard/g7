@@ -3,32 +3,25 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Contracts\UniqueIdServiceInterface;
 use App\Enums\MenuPermissionType;
 use App\Enums\PermissionType;
 use App\Enums\ScopeType;
 use App\Enums\UserStatus;
-use Database\Factories\UserFactory;
-use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Database\Schema\Builder as SchemaBuilder;
+use App\Contracts\UniqueIdServiceInterface;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements HasLocalePreference
 {
-    /** @use HasFactory<UserFactory> */
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
-
-    /**
-     * 닉네임 컬럼 최대 길이 (마이그레이션에서 명시한 값)
-     */
-    public const NICKNAME_MAX_LENGTH = 50;
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
@@ -38,7 +31,7 @@ class User extends Authenticatable implements HasLocalePreference
         'language' => ['label_key' => 'activity_log.fields.language', 'type' => 'text'],
         'timezone' => ['label_key' => 'activity_log.fields.timezone', 'type' => 'text'],
         'country' => ['label_key' => 'activity_log.fields.country', 'type' => 'text'],
-        'status' => ['label_key' => 'activity_log.fields.status', 'type' => 'enum', 'enum' => UserStatus::class],
+        'status' => ['label_key' => 'activity_log.fields.status', 'type' => 'enum', 'enum' => \App\Enums\UserStatus::class],
         'is_super' => ['label_key' => 'activity_log.fields.is_super', 'type' => 'boolean'],
         'homepage' => ['label_key' => 'activity_log.fields.homepage', 'type' => 'text'],
         'mobile' => ['label_key' => 'activity_log.fields.mobile', 'type' => 'text'],
@@ -56,22 +49,6 @@ class User extends Authenticatable implements HasLocalePreference
      * @var array<string, string|null|false>
      */
     protected array $effectiveScopeCache = [];
-
-    /**
-     * 보유 권한 부여 내역 캐시 (인스턴스 레벨)
-     *
-     * 한 요청에서 권한 판정은 수십~수백 번 일어난다 — 레이아웃 노드마다, 목록 행마다,
-     * 리소스 필드마다 부른다. 판정마다 DB 에 물으면 노드/행 수에 비례해 쿼리가 늘어난다.
-     * 첫 판정에서 `roles.permissions` 를 한 번 적재해 두고 이후로는 배열만 본다.
-     *
-     * 캐시 수명은 **모델 인스턴스**, 즉 요청 스코프다. 크로스 요청 캐시를 두지 않으므로
-     * 권한을 바꾸면 다음 요청부터 즉시 반영된다.
-     *
-     * 구조: 권한 식별자 ⇒ [{type, scope_type}, ...] (같은 권한을 여러 역할이 주면 여러 건)
-     *
-     * @var array<string, array<int, array{type: string|null, scope_type: string|null}>>|null
-     */
-    protected ?array $permissionGrantsCache = null;
 
     /**
      * 테이블명
@@ -131,7 +108,6 @@ class User extends Authenticatable implements HasLocalePreference
         'mobile_verified_at',
         'failed_login_attempts',
         'locked_until',
-        'locked_permanently',
         'last_failed_login_at',
     ];
 
@@ -164,7 +140,6 @@ class User extends Authenticatable implements HasLocalePreference
             'is_super' => 'boolean',
             'failed_login_attempts' => 'integer',
             'locked_until' => 'datetime',
-            'locked_permanently' => 'boolean',
             'last_failed_login_at' => 'datetime',
         ];
     }
@@ -221,7 +196,7 @@ class User extends Authenticatable implements HasLocalePreference
     /**
      * 사용자가 생성한 모듈들과의 관계를 정의합니다.
      *
-     * @return HasMany
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function modules()
     {
@@ -231,7 +206,7 @@ class User extends Authenticatable implements HasLocalePreference
     /**
      * 사용자가 생성한 플러그인들과의 관계를 정의합니다.
      *
-     * @return HasMany
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function plugins()
     {
@@ -266,79 +241,14 @@ class User extends Authenticatable implements HasLocalePreference
      */
     public function hasPermission(string $permission, ?PermissionType $type = null): bool
     {
-        $grants = $this->permissionGrants()[$permission] ?? null;
-
-        if ($grants === null) {
-            return false;
-        }
-
-        if ($type === null) {
-            return true;
-        }
-
-        foreach ($grants as $grant) {
-            if ($grant['type'] === $type->value) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * 보유 권한 부여 내역을 반환합니다 (인스턴스 캐시).
-     *
-     * 역할 → 권한을 한 번만 적재하고, 이후 판정은 전부 이 배열에서 이루어집니다.
-     *
-     * @return array<string, array<int, array{type: string|null, scope_type: string|null}>> 권한 식별자 ⇒ 부여 내역
-     */
-    protected function permissionGrants(): array
-    {
-        if ($this->permissionGrantsCache !== null) {
-            return $this->permissionGrantsCache;
-        }
-
-        $grants = [];
-
-        foreach ($this->roles()->with('permissions')->get() as $role) {
-            foreach ($role->permissions as $permission) {
-                $grants[$permission->identifier][] = [
-                    'type' => $this->enumValue($permission->type),
-                    'scope_type' => $this->enumValue($permission->pivot->scope_type ?? null),
-                ];
-            }
-        }
-
-        return $this->permissionGrantsCache = $grants;
-    }
-
-    /**
-     * Enum 또는 원시 값을 문자열로 정규화합니다.
-     *
-     * 캐스팅 설정 유무에 따라 Enum 인스턴스와 문자열이 섞여 들어오므로 한 형태로 맞춥니다.
-     *
-     * @param  mixed  $value  Enum 인스턴스 · 문자열 · null
-     * @return string|null 정규화된 문자열 (부재 시 null)
-     */
-    private function enumValue(mixed $value): ?string
-    {
-        if ($value instanceof \BackedEnum) {
-            return (string) $value->value;
-        }
-
-        return $value === null ? null : (string) $value;
-    }
-
-    /**
-     * 권한 판정 캐시를 비웁니다.
-     *
-     * 같은 인스턴스에서 역할을 바꾼 직후 다시 판정해야 하는 경우에 호출합니다.
-     * (역할 동기화 서비스가 호출하며, 일반 조회 경로에서는 필요하지 않습니다)
-     */
-    public function flushPermissionCaches(): void
-    {
-        $this->permissionGrantsCache = null;
-        $this->effectiveScopeCache = [];
+        return $this->roles()
+            ->whereHas('permissions', function ($query) use ($permission, $type) {
+                $query->where('identifier', $permission);
+                if ($type !== null) {
+                    $query->where('type', $type);
+                }
+            })
+            ->exists();
     }
 
     /**
@@ -350,17 +260,27 @@ class User extends Authenticatable implements HasLocalePreference
      */
     public function hasPermissions(array $permissions, bool $requireAll = true, ?PermissionType $type = null): bool
     {
-        // 같은 권한 집합을 hasPermission 과 공유한다 — 권한 개수만큼 쿼리가 늘지 않는다.
-        // 비교 기준(고유 매칭 수 vs 인자 개수)은 종전과 동일하게 유지한다.
-        $matched = 0;
+        $userPermissions = $this->roles()
+            ->whereHas('permissions', function ($query) use ($permissions, $type) {
+                $query->whereIn('identifier', $permissions);
+                if ($type !== null) {
+                    $query->where('type', $type);
+                }
+            })
+            ->with(['permissions' => function ($query) use ($permissions, $type) {
+                $query->whereIn('identifier', $permissions);
+                if ($type !== null) {
+                    $query->where('type', $type);
+                }
+            }])
+            ->get()
+            ->pluck('permissions')
+            ->flatten()
+            ->pluck('identifier')
+            ->unique()
+            ->count();
 
-        foreach (array_unique($permissions) as $permission) {
-            if ($this->hasPermission($permission, $type)) {
-                $matched++;
-            }
-        }
-
-        return $requireAll ? $matched === count($permissions) : $matched > 0;
+        return $requireAll ? $userPermissions === count($permissions) : $userPermissions > 0;
     }
 
     /**
@@ -380,21 +300,33 @@ class User extends Authenticatable implements HasLocalePreference
             return $this->effectiveScopeCache[$identifier];
         }
 
-        // 같은 권한 집합에서 scope_type 만 뽑는다 — 권한마다 쿼리를 다시 내지 않는다.
-        $values = array_column($this->permissionGrants()[$identifier] ?? [], 'scope_type');
+        $scopeTypes = $this->roles()
+            ->whereHas('permissions', function ($query) use ($identifier) {
+                $query->where('identifier', $identifier);
+            })
+            ->with(['permissions' => function ($query) use ($identifier) {
+                $query->where('identifier', $identifier);
+            }])
+            ->get()
+            ->pluck('permissions')
+            ->flatten()
+            ->pluck('pivot.scope_type');
 
         // 권한 미보유 시 null 반환 (기본값: 전체 접근)
-        if ($values === []) {
+        if ($scopeTypes->isEmpty()) {
             return $this->effectiveScopeCache[$identifier] = null;
         }
 
         // union 정책: 하나라도 null → 전체 접근
-        if (in_array(null, $values, true)) {
+        if ($scopeTypes->contains(null)) {
             return $this->effectiveScopeCache[$identifier] = null;
         }
 
+        // ScopeType Enum 값을 문자열로 변환하여 비교
+        $values = $scopeTypes->map(fn ($scope) => $scope instanceof ScopeType ? $scope->value : $scope);
+
         // 하나라도 'role' → role 적용
-        if (in_array(ScopeType::Role->value, $values, true)) {
+        if ($values->contains('role')) {
             return $this->effectiveScopeCache[$identifier] = 'role';
         }
 
@@ -434,16 +366,11 @@ class User extends Authenticatable implements HasLocalePreference
      */
     public function isAdmin(): bool
     {
-        // 같은 권한 집합을 재사용한다 — 관리자 판정은 미들웨어·리소스·레이아웃에서 반복 호출된다.
-        foreach ($this->permissionGrants() as $grants) {
-            foreach ($grants as $grant) {
-                if ($grant['type'] === PermissionType::Admin->value) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return $this->roles()
+            ->whereHas('permissions', function ($query) {
+                $query->where('type', PermissionType::Admin);
+            })
+            ->exists();
     }
 
     /**
@@ -461,8 +388,8 @@ class User extends Authenticatable implements HasLocalePreference
     /**
      * 슈퍼 관리자만 조회합니다.
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSuperAdmins($query)
     {
@@ -518,7 +445,7 @@ class User extends Authenticatable implements HasLocalePreference
     /**
      * 사용자가 생성한 메뉴들과의 관계를 정의합니다.
      *
-     * @return HasMany
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function menus()
     {
@@ -608,42 +535,20 @@ class User extends Authenticatable implements HasLocalePreference
      */
     public function withdraw(): bool
     {
-        // 멱등 가드 — 이미 탈퇴한 계정에 다시 호출해도 접미사가 겹쳐 붙지 않는다.
-        if ($this->isWithdrawn()) {
-            return true;
-        }
-
         $now = now();
         $dateSuffix = $now->format('Ymd'); // 예: 20260127
 
-        // name/email 은 마이그레이션에서 길이를 지정하지 않은 문자열 컬럼이므로
-        // 스키마 기본 길이(AppServiceProvider 의 defaultStringLength)를 그대로 따른다.
-        // 여기에 리터럴을 박으면 기본 길이를 바꾸는 순간 조용히 어긋난다.
-        $defaultLength = SchemaBuilder::$defaultStringLength ?? 255;
-
         // 이름에 suffix 추가 (있는 경우만)
         if ($this->name) {
-            $this->name = $this->appendWithdrawnSuffix($this->name, '_탈퇴_'.$dateSuffix, $defaultLength);
+            $this->name = $this->name.'_탈퇴_'.$dateSuffix;
         }
 
         // 이메일에 suffix 추가 (필수)
-        //
-        // 접미사에 사용자 ID 를 포함해 구조적으로 유일하게 만든다. 날짜만 붙이면
-        // 같은 이메일로 재가입한 회원이 같은 날 다시 탈퇴할 때 email unique 에
-        // 걸려 탈퇴가 실패한다(공개이슈 #112).
-        $this->email = $this->appendWithdrawnSuffix(
-            $this->email,
-            '_deleted_'.$dateSuffix.'_'.$this->id,
-            $defaultLength,
-        );
+        $this->email = $this->email.'_deleted_'.$dateSuffix;
 
         // 닉네임에 suffix 추가 (있는 경우만, 날짜 없이)
         if ($this->nickname) {
-            // nickname 은 마이그레이션에서 길이를 명시(50)한 컬럼이다.
-            // 이 접미사는 유일성 토큰(id)이 없다 — 현재 nickname/name 에 unique 인덱스가
-            // 없어 무해하지만, 향후 unique 인덱스를 추가하면 email 과 동일한 충돌
-            // (같은 값 재가입 후 재탈퇴 실패)이 재발하므로 그때 id 부착으로 전환할 것.
-            $this->nickname = $this->appendWithdrawnSuffix($this->nickname, '_탈퇴', self::NICKNAME_MAX_LENGTH);
+            $this->nickname = $this->nickname.'_탈퇴';
         }
 
         // 상태 변경
@@ -651,27 +556,5 @@ class User extends Authenticatable implements HasLocalePreference
         $this->withdrawn_at = $now;
 
         return $this->save();
-    }
-
-    /**
-     * 탈퇴 접미사를 컬럼 길이 안에서 부착합니다.
-     *
-     * 원값이 길면 접미사 길이만큼 앞을 잘라 붙입니다 — 자르지 않으면 접미사가 컬럼
-     * 길이를 넘겨 strict mode 저장 예외가 나고, 탈퇴가 중간에서 실패합니다.
-     *
-     * @param  string  $value  원본 값
-     * @param  string  $suffix  부착할 접미사
-     * @param  int  $maxLength  컬럼 최대 길이
-     * @return string 접미사가 부착된 값
-     */
-    protected function appendWithdrawnSuffix(string $value, string $suffix, int $maxLength): string
-    {
-        $available = $maxLength - mb_strlen($suffix);
-
-        if ($available < 0) {
-            $available = 0;
-        }
-
-        return mb_substr($value, 0, $available).$suffix;
     }
 }

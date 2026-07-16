@@ -43,7 +43,8 @@
           "id": "date_display_format_field",
           "type": "basic",
           "name": "Div",
-          "props": {},
+          "props": {
+          },
           "children": [
             {
               "type": "basic",
@@ -81,8 +82,14 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "hasChanges": true,
-                        "form.display.date_display_format": "standard"
+                        "form": {
+                          "...": "{{_local.form}}",
+                          "display": {
+                            "...": "{{_local.form?.display}}",
+                            "date_display_format": "standard"
+                          }
+                        },
+                        "hasChanges": true
                       }
                     }
                   ],
@@ -94,21 +101,10 @@
                         "type": "radio",
                         "name": "display.date_display_format",
                         "value": "standard",
-                        "className": "radio mt-0.5",
+                        "className": "radio mt-0.5 pointer-events-none",
                         "disabled": "{{_computed.isReadOnly}}",
                         "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "hasChanges": true,
-                            "form.display.date_display_format": "standard"
-                          }
-                        }
-                      ]
+                      }
                     },
                     {
                       "type": "basic",
@@ -158,8 +154,14 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "hasChanges": true,
-                        "form.display.date_display_format": "relative"
+                        "form": {
+                          "...": "{{_local.form}}",
+                          "display": {
+                            "...": "{{_local.form?.display}}",
+                            "date_display_format": "relative"
+                          }
+                        },
+                        "hasChanges": true
                       }
                     }
                   ],
@@ -171,21 +173,10 @@
                         "type": "radio",
                         "name": "display.date_display_format",
                         "value": "relative",
-                        "className": "radio mt-0.5",
+                        "className": "radio mt-0.5 pointer-events-none",
                         "disabled": "{{_computed.isReadOnly}}",
                         "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "hasChanges": true,
-                            "form.display.date_display_format": "relative"
-                          }
-                        }
-                      ]
+                      }
                     },
                     {
                       "type": "basic",
@@ -221,128 +212,6 @@
                       ]
                     }
                   ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "attachment_cleanup_section",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card mt-6"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H2",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.settings.sections.attachment_cleanup"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-board.admin.settings.sections.attachment_cleanup_description"
-        },
-        {
-          "id": "attachment_purge_enabled_field",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-tertiary"
-              },
-              "text": "$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled_hint"
-            },
-            {
-              "type": "composite",
-              "name": "Toggle",
-              "props": {
-                "name": "attachment_settings.purge_enabled",
-                "disabled": "{{_computed.isReadOnly}}",
-                "checked": "{{!!_local.form?.attachment_settings?.purge_enabled}}"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "hasChanges": true,
-                    "form.attachment_settings.purge_enabled": "{{$event.target.checked}}"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "attachment_purge_retention_days_field",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-board.admin.settings.fields.attachment_purge_retention_days"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-tertiary"
-              },
-              "text": "$t:sirsoft-board.admin.settings.fields.attachment_purge_retention_days_hint"
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "number",
-                "name": "attachment_settings.purge_retention_days",
-                "min": "{{_local?.form?._meta?.limits?.attachment_purge_retention_days_min ?? 1}}",
-                "max": "{{_local?.form?._meta?.limits?.attachment_purge_retention_days_max ?? 3650}}",
-                "className": "input w-40",
-                "disabled": "{{_computed.isReadOnly}}",
-                "value": "{{_local.form?.attachment_settings?.purge_retention_days ?? 30}}"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "hasChanges": true,
-                    "form.attachment_settings.purge_retention_days": "{{$event.target.value}}"
-                  }
                 }
               ]
             }

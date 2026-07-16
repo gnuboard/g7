@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use App\Support\ExtensionStoragePath;
 
 class RegisterPgProviderListener implements HookListenerInterface
 {
@@ -52,10 +51,7 @@ class RegisterPgProviderListener implements HookListenerInterface
             'name_key' => 'sirsoft-pay_nicepayments::provider.name',
             'name' => localized_label(nameKey: 'sirsoft-pay_nicepayments::provider.name'),
             'icon' => 'credit-card',
-            // 결제수단 id 어휘(PaymentMethodEnum)로 선언한다 — 관리자 PG 드롭다운이
-            // supported_methods.includes(method.id) 로 대조하므로 다른 어휘를 쓰면
-            // 그 결제수단은 PG를 지정할 수 없게 된다(무통장입금 dbank 는 PG 불필요라 제외).
-            'supported_methods' => ['card', 'bank', 'vbank', 'phone'],
+            'supported_methods' => ['card', 'bank_transfer', 'virtual_account', 'mobile'],
             // 코어의 provider-agnostic 결제 진입 dispatch — 주문 응답의 pg_payment_handler 로
             // 내려가 템플릿이 그대로 호출한다. 미선언 시 프론트가 응답을 변조해 결제창을
             // 직접 띄우는 우회가 필요해진다(#475).
@@ -110,7 +106,7 @@ class RegisterPgProviderListener implements HookListenerInterface
 
     private function isNicepayDefaultPg(): bool
     {
-        $path = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
+        $path = storage_path('app/modules/sirsoft-ecommerce/settings/order_settings.json');
 
         if (! file_exists($path)) {
             return false;

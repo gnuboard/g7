@@ -14,22 +14,14 @@ use Modules\Sirsoft\Ecommerce\DTO\ItemCalculation;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\PromotionsSummary;
 use Modules\Sirsoft\Ecommerce\DTO\Summary;
-use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
-use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
-use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
-use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
-use Modules\Sirsoft\Ecommerce\Exceptions\CouponAlreadyUsedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Exceptions\UnsupportedPaymentCurrencyException;
-use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
-use Modules\Sirsoft\Ecommerce\Models\Coupon;
-use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -43,7 +35,6 @@ use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 
 /**
@@ -78,40 +69,6 @@ class OrderProcessingServiceTest extends ModuleTestCase
                 unlink($file);
             }
         }
-    }
-
-    /**
-     * 마일리지 사용 정책을 무제한으로 완화합니다.
-     *
-     * 주문 확정 시점에 사용 정책(min_use_amount / use_unit / max_use_*)이 강제되므로(#493 E1),
-     * 마일리지가 주제가 아닌 테스트는 배포 기본값(최소 1,000 / 상한 50,000)에 걸린다.
-     * 이 테스트들의 관심사는 주문 메타·결제 상태이므로 정책을 열어 두고 본래 대상만 검증한다.
-     * 정책 강제 자체는 MileageUsageLimitTest 가 다룬다.
-     */
-    private function allowAnyMileageUsage(): void
-    {
-        $dir = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
-        if (! is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-
-        file_put_contents($dir.'/mileage.json', json_encode([
-            'enabled' => true,
-            'default_earn_rate' => 0,
-            'earn_trigger' => 'confirmed',
-            'earn_delay_days' => 0,
-            'currency_rules' => [[
-                'currency_code' => 'KRW',
-                'point_value' => 1,
-                'min_use_amount' => 0,
-                'use_unit' => 1,
-                'max_use_type' => 'percent',
-                'max_use_percent' => 100,
-                'max_use_value' => 0,
-            ]],
-            'expiry_enabled' => false,
-            'expiry_days' => 365,
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
     /**
@@ -638,97 +595,15 @@ class OrderProcessingServiceTest extends ModuleTestCase
             103000
         );
 
-        // shipping_policy_applied_snapshot 은 `{items: [...], address: {...}}` 구조여야 한다.
-        // 항목 목록과 배송지 메타를 한 배열에 섞으면 PHP 배열이 non-sequential 이 되어
-        // json_encode 가 객체로 직렬화하고, 배열을 전제하는 화면에서 표시가 사라진다.
+        // shipping_policy_applied_snapshot이 비어있지 않아야 함
         $snapshot = $order->shipping_policy_applied_snapshot;
         $this->assertNotEmpty($snapshot);
-        $this->assertArrayHasKey('items', $snapshot);
-        $this->assertArrayHasKey('address', $snapshot);
-        $this->assertEquals($productOption->id, $snapshot['items'][0]['product_option_id']);
-        $this->assertEquals(1, $snapshot['items'][0]['policy']['policy_id']);
-
-        // items 는 JSON 에서 반드시 배열 리터럴로 나가야 한다 (객체면 프론트 .find 가 죽는다)
-        $this->assertStringContainsString('"items":[', json_encode($snapshot));
-    }
-
-    /**
-     * 주문의 총 무게/부피는 주문 옵션 소계의 합으로 기록된다 (공개 #94 / N7).
-     *
-     * 기존에는 0 으로 고정 기록되어, 배송사 연동·운임 정산이 이 값을 읽으면
-     * 무게 없는 주문으로 취급됐다. 값의 단위는 상품 옵션과 같은 g / cm³ 다.
-     */
-    public function test_create_from_temp_order_records_total_weight_and_volume(): void
-    {
-        $user = User::factory()->create();
-
-        $product = Product::factory()->create();
-        $productOption = ProductOption::factory()->create([
-            'product_id' => $product->id,
-            'weight' => 500,
-            'volume' => 1200,
-        ]);
-
-        $tempOrder = TempOrderFactory::new()
-            ->forUser($user)
-            ->withItems([
-                [
-                    'cart_id' => 1,
-                    'product_id' => $product->id,
-                    'product_option_id' => $productOption->id,
-                    'quantity' => 3,
-                ],
-            ])
-            ->withCalculationResult([
-                'summary' => ['final_amount' => 103000],
-                'items' => [],
-                'promotions' => [
-                    'product_promotions' => ['coupons' => [], 'discount_codes' => [], 'events' => []],
-                    'order_promotions' => ['coupons' => [], 'discount_codes' => [], 'events' => []],
-                ],
-                'validation_errors' => [],
-            ])
-            ->create();
-
-        $item = new ItemCalculation(
-            productId: $product->id,
-            productOptionId: $productOption->id,
-            quantity: 3,
-            unitPrice: 100000,
-            subtotal: 300000,
-            finalAmount: 300000,
-        );
-
-        $this->mockCalculationService($this->makeCalculationResult(103000, [
-            'items' => [$item],
-        ]));
-
-        $order = $this->service->createFromTempOrder(
-            $tempOrder,
-            ['name' => 'Test', 'phone' => '010-0000-0000', 'email' => 'test@test.com'],
-            ['recipient_name' => 'Test', 'recipient_phone' => '010-0000-0000', 'zipcode' => '00000', 'address' => 'Test', 'address_detail' => 'Test'],
-            'card',
-            103000
-        );
-
-        $order->refresh();
-
-        // 단위 무게는 상품 옵션의 g 값을 그대로 복사한다 (kg 환산은 배송비 계산 시점에만)
-        $orderOption = $order->options()->first();
-        $this->assertEquals(500.0, (float) $orderOption->unit_weight);
-        $this->assertEquals(1200.0, (float) $orderOption->unit_volume);
-        $this->assertEquals(1500.0, (float) $orderOption->subtotal_weight);
-        $this->assertEquals(3600.0, (float) $orderOption->subtotal_volume);
-
-        // 주문 합계는 옵션 소계의 합
-        $this->assertEquals(1500.0, (float) $order->total_weight);
-        $this->assertEquals(3600.0, (float) $order->total_volume);
+        $this->assertEquals($productOption->id, $snapshot[0]['product_option_id']);
+        $this->assertEquals(1, $snapshot[0]['policy']['policy_id']);
     }
 
     public function test_create_from_temp_order_saves_order_meta_with_calculation_input(): void
     {
-        $this->allowAnyMileageUsage();
-
         $user = User::factory()->create();
 
         // 마일리지 사용 훅이 실제 FIFO 차감을 수행하므로 사용액(500) 이상 잔액 시드
@@ -977,103 +852,6 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
         $this->assertTrue($hookCalled, '쿠폰 사용 훅이 호출되어야 합니다');
         $this->assertContains(201, $capturedCouponIds);
-    }
-
-    /**
-     * 이미 다른 주문이 선점한 쿠폰으로 주문을 확정하면 트랜잭션 전체가 롤백되어야 합니다.
-     *
-     * 쿠폰 차감 실패를 삼키고 주문만 생성하면, 1회 제한 쿠폰의 할인이 두 주문에 모두
-     * 적용된 채로 확정된다 (KVE-2026-1886).
-     *
-     * @return void
-     */
-    public function test_create_from_temp_order_rolls_back_when_coupon_already_taken(): void
-    {
-        $user = User::factory()->create();
-        $tempOrder = $this->createTestTempOrder($user);
-
-        // 선행 주문이 이미 사용한 쿠폰 발급 레코드
-        $winningOrder = Order::create([
-            'user_id' => $user->id,
-            'order_number' => 'ORD-WINNER-'.uniqid(),
-            'order_status' => OrderStatusEnum::PENDING_PAYMENT,
-            'currency' => 'KRW',
-            'item_count' => 1,
-            'ordered_at' => now(),
-            'subtotal_amount' => 50000,
-            'total_amount' => 45000,
-            'total_paid_amount' => 45000,
-        ]);
-
-        $couponModel = Coupon::create([
-            'name' => ['ko' => '선점 쿠폰', 'en' => 'Taken Coupon'],
-            'target_type' => CouponTargetType::PRODUCT_AMOUNT,
-            'discount_type' => CouponDiscountType::FIXED,
-            'discount_value' => 5000,
-            'min_order_amount' => 0,
-            'target_scope' => CouponTargetScope::ALL,
-            'is_combinable' => true,
-            'valid_from' => now()->subDay(),
-            'valid_to' => now()->addDays(30),
-        ]);
-
-        $issue = CouponIssue::create([
-            'coupon_id' => $couponModel->id,
-            'user_id' => $user->id,
-            'coupon_code' => 'TAKEN'.uniqid(),
-            'status' => CouponIssueRecordStatus::USED,
-            'issued_at' => now(),
-            'expired_at' => now()->addDays(30),
-            'used_at' => now(),
-            'order_id' => $winningOrder->id,
-        ]);
-
-        $coupon = new CouponApplication(
-            couponId: $couponModel->id,
-            couponIssueId: $issue->id,
-            name: '선점 쿠폰',
-            targetType: 'product_amount',
-            discountType: 'fixed',
-            discountValue: 5000,
-            totalDiscount: 5000,
-        );
-        $promotions = new PromotionsSummary(
-            productPromotions: new AppliedPromotions(coupons: [$coupon])
-        );
-
-        $this->mockCalculationService($this->makeCalculationResult(103000, [
-            'promotions' => $promotions,
-        ]));
-
-        // 실제 리스너를 훅에 연결 (프로덕션과 동일 경로)
-        $listener = app(CouponUseListener::class);
-        HookManager::addAction(
-            'sirsoft-ecommerce.coupon.use',
-            fn ($couponIds, $order) => $listener->markCouponsUsed($couponIds, $order)
-        );
-
-        $ordersBefore = Order::query()->count();
-
-        try {
-            $this->service->createFromTempOrder(
-                $tempOrder,
-                ['name' => 'Test', 'phone' => '010-0000-0000', 'email' => 'test@test.com'],
-                ['recipient_name' => 'Test', 'recipient_phone' => '010-0000-0000', 'zipcode' => '00000', 'address' => 'Test', 'address_detail' => 'Test'],
-                'card',
-                103000
-            );
-            $this->fail('선점된 쿠폰으로 주문이 확정되어서는 안 됩니다.');
-        } catch (CouponAlreadyUsedException $e) {
-            $this->assertSame($issue->id, $e->getCouponIssueId());
-        }
-
-        // 주문 트랜잭션 전체 롤백 — 주문 행이 늘지 않아야 한다
-        $this->assertSame($ordersBefore, Order::query()->count(), '경쟁에서 밀린 주문은 생성되지 않아야 합니다.');
-
-        // 쿠폰 소유는 선행 주문 그대로
-        $issue->refresh();
-        $this->assertEquals(CouponIssueRecordStatus::USED, $issue->status);
-        $this->assertEquals($winningOrder->id, $issue->order_id);
     }
 
     public function test_create_from_temp_order_calls_mileage_use_hook(): void
@@ -1376,8 +1154,9 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * 하도록 바뀌었으나, validatePaymentAmount 2단계가 base(total_due_amount)를 직접 비교해
      * base≠order_currency(예: base JPY 500 → 결제 KRW 4,750) 에서 "결제금액 불일치"로 오차단됐다.
      * 검증 기준을 결제 통화 환산액으로 통일했으므로, 환산 청구액은 통과하고 base 금액은 거부되어야 한다.
+     *
+     * @dataProvider providePaymentCurrencyCombinations
      */
-    #[DataProvider('providePaymentCurrencyCombinations')]
     public function test_validate_payment_amount_uses_payment_currency_charge(
         string $baseCurrency,
         string $orderCurrency,
@@ -2869,8 +2648,6 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     public function test_create_from_temp_order_full_mileage_payment_marks_payment_complete(): void
     {
-        $this->allowAnyMileageUsage();
-
         $user = User::factory()->create();
 
         // 결제액 전액(100,000)을 마일리지로 충당 — FIFO 차감용 잔액 시드

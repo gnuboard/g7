@@ -7,18 +7,12 @@
  *  C. (A 로 해소) 수평 컨테이너(정렬 박스)에서 좌/우 삽입 어포던스 활성 — block 은 상/하만.
  *  D. 표(Table) 추가 → 머리글/본문 행이 실제로 렌더(빈 table 회귀 차단).
  *
- * 축 요약(마커 아님 — 평문): flex_toggle_node_derived, spacing_per_side_independent, insertion_dir_by_flow, table_renders_rows.
- * 효과 요약(마커 아님 — 평문): flex_container_controls_and_disable, pt_pl_coexist, left_right_enabled_in_flex, table_tr_td_rendered.
+ * @scenario flex_toggle_node_derived + spacing_per_side_independent + insertion_dir_by_flow + table_renders_rows
+ * @effects flex_container_controls_and_disable + pt_pl_coexist + left_right_enabled_in_flex + table_tr_td_rendered
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
-import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
 
-/** 로그인 카드(Div, 비-flex) — 본문 루트 기준 상대 경로 */
-const CARD_REL = 'children.5.children.0.children.0.children.1';
-
-// 절대 경로의 첫 세그먼트는 베이스 레이아웃 루트 인덱스라 베이스에 컴포넌트가 추가되면 밀린다.
-// 리터럴로 두지 않고 openEditorLogin 이 본문 루트 id 로 해석해 채운다 (사용처는 그대로 읽는다).
-let CARD = '';
+const CARD = '2.children.5.children.0.children.0.children.1'; // 로그인 카드(Div, 비-flex)
 
 async function openEditorLogin(page: import('@playwright/test').Page): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
@@ -30,8 +24,6 @@ async function openEditorLogin(page: import('@playwright/test').Page): Promise<v
     () => document.querySelectorAll('[data-editor-path]').length > 0,
     { timeout: 20_000 },
   );
-
-  CARD = await resolveEditorPath(page, CARD_REL);
 }
 
 /** 지정 path 노드를 선택하고 ⓘ → 속성 설정으로 속성 편집 모달을 연다. */
@@ -52,7 +44,6 @@ async function openPropsFor(page: import('@playwright/test').Page, editorPath: s
 }
 
 test.describe('@layout-editor S7 후속 회귀', () => {
-  /** @effects flex_container_controls_and_disable */
   test('A. 정렬 박스 만들기 → 컨테이너 컨트롤 + 해제 토글로 원복 (노드 파생 판정)', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -83,7 +74,6 @@ test.describe('@layout-editor S7 후속 회귀', () => {
     await expect(page.getByTestId('g7le-flex-enable')).toBeAttached();
   });
 
-  /** @effects pt_pl_coexist */
   test('B. 여백 개별 모드 — 상/좌를 다른 값으로 → pt-/pl- 토큰 공존', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -108,7 +98,6 @@ test.describe('@layout-editor S7 후속 회귀', () => {
     ).toBe(true);
   });
 
-  /** @effects left_right_enabled_in_flex */
   test('C. 흐름별 삽입 방향 — flex-row 자식은 좌/우 활성, block 자식은 상/하만', async ({ page }) => {
     await openEditorLogin(page);
 
@@ -135,7 +124,6 @@ test.describe('@layout-editor S7 후속 회귀', () => {
     expect(await page.getByTestId('g7le-insertion-below').getAttribute('data-disabled')).toBe('false');
   });
 
-  /** @effects table_tr_td_rendered */
   test('D. 표 추가 → 머리글/본문 행이 실제 렌더(빈 table 회귀 차단)', async ({ page }) => {
     await openEditorLogin(page);
 
@@ -212,10 +200,8 @@ test.describe('@layout-editor S7 후속 회귀', () => {
       for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'])
         el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, clientX: r.left + 10, clientY: r.top + 10, view: window }));
     }, CARD);
-    // 라벨은 방향 표시용 `↑`(aria-hidden 장식) 를 앞에 두므로 타입 식별자는 뒤쪽으로 단언한다.
-    // 배치 판정은 장식이 아니라 data-placement 가 담당한다.
     const divLabel = page.getByTestId('g7le-overlay-type-label');
-    await expect(divLabel).toHaveText(/Div$/);
+    await expect(divLabel).toHaveText('Div');
     expect(await divLabel.getAttribute('data-placement')).toBe('inside');
 
     // H2 헤딩(얇은 박스) 선택 → "H2" 라벨, outside 배치(콘텐츠 비가림)
@@ -226,7 +212,7 @@ test.describe('@layout-editor S7 후속 회귀', () => {
         el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, clientX: r.left + 6, clientY: r.top + 6, view: window }));
     }, `${CARD}.children.0`);
     const h2Label = page.getByTestId('g7le-overlay-type-label');
-    await expect(h2Label).toHaveText(/H2$/);
+    await expect(h2Label).toHaveText('H2');
     expect(await h2Label.getAttribute('data-placement')).toBe('outside');
   });
 });

@@ -91,8 +91,7 @@
         "page": "{{query.page || 1}}",
         "per_page": "{{query.per_page || 20}}",
         "search": "{{query.search}}",
-        "search_type": "{{query.search_type}}",
-        "template_channel": "{{query.channel ?? 'mail'}}"
+        "search_type": "{{query.search_type}}"
       },
       "initLocal": {
         "_merge": "deep",
@@ -192,6 +191,7 @@
     }
   ],
   "initLocal": {
+    "activeNotificationChannel": null,
     "editingDefinition": null,
     "editingTemplate": null,
     "editLang": "ko",
@@ -348,7 +348,6 @@
                       }
                     },
                     {
-                      "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
                       "handler": "navigate",
                       "params": {
                         "path": "/admin/ecommerce/settings",
@@ -513,7 +512,6 @@
                 "type": "basic",
                 "name": "Button",
                 "props": {
-                  "data-testid": "ecommerce-settings-save",
                   "disabled": "{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}",
                   "className": "btn btn-primary flex-center gap-1.5"
                 },
@@ -590,7 +588,7 @@
                               "handler": "toast",
                               "params": {
                                 "type": "error",
-                                "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.settings.save_error')}}"
+                                "message": "$t:sirsoft-ecommerce.admin.settings.save_error"
                               }
                             }
                           ]

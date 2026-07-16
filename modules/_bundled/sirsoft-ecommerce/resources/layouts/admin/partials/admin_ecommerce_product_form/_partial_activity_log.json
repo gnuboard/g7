@@ -330,7 +330,7 @@
                                     },
                                     "children": [
                                         {
-                                            "id": "activity_log_row_{{logIdx}}",
+                                            "id": "activity_log_row",
                                             "type": "basic",
                                             "name": "Tr",
                                             "iteration": {
@@ -671,7 +671,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "clipboard-list",
-                                                                "className": "text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"
+                                                                "className": "w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600"
                                                             }
                                                         },
                                                         {
@@ -703,7 +703,7 @@
                     },
                     "children": [
                         {
-                            "id": "activity_log_card_item_{{logIdx}}",
+                            "id": "activity_log_card_item",
                             "type": "basic",
                             "name": "Div",
                             "iteration": {
@@ -1039,7 +1039,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "clipboard-list",
-                                        "className": "text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"
+                                        "className": "w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600"
                                     }
                                 },
                                 {
@@ -1064,8 +1064,7 @@
                             "name": "Pagination",
                             "props": {
                                 "currentPage": "{{activity_logs.data?.meta?.current_page ?? 1}}",
-                                "totalPages": "{{activity_logs.data?.meta?.last_page ?? null}}",
-                                "hasMorePages": "{{activity_logs.data?.meta?.has_more_pages ?? false}}",
+                                "totalPages": "{{activity_logs.data?.meta?.last_page ?? 1}}",
                                 "showFirstLast": true
                             },
                             "actions": [

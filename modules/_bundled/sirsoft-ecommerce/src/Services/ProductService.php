@@ -2,22 +2,14 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
-use App\Search\SearchPagePolicy;
-use App\Support\ExtensionStoragePath;
-use App\Support\Query\BoundedCount;
-use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OptionHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
-use Modules\Sirsoft\Ecommerce\Exceptions\ProductPriceRelationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\StockMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOption;
@@ -25,56 +17,16 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
  * 상품 서비스
  */
 class ProductService
 {
-    use ReappliesPermissionScope;
-
-    /**
-     * 검색 정렬 이름 → [실제 컬럼, 방향] 선언
-     *
-     * 코어({@see SearchPagePolicy})가 이 선언을 읽어 커서 적용 여부를 판정한다.
-     * 여기에 없는 정렬 이름(관련도순 등)은 커서로 처리하지 않고 offset 을 유지한다.
-     */
-    public const SEARCH_SORT_MAP = [
-        'latest' => ['created_at', 'desc'],
-        'oldest' => ['created_at', 'asc'],
-        'price_asc' => ['selling_price', 'asc'],
-        'price_desc' => ['selling_price', 'desc'],
-    ];
-
-    /**
-     * 커서(키셋) 경계로 쓸 수 있는 실제 컬럼 선언
-     */
-    public const SEARCH_CURSOR_COLUMNS = ['created_at', 'selling_price'];
-
     /**
      * HTMLPurifier 인스턴스 (지연 생성)
      */
     protected ?\HTMLPurifier $purifier = null;
-
-    /**
-     * 이 모듈의 식별자
-     */
-    private const MODULE_IDENTIFIER = 'sirsoft-ecommerce';
-
-    /**
-     * HTMLPurifier 정의 캐시 디렉토리 권한
-     *
-     * 0775 인 이유: CLI(스케줄러/큐)와 웹(php-fpm)이 같은 캐시를 공유해야 한다. 그룹 쓰기가
-     * 없으면 먼저 만든 프로세스가 상대를 잠근다. `Cache.SerializerPermissions` 로 HTMLPurifier 가
-     * 만드는 하위 디렉토리에도 전파되며, `.ser` 파일에는 `$chmod & 0666` 이 적용되어 0664 가 된다.
-     */
-    private const PURIFIER_CACHE_DIR_MODE = 0775;
-
-    /**
-     * 정의 캐시 비활성 통지를 프로세스당 1회만 남기기 위한 플래그
-     */
-    private static bool $purifierCacheWarned = false;
 
     /**
      * 시스템 기본통화 코드 조회
@@ -92,8 +44,7 @@ class ProductService
         protected SequenceService $sequenceService,
         protected OrderOptionRepositoryInterface $orderOptionRepository,
         protected ProductLabelRepositoryInterface $productLabelRepository,
-        protected ProductAdditionalOptionValueRepositoryInterface $additionalOptionValueRepository,
-        protected ProductInquiryService $inquiryService
+        protected ProductAdditionalOptionValueRepositoryInterface $additionalOptionValueRepository
     ) {}
 
     /**
@@ -110,21 +61,6 @@ class ProductService
         $perPage = (int) ($filters['per_page'] ?? 20);
 
         return $this->repository->getListWithFilters($filters, $perPage);
-    }
-
-    /**
-     * 여러 상품의 옵션을 상품 ID 로 묶어 한 번에 조회합니다 (비활성 옵션 포함).
-     *
-     * 상품 목록에서 펼친 행들의 옵션을 채우기 위한 배치 조회입니다. 상품 수와 무관하게
-     * 쿼리 2개(허용 ID 확정 + 옵션 조회)로 끝납니다.
-     *
-     * @param  array<int, int|string>  $productIds  조회할 상품 ID 목록
-     * @return array{product_ids: array<int, int>, options: \Illuminate\Support\Collection|array<int, mixed>}
-     *                                                                                                        스코프를 통과한 상품 ID 와 상품 ID 로 그룹핑된 옵션
-     */
-    public function getOptionsByProductIds(array $productIds): array
-    {
-        return $this->repository->getOptionsGroupedByProductIds($productIds);
     }
 
     /**
@@ -327,8 +263,6 @@ class ProductService
      */
     public function update(Product $product, array $data): Product
     {
-        $this->assertWithinScope($product, 'sirsoft-ecommerce.products.update');
-
         // 수정 전 훅
         HookManager::doAction('sirsoft-ecommerce.product.before_update', $product, $data);
 
@@ -433,8 +367,6 @@ class ProductService
      */
     public function delete(Product $product): bool
     {
-        $this->assertWithinScope($product, 'sirsoft-ecommerce.products.delete');
-
         // 도메인 가드: 주문 이력이 있는 상품은 삭제 불가 (컨트롤러 우회·bulk 경로 방어)
         // DB FK restrictOnDelete 가 거부하기 전에 사유가 명확한 예외로 차단한다.
         $ordersCount = $this->orderOptionRepository->countByProductId($product->id);
@@ -444,11 +376,6 @@ class ProductService
 
         // 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.product.before_delete', $product);
-
-        // 상품 문의 스레드 정리 — 트랜잭션 진입 전 실행 (게시판 훅이 자체 트랜잭션과
-        // after_delete Action 훅을 내부에서 발행하므로 바깥 트랜잭션에 묶지 않는다).
-        // 종전에는 피벗이 FK 캐스케이드로만 소멸해 질문·답변 Post 가 공개 상태로 잔존했다.
-        $this->inquiryService->deleteInquiriesForProduct($product->id);
 
         return DB::transaction(function () use ($product) {
             // 1. 이미지 파일 물리적 삭제 (Storage)
@@ -486,6 +413,9 @@ class ProductService
             // TODO: 리뷰 삭제 (테이블: ecommerce_reviews)
             // Review::where('product_id', $product->id)->delete();
 
+            // TODO: 상품문의 삭제 (테이블: ecommerce_product_inquiries)
+            // ProductInquiry::where('product_id', $product->id)->delete();
+
             // 8. 상품 레코드 완전 삭제 (SoftDeletes 무시)
             // 모든 연관 데이터가 완전 삭제되었으므로 상품도 완전 삭제합니다.
             $result = $this->repository->forceDelete($product);
@@ -521,8 +451,6 @@ class ProductService
      */
     public function bulkUpdateStatus(array $ids, string $field, string $value): array
     {
-        $this->assertAllWithinScope($this->repository->findByIdsKeyed($ids), 'sirsoft-ecommerce.products.update');
-
         // 스냅샷 캡처 (활동 로그 변경 감지용)
         $snapshots = $this->repository->getSnapshotsByIds($ids);
 
@@ -556,8 +484,6 @@ class ProductService
      */
     public function bulkUpdatePrice(array $ids, string $method, float $value, string $unit): array
     {
-        $this->assertAllWithinScope($this->repository->findByIdsKeyed($ids), 'sirsoft-ecommerce.products.update');
-
         // 스냅샷 캡처 (활동 로그 변경 감지용)
         $snapshots = $this->repository->getSnapshotsByIds($ids);
 
@@ -590,8 +516,6 @@ class ProductService
      */
     public function bulkUpdateStock(array $ids, string $method, int $value): array
     {
-        $this->assertAllWithinScope($this->repository->findByIdsKeyed($ids), 'sirsoft-ecommerce.products.update');
-
         // 스냅샷 캡처 (활동 로그 변경 감지용)
         $snapshots = $this->repository->getSnapshotsByIds($ids);
 
@@ -622,8 +546,6 @@ class ProductService
      */
     public function bulkUpdate(array $data): array
     {
-        $this->assertAllWithinScope($this->repository->findByIdsKeyed($data['ids'] ?? []), 'sirsoft-ecommerce.products.update');
-
         // 스냅샷 캡처 (활동 로그 변경 감지용)
         $ids = $data['ids'] ?? [];
         $snapshots = $this->repository->getSnapshotsByIds($ids);
@@ -665,7 +587,6 @@ class ProductService
                     if (! empty($updateData)) {
                         $product = $this->repository->find($productId);
                         if ($product) {
-                            $this->assertPriceRelation($product, $updateData);
                             $updateData['updated_by'] = Auth::id();
                             $this->repository->update($product, $updateData);
                             $productsUpdated++;
@@ -695,54 +616,6 @@ class ProductService
         HookManager::doAction('sirsoft-ecommerce.product.after_bulk_update', $result, $data, $snapshots);
 
         return $result;
-    }
-
-    /**
-     * 상품과 그 옵션의 활동 로그를 합쳐 조회합니다.
-     *
-     * @param  Product  $product  대상 상품
-     * @param  array  $filters  조회 필터 (per_page, sort_order)
-     * @return LengthAwarePaginator 활동 로그 페이지네이터
-     */
-    public function getActivityLogs(Product $product, array $filters = []): LengthAwarePaginator
-    {
-        return $this->repository->getActivityLogsForProduct($product, $filters);
-    }
-
-    /**
-     * 실제로 적용될 가격 조합이 판매가 ≤ 정가를 지키는지 확인합니다.
-     *
-     * 일괄 수정은 정가/판매가 중 한쪽만 보내는 부분 전송이 흔해 FormRequest 는 두 값이 모두
-     * 전송된 경우에만 비교합니다. 한쪽만 온 경우 나머지 한쪽은 DB 에 남아 있던 값이 그대로
-     * 적용되므로, 단일 필드 전송으로 판매가를 정가 위로 올리는 우회로가 열립니다.
-     * 저장 직전에 DB 기존값과 합쳐 확정된 조합으로 다시 판정합니다.
-     *
-     * @param  Product  $product  대상 상품 (DB 기존값)
-     * @param  array  $updateData  적용될 수정 데이터
-     *
-     * @throws ProductPriceRelationException 판매가가 정가를 초과하는 경우
-     */
-    protected function assertPriceRelation(Product $product, array $updateData): void
-    {
-        $incoming = static fn (string $key) => array_key_exists($key, $updateData)
-            && $updateData[$key] !== null
-            && $updateData[$key] !== '';
-
-        if (! $incoming('list_price') && ! $incoming('selling_price')) {
-            return;
-        }
-
-        $listPrice = $incoming('list_price')
-            ? (float) $updateData['list_price']
-            : (float) $product->list_price;
-
-        $sellingPrice = $incoming('selling_price')
-            ? (float) $updateData['selling_price']
-            : (float) $product->selling_price;
-
-        if ($sellingPrice > $listPrice) {
-            throw new ProductPriceRelationException((int) $product->id);
-        }
     }
 
     /**
@@ -1352,7 +1225,12 @@ class ProductService
         }
 
         if ($this->purifier === null) {
-            $this->purifier = $this->createPurifier();
+            $config = \HTMLPurifier_Config::createDefault();
+            $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,s,ul,ol,li,a[href|target],img[src|alt|width|height],h1,h2,h3,h4,h5,h6,table,tr,td,th,thead,tbody,tfoot,caption,colgroup,col,blockquote,pre,code,div,span[style],hr');
+            $config->set('CSS.AllowedProperties', 'color,background-color,font-size,font-weight,text-align,text-decoration,margin,padding,border,width,height');
+            $config->set('Attr.AllowedFrameTargets', ['_blank']);
+            $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);
+            $this->purifier = new \HTMLPurifier($config);
         }
 
         foreach ($data['description'] as $locale => $content) {
@@ -1362,113 +1240,6 @@ class ProductService
         }
 
         return $data;
-    }
-
-    /**
-     * HTMLPurifier 인스턴스를 생성합니다.
-     *
-     * 정의 캐시 경로를 `storage/` 아래로 강제합니다. 지정하지 않으면 HTMLPurifier 는 자기 설치
-     * 폴더(`{module}/vendor/ezyang/htmlpurifier/library/.../DefinitionCache/Serializer/`)에 캐시를
-     * 쓰는데, 배포본의 vendor 를 읽기 전용으로 두는 서버에서는 그 쓰기가 `E_USER_WARNING` 을 내고
-     * Laravel 이 이를 `ErrorException` 으로 승격시켜 상품 등록/수정이 매번 500 이 됩니다 (공개 #125).
-     * 캐시는 설정 해시당 1회만 기록되므로 쓰기 불가 환경에서는 캐시가 영영 생기지 않아 모든 요청이
-     * 실패합니다.
-     *
-     * 캐시 디렉토리를 확보하지 못하면 정의 캐시만 끄고(`Cache.DefinitionImpl = null`) 정화는 그대로
-     * 수행합니다 — 캐시는 성능 장치이고 정화는 보안 장치라, 캐시 실패가 보안 장치를 건너뛰게
-     * 만들어서는 안 됩니다.
-     *
-     * @return \HTMLPurifier 설정이 적용된 인스턴스
-     */
-    protected function createPurifier(): \HTMLPurifier
-    {
-        $cachePath = $this->resolvePurifierCachePath($failure);
-
-        if ($cachePath === null && ! self::$purifierCacheWarned) {
-            self::$purifierCacheWarned = true;
-
-            // `error` 로 남기는 이유: G7 출하 기본값(config/settings/defaults.json)의 `log_level` 이
-            // `error` 라, `warning` 으로 남기면 기본 설치 상태에서는 이 통지가 로그 파일에 아예
-            // 기록되지 않는다. 저장은 성공하므로 사용자 피해는 없지만, 캐시를 못 쓰는 상태가
-            // 흔적 없이 영구히 유지되어 운영자가 조치할 근거를 얻지 못한다.
-            Log::error('HTMLPurifier 정의 캐시 디렉토리를 사용할 수 없어 캐시 없이 동작합니다', [
-                'module' => self::MODULE_IDENTIFIER,
-                'expected_path' => $this->purifierCacheDirectory(),
-                // 사유마다 고쳐야 할 대상이 다르다 — 상위 디렉토리 권한 / 그 자리를 차지한 파일 /
-                // 대상 자신의 권한. 사유 없이 경로만 남기면 운영자가 어디를 볼지 알 수 없다.
-                'reason' => $failure['reason'] ?? 'unknown',
-                'blocking_path' => $failure['path'] ?? $this->purifierCacheDirectory(),
-                'impact' => '상품 설명(HTML) 정화가 요청마다 정의를 다시 계산합니다. 해당 디렉토리의 쓰기 권한을 확인하세요.',
-            ]);
-        }
-
-        return new \HTMLPurifier($this->buildPurifierConfig($cachePath));
-    }
-
-    /**
-     * HTMLPurifier 설정을 조립합니다.
-     *
-     * @param  string|null  $cachePath  정의 캐시 디렉토리 절대 경로 (null 이면 캐시 비활성)
-     * @return \HTMLPurifier_Config 조립된 설정
-     */
-    protected function buildPurifierConfig(?string $cachePath): \HTMLPurifier_Config
-    {
-        $config = \HTMLPurifier_Config::createDefault();
-        $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,s,ul,ol,li,a[href|target],img[src|alt|width|height],h1,h2,h3,h4,h5,h6,table,tr,td,th,thead,tbody,tfoot,caption,colgroup,col,blockquote,pre,code,div,span[style],hr');
-        $config->set('CSS.AllowedProperties', 'color,background-color,font-size,font-weight,text-align,text-decoration,margin,padding,border,width,height');
-        $config->set('Attr.AllowedFrameTargets', ['_blank']);
-        $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);
-
-        if ($cachePath === null) {
-            $config->set('Cache.DefinitionImpl', null);
-
-            return $config;
-        }
-
-        $config->set('Cache.SerializerPath', $cachePath);
-        // HTMLPurifier 가 `{경로}/HTML` 하위 디렉토리와 `.ser` 파일을 만들 때 쓰는 권한.
-        // 기본값 0755 는 CLI 가 먼저 만들면 웹 계정이 못 쓴다.
-        $config->set('Cache.SerializerPermissions', self::PURIFIER_CACHE_DIR_MODE);
-
-        return $config;
-    }
-
-    /**
-     * 정의 캐시 디렉토리를 확보하고 절대 경로를 반환합니다.
-     *
-     * 디렉토리가 이미 있는데 쓰기 불가라면 요청 경로에서 권한을 고치려 들지 않고 null 을
-     * 돌려줍니다 — 호출측이 캐시를 끄고 정화는 그대로 수행합니다.
-     *
-     * 확보 자체(경고를 내지 않는 생성 · umask 무력화 · POSIX setgid · 소유권 상속 · 쓰기 판정)는
-     * 코어 공통 프리미티브가 맡습니다. 그 프리미티브는 예외도 PHP 경고도 내지 않으므로, 이 수정이
-     * 막으려던 500 이 확보 실패 지점에서 다시 나는 일이 없습니다.
-     *
-     * @param  array{reason: string, path: string}|null  $failure  out — 확보 실패 사유와 그 대상 경로
-     * @return string|null 사용 가능한 절대 경로. 확보 실패 시 null
-     */
-    protected function resolvePurifierCachePath(?array &$failure = null): ?string
-    {
-        $dir = $this->purifierCacheDirectory();
-
-        return FilePermissionHelper::ensureWritableDirectory($dir, self::PURIFIER_CACHE_DIR_MODE, $failure)
-            ? $dir
-            : null;
-    }
-
-    /**
-     * 정의 캐시 디렉토리의 절대 경로 (존재 여부와 무관한 순수 계산).
-     *
-     * 경로는 코어 해석기가 `modules` 디스크 root 를 단일 출처로 삼아 조립합니다.
-     * `getStorageBasePath('cache')` 를 경유하지 않는 이유는 그 반환값이 `Storage::disk()->path()`
-     * 위임이라, 확장이 카테고리 디스크를 비로컬(S3 등)로 오버라이드하면 파일시스템 경로가 아니게
-     * 되기 때문입니다 — HTMLPurifier 는 `file_put_contents` 로 쓰므로 반드시 로컬 절대 경로여야
-     * 합니다.
-     *
-     * @return string 절대 경로
-     */
-    protected function purifierCacheDirectory(): string
-    {
-        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'cache/htmlpurifier');
     }
 
     /**
@@ -1758,7 +1529,7 @@ class ProductService
                 'hash' => $img->hash,
                 'url' => $img->url,
                 'original_filename' => $img->original_filename,
-                'download_url' => $img->download_url,
+                'download_url' => '/api/modules/sirsoft-ecommerce/product-image/'.$img->hash,
                 'file_size' => $img->file_size,
                 'size' => $img->file_size,
                 'size_formatted' => $this->formatFileSize($img->file_size),
@@ -1991,9 +1762,9 @@ class ProductService
      * @param  int|null  $categoryId  카테고리 필터
      * @param  int  $offset  오프셋
      * @param  int  $limit  조회할 최대 항목 수
-     * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
+     * @return array{total: int, items: Collection}
      */
-    public function searchByKeyword(string $keyword, string $sort = 'latest', ?int $categoryId = null, int $offset = 0, int $limit = 10): BoundedPage
+    public function searchByKeyword(string $keyword, string $sort = 'latest', ?int $categoryId = null, int $offset = 0, int $limit = 10): array
     {
         [$orderBy, $direction] = $this->resolveSortColumn($sort);
 
@@ -2001,44 +1772,13 @@ class ProductService
     }
 
     /**
-     * 키워드로 상품을 커서(키셋)로 검색합니다.
-     *
-     * 커서 적용 가능 여부는 코어({@see SearchPagePolicy})가 판정한다. 이 서비스는
-     * 정렬 선언({@see self::SEARCH_SORT_MAP})만 제공하고 규칙을 다시 쓰지 않는다.
-     *
-     * @param  string  $keyword  검색 키워드
-     * @param  string  $sort  정렬 옵션
-     * @param  int|null  $categoryId  카테고리 필터
-     * @param  int  $perPage  페이지당 항목 수
-     * @param  string|null  $cursor  인코딩된 커서 (첫 페이지면 null)
-     * @param  int  $page  요청 페이지 번호 (커서 없이 깊은 페이지를 지목했는지 판정용)
-     * @return CursorPaginator|null 커서 페이지 결과 (커서 적용 불가 시 null)
-     */
-    public function searchByKeywordWithCursor(
-        string $keyword,
-        string $sort = 'latest',
-        ?int $categoryId = null,
-        int $perPage = 10,
-        ?string $cursor = null,
-        int $page = 1
-    ): ?CursorPaginator {
-        $sortKeys = SearchPagePolicy::sortKeys($sort, self::SEARCH_SORT_MAP);
-
-        if (! SearchPagePolicy::usesCursor($cursor, $sortKeys, self::SEARCH_CURSOR_COLUMNS, $page)) {
-            return null;
-        }
-
-        return $this->repository->searchByKeywordWithCursor($keyword, $sortKeys, $categoryId, $perPage, $cursor);
-    }
-
-    /**
      * 키워드와 일치하는 공개 상품 수를 조회합니다.
      *
      * @param  string  $keyword  검색 키워드
      * @param  int|null  $categoryId  카테고리 필터
-     * @return BoundedCount 일치하는 상품 수 (정확도 포함)
+     * @return int 일치하는 상품 수
      */
-    public function countByKeyword(string $keyword, ?int $categoryId = null): BoundedCount
+    public function countByKeyword(string $keyword, ?int $categoryId = null): int
     {
         return $this->repository->countByKeyword($keyword, $categoryId);
     }

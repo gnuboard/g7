@@ -37,6 +37,7 @@
     ]
   },
   "initLocal": {
+    "activeNotificationChannel": null,
     "editingDefinition": null,
     "editingTemplate": null,
     "editingRecipients": [],
@@ -127,8 +128,7 @@
         "page": "{{query.page || 1}}",
         "per_page": "{{query.per_page || 20}}",
         "search": "{{query.search}}",
-        "search_type": "{{query.search_type}}",
-        "template_channel": "{{query.channel ?? 'mail'}}"
+        "search_type": "{{query.search_type}}"
       },
       "initLocal": {
         "_merge": "deep",
@@ -347,7 +347,6 @@
                               }
                             },
                             {
-                              "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
                               "handler": "navigate",
                               "params": {
                                 "path": "/admin/boards/settings",
@@ -641,7 +640,7 @@
                               "target": "/api/modules/sirsoft-board/admin/settings",
                               "params": {
                                 "method": "PUT",
-                                "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
+                                "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
                               },
                               "onSuccess": [
                                 {
@@ -697,7 +696,7 @@
                                   "handler": "toast",
                                   "params": {
                                     "type": "error",
-                                    "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.save_error'}}"
+                                    "message": "$t:sirsoft-board.admin.settings.save_error"
                                   }
                                 }
                               ]

@@ -100,12 +100,12 @@
                       "handler": "navigate",
                       "params": {
                         "path": "/admin/ecommerce/orders",
+                        "replace": true,
                         "mergeQuery": true,
                         "query": {
                           "sort_by": "{{$event.target.value.split('_').slice(0,-1).join('_')}}",
                           "sort_order": "{{$event.target.value.split('_').pop()}}"
-                        },
-                        "replace": true
+                        }
                       }
                     }
                   ]
@@ -155,12 +155,12 @@
                       "handler": "navigate",
                       "params": {
                         "path": "/admin/ecommerce/orders",
+                        "replace": true,
                         "mergeQuery": true,
                         "query": {
                           "per_page": "{{$event.target.value}}",
                           "page": 1
                         },
-                        "replace": true,
                         "transition_overlay_target": "order_datagrid__body"
                       }
                     }
@@ -184,7 +184,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "arrow-down-tray",
-                    "className": "text-base"
+                    "className": "w-4 h-4"
                   }
                 },
                 {
@@ -266,9 +266,7 @@
                         "type": "click",
                         "handler": "navigate",
                         "params": {
-                          "path": "/admin/ecommerce/orders/{{row.order_number}}",
-                          "mergeQuery": true,
-                          "query": {}
+                          "path": "/admin/ecommerce/orders/{{row.order_number}}"
                         }
                       }
                     ]
@@ -599,18 +597,13 @@
                                 }
                               },
                               {
-                                "comment": "이 주문자의 주문만 보기 — 앞선 setState 가 검색어를 비우므로 URL 의 검색 조건도 함께 비운다. 비우지 않으면 화면 입력창은 빈 채로 이전 검색어가 계속 적용된다 (#75).",
                                 "handler": "navigate",
                                 "params": {
                                   "path": "/admin/ecommerce/orders",
-                                  "mergeQuery": true,
                                   "query": {
                                     "orderer_uuid": "{{row.user?.uuid}}",
-                                    "search_field": "",
-                                    "search_keyword": "",
                                     "page": 1
                                   },
-                                  "replace": true,
                                   "transition_overlay_target": "order_datagrid__body"
                                 }
                               }
@@ -624,23 +617,18 @@
                                 "params": {
                                   "target": "_local",
                                   "filter.searchField": "orderer_name",
-                                  "filter.searchKeyword": "{{row.address?.orderer_name || row.user?.name}}",
-                                  "filter.ordererUuid": ""
+                                  "filter.searchKeyword": "{{row.address?.orderer_name || row.user?.name}}"
                                 }
                               },
                               {
-                                "comment": "비회원 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
                                 "handler": "navigate",
                                 "params": {
                                   "path": "/admin/ecommerce/orders",
-                                  "mergeQuery": true,
                                   "query": {
                                     "search_field": "orderer_name",
                                     "search_keyword": "{{row.address?.orderer_name || row.user?.name}}",
-                                    "orderer_uuid": "",
                                     "page": 1
                                   },
-                                  "replace": true,
                                   "transition_overlay_target": "order_datagrid__body"
                                 }
                               }
@@ -730,7 +718,6 @@
             "data": "{{orders?.data?.data || []}}",
             "loading": "{{orders?.loading}}",
             "selectable": true,
-            "selectionScope": "page",
             "selectedIds": "{{_local.selectedItems || []}}",
             "showColumnSelector": false,
             "selectedCountText": "",
@@ -741,8 +728,7 @@
             "pagination": true,
             "serverSidePagination": true,
             "serverCurrentPage": "{{orders?.data?.pagination?.current_page ?? 1}}",
-            "serverTotalPages": "{{orders?.data?.pagination?.last_page ?? null}}",
-            "serverHasMorePages": "{{orders?.data?.pagination?.has_more_pages ?? false}}",
+            "serverTotalPages": "{{orders?.data?.pagination?.last_page ?? 1}}",
             "pageSize": 20,
             "alwaysShowPagination": true,
             "rowActions": [
@@ -776,11 +762,11 @@
               "handler": "navigate",
               "params": {
                 "path": "/admin/ecommerce/orders",
+                "replace": true,
                 "mergeQuery": true,
                 "query": {
                   "page": "{{$args[0]}}"
                 },
-                "replace": true,
                 "transition_overlay_target": "order_datagrid__body"
               }
             },
@@ -792,9 +778,7 @@
                 "view_detail": {
                   "handler": "navigate",
                   "params": {
-                    "path": "/admin/ecommerce/orders/{{$args[1].order_number}}",
-                    "mergeQuery": true,
-                    "query": {}
+                    "path": "/admin/ecommerce/orders/{{$args[1].order_number}}"
                   }
                 }
               }

@@ -15,7 +15,7 @@
  * EditorCanvasOverlay)로 커버한다.
  *
  * @scenario lock_kind selected_node_state=extension_originated
- * 효과 요약(마커 아님 — 평문): extension_node_context_menu_blocked, extension_node_blackbox_selection_normalized, editor_canvas_single_window_scroll, fullscreen_layout_expanded_in_editor.
+ * @effects extension_node_context_menu_blocked + extension_node_blackbox_selection_normalized + editor_canvas_single_window_scroll + fullscreen_layout_expanded_in_editor
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -26,12 +26,7 @@ async function openBasicEditor(page: Page): Promise<void> {
   await authenticatePage(page, token);
   await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fboards');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  // state 기본값은 'visible' 인데 프레임 하위 첫 노드는 빈 앵커(header_currency_inject_anchor)나
-  // `hidden` 클래스 요소일 수 있어 끝내 visible 이 되지 않는다 — 렌더 완료 판정은 존재로 한다.
-  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', {
-    state: 'attached',
-    timeout: 30_000,
-  });
+  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', { timeout: 30_000 });
 }
 
 /** admin 풀스크린 레이아웃(h-screen 루트 + 확장 주입 마케팅 조각) 편집기 진입. */
@@ -40,16 +35,10 @@ async function openAdminUserForm(page: Page): Promise<void> {
   await authenticatePage(page, token);
   await page.goto('/admin/layout-editor/sirsoft-admin_basic?route=*%2Fadmin%2Fusers%2Fcreate');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  // state 기본값은 'visible' 인데 프레임 하위 첫 노드는 빈 앵커(header_currency_inject_anchor)나
-  // `hidden` 클래스 요소일 수 있어 끝내 visible 이 되지 않는다 — 렌더 완료 판정은 존재로 한다.
-  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', {
-    state: 'attached',
-    timeout: 30_000,
-  });
+  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', { timeout: 30_000 });
 }
 
 test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
-  /** @effects extension_node_context_menu_blocked, extension_node_blackbox_selection_normalized */
   test('확장 주입 조각 내부 자식 클릭 → 진입점 통짜 선택 + ⓘ 메뉴 차단 + 확장 편집 어포던스', async ({ page }) => {
     await openAdminUserForm(page);
 
@@ -57,14 +46,11 @@ test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
     // 그 내부 깊은 자식을 클릭해도 통짜(진입점) 선택되어야 한다.
     const result = await page.evaluate(async () => {
       const frame = document.querySelector('[data-testid="g7le-preview-frame"]')!;
-      // 확장 조각 진입점은 마케팅 동의 섹션 라벨을 포함한다(샘플 마케팅 플러그인 주입 섹션).
-      // 라벨은 다국어(`admin.users.form.sections.marketing_consent`)라 로케일에 묶지 않는다.
+      // 확장 조각 진입점은 "Marketing & Consent" 라벨을 포함한다(샘플 마케팅 플러그인 주입 섹션).
       // 텍스트 기반으로 영역을 찾은 뒤 그 안 가장 깊은 자식(개별 텍스트 노드)을 클릭한다 —
       // 깊은 자식이 통짜(진입점) 단위로 정규화되어 선택되는지 검증.
       const candidates = Array.from(frame.querySelectorAll('[data-editor-path]')).filter(
-        (e) =>
-          /마케팅 및 동의|Marketing & Consent/.test(e.textContent || '') &&
-          (e.textContent || '').length < 30,
+        (e) => /Marketing & Consent/.test(e.textContent || '') && (e.textContent || '').length < 30,
       ) as HTMLElement[];
       const labelNode = candidates[candidates.length - 1];
       if (!labelNode) return { found: false };
@@ -93,7 +79,6 @@ test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
     expect(result.editExtension).toBe(true);
   });
 
-  /** @effects editor_canvas_single_window_scroll */
   test('일반(min-h-screen) 페이지 — 캔버스 별도 스크롤 없음 + 브라우저 단일 스크롤 + 헤더/트리 고정', async ({ page }) => {
     await openBasicEditor(page);
 
@@ -127,7 +112,6 @@ test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
     expect(metrics.treeStaysFixed).toBe(true);
   });
 
-  /** @effects fullscreen_layout_expanded_in_editor */
   test('admin 풀스크린(h-screen) 레이아웃 — 편집 캔버스에서 콘텐츠 자연 높이로 펼침(내부 스크롤 없음)', async ({ page }) => {
     await openAdminUserForm(page);
 

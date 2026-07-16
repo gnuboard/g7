@@ -2,24 +2,18 @@
 
 namespace App\Services;
 
-use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\ConsentType;
-use App\Enums\IdentityVerificationPurpose;
-use App\Enums\IdentityVerificationStatus;
 use App\Enums\UserStatus;
 use App\Exceptions\Auth\AccountLockedException;
-use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Extension\HookManager;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -32,7 +26,6 @@ class AuthService
         private UserConsentRepositoryInterface $userConsentRepository,
         private PasswordResetTokenRepositoryInterface $passwordResetTokenRepository,
         private IdentityPolicyService $policyService,
-        private IdentityVerificationLogRepositoryInterface $identityLogRepository,
     ) {}
 
     /**
@@ -103,7 +96,16 @@ class AuthService
         // 사전 잠금 체크 — 잠긴 계정은 Auth::attempt 자체를 시도하지 않는다.
         // (실패 카운트가 0 으로 리셋된 잠금 상태에서 Failed 이벤트가 다시
         //  카운트를 올려 재잠금 시각을 갱신하는 부작용 방지)
-        $this->assertNotLocked($this->userRepository->findByEmail($email));
+        if ((bool) g7_core_settings('security.login_attempt_enabled', true)) {
+            $candidate = $this->userRepository->findByEmail($email);
+            if ($candidate !== null && $this->userRepository->isLocked($candidate)) {
+                $remaining = max(1, (int) ceil(now()->diffInSeconds($candidate->locked_until, false) / 60));
+                throw new AccountLockedException(
+                    lockedUntil: $candidate->locked_until,
+                    remainingMinutes: $remaining,
+                );
+            }
+        }
 
         if (! Auth::attempt(['email' => $email, 'password' => $password])) {
             // 실패 카운트 증가/잠금 처리는 HandleFailedLoginListener 에서 담당
@@ -136,257 +138,6 @@ class AuthService
             ]);
         }
 
-        // 2단계 인증이 켜져 있으면 여기서 토큰을 발급하지 않는다.
-        // 비밀번호 확인만으로 세션이 열리면 2단계가 없는 것과 같으므로, 인증 코드를 확인할
-        // 때까지 로그인 상태를 만들지 않고 challenge 만 돌려준다.
-        if ($this->isTwoFactorRequired($user)) {
-            Auth::logout();
-
-            return $this->startTwoFactorChallenge($user, $email);
-        }
-
-        return $this->issueLoginSession($user, $email);
-    }
-
-    /**
-     * 계정이 잠겨 있으면 예외를 던집니다.
-     *
-     * 세션(토큰)을 발급하는 지점은 전부 이 검사를 거쳐야 합니다. 2단계 인증이 켜져 있으면
-     * 비밀번호 확인(`login`)은 challenge 만 돌려주고 실제 세션은 `completeTwoFactor()` 가
-     * 발급하므로, 한쪽에만 검사가 있으면 잠기기 전에 받아 둔 challenge 를 잠긴 뒤 완료하는
-     * 것만으로 잠금이 통째로 우회됩니다. 그 뒤 로그인 완료 훅이 실패 횟수·잠금 시각까지
-     * 초기화해 흔적도 남지 않습니다.
-     *
-     * @param  User|null  $user  검사 대상 사용자 (없으면 검사 대상 아님)
-     *
-     * @throws AccountLockedException 계정이 잠겨 있을 때
-     */
-    private function assertNotLocked(?User $user): void
-    {
-        if (! (bool) g7_core_settings('security.login_attempt_enabled', true)) {
-            return;
-        }
-
-        if ($user === null || ! $this->userRepository->isLocked($user)) {
-            return;
-        }
-
-        // 영구 잠금은 해제 시각이 없다 — diffInSeconds(null) 로 폭발하지 않도록 분기.
-        $remaining = $user->locked_until === null
-            ? null
-            : max(1, (int) ceil(now()->diffInSeconds($user->locked_until, false) / 60));
-
-        throw new AccountLockedException(
-            lockedUntil: $user->locked_until,
-            remainingMinutes: $remaining,
-        );
-    }
-
-    /**
-     * 이 사용자에게 2단계 인증을 요구해야 하는지 판정합니다.
-     *
-     * @param  User  $user  로그인 시도 사용자
-     * @return bool 2단계 인증 필요 여부
-     */
-    private function isTwoFactorRequired(User $user): bool
-    {
-        if (! (bool) g7_core_settings('security.two_factor_auth', false)) {
-            return false;
-        }
-
-        // 코드를 받을 수단이 없으면 요구할 수 없다 — 요구하면 그 계정은 영구히 잠긴다.
-        return filled($user->email);
-    }
-
-    /**
-     * 2단계 인증 challenge 를 발행합니다.
-     *
-     * @param  User  $user  대상 사용자
-     * @param  string  $email  로그인에 사용한 이메일
-     * @return array{two_factor_required: bool, challenge_id: string, provider_id: string, expires_at: mixed} challenge 정보
-     */
-    private function startTwoFactorChallenge(User $user, string $email): array
-    {
-        $identity = app(IdentityVerificationService::class);
-
-        $challenge = $identity->start(
-            IdentityVerificationPurpose::Login->value,
-            $user,
-            [
-                'origin_type' => 'route',
-                'origin_identifier' => 'auth.login',
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]
-        );
-
-        // 코드를 보내지 못하면 사용자는 완료할 수 없는 challenge 를 들고 막다른 길에 선다.
-        // "인증번호를 보냈습니다" 로 안내하면 원인을 알 방법이 없으므로, 발송 실패는 실패로 알린다.
-        // 이때 2단계 인증을 건너뛰고 로그인시키지는 않는다 — 보안 통제가 조용히 열리면
-        // 메일 설정이 깨진 동안 2단계 인증이 없는 것과 같아진다.
-        if (($identity->getStatus($challenge->id)['status'] ?? null) === IdentityVerificationStatus::Failed->value) {
-            Log::error('2단계 인증 코드 발송 실패 — 로그인을 차단합니다', [
-                'user_id' => $user->id,
-                'challenge_id' => $challenge->id,
-                'provider_id' => $challenge->providerId,
-            ]);
-
-            // 자격 증명은 올바르다 — 401 로 뭉개면 사용자는 비밀번호를 의심하며 같은 실패를
-            // 반복하고, 운영자는 메일 설정이 깨진 사실을 알 방법이 없다.
-            throw new TwoFactorDeliveryFailedException;
-        }
-
-        HookManager::doAction('core.auth.two_factor_requested', $user, [
-            'email' => $email,
-            'challenge_id' => $challenge->id,
-            'ip_address' => request()->ip(),
-        ]);
-
-        return [
-            'two_factor_required' => true,
-            'challenge_id' => $challenge->id,
-            'provider_id' => $challenge->providerId,
-            'expires_at' => $challenge->expiresAt ?? null,
-        ];
-    }
-
-    /**
-     * 2단계 인증 코드를 확인하고 로그인을 완료합니다.
-     *
-     * @param  string  $challengeId  challenge UUID
-     * @param  array<string, mixed>  $input  프로바이더 입력 (코드 등)
-     * @return array{user: User, token: string, token_type: string} 로그인 결과
-     *
-     * @throws ValidationException 검증 실패 또는 challenge 불일치
-     */
-    public function completeTwoFactor(string $challengeId, array $input): array
-    {
-        $identity = app(IdentityVerificationService::class);
-
-        $status = $identity->getStatus($challengeId);
-
-        // 이 흐름 전용 challenge 인지 먼저 확인한다. purpose 를 검사하지 않으면 다른 용도로
-        // 발급된 challenge(가입·비밀번호 재설정 등)를 들고 와 로그인할 수 있다.
-        if (($status['purpose'] ?? null) !== IdentityVerificationPurpose::Login->value) {
-            throw ValidationException::withMessages([
-                'challenge_id' => [__('auth.two_factor_invalid_challenge')],
-            ]);
-        }
-
-        $result = $identity->verify($challengeId, $input, [
-            'origin_type' => 'route',
-            'origin_identifier' => 'auth.login',
-        ]);
-
-        if (! $result->success) {
-            throw ValidationException::withMessages([
-                'code' => [__('auth.two_factor_failed')],
-            ]);
-        }
-
-        $user = $identity->resolveVerifiedUser($challengeId, IdentityVerificationPurpose::Login->value);
-
-        if (! $user || $user->status !== UserStatus::Active->value) {
-            throw ValidationException::withMessages([
-                'challenge_id' => [__('auth.two_factor_invalid_challenge')],
-            ]);
-        }
-
-        // 세션을 여는 것은 이 지점이다 — challenge 발급 이후에 잠겼을 수 있으므로 재검사한다.
-        // Auth::login() 앞에 두어야 로그인 완료 훅이 잠금 필드를 초기화하지 못한다.
-        $this->assertNotLocked($user);
-
-        Auth::login($user);
-
-        return $this->issueLoginSession($user, (string) $user->email);
-    }
-
-    /**
-     * 2단계 인증 코드를 재발송합니다.
-     *
-     * 아직 사용되지 않은 challenge 만 재발송 대상입니다. 기존 challenge 를 취소하고 새로
-     * 발행하므로, 재발송 이후에는 앞서 받은 인증번호가 통하지 않습니다 — 재발송을 남겨 두면
-     * 유효한 코드가 여러 개 동시에 살아 있어 대입 시도의 표적이 넓어집니다.
-     *
-     * 해석된 사용자는 응답 페이로드에 실리지 않고 out 파라미터로만 올린다 — 관리자 경로가
-     * 그 사용자로 등급을 판정해야 하지만, 사용자 경로가 그대로 내보내면 모델이 응답에 새는다.
-     *
-     * @param  string  $challengeId  비밀번호 확인 단계가 돌려준 challenge UUID
-     * @param  User|null  $resolvedUser  (out) challenge 가 식별한 사용자
-     * @return array{two_factor_required: bool, challenge_id: string, provider_id: string, expires_at: mixed} 새 challenge 정보
-     *
-     * @throws ValidationException challenge 가 재발송 대상이 아닐 때
-     * @throws AccountLockedException 계정이 잠겨 있을 때
-     * @throws TwoFactorDeliveryFailedException 인증번호를 보내지 못했을 때
-     */
-    public function resendTwoFactorChallenge(string $challengeId, ?User &$resolvedUser = null): array
-    {
-        $log = $this->identityLogRepository->findById($challengeId);
-
-        // 존재하지 않음 / 다른 용도 / 이미 검증·취소·실패·만료 — 전부 같은 응답으로 답한다.
-        // 사유를 구분해 주면 challenge id 를 넣어 보며 상태를 캐낼 수 있다.
-        $resendable = [
-            IdentityVerificationStatus::Requested->value,
-            IdentityVerificationStatus::Sent->value,
-        ];
-
-        if ($log === null
-            || $log->purpose !== IdentityVerificationPurpose::Login->value
-            || ! in_array($log->status->value, $resendable, true)
-            || ($log->expires_at !== null && $log->expires_at->isPast())
-        ) {
-            throw ValidationException::withMessages([
-                'challenge_id' => [__('auth.two_factor_invalid_challenge')],
-            ]);
-        }
-
-        $user = $log->user_id === null ? null : $this->userRepository->findById((int) $log->user_id);
-
-        if (! $user || $user->status !== UserStatus::Active->value) {
-            throw ValidationException::withMessages([
-                'challenge_id' => [__('auth.two_factor_invalid_challenge')],
-            ]);
-        }
-
-        // challenge 발급 이후에 잠겼을 수 있다 — 재발송도 잠긴 계정에는 코드를 보내지 않는다.
-        $this->assertNotLocked($user);
-
-        $resolvedUser = $user;
-
-        app(IdentityVerificationService::class)->cancel($log->id);
-
-        return $this->startTwoFactorChallenge($user, (string) $user->email);
-    }
-
-    /**
-     * 이미 발급된 세션(토큰 + web 세션)을 되돌립니다.
-     *
-     * 2단계 인증 완료는 코드 확인 시점에 토큰을 발급하므로, 그 뒤에 권한 검사로 거절하는
-     * 경로는 발급분을 반드시 회수해야 합니다. `logout()` 은 `currentAccessToken()` 에
-     * 의존해 이 시점(요청 자체는 미인증)에는 아무 일도 하지 않습니다.
-     *
-     * @param  User  $user  대상 사용자
-     * @param  string  $plainTextToken  방금 발급한 평문 토큰 ({id}|{token} 형식)
-     */
-    public function revokeIssuedSession(User $user, string $plainTextToken): void
-    {
-        PersonalAccessToken::findToken($plainTextToken)?->delete();
-
-        // completeTwoFactor() 의 Auth::login() 이 연 세션도 함께 닫는다.
-        if (request()->hasSession() && request()->session()->isStarted() && Auth::guard('web')->check()) {
-            Auth::guard('web')->logout();
-        }
-    }
-
-    /**
-     * 토큰을 발급하고 로그인 완료 훅을 실행합니다.
-     *
-     * @param  User  $user  로그인 사용자
-     * @param  string  $email  로그인에 사용한 이메일
-     * @return array{user: User, token: string, token_type: string} 로그인 결과
-     */
-    private function issueLoginSession(User $user, string $email): array
-    {
         $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
 
         // 세션에 사용자 저장 (/dev 대시보드 인증용)
@@ -445,35 +196,24 @@ class AuthService
             'nickname' => $data['nickname'] ?? null,
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'mobile' => $data['mobile'] ?? null,
-            'phone' => $data['phone'] ?? null,
             'language' => $data['language'] ?? 'ko',
             'country' => $this->detectCountryFromAcceptLanguage(),
             'ip_address' => request()->ip(),
             'status' => $status,
         ];
 
-        // 계정 생성 이후 단계에서 실패하면 이메일만 점유한 유령 계정이 남아
-        // 같은 이메일로 재가입조차 불가능해진다. 생성~토큰 발급을 하나로 묶는다.
-        [$user, $token] = DB::transaction(function () use ($userData, $data, $now) {
-            $user = $this->userRepository->create($userData);
+        $user = $this->userRepository->create($userData);
 
-            // 약관 동의 이력 기록
-            $this->recordConsents($user, $data, $now);
+        // 약관 동의 이력 기록
+        $this->recordConsents($user, $data, $now);
 
-            // 'user' 역할 자동 할당 (UserService 패턴과 동일)
-            $userRole = $this->roleRepository->findByIdentifier('user');
-            if ($userRole) {
-                $user->roles()->sync([$userRole->id]);
-            }
+        // 'user' 역할 자동 할당 (UserService 패턴과 동일)
+        $userRole = $this->roleRepository->findByIdentifier('user');
+        if ($userRole) {
+            $user->roles()->sync([$userRole->id]);
+        }
 
-            $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
-
-            return [$user, $token];
-        });
-
-        // 커밋 후 부수효과 (캐시는 DB 트랜잭션의 롤백 대상이 아니다)
-        $user->flushPermissionCaches();
+        $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
 
         // Hook 발생 (회원가입 완료) — 알림 발송은 NotificationHookListener,
         // signup_after_create 정책이 enabled 면 InitiateIdentityChallengeAfterRegister 가 challenge 발행.
@@ -551,15 +291,9 @@ class AuthService
      *
      * @param  User  $user  토큰을 갱신할 사용자
      * @return array 새로운 토큰 정보
-     *
-     * @throws AccountLockedException 계정이 잠겨 있을 때
      */
     public function refreshToken(User $user): array
     {
-        // 재발급도 세션을 여는 지점이다. 유효한 기존 세션이 전제라 신규 로그인 우회는
-        // 아니지만, 관리자가 계정을 잠근 뒤에도 그 세션이 무기한 연장되면 잠금이 실효를 잃는다.
-        $this->assertNotLocked($user);
-
         // 현재 토큰 삭제 (다른 디바이스는 유지)
         $currentToken = $user->currentAccessToken();
 
@@ -670,8 +404,7 @@ class AuthService
         }
 
         // 4. 만료 시간 체크
-        // Carbon 날짜 연산은 strict 타입 경계라 설정이 문자열이면 TypeError 가 난다 → 정수 보장
-        $expireMinutes = (int) config('auth.passwords.users.expire', 60);
+        $expireMinutes = config('auth.passwords.users.expire', 60);
         if ($record->created_at->addMinutes($expireMinutes)->isPast()) {
             $record->delete();
 
@@ -720,8 +453,7 @@ class AuthService
         }
 
         // 만료 시간 체크 (기본 60분)
-        // Carbon 날짜 연산은 strict 타입 경계라 설정이 문자열이면 TypeError 가 난다 → 정수 보장
-        $expireMinutes = (int) config('auth.passwords.users.expire', 60);
+        $expireMinutes = config('auth.passwords.users.expire', 60);
 
         if ($record->created_at->addMinutes($expireMinutes)->isPast()) {
             // 만료된 토큰 삭제
@@ -732,20 +464,16 @@ class AuthService
             ]);
         }
 
-        // 비밀번호를 바꾼 뒤 토큰 삭제가 실패하면 그 재설정 토큰이 계속 유효한 채로
-        // 남아 재사용된다(보안). 두 단계를 하나로 묶는다.
-        DB::transaction(function () use ($user, $password, $record) {
-            // Hook 발생 (비밀번호 재설정 시작)
-            HookManager::doAction('core.auth.before_reset_password', $user);
+        // Hook 발생 (비밀번호 재설정 시작)
+        HookManager::doAction('core.auth.before_reset_password', $user);
 
-            // 비밀번호 업데이트
-            $this->userRepository->update($user, [
-                'password' => Hash::make($password),
-            ]);
+        // 비밀번호 업데이트
+        $this->userRepository->update($user, [
+            'password' => Hash::make($password),
+        ]);
 
-            // 사용된 토큰 삭제
-            $record->delete();
-        });
+        // 사용된 토큰 삭제
+        $record->delete();
 
         // Hook 발생 (비밀번호 변경 완료) — 알림 발송은 NotificationHookListener가 처리
         HookManager::doAction('core.auth.after_password_changed', $user);

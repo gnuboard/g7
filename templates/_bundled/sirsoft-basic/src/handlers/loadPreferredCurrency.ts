@@ -11,48 +11,20 @@ const logger = ((window as any).G7Core?.createLogger?.('Handler:Currency')) ?? {
     error: (...args: unknown[]) => console.error('[Handler:Currency]', ...args),
 };
 
-import { HandlerContext, TemplateActionDefinition } from '../types';
+import { HandlerContext } from '../types';
 
 const STORAGE_KEY = 'g7_preferred_currency';
-
-/**
- * 쇼핑몰 설정의 기본 통화를 전역 상태에서 읽습니다.
- *
- * 특정 통화를 상수로 못 박으면 그 통화를 쓰지 않는 상점에서 표시 통화가 잘못 초기화된다.
- *
- * @returns 기본 통화 코드 (읽지 못하면 빈 문자열)
- */
-function resolveConfiguredDefaultCurrency(): string {
-  try {
-    const state = (window as any).G7Core?.state?.get?.() || {};
-
-    return state.defaultCurrency
-      || state?.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency
-      || '';
-  } catch {
-    return '';
-  }
-}
+const DEFAULT_CURRENCY = 'KRW';
 
 interface LoadPreferredCurrencyParams {
   defaultCurrency?: string;
 }
 
 /**
- * 선호 통화를 전역 상태에 반영한다.
- *
- * @param currencyCode 통화 코드
- * @return 없음
- */
-function writeGlobalCurrency(currencyCode: string): void {
-  (window as any).G7Core?.state?.set?.({ preferredCurrency: currencyCode });
-}
-
-/**
  * localStorage에서 선호 통화를 로드하여 전역 상태에 설정합니다.
  *
- * @param action - 액션 정의 (`params.defaultCurrency`)
- * @param _context - 핸들러 컨텍스트 (미사용 — 전역 상태는 G7Core.state.set() 으로 쓴다)
+ * @param params.defaultCurrency - 기본 통화 (선택, 기본값: 'KRW')
+ * @param context - 핸들러 컨텍스트
  * @returns 로드된 통화 코드
  *
  * @example
@@ -67,11 +39,10 @@ function writeGlobalCurrency(currencyCode: string): void {
  * }
  */
 export function loadPreferredCurrencyHandler(
-  action: TemplateActionDefinition,
-  _context?: HandlerContext
+  params: LoadPreferredCurrencyParams,
+  context: HandlerContext
 ): string {
-  const params = (action?.params ?? {}) as LoadPreferredCurrencyParams;
-  const { defaultCurrency = resolveConfiguredDefaultCurrency() } = params;
+  const { defaultCurrency = DEFAULT_CURRENCY } = params;
 
   let currency = defaultCurrency;
 
@@ -87,9 +58,8 @@ export function loadPreferredCurrencyHandler(
     logger.warn('localStorage 접근 불가, 기본 통화 사용:', defaultCurrency);
   }
 
-  // 전역 상태에 설정 — 엔진 context.setState 는 객체 하나만 받는 로컬 writer 다.
-  // 전역 쓰기 공개 통로는 G7Core.state.set() 이다.
-  writeGlobalCurrency(currency);
+  // 전역 상태에 설정
+  context.setState('global', { preferredCurrency: currency });
 
   return currency;
 }
@@ -97,8 +67,8 @@ export function loadPreferredCurrencyHandler(
 /**
  * 선호 통화를 localStorage에 저장합니다.
  *
- * @param action - 액션 정의 (`params.currencyCode`)
- * @param _context - 핸들러 컨텍스트 (미사용 — 전역 상태는 G7Core.state.set() 으로 쓴다)
+ * @param currencyCode - 저장할 통화 코드
+ * @param context - 핸들러 컨텍스트
  *
  * @example
  * // 통화 선택 드롭다운에서 사용
@@ -113,10 +83,10 @@ export function loadPreferredCurrencyHandler(
  * }
  */
 export function savePreferredCurrencyHandler(
-  action: TemplateActionDefinition,
-  _context?: HandlerContext
+  params: { currencyCode: string },
+  context: HandlerContext
 ): void {
-  const { currencyCode } = (action?.params ?? {}) as { currencyCode: string };
+  const { currencyCode } = params;
 
   if (!isValidCurrency(currencyCode)) {
     logger.warn('유효하지 않은 통화 코드:', currencyCode);
@@ -132,7 +102,7 @@ export function savePreferredCurrencyHandler(
   }
 
   // 전역 상태 업데이트
-  writeGlobalCurrency(currencyCode);
+  context.setState('global', { preferredCurrency: currencyCode });
 }
 
 /**

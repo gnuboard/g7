@@ -3,12 +3,9 @@
 namespace Modules\Sirsoft\Board\Http\Requests;
 
 use App\Extension\HookManager;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
@@ -20,13 +17,8 @@ use Modules\Sirsoft\Board\Rules\ParentPostValidationRule;
  */
 class StorePostRequest extends FormRequest
 {
-    use ResolvesAllowedExtensions;
-    use ValidatesAttachmentCount;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
-     *
-     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -104,12 +96,7 @@ class StorePostRequest extends FormRequest
             $maxFiles = $board->max_file_count ?? $defaults['max_file_count'] ?? 5;
             $maxSizeMB = $board->max_file_size ?? $defaults['max_file_size'] ?? 10;
             $maxSizeKB = $maxSizeMB * 1024;
-            // 게시판/기본값이 모두 비어 있으면(null 또는 []) 최종 기본 확장자로 폴백한다.
-            // 빈 배열을 그대로 쓰면 'mimes:' 빈 규칙이 되어 전 파일이 거부된다.
-            $allowedExtensions = $this->resolveAllowedExtensions(
-                $board->allowed_extensions,
-                $defaults['allowed_extensions'] ?? null
-            );
+            $allowedExtensions = $board->allowed_extensions ?? $defaults['allowed_extensions'] ?? ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip'];
             $mimes = implode(',', $allowedExtensions);
 
             $rules['files'] = ['nullable', 'array', 'max:'.$maxFiles];
@@ -168,18 +155,5 @@ class StorePostRequest extends FormRequest
             'files' => __('sirsoft-board::validation.attributes.post.files'),
             'files.*' => __('sirsoft-board::validation.attributes.post.file'),
         ];
-    }
-
-    /**
-     * 필드 단위 규칙으로 판정할 수 없는 첨부 총합을 검증합니다.
-     *
-     * @param  Validator  $validator  검증기
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator) {
-            $board = Board::where('slug', $this->route('slug'))->first();
-            $this->validateAttachmentTotal($validator, $board);
-        });
     }
 }

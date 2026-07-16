@@ -8,9 +8,10 @@ use App\Models\Module;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Database\Seeder;
+use Modules\Sirsoft\Ecommerce\Enums\SequenceAlgorithm;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
-use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Sequence;
+use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 
 /**
@@ -72,7 +73,7 @@ class TestingSeeder extends Seeder
         // 배송사 초기 데이터 생성
         $this->createShippingCarriers();
 
-        // 클레임 사유 초기 데이터 생성
+        // 클래임 사유 초기 데이터 생성
         $this->createClaimReasons();
     }
 
@@ -126,7 +127,7 @@ class TestingSeeder extends Seeder
     }
 
     /**
-     * 클레임 사유 초기 데이터를 생성합니다.
+     * 클래임 사유 초기 데이터를 생성합니다.
      */
     private function createClaimReasons(): void
     {

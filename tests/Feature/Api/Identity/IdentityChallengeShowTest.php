@@ -36,11 +36,6 @@ class IdentityChallengeShowTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /**
-     * @scenario source=identity-challenge-status-field-exposure axis=field:id,field:status,field:public_payload
-     *
-     * @effects public_safe_fields_present_in_response
-     */
     public function test_show_returns_public_status_fields(): void
     {
         // start a challenge
@@ -60,11 +55,6 @@ class IdentityChallengeShowTest extends TestCase
             ->assertJsonPath('data.id', $id);
     }
 
-    /**
-     * @scenario source=identity-challenge-status-field-exposure axis=field:attempts,field:max_attempts,field:target_hash
-     *
-     * @effects attempts_absent_from_response, max_attempts_absent_from_response, target_hash_absent_from_response, verification_token_absent_from_response, metadata_absent_from_response
-     */
     public function test_show_does_not_expose_sensitive_fields(): void
     {
         $request = $this->postJson('/api/identity/challenges', [
@@ -75,18 +65,11 @@ class IdentityChallengeShowTest extends TestCase
 
         $response = $this->getJson("/api/identity/challenges/{$id}");
 
-        // 누적 시도 횟수(attempts)·코드 본체·target_hash·verification_token 등 노출 금지.
-        // 이 엔드포인트는 권한 가드 없는 공개 폴링용이므로, 남의 인증이 몇 번 실패했는지를
-        // 추론할 단서를 응답에 담지 않는다.
+        // 시도 횟수·코드 본체·target_hash·verification_token 등 노출 금지
         $response->assertJsonMissingPath('data.attempts')
             ->assertJsonMissingPath('data.target_hash')
             ->assertJsonMissingPath('data.verification_token')
             ->assertJsonMissingPath('data.metadata');
-
-        // 상한(max_attempts)은 정책 상수라 노출한다 — 화면이 남은 횟수를 표시하려면 필요하고,
-        // 상수 자체로는 그 인증 건이 몇 번 실패했는지가 드러나지 않는다.
-        // (Service::getStatus 의 판정과 같은 계약. 한쪽만 바뀌면 이 단언이 먼저 깨진다.)
-        $this->assertIsInt($response->json('data.max_attempts'));
     }
 
     public function test_show_reflects_status_transitions(): void

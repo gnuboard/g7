@@ -11,12 +11,11 @@
  *    잠그며, 본 spec 은 토글 표시/전환의 브라우저 가시 결과를 측정한다.
  *
  * @scenario layout-editor-page-state-switcher
- * 효과 요약(마커 아님 — 평문): login_route_shows_state_toggle_with_two_options, root_route_hides_state_toggle, login_failed_state_renders_form_error_text_on_canvas, profile_edit_password_entry_vs_actual_edit_section_toggle, admin_users_edit_vs_create_title_via_route_id_removal, admin_settings_general_vs_seo_tab_via_query_tab, checkout_validation_failed_renders_dotted_key_inline_errors, guest_order_form_guest_vs_member_branch_toggle_via_currentuser_patch.
+ * @effects login_route_shows_state_toggle_with_two_options + root_route_hides_state_toggle + login_failed_state_renders_form_error_text_on_canvas + profile_edit_password_entry_vs_actual_edit_section_toggle + admin_users_edit_vs_create_title_via_route_id_removal + admin_settings_general_vs_seo_tab_via_query_tab + checkout_validation_failed_renders_dotted_key_inline_errors + guest_order_form_guest_vs_member_branch_toggle_via_currentuser_patch
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
 test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
-  /** @effects login_route_shows_state_toggle_with_two_options */
   test('states 선언 라우트(/login) → 상태 토글 표시 + 항목 2개', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -34,7 +33,6 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     await expect(options).toHaveCount(2);
   });
 
-  /** @effects root_route_hides_state_toggle */
   test('states 미선언 라우트(/) → 상태 토글 미표시 (디그레이드)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -51,7 +49,6 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     await expect(page.getByTestId('g7le-state-switcher')).toHaveCount(0);
   });
 
-  /** @effects login_failed_state_renders_form_error_text_on_canvas */
   test('로그인 실패 상태 전환 → 캔버스에 폼 오류 표시 (formErrors 경로 주입)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -85,7 +82,6 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
   // initialState.local.isPasswordVerified 패치가 레이아웃 init_actions 의 기본값을 이겨
   // 각 단계 화면이 미리보기된다. 신규 다국어 키(editor.state.profile_*)가 캐시 무효화
   // 구멍 없이 친화명으로 해석되는지도 함께 측정한다(라벨 raw 회귀 차단).
-  /** @effects profile_edit_password_entry_vs_actual_edit_section_toggle */
   test('profile/edit → 비밀번호 확인 / 실제 수정 단계 토글 + 신규 라벨 해석', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -102,23 +98,22 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     const frame = page.getByTestId('g7le-preview-frame');
 
     // 기본 password_entry → 비밀번호 확인 섹션 표시
-    await expect(frame.getByText(/내 정보를 수정하려면 비밀번호를 입력해주세요\.|Please enter your password to edit your profile\./).first()).toBeVisible({
+    await expect(frame.getByText('Please enter your password to edit your profile.').first()).toBeVisible({
       timeout: 15_000,
     });
 
     // actual_edit 전환 → 비밀번호 섹션 사라지고 정보 수정 폼(필드) 표시
     await select.selectOption('actual_edit');
     await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute('data-active-state', 'actual_edit', { timeout: 5_000 });
-    await expect(frame.getByText(/내 정보를 수정하려면 비밀번호를 입력해주세요\.|Please enter your password to edit your profile\./)).toHaveCount(0, { timeout: 15_000 });
+    await expect(frame.getByText('Please enter your password to edit your profile.')).toHaveCount(0, { timeout: 15_000 });
 
     // 신규 상태 라벨이 raw 키가 아닌 친화명으로 해석된다(캐시 무효화 구멍 회귀 차단)
-    await expect(select.locator('option', { hasText: /정보 수정|Edit profile/ })).toHaveCount(1);
+    await expect(select.locator('option', { hasText: 'Edit profile' })).toHaveCount(1);
     await expect(select.locator('option', { hasText: 'editor.state.profile' })).toHaveCount(0);
   });
 
   // route 패치 — admin_user_form 의 route.id 유무(수정↔신규) 변종 (미커버 발굴분).
   // admin 라우트는 `*/admin/...` 프리픽스라 URL 직접 인코딩 대신 라우트 트리 클릭으로 진입.
-  /** @effects admin_users_edit_vs_create_title_via_route_id_removal */
   test('admin users/:id/edit → route.id 제거로 수정↔신규 작성 모드 전환', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -135,16 +130,15 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     const frame = page.getByTestId('g7le-preview-frame');
 
     // 기본 edit_existing → 수정 제목
-    await expect(frame.getByText(/사용자 정보 수정|Edit User Information/).first()).toBeVisible({ timeout: 15_000 });
+    await expect(frame.getByText('Edit User Information').first()).toBeVisible({ timeout: 15_000 });
 
     // create_mode 전환 → route.id 제거 → 신규 작성 제목
     await select.selectOption('create_mode');
     await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute('data-active-state', 'create_mode', { timeout: 5_000 });
-    await expect(frame.getByText(/사용자 등록|Create User/).first()).toBeVisible({ timeout: 15_000 });
+    await expect(frame.getByText('Create User').first()).toBeVisible({ timeout: 15_000 });
   });
 
   // query 패치 — admin_settings 의 query.tab 변종 (미커버 발굴분).
-  /** @effects admin_settings_general_vs_seo_tab_via_query_tab */
   test('admin settings → query.tab 으로 일반↔SEO 탭 전환', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -158,7 +152,7 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     const select = page.getByTestId('g7le-state-switcher-select');
     await expect(select).toBeVisible({ timeout: 15_000 });
     // 2탭 변종 (General / SEO) 라벨 친화명 해석
-    await expect(select.locator('option', { hasText: /SEO 탭|SEO tab/ })).toHaveCount(1);
+    await expect(select.locator('option', { hasText: 'SEO tab' })).toHaveCount(1);
 
     await select.selectOption('settings_seo');
     await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute('data-active-state', 'settings_seo', { timeout: 5_000 });
@@ -168,7 +162,6 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
   // `_local.errors?.['orderer.name']` 처럼 **키 자체에 점이 박힌** flat 키로 읽는다. 페이지
   // 상태 formErrors 키를 대괄호 표기(`_local.errors['orderer.name']`)로 지정하면
   // tokenizePath 가 점을 리터럴 leaf 로 보존해 인라인 에러가 캔버스에 표현된다.
-  /** @effects checkout_validation_failed_renders_dotted_key_inline_errors */
   test('checkout → validation_failed 전환 시 점 박힌 키 인라인 에러 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -182,19 +175,8 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
 
     const select = page.getByTestId('g7le-state-switcher-select');
     await expect(select).toBeVisible({ timeout: 15_000 });
-
-    // 이 테스트가 의존하는 상태가 선택지에 있는지만 확인한다.
-    //
-    // 이전에는 `toHaveCount(3)` 으로 총 개수를 못박아 두었는데, 상태 그룹은 편집기 스펙에서
-    // 계속 늘어난다 — 실제로 `summary_details_expanded` 가 추가되어 4개가 되면서(#383,
-    // `modules/_bundled/sirsoft-ecommerce/editor-spec.json` 의 `/shop/checkout` 그룹) 총 개수
-    // 단언이 깨졌다. 개수는 이 테스트의 검증 대상(점 박힌 키 인라인 에러 노출)이 아니므로,
-    // 새 상태가 추가돼도 깨지지 않게 필요한 값의 존재로 판정한다.
-    const optionValues = await select.locator('option').evaluateAll((els) =>
-      els.map((e) => (e as HTMLOptionElement).value),
-    );
-    expect(optionValues).toContain('normal');
-    expect(optionValues).toContain('validation_failed');
+    // 3상태 (normal / payment_error / validation_failed)
+    await expect(select.locator('option')).toHaveCount(3);
 
     const frame = page.getByTestId('g7le-preview-frame');
 
@@ -218,7 +200,6 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
   // 안내). 편집기 sampleGlobal 은 로그인 고정이라 상태 그룹이 없으면 비회원 조회 폼이 영영
   // 미표시되어 편집 불가였다. guest 상태(currentUser:null 패치)로 폼을, member 상태(패치
   // 없음)로 안내 분기를 각각 캔버스에 노출하는지 측정한다(라이브 실측 회귀 차단).
-  /** @effects guest_order_form_guest_vs_member_branch_toggle_via_currentuser_patch */
   test('guest_order_form → 비회원(조회 폼) ↔ 회원(마이페이지 안내) 분기 전환', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

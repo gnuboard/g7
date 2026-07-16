@@ -3,9 +3,6 @@
 return [
     // User related exceptions
     'cannot_delete_super_admin' => 'Super admin cannot be deleted.',
-    'cannot_modify_super_admin' => 'You do not have permission to modify a super admin account or role.',
-    'cannot_grant_unheld_permission' => 'You cannot grant permissions you do not hold or a broader scope than your own.',
-    'cannot_modify_protected_role' => 'You do not have permission to modify a system or extension-owned role.',
 
     'circular_reference' => 'Layout circular reference detected: :trace',
     'max_depth_exceeded' => 'Layout nesting depth exceeds maximum allowed depth (:max).',
@@ -81,13 +78,5 @@ return [
         'no_composer_lock' => 'composer.lock is required. Run composer install first: :path',
         'vendor_dir_not_found' => 'vendor/ directory does not exist. Run composer install first: :path',
         'composer_binary_not_found' => 'Composer binary not found. Set the COMPOSER_BINARY environment variable or add composer to your PATH.',
-    ],
-
-    // SEO / Sitemap 관련 예외
-    'seo' => [
-        'sitemap_write_failed' => 'Failed to write sitemap file: :path',
-        'sitemap_gzip_failed' => 'Failed to compress sitemap child file: :file',
-        'sitemap_temp_file_unreadable' => 'Cannot read sitemap temporary file: :file',
-        'sitemap_stat_group_column_unsupported' => 'Unsupported group-by column: :column',
     ],
 ];

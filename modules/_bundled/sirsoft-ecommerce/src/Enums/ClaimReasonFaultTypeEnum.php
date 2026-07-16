@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Enums;
 
 /**
- * 클레임 사유 귀책 유형 Enum
+ * 클래임 사유 귀책 유형 Enum
  */
 enum ClaimReasonFaultTypeEnum: string
 {
@@ -14,7 +14,7 @@ enum ClaimReasonFaultTypeEnum: string
     /**
      * 다국어 라벨을 반환합니다.
      *
-     * @return string 다국어 라벨
+     * @return string
      */
     public function label(): string
     {
@@ -24,7 +24,7 @@ enum ClaimReasonFaultTypeEnum: string
     /**
      * 모든 값 배열을 반환합니다.
      *
-     * @return array 모든 값 배열
+     * @return array
      */
     public static function values(): array
     {
@@ -34,7 +34,7 @@ enum ClaimReasonFaultTypeEnum: string
     /**
      * 프론트엔드용 옵션 배열을 반환합니다.
      *
-     * @return array 프론트엔드용 옵션 배열
+     * @return array
      */
     public static function toSelectOptions(): array
     {

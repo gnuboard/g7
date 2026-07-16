@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
-use Modules\Sirsoft\Ecommerce\Support\ReviewWritePolicy;
 
 /**
  * 주문 옵션 리소스
@@ -288,11 +287,17 @@ class OrderOptionResource extends BaseApiResource
     /**
      * 구매확정 시점 기준 리뷰 작성 기한이 지났는지 판정
      *
-     * 판정 규칙은 ReviewWritePolicy 단일 SSoT 를 따른다 — 화면 표시(이 리소스)와
-     * 실제 저장 가능 여부(ProductReviewService::canWrite)가 어긋나지 않도록 한다.
+     * ProductReviewService::canWrite 와 동일한 경계 비교를 사용한다
+     * (confirmed_at + N일 < now). N(write_deadline_days)이 0 이하면 무제한으로 간주.
      */
     private function isReviewDeadlinePassed(): bool
     {
-        return ReviewWritePolicy::isDeadlinePassed($this->confirmed_at);
+        $deadlineDays = (int) module_setting('sirsoft-ecommerce', 'review_settings.write_deadline_days', 90);
+
+        if (! $this->confirmed_at || $deadlineDays <= 0) {
+            return false;
+        }
+
+        return now()->gt($this->confirmed_at->copy()->addDays($deadlineDays));
     }
 }

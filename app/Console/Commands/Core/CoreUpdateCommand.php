@@ -16,10 +16,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorMode;
 use App\Services\CoreUpdateService;
-use App\Support\ComposerInstallInfo;
 use App\Support\ConfigCacheHelper;
-use App\Support\PackageManifestCacheHelper;
-use App\Support\RouteCacheHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -37,8 +34,7 @@ class CoreUpdateCommand extends Command
         {--local : 로컬 코드베이스를 업데이트 소스로 사용 (GitHub 스킵)}
         {--source= : 수동 업데이트용 소스 디렉토리 경로 (GitHub 다운로드 대신 지정 디렉토리 사용)}
         {--zip= : 수동 업데이트용 ZIP 파일 경로 (GitHub 다운로드 대신 지정 ZIP 추출 사용)}
-        {--vendor-mode=auto : vendor 설치 모드 (auto|composer|bundled)}
-        {--rebuild-search-index : 번들 확장 일괄 업데이트 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
+        {--vendor-mode=auto : vendor 설치 모드 (auto|composer|bundled)}';
 
     protected $description = '그누보드7 코어를 최신 버전으로 업데이트합니다';
 
@@ -303,16 +299,12 @@ class CoreUpdateCommand extends Command
             // Step 11/12 의 restoreOwnership 이 항목별 정확 복원하도록 전달한다.
             // 사용자 데이터 영역(storage/app/{modules,plugins,attachments,public,settings})
             // 은 본 스냅샷 대상이 아니며 chown 자체가 빠지므로 시드/업로드 owner 가 보존된다.
-            //
-            // 이번 실행이 방금 만든 격리 디렉토리(core_{ts})는 제외한다 — 스냅샷은 그 디렉토리가
-            // 생긴 뒤에 찍히므로, 제외하지 않으면 sudo 가 root 로 만든 추출본이 "원본" 으로
-            // 기록되고 복원이 잔존물을 다시 root 로 되돌린다(7.0.0~7.0.9 실사례).
             $detailedOwnershipSnapshot = $service->snapshotOwnershipDetailed([
                 'storage/logs',
                 'storage/framework',
                 'storage/app/core_pending',
                 'bootstrap/cache',
-            ], excludes: [$service->resolveStagingRoot($pendingPath)]);
+            ]);
             if (! empty($detailedOwnershipSnapshot)) {
                 $log('항목별 정확 스냅샷 수집: '.count($detailedOwnershipSnapshot).'개 항목 (PHP-FPM 쓰기 영역)');
             }
@@ -321,22 +313,6 @@ class CoreUpdateCommand extends Command
             $vendorMode = VendorMode::fromStringOrAuto((string) $this->option('vendor-mode'));
             $composerSkipped = $vendorMode !== VendorMode::Bundled
                 && $service->isComposerUnchangedForCore($pendingPath);
-
-            // 운영 vendor 에 개발용(require-dev) 패키지가 섞여 있는지 알린다. 그대로 두면
-            // 이전 설치본이 만든 패키지 매니페스트가 새 vendor 와 어긋나 이후 부팅이 깨지고,
-            // 그 사실은 오류 메시지 어디에도 "dev 설치본" 으로 드러나지 않는다.
-            $devPackages = ComposerInstallInfo::devPackageNames(base_path('vendor'));
-            if ($devPackages !== []) {
-                $devCount = count($devPackages);
-                $devSample = implode(', ', array_slice($devPackages, 0, 5)).($devCount > 5 ? ' …' : '');
-                if ($composerSkipped) {
-                    $this->warn("운영 vendor 에 개발용 패키지 {$devCount}개 감지 — composer.json/lock 변경이 없어 vendor 를 재설치하지 않으므로 그대로 남습니다. 업데이트 후 'composer install --no-dev --optimize-autoloader' 실행을 권장합니다.");
-                    $log("운영 vendor 개발용 패키지 {$devCount}개 잔존 (composer 스킵): {$devSample}");
-                } else {
-                    $this->line("운영 vendor 에 개발용 패키지 {$devCount}개 감지 — 이번 업데이트가 --no-dev vendor 로 교체합니다.");
-                    $log("운영 vendor 개발용 패키지 {$devCount}개 감지 — --no-dev vendor 로 교체: {$devSample}");
-                }
-            }
 
             if ($composerSkipped) {
                 $bar->setMessage('Composer 의존성 변경 없음 — 스킵');
@@ -529,11 +505,6 @@ class CoreUpdateCommand extends Command
             $service->updateVersionInEnv($toVersion);
             $service->clearAllCaches();
 
-            // 상주 큐 워커는 부팅이 한 번뿐이라 옛 코드를 물고 있다 — 캐시가 새 코드 기준으로
-            // 정리된 직후 재시작 신호를 보낸다.
-            $service->signalQueueRestart();
-            $log('큐 워커 재시작 신호 전송 (queue:restart)');
-
             // 코어 업데이트 후 프론트엔드가 새 lang/routes/layout 자원으로 fetch 하도록
             // `ext.cache_version` bump. 코어 lang JSON 변경이 프론트엔드 캐시에
             // 반영되지 않는 회귀를 차단한다 (core-frontend-i18n-infrastructure 계획서).
@@ -570,11 +541,6 @@ class CoreUpdateCommand extends Command
             // 요청이 config 파일을 재파싱한다(성능 손실). ConfigCacheHelper 는 설치 미완료
             // 상태를 가드하고 실패를 안전하게 흡수한다.
             ConfigCacheHelper::rebuild();
-
-            // 라우트 캐시도 같은 이유로 되살린다. 코어 업데이트는 routes/*.php 와 vendor 를
-            // 교체하므로 흐름 중간에 비우는 것이 맞지만, 비운 채로 끝내면 이후 모든 요청이
-            // 라우트를 다시 등록한다. 재생성은 파일이 전부 안착한 이 지점에서만 안전하다.
-            RouteCacheHelper::rebuild();
 
             $log('정리 완료');
 
@@ -620,10 +586,6 @@ class CoreUpdateCommand extends Command
             // fallback(spawn 실패)로 부모가 upgrade step 을 직접 실행한 경우, 부모가 만든
             // upgrade 로그가 root 로 남는다 — 모든 로그 쓰기가 끝난 이 시점에 정합한다.
             $this->restoreUpgradeLogOwnership();
-            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
-            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
-            // 전면 500 차단 (7.0.9→7.0.10 실사례)
-            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::SUCCESS;
 
@@ -659,9 +621,6 @@ class CoreUpdateCommand extends Command
             try {
                 $service->updateVersionInEnv($toVersion);
                 $service->clearAllCaches();
-                // 핸드오프로 멈춰도 파일은 이미 toVersion 이므로 워커는 새 코드로 재기동해야 한다.
-                $service->signalQueueRestart();
-                $log('큐 워커 재시작 신호 전송 (queue:restart)');
                 // 핸드오프 cleanup 에서도 프론트엔드 캐시 버전 bump — 사용자가 resume 명령
                 // (execute-upgrade-steps) 을 실행하기 전이라도 이미 toVersion 으로 반영된
                 // 코어 lang/routes/layout 자원이 프론트엔드 캐시 stale 로 가려지지 않도록.
@@ -711,10 +670,6 @@ class CoreUpdateCommand extends Command
             }
 
             $this->restoreUpgradeLogOwnership();
-            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
-            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
-            // 전면 500 차단 (7.0.9→7.0.10 실사례)
-            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::SUCCESS;
 
@@ -810,10 +765,6 @@ class CoreUpdateCommand extends Command
             }
 
             $this->restoreUpgradeLogOwnership();
-            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
-            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
-            // 전면 500 차단 (7.0.9→7.0.10 실사례)
-            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::FAILURE;
         }
@@ -903,33 +854,6 @@ class CoreUpdateCommand extends Command
             'APP_VERSION' => $toVersion,
             'G7_UPDATE_IN_PROGRESS' => '1',
         ]);
-
-        // spawn 직전 config 캐시 제거. 자식은 새 프로세스라 `bootstrap/cache/config.php` 가 있으면
-        // 그 캐시로 부팅하는데, 그 캐시는 이전 버전 설치본이 만든 것이다(설치 마법사·설정 저장·
-        // 확장 업데이트). 캐시 부팅에서는 `.env` 도 읽지 않고 위 `$env` 의 APP_VERSION 오버라이드도
-        // config 에 반영되지 않으며, 신버전 `config/app.php` 가 추가한 update 목록(쓰기 권한
-        // 디렉토리 등)도 자식에게 보이지 않는다 (7.0.9→7.0.10 실사례: stale 가드 오판 +
-        // `public/build/ext` 권한 정상화 누락). 부모의 메모리 config 는 영향받지 않고, 캐시는
-        // Step 11 의 `ConfigCacheHelper::rebuild()` 가 모든 파일이 안착한 뒤 다시 만든다.
-        ConfigCacheHelper::clear();
-
-        // 같은 이유로 패키지 매니페스트(bootstrap/cache/packages.php · services.php)도 비운다.
-        // vendor 는 Step 6/8 에서 이미 교체됐지만 두 파일은 Step 11 clearAllCaches 까지 이전
-        // 설치본의 것이 남고, Laravel 은 packages.php 가 "없을 때만" 다시 만든다. 이전 설치본이
-        // dev composer(require-dev 전이 의존성 laravel/mcp 의 McpServiceProvider 포함)로 깔렸다면
-        // 자식은 새 vendor 에 없는 provider 를 new 하다 부팅 단계에서 죽는다 (7.0.9→7.0.10 실사례).
-        // 부모 메모리의 매니페스트는 영향받지 않고, Step 11 이 package:discover 로 다시 만든다.
-        //
-        // 지우지 못한 파일(권한·소유권 불일치)은 로그에 남긴다. 그 상태면 자식의 자가 치유도 같은
-        // 권한으로 실패하므로 증상은 이전 설치본 provider 의 「Class not found」 그대로이고, 이 기록이
-        // 권한이 원인이라는 유일한 흔적이다.
-        $remainingManifests = PackageManifestCacheHelper::clear();
-        if ($remainingManifests !== []) {
-            $manifestWarning = 'spawn 직전 패키지 매니페스트 삭제 실패 — 자식이 이전 설치본의 provider 목록으로 부팅할 수 있습니다 (권한·소유권 확인): '
-                .implode(', ', $remainingManifests);
-            $log($manifestWarning);
-            $this->warn($manifestWarning);
-        }
 
         $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
         if (! is_resource($process)) {
@@ -1428,17 +1352,44 @@ class CoreUpdateCommand extends Command
      *  - `root_web_symmetric` : root 실행 + 웹서버 계정이 root 로 추정됨 (root 서비스 구성).
      *  - `root_web_unknown`   : root 실행 + 웹서버 계정 추정 실패 (스냅샷/추정 불가).
      *
-     * 판정은 `FilePermissionHelper::describeWebServerAccount()` 가 소유한다 — 정적 게시 상태·게시
-     * 명령(`ext-static:*`)의 root 경고와 같은 4분기를 공유하기 위해 옮겼다(#651 C1). 이 메서드는
-     * 그 결과를 종전 반환 형태(`[모드, 계정명]`)로 바꿔 주는 위임만 한다.
+     * 웹서버 계정은 `FilePermissionHelper::inferWebServerOwnership()` 이 storage/bootstrap
+     * 쓰기 영역 소유자로 추정한다.
      *
      * @return array{0: string, 1: string|null} [모드, 웹서버 계정명 또는 null]
      */
     private function classifyResumeExecutionContext(): array
     {
-        $account = FilePermissionHelper::describeWebServerAccount();
+        if (! function_exists('posix_geteuid') || ! function_exists('posix_getpwuid')) {
+            return ['non_root', null];
+        }
 
-        return [$account['mode'], $account['name']];
+        // root(sudo) 실행이 아니면 일반 SSH 사용자 = 파일 소유자 → 권한 분기 안내 불필요.
+        // (공유 호스팅에서 웹서버·PHP·실행 유저가 같은 경우도 여기서 non_root 로 처리됨.)
+        if (posix_geteuid() !== 0) {
+            return ['non_root', null];
+        }
+
+        [$owner] = FilePermissionHelper::inferWebServerOwnership();
+
+        // 추정 실패 (스냅샷 불가) — 계정명 미상 경고 경로.
+        if ($owner === false) {
+            return ['root_web_unknown', null];
+        }
+
+        // 웹서버 계정이 root 로 추정됨 — root 로 서비스하는 구성이라 재실행도 root 로 무해.
+        if ($owner === 0) {
+            return ['root_web_symmetric', null];
+        }
+
+        $entry = posix_getpwuid($owner);
+        $name = $entry['name'] ?? null;
+
+        // uid 는 나왔지만 이름 해석 실패 — 미상 경로로 처리 (uid 노출은 오히려 혼란).
+        if ($name === null) {
+            return ['root_web_unknown', null];
+        }
+
+        return ['root_web_known', $name];
     }
 
     /**

@@ -7,20 +7,14 @@ use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use App\Services\DriverRegistryService;
 use App\Services\NotificationChannelService;
 use App\Services\NotificationDefinitionService;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiRequestField;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiResponseType;
-use Modules\Sirsoft\Ecommerce\Exceptions\ShippingCarrierOperationException;
-use Modules\Sirsoft\Ecommerce\Exceptions\ShippingTypeOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\GetSettingRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreBanksRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
@@ -59,19 +53,9 @@ class EcommerceSettingsController extends AdminBaseController
             $settings = $this->appendClaimReasonsToSettings($settings);
             $settings = $this->appendMileageNotificationChannelsToSettings($settings);
             $settings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
-            // 현금영수증 발급 프로바이더 후보 — 결제 플러그인이 훅으로 자신을 등록한다.
-            // 발급 PG 와 결제 PG 는 독립 선택이므로 목록도 별도로 내린다 (KG 결제 + 토스 발급 등).
-            $settings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
-            // 공개 자산 디스크 선택지 — 카탈로그 SSoT 는 코어 DriverRegistryService 게터 한 곳
-            $settings['available_public_asset_disks'] = app(DriverRegistryService::class)
-                ->getAvailableDrivers('public_asset');
             $settings['abilities'] = [
                 'can_update' => PermissionHelper::check('sirsoft-ecommerce.settings.update', request()->user()),
             ];
-
-            // 화면의 숫자 입력 경계값 — 저장 규칙과 같은 출처를 내려준다.
-            // 화면이 리터럴을 들면 규칙이 바뀔 때 따라오지 못해 "화면은 받는데 저장은 422" 가 된다.
-            $settings['_meta'] = ['limits' => config('sirsoft-ecommerce.limits', [])];
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -171,12 +155,6 @@ class EcommerceSettingsController extends AdminBaseController
                 // 설정 저장 활동로그 (저장된 카테고리 목록 전달)
                 HookManager::doAction('sirsoft-ecommerce.settings.after_save', array_keys($settings));
 
-                // 코어 모듈 설정 저장 훅 — SEO 캐시 무효화 등 코어/타 확장 리스너가 구독한다.
-                // 발화 지점을 서비스가 아니라 관리자 컨트롤러에 두는 이유: 훅 의미가
-                // "관리자가 설정을 저장했다" 이고, 서비스에 두면 내부 저장 호출 전부가
-                // 활동로그·캐시 무효화를 유발한다.
-                HookManager::doAction('core.module_settings.after_save', 'sirsoft-ecommerce', $settings, $result);
-
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
                 $updatedSettings = $this->settingsService->getAllSettings();
                 $updatedSettings = $this->appendCarriersToSettings($updatedSettings);
@@ -185,10 +163,6 @@ class EcommerceSettingsController extends AdminBaseController
                 $updatedSettings = $this->appendClaimReasonsToSettings($updatedSettings);
                 $updatedSettings = $this->appendMileageNotificationChannelsToSettings($updatedSettings);
                 $updatedSettings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
-                $updatedSettings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
-                // 공개 자산 디스크 선택지 — 저장 응답에도 재부착 (관리자 UI 상태 갱신용)
-                $updatedSettings['available_public_asset_disks'] = app(DriverRegistryService::class)
-                    ->getAvailableDrivers('public_asset');
 
                 return ResponseHelper::moduleSuccess(
                     'sirsoft-ecommerce',
@@ -202,25 +176,7 @@ class EcommerceSettingsController extends AdminBaseController
                     400
                 );
             }
-        } catch (ShippingTypeOperationException|ShippingCarrierOperationException $e) {
-            // 도메인 실패(사용 중이라 삭제 불가 등)는 운영자가 조치할 수 있는 사유다.
-            // generic 500 으로 뭉개면 "왜" 저장이 실패했는지 화면에서 알 수 없다.
-            // 키가 이미 `sirsoft-ecommerce::` 로 정규화돼 있어 moduleError 가 아닌 error 를 쓴다
-            // (ShippingCarrierController::destroy 와 동형).
-            $messageKey = $e->getMessageKey();
-
-            return ResponseHelper::error(
-                $messageKey,
-                400,
-                null,
-                $e->getMessageParams()
-            );
         } catch (Exception $e) {
-            Log::error('이커머스 설정 저장 실패', [
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.settings.save_error',
@@ -243,13 +199,6 @@ class EcommerceSettingsController extends AdminBaseController
             $result = $this->settingsService->saveBanks($banks);
 
             if ($result) {
-                HookManager::doAction(
-                    'core.module_settings.after_save',
-                    'sirsoft-ecommerce',
-                    ['order_settings' => ['banks' => $banks]],
-                    $result
-                );
-
                 $updatedSettings = $this->settingsService->getAllSettings();
 
                 return ResponseHelper::moduleSuccess(
@@ -318,11 +267,6 @@ class EcommerceSettingsController extends AdminBaseController
             $result = $this->settingsService->setSetting($key, $value);
 
             if ($result) {
-                // dot-key 를 카테고리 하위 구조로 되돌려 벌크 저장과 같은 payload 형태로 만든다
-                $payload = [];
-                Arr::set($payload, $key, $value);
-                HookManager::doAction('core.module_settings.after_save', 'sirsoft-ecommerce', $payload, $result);
-
                 return ResponseHelper::moduleSuccess(
                     'sirsoft-ecommerce',
                     'messages.settings.update_success',
@@ -490,7 +434,7 @@ class EcommerceSettingsController extends AdminBaseController
     }
 
     /**
-     * 설정 응답에 클레임 사유 목록을 추가합니다.
+     * 설정 응답에 클래임 사유 목록을 추가합니다.
      *
      * DB 관리 대상인 claim reasons를 claim 섹션에 포함시킵니다.
      *

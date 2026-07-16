@@ -35,14 +35,4 @@ class OrderCancelRepository implements OrderCancelRepositoryInterface
             ->latest('id')
             ->first();
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function countByCancelReasonType(string $reasonCode): int
-    {
-        return $this->model->newQuery()
-            ->where('cancel_reason_type', $reasonCode)
-            ->count();
-    }
 }

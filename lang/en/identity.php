@@ -30,8 +30,6 @@ return [
         'missing_scope_or_target' => 'Both scope and target are required to resolve a policy.',
         'admin_policy_has_no_default' => 'Admin-created policies do not have a declared default.',
         'reset_field_failed' => 'Failed to reset the field to its declared default. Check if the field is valid.',
-        'cannot_delete_system_policy' => 'System-declared policies cannot be deleted. Only administrator-created policies can be deleted.',
-        'purpose_not_allowed' => 'This verification request cannot be handled on this screen.',
     ],
 
     'messages' => [
@@ -66,10 +64,6 @@ return [
         'sensitive_action' => [
             'label' => 'Sensitive Action',
             'description' => 'Re-verify before sensitive actions such as account deletion or admin operations.',
-        ],
-        'login' => [
-            'label' => 'Two-Factor Login',
-            'description' => 'Require one more step after the password when two-factor authentication is enabled.',
         ],
     ],
 

@@ -10,8 +10,6 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\EarnMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ExpireMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyExpiringMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
-use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredTempOrdersCommand;
-use Modules\Sirsoft\Ecommerce\Console\Commands\PruneTempProductImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ReconcileMileageBalanceCommand;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
 use Modules\Sirsoft\Ecommerce\Repositories\BrandRepository;
@@ -33,9 +31,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInt
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCashReceiptRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
@@ -68,9 +64,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\MileageBalanceRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\MileageTransactionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderCancelOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderCancelRepository;
-use Modules\Sirsoft\Ecommerce\Repositories\OrderCashReceiptRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderOptionRepository;
-use Modules\Sirsoft\Ecommerce\Repositories\OrderPaymentRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRefundOptionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRefundRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
@@ -97,7 +91,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\UserAddressRepository;
 use Modules\Sirsoft\Ecommerce\Seo\EcommerceSitemapContributor;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
-use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
@@ -122,21 +115,10 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
      * @var array<int, class-string>
      */
     protected array $storageServices = [
+        CategoryImageService::class,
+        ProductImageService::class,
         ProductReviewService::class,
-    ];
-
-    /**
-     * 카테고리별 StorageInterface가 필요한 서비스 매핑 (클래스 ⇒ 카테고리)
-     *
-     * 이미지 서비스는 getStorageDiskFor('images') 가 결정한 디스크(공개 자산 디스크
-     * 설정 반영)를 주입받아, put/getDisk() 행 기록이 자동으로 카테고리 디스크를 따릅니다.
-     *
-     * @var array<class-string, string>
-     */
-    protected array $storageCategoryServices = [
-        CategoryImageService::class => 'images',
-        ProductImageService::class => 'images',
-        ProductReviewImageService::class => 'images',
+        ProductReviewImageService::class,
     ];
 
     /**
@@ -155,9 +137,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         ExtraFeeTemplateRepositoryInterface::class => ExtraFeeTemplateRepository::class,
         OrderCancelRepositoryInterface::class => OrderCancelRepository::class,
         OrderCancelOptionRepositoryInterface::class => OrderCancelOptionRepository::class,
-        OrderCashReceiptRepositoryInterface::class => OrderCashReceiptRepository::class,
         OrderOptionRepositoryInterface::class => OrderOptionRepository::class,
-        OrderPaymentRepositoryInterface::class => OrderPaymentRepository::class,
         OrderRefundRepositoryInterface::class => OrderRefundRepository::class,
         OrderRefundOptionRepositoryInterface::class => OrderRefundOptionRepository::class,
         OrderRepositoryInterface::class => OrderRepository::class,
@@ -199,8 +179,6 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         ExpireMileageCommand::class,
         NotifyExpiringMileageCommand::class,
         PruneExpiredCartsCommand::class,
-        PruneExpiredTempOrdersCommand::class,
-        PruneTempProductImagesCommand::class,
         ReconcileMileageBalanceCommand::class,
     ];
 
@@ -219,12 +197,6 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
 
         // PaymentMethodResolver를 싱글톤으로 등록 (요청 내 결제수단 카탈로그 조회 1회 캐시)
         $this->app->singleton(PaymentMethodResolver::class);
-
-        // EcommerceSettingsService를 싱글톤으로 등록 (공개 #116)
-        // 위 3종과 달리 미등록이라 주입 지점마다 별개 인스턴스가 만들어졌고, 각자 자기 설정
-        // 캐시를 들고 있었다. 싱글톤 리졸버가 비-싱글톤 설정 서비스를 captive 로 보유하는
-        // 비대칭도 함께 생긴다. 쓰기 메서드가 모두 자기 캐시를 무효화하므로 공유해도 안전하다.
-        $this->app->singleton(EcommerceSettingsService::class);
     }
 
     /**
@@ -246,9 +218,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // Sitemap 기여자 등록
         $this->app->booted(function () {
             if ($this->app->bound(SitemapGenerator::class)) {
-                // Repository 주입을 위해 컨테이너로 해석합니다.
                 $this->app->make(SitemapGenerator::class)->registerContributor(
-                    $this->app->make(EcommerceSitemapContributor::class)
+                    new EcommerceSitemapContributor
                 );
             }
         });

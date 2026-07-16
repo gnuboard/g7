@@ -9,9 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
-use Modules\Sirsoft\Ecommerce\Exceptions\CouponAlreadyUsedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\InsufficientStockException;
-use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Exceptions\UnsupportedPaymentCurrencyException;
@@ -20,7 +18,6 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
-use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
  * 주문 생성 공통 흐름 Trait
@@ -93,9 +90,7 @@ trait HandlesOrderCreation
                 shippingMemo: $request->input('shipping_memo'),
                 depositorName: $request->input('depositor_name'),
                 dbankInfo: $request->getDbankInfo(),
-                guestLookupPassword: $request->getGuestLookupPassword(),
-                cashReceiptInfo: $request->getCashReceiptInfo(),
-                refundBankInfo: $request->getRefundBankInfo()
+                guestLookupPassword: $request->getGuestLookupPassword()
             );
 
             $order->load(['options', 'payment', 'shippingAddress']);
@@ -130,8 +125,8 @@ trait HandlesOrderCreation
         } catch (PaymentAmountMismatchException $e) {
             return ResponseHelper::error(
                 __('sirsoft-ecommerce::exceptions.payment_amount_mismatch', [
-                    'expected' => ecommerce_format_price($e->getExpectedAmount()),
-                    'actual' => ecommerce_format_price($e->getActualAmount()),
+                    'expected' => number_format($e->getExpectedAmount()),
+                    'actual' => number_format($e->getActualAmount()),
                 ]),
                 422
             );
@@ -168,35 +163,6 @@ trait HandlesOrderCreation
                 'has_status_issue' => $e->hasStatusIssue(),
                 'has_restriction_issue' => $e->hasRestrictionIssue(),
             ]);
-
-        } catch (CouponAlreadyUsedException $e) {
-            // 주문 확정 시점에 다른 주문이 같은 쿠폰을 선점했다 — 주문 트랜잭션은 롤백된 상태다.
-            // generic 500 이 아닌 409 로 알려 사용자가 쿠폰 소진 없이 재시도할 수 있게 한다.
-            Log::warning('Order create: coupon already taken by another order', [
-                'coupon_issue_id' => $e->getCouponIssueId(),
-            ]);
-
-            $messageKey = $e->getMessageKey();
-
-            return ResponseHelper::error(
-                $messageKey,
-                409,
-                ['code' => 'coupon_already_used', 'coupon_issue_id' => $e->getCouponIssueId()],
-                $e->getMessageParams()
-            );
-
-        } catch (MileageValidationException $e) {
-            // 마일리지 사용 정책 위반(한도/단위/최소사용액/잔액) — generic 500 이 아닌 422 명시 차단.
-            // 임시주문 생성 이후 설정이 바뀌었거나 임시주문이 조작된 경우 여기로 떨어진다.
-            Log::warning('Order create: mileage usage policy violation', [
-                'message' => $e->getMessage(),
-            ]);
-
-            return ResponseHelper::error(
-                'sirsoft-ecommerce::exceptions.order_create_failed',
-                422,
-                ['code' => 'mileage_usage_not_allowed', 'detail' => $e->getMessage()]
-            );
 
         } catch (OrderProcessingException $e) {
             // 주문 확정 재계산 검증 실패(쿠폰 만료/min_amount/per_user_limit/not_combinable 등)
@@ -236,9 +202,7 @@ trait HandlesOrderCreation
     {
         $responseData = [
             'order' => $orderResource,
-            // 상점 주소는 운영자 설정이다 — 기본값 리터럴을 내려보내면 주소를 바꾼 상점에서
-            // 결제를 마친 손님이 존재하지 않는 화면으로 이동한다 (공개 #85).
-            'redirect_url' => ShopPathResolver::path("orders/{$order->order_number}/complete"),
+            'redirect_url' => "/shop/orders/{$order->order_number}/complete",
             'requires_pg_payment' => $requiresPg,
         ];
 
@@ -348,40 +312,6 @@ trait HandlesOrderCreation
             // (예: kginicis_lpay → gopaymethod=LPAY). 서버가 확장 ID 를 1급 시민으로
             // 저장하게 되면서 프론트 인터셉터가 원본 수단을 따로 전달할 필요가 없어졌다(#475).
             'payment_method' => $order->payment?->paymentMethodId(),
-            // 에스크로 결제(가상계좌·계좌이체) 시 필수인 상품 상세 배열. PG 가 사용 여부를
-            // 프론트에서 결정하므로 provider-agnostic 하게 항상 조립한다 (비에스크로는 무시).
-            'escrow_products' => $this->buildEscrowProducts($order, $locale),
         ];
-    }
-
-    /**
-     * 에스크로 결제용 상품 상세 배열을 구성합니다.
-     *
-     * 토스 SDK 의 escrowProducts 파라미터 형식 {id, name, code, unitPrice, quantity} 에 맞춘다.
-     * unitPrice 는 개당가(합계 아님)이며, name 은 현재 로케일로 로컬라이즈한다.
-     * 에스크로는 국내(KRW) 전용이므로 unitPrice 는 base(KRW) 정수를 그대로 쓴다.
-     *
-     * @param  Order  $order  주문 (options 로드됨)
-     * @param  string  $locale  현재 로케일
-     * @return array<int, array{id:string, name:string, code:string, unitPrice:int, quantity:int}>
-     */
-    protected function buildEscrowProducts(Order $order, string $locale): array
-    {
-        $fallback = config('app.fallback_locale', 'ko');
-
-        return $order->options->map(function ($option) use ($locale, $fallback) {
-            $name = $option->product_name;
-            $localizedName = is_array($name)
-                ? ($name[$locale] ?? $name[$fallback] ?? reset($name) ?: '')
-                : ($name ?? '');
-
-            return [
-                'id' => (string) $option->product_option_id,
-                'name' => $localizedName,
-                'code' => (string) $option->product_option_id,
-                'unitPrice' => (int) round((float) $option->unit_price),
-                'quantity' => (int) $option->quantity,
-            ];
-        })->values()->all();
     }
 }

@@ -292,7 +292,7 @@
       },
       "children": [
         {
-          "id": "template_card_{{tplIdx}}",
+          "id": "template_card",
           "type": "basic",
           "name": "Div",
           "iteration": {
@@ -468,16 +468,7 @@
                                     "type": "success"
                                   }
                                 }
-                              ],
-                                "onError": [
-                                    {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message}}"
-                                        }
-                                    }
-                                ]
+                              ]
                             }
                           ]
                         },
@@ -551,16 +542,7 @@
                                     "type": "success"
                                   }
                                 }
-                              ],
-                                "onError": [
-                                    {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message}}"
-                                        }
-                                    }
-                                ]
+                              ]
                             }
                           ]
                         }
@@ -687,9 +669,8 @@
           "type": "composite",
           "name": "Pagination",
           "props": {
-            "currentPage": "{{mailTemplates?.data?.pagination?.current_page ?? 1}}",
-            "totalPages": "{{mailTemplates?.data?.pagination?.last_page ?? null}}",
-            "hasMorePages": "{{mailTemplates?.data?.pagination?.has_more_pages ?? false}}"
+            "currentPage": "{{mailTemplates?.data?.pagination?.current_page || 1}}",
+            "totalPages": "{{mailTemplates?.data?.pagination?.last_page || 1}}"
           },
           "actions": [
             {

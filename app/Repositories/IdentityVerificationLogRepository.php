@@ -4,13 +4,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityVerificationStatus;
-use App\Helpers\TimezoneHelper;
-use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
-use App\Repositories\Concerns\DeletesInBatches;
-use App\Repositories\Concerns\PaginatesWithDeferredJoin;
-use App\Support\Query\PaginationLimits;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 
 /**
@@ -20,9 +14,6 @@ use Illuminate\Support\Carbon;
  */
 class IdentityVerificationLogRepository implements IdentityVerificationLogRepositoryInterface
 {
-    use DeletesInBatches;
-    use PaginatesWithDeferredJoin;
-
     /**
      * 검증 로그를 생성합니다.
      *
@@ -89,13 +80,7 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
-     * 미소비·미만료 검증 토큰으로 로그를 조회합니다.
-     *
-     * 만료 술어(expires_at > now)는 이 지점이 단일 관문이다. 정책 미들웨어·정책 서비스·
-     * 회원가입/비밀번호재설정 리스너·IdvTokenRule 이 모두 이 메서드를 경유하므로
-     * 호출부마다 만료 검사를 중복해 두지 않는다(한쪽 누락 시 그 경로가 우회로가 된다).
-     * expires_at 이 비어 있는 로그도 반환하지 않는다 — 모든 provider 가 challenge 생성 시
-     * expires_at 을 세팅하므로 NULL 은 정상 발급 산물이 아니다.
+     * 미소비된 검증 토큰으로 로그를 조회합니다.
      *
      * @param  string  $token  검증 토큰
      * @param  string  $purpose  본인인증 목적
@@ -108,7 +93,6 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
             ->where('purpose', $purpose)
             ->where('status', IdentityVerificationStatus::Verified->value)
             ->whereNull('consumed_at')
-            ->where('expires_at', '>', Carbon::now())
             ->first();
     }
 
@@ -136,10 +120,9 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
      */
     public function purgeOlderThan(int $days): int
     {
-        return $this->deleteInBatches(
-            IdentityVerificationLog::query()
-                ->where('created_at', '<', Carbon::now()->subDays(max(1, $days)))
-        );
+        return IdentityVerificationLog::query()
+            ->where('created_at', '<', Carbon::now()->subDays(max(1, $days)))
+            ->delete();
     }
 
     /**
@@ -147,7 +130,7 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
      *
      * @param  array  $filters  검색 필터
      * @param  int  $perPage  페이지당 항목 수
-     * @return LengthAwarePaginator 페이지네이터
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator 페이지네이터
      */
     public function search(array $filters, int $perPage = 20)
     {
@@ -175,7 +158,7 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
         if (! empty($filters['source_type'])) {
             $query->whereIn('origin_policy_key', function ($q) use ($filters) {
                 $q->select('key')
-                    ->from((new IdentityPolicy)->getTable())
+                    ->from('identity_policies')
                     ->where('source_type', $filters['source_type']);
                 if (! empty($filters['source_identifier'])) {
                     $q->where('source_identifier', $filters['source_identifier']);
@@ -207,33 +190,21 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
             }
         }
 
-        // 기간 필터는 사이트 타임존 기준으로 해석한다 — created_at 은 UTC 로 저장되고
-        // 화면은 사이트 타임존으로 보여주므로, 입력 문자열을 그대로 비교하면 하루가 어긋난다.
-        // 종료값은 시각 없이 날짜만 오는 경우(`<input type="date">`) 그날 끝까지 포함한다.
         if (! empty($filters['date_from'])) {
-            $query->where('created_at', '>=', TimezoneHelper::fromSiteDateTime($filters['date_from']));
+            $query->where('created_at', '>=', $filters['date_from']);
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', TimezoneHelper::fromSiteRangeEnd($filters['date_to']));
+            $query->where('created_at', '<=', $filters['date_to']);
         }
 
         $sortBy = in_array($filters['sort_by'] ?? null, ['created_at', 'attempts'], true)
             ? $filters['sort_by']
             : 'created_at';
         $sortOrder = ($filters['sort_order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $query->orderBy($sortBy, $sortOrder);
 
-        // 본인인증 로그는 계속 쌓이는 이력이라 뒤쪽 페이지에서 OFFSET 비용이 커진다.
-        // 응답이 요청/응답 payload 를 그대로 노출하므로 컬럼은 좁히지 않고 지연 조인만 적용한다.
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: [['column' => $sortBy, 'direction' => $sortOrder]],
-            perPage: $perPage,
-            // 로그 테이블은 계속 쌓이기만 한다. 총 건수는 상한까지만 세고 "다음" 이동은
-            // per_page + 1 실측으로 끝까지 열어 둔다 (계산 불가는 마지막 페이지 번호 하나뿐).
-            resultCap: PaginationLimits::resultCap('admin.identity_logs'),
-        );
+        return $query->paginate($perPage);
     }
 
     /**

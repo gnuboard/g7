@@ -4,8 +4,6 @@ namespace App\Http\Requests\Auth;
 
 use App\Extension\HookManager;
 use App\Models\User;
-use App\Rules\PasswordPolicy;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,8 +11,6 @@ class ResetPasswordRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -24,14 +20,14 @@ class ResetPasswordRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         $rules = [
             'token' => 'required|string',
             'email' => ['required', 'email', Rule::exists(User::class, 'email')],
-            'password' => ['required', 'string', 'confirmed', PasswordPolicy::rule()],
+            'password' => 'required|string|min:8|confirmed',
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공

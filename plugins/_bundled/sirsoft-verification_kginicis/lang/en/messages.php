@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 return [
-    'bridge_page_title' => 'Identity verification result',
     'title' => 'KG Inicis Identity Verification',
     'description' => 'Plugin that connects KG Inicis identity verification service to G7 core IDV infrastructure.',
 

@@ -14,10 +14,9 @@ class TemplateServiceLocalizationTest extends TestCase
     {
         App::setLocale('ko');
 
-        // 메시지는 원인(:error)을 함께 노출한다 — 치환까지 확인해야 자리표시자 누락을 잡는다.
         $this->assertEquals(
-            '파일 복사에 실패했습니다: 디스크 없음',
-            __('templates.errors.file_copy_failed', ['error' => '디스크 없음'])
+            '파일 복사에 실패했습니다.',
+            __('templates.errors.file_copy_failed')
         );
 
         $this->assertEquals(
@@ -34,8 +33,8 @@ class TemplateServiceLocalizationTest extends TestCase
         App::setLocale('en');
 
         $this->assertEquals(
-            'Failed to copy files: disk missing',
-            __('templates.errors.file_copy_failed', ['error' => 'disk missing'])
+            'Failed to copy files.',
+            __('templates.errors.file_copy_failed')
         );
 
         $this->assertEquals(
@@ -51,13 +50,13 @@ class TemplateServiceLocalizationTest extends TestCase
     {
         // 한국어로 설정
         App::setLocale('ko');
-        $koreanMessage = __('templates.errors.file_copy_failed', ['error' => 'x']);
-        $this->assertEquals('파일 복사에 실패했습니다: x', $koreanMessage);
+        $koreanMessage = __('templates.errors.file_copy_failed');
+        $this->assertEquals('파일 복사에 실패했습니다.', $koreanMessage);
 
         // 영어로 전환
         App::setLocale('en');
-        $englishMessage = __('templates.errors.file_copy_failed', ['error' => 'x']);
-        $this->assertEquals('Failed to copy files: x', $englishMessage);
+        $englishMessage = __('templates.errors.file_copy_failed');
+        $this->assertEquals('Failed to copy files.', $englishMessage);
 
         // 메시지가 다른지 확인
         $this->assertNotEquals($koreanMessage, $englishMessage);

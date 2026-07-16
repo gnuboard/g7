@@ -8,9 +8,6 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
-use Modules\Sirsoft\Ecommerce\Exceptions\OrderModificationException;
-use Modules\Sirsoft\Ecommerce\Exceptions\OrderOptionNotConfirmableException;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Traits\HandlesOrderCreation;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\CreateOrderRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\GuestCancelOrderRequest;
@@ -29,7 +26,6 @@ use Modules\Sirsoft\Ecommerce\Services\OrderService;
 use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Services\TempOrderService;
 use Modules\Sirsoft\Ecommerce\Services\UserAddressService;
-use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
  * 주문 공유 컨트롤러 (회원/비회원 공용 + 비회원 토큰 후속 액션)
@@ -197,9 +193,7 @@ class OrderController extends PublicBaseController
             return ResponseHelper::error(
                 'sirsoft-ecommerce::exceptions.order_not_found',
                 404,
-                // 상점 주소 설정(route_path/no_route)을 반영해야 주소를 바꾼 상점에서도
-                // 실제 존재하는 비회원 조회 화면으로 안내된다 (공개 #85).
-                ['redirect_to' => ShopPathResolver::path('guest/orders')]
+                ['redirect_to' => '/shop/guest/orders']
             );
         }
 
@@ -313,12 +307,6 @@ class OrderController extends PublicBaseController
                 'sirsoft-ecommerce::messages.order.cancelled',
                 new GuestOrderResource($updatedOrder)
             );
-        } catch (OrderCancellationException $e) {
-            // 취소 도메인 규칙 위반 — 사용자에게 안내 가능한 상황이므로 422
-            return ResponseHelper::error(
-                'sirsoft-ecommerce::exceptions.order_cancel_failed',
-                422
-            );
         } catch (Exception $e) {
             Log::error('비회원 주문 취소 실패', [
                 'order_number' => $request->getOrder()->order_number,
@@ -326,8 +314,8 @@ class OrderController extends PublicBaseController
             ]);
 
             return ResponseHelper::error(
-                'sirsoft-ecommerce::exceptions.operation_failed',
-                500
+                'sirsoft-ecommerce::exceptions.order_cancel_failed',
+                422
             );
         }
     }
@@ -385,15 +373,7 @@ class OrderController extends PublicBaseController
                 'sirsoft-ecommerce::messages.orders.shipping_address_updated',
                 new GuestOrderResource($updatedOrder)
             );
-        } catch (OrderModificationException $e) {
-            // 도메인 규칙 위반(배송 전 상태 아님 등) — 사용자가 고칠 수 있는 상황이므로 422
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'messages.orders.cannot_modify_address',
-                422
-            );
         } catch (Exception $e) {
-            // 그 외 예외는 서버 결함/인프라 장애다. 422 로 뭉개면 장애가 입력 오류로 위장된다.
             Log::error('비회원 배송지 수정 실패', [
                 'order_number' => $request->getOrder()->order_number,
                 'error' => $e->getMessage(),
@@ -401,8 +381,8 @@ class OrderController extends PublicBaseController
 
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
-                'exceptions.order_shipping_address_update_failed',
-                500
+                'messages.orders.cannot_modify_address',
+                422
             );
         }
     }
@@ -415,9 +395,6 @@ class OrderController extends PublicBaseController
      * @param  int  $optionId  주문 옵션 ID (라우트 파라미터)
      * @return JsonResponse 구매확정 후 주문 상세
      */
-    // route-param:unused $orderNumber 는 VerifyGuestOrderToken 미들웨어가 토큰↔주문 일치 검증에
-    // 사용하고, 본문은 미들웨어가 확정한 주문($request->getOrder())만 쓴다. 본문에서 재사용하면
-    // 검증되지 않은 라우트 값으로 주문을 다시 찾는 우회로가 생긴다.
     public function confirmOption(GuestOrderTokenRequest $request, string $orderNumber, int $optionId): JsonResponse
     {
         $order = $request->getOrder();
@@ -437,15 +414,7 @@ class OrderController extends PublicBaseController
                 'sirsoft-ecommerce::messages.order.confirmed',
                 new GuestOrderResource($updatedOrder)
             );
-        } catch (OrderOptionNotConfirmableException $e) {
-            // 상태 게이트 위반(이미 확정 / 확정 불가 상태) — 도메인 사유이므로 422.
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.'.$e->getReason(),
-                422
-            );
         } catch (Exception $e) {
-            // 위 typed 예외를 제외한 나머지는 전부 서버 결함/인프라 장애다.
             Log::error('비회원 구매확정 실패', [
                 'order_number' => $order->order_number,
                 'option_id' => $optionId,
@@ -454,8 +423,8 @@ class OrderController extends PublicBaseController
 
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
+                'exceptions.order_option_cannot_confirm',
+                422
             );
         }
     }

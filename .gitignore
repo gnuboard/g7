@@ -48,8 +48,6 @@ node_modules/
 
 # Settings JSON files (환경별 설정)
 /storage/app/settings/
-# 성능 계측 리포트 (g7:bench --report) — 측정값이 실행 머신 사양에 종속되므로 저장소에 축적하지 않는다
-/storage/app/benchmarks/
 
 # 확장 프론트엔드 병합 번들 캐시 (version-in-path, 런타임 생성)
 /storage/app/ext-bundles/
@@ -145,9 +143,3 @@ test-results/
 # 배포용 빌드는 `--production` 이 G7_BUILD_SOURCEMAP=0 을 주입해 생성 자체를 막는다.
 # 경로 한정 시 새 확장이 추가될 때 조용히 누락되므로 전역 규칙으로 둔다.
 *.map
-
-# ===== 부트스트랩 리소스 정적 게시 (bake, #122) =====
-# 병합 산출물의 버전 디렉토리 사본 — 각 서버가 수명주기 이벤트마다 재생성하는
-# 로컬 파생물이라 저장소·release 페이로드에 유입되면 안 된다.
-# `public/build/core/` 는 계속 추적한다 (배포 산출물) — 혼동 금지.
-/public/build/ext/

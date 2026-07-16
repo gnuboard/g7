@@ -35,7 +35,6 @@ import {
 } from '../devtools/editorTrackers';
 import { setPendingValue, setPendingValues } from './pendingCustomTranslations';
 import { TranslationEngine } from '../../TranslationEngine';
-import { suffixed } from '../../../support/assetUrl';
 import {
   stripBindingTokens,
   buildParamizedKeyText,
@@ -740,7 +739,7 @@ export async function bustTranslationCache(
     // 최신 cache_version 을 노출하므로 그것을 읽어 엔진 버전을 갱신한 뒤 재로드한다.
     try {
       const cfg = await fetch(
-        suffixed(`/api/templates/${encodeURIComponent(templateIdentifier)}/config`, 'json'),
+        `/api/templates/${encodeURIComponent(templateIdentifier)}/config.json`,
         { headers: { Accept: 'application/json' }, credentials: 'same-origin' },
       ).then((r) => (r.ok ? r.json() : null));
       const v = cfg?.data?.cache_version ?? cfg?.cache_version;

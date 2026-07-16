@@ -35,13 +35,7 @@
       "translations": "Translations",
       "data_sources": "Data",
       "reset": "Reset",
-      "switch_template": "Switch to another template",
-      "custom_assets": "Custom assets",
-      "custom_assets_hint": "Manage operator-added CSS, JS, fonts and images.",
-      "custom_assets_off": "Disable custom assets",
-      "custom_assets_on": "Enable custom assets",
-      "custom_assets_off_hint": "Reopen this screen without operator-added CSS/JS. Use it when an added asset breaks the screen.",
-      "custom_assets_on_hint": "Operator-added assets are currently disabled. Click to apply them again."
+      "switch_template": "Switch to another template"
     },
     "route_tree": {
       "panel_title": "Screens / Routes",
@@ -112,27 +106,6 @@
     "extension_gated_desc_with_states": "The area this extension injects into only appears in a specific screen state. Switch to that state using the state selector at the top to edit it.",
     "slot_area_label": "Content area"
   },
-  "custom_assets": {
-    "target_label": "Target extension",
-    "type_template": "Template",
-    "type_module": "Module",
-    "type_plugin": "Plugin",
-    "title": "Custom assets",
-    "close": "Close",
-    "loading": "Loading…",
-    "empty": "No files yet. Type a path below and save, or upload a file to start.",
-    "forbidden": "You do not have permission to manage custom assets. Ask an administrator for the “Manage Custom Assets” permission.",
-    "new_path_placeholder": "e.g. 10-overrides.css",
-    "path_label": "File path",
-    "content_label": "File content",
-    "new_file": "New file",
-    "save": "Save",
-    "upload": "Upload file",
-    "delete": "Delete",
-    "delete_confirm": "This file will be deleted. This cannot be undone.",
-    "binary_hint": "This file type (:extension) cannot be edited directly. Upload a replacement with the same name.",
-    "apply_hint": "Saved changes apply from the next page load."
-  },
   "version_history": {
     "title": "Version history",
     "close": "Close",
@@ -153,8 +126,7 @@
     "diff_title": "Changes v{old} → v{new}",
     "diff_back": "Back",
     "diff_identical": "The two versions are identical.",
-    "diff_too_large": "The changes are too large to display.",
-    "load_more": "Load more"
+    "diff_too_large": "The changes are too large to display."
   },
   "preview_action": {
     "no_document": "No layout is selected to preview."
@@ -320,8 +292,6 @@
     "blocked_inactive_extension": "Cannot save — newly added components belong to a deactivated extension",
     "network_error_title": "Network error while saving",
     "guard_no_document": "No layout document loaded — nothing to save",
-    "guard_extension_reassembly_title": "Not saved — extension content could not be mapped back",
-    "guard_extension_reassembly": "{count} element(s) injected by this extension could not be traced to their original slot. Saving would drop them, so the save was blocked. Reload the page and try again.",
     "concurrent": {
       "title": "Another user saved first",
       "message": "This layout was saved by another administrator. Load the latest version?",
@@ -345,9 +315,6 @@
       "mode_tile": "Tile",
       "upload_failed": "Image upload failed"
     },
-    "number": {
-      "placeholder": "Enter a number"
-    },
     "dimension": {
       "placeholder": "e.g. 320px, 50%, 24rem, auto"
     },
@@ -361,11 +328,6 @@
       "right": "Right",
       "bottom": "Bottom",
       "left": "Left"
-    },
-    "bound_value": {
-      "notice": "Bound to data (filled automatically)",
-      "replace": "Replace with a fixed value",
-      "restore": "Restore the data binding"
     }
   },
   "recipe": {
@@ -1310,14 +1272,6 @@
     "login": {
       "label": "Handle login",
       "param_body": "Login info"
-    },
-    "login_two_factor": {
-      "label": "Verify code",
-      "param_body": "Verification info"
-    },
-    "login_two_factor_resend": {
-      "label": "Resend code",
-      "param_body": "Challenge info"
     },
     "logout": {
       "label": "Handle logout",

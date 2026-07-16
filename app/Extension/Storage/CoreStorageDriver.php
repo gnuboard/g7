@@ -3,9 +3,7 @@
 namespace App\Extension\Storage;
 
 use App\Contracts\Extension\StorageInterface;
-use App\Extension\Storage\Concerns\ResolvesPublicUrl;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 코어 스토리지 드라이버
@@ -15,8 +13,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class CoreStorageDriver implements StorageInterface
 {
-    use ResolvesPublicUrl;
-
     /**
      * 사용할 디스크 이름
      */
@@ -97,16 +93,17 @@ class CoreStorageDriver implements StorageInterface
     }
 
     /**
-     * `core.storage.filter_url` 훅 컨텍스트의 드라이버별 식별 정보를 반환합니다.
-     *
-     * @return array{scope: string, identifier: ?string} scope + 식별자 (코어는 null)
+     * {@inheritDoc}
      */
-    protected function urlHookContext(): array
+    public function url(string $category, string $path): ?string
     {
-        return [
-            'scope' => 'core',
-            'identifier' => null,
-        ];
+        if ($this->disk !== 'public') {
+            return null;
+        }
+
+        $fullPath = $this->resolvePath($category, $path);
+
+        return Storage::disk($this->disk)->url($fullPath);
     }
 
     /**
@@ -158,7 +155,7 @@ class CoreStorageDriver implements StorageInterface
     /**
      * {@inheritDoc}
      */
-    public function response(string $category, string $path, string $filename, array $headers = []): ?StreamedResponse
+    public function response(string $category, string $path, string $filename, array $headers = []): ?\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $fullPath = $this->resolvePath($category, $path);
 
@@ -183,7 +180,7 @@ class CoreStorageDriver implements StorageInterface
     /**
      * {@inheritDoc}
      */
-    public function download(string $category, string $path, string $filename, array $headers = []): ?StreamedResponse
+    public function download(string $category, string $path, string $filename, array $headers = []): ?\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $fullPath = $this->resolvePath($category, $path);
 

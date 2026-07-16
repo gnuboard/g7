@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Page\Http\Controllers\Admin;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Page\Http\Requests\ReorderPageAttachmentsRequest;
 use Modules\Sirsoft\Page\Http\Requests\UploadPageAttachmentRequest;
 use Modules\Sirsoft\Page\Http\Resources\PageAttachmentResource;
@@ -50,14 +49,6 @@ class PageAttachmentController extends AdminBaseController
                     'data' => new PageAttachmentResource($attachment),
                 ],
                 201
-            );
-        } catch (AttachmentLimitExceededException $e) {
-            // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error(
-                $e->getMessageKey(),
-                422,
-                ['code' => 'attachment_limit_exceeded'],
-                $e->getMessageParams()
             );
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.attachment.upload_failed', 500, $e->getMessage());

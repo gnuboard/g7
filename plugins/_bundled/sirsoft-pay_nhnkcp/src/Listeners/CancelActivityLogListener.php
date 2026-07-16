@@ -76,7 +76,7 @@ class CancelActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-pay_nhnkcp::activity_log.description.payment_cancel',
             'description_params' => [
                 'order_number' => $order->order_number,
-                'refund_amount' => ecommerce_format_price((int) $refundAmount, $order->currency),
+                'refund_amount' => number_format((int) $refundAmount),
             ],
             'properties' => [
                 'tno' => $payment->transaction_id,

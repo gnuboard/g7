@@ -4,7 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Requests;
 
 use Illuminate\Support\Facades\Validator;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreBanksRequest;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\TestCase;
 
 /**
  * 은행 목록 저장 요청 검증 테스트
@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * - 현재 로케일 은행명만 필수
  * - 빈 배열 허용
  */
-class StoreBanksRequestTest extends ModuleTestCase
+class StoreBanksRequestTest extends TestCase
 {
     /**
      * 은행명 검증은 "현재 앱 로케일" 필드만 필수로 본다. 테스트 데이터가 ko/en 을 제공하므로
@@ -30,11 +30,12 @@ class StoreBanksRequestTest extends ModuleTestCase
     /**
      * 검증 수행
      *
-     * @param  array  $data  검증 대상 데이터
+     * @param array $data 검증 대상 데이터
+     * @return \Illuminate\Validation\Validator
      */
     protected function validate(array $data): \Illuminate\Validation\Validator
     {
-        $request = new StoreBanksRequest;
+        $request = new StoreBanksRequest();
 
         return Validator::make($data, $request->rules());
     }

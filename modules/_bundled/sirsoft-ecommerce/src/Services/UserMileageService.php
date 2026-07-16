@@ -7,7 +7,6 @@ use App\Extension\HookManager;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminEarnDto;
@@ -18,7 +17,6 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 
 /**
  * 사용자 마일리지 서비스 (원장 SSoT + 표시 캐시)
@@ -213,82 +211,7 @@ class UserMileageService
             $cap = intdiv($cap, $unit) * $unit;
         }
 
-        // 최소 사용 금액 미만이면 애초에 사용이 불가하므로 안내값도 0 이어야 한다.
-        // (안내값이 하한을 모르면 "화면이 허용한 값인데 결제에서 거부" 가 된다)
-        $minUse = (int) ($rule['min_use_amount'] ?? 0);
-        if ($cap < $minUse) {
-            return 0;
-        }
-
         return max(0, $cap);
-    }
-
-    /**
-     * 마일리지 사용 정책(하한/단위/상한)을 반환합니다 (주문서 안내용).
-     *
-     * 검증(validateUsage)이 실제로 적용하는 값과 동일한 출처(통화 규칙)를 사용해,
-     * 화면 안내와 서버 판정이 어긋나지 않도록 합니다.
-     *
-     * @param  int  $paymentAmount  결제 금액 (정률 상한 계산 기준, 마일리지 차감 전)
-     * @param  string|null  $currency  통화 코드 (null 시 기본통화)
-     * @return array{min_use_amount: int, use_unit: int, max_use_amount: int} 사용 정책
-     */
-    public function getUsagePolicy(int $paymentAmount, ?string $currency = null): array
-    {
-        if (! $this->isMileageUsable()) {
-            return ['min_use_amount' => 0, 'use_unit' => 1, 'max_use_amount' => 0];
-        }
-
-        $rule = $this->currencyRule($currency ?? $this->defaultCurrency());
-
-        return [
-            'min_use_amount' => (int) ($rule['min_use_amount'] ?? 0),
-            'use_unit' => max(1, (int) ($rule['use_unit'] ?? 1)),
-            'max_use_amount' => $this->resolveAllowedUseAmount($rule, $paymentAmount),
-        ];
-    }
-
-    /**
-     * 주문 시점 마일리지 사용 정책 스냅샷을 생성합니다.
-     *
-     * 통화/프로모션/배송정책과 동일하게, 주문을 지배한 정책을 주문 행에 고정합니다.
-     * 관리자가 이후 한도를 바꿔도 그 주문이 어떤 정책 아래 성립했는지 재현 가능해야
-     * 합니다(정산·감사·분쟁 대응). 사용액 자체는 원장(MileageTransaction)이 SSoT 이며,
-     * 이 스냅샷은 판정 근거를 보존하는 용도입니다.
-     *
-     * @param  int  $paymentAmount  판정 기준 결제금액 (마일리지 차감 전)
-     * @param  int  $usedPoints  실제 사용된 마일리지
-     * @param  string|null  $currency  정산 통화 (null 시 기본통화)
-     * @return array 사용 정책 스냅샷
-     */
-    public function buildUsagePolicySnapshot(int $paymentAmount, int $usedPoints, ?string $currency = null): array
-    {
-        $currency = $currency ?? $this->defaultCurrency();
-        $usable = $this->isMileageUsable();
-        $rule = $usable ? $this->currencyRule($currency) : [];
-
-        // 적립 절사 기준은 사용 가능 여부와 무관하게 기록한다 — 마일리지 "사용" 이 막혀 있어도
-        // 적립은 별개로 일어나므로, 사용 불가 주문의 재계산에도 절사 기준이 필요하다.
-        $earnRounding = MileageRounding::normalize($this->currencyRule($currency));
-
-        return [
-            'usable' => $usable,
-            'currency' => $currency,
-            'rule' => [
-                'point_value' => (float) ($rule['point_value'] ?? 1),
-                'min_use_amount' => (int) ($rule['min_use_amount'] ?? 0),
-                'use_unit' => max(1, (int) ($rule['use_unit'] ?? 1)),
-                'max_use_type' => (string) ($rule['max_use_type'] ?? 'percent'),
-                'max_use_percent' => (float) ($rule['max_use_percent'] ?? 100),
-                'max_use_value' => (int) ($rule['max_use_value'] ?? 0),
-                MileageRounding::UNIT_KEY => $earnRounding['unit'],
-                MileageRounding::METHOD_KEY => $earnRounding['method'],
-            ],
-            // 판정 근거 — 이 결제금액에 이 정책을 적용해 아래 상한이 나왔고, 그 안에서 사용됐다.
-            'payment_amount_basis' => $paymentAmount,
-            'max_use_amount' => $usable ? $this->resolveAllowedUseAmount($rule, $paymentAmount) : 0,
-            'used_points' => $usedPoints,
-        ];
     }
 
     /**
@@ -296,13 +219,13 @@ class UserMileageService
      *
      * @param  int  $userId  사용자 ID
      * @param  int  $usePoints  사용 요청 마일리지
-     * @param  int  $paymentAmount  결제 금액 (마일리지 차감 전)
-     * @param  string|null  $currency  통화 코드 (null 시 기본통화 — canUse/getMaxUsable 과 동일 기준)
+     * @param  int  $paymentAmount  결제 금액
+     * @param  string  $currency  통화 코드
      * @return int 검증/보정된 사용 마일리지
      *
      * @throws MileageValidationException 검증 실패 시
      */
-    public function validateUsage(int $userId, int $usePoints, int $paymentAmount, ?string $currency = null): int
+    public function validateUsage(int $userId, int $usePoints, int $paymentAmount, string $currency): int
     {
         if ($usePoints <= 0) {
             return 0;
@@ -315,7 +238,6 @@ class UserMileageService
             );
         }
 
-        $currency = $currency ?? $this->defaultCurrency();
         $rule = $this->currencyRule($currency);
 
         $minUse = (int) ($rule['min_use_amount'] ?? 0);
@@ -334,12 +256,8 @@ class UserMileageService
 
         $maxByLimit = $this->resolveMaxUseLimit($rule, $paymentAmount);
         if ($usePoints > $maxByLimit || $usePoints > $paymentAmount) {
-            // 사용 가능한 최대 금액을 함께 안내 — 얼마로 줄여야 결제되는지 알 수 없으면
-            // 사용자는 값을 낮춰가며 재시도할 수밖에 없다.
             throw new MileageValidationException(
-                __('sirsoft-ecommerce::exceptions.mileage.exceeds_max_use', [
-                    'amount' => $this->resolveAllowedUseAmount($rule, $paymentAmount),
-                ])
+                __('sirsoft-ecommerce::exceptions.mileage.exceeds_max_use')
             );
         }
 
@@ -380,35 +298,36 @@ class UserMileageService
         // 방식 A: 기존 purchase_earn lot 이 있으면 그 lot 에 델타를 증액(적립 내역 한 줄 유지).
         // 취소 회수(findEarnLotForOption 단일 lot 가정)·유효기간 정합을 위해 신규 lot 을 늘리지 않는다.
         if ($type === MileageTransactionTypeEnum::PURCHASE_EARN
-            && $this->ledger->findEarnLotForOption($option->id) !== null) {
-            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target);
+            && ($existingLot = $this->ledger->findEarnLotForOption($option->id)) !== null) {
+            $this->ledger->incrementEarnLotAmount($existingLot, $amount);
+
+            $this->cache->recalculateForUser($order->user_id, $currency);
+            $this->cache->recalculatePending($order->user_id, $currency);
+
+            $this->logActivity('mileage.earn', [
+                'loggable' => $existingLot,
+                'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
+                'description_params' => ['amount' => (int) $amount],
+                'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency, 'delta' => (int) $amount],
+            ]);
+
+            return $existingLot;
         }
 
         $expiresAt = $this->resolveEarnExpiry();
 
-        try {
-            $tx = $this->ledger->createTransaction([
-                'user_id' => $order->user_id,
-                'currency' => $currency,
-                'type' => $type->value,
-                'amount' => $amount,
-                'remaining_amount' => $amount,
-                'balance_after' => $this->ledger->getBalanceByCurrency($order->user_id, $currency) + $amount,
-                'order_id' => $order->id,
-                'order_option_id' => $option->id,
-                'expires_at' => $expiresAt,
-                'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn', ['amount' => ecommerce_format_price($amount, $currency)]),
-            ]);
-        } catch (UniqueConstraintViolationException $e) {
-            // 최초 적립이 동시에 겹쳐 다른 요청이 먼저 lot 을 만들었다. 옵션당 적립 lot 은
-            // 한 줄이어야 하므로(취소 회수가 그 한 줄을 되돌린다) 새로 만들지 않고 증액 경로로
-            // 흡수한다 — 델타는 잠근 행 기준으로 다시 산정되므로 이중 적립이 되지 않는다.
-            if ($type !== MileageTransactionTypeEnum::PURCHASE_EARN) {
-                throw $e;
-            }
-
-            return $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target);
-        }
+        $tx = $this->ledger->createTransaction([
+            'user_id' => $order->user_id,
+            'currency' => $currency,
+            'type' => $type->value,
+            'amount' => $amount,
+            'remaining_amount' => $amount,
+            'balance_after' => $this->ledger->getBalanceByCurrency($order->user_id, $currency) + $amount,
+            'order_id' => $order->id,
+            'order_option_id' => $option->id,
+            'expires_at' => $expiresAt,
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn', ['amount' => $amount]),
+        ]);
 
         $this->cache->recalculateForUser($order->user_id, $currency);
         $this->cache->recalculatePending($order->user_id, $currency);
@@ -416,7 +335,7 @@ class UserMileageService
         $this->logActivity('mileage.earn', [
             'loggable' => $tx,
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
-            'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
+            'description_params' => ['amount' => (int) $amount],
             'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency],
         ]);
 
@@ -480,7 +399,7 @@ class UserMileageService
             'order_id' => $orderId,
             'order_cancel_id' => $orderCancelId,
             'expires_at' => $expiresAt,
-            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => ecommerce_format_price($amount, $currency)]),
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => $amount]),
         ]);
 
         // 원 사용 거래에 동일 order_cancel_id 역주입 — 복원 ↔ 원 사용 거래 연결 (행 확장 정합)
@@ -491,7 +410,7 @@ class UserMileageService
         $this->logActivity('mileage.restore', [
             'loggable' => $tx,
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
-            'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
+            'description_params' => ['amount' => (int) $amount],
             'properties' => ['order_id' => $orderId, 'order_cancel_id' => $orderCancelId, 'currency' => $currency],
         ]);
 
@@ -530,7 +449,7 @@ class UserMileageService
             'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency) + $amount,
             'order_id' => $orderId,
             'expires_at' => $expiresAt,
-            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => ecommerce_format_price($amount, $currency)]),
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => $amount]),
         ]);
 
         $this->cache->recalculateForUser($userId, $currency);
@@ -538,7 +457,7 @@ class UserMileageService
         $this->logActivity('mileage.restore', [
             'loggable' => $tx,
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
-            'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
+            'description_params' => ['amount' => (int) $amount],
             'properties' => ['order_id' => $orderId, 'currency' => $currency, 'reason' => 'payment_failed'],
         ]);
 
@@ -558,24 +477,17 @@ class UserMileageService
             return null;
         }
 
-        // 해당 옵션 적립건 존재 확인 (실제 회수 대상은 트랜잭션 안에서 잠금과 함께 되읽는다)
-        if ($this->ledger->findEarnLotForOption($option->id) === null) {
+        // 해당 옵션 적립건 조회
+        $earnLot = $this->ledger->findEarnLotForOption($option->id);
+
+        if ($earnLot === null) {
             return null;
         }
 
         $currency = $this->baseCurrencyForOrder($order);
+        $toRecover = (float) $earnLot->amount;
 
-        return DB::transaction(function () use ($order, $option, $currency) {
-            // 회수액은 잠근 행의 커밋된 금액 기준이어야 한다 — 트랜잭션 밖에서 읽은 값을 쓰면
-            // 그 사이 반영된 적립 증액분이 회수에서 누락된다.
-            $earnLot = $this->ledger->findEarnLotForOptionForUpdate($option->id);
-
-            if ($earnLot === null) {
-                return null;
-            }
-
-            $toRecover = (float) $earnLot->amount;
-
+        return DB::transaction(function () use ($order, $option, $earnLot, $currency, $toRecover) {
             $shortfall = $this->recoverPoints($order->user_id, $currency, $toRecover, $earnLot);
 
             $tx = $this->ledger->createTransaction([
@@ -589,7 +501,7 @@ class UserMileageService
                 'order_option_id' => $option->id,
                 'source_transaction_id' => $earnLot->id,
                 'metadata' => $shortfall > 0 ? ['shortfall' => $shortfall] : null,
-                'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn_cancel', ['amount' => ecommerce_format_price($toRecover, $currency)]),
+                'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn_cancel', ['amount' => $toRecover]),
             ]);
 
             $this->cache->recalculateForUser($order->user_id, $currency);
@@ -598,7 +510,7 @@ class UserMileageService
             $this->logActivity('mileage.earn_cancel', [
                 'loggable' => $tx,
                 'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn_cancel',
-                'description_params' => ['amount' => ecommerce_format_price((int) $toRecover, $currency)],
+                'description_params' => ['amount' => (int) $toRecover],
                 'properties' => [
                     'order_id' => $order->id,
                     'order_option_id' => $option->id,
@@ -634,7 +546,7 @@ class UserMileageService
                 'memo' => $dto->memo,
                 'expires_at' => $expiresAt,
                 'description' => $dto->description
-                    ?? __('sirsoft-ecommerce::activity_log.description.mileage_admin_earn', ['amount' => ecommerce_format_price($dto->amount, $dto->currency)]),
+                    ?? __('sirsoft-ecommerce::activity_log.description.mileage_admin_earn', ['amount' => $dto->amount]),
             ]);
 
             $this->cache->recalculateForUser($userId, $dto->currency);
@@ -642,7 +554,7 @@ class UserMileageService
             $this->logActivity('mileage.admin_earn', [
                 'loggable' => $tx,
                 'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_admin_earn',
-                'description_params' => ['amount' => ecommerce_format_price($dto->amount, $dto->currency)],
+                'description_params' => ['amount' => $dto->amount],
                 'properties' => ['granted_by' => $dto->grantedBy, 'currency' => $dto->currency],
             ]);
 
@@ -780,7 +692,7 @@ class UserMileageService
             $this->logActivity('mileage.adjust', [
                 'loggable' => $transaction,
                 'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_adjust',
-                'description_params' => ['amount' => ecommerce_format_price((int) abs((float) $transaction->amount), $transaction->currency)],
+                'description_params' => ['amount' => (int) abs((float) $transaction->amount)],
                 'properties' => [
                     'user_id' => $transaction->user_id,
                     'currency' => $transaction->currency,
@@ -818,7 +730,7 @@ class UserMileageService
                     'balance_after' => $this->ledger->getBalanceByCurrency($lot->user_id, $lot->currency) - $remaining,
                     'source_transaction_id' => $lot->id,
                     'expired_at' => $now,
-                    'description' => __('sirsoft-ecommerce::activity_log.description.mileage_expire', ['amount' => ecommerce_format_price($remaining, $lot->currency)]),
+                    'description' => __('sirsoft-ecommerce::activity_log.description.mileage_expire', ['amount' => $remaining]),
                 ]);
 
                 $this->ledger->markExpired($lot, $now);
@@ -827,7 +739,7 @@ class UserMileageService
                 $this->logActivity('mileage.expire', [
                     'loggable' => $tx,
                     'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_expire',
-                    'description_params' => ['amount' => ecommerce_format_price((int) $remaining, $lot->currency)],
+                    'description_params' => ['amount' => (int) $remaining],
                     'properties' => ['user_id' => $lot->user_id, 'currency' => $lot->currency],
                 ]);
 
@@ -859,7 +771,7 @@ class UserMileageService
 
             $this->logActivity('mileage.expire', [
                 'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_expire',
-                'description_params' => ['amount' => ecommerce_format_price((int) $remaining, $lot->currency)],
+                'description_params' => ['amount' => (int) $remaining],
                 'properties' => [
                     'user_id' => $userId,
                     'currency' => $lot->currency,
@@ -936,13 +848,6 @@ class UserMileageService
                 $firstSource ??= $lot->id;
             }
 
-            // 지급(adminEarn)은 description 을 채우는데 차감·사용은 비워 두면
-            // 회원 마일리지 내역의 「내용」 열이 음수 행에서만 공백이 된다.
-            // 활동 로그와 같은 키를 써서 지급/차감 표기를 대칭으로 맞춘다.
-            $descriptionKey = $type === MileageTransactionTypeEnum::ADMIN_DEDUCT
-                ? 'sirsoft-ecommerce::activity_log.description.mileage_admin_deduct'
-                : 'sirsoft-ecommerce::activity_log.description.mileage_use';
-
             $tx = $this->ledger->createTransaction(array_merge([
                 'user_id' => $userId,
                 'currency' => $currency,
@@ -951,7 +856,6 @@ class UserMileageService
                 'remaining_amount' => 0,
                 'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency),
                 'source_transaction_id' => $firstSource,
-                'description' => __($descriptionKey, ['amount' => ecommerce_format_price($amount, $currency)]),
             ], $extra));
 
             $this->cache->recalculateForUser($userId, $currency);
@@ -964,54 +868,11 @@ class UserMileageService
             $this->logActivity($action, [
                 'loggable' => $tx,
                 'description_key' => $descKey,
-                'description_params' => ['amount' => ecommerce_format_price($amount, $currency)],
+                'description_params' => ['amount' => $amount],
                 'properties' => array_merge(['currency' => $currency], $grantedBy !== null ? ['granted_by' => $grantedBy] : []),
             ]);
 
             return $tx;
-        });
-    }
-
-    /**
-     * 기존 구매 적립 lot 에 목표액 대비 델타만 증액합니다 (방식 A — 적립 내역 한 줄 유지).
-     *
-     * 델타는 행을 잠근 뒤 다시 산정한다 — 두 확정 요청이 같은 기적립 합계를 읽으면 같은
-     * 델타를 각자 증액해 목표 적립액을 넘어선다.
-     *
-     * @param  Order  $order  주문
-     * @param  OrderOption  $option  주문옵션
-     * @param  string  $currency  기준 통화
-     * @param  float  $target  목표 적립액
-     * @return MileageTransaction|null 증액된 적립건 (대상 없으면 null)
-     */
-    private function applyDeltaToExistingEarnLot(Order $order, OrderOption $option, string $currency, float $target): ?MileageTransaction
-    {
-        return DB::transaction(function () use ($order, $option, $currency, $target) {
-            $existingLot = $this->ledger->findEarnLotForOptionForUpdate($option->id);
-
-            if ($existingLot === null) {
-                return null;
-            }
-
-            $delta = $target - $this->ledger->sumPurchaseEarnedForOption($option->id);
-
-            if ($delta <= 0) {
-                return $existingLot;
-            }
-
-            $this->ledger->incrementEarnLotAmount($existingLot, $delta);
-
-            $this->cache->recalculateForUser($order->user_id, $currency);
-            $this->cache->recalculatePending($order->user_id, $currency);
-
-            $this->logActivity('mileage.earn', [
-                'loggable' => $existingLot,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
-                'description_params' => ['amount' => ecommerce_format_price((int) $delta, $currency)],
-                'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency, 'delta' => (int) $delta],
-            ]);
-
-            return $existingLot;
         });
     }
 
@@ -1108,27 +969,6 @@ class UserMileageService
         }
 
         return (int) ($rule['max_use_value'] ?? PHP_INT_MAX);
-    }
-
-    /**
-     * 실제로 사용 가능한 최대 금액을 계산합니다 (한도 · 결제금액 · 사용단위 반영).
-     *
-     * 잔액은 반영하지 않습니다 — 정책상 허용 한도이며, 잔액 부족은 별도 사유로 구분됩니다.
-     *
-     * @param  array  $rule  통화 규칙
-     * @param  int  $paymentAmount  결제 금액 (마일리지 차감 전)
-     * @return int 정책상 사용 가능한 최대 금액
-     */
-    private function resolveAllowedUseAmount(array $rule, int $paymentAmount): int
-    {
-        $allowed = min($this->resolveMaxUseLimit($rule, $paymentAmount), $paymentAmount);
-
-        $unit = (int) ($rule['use_unit'] ?? 1);
-        if ($unit > 1) {
-            $allowed = intdiv($allowed, $unit) * $unit;
-        }
-
-        return max(0, $allowed);
     }
 
     /**

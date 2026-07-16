@@ -207,7 +207,7 @@
               },
               "children": [
                 {
-                  "type": "composite",
+                  "type": "basic",
                   "name": "Toggle",
                   "props": {
                     "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_active",

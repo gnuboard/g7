@@ -78,7 +78,6 @@
           "search_type": "{{_local.searchType || undefined}}",
           "page": 1
         },
-        "replace": true,
         "transition_overlay_target": "schedules_data_grid__body"
       }
     }
@@ -124,8 +123,7 @@
                     "handler": "navigate",
                     "params": {
                       "path": "{{route.path}}",
-                      "mergeQuery": true,
-                      "query": {}
+                      "mergeQuery": false
                     }
                   }
                 ]
@@ -147,14 +145,7 @@
                         "params": {
                           "target": "global",
                           "selectedSchedule": null,
-                          "isEditMode": false,
-                          "scheduleForm": {
-                            "type": "artisan",
-                            "frequency": "daily",
-                            "without_overlapping": true,
-                            "run_in_maintenance": false,
-                            "is_active": true
-                          }
+                          "isEditMode": false
                         }
                       },
                       {

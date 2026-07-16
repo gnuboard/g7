@@ -12,8 +12,6 @@ class UpdateCartQuantityRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
-     *
-     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -23,15 +21,12 @@ class UpdateCartQuantityRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, mixed> 검증 규칙
+     * @return array
      */
     public function rules(): array
     {
-        $maxQuantity = (int) config('sirsoft-ecommerce.cart.max_quantity', 99);
-
         $rules = [
-            // 장바구니 수량 상한은 config('sirsoft-ecommerce.cart.max_quantity') 가 SSoT
-            'quantity' => ['required', 'integer', 'min:1', 'max:'.$maxQuantity],
+            'quantity' => 'required|integer|min:1|max:9999',
         ];
 
         return HookManager::applyFilters('sirsoft-ecommerce.cart.update_quantity_validation_rules', $rules, $this);
@@ -40,7 +35,7 @@ class UpdateCartQuantityRequest extends FormRequest
     /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array<string, string> 검증 메시지
+     * @return array
      */
     public function messages(): array
     {

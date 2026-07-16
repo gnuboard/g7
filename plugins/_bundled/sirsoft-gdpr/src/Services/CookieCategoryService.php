@@ -157,10 +157,9 @@ class CookieCategoryService
     /**
      * consent_key 에 대응하는 사용자 친화 설명을 현재 locale 기준으로 반환합니다.
      *
-     * 설명(description)은 관리자 설정 화면에 편집 UI 가 없어(라벨만 편집 가능) 운영자가
-     * 카테고리를 저장하면 description 이 유실된다. 따라서 설명은 관리자 설정(getCategories)이
-     * 아니라 항상 코드 기본값(getDefaultCategories)에서 가져온다 — 운영자 라벨 커스텀과
-     * 무관하게 마이페이지·배너에 일관된 설명이 노출된다 (이슈 #430). 기본값에도 없으면 null.
+     * 마이페이지 「내 동의 현황」 의 동의 항목 컬럼에서 영문 식별자 대신 회원이
+     * 즉시 이해할 수 있는 한 줄 설명을 노출하기 위함. 카탈로그에 매칭되는 카테고리가
+     * 없거나 설명이 비어 있으면 null 반환 — 호출 측이 fallback 처리.
      *
      * @param string $consentKey 동의 항목 키 (예: cookie_analytics)
      * @return string|null
@@ -171,7 +170,7 @@ class CookieCategoryService
         $locale = (string) app()->getLocale();
         $fallbackLocale = (string) config('app.fallback_locale', 'en');
 
-        foreach ($this->getDefaultCategories() as $cat) {
+        foreach ($this->getCategories() as $cat) {
             if (($cat['key'] ?? null) !== $bareKey) {
                 continue;
             }
@@ -202,21 +201,21 @@ class CookieCategoryService
                 'required' => true,
                 'label' => ['ko' => '필수 쿠키', 'en' => 'Strictly Necessary'],
                 'description' => [
-                    // g7_locale·g7_color_scheme 은 ePrivacy Art.5(3) + WP29 Opinion 04/2012 §3.6 의 user-initiated preference
-                    // 예외 (사용자가 화면에서 직접 고른 표시 환경) 로 strictly necessary 분류. 사용자 안내에 명시.
-                    'ko' => '세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 직접 고른 언어 설정과 화면 테마, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.',
-                    'en' => 'Strictly necessary for site operation: session/CSRF/auth tokens, shopping basket identifier, user-selected language preference and display theme, cookie consent record. Cannot be disabled.',
+                    // g7_locale 은 ePrivacy Art.5(3) + WP29 Opinion 04/2012 §3.6 의 user-initiated preference
+                    // 예외 (사용자 가입 시 명시 선택) 로 strictly necessary 분류. 사용자 안내에 명시.
+                    'ko' => '세션·CSRF·로그인 토큰, 장바구니 식별자, 사용자가 가입 시 선택한 언어 설정, 쿠키 동의 기록 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.',
+                    'en' => 'Strictly necessary for site operation: session/CSRF/auth tokens, shopping basket identifier, user-selected language preference at registration, cookie consent record. Cannot be disabled.',
                 ],
             ],
             [
                 // Phase 1: functional 카테고리 신설 — ICO/CNIL 4분류 체계 부합.
-                // 자체 functional 키 (표시 통화 등) + 외부 functional 도구 (Crisp, Intercom 등) 분류 영역.
+                // 자체 functional 키 (다크모드/통화) + 외부 functional 도구 (Crisp, Intercom 등) 분류 영역.
                 'key' => 'functional',
                 'required' => false,
                 'label' => ['ko' => '기능 쿠키', 'en' => 'Functional'],
                 'description' => [
-                    'ko' => '사용자 선호도(표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.',
-                    'en' => 'Cookies that remember user preferences such as display currency. If declined, defaults are used on every visit.',
+                    'ko' => '사용자 선호도(다크모드, 표시 통화 등)를 기억하는 쿠키입니다. 거부 시 매 방문마다 기본값으로 표시됩니다.',
+                    'en' => 'Cookies that remember user preferences such as dark mode and display currency. If declined, defaults are used on every visit.',
                 ],
             ],
             [

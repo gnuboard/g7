@@ -15,7 +15,7 @@ class AdminIdentityMessageDefinitionIndexRequest extends FormRequest
     /**
      * 권한 확인 (미들웨어에서 처리).
      *
-     * @return bool 항상 true (권한은 라우트 permission 미들웨어가 담당)
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -25,7 +25,7 @@ class AdminIdentityMessageDefinitionIndexRequest extends FormRequest
     /**
      * 검증 규칙.
      *
-     * @return array<string, mixed> 검증 규칙 배열
+     * @return array
      */
     public function rules(): array
     {
@@ -50,7 +50,7 @@ class AdminIdentityMessageDefinitionIndexRequest extends FormRequest
         ];
 
         return HookManager::applyFilters(
-            'core.identity.message_definition.index_validation_rules',
+            'core.identity.message_definition.filter_index_rules',
             $rules
         );
     }
@@ -58,7 +58,7 @@ class AdminIdentityMessageDefinitionIndexRequest extends FormRequest
     /**
      * 검증 메시지.
      *
-     * @return array<string, string> 검증 오류 메시지 배열
+     * @return array
      */
     public function messages(): array
     {

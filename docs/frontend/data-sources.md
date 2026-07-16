@@ -84,7 +84,7 @@
 | 필드 | 타입 | 필수 | 기본값 | 설명 |
 |------|------|------|--------|------|
 | `id` | string | ✅ | - | 데이터 소스 고유 ID (컴포넌트에서 `{{id.data}}` 형태로 참조) |
-| `label_key` | string | ❌ | - | 친화 명칭 `$t:` 다국어 키 (예 `$t:editor.data_source.products`). 레이아웃 편집기 데이터 연결 검색 피커가 현재 로케일 명칭으로 표시. 미지정 시 `id` 폴백. 번들 템플릿은 전 data_source 보유 의무(정적 검사) |
+| `label_key` | string | ❌ | - | 친화 명칭 `$t:` 다국어 키 (예 `$t:editor.data_source.products`). 레이아웃 편집기 데이터 연결 검색 피커가 현재 로케일 명칭으로 표시. 미지정 시 `id` 폴백. 번들 템플릿은 전 data_source 보유 의무(audit `data-source-label-key-coverage`) |
 | `type` | string | ✅ | - | 데이터 소스 타입 (`api`, `static`, `route_params`, `query_params`, `websocket`) |
 | `endpoint` | string | ✅* | - | API 엔드포인트 (type이 `api`일 때 필수) |
 | `method` | string | ❌ | `GET` | HTTP 메서드 (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) |
@@ -154,26 +154,6 @@
 필수: POST 요청의 body 데이터도 "params" 필드에 정의
 권장: 빈 배열/null 전송 방지를 위한 조건부 표현식 사용
 ```
-
-### 서버 필터와 화면 필터는 같은 출처를 읽는다
-
-`params` 로 서버에 넘겨 응답을 좁힌 값(채널·상태·분류 등)을 화면이 다시 필터 조건으로 쓴다면, 두 표현식은 **같은 출처 하나**를 읽어야 한다. 표현식을 글자까지 똑같이 적는 것으로는 부족하다 — 출처가 둘이면 갱신 시점이 달라 어긋난다.
-
-```json
-// ❌ 두 출처 (URL + 페이지 로컬 상태)
-"params": { "template_channel": "{{_local.activeChannel ?? query.channel ?? 'mail'}}" }
-"if":     "{{(row.templates ?? []).find(t => t.channel === (_local.activeChannel ?? query.channel ?? 'mail'))}}"
-
-// ✅ URL 단일 출처
-"params": { "template_channel": "{{query.channel ?? 'mail'}}" }
-"if":     "{{(row.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}"
-```
-
-`_local` 은 화면 안에서만 사는 값이라 URL 이 나르지 못한다. 다른 탭에 갔다 돌아오면 URL 의 필터 키는 사라지는데(탭 전환은 목록 상태를 승계하지 않는다) `_local` 만 이전 값으로 남는다. 그 사이 목록은 기본값으로 다시 불려 오고 화면은 남은 값으로 걸러내므로, **응답에는 있는 데이터를 화면이 "없음" 으로 표시**한다. 예외도 콘솔 경고도 4xx/5xx 도 남지 않아 로그로는 발견되지 않는다.
-
-같은 이유로 정적 대조 테스트도 이 결함을 놓친다. 두 표현식이 문자열로 동일하기 때문이다. 검사해야 하는 것은 동일성이 아니라 **출처의 개수**다.
-
-로컬 상태를 함께 두고 싶은 이유가 "클릭 즉시 반응" 이라면, `navigate` 가 URL 을 갱신하면서 이미 같은 렌더 사이클에 반영되므로 별도 복제가 필요 없다.
 
 ### multipart/form-data 지원 (파일 업로드)
 
@@ -372,12 +352,6 @@ auth_mode: "optional" 동작 흐름:
 > **중요**: `auth_mode: "required"`에서 토큰이 없으면 API 요청 자체를 하지 않습니다.
 > `fallback`이 정의되어 있으면 fallback 데이터가 렌더링에 사용되고, 없으면 데이터 없이 처리됩니다.
 > 이를 통해 비로그인 상태에서 인증 필수 API 호출로 인한 401 → 로그인 리다이렉트 문제를 방지합니다.
-
-### 라우트가 optional.sanctum 이면 optional 선언 의무
-
-로그인 여부에 따라 응답 범위가 달라지는 서버 라우트(`optional.sanctum` — 통합검색처럼 회원 열람 범위를 해석하는 API)를 소비하는 데이터 소스는 `auth_mode: "optional"` 을 반드시 선언한다.
-
-기본값이 `none` 이므로 미선언 시 로그인 회원의 요청에도 토큰이 실리지 않는다. 이 실패는 오류·경고 없이 "로그인 회원이 비회원 범위 응답을 받는" 형태로만 나타난다 — 서버측 권한 해석이 통째로 무력화되는데 화면·콘솔·네트워크 어디에도 실패 신호가 없다. 서버 라우트의 미들웨어와 데이터 소스의 `auth_mode` 는 한 계약의 양끝이므로, 어느 한쪽을 바꾸면 반대편도 함께 확인한다.
 
 ### 하위 호환성
 

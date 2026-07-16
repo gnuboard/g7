@@ -30,7 +30,7 @@
               "name": "Icon",
               "props": {
                 "name": "folder",
-                "className": "text-xl text-gray-700 dark:text-gray-300"
+                "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
               }
             },
             {
@@ -89,10 +89,8 @@
                   }
                 },
                 {
-                  "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75).",
                   "handler": "replaceUrl",
                   "params": {
-                    "mergeQuery": true,
                     "query": {
                       "id": "{{$args[0]?.id}}",
                       "mode": "view"
@@ -139,7 +137,7 @@
                       "handler": "toast",
                       "params": {
                         "type": "error",
-                        "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.category.messages.order_update_failed'}}"
+                        "message": "$t:sirsoft-ecommerce.admin.category.messages.order_update_failed"
                       }
                     },
                     {
@@ -220,7 +218,7 @@
           "name": "Icon",
           "props": {
             "name": "folder",
-            "className": "text-xl text-gray-400 dark:text-gray-500"
+            "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
           }
         },
         {

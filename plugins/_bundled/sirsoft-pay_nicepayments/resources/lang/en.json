@@ -34,7 +34,7 @@
         "copy": "Copy",
         "section_redirect": "Redirect URLs",
         "redirect_success_url": "Payment Success Redirect URL",
-        "redirect_success_url_hint": "{shopBase} is filled in from the storefront address setting. You may also enter a full URL (https://...). {orderId} will be replaced with the actual order number.",
+        "redirect_success_url_hint": "Supports relative paths (/shop/...) or full URLs (https://...). {orderId} will be replaced with the actual order number.",
         "redirect_fail_url": "Payment Failure Redirect URL",
         "redirect_fail_url_hint": "Supports relative paths or full URLs. Error details are appended as query parameters.",
         "use_escrow": "Enable Escrow Payment",
@@ -149,11 +149,6 @@
             "order_not_found": "Order not found.",
             "amount_mismatch": "Payment amount does not match.",
             "authorize_failed": "Payment authorization failed."
-        }
-    },
-    "payment": {
-        "error": {
-            "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
         }
     }
 }

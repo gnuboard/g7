@@ -25,7 +25,6 @@
               "name": "Button",
               "props": {
                 "className": "flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors",
-                "data-testid": "currency-switcher",
                 "aria-haspopup": "listbox",
                 "aria-expanded": "{{_local.showCurrencyDropdown ?? false}}",
                 "aria-label": "$t:sirsoft-ecommerce.common.currency_label"
@@ -56,7 +55,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": { "className": "font-medium" },
-                          "text": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
+                          "text": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}"
                         },
                         {
                           "comment": "접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). 통화와 시각적으로 구분되도록 옅은 색.",
@@ -89,7 +88,7 @@
                   "text": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
                 },
                 { "type": "basic", "name": "Icon", "props": { "name": "coins", "className": "text-base" } },
-                { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{_global.preferredCurrency ?? _global.defaultCurrency}}" },
+                { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}" },
                 { "type": "basic", "name": "Icon", "props": { "name": "chevron-down", "className": "text-xs" } }
               ],
               "actions": [
@@ -152,7 +151,6 @@
                           "name": "Button",
                           "props": {
                             "className": "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
-                            "data-testid": "currency-option-{{currency.code}}",
                             "role": "option",
                             "aria-selected": "{{_global.preferredCurrency === currency.code}}"
                           },
@@ -207,16 +205,7 @@
                                         "params": {
                                           "method": "PUT",
                                           "body": { "currency": "{{currency.code}}" }
-                                        },
-                                        "onError": [
-                                          {
-                                            "handler": "toast",
-                                            "params": {
-                                              "type": "error",
-                                              "message": "{{error.message}}"
-                                            }
-                                          }
-                                        ]
+                                        }
                                       }
                                     }
                                   ]
@@ -321,16 +310,7 @@
                                         "params": {
                                           "method": "PUT",
                                           "body": { "shipping_country": "{{shipCountry.code}}" }
-                                        },
-                                        "onError": [
-                                          {
-                                            "handler": "toast",
-                                            "params": {
-                                              "type": "error",
-                                              "message": "{{error.message}}"
-                                            }
-                                          }
-                                        ]
+                                        }
                                       }
                                     }
                                   ]

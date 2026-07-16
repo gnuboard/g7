@@ -74,6 +74,7 @@ class MileageEarnDeltaAndGateTest extends ModuleTestCase
      *
      * @param  int  $quantity  옵션 수량
      * @param  float  $earnPoints  적립예정 포인트 소계
+     * @return Order
      */
     private function makeDeliveredOrder(int $quantity, float $earnPoints): Order
     {
@@ -97,6 +98,7 @@ class MileageEarnDeltaAndGateTest extends ModuleTestCase
      * 해당 주문의 구매적립(purchase_earn) 총액을 반환합니다.
      *
      * @param  int  $orderId  주문 ID
+     * @return float
      */
     private function purchaseEarnTotal(int $orderId): float
     {
@@ -121,8 +123,7 @@ class MileageEarnDeltaAndGateTest extends ModuleTestCase
         // 1차: 1개만 구매확정 → 분할 + 100P 적립
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => 1]],
-            OrderStatusEnum::CONFIRMED,
-            $order->id,
+            OrderStatusEnum::CONFIRMED
         );
         $this->assertEqualsWithDelta(100.0, $this->purchaseEarnTotal($order->id), 0.5, '1차 확정 후 100P 적립되어야 함');
 
@@ -134,8 +135,7 @@ class MileageEarnDeltaAndGateTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $remaining->id, 'quantity' => 1]],
-            OrderStatusEnum::CONFIRMED,
-            $order->id,
+            OrderStatusEnum::CONFIRMED
         );
 
         $this->assertEqualsWithDelta(200.0, $this->purchaseEarnTotal($order->id), 0.5, '나눠 확정 총합은 200P 여야 함');
@@ -157,8 +157,7 @@ class MileageEarnDeltaAndGateTest extends ModuleTestCase
             $this->assertNotNull($target, "{$i}회차 확정 대상(배송완료)이 있어야 함");
             $this->service->bulkChangeStatusWithQuantity(
                 [['option_id' => $target->id, 'quantity' => 1]],
-                OrderStatusEnum::CONFIRMED,
-                $order->id,
+                OrderStatusEnum::CONFIRMED
             );
         }
 
@@ -177,8 +176,7 @@ class MileageEarnDeltaAndGateTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => 1]],
-            OrderStatusEnum::CONFIRMED,
-            $order->id,
+            OrderStatusEnum::CONFIRMED
         );
         $this->assertEqualsWithDelta(150.0, $this->purchaseEarnTotal($order->id), 0.5);
 
@@ -202,8 +200,7 @@ class MileageEarnDeltaAndGateTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => 1]],
-            OrderStatusEnum::CONFIRMED,
-            $order->id,
+            OrderStatusEnum::CONFIRMED
         );
 
         $this->assertSame(0.0, $this->purchaseEarnTotal($order->id), '기능 OFF 면 즉시적립도 발생하지 않아야 함');
@@ -223,8 +220,7 @@ class MileageEarnDeltaAndGateTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => 1]],
-            OrderStatusEnum::CONFIRMED,
-            $order->id,
+            OrderStatusEnum::CONFIRMED
         );
 
         $this->assertEqualsWithDelta(120.0, $this->purchaseEarnTotal($order->id), 0.5, '기능 ON 이면 즉시적립 정상');

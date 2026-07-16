@@ -8,7 +8,6 @@ use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Models\Category;
-use Modules\Sirsoft\Ecommerce\Rules\NotCircularCategoryParent;
 
 /**
  * 카테고리 수정 요청
@@ -19,8 +18,6 @@ class UpdateCategoryRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
-     *
-     * @return bool 권한 검증 결과 (항상 true)
      */
     public function authorize(): bool
     {
@@ -46,7 +43,7 @@ class UpdateCategoryRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, mixed> 필드별 검증 규칙
+     * @return array
      */
     public function rules(): array
     {
@@ -54,12 +51,8 @@ class UpdateCategoryRequest extends FormRequest
 
         $rules = [
             'name' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
-            'description' => ['nullable', 'array', new TranslatableField],
-            'parent_id' => [
-                'nullable',
-                Rule::exists(Category::class, 'id'),
-                new NotCircularCategoryParent($categoryId !== null ? (int) $categoryId : null),
-            ],
+            'description' => ['nullable', 'array', new TranslatableField()],
+            'parent_id' => ['nullable', Rule::exists(Category::class, 'id')],
             'slug' => [
                 'required',
                 'string',
@@ -80,7 +73,7 @@ class UpdateCategoryRequest extends FormRequest
     /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array<string, string> 규칙별 다국어 에러 메시지
+     * @return array
      */
     public function messages(): array
     {

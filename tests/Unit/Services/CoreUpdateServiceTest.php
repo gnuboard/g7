@@ -39,72 +39,14 @@ class CoreUpdateServiceTest extends TestCase
      */
     private array $tempFiles = [];
 
-    /**
-     * 진입 시점의 업데이트 트리 플래그 (tearDown 에서 복원)
-     */
-    private string|false $originalUpdateFlag = false;
-
-    /**
-     * 진입 시점의 APP_VERSION 3채널 값 (tearDown 에서 복원)
-     *
-     * @var array{env: string|null, server: string|null, putenv: string|false}
-     */
-    private array $originalAppVersion = ['env' => null, 'server' => null, 'putenv' => false];
-
     protected function setUp(): void
     {
         parent::setUp();
-
-        // `updateVersionInEnv()` 는 `.env` 파일만이 아니라 프로세스 환경(3채널)도 갱신한다.
-        // 그 부수효과가 클래스 안에 남으면 **뒤이은 테스트가 부팅하는 앱의 `config('app.version')`**
-        // 이 오염된다(`config/app.php` 가 `env('APP_VERSION', …)` 이므로). 실제로 그 순서 의존으로
-        // `test_check_updates_command_shows_success` 가 "현재 최신 버전입니다" 대신 업데이트 있음으로
-        // 갈렸다. 진입 시 스냅샷을 떠 두고 종료 시 되돌린다.
-        $this->originalAppVersion = [
-            'env' => $_ENV['APP_VERSION'] ?? null,
-            'server' => $_SERVER['APP_VERSION'] ?? null,
-            'putenv' => getenv('APP_VERSION'),
-        ];
-
-        // 이 클래스의 한 케이스가 `core:update` 를 실제로 호출하는데, 부모 커맨드는 "프로세스
-        // 종료와 함께 소멸" 을 전제로 `G7_UPDATE_IN_PROGRESS` 를 정리하지 않는다. PHPUnit 은
-        // 프로세스가 이어지므로 그 플래그가 이후 모든 테스트로 새어 나가, 부팅마다
-        // `bootstrap/app.php` 의 매니페스트 자가 치유가 발동한다(내용은 같아도 불필요한 churn).
-        // 진입 시 비우고 종료 시 되돌린다 — ExecuteUpgradeStepsStandaloneTest 와 같은 규율.
-        $this->originalUpdateFlag = getenv('G7_UPDATE_IN_PROGRESS');
-        putenv('G7_UPDATE_IN_PROGRESS');
-        unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
-
         $this->service = new CoreUpdateService;
     }
 
     protected function tearDown(): void
     {
-        // APP_VERSION 3채널 복원 (updateVersionInEnv 부수효과 격리)
-        foreach (['env' => &$_ENV, 'server' => &$_SERVER] as $slot => &$bag) {
-            if ($this->originalAppVersion[$slot] === null) {
-                unset($bag['APP_VERSION']);
-            } else {
-                $bag['APP_VERSION'] = $this->originalAppVersion[$slot];
-            }
-        }
-        unset($bag);
-
-        if ($this->originalAppVersion['putenv'] === false) {
-            putenv('APP_VERSION');
-        } else {
-            putenv('APP_VERSION='.$this->originalAppVersion['putenv']);
-        }
-
-        if ($this->originalUpdateFlag === false) {
-            putenv('G7_UPDATE_IN_PROGRESS');
-            unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
-        } else {
-            putenv('G7_UPDATE_IN_PROGRESS='.$this->originalUpdateFlag);
-            $_ENV['G7_UPDATE_IN_PROGRESS'] = $this->originalUpdateFlag;
-            $_SERVER['G7_UPDATE_IN_PROGRESS'] = $this->originalUpdateFlag;
-        }
-
         // 임시 파일 정리
         foreach ($this->tempFiles as $file) {
             if (File::exists($file)) {
@@ -484,55 +426,6 @@ MD;
     }
 
     /**
-     * `.env` 파일만이 아니라 프로세스 환경(3채널)도 함께 갱신하는지 검증합니다.
-     *
-     * 부모가 config 캐시 없이 부팅했다면 Dotenv 가 `$_ENV['APP_VERSION']` 에 이전 버전을 채워 두고,
-     * env 저장소가 불변이라 뒤이어 부팅하는 `config:cache` 프로세스가 `.env` 를 다시 읽어도 그 값이
-     * 바뀌지 않는다. 그러면 `bootstrap/cache/config.php` 에 **이전 버전**이 박제되어 이후 모든 웹
-     * 요청이 옛 버전으로 판정한다 — 새 코어를 요구하는 확장이 `incompatible_core` 로 꺼지는 경로다.
-     * (2026-09-07 실측: `config:clear` 후 7.0.10 → 7.0.11 업데이트가 config 캐시에 7.0.10 을 구웠다.)
-     */
-    public function test_update_version_in_env_also_updates_process_env(): void
-    {
-        $originalEnv = $_ENV['APP_VERSION'] ?? null;
-        $originalServer = $_SERVER['APP_VERSION'] ?? null;
-        $originalPutenv = getenv('APP_VERSION');
-
-        try {
-            // 업데이트 전 프로세스 환경 = 이전 버전 (캐시 없이 부팅한 부모의 상태)
-            $_ENV['APP_VERSION'] = '1.0.0';
-            $_SERVER['APP_VERSION'] = '1.0.0';
-            putenv('APP_VERSION=1.0.0');
-
-            $this->withIsolatedBasePath(function (string $tempBase): void {
-                File::put($tempBase.DIRECTORY_SEPARATOR.'.env', "APP_NAME=G7\nAPP_VERSION=1.0.0\n");
-
-                $this->service->updateVersionInEnv('2.5.0');
-            });
-
-            $this->assertSame('2.5.0', $_ENV['APP_VERSION'], '$_ENV 채널이 갱신되어야 한다');
-            $this->assertSame('2.5.0', $_SERVER['APP_VERSION'], '$_SERVER 채널이 갱신되어야 한다');
-            $this->assertSame('2.5.0', getenv('APP_VERSION'), 'putenv 채널이 갱신되어야 한다');
-        } finally {
-            if ($originalEnv === null) {
-                unset($_ENV['APP_VERSION']);
-            } else {
-                $_ENV['APP_VERSION'] = $originalEnv;
-            }
-            if ($originalServer === null) {
-                unset($_SERVER['APP_VERSION']);
-            } else {
-                $_SERVER['APP_VERSION'] = $originalServer;
-            }
-            if ($originalPutenv === false) {
-                putenv('APP_VERSION');
-            } else {
-                putenv('APP_VERSION='.$originalPutenv);
-            }
-        }
-    }
-
-    /**
      * .env 파일에 APP_VERSION 이 없을 때 새로 추가하는지 검증합니다.
      */
     public function test_update_version_in_env_appends_when_missing(): void
@@ -899,8 +792,6 @@ MD;
             'composer.json.default',
             'tests',
             'docs',
-            // 한국어 README — 영문 README.md 와 짝을 이루는 공개 문서이므로 함께 배포되어야 한다.
-            'README.ko.md',
         ];
 
         foreach ($coreAdditional as $item) {
@@ -1394,48 +1285,6 @@ MD;
             $this->assertFileDoesNotExist(
                 $fakeBase.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Orphan.php',
                 'prune 모드는 orphan 을 삭제해야 한다',
-            );
-        } finally {
-            $restore();
-        }
-    }
-
-    /**
-     * `applyUpdate(prune:true)` 가 `public` 타깃을 정리할 때 정적 게시본
-     * (`public/build/ext`)을 orphan 으로 삭제하지 않고 보존합니다 (#122).
-     *
-     * 게시본은 릴리즈 소스에 없는 로컬 파생물이라 excludes(`build/ext`) 미등록 시
-     * prune 이 삭제해, 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다.
-     */
-    public function test_apply_update_prune_preserves_static_publish_dir(): void
-    {
-        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['public']);
-
-        // prepareApplyUpdateEnv 가 excludes 를 비우므로 실제 기본값(config/app.php)을 재주입 —
-        // 이 테스트의 검증 대상이 바로 excludes 의 `build/ext` 항목이다
-        config(['app.update.excludes' => ['node_modules', '.git', 'bootstrap/cache', 'build/ext']]);
-
-        try {
-            // source(릴리즈): public/build/core 는 추적 배포 산출물이라 항상 존재,
-            // build/ext 는 로컬 파생물이라 릴리즈 소스에 없다
-            File::ensureDirectoryExists($source.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'build'.DIRECTORY_SEPARATOR.'core');
-            File::put($source.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'index.php', "<?php // core\n");
-            File::put(
-                $source.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'build'.DIRECTORY_SEPARATOR.'core'.DIRECTORY_SEPARATOR.'template-engine.min.js',
-                '// bundle'
-            );
-
-            // 활성(mine): 정적 게시본 + manifest
-            $publishDir = $fakeBase.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'build'
-                .DIRECTORY_SEPARATOR.'ext'.DIRECTORY_SEPARATOR.'1234';
-            File::ensureDirectoryExists($publishDir);
-            File::put($publishDir.DIRECTORY_SEPARATOR.'manifest.json', '{}');
-
-            $this->service->applyUpdate($source, null, prune: true, applyList: null);
-
-            $this->assertFileExists(
-                $publishDir.DIRECTORY_SEPARATOR.'manifest.json',
-                'prune 업데이트가 정적 게시본(public/build/ext)을 orphan 삭제하면 안 된다',
             );
         } finally {
             $restore();

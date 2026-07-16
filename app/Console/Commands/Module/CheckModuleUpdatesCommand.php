@@ -116,7 +116,7 @@ class CheckModuleUpdatesCommand extends Command
         $updateCount = 0;
 
         foreach ($result['details'] as $detail) {
-            $isUpdate = (bool) ($detail['update_available'] ?? true);
+            $isUpdate = $detail['update_available'] ?? false;
             if ($isUpdate) {
                 $updateCount++;
             }
@@ -143,7 +143,7 @@ class CheckModuleUpdatesCommand extends Command
         $this->table($headers, $tableData);
         $this->newLine();
         $this->info(__('modules.commands.check_updates.summary', [
-            'total' => $result['checked_count'] ?? count($result['details']),
+            'total' => count($result['details']),
             'updates' => $updateCount,
         ]));
 

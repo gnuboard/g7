@@ -584,7 +584,7 @@
                           {
                             "handler": "toast",
                             "params": {
-                              "message": "{{error.message ?? '$t:admin.settings.identity.messages.add_modal.save_failed'}}",
+                              "message": "$t:admin.settings.identity.messages.add_modal.save_failed",
                               "type": "error"
                             }
                           }

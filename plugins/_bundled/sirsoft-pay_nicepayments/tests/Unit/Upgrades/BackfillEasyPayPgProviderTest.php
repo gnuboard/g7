@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNicepayments\Tests\Unit\Upgrades;
 
 use App\Extension\UpgradeContext;
-use App\Support\ExtensionStoragePath;
 use App\Upgrades\Data\Ext\Plugins\SirsoftPayNicepayments\V1_0_0_beta_4\Migrations\BackfillEasyPayPgProvider;
 use Illuminate\Support\Facades\File;
-use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
+use Tests\TestCase;
 
 require_once dirname(__DIR__, 3).'/upgrades/data/1.0.0-beta.4/migrations/BackfillEasyPayPgProvider.php';
 
@@ -19,7 +18,7 @@ require_once dirname(__DIR__, 3).'/upgrades/data/1.0.0-beta.4/migrations/Backfil
  * 있다. 서버가 이 값을 보고 간편결제 주문을 "PG 결제가 아닌 주문" 으로 오인해 결제 실패
  * 시 관리자 알림 오발송 + 임시주문 삭제(재결제 불가) 를 일으켰다.
  */
-class BackfillEasyPayPgProviderTest extends PluginTestCase
+class BackfillEasyPayPgProviderTest extends TestCase
 {
     private string $settingsPath;
 
@@ -31,7 +30,7 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
     {
         parent::setUp();
 
-        $this->settingsPath = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
+        $this->settingsPath = storage_path('app/modules/sirsoft-ecommerce/settings/order_settings.json');
         $this->hadOriginalSettings = File::exists($this->settingsPath);
         $this->originalSettings = $this->hadOriginalSettings ? File::get($this->settingsPath) : null;
 

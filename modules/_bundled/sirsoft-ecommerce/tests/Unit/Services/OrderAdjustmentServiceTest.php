@@ -1873,12 +1873,12 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             chargePolicy: ChargePolicyEnum::RANGE_WEIGHT,
             ranges: [
                 'tiers' => [
-                    ['min' => 0, 'max' => 0.5, 'fee' => 2500],
-                    ['min' => 0.5, 'max' => null, 'fee' => 4000],
+                    ['min' => 0, 'max' => 500, 'fee' => 2500],
+                    ['min' => 500, 'max' => null, 'fee' => 4000],
                 ],
             ],
         );
-        [$p, $o] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 300);
+        [$p, $o] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 0.3);
 
         $input = new CalculationInput(items: [
             new CalculationItem(productId: $p->id, productOptionId: $o->id, quantity: 1),
@@ -1903,8 +1903,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             chargePolicy: ChargePolicyEnum::RANGE_VOLUME,
             ranges: [
                 'tiers' => [
-                    ['min' => 0, 'max' => 1, 'fee' => 3000],
-                    ['min' => 1, 'max' => null, 'fee' => 5000],
+                    ['min' => 0, 'max' => 1000, 'fee' => 3000],
+                    ['min' => 1000, 'max' => null, 'fee' => 5000],
                 ],
             ],
         );
@@ -1934,13 +1934,13 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             chargePolicy: ChargePolicyEnum::RANGE_VOLUME_WEIGHT,
             ranges: [
                 'tiers' => [
-                    ['min' => 0, 'max' => 0.5, 'fee' => 3000],
-                    ['min' => 0.5, 'max' => null, 'fee' => 5000],
+                    ['min' => 0, 'max' => 500, 'fee' => 3000],
+                    ['min' => 500, 'max' => null, 'fee' => 5000],
                 ],
                 'volume_weight_divisor' => 6000,
             ],
         );
-        [$p, $o] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 500, volume: 4200);
+        [$p, $o] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 0.5, volume: 4200);
 
         $input = new CalculationInput(items: [
             new CalculationItem(productId: $p->id, productOptionId: $o->id, quantity: 1),
@@ -1965,7 +1965,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             baseFee: 2000,
             ranges: ['unit_value' => 0.5],
         );
-        [$p, $o] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 1200);
+        [$p, $o] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 1.2);
 
         $input = new CalculationInput(items: [
             new CalculationItem(productId: $p->id, productOptionId: $o->id, quantity: 1),
@@ -1988,7 +1988,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
         $sp = $this->createShippingPolicy(
             chargePolicy: ChargePolicyEnum::PER_VOLUME,
             baseFee: 1500,
-            ranges: ['unit_value' => 1],
+            ranges: ['unit_value' => 1000],
         );
         [$p, $o] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, volume: 2500);
 
@@ -2017,7 +2017,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             baseFee: 2000,
             ranges: ['unit_value' => 0.5, 'volume_weight_divisor' => 6000],
         );
-        [$p, $o] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 300, volume: 4200);
+        [$p, $o] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 0.3, volume: 4200);
 
         $input = new CalculationInput(items: [
             new CalculationItem(productId: $p->id, productOptionId: $o->id, quantity: 1),
@@ -2360,13 +2360,13 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             chargePolicy: ChargePolicyEnum::RANGE_WEIGHT,
             ranges: [
                 'tiers' => [
-                    ['min' => 0, 'max' => 0.5, 'fee' => 2500],
-                    ['min' => 0.5, 'max' => null, 'fee' => 4000],
+                    ['min' => 0, 'max' => 500, 'fee' => 2500],
+                    ['min' => 500, 'max' => null, 'fee' => 4000],
                 ],
             ],
         );
         // 0.35kg × 2개 = 0.7kg = 700g → 4000원 구간
-        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 350);
+        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 0.35);
 
         $input = new CalculationInput(items: [
             new CalculationItem(productId: $p->id, productOptionId: $o->id, quantity: 2),
@@ -2396,8 +2396,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             chargePolicy: ChargePolicyEnum::RANGE_VOLUME,
             ranges: [
                 'tiers' => [
-                    ['min' => 0, 'max' => 1, 'fee' => 3000],
-                    ['min' => 1, 'max' => null, 'fee' => 5000],
+                    ['min' => 0, 'max' => 1000, 'fee' => 3000],
+                    ['min' => 1000, 'max' => null, 'fee' => 5000],
                 ],
             ],
         );
@@ -2437,8 +2437,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             chargePolicy: ChargePolicyEnum::RANGE_VOLUME_WEIGHT,
             ranges: [
                 'tiers' => [
-                    ['min' => 0, 'max' => 0.5, 'fee' => 3000],
-                    ['min' => 0.5, 'max' => null, 'fee' => 5000],
+                    ['min' => 0, 'max' => 500, 'fee' => 3000],
+                    ['min' => 500, 'max' => null, 'fee' => 5000],
                 ],
                 'volume_weight_divisor' => 6000,
             ],
@@ -2446,7 +2446,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
         // 0.2kg, 1500cm³ per item
         // 3개: 무게0.6kg, 부피4500→부피무게0.75, max(0.6,0.75)=750g → 5000원
         // 1개: 무게0.2kg, 부피1500→부피무게0.25, max(0.2,0.25)=250g → 3000원
-        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 200, volume: 1500);
+        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 0.2, volume: 1500);
 
         $input = new CalculationInput(items: [
             new CalculationItem(productId: $p->id, productOptionId: $o->id, quantity: 3),
@@ -2642,7 +2642,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             ranges: ['unit_value' => 0.5],
         );
         // 0.4kg × 3개 = 1.2kg
-        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 400);
+        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 0.4);
 
         $input = new CalculationInput(items: [
             new CalculationItem(productId: $p->id, productOptionId: $o->id, quantity: 3),
@@ -2675,7 +2675,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             ranges: ['unit_value' => 0.5],
         );
         // 0.4kg × 3개 = 1.2kg
-        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 400);
+        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 0.4);
 
         $input = new CalculationInput(items: [
             new CalculationItem(productId: $p->id, productOptionId: $o->id, quantity: 3),
@@ -2704,7 +2704,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
         $sp = $this->createShippingPolicy(
             chargePolicy: ChargePolicyEnum::PER_VOLUME,
             baseFee: 1500,
-            ranges: ['unit_value' => 1],
+            ranges: ['unit_value' => 1000],
         );
         // 500cm³ × 5개 = 2500cm³
         [$p, $o] = $this->createProductWithOption(price: 5000, shippingPolicy: $sp, volume: 500);
@@ -2809,7 +2809,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             baseFee: 2000,
             ranges: ['unit_value' => 0.5, 'volume_weight_divisor' => 6000],
         );
-        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 200, volume: 1500);
+        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 0.2, volume: 1500);
 
         $input = new CalculationInput(items: [
             new CalculationItem(productId: $p->id, productOptionId: $o->id, quantity: 4),
@@ -2987,9 +2987,9 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * A-7-4: PER_WEIGHT + multiply extra fee → 수량 감소 시 도서산간도 비례 감소
      *
      * unit=0.5kg, fee=2000, extra=1500×multiply.
-     * 도서산간 multiply 는 기본 배송비와 같은 배송 단위 수 기준 (수량이 아니다)
-     * 3개(1.2kg): 배송 ceil(1.2/0.5)=3단위 × 2K=6K, 도서산간 3단위 × 1.5K=4.5K
-     * 1개(0.4kg): 배송 ceil(0.4/0.5)=1단위 × 2K=2K, 도서산간 1단위 × 1.5K=1.5K
+     * 도서산간 multiply는 quantity/unit_value 기반 (PER_WEIGHT에서도 수량 사용)
+     * 3개: 배송 ceil(1.2kg/0.5)×2K=6K, 도서산간 ceil(3/0.5)×1.5K=9K
+     * 1개: 배송 ceil(0.4kg/0.5)×2K=2K, 도서산간 ceil(1/0.5)×1.5K=3K
      */
     public function test_extra_fee_multiply_per_weight(): void
     {
@@ -3004,7 +3004,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             extraFeeMultiply: true,
         );
         // 0.4kg × 3개 = 1.2kg
-        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 400);
+        [$p, $o] = $this->createProductWithOption(price: 10000, shippingPolicy: $sp, weight: 0.4);
 
         $address = new ShippingAddress(countryCode: 'KR', zipcode: '63400');
         $input = new CalculationInput(
@@ -3020,10 +3020,10 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             ['order_option_id' => $option->id, 'cancel_quantity' => 2],
         ]));
 
-        // 원래: 30K + 6K(배송) + 4.5K(도서산간) = 40.5K
-        // 잔여: 10K + 2K(배송) + 1.5K(도서산간) = 13.5K
-        // refund = 40.5K - 13.5K = 27,000
-        $this->assertEquals(27000, $result->refundAmount);
+        // 원래: 30K + 6K(배송) + 9K(도서산간) = 45K
+        // 잔여: 10K + 2K(배송) + 3K(도서산간) = 15K
+        // refund = 45K - 15K = 30,000
+        $this->assertEquals(30000, $result->refundAmount);
     }
 
     /**
@@ -4228,15 +4228,15 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             chargePolicy: ChargePolicyEnum::RANGE_WEIGHT,
             ranges: [
                 'tiers' => [
-                    ['min' => 0, 'max' => 0.5, 'fee' => 2500],
-                    ['min' => 0.5, 'max' => null, 'fee' => 4000],
+                    ['min' => 0, 'max' => 500, 'fee' => 2500],
+                    ['min' => 500, 'max' => null, 'fee' => 4000],
                 ],
             ],
         );
 
         // 0.3kg × 2개
-        [$pA, $oA] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 300);
-        [$pB, $oB] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 300);
+        [$pA, $oA] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 0.3);
+        [$pB, $oB] = $this->createProductWithOption(price: 20000, shippingPolicy: $sp, weight: 0.3);
 
         $input = new CalculationInput(
             items: [
@@ -4775,9 +4775,6 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * 다중통화 스냅샷이 없는 주문의 환불 시 mc_* 필드는 모두 null입니다.
-     *
-     * 레거시 주문(다통화 도입 이전에 생성되어 currency_snapshot 이 비어 있는 행)의 취소 경로를
-     * 검증한다. OrderFactory 는 기본 스냅샷을 채우므로 여기서는 명시적으로 null 을 주입한다.
      */
     public function test_mc_fields_null_without_currency_snapshot(): void
     {
@@ -4789,12 +4786,8 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             ],
         );
 
-        // OrderFactory 는 currency_snapshot 을 항상 채운다 (등록된 통화 설정 기준).
-        // 통화 설정이 비어 있을 때만 우연히 falsy 가 되므로, 앞선 테스트가 통화 설정을 남기면
-        // 이 테스트가 간헐 실패한다. "스냅샷 없는 주문" 이라는 전제를 명시적으로 못박는다.
-        $order = $this->createOrderFromCalculation($input, ['currency_snapshot' => null]);
-        $this->assertNull($order->currency_snapshot, '테스트 전제: 주문에 통화 스냅샷이 없다');
-
+        // currency_snapshot 미설정 (기본값 null)
+        $order = $this->createOrderFromCalculation($input);
         $optA = $order->options->first();
         $cancellation = $this->buildCancellation([
             ['order_option_id' => $optA->id, 'cancel_quantity' => 1],
@@ -4953,12 +4946,6 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      *
      * 50,000×1 + 주문쿠폰(FIXED 5000, minOrder=30000)
      * 전체취소 → 잔여 0 < 30000 → 쿠폰 복원
-     *
-     * 재계산 전 쿠폰을 일시적으로 미사용으로 되돌리던 왕복 UPDATE 를 제거한 뒤에도(#108)
-     * 이 복원 판정이 그대로여야 한다 — 판정은 스냅샷의 min_order_amount 로만 이뤄지고
-     * 쿠폰의 사용 상태(status/used_at)를 읽지 않기 때문이다.
-     *
-     * @effects coupon_restore_on_min_amount_shortfall_unchanged_after_reset_removal
      */
     public function test_coupon_restore_detected_when_min_order_not_met_after_partial(): void
     {
@@ -7328,69 +7315,5 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             $resultPg->refundAmount + $resultPg->refundPointsAmount,
             $resultPoints->refundAmount + $resultPoints->refundPointsAmount,
         );
-    }
-
-    // ================================================================
-    // 부분취소 부가세 재산출 (#493 E5)
-    // ================================================================
-
-    /**
-     * 부분취소 재계산이 잔여 금액 기준 부가세를 다시 계산하는지 테스트합니다.
-     *
-     * 부가세를 재산출하지 않으면 취소 후에도 취소 전 부가세가 남아 세금 표기가 실제 결제
-     * 금액과 어긋난다.
-     */
-    public function test_partial_cancel_recalculates_vat(): void
-    {
-        [$productA, $optionA] = $this->createProductWithOption(price: 11000);
-        [$productB, $optionB] = $this->createProductWithOption(price: 22000);
-
-        $input = new CalculationInput(items: [
-            new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
-            new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
-        ]);
-
-        $order = $this->createOrderFromCalculation($input);
-        $cancelTarget = $order->options->firstWhere('product_option_id', $optionB->id);
-
-        $result = $this->adjustmentService->calculate(
-            $order,
-            $this->buildCancellation([['order_option_id' => $cancelTarget->id, 'cancel_quantity' => 1]])
-        );
-
-        // 잔여 11,000 (10%) → 1,000. 취소 전 전체(33,000)의 3,000 이 남으면 안 된다.
-        $this->assertSame(1000, (int) $result->orderUpdates['total_vat_amount']);
-    }
-
-    /**
-     * 부분취소 재계산이 주문 당시 스냅샷 세율을 쓰는지 테스트합니다.
-     *
-     * 상품의 현재 세율을 읽으면, 주문 이후 세율이 바뀐 상품에서 과거 주문의 세금 표기가
-     * 소급해 바뀐다.
-     */
-    public function test_partial_cancel_uses_snapshot_tax_rate_not_current_product_rate(): void
-    {
-        [$productA, $optionA] = $this->createProductWithOption(price: 11000);
-        [$productB, $optionB] = $this->createProductWithOption(price: 22000);
-
-        $input = new CalculationInput(items: [
-            new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
-            new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
-        ]);
-
-        $order = $this->createOrderFromCalculation($input);
-
-        // 주문 이후 상품 세율 변경 — 과거 주문의 재계산에 영향을 주면 안 된다
-        $productA->update(['tax_rate' => 25.0]);
-
-        $cancelTarget = $order->options->firstWhere('product_option_id', $optionB->id);
-
-        $result = $this->adjustmentService->calculate(
-            $order,
-            $this->buildCancellation([['order_option_id' => $cancelTarget->id, 'cancel_quantity' => 1]])
-        );
-
-        // 스냅샷 세율 10% 기준 1,000 (현재 세율 25% 였다면 2,200)
-        $this->assertSame(1000, (int) $result->orderUpdates['total_vat_amount']);
     }
 }

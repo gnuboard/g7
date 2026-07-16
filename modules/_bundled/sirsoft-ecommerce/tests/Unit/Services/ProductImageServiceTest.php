@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Queue;
@@ -17,16 +18,18 @@ use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 /**
  * ProductImageService 단위 테스트
  *
  * StorageInterface 기반 상품 이미지 업로드, 삭제, 순서변경, 임시연결 등을 테스트합니다.
  */
-class ProductImageServiceTest extends ModuleTestCase
+class ProductImageServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private ProductImageService $service;
 
     /** @var MockInterface&ProductImageRepositoryInterface */
@@ -433,11 +436,6 @@ class ProductImageServiceTest extends ModuleTestCase
             ->once()
             ->with($sourceHash)
             ->andReturn($sourceImage);
-
-        // 복사는 원본 행 disk 기준으로 스토리지를 해석한다 (혼재 운용, 공개#100)
-        $this->storage
-            ->shouldReceive('getDisk')
-            ->andReturn('local');
 
         $this->storage
             ->shouldReceive('get')

@@ -4,9 +4,8 @@ namespace Tests\Unit\Notifications;
 
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
-use App\Models\User;
-use App\Notifications\GenericNotification;
 use App\Notifications\GuestNotifiable;
+use App\Notifications\GenericNotification;
 use App\Services\NotificationChannelService;
 use App\Services\NotificationTemplateService;
 use Tests\TestCase;
@@ -24,10 +23,6 @@ class GenericNotificationGuestGateTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        // 메일 발송 통과를 단언하므로 mail 채널을 준비 완료 상태로 만든다
-        // (기본 테스트 설정은 from_address 가 플레이스홀더라 readiness 가 false 다)
-        $this->enableMailChannelReadiness();
 
         $templateService = app(NotificationTemplateService::class);
         foreach (['mail', 'database'] as $ch) {
@@ -111,7 +106,7 @@ class GenericNotificationGuestGateTest extends TestCase
 
     public function test_member_is_unaffected_by_guest_gate(): void
     {
-        $member = User::factory()->make();
+        $member = \App\Models\User::factory()->make();
 
         // 회원은 게스트 게이트 무영향 — database 채널도 정상 통과(템플릿 존재 + readiness)
         $this->assertSame(['database'], $this->notification('database')->via($member));

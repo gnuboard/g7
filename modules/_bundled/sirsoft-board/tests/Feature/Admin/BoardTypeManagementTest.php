@@ -3,16 +3,13 @@
 namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
-require_once __DIR__.'/../../ModuleTestCase.php';
+require_once __DIR__ . '/../../ModuleTestCase.php';
 
-use App\Models\Permission;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Services\BoardSettingsService;
-use Modules\Sirsoft\Board\Services\BoardTypeService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 class BoardTypeManagementTest extends ModuleTestCase
@@ -25,7 +22,7 @@ class BoardTypeManagementTest extends ModuleTestCase
 
         if (! Schema::hasTable('board_types')) {
             $this->artisan('migrate', [
-                '--path' => $this->getModuleBasePath().'/database/migrations',
+                '--path' => $this->getModuleBasePath() . '/database/migrations',
                 '--realpath' => true,
             ]);
         }
@@ -242,79 +239,14 @@ class BoardTypeManagementTest extends ModuleTestCase
             'name' => ['ko' => '기본 유형'],
         ]);
 
-        // basic_defaults 는 파일 기반 전역 설정이라 DB 트랜잭션 롤백 대상이 아니다.
-        // 원래 값을 보관했다가 테스트 종료 시 반드시 되돌린다 (미복원 시 개발/운영 설정 오염).
         $settingsService = app(BoardSettingsService::class);
-        $originalType = $settingsService->getSettings('basic_defaults')['type'] ?? null;
         $settingsService->setSetting('basic_defaults.type', 'test_default_type');
-
-        try {
-            $response = $this->actingAs($this->adminUser)
-                ->deleteJson("/api/modules/sirsoft-board/admin/board-types/{$boardType->id}");
-
-            $response->assertStatus(422);
-            $this->assertDatabaseHas('board_types', ['id' => $boardType->id]);
-        } finally {
-            $settingsService->setSetting('basic_defaults.type', $originalType);
-        }
-    }
-
-    /**
-     * 삭제 불가 응답의 메시지가 예외 원문이 아니라 해석된 다국어 문구여야 한다.
-     *
-     * 종전에는 예외 메시지(이미 번역된 문장)를 다시 메시지 키 자리에 넘겨서, 키 해석에
-     * 실패한 원문이 그대로 사용자 화면에 나갔다. 상태코드만 보는 단언은 이 결함을
-     * 통과시킨다 — 422 는 그대로였기 때문이다.
-     *
-     * @scenario error_class=domain
-     *
-     * @effects board_type_delete_domain_exception_returns_422_with_resolved_message
-     */
-    public function test_delete_in_use_response_message_is_resolved_key_not_exception_text(): void
-    {
-        $boardType = BoardType::create([
-            'slug' => 'test_in_use_msg',
-            'name' => ['ko' => '사용중 유형'],
-        ]);
-
-        Board::factory()->create(['type' => 'test_in_use_msg']);
 
         $response = $this->actingAs($this->adminUser)
             ->deleteJson("/api/modules/sirsoft-board/admin/board-types/{$boardType->id}");
 
         $response->assertStatus(422);
-
-        $expected = __('sirsoft-board::messages.board_type.delete_in_use', ['count' => 1]);
-        $this->assertSame($expected, $response->json('message'));
-        // 키 문자열 자체가 노출되면(해석 실패) 그것도 결함이다
-        $this->assertStringNotContainsString('sirsoft-board::', (string) $response->json('message'));
-    }
-
-    /**
-     * 인프라 예외는 422 로 뭉개지 않고 500 으로 구분하며 예외 원문을 노출하지 않는다.
-     *
-     * @scenario error_class=infrastructure
-     *
-     * @effects board_type_delete_infrastructure_exception_returns_500
-     */
-    public function test_delete_infrastructure_exception_returns_500(): void
-    {
-        $boardType = BoardType::create([
-            'slug' => 'test_infra_500',
-            'name' => ['ko' => '인프라 예외 유형'],
-        ]);
-
-        $this->mock(BoardTypeService::class, function ($mock) {
-            $mock->shouldReceive('deleteBoardType')
-                ->andThrow(new \RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away'));
-            $mock->shouldReceive()->andReturnNull();
-        });
-
-        $response = $this->actingAs($this->adminUser)
-            ->deleteJson("/api/modules/sirsoft-board/admin/board-types/{$boardType->id}");
-
-        $response->assertStatus(500);
-        $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
+        $this->assertDatabaseHas('board_types', ['id' => $boardType->id]);
     }
 
     /**
@@ -348,8 +280,8 @@ class BoardTypeManagementTest extends ModuleTestCase
             'name' => ['ko' => '폼 테스트 유형'],
         ]);
 
-        $adminRole = Role::where('identifier', 'admin')->first();
-        $readPerm = Permission::firstOrCreate(
+        $adminRole = \App\Models\Role::where('identifier', 'admin')->first();
+        $readPerm = \App\Models\Permission::firstOrCreate(
             ['identifier' => 'sirsoft-board.boards.read'],
             ['name' => ['ko' => '게시판 조회', 'en' => 'Read Boards'], 'type' => 'admin']
         );

@@ -143,10 +143,6 @@ return [
 
         'category_max' => 50,
 
-        // 신규 게시글 NEW 배지 표시 기간 (시간 단위, 0 = 표시 안 함)
-        'new_display_hours_min' => 0,
-        'new_display_hours_max' => 720,
-
         // 답글 깊이 제한
         'max_reply_depth_min' => 1,
         'max_reply_depth_max' => 10,
@@ -154,30 +150,6 @@ return [
         // 대댓글 깊이 제한
         'max_comment_depth_min' => 0,
         'max_comment_depth_max' => 10,
-
-        // 삭제 첨부 영구 정리 보존기간 (일)
-        'attachment_purge_retention_days_min' => 1,
-        'attachment_purge_retention_days_max' => 3650,
-
-        // 신고 정책
-        'auto_hide_threshold_min' => 0,
-        'auto_hide_threshold_max' => 100,
-        'daily_report_limit_min' => 0,
-        'daily_report_limit_max' => 100,
-        'rejection_limit_count_min' => 0,
-        'rejection_limit_count_max' => 50,
-        'rejection_limit_days_min' => 1,
-        'rejection_limit_days_max' => 365,
-
-        // 스팸/보안 쿨다운 (초)
-        'post_cooldown_seconds_min' => 0,
-        'post_cooldown_seconds_max' => 3600,
-        'comment_cooldown_seconds_min' => 0,
-        'comment_cooldown_seconds_max' => 3600,
-        'report_cooldown_seconds_min' => 0,
-        'report_cooldown_seconds_max' => 3600,
-        'view_count_cache_ttl_min' => 60,
-        'view_count_cache_ttl_max' => 604800,
     ],
 
     /*

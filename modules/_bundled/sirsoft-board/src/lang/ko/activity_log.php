@@ -35,7 +35,6 @@ return [
 
         // 게시판 유형 (Admin)
         'board_type_index' => '게시판 유형 목록 조회',
-        'board_type_show' => '게시판 유형 상세 조회 (:type_name)',
         'board_type_create' => '게시판 유형 생성 (:type_name)',
         'board_type_update' => '게시판 유형 수정 (:type_name)',
         'board_type_delete' => '게시판 유형 삭제 (:type_name)',
@@ -78,7 +77,6 @@ return [
     // ChangeDetector 필드 라벨
     'fields' => [
         // Board
-        'name' => '게시판명',
         'is_active' => '활성 여부',
         'per_page' => '페이지당 게시물 수',
         'per_page_mobile' => '모바일 페이지당 게시물 수',
@@ -90,7 +88,6 @@ return [
         'use_comment' => '댓글 사용',
         'use_reply' => '답글 사용',
         'max_reply_depth' => '최대 답글 깊이',
-        'reply_delete_policy' => '답글 삭제 방식',
         'use_report' => '신고 사용',
         'use_file_upload' => '파일 업로드 사용',
         'max_file_size' => '최대 파일 크기',

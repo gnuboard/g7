@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Page\Providers;
 use App\Extension\BaseModuleServiceProvider;
 use App\Seo\SitemapGenerator;
 use Modules\Sirsoft\Page\Console\Commands\PlaywrightSeedPage;
-use Modules\Sirsoft\Page\Console\Commands\PruneTempAttachmentsCommand;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageVersionRepositoryInterface;
@@ -58,16 +57,14 @@ class PageServiceProvider extends BaseModuleServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 PlaywrightSeedPage::class,
-                PruneTempAttachmentsCommand::class,
             ]);
         }
 
         // Sitemap 기여자 등록
         $this->app->booted(function () {
             if ($this->app->bound(SitemapGenerator::class)) {
-                // Repository 주입을 위해 컨테이너로 해석합니다.
                 $this->app->make(SitemapGenerator::class)->registerContributor(
-                    $this->app->make(PageSitemapContributor::class)
+                    new PageSitemapContributor
                 );
             }
         });

@@ -132,18 +132,7 @@
         ]
     },
     "named_actions": {
-        "resetExpandedOptionState": {
-            "comment": "목록 구성이 바뀌는 이동(검색·정렬·페이지·프리셋·초기화) 앞에 둔다. 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.",
-            "handler": "setState",
-            "params": {
-                "target": "local",
-                "expandedRows": [],
-                "optionsLoadingIds": [],
-                "optionsErrorIds": [],
-                "selectedOptionIds": []
-            }
-        },
-        "searchProductsNavigate": {
+        "searchProducts": {
             "handler": "navigate",
             "params": {
                 "path": "/admin/ecommerce/products",
@@ -175,13 +164,6 @@
                 },
                 "transition_overlay_target": "product_datagrid__body"
             }
-        },
-        "searchProducts": {
-            "handler": "sequence",
-            "actions": [
-                { "actionRef": "resetExpandedOptionState" },
-                { "actionRef": "searchProductsNavigate" }
-            ]
         }
     },
     "data_sources": [
@@ -409,7 +391,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "refresh-cw",
-                                                    "className": "text-xl"
+                                                    "className": "w-5 h-5"
                                                 }
                                             }
                                         ]
@@ -428,7 +410,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "text-base"
+                                                    "className": "w-4 h-4"
                                                 }
                                             },
                                             {
@@ -442,9 +424,7 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/products/create",
-                                                    "mergeQuery": true,
-                                                    "query": {}
+                                                    "path": "/admin/ecommerce/products/create"
                                                 }
                                             }
                                         ]
@@ -608,7 +588,6 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "data-testid": "product-bulk-stock-open",
                                                     "className": "{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
                                                     "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                                                 },
@@ -651,8 +630,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "data-testid": "product-bulk-apply",
-                                            "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                             "disabled": "{{((!_local.selectedItems || _local.selectedItems.length === 0) && (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.product.bulk_apply",
@@ -752,34 +730,18 @@
                                                 "actions": [
                                                     {
                                                         "type": "change",
-                                                        "handler": "sequence",
-                                                        "actions": [
-                                                            {
-                                                                "comment": "정렬이 바뀌면 행 구성이 통째로 달라진다 — 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "expandedRows": [],
-                                                                    "optionsLoadingIds": [],
-                                                                    "optionsErrorIds": [],
-                                                                    "selectedOptionIds": []
-                                                                }
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/products",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
                                                             },
-                                                            {
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/ecommerce/products",
-                                                                    "replace": true,
-                                                                    "mergeQuery": true,
-                                                                    "query": {
-                                                                        "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                                                        "sort_order": "{{$event.target.value.split('_').pop()}}",
-                                                                        "page": 1
-                                                                    },
-                                                                    "transition_overlay_target": "product_datagrid__body"
-                                                                }
-                                                            }
-                                                        ]
+                                                            "transition_overlay_target": "product_datagrid__body"
+                                                        }
                                                     }
                                                 ]
                                             },
@@ -841,7 +803,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "arrow-down-tray",
-                                                            "className": "text-base"
+                                                            "className": "w-4 h-4"
                                                         }
                                                     },
                                                     {

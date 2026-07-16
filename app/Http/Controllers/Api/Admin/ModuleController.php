@@ -3,13 +3,9 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
-use App\Exceptions\ModuleOperationException;
-use App\Extension\Vendor\VendorMode;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
-use App\Http\Controllers\Concerns\RebuildsSearchIndexOnDemand;
-use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Requests\Module\ActivateModuleRequest;
 use App\Http\Requests\Module\DeactivateModuleRequest;
 use App\Http\Requests\Module\IndexModuleRequest;
@@ -20,10 +16,10 @@ use App\Http\Requests\Module\PerformModuleUpdateRequest;
 use App\Http\Requests\Module\PreviewModuleManifestRequest;
 use App\Http\Requests\Module\RefreshModuleLayoutsRequest;
 use App\Http\Requests\Module\UninstallModuleRequest;
+use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Resources\ModuleCollection;
 use App\Http\Resources\ModuleResource;
 use App\Services\Extension\ExtensionInstallPreviewBuilder;
-use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LicenseService;
 use App\Services\ModuleService;
 use App\Services\TemplateService;
@@ -40,7 +36,6 @@ class ModuleController extends AdminBaseController
 {
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
-    use RebuildsSearchIndexOnDemand;
 
     public function __construct(
         private ModuleService $moduleService,
@@ -174,7 +169,7 @@ class ModuleController extends AdminBaseController
     public function installPreview(string $moduleName, ExtensionInstallPreviewBuilder $builder): JsonResponse
     {
         try {
-            $preview = $builder->build(LanguagePackScope::Module, $moduleName);
+            $preview = $builder->build(\App\Enums\LanguagePackScope::Module, $moduleName);
 
             return $this->success('module.fetch_success', $preview);
         } catch (\Exception $e) {
@@ -193,14 +188,14 @@ class ModuleController extends AdminBaseController
         try {
             $validated = $request->validated();
             $moduleName = $validated['module_name'];
-            $vendorMode = VendorMode::fromStringOrAuto(
+            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
 
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
             $this->installSelectedDependencies($validated['dependencies'] ?? []);
 
-            $module = $this->moduleService->installModule($moduleName, $vendorMode, false, $installFailureReason);
+            $module = $this->moduleService->installModule($moduleName, $vendorMode);
 
             if ($module) {
                 // cascade 2단계: 동반 번들 언어팩 best-effort 설치
@@ -211,9 +206,7 @@ class ModuleController extends AdminBaseController
 
                 return $this->success('module.install_success', $payload, 201);
             } else {
-                return $this->error('module.install_failed', 400, null, [
-                    'error' => $installFailureReason ?? __('modules.errors.unknown_error'),
-                ]);
+                return $this->error('module.install_failed');
             }
         } catch (ValidationException $e) {
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
@@ -260,7 +253,7 @@ class ModuleController extends AdminBaseController
                 $moduleInfo = $result['module_info'] ?? null;
 
                 // 요구사항 #7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함 (요구사항 #8: 빈 배열이면 모달 표시 안 함)
-                $pendingLanguagePacks = app(LanguagePackBundledRegistrar::class)
+                $pendingLanguagePacks = app(\App\Services\LanguagePack\LanguagePackBundledRegistrar::class)
                     ->getPendingForReactivation('module', $moduleName);
 
                 if ($moduleInfo) {
@@ -274,12 +267,10 @@ class ModuleController extends AdminBaseController
                     'pending_language_packs' => $pendingLanguagePacks,
                 ]));
             } else {
-                return $this->error('module.activate_failed', 400, null, [
-                    'error' => $result['reason'] ?? __('modules.errors.unknown_error'),
-                ]);
+                return $this->error('module.activate_failed');
             }
         } catch (ValidationException $e) {
-            return $this->error('module.activate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            return $this->error('module.activate_failed', 422, $e->errors());
         } catch (\Exception $e) {
             return $this->error('module.activate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -325,12 +316,10 @@ class ModuleController extends AdminBaseController
 
                 return $this->success('module.deactivate_success', $result);
             } else {
-                return $this->error('module.deactivate_failed', 400, null, [
-                    'error' => $result['reason'] ?? __('modules.errors.unknown_error'),
-                ]);
+                return $this->error('module.deactivate_failed');
             }
         } catch (ValidationException $e) {
-            return $this->error('module.deactivate_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            return $this->error('module.deactivate_failed', 422, $e->errors());
         } catch (\Exception $e) {
             return $this->error('module.deactivate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -390,26 +379,15 @@ class ModuleController extends AdminBaseController
             $moduleName = $validated['module_name'];
             $deleteData = $validated['delete_data'] ?? false;
 
-            $result = $this->moduleService->uninstallModule(
-                $moduleName,
-                $deleteData,
-                $uninstallFailureReason,
-                $preservedBackups
-            );
+            $result = $this->moduleService->uninstallModule($moduleName, $deleteData);
 
             if ($result) {
-                // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 응답에 실어
-                // 알리지 않으면 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.
-                return $this->success('module.uninstall_success', [
-                    'preserved_backups' => $preservedBackups ?? [],
-                ]);
+                return $this->success('module.uninstall_success');
             } else {
-                return $this->error('module.uninstall_failed', 400, null, [
-                    'error' => $uninstallFailureReason ?? __('modules.errors.unknown_error'),
-                ]);
+                return $this->error('module.uninstall_failed');
             }
         } catch (ValidationException $e) {
-            return $this->error('module.uninstall_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            return $this->error('module.uninstall_failed', 422, $e->errors());
         } catch (\Exception $e) {
             return $this->error('module.uninstall_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -451,10 +429,8 @@ class ModuleController extends AdminBaseController
                 new ModuleResource($module),
                 201
             );
-        } catch (ModuleOperationException $e) {
-            // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
-            // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
-            return $this->error($e->errorKey, 422, null, $e->params);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
             return $this->error('module.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
@@ -477,10 +453,8 @@ class ModuleController extends AdminBaseController
                 new ModuleResource($module),
                 201
             );
-        } catch (ModuleOperationException $e) {
-            // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
-            // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
-            return $this->error($e->errorKey, 422, null, $e->params);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
             return $this->error('module.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
@@ -498,7 +472,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('modules.check_updates_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('modules.check_updates_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            return $this->error('modules.check_updates_failed', 422, $e->errors());
         } catch (\Exception $e) {
             return $this->error('modules.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -516,18 +490,11 @@ class ModuleController extends AdminBaseController
     public function checkModifiedLayouts(string $moduleName): JsonResponse
     {
         try {
-            // 미존재 식별자는 404 로 구분한다. 존재 확인 없이 조회하면 레이아웃 0건과
-            // 모듈 부재가 똑같이 "수정된 레이아웃 없음" 으로 보고되어, 오타·제거된 모듈이
-            // 조용히 "수정 없음" 으로 통과한다 (show/uninstall-info 와 동일 규약).
-            if (! $this->moduleService->getModuleInfo($moduleName)) {
-                return $this->error('module.not_found', 404, null, ['module' => $moduleName]);
-            }
-
             $result = $this->moduleService->checkModifiedLayouts($moduleName);
 
             return $this->success('modules.check_modified_layouts_success', $result);
         } catch (ValidationException $e) {
-            return $this->error('modules.check_modified_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            return $this->error('modules.check_modified_layouts_failed', 422, $e->errors());
         } catch (\Exception $e) {
             return $this->error('modules.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -548,43 +515,23 @@ class ModuleController extends AdminBaseController
     {
         try {
             $validated = $request->validated();
-            $vendorMode = VendorMode::fromStringOrAuto(
+            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
             $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
             $force = (bool) ($validated['force'] ?? false);
             $result = $this->moduleService->updateModule($moduleName, $vendorMode, $layoutStrategy, $force);
 
-            // 검색 인덱스 재생성은 운영자가 체크했을 때만 수행한다 — 인덱스 잠금·재색인 비용이
-            // 있어 운영 중인 사이트에서 업데이트만으로 발생해서는 안 된다.
-            $searchIndex = $this->rebuildSearchIndexIfRequested(
-                (bool) ($validated['rebuild_search_index'] ?? false)
-            );
-
             $moduleInfo = $result['module_info'] ?? null;
-
-            // 메시지 치환 파라미터를 반드시 전달한다 — 누락 시 ":module"/":version"
-            // 플레이스홀더가 그대로 사용자에게 노출된다.
-            $messageParams = [
-                'module' => $moduleName,
-                'version' => (string) ($result['to_version'] ?? data_get($moduleInfo, 'version') ?? ''),
-            ];
 
             if ($moduleInfo) {
                 return $this->successWithResource(
                     'modules.update_success',
-                    (new ModuleResource($moduleInfo))->additional(['search_index' => $searchIndex]),
-                    200,
-                    $messageParams
+                    new ModuleResource($moduleInfo)
                 );
             }
 
-            return $this->success(
-                'modules.update_success',
-                $result + ['search_index' => $searchIndex],
-                200,
-                $messageParams
-            );
+            return $this->success('modules.update_success', $result);
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
@@ -618,12 +565,10 @@ class ModuleController extends AdminBaseController
                     new ModuleResource($module)
                 );
             } else {
-                return $this->error('module.refresh_layouts_failed', 400, null, [
-                    'error' => __('modules.errors.unknown_error'),
-                ]);
+                return $this->error('module.refresh_layouts_failed');
             }
         } catch (ValidationException $e) {
-            return $this->error('module.refresh_layouts_failed', 422, $e->errors(), ['error' => $e->getMessage()]);
+            return $this->error('module.refresh_layouts_failed', 422, $e->errors());
         } catch (\Exception $e) {
             return $this->error('module.refresh_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
@@ -656,7 +601,7 @@ class ModuleController extends AdminBaseController
     /**
      * 모듈의 라이선스 파일 내용을 반환합니다.
      *
-     * @param  string  $identifier  모듈 식별자
+     * @param string $identifier 모듈 식별자
      * @return JsonResponse
      */
     public function license(string $identifier): JsonResponse

@@ -154,9 +154,7 @@
                   "type": "click",
                   "handler": "navigate",
                   "params": {
-                    "path": "/admin/board/{{route.slug}}/post/{{item.id}}",
-                    "mergeQuery": true,
-                    "query": {}
+                    "path": "/admin/board/{{route.slug}}/post/{{item.id}}"
                   }
                 }
               ],

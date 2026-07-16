@@ -17,26 +17,6 @@ return [
         'updated' => 'Category has been updated.',
         'deleted' => 'Category has been deleted.',
         'has_products' => '(:count linked products)',
-        'fetch_success' => 'Category list retrieved successfully.',
-        'fetch_failed' => 'Failed to retrieve the category list.',
-        'status_changed' => 'Category status has been changed.',
-        'order_updated' => 'Category order has been changed.',
-    ],
-    'settings' => [
-        'fetch_success' => 'Settings retrieved successfully.',
-        'fetch_failed' => 'Failed to retrieve settings.',
-        'save_success' => 'Settings have been saved.',
-        'save_failed' => 'Failed to save settings.',
-        'save_error' => 'An error occurred while saving settings.',
-        'update_success' => 'Settings have been updated.',
-        'update_failed' => 'Failed to update settings.',
-        'update_error' => 'An error occurred while updating settings.',
-        'cache_clear_success' => 'Settings cache has been cleared.',
-        'cache_clear_error' => 'An error occurred while clearing the settings cache.',
-    ],
-    'payment' => [
-        'provider_not_found' => 'Payment method not found.',
-        'client_config_success' => 'Payment configuration retrieved successfully.',
     ],
     'products' => [
         'not_found' => 'Product not found.',
@@ -63,8 +43,6 @@ return [
         'code_generation_failed' => 'Failed to generate product code.',
         'logs_fetch_success' => 'Product activity logs retrieved successfully.',
         'logs_fetch_failed' => 'Failed to retrieve product activity logs.',
-        'options_fetch_success' => 'Product options retrieved successfully.',
-        'options_fetch_failed' => 'Failed to retrieve product options.',
     ],
     'presets' => [
         'created' => 'Search preset has been saved.',
@@ -72,7 +50,6 @@ return [
         'deleted' => 'Search preset has been deleted.',
         'name_exists' => 'A preset with the same name already exists.',
         'not_owner' => 'You do not have permission to modify this preset.',
-        'fetch_success' => 'Search preset list retrieved successfully.',
     ],
     'product_image' => [
         'not_found' => 'Product image not found.',
@@ -84,12 +61,6 @@ return [
         'thumbnail_set' => 'Thumbnail has been set.',
         'not_found' => 'Product image not found.',
     ],
-    'category_images' => [
-        'uploaded' => 'Image has been uploaded.',
-        'deleted' => 'Image has been deleted.',
-        'reordered' => 'Image order has been changed.',
-        'not_found' => 'Category image not found.',
-    ],
     'brands' => [
         'list_retrieved' => 'Brand list retrieved successfully.',
         'retrieved' => 'Brand information retrieved successfully.',
@@ -97,7 +68,6 @@ return [
         'created' => 'Brand has been created.',
         'updated' => 'Brand has been updated.',
         'deleted' => 'Brand has been deleted.',
-        'status_changed' => 'Brand status has been changed.',
         'has_products' => '(:count linked products)',
     ],
     'options' => [
@@ -108,7 +78,6 @@ return [
         'bulk_update_success' => ':count options have been updated.',
         'bulk_update_failed' => 'Option bulk update failed.',
         'has_order_history' => 'Options with order history cannot be deleted.',
-        'bulk_updated' => ':count option(s) have been updated.',
     ],
 
     // Order (singular) - User-facing order messages
@@ -180,8 +149,6 @@ return [
         'bulk_shipping_updated' => 'Shipping information of :count orders has been updated.',
         'bulk_update_failed' => 'Bulk update failed.',
         'status_changed' => 'Order status has been changed to :status.',
-        'update_failed' => 'Failed to update the order.',
-        'delete_failed' => 'Failed to delete the order.',
         'shipping_registered' => 'Shipping information has been registered.',
         'export_success' => 'Excel file has been created.',
         'export_failed' => 'Failed to create Excel file.',
@@ -343,7 +310,6 @@ return [
         'not_downloadable' => 'This coupon is not available for download.',
         'quantity_exhausted' => 'Coupon quantity exhausted.',
         'issue_period_expired' => 'Coupon issue period has ended.',
-        'validity_not_configured' => 'This coupon cannot be issued because its validity period is not configured. Please contact the administrator.',
         // Coupon validation errors (DTO/ValidationError)
         'expired' => 'This coupon has expired.',
         'min_amount_not_met' => 'Minimum order amount not met.',
@@ -416,7 +382,6 @@ return [
         'updated' => 'Shipping carrier has been updated.',
         'deleted' => 'Shipping carrier has been deleted.',
         'toggled' => 'Shipping carrier status has been changed.',
-        'status_changed' => 'Shipping carrier status has been changed.',
         'delete_failed_in_use' => 'Cannot delete a carrier in use by orders. We recommend deactivating it instead.',
         'type_domestic' => 'Domestic',
         'type_international' => 'International',
@@ -474,7 +439,6 @@ return [
         'toggled' => 'Shipping policy status has been changed.',
         'copied' => 'Shipping policy has been copied.',
         'bulk_deleted' => ':count shipping policies have been deleted.',
-        'active_list_retrieved' => 'Active shipping policy list retrieved successfully.',
         'bulk_toggled' => ':count shipping policies status have been changed.',
         'set_default_success' => 'Default shipping policy has been set.',
         'api_test_done' => 'Calculation API test call completed.',
@@ -488,12 +452,6 @@ return [
             'per_volume' => ':fee per :unit L',
             'per_volume_weight' => ':fee per :unit kg',
             'per_amount' => ':fee per :unit',
-            // Tier boundary units for range policies (derived from the charge policy, not stored data)
-            'range_unit' => [
-                'quantity' => ' items',
-                'weight' => ' kg',
-                'volume' => ' L',
-            ],
         ],
         'fee_details' => [
             'base_fee' => 'Shipping Fee',
@@ -1157,14 +1115,6 @@ return [
         'can_write_checked' => 'Review eligibility checked.',
         'can_write_check_failed' => 'Failed to check review eligibility.',
         'cannot_write' => 'Cannot write a review. (Reason: :reason)',
-        // 작성 불가 사유 라벨 — :reason 치환자에 원시 식별자 대신 번역문을 싣는다
-        'reasons' => [
-            'order_option_not_found' => 'order item not found',
-            'not_own_order' => 'not your order',
-            'not_confirmed' => 'purchase not confirmed yet',
-            'deadline_passed' => 'review period has ended',
-            'already_written' => 'review already written',
-        ],
         'forbidden' => 'You do not have permission.',
         'deleted' => 'Review has been deleted.',
         'delete_failed' => 'Failed to delete review.',
@@ -1225,14 +1175,11 @@ return [
         'board_changed' => 'The board configuration has changed and the post could not be found. Please contact the administrator.',
         'reply_created' => 'Reply has been submitted.',
         'reply_failed' => 'Failed to submit reply.',
-        'reply_already_exists' => 'A reply has already been registered. Please edit or delete the existing reply before submitting a new one.',
         'reply_updated' => 'Reply has been updated.',
         'reply_update_failed' => 'Failed to update reply.',
         'reply_deleted' => 'Reply has been deleted.',
         'reply_delete_failed' => 'Failed to delete reply.',
         'reply_not_found' => 'Reply not found.',
-        // 서비스가 던진 사유를 그대로 덧붙여, 실패 원인을 서버 기록 없이도 알 수 있게 한다
-        'operation_failed_reason' => ':reason',
     ],
 
     // User addresses

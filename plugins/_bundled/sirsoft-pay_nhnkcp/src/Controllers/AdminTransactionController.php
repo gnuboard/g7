@@ -1,7 +1,5 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 룰 면제 주석만 추가 — 요청/응답 계약 불변 (해당 엔드포인트 문서 부재는 사전 상태)
-
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
@@ -13,9 +11,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
 
 /**
@@ -50,9 +45,8 @@ class AdminTransactionController extends AdminBaseController
      */
     public function queryByOrder(string $orderNumber): JsonResponse
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $payment = DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
+        $payment = DB::table('ecommerce_order_payments as p')
+            ->join('ecommerce_orders as o', 'o.id', '=', 'p.order_id')
             ->where('o.order_number', $orderNumber)
             ->where('p.pg_provider', 'nhnkcp')
             ->whereNotNull('p.transaction_id')
@@ -68,13 +62,11 @@ class AdminTransactionController extends AdminBaseController
                 'p.cancelled_at',
                 'p.cancel_history',
                 'p.currency',
-                // 취소·환불 금액은 기준 통화 저장값이라 표기 통화도 주문 스냅샷을 따라야 한다
-                'o.currency_snapshot',
             ])
             ->first();
 
         if (! $payment) {
-            return ResponseHelper::success('common.success', null);
+            return ResponseHelper::success('messages.success', null);
         }
 
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -90,25 +82,24 @@ class AdminTransactionController extends AdminBaseController
         $refundStatus = is_string($refund->refund_status ?? null)
             ? RefundStatusEnum::tryFrom($refund->refund_status)
             : null;
-        $baseCurrency = $this->resolveBaseCurrency($payment->currency_snapshot ?? null);
         $cancelledAmount = (float) ($payment->cancelled_amount ?? 0);
         $refundAmount = $refund ? (float) ($refund->refund_amount ?? 0) : 0.0;
 
-        return ResponseHelper::success('common.success', [
-            'tno' => $payment->transaction_id,
-            'app_no' => $rawResponse['app_no'] ?? $meta['app_no'] ?? null,
+        return ResponseHelper::success('messages.success', [
+            'tno'            => $payment->transaction_id,
+            'app_no'         => $rawResponse['app_no'] ?? $meta['app_no'] ?? null,
             'use_pay_method' => $meta['use_pay_method'] ?? $rawResponse['use_pay_method'] ?? null,
-            'app_time' => $meta['app_time'] ?? $rawResponse['app_time'] ?? null,
-            'res_cd' => $meta['res_cd'] ?? $rawResponse['res_cd'] ?? '0000',
-            'card_name' => $rawResponse['card_name'] ?? $meta['card_name'] ?? $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
-            'account' => $meta['account'] ?? null,
-            'bank_name' => $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
-            '_is_test_mode' => $isTest,
+            'app_time'       => $meta['app_time'] ?? $rawResponse['app_time'] ?? null,
+            'res_cd'         => $meta['res_cd'] ?? $rawResponse['res_cd'] ?? '0000',
+            'card_name'      => $rawResponse['card_name'] ?? $meta['card_name'] ?? $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
+            'account'        => $meta['account'] ?? null,
+            'bank_name'      => $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
+            '_is_test_mode'  => $isTest,
             'payment_status' => $paymentStatus?->value ?? $payment->payment_status,
             'payment_status_label' => $paymentStatus?->label(),
             'payment_status_variant' => $paymentStatus?->variant(),
             'cancelled_amount' => $cancelledAmount,
-            'cancelled_amount_formatted' => ecommerce_format_price($cancelledAmount, $baseCurrency),
+            'cancelled_amount_formatted' => $this->formatKrwAmount($cancelledAmount),
             'cancelled_at' => $payment->cancelled_at,
             'cancel_history' => $this->decodeJsonArray($payment->cancel_history ?? null),
             'refund_number' => $refund->refund_number ?? null,
@@ -116,7 +107,7 @@ class AdminTransactionController extends AdminBaseController
             'refund_status_label' => $refundStatus?->label(),
             'refund_status_variant' => $refundStatus?->variant(),
             'refund_amount' => $refundAmount,
-            'refund_amount_formatted' => ecommerce_format_price($refundAmount, $baseCurrency),
+            'refund_amount_formatted' => $this->formatKrwAmount($refundAmount),
             'refunded_at' => $refund->refunded_at ?? null,
             'refund_pg_transaction_id' => $refund->pg_transaction_id ?? null,
             '_base_pay_method_label' => $display['payment_method_label'],
@@ -129,8 +120,7 @@ class AdminTransactionController extends AdminBaseController
 
     private function latestRefundForOrder(int $orderId): ?object
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        return DB::table((new OrderRefund)->getTable())
+        return DB::table('ecommerce_order_refunds')
             ->where('order_id', $orderId)
             ->orderByDesc('id')
             ->select([
@@ -143,20 +133,9 @@ class AdminTransactionController extends AdminBaseController
             ->first();
     }
 
-    /**
-     * 주문 시점 기준 통화 코드를 스냅샷에서 해석합니다.
-     *
-     * 취소·환불 금액은 기준 통화로 저장되므로, 표기 통화도 그 시점 기준 통화여야 한다.
-     * 스냅샷이 없으면 현재 기본 통화로 폴백한다.
-     *
-     * @param  mixed  $snapshot  currency_snapshot 컬럼값(JSON 문자열 또는 배열)
-     * @return string|null 기준 통화 코드 (없으면 null → 현재 기본 통화)
-     */
-    private function resolveBaseCurrency(mixed $snapshot): ?string
+    private function formatKrwAmount(float $amount): string
     {
-        $decoded = is_string($snapshot) ? json_decode($snapshot, true) : $snapshot;
-
-        return is_array($decoded) ? ($decoded['base_currency'] ?? null) : null;
+        return number_format((int) round($amount)).'원';
     }
 
     /**

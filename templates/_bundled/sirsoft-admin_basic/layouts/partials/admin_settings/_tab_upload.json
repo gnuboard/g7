@@ -67,17 +67,6 @@
                             "className": "text-red-500 ml-1"
                           },
                           "text": "*"
-                        },
-                        {
-                          "type": "composite",
-                          "name": "Badge",
-                          "if": "{{_computed.envLocked?.['upload.max_file_size'] === true}}",
-                          "props": {
-                            "text": "$t:admin.settings.env_locked_badge",
-                            "variant": "secondary",
-                            "size": "sm",
-                            "className": "ml-2"
-                          }
                         }
                       ]
                     },
@@ -94,9 +83,9 @@
                           "props": {
                             "type": "number",
                             "name": "upload.max_file_size",
-                            "min": "{{_local?.form?._meta?.limits?.upload_max_file_size_min ?? 1}}",
-                            "max": "{{_local?.form?._meta?.limits?.upload_max_file_size_max ?? 1024}}",
-                            "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.max_file_size'] === true}}",
+                            "min": "1",
+                            "max": "1024",
+                            "disabled": "{{_computed.isReadOnly}}",
                             "className": "input flex-1 {{_local.errors?.['upload.max_file_size'] ? 'input-error' : ''}}"
                           }
                         },
@@ -226,24 +215,7 @@
                   "props": {
                     "className": "form-label"
                   },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.upload.image_max_width"
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Badge",
-                      "if": "{{_computed.envLocked?.['upload.image_max_width'] === true}}",
-                      "props": {
-                        "text": "$t:admin.settings.env_locked_badge",
-                        "variant": "secondary",
-                        "size": "sm",
-                        "className": "ml-2"
-                      }
-                    }
-                  ]
+                  "text": "$t:admin.settings.upload.image_max_width"
                 },
                 {
                   "type": "basic",
@@ -258,9 +230,9 @@
                       "props": {
                         "type": "number",
                         "name": "upload.image_max_width",
-                        "min": "{{_local?.form?._meta?.limits?.upload_image_max_width_min ?? 100}}",
-                        "max": "{{_local?.form?._meta?.limits?.upload_image_max_width_max ?? 10000}}",
-                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_width'] === true}}",
+                        "min": "100",
+                        "max": "10000",
+                        "disabled": "{{_computed.isReadOnly}}",
                         "className": "input flex-1"
                       }
                     },
@@ -287,24 +259,7 @@
                   "props": {
                     "className": "form-label"
                   },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.upload.image_max_height"
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Badge",
-                      "if": "{{_computed.envLocked?.['upload.image_max_height'] === true}}",
-                      "props": {
-                        "text": "$t:admin.settings.env_locked_badge",
-                        "variant": "secondary",
-                        "size": "sm",
-                        "className": "ml-2"
-                      }
-                    }
-                  ]
+                  "text": "$t:admin.settings.upload.image_max_height"
                 },
                 {
                   "type": "basic",
@@ -319,9 +274,9 @@
                       "props": {
                         "type": "number",
                         "name": "upload.image_max_height",
-                        "min": "{{_local?.form?._meta?.limits?.upload_image_max_height_min ?? 100}}",
-                        "max": "{{_local?.form?._meta?.limits?.upload_image_max_height_max ?? 10000}}",
-                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_max_height'] === true}}",
+                        "min": "100",
+                        "max": "10000",
+                        "disabled": "{{_computed.isReadOnly}}",
                         "className": "input flex-1"
                       }
                     },
@@ -348,24 +303,7 @@
                   "props": {
                     "className": "form-label"
                   },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.upload.image_quality"
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Badge",
-                      "if": "{{_computed.envLocked?.['upload.image_quality'] === true}}",
-                      "props": {
-                        "text": "$t:admin.settings.env_locked_badge",
-                        "variant": "secondary",
-                        "size": "sm",
-                        "className": "ml-2"
-                      }
-                    }
-                  ]
+                  "text": "$t:admin.settings.upload.image_quality"
                 },
                 {
                   "type": "basic",
@@ -380,9 +318,9 @@
                       "props": {
                         "type": "number",
                         "name": "upload.image_quality",
-                        "min": "{{_local?.form?._meta?.limits?.upload_image_quality_min ?? 1}}",
-                        "max": "{{_local?.form?._meta?.limits?.upload_image_quality_max ?? 100}}",
-                        "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.image_quality'] === true}}",
+                        "min": "1",
+                        "max": "100",
+                        "disabled": "{{_computed.isReadOnly}}",
                         "className": "input flex-1"
                       }
                     },
@@ -409,105 +347,8 @@
           ]
         }
       ]
-    },
-    {
-      "id": "card_orphan_cleanup",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.upload.orphan_cleanup"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.upload.orphan_cleanup_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "id": "field_orphan_cleanup_enabled",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.upload.orphan_cleanup_enabled"
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "upload.orphan_cleanup_enabled",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.upload.orphan_cleanup_enabled_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_orphan_retention_days",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.upload.orphan_retention_days"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "upload.orphan_retention_days",
-                    "min": "{{_local?.form?._meta?.limits?.upload_orphan_retention_days_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.upload_orphan_retention_days_max ?? 3650}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "input"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.upload.orphan_retention_days_hint"
-                }
-              ]
-            }
-          ]
-        }
-      ]
     }
   ],
-  "props": {}
+  "props": {
+  }
 }

@@ -10,15 +10,12 @@ use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
-use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
 use Modules\Sirsoft\Board\Rules\SlugUniqueRule;
 
 class StoreBoardRequest extends FormRequest
 {
-    use ReadsBoardLimits;
     use ValidatesLengthRange;
 
     /**
@@ -55,7 +52,6 @@ class StoreBoardRequest extends FormRequest
             'use_comment' => $settings['use_comment'] ?? true,
             'use_reply' => $settings['use_reply'] ?? true,
             'max_reply_depth' => $settings['max_reply_depth'] ?? 5,
-            'reply_delete_policy' => $settings['reply_delete_policy'] ?? ReplyDeletePolicy::Cascade->value,
             'max_comment_depth' => $settings['max_comment_depth'] ?? 10,
             'use_file_upload' => $settings['use_file_upload'] ?? false,
             'comment_order' => $settings['comment_order'] ?? 'ASC',
@@ -108,41 +104,37 @@ class StoreBoardRequest extends FormRequest
      */
     public function rules(): array
     {
-        // config 기준 제한값 (폴백 기본치는 ReadsBoardLimits 트레이트가 단일 관리)
-        $limits = $this->boardLimits();
-        $perPageMin = $limits['per_page_min'];
-        $perPageMax = $limits['per_page_max'];
-        $maxFileSizeMax = $limits['max_file_size_max']; // MB
-        $maxFileCountMax = $limits['max_file_count_max'];
-        $categoryMax = $limits['category_max'];
+        // config에서 제한값 가져오기
+        $limits = config('sirsoft-board.limits', []);
+        $perPageMin = $limits['per_page_min'] ?? 5;
+        $perPageMax = $limits['per_page_max'] ?? 100;
+        $maxFileSizeMax = $limits['max_file_size_max'] ?? 200; // MB
+        $maxFileCountMax = $limits['max_file_count_max'] ?? 20;
+        $categoryMax = $limits['category_max'] ?? 50;
 
         // 제목 길이 제한
-        $minTitleLengthMin = $limits['min_title_length_min'];
-        $minTitleLengthMax = $limits['min_title_length_max'];
-        $maxTitleLengthMin = $limits['max_title_length_min'];
-        $maxTitleLengthMax = $limits['max_title_length_max'];
+        $minTitleLengthMin = $limits['min_title_length_min'] ?? 0;
+        $minTitleLengthMax = $limits['min_title_length_max'] ?? 200;
+        $maxTitleLengthMin = $limits['max_title_length_min'] ?? 1;
+        $maxTitleLengthMax = $limits['max_title_length_max'] ?? 200;
 
         // 내용 길이 제한
-        $minContentLengthMin = $limits['min_content_length_min'];
-        $minContentLengthMax = $limits['min_content_length_max'];
-        $maxContentLengthMin = $limits['max_content_length_min'];
-        $maxContentLengthMax = $limits['max_content_length_max'];
+        $minContentLengthMin = $limits['min_content_length_min'] ?? 0;
+        $minContentLengthMax = $limits['min_content_length_max'] ?? 10000;
+        $maxContentLengthMin = $limits['max_content_length_min'] ?? 1;
+        $maxContentLengthMax = $limits['max_content_length_max'] ?? 50000;
 
         // 댓글 길이 제한
-        $minCommentLengthMin = $limits['min_comment_length_min'];
-        $minCommentLengthMax = $limits['min_comment_length_max'];
-        $maxCommentLengthMin = $limits['max_comment_length_min'];
-        $maxCommentLengthMax = $limits['max_comment_length_max'];
+        $minCommentLengthMin = $limits['min_comment_length_min'] ?? 0;
+        $minCommentLengthMax = $limits['min_comment_length_max'] ?? 1000;
+        $maxCommentLengthMin = $limits['max_comment_length_min'] ?? 1;
+        $maxCommentLengthMax = $limits['max_comment_length_max'] ?? 1000;
 
         // 답글/대댓글 깊이 제한
-        $maxReplyDepthMin = $limits['max_reply_depth_min'];
-        $maxReplyDepthMax = $limits['max_reply_depth_max'];
-        $maxCommentDepthMin = $limits['max_comment_depth_min'];
-        $maxCommentDepthMax = $limits['max_comment_depth_max'];
-
-        // NEW 배지 표시 기간 (0 = 표시 안 함)
-        $newDisplayHoursMin = $limits['new_display_hours_min'];
-        $newDisplayHoursMax = $limits['new_display_hours_max'];
+        $maxReplyDepthMin = $limits['max_reply_depth_min'] ?? 1;
+        $maxReplyDepthMax = $limits['max_reply_depth_max'] ?? 10;
+        $maxCommentDepthMin = $limits['max_comment_depth_min'] ?? 0;
+        $maxCommentDepthMax = $limits['max_comment_depth_max'] ?? 10;
 
         $rules = [
             // 기본 정보 (name, description은 다국어 필드 - 기본 언어만 필수)
@@ -172,7 +164,7 @@ class StoreBoardRequest extends FormRequest
             'use_reply' => ['required', 'boolean'],
             'use_report' => ['required', 'boolean'],
             'comment_order' => ['required', 'in:ASC,DESC'],
-            'new_display_hours' => ['nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
+            'new_display_hours' => ['nullable', 'integer', 'min:1', 'max:720'],
 
             // 제목 길이 제한
             'min_title_length' => ['nullable', 'integer', "min:{$minTitleLengthMin}", "max:{$minTitleLengthMax}"],
@@ -209,7 +201,6 @@ class StoreBoardRequest extends FormRequest
 
             // 답글/대댓글 깊이 제한
             'max_reply_depth' => ['nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
-            'reply_delete_policy' => ['required', 'string', Rule::in(ReplyDeletePolicy::values())],
             'max_comment_depth' => ['nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
 
             // 알림 설정
@@ -245,7 +236,7 @@ class StoreBoardRequest extends FormRequest
     public function attributes(): array
     {
         $attributes = [
-            'blocked_keywords' => __('sirsoft-board::validation.attributes.board.blocked_keywords'),
+            'blocked_keywords' => __('sirsoft-board::admin.form.fields.blocked_keywords.label'),
             'add_to_menu' => __('sirsoft-board::validation.attributes.board.add_to_menu'),
         ];
 

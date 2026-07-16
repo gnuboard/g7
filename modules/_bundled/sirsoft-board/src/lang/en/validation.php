@@ -10,15 +10,6 @@ return [
     // bulk apply fields validation messages
     'fields_invalid' => 'The selected :value field is not allowed.',
 
-    // Bulk apply of board settings validation messages
-    'bulk_apply' => [
-        'fields.required' => 'Please select at least one setting to apply.',
-        'fields.min' => 'Please select at least one setting to apply.',
-        'apply_all.required' => 'Please specify whether to apply to all boards.',
-        'board_ids.required_if' => 'Please select target boards when not applying to all boards.',
-        'board_ids.*.exists' => 'Board does not exist.',
-    ],
-
     // slug validation messages
     'slug' => [
         'required' => 'Board slug is required.',
@@ -113,10 +104,6 @@ return [
             'min' => 'Please select at least one role for this permission.',
             'exists' => 'Role does not exist.',
         ],
-        'mode' => [
-            'required' => 'Please select a permission mode.',
-            'in' => 'Invalid permission mode.',
-        ],
     ],
 
     // reply/comment depth validation messages
@@ -188,7 +175,6 @@ return [
 
     // Board validation (backward compatibility)
     'board' => [
-        'not_found' => 'Board not found.',
         'name' => [
             'required' => 'Board name is required.',
             'string' => 'Board name must be a string.',
@@ -259,14 +245,10 @@ return [
             'not_found' => 'Parent post not found.',
             'blinded' => 'Cannot create reply on blinded post.',
             'deleted' => 'Cannot create reply on deleted post.',
-            'secret' => 'Cannot create reply on a secret post you are not allowed to view.',
             'depth_exceeded' => 'This board allows replies up to :max level(s) only.',
             'notice_not_allowed' => 'Replies cannot be created on notice posts.',
         ],
         'reply_not_allowed' => 'Reply feature is disabled for this board.',
-        'delete' => [
-            'has_replies' => 'Posts with replies cannot be deleted. Please delete the replies first.',
-        ],
         'status' => [
             'in' => 'Invalid post status.',
         ],
@@ -307,7 +289,6 @@ return [
             'basic_defaults.use_comment' => 'Use Comment',
             'basic_defaults.use_reply' => 'Use Reply',
             'basic_defaults.max_reply_depth' => 'Max Reply Depth',
-            'basic_defaults.reply_delete_policy' => 'Reply Delete Policy',
             'basic_defaults.max_comment_depth' => 'Max Comment Depth',
             'basic_defaults.comment_order' => 'Comment Order',
             'basic_defaults.show_view_count' => 'Show View Count',
@@ -382,35 +363,6 @@ return [
         ],
         'board' => [
             'add_to_menu' => 'Show in admin menu',
-            'blocked_keywords' => 'Blocked Keywords',
-        ],
-        // Bulk apply of board settings
-        'bulk_apply' => [
-            'fields' => 'Target Settings',
-            'fields.*' => 'Target Settings',
-            'apply_all' => 'Apply to All Boards',
-            'board_ids' => 'Target Boards',
-            'board_ids.*' => 'Target Boards',
-            'override_values' => 'Override Values',
-            // Column labels for override values — mirror the settings group (shown on range errors)
-            'override_values.per_page' => 'Posts Per Page',
-            'override_values.per_page_mobile' => 'Posts Per Page (Mobile)',
-            'override_values.max_reply_depth' => 'Max Reply Depth',
-            'override_values.reply_delete_policy' => 'Reply Delete Policy',
-            'override_values.max_comment_depth' => 'Max Comment Depth',
-            'override_values.min_title_length' => 'Min Title Length',
-            'override_values.max_title_length' => 'Max Title Length',
-            'override_values.min_content_length' => 'Min Content Length',
-            'override_values.max_content_length' => 'Max Content Length',
-            'override_values.min_comment_length' => 'Min Comment Length',
-            'override_values.max_comment_length' => 'Max Comment Length',
-            'override_values.max_file_size' => 'Max File Size',
-            'override_values.max_file_count' => 'Max File Count',
-            'override_values.new_display_hours' => 'New Display Hours',
-
-            // attachment_settings
-            'attachment_settings.purge_enabled' => 'Permanent Cleanup Of Deleted Attachments',
-            'attachment_settings.purge_retention_days' => 'Deleted Attachment Retention Period',
         ],
     ],
 
@@ -446,7 +398,6 @@ return [
             'not_found' => 'Post not found.',
             'blinded' => 'Cannot create comment on blinded post.',
             'deleted' => 'Cannot create comment on deleted post.',
-            'secret' => 'Cannot create comment on a secret post you are not allowed to view.',
         ],
         'parent_id' => [
             'exists' => 'Parent comment does not exist.',
@@ -592,7 +543,6 @@ return [
 
     // Report validation messages
     'report' => [
-        'invalid_status_transition' => 'The report cannot be changed to that status from its current status.',
         'status' => [
             'required' => 'Report status is required.',
             'in' => 'Invalid report status.',

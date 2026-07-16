@@ -11,8 +11,8 @@
  * 이라, 본 spec 은 탭 노출/빌더 렌더/조작 결과의 가시 상태만 확인하고 합성 로직 정합성은
  * 단위/RTL(actionRecipeEngine/conditionRecipeEngine/s7-property-controls)이 잠근다.
  *
- * 축 요약(마커 아님 — 평문): property_modal_action_tab, property_modal_visibility_tab, flex_editor_section.
- * 효과 요약(마커 아님 — 평문): action_tab_visible_when_events, visibility_builder_renders, flex_section_for_container.
+ * @scenario property_modal_action_tab + property_modal_visibility_tab + flex_editor_section
+ * @effects action_tab_visible_when_events + visibility_builder_renders + flex_section_for_container
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -64,7 +64,6 @@ async function selectNode(page: PwPage, editorPath: string): Promise<boolean> {
 }
 
 test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
-  /** @effects visibility_builder_renders */
   test('요소 선택 → 속성 모달에 표시조건 탭 + 조건 빌더 렌더', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -129,7 +128,7 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
 
   // ── D-D 회귀 — 컴포넌트 [동작] 탭 ──
   // @scenario property_modal_action_tab
-  // @effects nested_onsuccess_picker_not_empty, action_card_drag_handle_draggable
+  // @effects nested_onsuccess_picker_not_empty + action_card_drag_handle_draggable
 
   /** [동작] 탭을 가진(events capability) 노드를 찾아 동작 탭을 연다. 못 찾으면 null.
    *  Button 등 onClick capability 보유 가능성이 높은 노드를 우선 시도한다(앞쪽 컨테이너는
@@ -164,7 +163,6 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
     return false;
   }
 
-  /** @effects action_tab_visible_when_events */
   test('동작 탭 — apiCall 의 성공 시 동작(중첩) add picker 가 코어 핸들러를 노출(빈 상태 금지)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -173,26 +171,19 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
 
     // 첫 이벤트 슬롯에 apiCall(서버 호출) 동작 추가. (슬롯에 기존 카드가 있을 수 있으므로
     // 추가 후 "맨 끝 카드"가 방금 추가한 apiCall — 그 카드의 edit 을 연다.)
-    // 동작 편집기가 공용 ActionListBuilder 로 공통화되면서 testid 체계가 바뀌었다.
-    // 이벤트 슬롯 빌더의 prefix 는 `g7le-action-slot-{eventName}` 이고, 중첩 목록은
-    // `{prefix}-edit-{paramKey}` 를 다시 prefix 로 받는다. 인덱스는 add 토글이 아니라
-    // 카드(item/edit/drag)에 붙는다.
-    const SLOT = 'g7le-action-slot-onClick';
-    const NESTED = `${SLOT}-edit-onSuccess`;
-
     const firstSlot = page.locator('[data-testid="g7le-action-event-onClick"]').first();
-    await firstSlot.locator(`[data-testid="${SLOT}-add-picker-toggle"]`).click();
+    await firstSlot.locator('[data-testid="g7le-action-add-0-toggle"]').click();
     await firstSlot.locator('[data-testid="g7le-init-action-spec-apiCall"]').click();
     // 추가된 apiCall 카드(슬롯의 마지막 카드) 편집 → onSuccess 중첩 영역.
-    const editBtns = firstSlot.locator(`[data-testid^="${SLOT}-edit-"]`);
+    const editBtns = firstSlot.locator('[data-testid^="g7le-action-edit-0-"]');
     await editBtns.last().click();
-    const onSuccess = page.getByTestId(`${SLOT}-edit-param-onSuccess`);
+    const onSuccess = page.getByTestId('g7le-action-param-onSuccess');
     await expect(onSuccess).toBeVisible();
     // 빈 상태("사용할 수 있는 동작이 없습니다") 가 아니라 중첩 add 토글이 있어야 한다(rawRecipes 전달).
-    await expect(onSuccess.getByTestId(`${NESTED}-add-picker-empty`)).toHaveCount(0);
-    await expect(onSuccess.getByTestId(`${NESTED}-add-picker-toggle`)).toHaveCount(1);
+    await expect(onSuccess.getByTestId('g7le-action-add-1-empty')).toHaveCount(0);
+    await expect(onSuccess.getByTestId('g7le-action-add-1-toggle')).toHaveCount(1);
     // 펼치면 코어 핸들러(안내 메시지 등) 노출.
-    await onSuccess.getByTestId(`${NESTED}-add-picker-toggle`).click();
+    await onSuccess.getByTestId('g7le-action-add-1-toggle').click();
     await expect(onSuccess.getByTestId('g7le-init-action-spec-toast')).toHaveCount(1);
   });
 
@@ -203,15 +194,11 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
     expect(await openActionTab(page)).toBe(true);
 
     // 동작 1개 추가(toast) → 카드 생성 → 드래그 핸들 draggable 확인.
-    // 이벤트 슬롯 빌더 prefix = `g7le-action-slot-{eventName}` (공용 ActionListBuilder 공통화).
-    // 어떤 이벤트 슬롯이 렌더되는지는 노드에 따라 다르므로 접미사 패턴으로 첫 슬롯을 집는다.
-    const slotAddToggle = page
-      .locator('[data-testid="g7le-action-editor"] [data-testid$="-add-picker-toggle"]')
-      .first();
+    const slotAddToggle = page.locator('[data-testid="g7le-action-editor"] [data-testid="g7le-action-add-0-toggle"]').first();
     await slotAddToggle.click();
     const toastSpec = page.locator('[data-testid="g7le-action-editor"] [data-testid="g7le-init-action-spec-toast"]').first();
     await toastSpec.click();
-    const handle = page.locator('[data-testid="g7le-action-editor"] [data-testid*="-drag-"]').first();
+    const handle = page.getByTestId('g7le-action-drag-0-0').first();
     await expect(handle).toBeVisible();
     await expect(handle).toHaveAttribute('draggable', 'true');
   });

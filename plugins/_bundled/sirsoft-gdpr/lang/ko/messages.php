@@ -4,7 +4,6 @@ return [
     'consent' => [
         'granted' => '동의가 저장되었습니다.',
         'granted_again' => '동의가 갱신되었습니다.',
-        'rejected_saved' => '동의하지 않고 계속합니다. 선택 항목은 사용되지 않습니다.',
         'revoked' => '동의가 철회되었습니다.',
         'renew_all_success' => '활성 항목 {renewed} 개를 새 정책 버전으로 갱신했습니다.',
         'granting' => '동의 중...',
@@ -29,16 +28,6 @@ return [
         'too_long_marketing' => '마케팅 카테고리 — 도메인은 253자를 초과할 수 없습니다.',
         'must_be_array' => '카테고리별 도메인 목록은 배열이어야 합니다.',
     ],
-    'necessary_storage_allowlist' => [
-        'invalid_format_local_storage' => '브라우저 저장소 — 항목 형식이 올바르지 않습니다. (영문·숫자와 _ . : @ + - 사용, 끝에 * 하나만 가능)',
-        'invalid_format_session_storage' => '세션 저장소 — 항목 형식이 올바르지 않습니다. (영문·숫자와 _ . : @ + - 사용, 끝에 * 하나만 가능)',
-        'invalid_format_cookie' => '쿠키 — 항목 형식이 올바르지 않습니다. (영문·숫자와 _ . : @ + - 사용, 끝에 * 하나만 가능)',
-        'too_long_local_storage' => '브라우저 저장소 — 항목은 128자를 초과할 수 없습니다.',
-        'too_long_session_storage' => '세션 저장소 — 항목은 128자를 초과할 수 없습니다.',
-        'too_long_cookie' => '쿠키 — 항목은 128자를 초과할 수 없습니다.',
-        'must_be_array' => '저장소별 항목 목록은 배열이어야 합니다.',
-        'invalid_scope' => '알 수 없는 저장소 구분입니다: :scope (브라우저 저장소·세션 저장소·쿠키만 사용할 수 있습니다)',
-    ],
     'settings' => [
         'saved' => '설정이 저장되었습니다.',
         'title' => 'GDPR 설정',
@@ -52,7 +41,6 @@ return [
             'cookie_categories' => '쿠키 카테고리',
             'cookie_policy_version' => '쿠키 정책 버전',
             'auto_blocking' => '자동 차단 정책',
-            'necessary_storage' => '필수 저장 항목',
             'auto_blocking_desc' => '쿠키 배너 노출이 ON 일 때 아래 카테고리별 차단 도메인 목록의 외부 추적 리소스가 사용자 동의 전까지 자동 차단됩니다. (별도 토글 없음 — 배너 노출과 함께 자동 작동)',
         ],
         'nav' => [
@@ -89,7 +77,7 @@ return [
             ],
             'banner_enabled' => [
                 'label' => '쿠키 배너 노출',
-                'hint' => '활성 시 쿠키 동의 배너 노출 + 동의 전 외부 추적 자동 차단이 함께 시작됩니다. (GDPR Art.6 "동의 전 처리 금지" 의 강제 메커니즘인 차단을 분리 토글로 끄지 못하도록 단일 토글로 통합) 마이페이지 동의 관리 카드는 이 토글과 무관하게 동의/철회 이력이 있는 회원에게 항상 노출됩니다.',
+                'hint' => '활성 시 쿠키 동의 배너 노출 + 동의 전 외부 추적 자동 차단 + 마이페이지 동의 관리 카드가 일괄 활성됩니다. (GDPR Art.6 "동의 전 처리 금지" 의 강제 메커니즘인 차단을 분리 토글로 끄지 못하도록 단일 토글로 통합)',
             ],
             'banner_position' => [
                 'label' => '배너 위치',
@@ -112,9 +100,6 @@ return [
                     'analytics' => '분석 카테고리 차단 도메인',
                     'marketing' => '마케팅 카테고리 차단 도메인',
                 ],
-            ],
-            'necessary_storage_allowlist' => [
-                'label' => '필수 저장 항목 허용목록',
             ],
             'cookie_categories' => [
                 'description' => '쿠키 카테고리 4종의 용도와 차단 도구 예시는 각 카드의 [정보 펼치기] 에서 확인할 수 있습니다.',
@@ -152,9 +137,6 @@ return [
                     'snapshot_action' => '본문',
                 ],
             ],
-            'history_page_summary' => '총 :total건 · :current / :last 페이지',
-            'history_prev' => '이전',
-            'history_next' => '다음',
             'snapshot_view_short' => '보기',
             'material_modal' => [
                 'title' => '정책 버전 발행 + 재동의 트리거',
@@ -207,15 +189,11 @@ return [
             'action' => [
                 'granted' => '동의',
                 'revoked' => '철회',
-                'rejected' => '거부',
             ],
             'source' => [
                 'banner' => '배너',
                 'preference_center' => '환경설정',
-                'register' => '회원가입',
                 'mypage' => '마이페이지',
-                'mypage_renew_all' => '마이페이지 일괄 재동의',
-                'withdraw' => '회원탈퇴',
             ],
             'col' => [
                 'created_at' => '시점',
@@ -232,7 +210,7 @@ return [
                 'categories_label' => '카테고리 스냅샷',
                 'categories_hint' => '동의 시점에 회원이 카테고리별로 표시한 의사입니다. 정책 본문이 갱신되어도 이 기록은 불변으로 보존됩니다.',
                 'snapshot_granted' => '동의',
-                'snapshot_revoked' => '미동의',
+                'snapshot_revoked' => '거부',
             ],
         ],
     ],
@@ -250,21 +228,6 @@ return [
             'col_action' => '작업',
             'consented' => '동의',
             'revoked' => '철회',
-            'rejected_label' => '거부',
-            // 이슈 #430 — 각 동의 항목 상태별 표시 동사. Resource(status_label)가 status 로 골라 내려준다.
-            'status' => [
-                'granted' => '동의',
-                'consented' => '동의',
-                'revoked' => '철회',
-                'rejected' => '거부',
-            ],
-            // 이슈 #430 (버튼 재설계) — 상태 배지 문구. Resource(status_badge_label).
-            'badge' => [
-                'required' => '항상 적용',
-                'consented' => '동의함',
-                'rejected' => '거부함',
-                'unset' => '미설정',
-            ],
             'revoke' => '철회',
             'grant' => '동의',
             'grant_again' => '다시 동의',
@@ -292,9 +255,9 @@ return [
         'title' => '쿠키 사용 안내',
         'description' => '본 사이트는 사용자 경험 개선과 분석을 위해 쿠키를 사용합니다. 항목별로 동의 여부를 선택할 수 있습니다.',
         'accept_all' => '모두 동의',
-        'reject_continue' => '동의하지 않고 계속하기',
-        'preferences' => '선택 동의',
-        'save' => '선택 저장',
+        'reject_all' => '필수만 사용',
+        'preferences' => '환경설정',
+        'save' => '선택 동의',
         'policy_link' => '개인정보처리방침',
         'preferences_title' => '쿠키 환경설정',
         'preferences_description' => '카테고리별 쿠키 사용을 개별 동의/철회할 수 있습니다. 필수 카테고리는 끌 수 없습니다.',

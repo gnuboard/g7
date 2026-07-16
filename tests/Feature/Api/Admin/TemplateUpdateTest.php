@@ -3,13 +3,11 @@
 namespace Tests\Feature\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
-use App\Enums\PermissionType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Mockery;
 use Tests\TestCase;
@@ -54,7 +52,7 @@ class TemplateUpdateTest extends TestCase
                     'description' => json_encode(['ko' => $permIdentifier.' 권한', 'en' => $permIdentifier.' Permission']),
                     'extension_type' => ExtensionOwnerType::Core,
                     'extension_identifier' => 'core',
-                    'type' => PermissionType::Admin,
+                    'type' => \App\Enums\PermissionType::Admin,
                 ]
             );
             $permissionIds[] = $permission->id;
@@ -231,7 +229,7 @@ class TemplateUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(TemplateService::class);
         $mockService->shouldReceive('performVersionUpdate')
-            ->with('test-template', 'overwrite', false)
+            ->with('test-template', 'overwrite')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -298,7 +296,7 @@ class TemplateUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(TemplateService::class);
         $mockService->shouldReceive('performVersionUpdate')
-            ->with('test-template', 'overwrite', false)
+            ->with('test-template', 'overwrite')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -344,7 +342,7 @@ class TemplateUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(TemplateService::class);
         $mockService->shouldReceive('performVersionUpdate')
-            ->with('nonexistent-template', 'overwrite', false)
+            ->with('nonexistent-template', 'overwrite')
             ->once()
             ->andThrow(
                 ValidationException::withMessages([
@@ -365,7 +363,7 @@ class TemplateUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(TemplateService::class);
         $mockService->shouldReceive('performVersionUpdate')
-            ->with('test-template', 'overwrite', false)
+            ->with('test-template', 'overwrite')
             ->once()
             ->andThrow(new \RuntimeException('Unexpected error'));
         $this->app->instance(TemplateService::class, $mockService);
@@ -398,7 +396,7 @@ class TemplateUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(TemplateService::class);
         $mockService->shouldReceive('performVersionUpdate')
-            ->with('test-template', 'keep', false)
+            ->with('test-template', 'keep')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -452,11 +450,6 @@ class TemplateUpdateTest extends TestCase
     public function test_check_modified_layouts_returns_result(): void
     {
         $mockService = Mockery::mock(TemplateService::class);
-        // 컨트롤러는 조회 전에 식별자 존재를 먼저 확인한다 — 이 선행 호출을 스텁하지 않으면
-        // Mockery 가 미정의 호출로 예외를 던지고 그것이 500 으로 잡힌다.
-        $mockService->shouldReceive('getTemplateInfo')
-            ->with('test-template')
-            ->andReturn(['identifier' => 'test-template', 'name' => 'Test Template']);
         $mockService->shouldReceive('checkModifiedLayouts')
             ->with('test-template')
             ->once()
@@ -513,7 +506,7 @@ class TemplateUpdateTest extends TestCase
     public function test_check_updates_route_name_exists(): void
     {
         $this->assertTrue(
-            Route::has('api.admin.templates.check-updates'),
+            \Illuminate\Support\Facades\Route::has('api.admin.templates.check-updates'),
             'Route api.admin.templates.check-updates should exist'
         );
     }
@@ -524,7 +517,7 @@ class TemplateUpdateTest extends TestCase
     public function test_update_route_name_exists(): void
     {
         $this->assertTrue(
-            Route::has('api.admin.templates.update'),
+            \Illuminate\Support\Facades\Route::has('api.admin.templates.update'),
             'Route api.admin.templates.update should exist'
         );
     }
@@ -535,7 +528,7 @@ class TemplateUpdateTest extends TestCase
     public function test_check_modified_layouts_route_name_exists(): void
     {
         $this->assertTrue(
-            Route::has('api.admin.templates.check-modified-layouts'),
+            \Illuminate\Support\Facades\Route::has('api.admin.templates.check-modified-layouts'),
             'Route api.admin.templates.check-modified-layouts should exist'
         );
     }

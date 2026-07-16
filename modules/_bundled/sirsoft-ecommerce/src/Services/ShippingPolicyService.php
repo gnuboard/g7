@@ -9,15 +9,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
  * 배송정책 서비스
  */
 class ShippingPolicyService
 {
-    use ReappliesPermissionScope;
-
     public function __construct(
         protected ShippingPolicyRepositoryInterface $repository
     ) {}
@@ -121,8 +118,6 @@ class ShippingPolicyService
      */
     public function update(ShippingPolicy $shippingPolicy, array $data): ShippingPolicy
     {
-        $this->assertWithinScope($shippingPolicy, 'sirsoft-ecommerce.shipping-policies.update');
-
         // 수정 전 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.before_update', $shippingPolicy, $data);
 
@@ -244,9 +239,6 @@ class ShippingPolicyService
      */
     public function delete(ShippingPolicy $shippingPolicy): bool
     {
-        // 라우트가 강제하는 권한(SSoT)과 같은 식별자를 쓴다 — 삭제 경로는 `.delete` 다.
-        $this->assertWithinScope($shippingPolicy, 'sirsoft-ecommerce.shipping-policies.delete');
-
         // 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.before_delete', $shippingPolicy);
 
@@ -272,8 +264,6 @@ class ShippingPolicyService
      */
     public function toggleActive(ShippingPolicy $shippingPolicy): ShippingPolicy
     {
-        $this->assertWithinScope($shippingPolicy, 'sirsoft-ecommerce.shipping-policies.update');
-
         // 토글 전 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.before_toggle_active', $shippingPolicy);
 
@@ -293,14 +283,8 @@ class ShippingPolicyService
      */
     public function bulkDelete(array $ids): int
     {
-        // 스코프 검사와 스냅샷이 같은 조회를 공유한다 — 두 번 부르면 쿼리가 늘고,
-        // 그 사이에 대상이 바뀌면 검사한 것과 기록하는 것이 달라진다.
-        $targets = $this->repository->findByIdsKeyed($ids);
-
-        $this->assertAllWithinScope($targets, 'sirsoft-ecommerce.shipping-policies.delete');
-
         // 삭제 전 스냅샷 캡처 (after_bulk_delete 훅에 전달)
-        $snapshots = $targets->map->toArray()->all();
+        $snapshots = $this->repository->findByIdsKeyed($ids)->map->toArray()->all();
 
         // 일괄 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.before_bulk_delete', $ids);
@@ -325,13 +309,8 @@ class ShippingPolicyService
      */
     public function bulkToggleActive(array $ids, bool $isActive): int
     {
-        // 스코프 검사와 스냅샷이 같은 조회를 공유한다(위 bulkDelete 와 동일 이유).
-        $targets = $this->repository->findByIdsKeyed($ids);
-
-        $this->assertAllWithinScope($targets, 'sirsoft-ecommerce.shipping-policies.update');
-
         // 변경 전 스냅샷 캡처 (after_bulk_toggle_active 훅에 전달)
-        $snapshots = $targets->map->toArray()->all();
+        $snapshots = $this->repository->findByIdsKeyed($ids)->map->toArray()->all();
 
         // 일괄 변경 전 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.before_bulk_toggle_active', $ids, $isActive);
@@ -362,8 +341,6 @@ class ShippingPolicyService
      */
     public function setDefault(ShippingPolicy $shippingPolicy): ShippingPolicy
     {
-        $this->assertWithinScope($shippingPolicy, 'sirsoft-ecommerce.shipping-policies.update');
-
         // 기본값 설정 전 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.before_set_default', $shippingPolicy);
 

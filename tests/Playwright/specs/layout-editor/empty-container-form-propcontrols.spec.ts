@@ -16,12 +16,11 @@
  * PasswordInput.test.tsx 가 data-editor-* 루트 부착을 잠근다. 본 Playwright 는 실제 편집기
  * 팔레트 필터 연동 + propControl→DOM 라운드트립을 브라우저로 검증한다.
  *
- * 축 요약(마커 아님 — 평문): empty_container_first_child, form_propcontrol_edit.
- * 효과 요약(마커 아님 — 평문): empty_container_global_palette_filters_by_own_accepts_not_parent, palette_filters_by_parent_accepts.
+ * @scenario empty_container_first_child + form_propcontrol_edit
+ * @effects empty_container_global_palette_filters_by_own_accepts_not_parent + palette_filters_by_parent_accepts
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
-import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
 
 async function gotoEditor(page: Page, route = '%2F'): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
@@ -75,9 +74,7 @@ async function clickPaletteItem(page: Page, name: string): Promise<void> {
 
 /** 검증 컨테이너(빈 Div) 를 home content root 안에 추가하고 그 path 를 반환. */
 async function addEmptyDiv(page: Page): Promise<string> {
-  // 첫 세그먼트는 베이스 레이아웃 루트 인덱스라 베이스에 컴포넌트가 추가되면 밀린다 —
-  // 리터럴 대신 본문 루트 id 로 해석한다.
-  const contentRoot = await resolveEditorPath(page, 'children.5.children.0.children.0');
+  const contentRoot = '2.children.5.children.0.children.0';
   expect(await selectByPath(page, contentRoot)).toBe(true);
   await openPaletteItems(page);
   await clickPaletteItem(page, 'Div');
@@ -92,7 +89,6 @@ async function addEmptyDiv(page: Page): Promise<string> {
 }
 
 test.describe('@layout-editor 빈 컨테이너 첫 자식 + 폼 propControl', () => {
-  /** @effects empty_container_global_palette_filters_by_own_accepts_not_parent, palette_filters_by_parent_accepts */
   test('빈 Div 선택 시 팔레트가 그 Div 의 accepts(폼 포함)로 필터된다 (결함#1)', async ({ page }) => {
     await gotoEditor(page);
 

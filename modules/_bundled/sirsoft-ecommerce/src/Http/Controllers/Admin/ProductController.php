@@ -5,22 +5,19 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Resources\ActivityLogResource;
+use App\Models\ActivityLog;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ProductImageUploadLimitException;
-use Modules\Sirsoft\Ecommerce\Exceptions\ProductPriceRelationException;
-use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdatePriceRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateProductsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateStockRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductListRequest;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductLogsRequest;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductOptionsListRequest;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductShowForCopyRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ReorderProductImagesRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreProductRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateProductRequest;
@@ -29,9 +26,9 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\ProductCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductOptionResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductResource;
 use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 관리 컨트롤러
@@ -65,63 +62,10 @@ class ProductController extends AdminBaseController
                 'messages.products.fetch_success',
                 $collection->withStatistics($statistics)
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',
-                500
-            );
-        }
-    }
-
-    /**
-     * 여러 상품의 옵션을 한 번에 조회합니다 (비활성 옵션 포함).
-     *
-     * 목록에서 행을 펼칠 때 그 행들의 옵션을 채우기 위한 배치 엔드포인트입니다. 상품 목록이
-     * 옵션을 더 이상 기본 적재하지 않으므로 이 경로가 옵션 상세의 공급자입니다.
-     *
-     * 배치는 **부분 성공**을 계약으로 합니다. 존재하지 않거나 권한 스코프 밖인 상품 ID 는
-     * 404 를 만들지 않고 응답의 `product_ids` 에서 빠집니다 — 하나가 없다고 나머지 N-1 건의
-     * 정상 조회를 버릴 이유가 없고, 배치에서 "무엇이 없었는지" 는 상태코드로 표현할 수 없기
-     * 때문입니다. 단건 404 semantics 는 `GET admin/products/{identifier}` 가 제공합니다.
-     * 호출자는 요청한 ID 배열과 응답의 `product_ids` 를 대조해 제외된 ID 를 확정할 수 있습니다.
-     *
-     * @param  ProductOptionsListRequest  $request  상품 옵션 배치 조회 요청
-     * @return JsonResponse 상품 ID 로 묶인 옵션 맵과 스코프를 통과한 상품 ID 목록
-     */
-    public function options(ProductOptionsListRequest $request): JsonResponse
-    {
-        try {
-            $result = $this->productService->getOptionsByProductIds(
-                $request->validated()['product_ids']
-            );
-
-            $grouped = [];
-            foreach ($result['product_ids'] as $productId) {
-                $options = $result['options'][$productId] ?? [];
-
-                $grouped[(string) $productId] = ProductOptionResource::collection($options)->resolve($request);
-            }
-
-            return ResponseHelper::moduleSuccess(
-                'sirsoft-ecommerce',
-                'messages.products.options_fetch_success',
-                [
-                    // 빈 맵이 JSON 배열([])로 나가지 않도록 객체로 확정한다
-                    'options' => (object) $grouped,
-                    'product_ids' => $result['product_ids'],
-                ]
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        } catch (Exception $e) {
-            Log::error('상품 옵션 배치 조회 실패', ['message' => $e->getMessage()]);
-
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'messages.products.options_fetch_failed',
                 500
             );
         }
@@ -157,8 +101,6 @@ class ProductController extends AdminBaseController
                 'messages.products.fetch_success',
                 new ProductResource($product)
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -194,8 +136,6 @@ class ProductController extends AdminBaseController
                 422,
                 $e->errors()
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             Log::error('상품 등록 실패', [
                 'message' => $e->getMessage(),
@@ -237,8 +177,6 @@ class ProductController extends AdminBaseController
                 422,
                 $e->errors()
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             Log::error('상품 수정 실패', [
                 'product_id' => $product->id,
@@ -273,8 +211,6 @@ class ProductController extends AdminBaseController
                 'messages.products.can_delete_checked',
                 $result
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -325,8 +261,6 @@ class ProductController extends AdminBaseController
                 null,
                 ['count' => $count]
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -365,8 +299,6 @@ class ProductController extends AdminBaseController
                 'messages.products.bulk_update_failed',
                 422
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -406,8 +338,6 @@ class ProductController extends AdminBaseController
                 'messages.products.bulk_price_update_failed',
                 422
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -446,8 +376,6 @@ class ProductController extends AdminBaseController
                 'messages.products.bulk_stock_update_failed',
                 422
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -479,23 +407,12 @@ class ProductController extends AdminBaseController
                 200,
                 ['count' => ($result['products_updated'] ?? 0) + ($result['options_updated'] ?? 0)]
             );
-        } catch (ProductPriceRelationException $e) {
-            // 판매가 > 정가 조합은 도메인 검증 실패 → generic 500 이 아닌 422
-            return ResponseHelper::error(
-                'validation.product.selling_price_lte_list',
-                422,
-                null,
-                [],
-                'sirsoft-ecommerce'
-            );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.bulk_update_failed',
                 422
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -520,8 +437,6 @@ class ProductController extends AdminBaseController
                 'messages.products.code_generated',
                 ['product_code' => $code]
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -555,8 +470,6 @@ class ProductController extends AdminBaseController
                 'messages.products.fetch_success',
                 new ProductResource($product)
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -599,8 +512,6 @@ class ProductController extends AdminBaseController
                 'messages.products.update_failed',
                 422
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -634,8 +545,6 @@ class ProductController extends AdminBaseController
                 'messages.products.fetch_success',
                 $formData
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -648,14 +557,28 @@ class ProductController extends AdminBaseController
     /**
      * 상품 복사용 데이터를 조회합니다.
      *
-     * @param  ProductShowForCopyRequest  $request  검증된 복사 옵션 요청
+     * @param  Request  $request  HTTP 요청 (복사 옵션 포함)
      * @param  Product  $product  복사할 상품 모델
      * @return JsonResponse 복사용 데이터 JSON 응답
      */
-    public function showForCopy(ProductShowForCopyRequest $request, Product $product): JsonResponse
+    public function showForCopy(Request $request, Product $product): JsonResponse
     {
         try {
-            $copyData = $this->productService->getDetailForCopy($product->id, $request->getCopyOptions());
+            $copyOptions = [
+                'images' => $request->boolean('copy_images', true),
+                'options' => $request->boolean('copy_options', true),
+                'categories' => $request->boolean('copy_categories', true),
+                'sales_info' => $request->boolean('copy_sales_info', true),
+                'description' => $request->boolean('copy_description', true),
+                'notice' => $request->boolean('copy_notice', true),
+                'common_info' => $request->boolean('copy_common_info', true),
+                'other_info' => $request->boolean('copy_other_info', true),
+                'shipping' => $request->boolean('copy_shipping', true),
+                'seo' => $request->boolean('copy_seo', false),
+                'identification' => $request->boolean('copy_identification', true),
+            ];
+
+            $copyData = $this->productService->getDetailForCopy($product->id, $copyOptions);
 
             if (! $copyData) {
                 return ResponseHelper::notFound(
@@ -703,8 +626,6 @@ class ProductController extends AdminBaseController
                 'messages.products.fetch_success',
                 $copyData
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -764,10 +685,7 @@ class ProductController extends AdminBaseController
                 ['max' => $e->maxImages],
                 'sirsoft-ecommerce'
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
-            // 개수 상한 초과는 위에서 typed 로 분기된다 — 여기 도달하면 서버 결함/인프라 장애다
             Log::error('상품 이미지 업로드 실패', [
                 'product_id' => $productId,
                 'error' => $e->getMessage(),
@@ -777,7 +695,7 @@ class ProductController extends AdminBaseController
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                500
+                400
             );
         }
     }
@@ -805,21 +723,11 @@ class ProductController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.product_images.deleted'
             );
-        } catch (ResourceScopeMismatchException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -840,21 +748,11 @@ class ProductController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.product_images.reordered'
             );
-        } catch (ResourceScopeMismatchException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -875,21 +773,11 @@ class ProductController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.product_images.thumbnail_set'
             );
-        } catch (ResourceScopeMismatchException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -914,23 +802,42 @@ class ProductController extends AdminBaseController
     /**
      * 상품 처리로그(활동 로그) 목록을 조회합니다.
      *
-     * @param  ProductLogsRequest  $request  검증된 조회 요청
+     * @param  Request  $request  요청
      * @param  Product  $product  상품
      * @return JsonResponse 활동 로그 목록
      */
-    public function logs(ProductLogsRequest $request, Product $product): JsonResponse
+    public function logs(Request $request, Product $product): JsonResponse
     {
         try {
-            // 상품 + 상품옵션 로그 합산 조회는 Service → Repository 경유 (컨트롤러 직접 조회 금지)
-            $logs = $this->productService->getActivityLogs($product, $request->getFilters());
+            $perPage = (int) ($request->query('per_page', 10));
+            $sortOrder = $request->query('sort_order', 'desc');
+
+            // 상품 + 상품옵션 로그를 합쳐서 조회
+            $optionIds = $product->options()->pluck('id')->toArray();
+
+            $query = ActivityLog::where(function ($q) use ($product, $optionIds) {
+                // 상품 자체 로그
+                $q->where(function ($sub) use ($product) {
+                    $sub->where('loggable_type', $product->getMorphClass())
+                        ->where('loggable_id', $product->getKey());
+                });
+
+                // 해당 상품의 옵션 로그
+                if (! empty($optionIds)) {
+                    $q->orWhere(function ($sub) use ($optionIds) {
+                        $sub->where('loggable_type', (new ProductOption)->getMorphClass())
+                            ->whereIn('loggable_id', $optionIds);
+                    });
+                }
+            })->orderBy('created_at', $sortOrder);
+
+            $logs = $query->paginate($perPage);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.products.logs_fetch_success',
                 ActivityLogResource::collection($logs)->response()->getData(true)
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',

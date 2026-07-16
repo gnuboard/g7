@@ -8,7 +8,6 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Log;
-use Plugins\Sirsoft\PayNhnkcp\Support\ShopRedirectUrl;
 
 /**
  * KCP 결제 승인 콜백 요청 검증
@@ -48,8 +47,6 @@ class AuthCallbackRequest extends FormRequest
             'good_mny' => ['nullable', 'numeric', 'min:1'],
             'use_pay_method' => ['nullable', 'string'],
             'param_opt_1' => ['nullable', 'string', 'max:50'],
-            // 모바일 가상계좌 세션 nonce (승인키 발급 시점에 실어 보낸 값을 KCP 가 되돌려준다)
-            'param_opt_2' => ['nullable', 'string', 'max:50'],
             'nhnkcp_easy_pay_method' => ['nullable', 'string', 'max:50'],
             // 모바일 SmartPhone Pay 가상계좌 콜백 (enc_data 없이 평문 전달)
             // KCP가 보내는 변종 키 모두 허용 — handleVbankIssued 에서 우선순위로 처리
@@ -71,11 +68,11 @@ class AuthCallbackRequest extends FormRequest
         ]);
 
         $settings = plugin_settings(self::PLUGIN_IDENTIFIER);
-        $baseUrl = ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL);
+        $baseUrl = $settings['redirect_fail_url'] ?? '/shop/checkout';
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         throw new HttpResponseException(
-            redirect($baseUrl.$separator.http_build_query(['error' => 'invalid_params']))
+            redirect($baseUrl . $separator . http_build_query(['error' => 'invalid_params']))
         );
     }
 }

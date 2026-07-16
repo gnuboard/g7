@@ -8,7 +8,6 @@ use App\Models\TemplateLayoutExtensionVersion;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LayoutExtensionVersionRepository implements LayoutExtensionVersionRepositoryInterface
@@ -29,10 +28,9 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
      * @param  int  $extensionId  레이아웃 확장 ID
      * @param  array  $content  저장할 content 스냅샷
      * @param  array|null  $previousContent  직전 버전 content (변경 요약 기준). null 이면 변경 요약 0
-     * @param  int|null  $createdBy  저장자 ID (null 이면 현재 인증 사용자)
      * @return TemplateLayoutExtensionVersion 생성된 버전
      */
-    public function saveVersion(int $extensionId, array $content, ?array $previousContent = null, ?int $createdBy = null): TemplateLayoutExtensionVersion
+    public function saveVersion(int $extensionId, array $content, ?array $previousContent = null): TemplateLayoutExtensionVersion
     {
         $nextVersion = $this->getNextVersion($extensionId);
 
@@ -46,55 +44,24 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
             'version' => $nextVersion,
             'content' => $content,
             'changes_summary' => $changesSummary,
-            // 저장자 — 버전 목록의 「저장자」 표시 근거. 종전엔 기록하지 않아 항상 「알 수 없음」이었다.
-            'created_by' => $createdBy ?? Auth::id(),
         ]);
     }
 
     /**
-     * 특정 확장의 최근 버전 목록 조회 (최신순)
+     * 특정 확장의 모든 버전 조회 (최신순)
      *
      * @param  int  $extensionId  레이아웃 확장 ID
-     * @param  int  $limit  조회할 최대 버전 수 (버전 행은 정리되지 않고 쌓이므로 상한 필수)
      * @return Collection 버전 컬렉션
      */
-    public function getVersions(int $extensionId, int $limit = 100): Collection
+    public function getVersions(int $extensionId): Collection
     {
         // creator eager load — 버전 목록에 저장자 이름(created_by_name) 노출용 (N+1 회피,
         // 레이아웃 본체 getVersionsByLayoutId 와 동일 정책).
-        //
-        // 버전 행은 저장할 때마다 쌓이고 정리되지 않으므로 조회 건수에 상한을 둔다. 목록이 쓰지
-        // 않는 `content`(버전마다 확장 본문 사본)도 조회하지 않는다 — 본문은 버전 비교 diff
-        // 전용이며 단건 조회가 공급한다. (레이아웃 본체와 동일 정책)
         return $this->model
             ->with('creator:id,name')
             ->where('extension_id', $extensionId)
             ->orderBy('version', 'desc')
-            ->limit($limit)
-            ->get(['id', 'extension_id', 'version', 'changes_summary', 'created_by', 'created_at']);
-    }
-
-    /**
-     * 확장의 특정 버전 번호 조회 (본문 포함)
-     *
-     * 목록(getVersions)에서 뺀 `content` 의 대체 경로다. 목록 조회를 재사용하면 두 가지가
-     * 동시에 깨진다 — ① 목록이 조회하지 않는 `content` 가 빈 값이 되어 버전 비교 diff 가
-     * "전 항목 삭제"로 표시되고 ② 목록 상한(기본 100건) 밖의 오래된 버전이 404 가 된다.
-     * (레이아웃 본체 LayoutRepository::findVersionByNumber 와 동일 정책)
-     *
-     * @param  int  $extensionId  레이아웃 확장 ID
-     * @param  int  $version  버전 번호
-     * @return TemplateLayoutExtensionVersion|null 찾은 버전 모델 또는 null
-     */
-    public function findVersionByNumber(int $extensionId, int $version): ?TemplateLayoutExtensionVersion
-    {
-        // creator eager load — 단건 버전 조회도 저장자 이름을 목록과 일관 노출.
-        return $this->model
-            ->newQuery()
-            ->with('creator:id,name')
-            ->where('extension_id', $extensionId)
-            ->where('version', $version)
-            ->first();
+            ->get();
     }
 
     /**
@@ -169,10 +136,9 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
             $extension = LayoutExtension::findOrFail($extensionId);
             $currentContent = $extension->content;
 
-            // 3. 확장을 복원할 content로 업데이트 — lock_version 도 올린다(레이아웃 본체와 동형).
+            // 3. 확장을 복원할 content로 업데이트
             $extension->update([
                 'content' => $versionToRestore->content,
-                'lock_version' => ((int) ($extension->lock_version ?? 0)) + 1,
             ]);
 
             // 4. 복원 결과를 새 버전으로 저장 — content 는 복원된 내용, changes_summary 는 복원

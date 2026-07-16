@@ -31,8 +31,6 @@ import {
   type EditorAccessError,
 } from '../types/editorErrors';
 import { reseedPendingIntoEngine } from './pendingCustomTranslations';
-import { suffixed } from '../../../support/assetUrl';
-import { isAllowedScriptSrc, getTrustedScriptHosts } from '../../../support/scriptSrcPolicy';
 
 export interface EditorTemplateAssetsState {
   componentRegistry: ComponentRegistry | null;
@@ -100,7 +98,7 @@ async function fetchLatestCacheVersion(identifier: string): Promise<number> {
   try {
     if (typeof fetch !== 'function') return 0;
     const res = await fetch(
-      suffixed(`/api/templates/${encodeURIComponent(identifier)}/config`, 'json'),
+      `/api/templates/${encodeURIComponent(identifier)}/config.json`,
       { credentials: 'same-origin', headers: { Accept: 'application/json' } },
     );
     if (!res.ok) return 0;
@@ -120,17 +118,6 @@ function injectScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (typeof document === 'undefined') {
       reject(new Error('document undefined'));
-      return;
-    }
-    // 출처 게이트 — 이 src 는 서버 응답(editor-assets manifest)이 지시하는 값이고,
-    // 붙는 자리는 관리자 document 다. 확장 자산 재로드(reloadModuleHandlers)·프리뷰 캔버스와
-    // 같은 판정을 받는다. 정상 템플릿 자산 URL 은 전부 `/api/...` same-origin 이다.
-    if (!isAllowedScriptSrc(src, getTrustedScriptHosts())) {
-      reject(
-        new Error(
-          `Blocked untrusted script src (same-origin path or declared trusted host required): ${src}`,
-        ),
-      );
       return;
     }
     const existing = document.querySelector(`script[data-g7le-asset="${src}"]`);

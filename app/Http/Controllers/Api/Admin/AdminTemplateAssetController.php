@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Helpers\EditorSpecAssembler;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use App\Services\ExtensionStaticCacheService;
 use App\Services\PermissionService;
 use App\Services\TemplateService;
-use App\Support\AssetUrl;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -88,22 +87,18 @@ class AdminTemplateAssetController extends AdminBaseController
             );
         }
 
-        // 확장 캐시 버전은 트레이트 게터로만 읽는다 — 원시 키 읽기는 `cache:clear` 직후 0 을
-        // 돌려주어 버전 없는 URL 을 만들고, 컨테이너 바인딩은 확장 네임스페이스로 누수될 수 있다.
-        // 게터는 키 부재 시 재생성하므로 항상 유효 버전이다 (`AssetUrl::staticExtBase` 와 동형).
-        $version = ExtensionStaticCacheService::getExtensionCacheVersion();
+        $extensionCacheVersion = (int) app(CacheInterface::class)->get('ext.cache_version', 0);
+        $version = $extensionCacheVersion > 0 ? "?v={$extensionCacheVersion}" : '';
 
         return $this->success(
             __('templates.messages.editor_assets_retrieved'),
             [
                 'identifier' => $identifier,
-                'js' => [AssetUrl::templateAsset($identifier, 'js/components.iife.js', $version)],
+                'js' => ["/api/templates/assets/{$identifier}/js/components.iife.js{$version}"],
                 // CSS 는 편집기 전용 엔드포인트로 — 다크 셀렉터를 프리뷰 마커로 치환해 서빙
                 // 일반 자산 서빙은 원본.
-                // URI 가 `components` 가 아니라 `component-styles` 인 이유: 확장자를 떼면
-                // `editor/components.json` 의 확장자 없는 형태와 충돌한다.
                 'css' => $cssAvailable
-                    ? [AssetUrl::suffixed("/api/admin/templates/{$identifier}/editor/component-styles", 'css', $version)]
+                    ? ["/api/admin/templates/{$identifier}/editor/components.css{$version}"]
                     : [],
                 'manifest_present' => true,
                 'manifest_source' => $jsSource,
@@ -230,7 +225,7 @@ class AdminTemplateAssetController extends AdminBaseController
         // 바인딩은 확장 컨텍스트로 누수될 수 있어(메모리 feedback_core_cache_no_container_binding)
         // 코어 캐시 store 를 빗나갈 수 있다.
         $cache = new CoreCacheDriver;
-        $cacheVersion = ExtensionStaticCacheService::getExtensionCacheVersion();
+        $cacheVersion = (int) $cache->get('ext.cache_version', 0);
         // 캐시 키 — 템플릿 + 확장 캐시 버전 + 파일 mtime(빌드 변경 즉시 무효화).
         $mtime = (int) @filemtime($cssPath);
         $cacheKey = "template.editor_css.{$identifier}.v{$cacheVersion}.m{$mtime}";

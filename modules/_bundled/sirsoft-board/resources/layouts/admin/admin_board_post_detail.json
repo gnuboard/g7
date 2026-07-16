@@ -120,8 +120,7 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/board/{{route.slug}}/post/{{route?.id}}",
-                                            "mergeQuery": true,
-                                            "query": {}
+                                            "mergeQuery": false
                                         }
                                     }
                                 ],
@@ -148,9 +147,7 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/board/{{route.slug}}",
-                                            "mergeQuery": true,
-                                            "query": {}
+                                            "path": "/admin/board/{{route.slug}}"
                                         }
                                     }
                                 ],
@@ -380,12 +377,10 @@
                                                     "if": "{{_global.modal_data?.type === 'comment'}}"
                                                 },
                                                 {
-                                                    "comment": "삭제 후 복귀 — 게시글이면 목록으로, 답변이면 원글 상세로 돌아간다. 어느 쪽이든 목록 클러스터 안이므로 목록 상태를 유지한다. 종전에는 mergeQuery 가 분기 표현식이라 답변 삭제 경로에서만 페이지/검색이 조용히 사라졌다 (#75).",
                                                     "handler": "navigate",
                                                     "params": {
                                                         "path": "{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}",
-                                                        "mergeQuery": true,
-                                                        "query": {}
+                                                        "mergeQuery": "{{_global.modal_data?.type === 'post'}}"
                                                     },
                                                     "if": "{{_global.modal_data?.type !== 'comment'}}"
                                                 },

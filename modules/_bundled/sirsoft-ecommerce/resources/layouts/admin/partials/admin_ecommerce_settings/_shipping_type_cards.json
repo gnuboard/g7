@@ -10,7 +10,7 @@
   },
   "children": [
     {
-      "id": "shipping_type_card_{{tIdx}}",
+      "id": "shipping_type_card",
       "type": "basic",
       "name": "Div",
       "iteration": {
@@ -63,7 +63,7 @@
               },
               "children": [
                 {
-                  "type": "composite",
+                  "type": "basic",
                   "name": "Toggle",
                   "props": {
                     "checked": "{{type.is_active ?? false}}",

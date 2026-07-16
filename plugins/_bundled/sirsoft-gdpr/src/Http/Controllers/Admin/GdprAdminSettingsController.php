@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\Gdpr\Http\Requests\UpdateAdminSettingsRequest;
-use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Services\GdprSettingsService;
 
 /**
@@ -31,8 +30,8 @@ class GdprAdminSettingsController extends AdminBaseController
     /**
      * GdprAdminSettingsController 생성자
      *
-     * @param  PluginSettingsService  $pluginSettings  플러그인 설정 서비스 (코어 — 조회용)
-     * @param  GdprSettingsService  $settingsService  GDPR 설정 저장 서비스
+     * @param PluginSettingsService $pluginSettings 플러그인 설정 서비스 (코어 — 조회용)
+     * @param GdprSettingsService $settingsService GDPR 설정 저장 서비스
      */
     public function __construct(
         private readonly PluginSettingsService $pluginSettings,
@@ -44,10 +43,6 @@ class GdprAdminSettingsController extends AdminBaseController
     /**
      * 현재 GDPR 플러그인 설정 전체를 반환합니다 (관리자 화면 폼 바인딩용).
      *
-     * 출하 기본 카탈로그 두 벌을 함께 싣습니다. 관리자 화면의 TagInput 이 이 값을 자동완성
-     * 추천으로 쓰는데, 응답에 없으면 드롭다운에 **이미 선택된 칩만** 다시 나타나 추천이
-     * 동작하는 것처럼 보인다 — 오류도 빈 목록도 남지 않아 증상만으로는 알 수 없다.
-     *
      * @return JsonResponse
      */
     public function show(): JsonResponse
@@ -56,10 +51,8 @@ class GdprAdminSettingsController extends AdminBaseController
 
         $settings = $this->normalizeJsonFields(is_array($settings) ? $settings : []);
 
-        return ResponseHelper::success('common.success', [
+        return ResponseHelper::success('messages.success', [
             'settings' => $settings,
-            'default_blocked_domains_preview' => Plugin::DEFAULT_BLOCKED_DOMAINS_CATALOG,
-            'default_necessary_allowlist_preview' => Plugin::DEFAULT_NECESSARY_ALLOWLIST_CATALOG,
         ]);
     }
 
@@ -69,12 +62,17 @@ class GdprAdminSettingsController extends AdminBaseController
      * 정책 버전은 자동 발행되지 않습니다. 운영자가 별도로
      * 「+ 새 버전 발행」 을 클릭해야 발행됩니다.
      *
-     * @param  UpdateAdminSettingsRequest  $request  검증된 요청
+     * @param UpdateAdminSettingsRequest $request 검증된 요청
      * @return JsonResponse
      */
     public function update(UpdateAdminSettingsRequest $request): JsonResponse
     {
         $validated = $request->validated();
+
+        // 동적 스키마 fallback (validation.md "동적 스키마 기반 FormRequest 패턴")
+        if (empty($validated)) {
+            $validated = $request->all();
+        }
 
         // 옛 자동 발행 흐름의 change_memo 필드는 더 이상 사용하지 않음 — 정책 버전 발행은 별도 엔드포인트로 일원화
         unset($validated['change_memo']);
@@ -89,7 +87,7 @@ class GdprAdminSettingsController extends AdminBaseController
     /**
      * 응답에서 JSON 필드는 디코드하여 객체/배열로 노출합니다.
      *
-     * @param  array<string, mixed>  $settings  설정 배열
+     * @param array<string, mixed> $settings 설정 배열
      * @return array<string, mixed>
      */
     private function normalizeJsonFields(array $settings): array

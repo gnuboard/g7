@@ -170,9 +170,7 @@
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/ecommerce/promotion-coupons",
-                                                            "mergeQuery": true,
-                                                            "query": {}
+                                                            "path": "/admin/ecommerce/promotion-coupons"
                                                         }
                                                     }
                                                 ]
@@ -232,9 +230,7 @@
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/ecommerce/promotion-coupons",
-                                                            "mergeQuery": true,
-                                                            "query": {}
+                                                            "path": "/admin/ecommerce/promotion-coupons"
                                                         }
                                                     }
                                                 ]
@@ -304,9 +300,7 @@
                                                                         {
                                                                             "handler": "navigate",
                                                                             "params": {
-                                                                                "path": "/admin/ecommerce/promotion-coupons",
-                                                                                "mergeQuery": true,
-                                                                                "query": {}
+                                                                                "path": "/admin/ecommerce/promotion-coupons"
                                                                             }
                                                                         }
                                                                     ],

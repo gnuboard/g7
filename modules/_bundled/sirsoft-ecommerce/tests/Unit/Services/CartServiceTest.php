@@ -90,12 +90,6 @@ class CartServiceTest extends ModuleTestCase
             ->andReturn(0)
             ->byDefault();
 
-        // 병합 경로는 상품별 합계를 시작 시점에 한 번만 읽는다 (항목마다 조회하지 않는다).
-        $this->mockCartRepository
-            ->shouldReceive('sumQuantityByProducts')
-            ->andReturn([])
-            ->byDefault();
-
         $this->mockProductRepository
             ->shouldReceive('find')
             ->andReturnUsing(fn ($id) => Product::find($id))
@@ -735,18 +729,17 @@ class CartServiceTest extends ModuleTestCase
             ->once()
             ->andReturn($guestItems);
 
-        // 병합은 항목마다 조회하지 않고 루프 밖에서 한 번에 읽는다
-        // (옵션 상세 1회 + 회원 장바구니 라인 1회)
+        // Mock stock check in mergeGuestCartToUser
         $this->mockProductOptionRepository
-            ->shouldReceive('findByIds')
-            ->once()
-            ->andReturn(new Collection([$option]));
+            ->shouldReceive('findById')
+            ->with($option->id)
+            ->andReturn($option);
 
         $this->mockCartRepository
-            ->shouldReceive('findAllByUserAndOptions')
-            ->with($user->id, Mockery::any())
+            ->shouldReceive('findAllByUserAndOption')
+            ->with($user->id, $option->id)
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new Collection);
 
         $this->mockCartRepository
             ->shouldReceive('update')
@@ -784,18 +777,16 @@ class CartServiceTest extends ModuleTestCase
             ->andReturn($guestItems);
 
         // Mock stock check in mergeGuestCartToUser
-        // 병합은 항목마다 조회하지 않고 루프 밖에서 한 번에 읽는다
-        // (옵션 상세 1회 + 회원 장바구니 라인 1회)
         $this->mockProductOptionRepository
-            ->shouldReceive('findByIds')
-            ->once()
-            ->andReturn(new Collection([$option]));
+            ->shouldReceive('findById')
+            ->with($option->id)
+            ->andReturn($option);
 
         $this->mockCartRepository
-            ->shouldReceive('findAllByUserAndOptions')
-            ->with($user->id, Mockery::any())
+            ->shouldReceive('findAllByUserAndOption')
+            ->with($user->id, $option->id)
             ->once()
-            ->andReturn(collect([$option->id => new Collection([$userCart])]));
+            ->andReturn(new Collection([$userCart]));
 
         $combinedCart = clone $userCart;
         $combinedCart->quantity = 5;
@@ -1171,19 +1162,22 @@ class CartServiceTest extends ModuleTestCase
             ->once()
             ->andReturn($guestItems);
 
-        // 병합은 항목마다 조회하지 않고 루프 밖에서 한 번에 읽는다
-        // (옵션 상세 1회 + 회원 장바구니 라인 1회)
+        // Mock stock check in mergeGuestCartToUser
         $this->mockProductOptionRepository
-            ->shouldReceive('findByIds')
-            ->once()
-            ->andReturn(new Collection([$optionA, $optionB]));
+            ->shouldReceive('findById')
+            ->with($optionA->id)
+            ->andReturn($optionA);
+        $this->mockProductOptionRepository
+            ->shouldReceive('findById')
+            ->with($optionB->id)
+            ->andReturn($optionB);
 
-        // 옵션A 는 회원 장바구니에 존재(합산), 옵션B 는 없음(user_id 이관)
+        // 옵션A: 회원 장바구니에 존재 → 합산
         $this->mockCartRepository
-            ->shouldReceive('findAllByUserAndOptions')
-            ->with($user->id, Mockery::any())
+            ->shouldReceive('findAllByUserAndOption')
+            ->with($user->id, $optionA->id)
             ->once()
-            ->andReturn(collect([$optionA->id => new Collection([$userCartA])]));
+            ->andReturn(new Collection([$userCartA]));
 
         $mergedCartA = clone $userCartA;
         $mergedCartA->quantity = 5;
@@ -1200,6 +1194,13 @@ class CartServiceTest extends ModuleTestCase
             ->shouldReceive('delete')
             ->with($guestCartA)
             ->once();
+
+        // 옵션B: 회원 장바구니에 없음 → user_id 업데이트
+        $this->mockCartRepository
+            ->shouldReceive('findAllByUserAndOption')
+            ->with($user->id, $optionB->id)
+            ->once()
+            ->andReturn(new Collection);
 
         $updatedGuestCartB = clone $guestCartB;
         $updatedGuestCartB->user_id = $user->id;
@@ -1597,19 +1598,18 @@ class CartServiceTest extends ModuleTestCase
             ->once()
             ->andReturn(new Collection([$guestCart]));
 
-        // 병합은 항목마다 조회하지 않고 루프 밖에서 한 번에 읽는다
-        // (옵션 상세 1회 + 회원 장바구니 라인 1회)
+        // Mock stock check in mergeGuestCartToUser - 재고 5개 반환
         $this->mockProductOptionRepository
-            ->shouldReceive('findByIds')
-            ->once()
-            ->andReturn(new Collection([$option]));
+            ->shouldReceive('findById')
+            ->with($option->id)
+            ->andReturn($option);
 
         // 회원 장바구니에 같은 옵션 있음
         $this->mockCartRepository
-            ->shouldReceive('findAllByUserAndOptions')
-            ->with($user->id, Mockery::any())
+            ->shouldReceive('findAllByUserAndOption')
+            ->with($user->id, $option->id)
             ->once()
-            ->andReturn(collect([$option->id => new Collection([$userCart])]));
+            ->andReturn(new Collection([$userCart]));
 
         // 기대: 수량을 재고(5개)로 조정하여 업데이트
         $updatedUserCart = clone $userCart;

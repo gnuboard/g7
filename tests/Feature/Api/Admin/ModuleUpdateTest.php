@@ -3,13 +3,11 @@
 namespace Tests\Feature\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
-use App\Enums\PermissionType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\ModuleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Mockery;
 use Tests\TestCase;
@@ -54,7 +52,7 @@ class ModuleUpdateTest extends TestCase
                     'description' => json_encode(['ko' => $permIdentifier.' 권한', 'en' => $permIdentifier.' Permission']),
                     'extension_type' => ExtensionOwnerType::Core,
                     'extension_identifier' => 'core',
-                    'type' => PermissionType::Admin,
+                    'type' => \App\Enums\PermissionType::Admin,
                 ]
             );
             $permissionIds[] = $permission->id;
@@ -231,7 +229,7 @@ class ModuleUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(ModuleService::class);
         $mockService->shouldReceive('updateModule')
-            ->with('test-module', Mockery::any(), 'overwrite', false)
+            ->with('test-module', Mockery::any(), 'overwrite')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -290,7 +288,7 @@ class ModuleUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(ModuleService::class);
         $mockService->shouldReceive('updateModule')
-            ->with('test-module', Mockery::any(), 'overwrite', false)
+            ->with('test-module', Mockery::any(), 'overwrite')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -334,7 +332,7 @@ class ModuleUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(ModuleService::class);
         $mockService->shouldReceive('updateModule')
-            ->with('nonexistent-module', Mockery::any(), 'overwrite', false)
+            ->with('nonexistent-module', Mockery::any(), 'overwrite')
             ->once()
             ->andThrow(
                 ValidationException::withMessages([
@@ -355,7 +353,7 @@ class ModuleUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(ModuleService::class);
         $mockService->shouldReceive('updateModule')
-            ->with('test-module', Mockery::any(), 'overwrite', false)
+            ->with('test-module', Mockery::any(), 'overwrite')
             ->once()
             ->andThrow(new \RuntimeException('Unexpected error'));
         $this->app->instance(ModuleService::class, $mockService);
@@ -391,7 +389,7 @@ class ModuleUpdateTest extends TestCase
     public function test_check_updates_route_name_exists(): void
     {
         $this->assertTrue(
-            Route::has('api.admin.modules.check-updates'),
+            \Illuminate\Support\Facades\Route::has('api.admin.modules.check-updates'),
             'Route api.admin.modules.check-updates should exist'
         );
     }
@@ -402,7 +400,7 @@ class ModuleUpdateTest extends TestCase
     public function test_update_route_name_exists(): void
     {
         $this->assertTrue(
-            Route::has('api.admin.modules.update'),
+            \Illuminate\Support\Facades\Route::has('api.admin.modules.update'),
             'Route api.admin.modules.update should exist'
         );
     }
@@ -418,7 +416,7 @@ class ModuleUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(ModuleService::class);
         $mockService->shouldReceive('updateModule')
-            ->with('test-module', Mockery::any(), 'keep', false)
+            ->with('test-module', Mockery::any(), 'keep')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -457,11 +455,6 @@ class ModuleUpdateTest extends TestCase
     public function test_check_modified_layouts_returns_result_from_service(): void
     {
         $mockService = Mockery::mock(ModuleService::class);
-        // 컨트롤러가 미존재 식별자를 404 로 구분하려 존재 확인을 먼저 한다 (#495).
-        // 이 스텁이 없으면 mock 이 BadMethodCallException 을 던져 500 이 된다.
-        $mockService->shouldReceive('getModuleInfo')
-            ->with('test-module')
-            ->andReturn(['identifier' => 'test-module', 'version' => '1.0.0']);
         $mockService->shouldReceive('checkModifiedLayouts')
             ->with('test-module')
             ->once()
@@ -499,7 +492,7 @@ class ModuleUpdateTest extends TestCase
     public function test_check_modified_layouts_route_name_exists(): void
     {
         $this->assertTrue(
-            Route::has('api.admin.modules.check-modified-layouts'),
+            \Illuminate\Support\Facades\Route::has('api.admin.modules.check-modified-layouts'),
             'Route api.admin.modules.check-modified-layouts should exist'
         );
     }

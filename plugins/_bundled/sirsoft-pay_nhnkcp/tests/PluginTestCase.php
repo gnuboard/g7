@@ -33,23 +33,15 @@ abstract class PluginTestCase extends TestCase
 
     protected function migrateFreshUsing(): array
     {
-        // 모든 번들 확장 migrations 포함 — 여러 확장 스위트를 한 프로세스에서 함께 돌릴 때
-        // 가장 먼저 실행된 TestCase 가 스키마를 확정하므로, 자기 확장만 넘기면 뒤따르는
-        // 확장의 테이블이 생성되지 않는다 (troubleshooting-backend.md 사례 21).
-        $paths = ['database/migrations'];
-        foreach (glob(base_path('modules/_bundled/*/database/migrations'), GLOB_ONLYDIR) as $p) {
-            $paths[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $p);
-        }
-        foreach (glob(base_path('plugins/_bundled/*/database/migrations'), GLOB_ONLYDIR) as $p) {
-            $paths[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $p);
-        }
-
         return [
             '--drop-views' => $this->shouldDropViews(),
             '--drop-types' => $this->shouldDropTypes(),
             '--seed' => $this->shouldSeed(),
             '--seeder' => $this->seeder(),
-            '--path' => $paths,
+            '--path' => [
+                'database/migrations',
+                'modules/sirsoft-ecommerce/database/migrations',
+            ],
         ];
     }
 
@@ -61,8 +53,6 @@ abstract class PluginTestCase extends TestCase
         $this->registerPluginAutoload();
 
         $this->app->register(EcommerceServiceProvider::class);
-        // _bundled 테스트가 _bundled 의 lang 을 보도록 네임스페이스 등록 (kginicis PluginTestCase 선례)
-        $this->app['translator']->addNamespace('sirsoft-pay_nhnkcp', dirname(__DIR__).'/lang');
 
         $this->registerModuleRoutes();
         $this->registerPluginRoutes();
@@ -126,12 +116,8 @@ abstract class PluginTestCase extends TestCase
             $relativeClass = substr($class, $len);
             $file = $moduleBasePath.str_replace('\\', '/', $relativeClass).'.php';
 
-            if (file_exists($file)
-                && ! class_exists($class, false) && ! interface_exists($class, false)
-                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
-                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
-                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
-                require_once $file;
+            if (file_exists($file)) {
+                require $file;
             }
         });
 
@@ -156,12 +142,8 @@ abstract class PluginTestCase extends TestCase
             $relativeClass = substr($class, $len);
             $file = $pluginBasePath.str_replace('\\', '/', $relativeClass).'.php';
 
-            if (file_exists($file)
-                && ! class_exists($class, false) && ! interface_exists($class, false)
-                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
-                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
-                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
-                require_once $file;
+            if (file_exists($file)) {
+                require $file;
             }
         });
     }

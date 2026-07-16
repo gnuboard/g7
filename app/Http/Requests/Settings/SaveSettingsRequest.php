@@ -4,11 +4,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
 use App\Models\Attachment;
-use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
-use App\Services\DriverRegistryService;
-use App\Support\AllowedExtensions;
-use App\Support\AssetUrl;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -32,9 +28,9 @@ class SaveSettingsRequest extends FormRequest
     private const SUPPORTED_STORAGE_DRIVERS = ['local', 's3'];
 
     /**
-     * S3 리전 형식 (AWS 리전 코드 + S3 호환 스토리지 임의값 허용 — R2 의 `auto` 등)
+     * 지원되는 S3 리전 목록
      */
-    private const S3_REGION_FORMAT = 'regex:/^[a-z0-9-]+$/';
+    private const SUPPORTED_S3_REGIONS = ['ap-northeast-2', 'ap-northeast-1', 'us-east-1', 'us-west-2', 'eu-west-1'];
 
     /**
      * 지원되는 캐시 드라이버 목록
@@ -55,6 +51,11 @@ class SaveSettingsRequest extends FormRequest
      * 지원되는 웹소켓 프로토콜 목록
      */
     private const SUPPORTED_WEBSOCKET_SCHEMES = ['http', 'https'];
+
+    /**
+     * 지원되는 검색엔진 드라이버 기본 목록
+     */
+    private const DEFAULT_SEARCH_ENGINE_DRIVERS = ['mysql-fulltext'];
 
     /**
      * 지원되는 로그 드라이버 목록
@@ -97,20 +98,6 @@ class SaveSettingsRequest extends FormRequest
             ]);
         }
 
-        // 사이트 기본 OG 이미지도 동일하게 첨부 객체 배열 → 정수 ID 배열로 정규화
-        $ogImageDefault = $this->input('seo.og_image_default');
-
-        if (is_array($ogImageDefault)) {
-            $this->merge([
-                'seo' => array_merge($this->input('seo', []), [
-                    'og_image_default' => array_map(
-                        fn ($item) => is_array($item) ? ($item['id'] ?? $item) : $item,
-                        $ogImageDefault
-                    ),
-                ]),
-            ]);
-        }
-
         // GeoIP 토글 필드: 신규 필드라 초기값이 settings에 없을 수 있음.
         // Toggle 컴포넌트가 undefined → true 전환 시 비표준 타입을 보낼 수 있으므로
         // boolean으로 명시 캐스팅하여 Laravel boolean 검증 호환 보장.
@@ -118,28 +105,6 @@ class SaveSettingsRequest extends FormRequest
             'advanced.geoip_enabled',
             'advanced.geoip_auto_update_enabled',
         ]);
-
-        $this->normalizeAllowedExtensions();
-    }
-
-    /**
-     * 허용 확장자를 저장 형태(소문자 확장자 배열)로 정규화합니다.
-     *
-     * 화면 입력 칸은 콤마로 구분한 한 줄 텍스트라 이 값은 문자열로 들어온다. 문자열 그대로
-     * 저장하면 업로드 제한을 적용하는 지점이 그 값을 쓰지 못해, 저장은 성공하는데 제한은
-     * 종전 목록으로 남는다. 형태 판정은 저장 경로 진입 전 이 한 곳에서만 수행한다.
-     */
-    private function normalizeAllowedExtensions(): void
-    {
-        $upload = $this->input('upload', []);
-
-        if (! is_array($upload) || ! array_key_exists('allowed_extensions', $upload)) {
-            return;
-        }
-
-        $upload['allowed_extensions'] = AllowedExtensions::normalize($upload['allowed_extensions']);
-
-        $this->merge(['upload' => $upload]);
     }
 
     /**
@@ -209,13 +174,6 @@ class SaveSettingsRequest extends FormRequest
             'general.language' => $this->getTabRules($tab, 'general', [Rule::in(config('app.supported_locales', ['ko', 'en']))]),
             'general.currency' => ['nullable', 'string', 'max:10'],
             'general.maintenance_mode' => ['nullable', 'boolean'],
-            // 자산 URL 방식 — 정적 최적화 서버 대응 (이슈 #486).
-            // 임의 문자열이 들어오면 AssetUrl::mode() 가 기본값으로 폴백하지만,
-            // 저장 단계에서 막아 설정 파일에 뜻 모를 값이 남지 않게 한다.
-            'general.asset_url_mode' => ['nullable', 'string', Rule::in([
-                AssetUrl::MODE_EXTENSION,
-                AssetUrl::MODE_EXTENSIONLESS,
-            ])],
             'general.site_logo' => ['nullable', 'array'],
             'general.site_logo.*' => ['integer', Rule::exists(Attachment::class, 'id')],
 
@@ -236,14 +194,11 @@ class SaveSettingsRequest extends FormRequest
             'mail.from_name' => $this->getTabRules($tab, 'mail', 'string|max:255'),
 
             // 업로드 설정
-            'upload.max_file_size' => $this->getTabRules($tab, 'upload', 'integer|min:'.config('core.settings_limits.upload_max_file_size_min', 1).'|max:'.config('core.settings_limits.upload_max_file_size_max', 1024)),
+            'upload.max_file_size' => $this->getTabRules($tab, 'upload', 'integer|min:1|max:1024'),
             'upload.allowed_extensions' => $this->getAllowedExtensionsRules($tab),
-            'upload.image_max_width' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_max_width_min', 100), 'max:'.config('core.settings_limits.upload_image_max_width_max', 10000)],
-            'upload.image_max_height' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_max_height_min', 100), 'max:'.config('core.settings_limits.upload_image_max_height_max', 10000)],
-            'upload.image_quality' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_quality_min', 1), 'max:'.config('core.settings_limits.upload_image_quality_max', 100)],
-            // 고아 첨부 정리 — 사용자 파일을 파기하므로 보존기간 하한을 서버가 강제한다.
-            'upload.orphan_cleanup_enabled' => ['nullable', 'boolean'],
-            'upload.orphan_retention_days' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_orphan_retention_days_min', 1), 'max:'.config('core.settings_limits.upload_orphan_retention_days_max', 3650)],
+            'upload.image_max_width' => ['nullable', 'integer', 'min:100', 'max:10000'],
+            'upload.image_max_height' => ['nullable', 'integer', 'min:100', 'max:10000'],
+            'upload.image_quality' => ['nullable', 'integer', 'min:1', 'max:100'],
 
             // SEO 설정
             'seo.meta_title_suffix' => ['nullable', 'string', 'max:100'],
@@ -257,22 +212,14 @@ class SaveSettingsRequest extends FormRequest
             'seo.bot_detection_enabled' => ['nullable', 'boolean'],
             'seo.bot_detection_library_enabled' => ['nullable', 'boolean'],
             'seo.og_default_site_name' => ['nullable', 'string', 'max:200'],
-            'seo.og_image_default' => ['nullable', 'array'],
-            'seo.og_image_default.*' => ['integer', Rule::exists(Attachment::class, 'id')],
-            'seo.og_image_default_width' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_og_image_default_width_min', 0), 'max:'.config('core.settings_limits.seo_og_image_default_width_max', 8000)],
-            'seo.og_image_default_height' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_og_image_default_height_min', 0), 'max:'.config('core.settings_limits.seo_og_image_default_height_max', 8000)],
+            'seo.og_image_default_width' => ['nullable', 'integer', 'min:0', 'max:8000'],
+            'seo.og_image_default_height' => ['nullable', 'integer', 'min:0', 'max:8000'],
             'seo.twitter_default_card' => ['nullable', 'string', Rule::in(['summary', 'summary_large_image', 'app', 'player', ''])],
             'seo.twitter_default_site' => ['nullable', 'string', 'max:50'],
             'seo.cache_enabled' => ['nullable', 'boolean'],
-            'seo.cache_ttl' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_cache_ttl_min', 60), 'max:'.config('core.settings_limits.seo_cache_ttl_max', 86400)],
+            'seo.cache_ttl' => ['nullable', 'integer', 'min:60', 'max:86400'],
             'seo.sitemap_enabled' => ['nullable', 'boolean'],
-            'seo.sitemap_cache_ttl' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_sitemap_cache_ttl_min', 3600), 'max:'.config('core.settings_limits.seo_sitemap_cache_ttl_max', 604800)],
-            // 분할 기준. 상한 50000 은 sitemaps.org 프로토콜 제한이며 SitemapWriter 가 동일 값으로 클램프합니다.
-            'seo.sitemap_urls_per_file' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_sitemap_urls_per_file_min', 1000), 'max:'.config('core.settings_limits.seo_sitemap_urls_per_file_max', 50000)],
-            'seo.sitemap_gzip' => ['nullable', 'boolean'],
-            'seo.sitemap_serve_stale_on_miss' => ['nullable', 'boolean'],
-            'seo.sitemap_max_urls_per_contributor' => ['nullable', 'integer', 'min:0'],
-            'seo.sitemap_hreflang_enabled' => ['nullable', 'boolean'],
+            'seo.sitemap_cache_ttl' => ['nullable', 'integer', 'min:3600', 'max:604800'],
             'seo.sitemap_schedule' => ['nullable', 'string', Rule::in(['hourly', 'daily', 'weekly'])],
             'seo.sitemap_schedule_time' => ['nullable', 'string', 'regex:/^\d{2}:\d{2}$/'],
             'seo.generator_enabled' => ['nullable', 'boolean'],
@@ -282,18 +229,8 @@ class SaveSettingsRequest extends FormRequest
             'security.force_https' => $this->getTabRules($tab, 'security', 'boolean'),
             'security.login_attempt_enabled' => $this->getTabRules($tab, 'security', 'boolean'),
             'security.auth_token_lifetime' => $this->getSecurityTabAuthTokenRules($tab),
-            'security.max_login_attempts' => ['nullable', 'integer', 'min:'.config('core.settings_limits.security_max_login_attempts_min', 0), 'max:'.config('core.settings_limits.security_max_login_attempts_max', 100)],
-            'security.login_lockout_time' => ['nullable', 'integer', 'min:'.config('core.settings_limits.security_login_lockout_time_min', 0), 'max:'.config('core.settings_limits.security_login_lockout_time_max', 1440)],
-            // 비밀번호 정책 — 저장 규칙이 없어 whitelist 에서 탈락하던 고아 설정을 배선.
-            // 경계값은 config('core.settings_limits') 가 SSoT — 설정 화면도 같은 값을 받아 쓴다.
-            'security.password_min_length' => [
-                'nullable',
-                'integer',
-                'min:'.config('core.settings_limits.security_password_min_length_min', 6),
-                'max:'.config('core.settings_limits.security_password_min_length_max', 64),
-            ],
-            'security.require_password_special_char' => ['nullable', 'boolean'],
-            'security.two_factor_auth' => ['nullable', 'boolean'],
+            'security.max_login_attempts' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'security.login_lockout_time' => ['nullable', 'integer', 'min:0', 'max:1440'],
             // 신규 설정이므로 미전송(기존 클라이언트)을 허용한다 — 미전송 시 기본값 false 유지
             'security.allow_internal_outbound_urls' => ['nullable', 'boolean'],
 
@@ -305,20 +242,10 @@ class SaveSettingsRequest extends FormRequest
             'advanced.stats_cache_ttl' => $this->getAdvancedTabCacheTtlRules($tab),
             'advanced.seo_cache_enabled' => $this->getTabRules($tab, 'advanced', 'boolean'),
             'advanced.seo_cache_ttl' => $this->getAdvancedTabCacheTtlRules($tab),
-            // 신규 설정이므로 미전송(기존 클라이언트)을 허용한다 — 미전송/미지정 시 코드 기본값 유지.
-            // 범위는 SEO 탭의 오버라이드 칸(seo.sitemap_cache_ttl)과 동일하게 맞춘다.
-            'advanced.seo_sitemap_cache_ttl' => ['nullable', 'integer', 'min:'.config('core.settings_limits.advanced_seo_sitemap_cache_ttl_min', 3600), 'max:'.config('core.settings_limits.advanced_seo_sitemap_cache_ttl_max', 604800)],
 
             // 디버그 설정 (advanced 탭)
             'advanced.debug_mode' => $this->getTabRules($tab, 'advanced', 'boolean'),
             'advanced.sql_query_log' => $this->getTabRules($tab, 'advanced', 'boolean'),
-
-            // 아웃바운드 HTTP 프록시 (advanced 탭)
-            // 디버그 모드 OFF 시 하위 필드는 collapse 되어 미전송됨 → nullable 필수
-            // (geoip 하위 필드와 같은 사유 — 조건부 렌더링 내부에 있다)
-            'advanced.outbound_proxy' => ['nullable', 'string', 'max:500', new ValidOutboundProxyUrl],
-            'advanced.outbound_proxy_bypass' => ['nullable', 'array'],
-            'advanced.outbound_proxy_bypass.*' => ['string', 'max:255'],
 
             // 코어 업데이트 설정 (advanced 탭)
             'advanced.core_update_github_url' => ['nullable', 'url', 'max:500'],
@@ -331,53 +258,44 @@ class SaveSettingsRequest extends FormRequest
             'advanced.geoip_license_key' => ['nullable', 'string', 'max:200', 'regex:/^[A-Za-z0-9_]+$/'],
             'advanced.geoip_auto_update_enabled' => ['nullable', 'boolean'],
 
-            // 목록 한계값 (advanced 탭) — 0 은 무제한
-            'advanced.pagination_result_cap' => ['nullable', 'integer', 'min:'.config('core.settings_limits.advanced_pagination_result_cap_min', 0), 'max:'.config('core.settings_limits.advanced_pagination_result_cap_max', 1000000)],
-            'advanced.pagination_max_page' => ['nullable', 'integer', 'min:'.config('core.settings_limits.advanced_pagination_max_page_min', 0), 'max:'.config('core.settings_limits.advanced_pagination_max_page_max', 100000)],
-
             // 드라이버 설정 (drivers 탭)
-            'drivers.storage_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_STORAGE_DRIVERS), $this->getDriverUsabilityRule('storage')]),
+            'drivers.storage_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_STORAGE_DRIVERS)]),
             'drivers.s3_bucket' => ['nullable', 'string', 'max:255'],
-            'drivers.s3_region' => ['nullable', 'string', 'max:64', self::S3_REGION_FORMAT],
+            'drivers.s3_region' => ['nullable', Rule::in(self::SUPPORTED_S3_REGIONS)],
             'drivers.s3_access_key' => ['nullable', 'string', 'max:255'],
             'drivers.s3_secret_key' => ['nullable', 'string', 'max:255'],
             'drivers.s3_url' => ['nullable', 'url', 'max:500'],
-            'drivers.s3_endpoint' => ['nullable', 'url', 'max:500'],
-            'drivers.s3_use_path_style' => ['nullable', 'boolean'],
-            'drivers.cache_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_CACHE_DRIVERS), $this->getDriverUsabilityRule('cache')]),
+            'drivers.cache_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_CACHE_DRIVERS)]),
             'drivers.redis_host' => ['nullable', 'string', 'max:255'],
-            'drivers.redis_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_redis_port_min', 1), 'max:'.config('core.settings_limits.drivers_redis_port_max', 65535)],
+            'drivers.redis_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'drivers.redis_password' => ['nullable', 'string', 'max:255'],
-            'drivers.redis_database' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_redis_database_min', 0), 'max:'.config('core.settings_limits.drivers_redis_database_max', 15)],
+            'drivers.redis_database' => ['nullable', 'integer', 'min:0', 'max:15'],
             'drivers.memcached_host' => ['nullable', 'string', 'max:255'],
-            'drivers.memcached_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_memcached_port_min', 1), 'max:'.config('core.settings_limits.drivers_memcached_port_max', 65535)],
-            'drivers.session_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')]),
-            'drivers.session_lifetime' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_session_lifetime_min', 1), 'max:'.config('core.settings_limits.drivers_session_lifetime_max', 43200)], // 1분 ~ 30일
-            'drivers.queue_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_QUEUE_DRIVERS), $this->getDriverUsabilityRule('queue')]),
+            'drivers.memcached_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'drivers.session_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_SESSION_DRIVERS)]),
+            'drivers.session_lifetime' => ['nullable', 'integer', 'min:1', 'max:43200'], // 1분 ~ 30일
+            'drivers.queue_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_QUEUE_DRIVERS)]),
             'drivers.websocket_enabled' => ['nullable', 'boolean'],
             'drivers.websocket_app_id' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_app_key' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_app_secret' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_host' => ['nullable', 'string', 'max:255'],
-            'drivers.websocket_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_websocket_port_min', 1), 'max:'.config('core.settings_limits.drivers_websocket_port_max', 65535)],
+            'drivers.websocket_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'drivers.websocket_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
             'drivers.websocket_verify_ssl' => ['nullable', 'boolean'],
             'drivers.websocket_server_host' => ['nullable', 'string', 'max:255'],
-            'drivers.websocket_server_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_websocket_server_port_min', 1), 'max:'.config('core.settings_limits.drivers_websocket_server_port_max', 65535)],
+            'drivers.websocket_server_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'drivers.websocket_server_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
             'drivers.search_engine_driver' => ['nullable', Rule::in($this->getSupportedSearchEngineDrivers())],
             'drivers.log_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_DRIVERS)]),
             'drivers.log_level' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_LEVELS)]),
-            'drivers.log_days' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_log_days_min', 1), 'max:'.config('core.settings_limits.drivers_log_days_max', 365)],
-            // 공개 자산 디스크 — 코어 3종(none/public/s3) + 플러그인 훅 등록 디스크.
-            // 카탈로그가 동적(플러그인 훅)이라 정적 Rule::in 불가 → 레지스트리 조회 closure
-            'drivers.public_asset_disk' => $this->getPublicAssetDiskRules(),
+            'drivers.log_days' => ['nullable', 'integer', 'min:1', 'max:365'],
 
             // 본인인증(IDV) provider 기술 파라미터 — 정책 분기는 IdentityPolicy 로 흡수됨
             'identity.default_provider' => ['nullable', 'string', 'max:100'],
             'identity.purpose_providers' => ['sometimes', 'array'],
-            'identity.challenge_ttl_minutes' => $this->getTabRules($tab, 'identity', 'integer|min:'.config('core.settings_limits.identity_challenge_ttl_minutes_min', 1).'|max:'.config('core.settings_limits.identity_challenge_ttl_minutes_max', 1440)),
-            'identity.max_attempts' => $this->getTabRules($tab, 'identity', 'integer|min:'.config('core.settings_limits.identity_max_attempts_min', 1).'|max:'.config('core.settings_limits.identity_max_attempts_max', 20)),
+            'identity.challenge_ttl_minutes' => $this->getTabRules($tab, 'identity', 'integer|min:1|max:1440'),
+            'identity.max_attempts' => $this->getTabRules($tab, 'identity', 'integer|min:1|max:20'),
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -439,8 +357,8 @@ class SaveSettingsRequest extends FormRequest
         return [
             'nullable',
             'integer',
-            'min:'.config('core.settings_limits.security_auth_token_lifetime_min', 0),
-            'max:'.config('core.settings_limits.security_auth_token_lifetime_max', 3600),
+            'min:0',
+            'max:3600',
             function ($attribute, $value, $fail) {
                 // 0은 무한대를 의미하므로 허용, 그 외에는 30 이상이어야 함
                 if ($value !== null && $value !== 0 && $value < 30) {
@@ -501,63 +419,9 @@ class SaveSettingsRequest extends FormRequest
 
         return array_merge($baseRules, [
             'integer',
-            'min:'.config('core.settings_limits.advanced_cache_ttl_min', 0),
-            'max:'.config('core.settings_limits.advanced_cache_ttl_max', 14400),
+            'min:0',
+            'max:14400',
         ]);
-    }
-
-    /**
-     * 드라이버 가용성 검증 rule 을 반환합니다.
-     *
-     * 선택된 드라이버가 현재 서버에서 실제로 동작 가능한지(어댑터 클래스·PHP 확장 존재)를
-     * 저장 시점에 검사합니다. 사용 불능 드라이버가 저장되면 사이트 전면 다운으로 이어질 수
-     * 있으므로(예: phpredis 확장 없는 서버의 redis) 서버 게이트로 차단합니다.
-     *
-     * @param  string  $category  드라이버 카테고리 (storage, cache, session, queue)
-     * @return \Closure 검증 클로저
-     */
-    private function getDriverUsabilityRule(string $category): \Closure
-    {
-        return function ($attribute, $value, $fail) use ($category) {
-            if (empty($value)) {
-                return;
-            }
-
-            $registry = app(DriverRegistryService::class);
-
-            if (! $registry->isDriverUsable($category, $value)) {
-                $fail(__('validation.settings.driver_unusable', [
-                    'driver' => $value,
-                    'reason' => $registry->usabilityFailureReason($category, $value),
-                ]));
-            }
-        };
-    }
-
-    /**
-     * 공개 자산 디스크에 대한 검증 규칙을 반환합니다.
-     *
-     * 선택지가 코어 3종 + 플러그인 훅 등록 디스크로 동적이라 정적 Rule::in 을 쓸 수 없고,
-     * DriverRegistryService 카탈로그 조회로 판정합니다.
-     *
-     * @return array 검증 규칙 배열
-     */
-    private function getPublicAssetDiskRules(): array
-    {
-        return [
-            'nullable',
-            'string',
-            'max:100',
-            function ($attribute, $value, $fail) {
-                if ($value === null || $value === '') {
-                    return;
-                }
-
-                if (! app(DriverRegistryService::class)->isDriverAvailable('public_asset', $value)) {
-                    $fail(__('validation.settings.public_asset_disk_invalid'));
-                }
-            },
-        ];
     }
 
     /**
@@ -705,10 +569,6 @@ class SaveSettingsRequest extends FormRequest
             'upload.image_quality.integer' => __('validation.settings.image_quality_integer'),
             'upload.image_quality.min' => __('validation.settings.image_quality_min'),
             'upload.image_quality.max' => __('validation.settings.image_quality_max'),
-            'upload.orphan_cleanup_enabled.boolean' => __('validation.settings.orphan_cleanup_enabled_boolean'),
-            'upload.orphan_retention_days.integer' => __('validation.settings.orphan_retention_days_integer'),
-            'upload.orphan_retention_days.min' => __('validation.settings.orphan_retention_days_min'),
-            'upload.orphan_retention_days.max' => __('validation.settings.orphan_retention_days_max'),
 
             // SEO 설정
             'seo.meta_title_suffix.max' => __('validation.settings.meta_title_suffix_max'),
@@ -745,14 +605,6 @@ class SaveSettingsRequest extends FormRequest
             'seo.sitemap_cache_ttl.integer' => __('validation.settings.sitemap_cache_ttl_integer'),
             'seo.sitemap_cache_ttl.min' => __('validation.settings.sitemap_cache_ttl_min'),
             'seo.sitemap_cache_ttl.max' => __('validation.settings.sitemap_cache_ttl_max'),
-            'seo.sitemap_urls_per_file.integer' => __('validation.settings.sitemap_urls_per_file_integer'),
-            'seo.sitemap_urls_per_file.min' => __('validation.settings.sitemap_urls_per_file_min'),
-            'seo.sitemap_urls_per_file.max' => __('validation.settings.sitemap_urls_per_file_max'),
-            'seo.sitemap_gzip.boolean' => __('validation.settings.sitemap_gzip_boolean'),
-            'seo.sitemap_serve_stale_on_miss.boolean' => __('validation.settings.sitemap_serve_stale_on_miss_boolean'),
-            'seo.sitemap_max_urls_per_contributor.integer' => __('validation.settings.sitemap_max_urls_per_contributor_integer'),
-            'seo.sitemap_max_urls_per_contributor.min' => __('validation.settings.sitemap_max_urls_per_contributor_min'),
-            'seo.sitemap_hreflang_enabled.boolean' => __('validation.settings.sitemap_hreflang_enabled_boolean'),
             'seo.sitemap_schedule.in' => __('validation.settings.sitemap_schedule_invalid'),
             'seo.sitemap_schedule_time.regex' => __('validation.settings.sitemap_schedule_time_invalid'),
 
@@ -787,36 +639,18 @@ class SaveSettingsRequest extends FormRequest
             'advanced.stats_cache_ttl.integer' => __('validation.settings.stats_cache_ttl_integer'),
             'advanced.stats_cache_ttl.min' => __('validation.settings.stats_cache_ttl_min'),
             'advanced.stats_cache_ttl.max' => __('validation.settings.stats_cache_ttl_max'),
-            'advanced.seo_cache_enabled.required' => __('validation.settings.advanced_seo_cache_enabled_required'),
-            'advanced.seo_cache_enabled.boolean' => __('validation.settings.advanced_seo_cache_enabled_boolean'),
-            'advanced.seo_cache_ttl.required' => __('validation.settings.advanced_seo_cache_ttl_required'),
-            'advanced.seo_cache_ttl.integer' => __('validation.settings.advanced_seo_cache_ttl_integer'),
-            'advanced.seo_cache_ttl.min' => __('validation.settings.advanced_seo_cache_ttl_min'),
-            'advanced.seo_cache_ttl.max' => __('validation.settings.advanced_seo_cache_ttl_max'),
-            'advanced.seo_sitemap_cache_ttl.integer' => __('validation.settings.seo_sitemap_cache_ttl_integer'),
-            'advanced.seo_sitemap_cache_ttl.min' => __('validation.settings.seo_sitemap_cache_ttl_min'),
-            'advanced.seo_sitemap_cache_ttl.max' => __('validation.settings.seo_sitemap_cache_ttl_max'),
+            'advanced.seo_cache_enabled.required' => __('validation.settings.seo_cache_enabled_required'),
+            'advanced.seo_cache_enabled.boolean' => __('validation.settings.seo_cache_enabled_boolean'),
+            'advanced.seo_cache_ttl.required' => __('validation.settings.seo_cache_ttl_required'),
+            'advanced.seo_cache_ttl.integer' => __('validation.settings.seo_cache_ttl_integer'),
+            'advanced.seo_cache_ttl.min' => __('validation.settings.seo_cache_ttl_min'),
+            'advanced.seo_cache_ttl.max' => __('validation.settings.seo_cache_ttl_max'),
 
             // 디버그 설정
             'advanced.debug_mode.required' => __('validation.settings.debug_mode_required'),
             'advanced.debug_mode.boolean' => __('validation.settings.debug_mode_boolean'),
             'advanced.sql_query_log.required' => __('validation.settings.sql_query_log_required'),
             'advanced.sql_query_log.boolean' => __('validation.settings.sql_query_log_boolean'),
-
-            // 아웃바운드 HTTP 프록시
-            'advanced.outbound_proxy.string' => __('validation.settings.outbound_proxy_string'),
-            'advanced.outbound_proxy.max' => __('validation.settings.outbound_proxy_max'),
-            'advanced.outbound_proxy_bypass.array' => __('validation.settings.outbound_proxy_bypass_array'),
-            'advanced.outbound_proxy_bypass.*.string' => __('validation.settings.outbound_proxy_bypass_item_string'),
-            'advanced.outbound_proxy_bypass.*.max' => __('validation.settings.outbound_proxy_bypass_item_max'),
-
-            // 목록 한계값
-            'advanced.pagination_result_cap.integer' => __('validation.settings.pagination_result_cap_integer'),
-            'advanced.pagination_result_cap.min' => __('validation.settings.pagination_result_cap_min'),
-            'advanced.pagination_result_cap.max' => __('validation.settings.pagination_result_cap_max'),
-            'advanced.pagination_max_page.integer' => __('validation.settings.pagination_max_page_integer'),
-            'advanced.pagination_max_page.min' => __('validation.settings.pagination_max_page_min'),
-            'advanced.pagination_max_page.max' => __('validation.settings.pagination_max_page_max'),
 
             // 코어 업데이트 설정
             'advanced.core_update_github_url.url' => __('validation.settings.core_update_github_url_invalid'),
@@ -827,15 +661,11 @@ class SaveSettingsRequest extends FormRequest
             'drivers.storage_driver.required' => __('validation.settings.storage_driver_required'),
             'drivers.storage_driver.in' => __('validation.settings.storage_driver_invalid'),
             'drivers.s3_bucket.max' => __('validation.settings.s3_bucket_max'),
-            'drivers.s3_region.regex' => __('validation.settings.s3_region_invalid'),
-            'drivers.s3_region.max' => __('validation.settings.s3_region_max'),
+            'drivers.s3_region.in' => __('validation.settings.s3_region_invalid'),
             'drivers.s3_access_key.max' => __('validation.settings.s3_access_key_max'),
             'drivers.s3_secret_key.max' => __('validation.settings.s3_secret_key_max'),
             'drivers.s3_url.url' => __('validation.settings.s3_url_invalid'),
             'drivers.s3_url.max' => __('validation.settings.s3_url_max'),
-            'drivers.s3_endpoint.url' => __('validation.settings.s3_endpoint_invalid'),
-            'drivers.s3_endpoint.max' => __('validation.settings.s3_endpoint_max'),
-            'drivers.s3_use_path_style.boolean' => __('validation.settings.s3_use_path_style_boolean'),
             'drivers.cache_driver.required' => __('validation.settings.cache_driver_required'),
             'drivers.cache_driver.in' => __('validation.settings.cache_driver_invalid'),
             'drivers.redis_host.max' => __('validation.settings.redis_host_max'),
@@ -883,8 +713,6 @@ class SaveSettingsRequest extends FormRequest
             'drivers.log_days.integer' => __('validation.settings.log_days_integer'),
             'drivers.log_days.min' => __('validation.settings.log_days_min'),
             'drivers.log_days.max' => __('validation.settings.log_days_max'),
-            'drivers.public_asset_disk.string' => __('validation.settings.public_asset_disk_invalid'),
-            'drivers.public_asset_disk.max' => __('validation.settings.public_asset_disk_invalid'),
 
             // 본인인증(IDV) 설정
             'identity.default_provider.string' => __('validation.settings.identity_default_provider_string'),
@@ -918,136 +746,12 @@ class SaveSettingsRequest extends FormRequest
             'general.site_description' => __('validation.attributes.site_description'),
             'general.admin_email' => __('validation.attributes.admin_email'),
             'general.timezone' => __('validation.attributes.timezone'),
-            'general.language' => __('validation.attributes.default_language'),
+            'general.language' => __('validation.attributes.language'),
             // 본인인증(IDV) 필드
             'identity.default_provider' => __('validation.attributes.identity_default_provider'),
             'identity.purpose_providers' => __('validation.attributes.identity_purpose_providers'),
             'identity.challenge_ttl_minutes' => __('validation.attributes.identity_challenge_ttl_minutes'),
             'identity.max_attempts' => __('validation.attributes.identity_max_attempts'),
-            // notifications
-            'notifications.channels' => __('validation.attributes.notification_channels'),
-            // general
-            'general.currency' => __('validation.attributes.default_currency'),
-            'general.maintenance_mode' => __('validation.attributes.maintenance_mode'),
-            'general.asset_url_mode' => __('validation.attributes.asset_url_mode'),
-            'general.site_logo' => __('validation.attributes.site_logo'),
-            'seo.og_image_default' => __('validation.attributes.og_image_default'),
-            // mail
-            'mail.mailer' => __('validation.attributes.mailer'),
-            'mail.host' => __('validation.attributes.smtp_host'),
-            'mail.port' => __('validation.attributes.smtp_port'),
-            'mail.username' => __('validation.attributes.smtp_username'),
-            'mail.password' => __('validation.attributes.smtp_password'),
-            'mail.encryption' => __('validation.attributes.encryption'),
-            'mail.mailgun_domain' => __('validation.attributes.mailgun_domain'),
-            'mail.mailgun_secret' => __('validation.attributes.mailgun_secret'),
-            'mail.mailgun_endpoint' => __('validation.attributes.mailgun_endpoint'),
-            'mail.ses_key' => __('validation.attributes.ses_key'),
-            'mail.ses_secret' => __('validation.attributes.ses_secret'),
-            'mail.ses_region' => __('validation.attributes.ses_region'),
-            'mail.from_address' => __('validation.attributes.from_address'),
-            'mail.from_name' => __('validation.attributes.from_name'),
-            // upload
-            'upload.max_file_size' => __('validation.attributes.max_file_size'),
-            'upload.allowed_extensions' => __('validation.attributes.allowed_extensions'),
-            'upload.image_max_width' => __('validation.attributes.image_max_width'),
-            'upload.image_max_height' => __('validation.attributes.image_max_height'),
-            'upload.image_quality' => __('validation.attributes.image_quality'),
-            'upload.orphan_cleanup_enabled' => __('validation.attributes.orphan_cleanup_enabled'),
-            'upload.orphan_retention_days' => __('validation.attributes.orphan_retention_days'),
-            // seo
-            'seo.meta_title_suffix' => __('validation.attributes.meta_title_suffix'),
-            'seo.meta_description' => __('validation.attributes.meta_description'),
-            'seo.meta_keywords' => __('validation.attributes.meta_keywords'),
-            'seo.google_analytics_id' => __('validation.attributes.google_analytics_id'),
-            'seo.google_site_verification' => __('validation.attributes.google_site_verification'),
-            'seo.naver_site_verification' => __('validation.attributes.naver_site_verification'),
-            'seo.bot_user_agents' => __('validation.attributes.bot_user_agents'),
-            'seo.bot_detection_enabled' => __('validation.attributes.bot_detection_enabled'),
-            'seo.bot_detection_library_enabled' => __('validation.attributes.bot_detection_library_enabled'),
-            'seo.og_default_site_name' => __('validation.attributes.og_default_site_name'),
-            'seo.og_image_default_width' => __('validation.attributes.og_image_default_width'),
-            'seo.og_image_default_height' => __('validation.attributes.og_image_default_height'),
-            'seo.twitter_default_card' => __('validation.attributes.twitter_default_card'),
-            'seo.twitter_default_site' => __('validation.attributes.twitter_default_site'),
-            'seo.cache_enabled' => __('validation.attributes.seo_page_cache_enabled'),
-            'seo.cache_ttl' => __('validation.attributes.seo_page_cache_ttl'),
-            'seo.sitemap_enabled' => __('validation.attributes.sitemap_enabled'),
-            'seo.sitemap_cache_ttl' => __('validation.attributes.sitemap_cache_ttl'),
-            'seo.sitemap_urls_per_file' => __('validation.attributes.sitemap_urls_per_file'),
-            'seo.sitemap_gzip' => __('validation.attributes.sitemap_gzip'),
-            'seo.sitemap_serve_stale_on_miss' => __('validation.attributes.sitemap_serve_stale_on_miss'),
-            'seo.sitemap_max_urls_per_contributor' => __('validation.attributes.sitemap_max_urls_per_contributor'),
-            'seo.sitemap_hreflang_enabled' => __('validation.attributes.sitemap_hreflang_enabled'),
-            'seo.sitemap_schedule' => __('validation.attributes.sitemap_schedule'),
-            'seo.sitemap_schedule_time' => __('validation.attributes.sitemap_schedule_time'),
-            'seo.generator_enabled' => __('validation.attributes.generator_enabled'),
-            'seo.generator_content' => __('validation.attributes.generator_content'),
-            // security
-            'security.force_https' => __('validation.attributes.force_https'),
-            'security.login_attempt_enabled' => __('validation.attributes.login_attempt_enabled'),
-            'security.auth_token_lifetime' => __('validation.attributes.auth_token_lifetime'),
-            'security.max_login_attempts' => __('validation.attributes.max_login_attempts'),
-            'security.login_lockout_time' => __('validation.attributes.login_lockout_time'),
-            'security.password_min_length' => __('validation.attributes.password_min_length'),
-            'security.require_password_special_char' => __('validation.attributes.require_password_special_char'),
-            'security.two_factor_auth' => __('validation.attributes.two_factor_auth'),
-            'security.allow_internal_outbound_urls' => __('validation.attributes.allow_internal_outbound_urls'),
-            // advanced
-            'advanced.cache_enabled' => __('validation.attributes.advanced_cache_enabled'),
-            'advanced.layout_cache_enabled' => __('validation.attributes.layout_cache_enabled'),
-            'advanced.layout_cache_ttl' => __('validation.attributes.layout_cache_ttl'),
-            'advanced.stats_cache_enabled' => __('validation.attributes.stats_cache_enabled'),
-            'advanced.stats_cache_ttl' => __('validation.attributes.stats_cache_ttl'),
-            'advanced.seo_cache_enabled' => __('validation.attributes.seo_cache_enabled'),
-            'advanced.seo_cache_ttl' => __('validation.attributes.seo_cache_ttl'),
-            'advanced.seo_sitemap_cache_ttl' => __('validation.attributes.seo_sitemap_cache_ttl'),
-            'advanced.debug_mode' => __('validation.attributes.debug_mode'),
-            'advanced.sql_query_log' => __('validation.attributes.sql_query_log'),
-            'advanced.outbound_proxy' => __('validation.attributes.outbound_proxy'),
-            'advanced.outbound_proxy_bypass' => __('validation.attributes.outbound_proxy_bypass'),
-            'advanced.core_update_github_url' => __('validation.attributes.core_update_github_url'),
-            'advanced.core_update_github_token' => __('validation.attributes.core_update_github_token'),
-            'advanced.geoip_enabled' => __('validation.attributes.geoip_enabled'),
-            'advanced.geoip_license_key' => __('validation.attributes.geoip_license_key'),
-            'advanced.geoip_auto_update_enabled' => __('validation.attributes.geoip_auto_update_enabled'),
-            'advanced.pagination_result_cap' => __('validation.attributes.pagination_result_cap'),
-            'advanced.pagination_max_page' => __('validation.attributes.pagination_max_page'),
-            // drivers
-            'drivers.storage_driver' => __('validation.attributes.storage_driver'),
-            'drivers.s3_bucket' => __('validation.attributes.s3_bucket'),
-            'drivers.s3_region' => __('validation.attributes.s3_region'),
-            'drivers.s3_access_key' => __('validation.attributes.s3_access_key'),
-            'drivers.s3_secret_key' => __('validation.attributes.s3_secret_key'),
-            'drivers.s3_url' => __('validation.attributes.s3_url'),
-            'drivers.s3_endpoint' => __('validation.attributes.s3_endpoint'),
-            'drivers.s3_use_path_style' => __('validation.attributes.s3_use_path_style'),
-            'drivers.cache_driver' => __('validation.attributes.cache_driver'),
-            'drivers.redis_host' => __('validation.attributes.redis_host'),
-            'drivers.redis_port' => __('validation.attributes.redis_port'),
-            'drivers.redis_password' => __('validation.attributes.redis_password'),
-            'drivers.redis_database' => __('validation.attributes.redis_database'),
-            'drivers.memcached_host' => __('validation.attributes.memcached_host'),
-            'drivers.memcached_port' => __('validation.attributes.memcached_port'),
-            'drivers.session_driver' => __('validation.attributes.session_driver'),
-            'drivers.session_lifetime' => __('validation.attributes.session_lifetime'),
-            'drivers.queue_driver' => __('validation.attributes.queue_driver'),
-            'drivers.websocket_enabled' => __('validation.attributes.websocket_enabled'),
-            'drivers.websocket_app_id' => __('validation.attributes.websocket_app_id'),
-            'drivers.websocket_app_key' => __('validation.attributes.websocket_app_key'),
-            'drivers.websocket_app_secret' => __('validation.attributes.websocket_app_secret'),
-            'drivers.websocket_host' => __('validation.attributes.websocket_host'),
-            'drivers.websocket_port' => __('validation.attributes.websocket_port'),
-            'drivers.websocket_scheme' => __('validation.attributes.websocket_scheme'),
-            'drivers.websocket_verify_ssl' => __('validation.attributes.websocket_verify_ssl'),
-            'drivers.websocket_server_host' => __('validation.attributes.websocket_server_host'),
-            'drivers.websocket_server_port' => __('validation.attributes.websocket_server_port'),
-            'drivers.websocket_server_scheme' => __('validation.attributes.websocket_server_scheme'),
-            'drivers.search_engine_driver' => __('validation.attributes.search_engine_driver'),
-            'drivers.log_driver' => __('validation.attributes.log_driver'),
-            'drivers.log_level' => __('validation.attributes.log_level'),
-            'drivers.log_days' => __('validation.attributes.log_days'),
-            'drivers.public_asset_disk' => __('validation.attributes.public_asset_disk'),
         ];
     }
 }

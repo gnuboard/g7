@@ -49,12 +49,10 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "pagination": {
-                        "current_page": 1,
-                        "last_page": 1,
-                        "per_page": 12,
-                        "total": 0
-                    }
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 12,
+                    "total": 0
                 }
             }
         },
@@ -169,7 +167,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "success",
-                                                            "message": "{{response.data?.updated_count > 0 ? '$t:admin.modules.check_updates_success|count=' + response.data.updated_count : '$t:admin.modules.check_updates_no_updates'}}"
+                                                            "message": "{{response.data?.update_count > 0 ? '$t:admin.modules.check_updates_success|count=' + response.data.update_count : '$t:admin.modules.check_updates_no_updates'}}"
                                                         }
                                                     }
                                                 ],
@@ -185,7 +183,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "{{error.message}}"
+                                                            "message": "{{$error.message}}"
                                                         }
                                                     }
                                                 ]
@@ -248,7 +246,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "upload",
-                                            "className": "text-xl"
+                                            "className": "w-5 h-5"
                                         }
                                     },
                                     {
@@ -279,7 +277,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "globe",
-                                            "className": "text-xl"
+                                            "className": "w-5 h-5"
                                         }
                                     },
                                     {
@@ -327,7 +325,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "upload",
-                                            "className": "text-xl"
+                                            "className": "w-5 h-5"
                                         }
                                     },
                                     {
@@ -351,7 +349,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "globe",
-                                            "className": "text-xl"
+                                            "className": "w-5 h-5"
                                         }
                                     },
                                     {
@@ -451,15 +449,6 @@
                                                                                 "handler": "refetchDataSource",
                                                                                 "params": {
                                                                                     "dataSourceId": "auto_deactivated_banner"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "onError": [
-                                                                            {
-                                                                                "handler": "toast",
-                                                                                "params": {
-                                                                                    "type": "error",
-                                                                                    "message": "{{error.message}}"
                                                                                 }
                                                                             }
                                                                         ]
@@ -610,7 +599,6 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/modules",
-                                            "mergeQuery": true,
                                             "query": {
                                                 "search": "{{_local.searchQuery || undefined}}",
                                                 "page": 1
@@ -642,9 +630,8 @@
                                     "pagination": true,
                                     "alwaysShowPagination": true,
                                     "serverSidePagination": true,
-                                    "serverCurrentPage": "{{modules?.data?.pagination?.current_page ?? 1}}",
-                                    "serverTotalPages": "{{modules?.data?.pagination?.last_page ?? null}}",
-                                    "serverHasMorePages": "{{modules?.data?.pagination?.has_more_pages ?? false}}",
+                                    "serverCurrentPage": "{{modules?.data?.current_page ?? 1}}",
+                                    "serverTotalPages": "{{modules?.data?.last_page ?? 1}}",
                                     "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
                                     "cardColumns": [
                                         {
@@ -889,7 +876,7 @@
                                                                                                             "if": "{{dep.type === 'module'}}",
                                                                                                             "props": {
                                                                                                                 "name": "cube",
-                                                                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                                                                "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
                                                                                                             }
                                                                                                         },
                                                                                                         {
@@ -898,7 +885,7 @@
                                                                                                             "if": "{{dep.type === 'plugin'}}",
                                                                                                             "props": {
                                                                                                                 "name": "puzzle-piece",
-                                                                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                                                                "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
                                                                                                             }
                                                                                                         },
                                                                                                         {
@@ -978,7 +965,7 @@
                                                                                     "name": "Icon",
                                                                                     "props": {
                                                                                         "name": "download",
-                                                                                        "className": "text-base"
+                                                                                        "className": "w-4 h-4"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -1013,9 +1000,7 @@
                                                                                                 "moduleLayoutStrategy": "overwrite",
                                                                                                 "hasModifiedModuleLayouts": false,
                                                                                                 "modifiedModuleLayoutsCount": 0,
-                                                                                                "modifiedModuleLayouts": [],
-                                                                                                "modifiedModuleLayoutsCheckFailed": false,
-                                                                                                "moduleRebuildSearchIndex": false
+                                                                                                "modifiedModuleLayouts": []
                                                                                             }
                                                                                         },
                                                                                         {
@@ -1032,17 +1017,7 @@
                                                                                                         "target": "global",
                                                                                                         "hasModifiedModuleLayouts": "{{response.data?.has_modified_layouts ?? false}}",
                                                                                                         "modifiedModuleLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                                                                                        "modifiedModuleLayouts": "{{response.data?.modified_layouts ?? []}}",
-                                                                                                        "modifiedModuleLayoutsCheckFailed": false
-                                                                                                    }
-                                                                                                }
-                                                                                            ],
-                                                                                            "onError": [
-                                                                                                {
-                                                                                                    "handler": "setState",
-                                                                                                    "params": {
-                                                                                                        "target": "global",
-                                                                                                        "modifiedModuleLayoutsCheckFailed": true
+                                                                                                        "modifiedModuleLayouts": "{{response.data?.modified_layouts ?? []}}"
                                                                                                     }
                                                                                                 }
                                                                                             ]
@@ -1098,7 +1073,7 @@
                                                                                     "name": "Icon",
                                                                                     "props": {
                                                                                         "name": "refresh",
-                                                                                        "className": "text-base"
+                                                                                        "className": "w-4 h-4"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -1330,9 +1305,7 @@
                                                                                                 "manage_language_packs": {
                                                                                                     "handler": "navigate",
                                                                                                     "params": {
-                                                                                                        "path": "/admin/modules/{{row.identifier}}/language-packs",
-                                                                                                        "mergeQuery": true,
-                                                                                                        "query": {}
+                                                                                                        "path": "/admin/modules/{{row.identifier}}/language-packs"
                                                                                                     }
                                                                                                 },
                                                                                                 "uninstall": {
@@ -1344,8 +1317,7 @@
                                                                                                                 "target": "global",
                                                                                                                 "selectedModule": "{{row}}",
                                                                                                                 "deleteModuleData": false,
-                                                                                                                "moduleUninstallInfo": null,
-                                                                                                                "moduleUninstallBackups": null
+                                                                                                                "moduleUninstallInfo": null
                                                                                                             }
                                                                                                         },
                                                                                                         {
@@ -1413,7 +1385,7 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
-                                        "text": "$t:admin.modules.pagination_info|total={{modules?.data?.pagination?.total ?? 0}}|from={{((modules?.data?.pagination?.current_page ?? 1) - 1) * (modules?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.pagination?.current_page ?? 1) * (modules?.data?.pagination?.per_page ?? 12), modules?.data?.pagination?.total ?? 0)}}"
+                                        "text": "$t:admin.modules.pagination_info|total={{modules?.data?.total ?? 0}}|from={{((modules?.data?.current_page ?? 1) - 1) * (modules?.data?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.current_page ?? 1) * (modules?.data?.per_page ?? 12), modules?.data?.total ?? 0)}}"
                                     }
                                 ]
                             }

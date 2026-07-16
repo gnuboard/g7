@@ -29,10 +29,8 @@ use Plugins\Sirsoft\PayNicepayments\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 use Plugins\Sirsoft\PayNicepayments\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\AuthCallbackRequest;
-use Plugins\Sirsoft\PayNicepayments\Http\Requests\SignDataRequest;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\VbankNotifyRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
-use Plugins\Sirsoft\PayNicepayments\Support\ShopRedirectUrl;
 use Plugins\Sirsoft\PayNicepayments\Support\UrlHelper;
 
 /**
@@ -429,7 +427,6 @@ class PaymentCallbackController
         string $txTid,
     ): string {
         return DB::transaction(function () use ($moid, $pgResponse, $resultCode, $payMethod, $isEscrow, $txTid): string {
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $lockedOrder = Order::query()
                 ->where('order_number', $moid)
                 ->lockForUpdate()
@@ -486,7 +483,6 @@ class PaymentCallbackController
                 'pg_response_sanitized' => true,
                 'pg_raw_response' => $this->sanitizePgResponse($pgResponse, self::VBANK_ISSUE_RESPONSE_KEYS),
             ];
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $payment->save();
 
             return 'recorded';
@@ -503,7 +499,6 @@ class PaymentCallbackController
         array $callbackPayload,
     ): string {
         return DB::transaction(function () use ($moid, $pgResponse, $txTid, $amt, $isEscrow, $request, $callbackPayload): string {
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $lockedOrder = Order::query()
                 ->where('order_number', $moid)
                 ->lockForUpdate()
@@ -588,13 +583,17 @@ class PaymentCallbackController
      * MOID, 주문 상태, 나이스페이 결제 레코드, Amt 를 우리 DB 와 비교 검증하여
      * 클라이언트 측 주문/금액 조작을 차단한다.
      *
-     * @param  SignDataRequest  $request  amt + moid (형식 검증은 FormRequest — 종전 수동 검사 400 → 표준 422)
-     * @return JsonResponse ediDate / signData / mid 또는 422
+     * @param  Request  $request  amt + moid
+     * @return JsonResponse ediDate / signData / mid 또는 400/422
      */
-    public function signData(SignDataRequest $request): JsonResponse
+    public function signData(Request $request): JsonResponse
     {
-        $amt = (int) $request->validated('amt');
-        $moid = (string) $request->validated('moid');
+        $amt = (int) $request->input('amt', 0);
+        $moid = (string) $request->input('moid', '');
+
+        if ($amt <= 0 || $moid === '') {
+            return response()->json(['error' => __('sirsoft-pay_nicepayments::messages.errors.invalid_request')], 400);
+        }
 
         $rateLimitKey = $this->signDataRateLimitKey($request, $moid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
@@ -996,8 +995,8 @@ class PaymentCallbackController
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
-        $url = ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]);
+        $urlTemplate = $settings['redirect_success_url'] ?? '/shop/orders/{orderId}/complete';
+        $url = str_replace('{orderId}', $orderId, $urlTemplate);
 
         return UrlHelper::toAbsolute($url);
     }
@@ -1005,7 +1004,7 @@ class PaymentCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL);
+        $baseUrl = $settings['redirect_fail_url'] ?? '/shop/checkout';
 
         if (! empty($queryParams)) {
             $query = http_build_query(array_filter($queryParams));
@@ -1083,7 +1082,6 @@ class PaymentCallbackController
                     'vbank_notifications' => $existing,
                     'vbank_notification_summary' => $this->buildNotificationSummary($existing),
                 ]);
-                // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
                 $payment->save();
             });
         } catch (\Throwable $e) {

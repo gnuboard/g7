@@ -6,30 +6,32 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Mockery;
-use Mockery\MockInterface;
 use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
-use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * CategoryImageService 단위 테스트
  *
  * StorageInterface 기반 이미지 업로드, 삭제 등을 테스트합니다.
  */
-class CategoryImageServiceTest extends ModuleTestCase
+class CategoryImageServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private CategoryImageService $service;
 
-    /** @var MockInterface&CategoryImageRepositoryInterface */
+    /** @var \Mockery\MockInterface&CategoryImageRepositoryInterface */
     private $repository;
 
-    /** @var MockInterface&StorageInterface */
+    /** @var \Mockery\MockInterface&StorageInterface */
     private $storage;
 
     private User $user;
@@ -61,6 +63,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         parent::tearDown();
     }
 
+    /**     */
     #[Test]
     public function test_upload_stores_image_and_creates_record(): void
     {
@@ -124,6 +127,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals(600, $result->height);
     }
 
+    /**     */
     #[Test]
     public function test_upload_with_temp_key_creates_temp_image(): void
     {
@@ -175,6 +179,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals($tempKey, $result->temp_key);
     }
 
+    /**     */
     #[Test]
     public function test_upload_with_alt_text(): void
     {
@@ -208,6 +213,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals($altText, $result->alt_text);
     }
 
+    /**     */
     #[Test]
     public function test_upload_fires_hooks(): void
     {
@@ -253,6 +259,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-ecommerce.category-image.after_upload');
     }
 
+    /**     */
     #[Test]
     public function test_delete_removes_file_from_storage(): void
     {
@@ -303,6 +310,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**     */
     #[Test]
     public function test_delete_fires_hooks(): void
     {
@@ -339,8 +347,9 @@ class CategoryImageServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-ecommerce.category-image.after_delete');
     }
 
+    /**     */
     #[Test]
-    public function test_link_temp_images_links_temp_files_to_category(): void
+    public function test_linkTempImages_links_temp_files_to_category(): void
     {
         // Arrange
         $tempKey = 'temp-uuid-456';
@@ -359,6 +368,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals(3, $result);
     }
 
+    /**     */
     #[Test]
     public function test_reorder_updates_image_order(): void
     {
@@ -382,6 +392,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**     */
     #[Test]
     public function test_reorder_fires_hooks(): void
     {
@@ -510,6 +521,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertNull($result);
     }
 
+    /**     */
     #[Test]
     public function test_update_modifies_image_metadata(): void
     {
@@ -537,6 +549,7 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals($altText, $result->alt_text);
     }
 
+    /**     */
     #[Test]
     public function test_update_fires_hooks(): void
     {

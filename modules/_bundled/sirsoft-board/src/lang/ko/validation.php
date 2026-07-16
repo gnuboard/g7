@@ -10,15 +10,6 @@ return [
     // 일괄 적용 fields 검증 메시지
     'fields_invalid' => '선택한 :value 필드는 허용되지 않습니다.',
 
-    // 게시판 설정 일괄 적용 검증 메시지
-    'bulk_apply' => [
-        'fields.required' => '일괄 적용할 항목을 하나 이상 선택해주세요.',
-        'fields.min' => '일괄 적용할 항목을 하나 이상 선택해주세요.',
-        'apply_all.required' => '전체 게시판 적용 여부를 지정해주세요.',
-        'board_ids.required_if' => '전체 적용이 아닌 경우 대상 게시판을 선택해주세요.',
-        'board_ids.*.exists' => '존재하지 않는 게시판입니다.',
-    ],
-
     // slug 검증 메시지
     'slug' => [
         'required' => '게시판 슬러그는 필수입니다.',
@@ -146,10 +137,6 @@ return [
             'min' => '권한에 최소 하나 이상의 역할을 선택해주세요.',
             'exists' => '존재하지 않는 역할입니다.',
         ],
-        'mode' => [
-            'required' => '권한 모드를 선택해주세요.',
-            'in' => '유효하지 않은 권한 모드입니다.',
-        ],
     ],
 
     // 답글/대댓글 깊이 검증 메시지
@@ -188,7 +175,6 @@ return [
 
     // 게시판 검증 (하위 호환성 유지)
     'board' => [
-        'not_found' => '게시판을 찾을 수 없습니다.',
         'name' => [
             'required' => '게시판명은 필수입니다.',
             'string' => '게시판명은 문자열이어야 합니다.',
@@ -259,14 +245,10 @@ return [
             'not_found' => '원글을 찾을 수 없습니다.',
             'blinded' => '블라인드 처리된 게시글에는 답글을 작성할 수 없습니다.',
             'deleted' => '삭제된 게시글에는 답글을 작성할 수 없습니다.',
-            'secret' => '열람 권한이 없는 비밀글에는 답글을 작성할 수 없습니다.',
             'depth_exceeded' => '이 게시판은 답글을 :max단계까지만 허용합니다.',
             'notice_not_allowed' => '공지사항에는 답글을 작성할 수 없습니다.',
         ],
         'reply_not_allowed' => '이 게시판은 답글 기능이 비활성화되어 있습니다.',
-        'delete' => [
-            'has_replies' => '답글이 달린 글은 삭제할 수 없습니다. 답글을 먼저 삭제해 주세요.',
-        ],
         'status' => [
             'in' => '유효하지 않은 게시글 상태입니다.',
         ],
@@ -307,7 +289,6 @@ return [
             'basic_defaults.use_comment' => '댓글 사용 여부',
             'basic_defaults.use_reply' => '답글 사용 여부',
             'basic_defaults.max_reply_depth' => '최대 답글 깊이',
-            'basic_defaults.reply_delete_policy' => '답글 삭제 방식',
             'basic_defaults.max_comment_depth' => '최대 댓글 깊이',
             'basic_defaults.comment_order' => '댓글 정렬',
             'basic_defaults.show_view_count' => '조회수 표시',
@@ -382,35 +363,6 @@ return [
         ],
         'board' => [
             'add_to_menu' => '관리자 메뉴에 표시',
-            'blocked_keywords' => '금지어',
-        ],
-        // 게시판 설정 일괄 적용
-        'bulk_apply' => [
-            'fields' => '적용 항목',
-            'fields.*' => '적용 항목',
-            'apply_all' => '전체 게시판 적용',
-            'board_ids' => '대상 게시판',
-            'board_ids.*' => '대상 게시판',
-            'override_values' => '재정의 값',
-            // 재정의 값의 컬럼 라벨 — settings 그룹과 동일 명칭 (범위 위반 메시지에 노출)
-            'override_values.per_page' => '페이지당 게시글 수',
-            'override_values.per_page_mobile' => '모바일 페이지당 게시글 수',
-            'override_values.max_reply_depth' => '최대 답글 깊이',
-            'override_values.reply_delete_policy' => '답글 삭제 방식',
-            'override_values.max_comment_depth' => '최대 댓글 깊이',
-            'override_values.min_title_length' => '최소 제목 길이',
-            'override_values.max_title_length' => '최대 제목 길이',
-            'override_values.min_content_length' => '최소 내용 길이',
-            'override_values.max_content_length' => '최대 내용 길이',
-            'override_values.min_comment_length' => '최소 댓글 길이',
-            'override_values.max_comment_length' => '최대 댓글 길이',
-            'override_values.max_file_size' => '최대 파일 크기',
-            'override_values.max_file_count' => '최대 파일 개수',
-            'override_values.new_display_hours' => '신규 표시 시간',
-
-            // attachment_settings
-            'attachment_settings.purge_enabled' => '삭제 첨부 영구 정리',
-            'attachment_settings.purge_retention_days' => '삭제 첨부 보존기간',
         ],
     ],
 
@@ -446,7 +398,6 @@ return [
             'not_found' => '게시글을 찾을 수 없습니다.',
             'blinded' => '블라인드 처리된 게시글에는 댓글을 작성할 수 없습니다.',
             'deleted' => '삭제된 게시글에는 댓글을 작성할 수 없습니다.',
-            'secret' => '열람 권한이 없는 비밀글에는 댓글을 작성할 수 없습니다.',
         ],
         'parent_id' => [
             'exists' => '존재하지 않는 댓글입니다.',
@@ -592,7 +543,6 @@ return [
 
     // 신고 검증 메시지
     'report' => [
-        'invalid_status_transition' => '현재 신고 상태에서는 해당 상태로 변경할 수 없습니다.',
         'status' => [
             'required' => '신고 상태는 필수입니다.',
             'in' => '유효하지 않은 신고 상태입니다.',

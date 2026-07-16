@@ -10,12 +10,10 @@ use App\Models\Attachment;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\AttachmentService;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -1374,42 +1372,6 @@ class SettingsControllerTest extends TestCase
             ->assertJson(['success' => true]);
     }
 
-    /**
-     * 드라이버 탭 저장 왕복에 S3 신규 키(s3_endpoint/s3_use_path_style)가 포함되어야 합니다 (#563).
-     */
-    public function test_store_drivers_roundtrip_includes_new_s3_keys(): void
-    {
-        $response = $this->authRequest()->postJson('/api/admin/settings', [
-            '_tab' => 'drivers',
-            'drivers' => [
-                'storage_driver' => 's3',
-                's3_bucket' => 'roundtrip-bucket',
-                's3_region' => 'auto',
-                's3_access_key' => 'roundtrip-key',
-                's3_secret_key' => 'roundtrip-secret',
-                's3_endpoint' => 'https://roundtrip.r2.cloudflarestorage.com',
-                's3_use_path_style' => true,
-                'cache_driver' => 'file',
-                'session_driver' => 'file',
-                'queue_driver' => 'database',
-                'log_driver' => 'daily',
-                'log_level' => 'error',
-                'websocket_enabled' => false,
-            ],
-        ]);
-
-        $response->assertStatus(200)
-            ->assertJson(['success' => true]);
-
-        $drivers = $this->authRequest()->getJson('/api/admin/settings')
-            ->assertStatus(200)
-            ->json('data.drivers');
-
-        $this->assertSame('auto', $drivers['s3_region'] ?? null);
-        $this->assertSame('https://roundtrip.r2.cloudflarestorage.com', $drivers['s3_endpoint'] ?? null);
-        $this->assertTrue((bool) ($drivers['s3_use_path_style'] ?? false));
-    }
-
     // ========================================================================
     // 시스템 정보 probe 실패 격리 테스트 — gnuboard/g7#59
     // (구조/캐시/정상값은 위 systemInfo 테스트가 이미 커버. 여기서는 호스팅
@@ -1498,7 +1460,6 @@ class SettingsControllerTest extends TestCase
                     $app->make(ConfigRepositoryInterface::class),
                     $app->make(AttachmentRepositoryInterface::class),
                     $app->make(CacheInterface::class),
-                    $app->make(AttachmentService::class),
                 );
             }
 
@@ -1525,152 +1486,6 @@ class SettingsControllerTest extends TestCase
                     'disk_usage' => ['total', 'used', 'free', 'percentage'],
                     'php_extensions' => ['required', 'optional'],
                     'server_time',
-                ],
-            ]);
-    }
-
-    /**
-     * OPcache 상태가 시스템 정보 페이로드에 포함된다.
-     *
-     * 관리자 환경설정 > 정보 탭이 이 값으로 상태 행과 성능 저하 경고 블록을 렌더한다.
-     * enabled 는 true/false 외에 null("확인 불가" — ini_get 차단 환경)을 가질 수 있다.
-     *
-     * @scenario probe_item=opcache,probe_outcome=success,auth_state=authenticated_with_permission
-     *
-     * @effects opcache_status_exposed_in_system_info
-     */
-    public function test_system_info_includes_opcache_status(): void
-    {
-        $cache = $this->app->make(CacheInterface::class);
-        $cache->forget('settings.system_info.'.app()->getLocale());
-
-        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
-                    'opcache' => ['loaded', 'enabled'],
-                ],
-            ]);
-
-        $opcache = $response->json('data.opcache');
-
-        $this->assertIsBool($opcache['loaded']);
-        $this->assertTrue(
-            $opcache['enabled'] === null || is_bool($opcache['enabled']),
-            'opcache.enabled 는 true/false/null 중 하나여야 합니다.'
-        );
-    }
-
-    // 아래 test_system_info_reports_each_opcache_state 의 DataProvider 가 함께 검증하는
-    // 나머지 3개 조합 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
-    // @scenario opcache_state=loaded_but_disabled, surface=system_info_api
-    // @effects opcache_status_exposed_in_system_info
-    // @scenario opcache_state=not_loaded, surface=system_info_api
-    // @effects opcache_status_exposed_in_system_info
-    // @scenario opcache_state=ini_get_blocked, surface=system_info_api
-    // @effects opcache_status_exposed_in_system_info
-
-    /**
-     * OPcache 판정 결과가 API 페이로드에 그대로 실려 나온다.
-     *
-     * 관리자 정보 탭이 이 값으로 상태 행과 경고 블록을 렌더하므로, 네 가지 상태가
-     * 각각 구별되어 전달되어야 한다. 특히 loaded_but_disabled(확장은 로드됐으나
-     * opcache.enable=0)와 ini_get_blocked(null)이 뭉개지면 화면 판단이 무너진다.
-     *
-     * @scenario opcache_state=enabled, surface=system_info_api
-     *
-     * @effects opcache_status_exposed_in_system_info
-     */
-    #[DataProvider('opcacheStateProvider')]
-    public function test_system_info_reports_each_opcache_state(array $probe): void
-    {
-        $cache = $this->app->make(CacheInterface::class);
-        $cache->forget('settings.system_info.'.app()->getLocale());
-
-        $service = new class($this->app, $probe) extends SettingsService
-        {
-            private array $stub;
-
-            public function __construct($app, array $stub)
-            {
-                parent::__construct(
-                    $app->make(ConfigRepositoryInterface::class),
-                    $app->make(AttachmentRepositoryInterface::class),
-                    $app->make(CacheInterface::class),
-                    $app->make(AttachmentService::class),
-                );
-                $this->stub = $stub;
-            }
-
-            protected function getOpcacheStatus(): array
-            {
-                return $this->stub;
-            }
-        };
-        $this->app->instance(SettingsService::class, $service);
-
-        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
-
-        $response->assertStatus(200);
-        $this->assertSame($probe, $response->json('data.opcache'));
-    }
-
-    /**
-     * @return array<string, array{0: array{loaded: bool, enabled: bool|null}}>
-     */
-    public static function opcacheStateProvider(): array
-    {
-        return [
-            'enabled' => [['loaded' => true, 'enabled' => true]],
-            'loaded_but_disabled' => [['loaded' => true, 'enabled' => false]],
-            'not_loaded' => [['loaded' => false, 'enabled' => false]],
-            'ini_get_blocked' => [['loaded' => true, 'enabled' => null]],
-        ];
-    }
-
-    /**
-     * OPcache probe 가 실패해도 격리되어 전체 200 이 유지된다.
-     *
-     * ini_get 이 disable_functions 로 차단된 호스팅에서 probe 하나가 죽어
-     * system-info API 전체가 500 이 나는 것을 방지한다.
-     *
-     * @scenario probe_item=opcache,probe_outcome=throws_error,auth_state=authenticated_with_permission
-     *
-     * @effects failing_probe_isolated_and_api_returns_200
-     * @effects failed_item_filled_with_unknown_fallback
-     */
-    public function test_system_info_isolates_failing_opcache_probe(): void
-    {
-        $cache = $this->app->make(CacheInterface::class);
-        $cache->forget('settings.system_info.'.app()->getLocale());
-
-        $service = new class($this->app) extends SettingsService
-        {
-            public function __construct($app)
-            {
-                parent::__construct(
-                    $app->make(ConfigRepositoryInterface::class),
-                    $app->make(AttachmentRepositoryInterface::class),
-                    $app->make(CacheInterface::class),
-                    $app->make(AttachmentService::class),
-                );
-            }
-
-            protected function getOpcacheStatus(): array
-            {
-                throw new \Error('Call to undefined function ini_get() (disable_functions)');
-            }
-        };
-        $this->app->instance(SettingsService::class, $service);
-
-        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'data' => [
-                    'opcache' => ['loaded' => false, 'enabled' => null],
                 ],
             ]);
     }

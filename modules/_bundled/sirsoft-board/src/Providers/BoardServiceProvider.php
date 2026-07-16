@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Providers;
 use App\Extension\BaseModuleServiceProvider;
 use App\Seo\SitemapGenerator;
 use Modules\Sirsoft\Board\Console\Commands\AggregateBoardStatsCommand;
-use Modules\Sirsoft\Board\Console\Commands\PruneAttachmentsCommand;
 use Modules\Sirsoft\Board\Repositories\AttachmentRepository;
 use Modules\Sirsoft\Board\Repositories\BoardRepository;
 use Modules\Sirsoft\Board\Repositories\BoardStatRepository;
@@ -89,7 +88,6 @@ class BoardServiceProvider extends BaseModuleServiceProvider
      */
     protected array $commands = [
         AggregateBoardStatsCommand::class,
-        PruneAttachmentsCommand::class,
     ];
 
     /**
@@ -107,9 +105,8 @@ class BoardServiceProvider extends BaseModuleServiceProvider
         // Sitemap 기여자 등록
         $this->app->booted(function () {
             if ($this->app->bound(SitemapGenerator::class)) {
-                // Repository 주입을 위해 컨테이너로 해석합니다.
                 $this->app->make(SitemapGenerator::class)->registerContributor(
-                    $this->app->make(BoardSitemapContributor::class)
+                    new BoardSitemapContributor
                 );
             }
         });

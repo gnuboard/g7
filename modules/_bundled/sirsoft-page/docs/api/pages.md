@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Pages 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
-3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
+3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -158,9 +158,6 @@ HTTP/1.1 200
 | content_mode | body | string | 아니오 | `html`, `text` | 본문 편집 모드. `html` 은 리치 에디터 HTML, `text` 는 평문으로 저장·렌더링됩니다 (미지정 시 `html`) |
 | published | body | boolean | 아니오 | — | 발행 여부 (발행된 항목만 필터) |
 | seo_meta | body | array | 아니오 | — | SEO 메타 정보 맵. 하위 키 `title`(max 255)·`description`(max 500)·`keywords`(max 500)를 담습니다 |
-| seo_meta.title | body | string | 아니오 | max 255 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
-| seo_meta.description | body | string | 아니오 | max 500 | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
-| seo_meta.keywords | body | string | 아니오 | max 500 | SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분) |
 | temp_key | body | string | 아니오 | max 64 | 저장 전 첨부 업로드 시 발급받은 임시 키. 생성된 페이지에 임시 첨부를 귀속시키는 데 사용합니다 |
 
 **요청 예시**
@@ -183,86 +180,17 @@ Content-Type: application/json
     "seo_meta": [
         "예시값"
     ],
-    "seo_meta.title": "예시 제목",
-    "seo_meta.description": "예시 내용입니다.",
-    "seo_meta.keywords": "예시값",
     "temp_key": "예시값"
 }
 ```
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (`PageResource`, HTTP 201)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `11` | 기본 키 (내부 식별자) |
-| slug | string | `example-key` | URL 슬러그 (고유, 소문자·숫자·하이픈) |
-| title | object | `{"ko":"예시 제목","en":"Example Title"}` | 페이지 제목 (다국어 JSON) |
-| content | object | `{"ko":"<p>예시 내용입니다.</p>"}` | 페이지 본문 (다국어 JSON, 미입력 시 null) |
-| content_mode | string | `html` | 본문 형식 (`html`, `text` — 미지정 시 `html`) |
-| published | boolean | `true` | 발행 여부 (true: 발행, false: 미발행) |
-| published_at | string\|null | `2026-07-08 10:51:59` | 발행 일시 (미발행 시 null) |
-| seo_meta | object\|null | `{"title":"...","description":"...","keywords":"..."}` | SEO 메타 정보 (title, description, keywords) |
-| current_version | integer | `1` | 현재 버전 번호 |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name — creator 관계 eager load) |
-| updater | object\|null | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name — updater 관계 eager load) |
-| attachments | array | `[]` | 페이지에 귀속된 첨부파일 목록 (`temp_key` 로 귀속된 임시 첨부 포함) |
-| created_at | string | `2026-07-08 10:51:59` | 생성 일시 |
-| updated_at | string | `2026-07-08 10:51:59` | 최종 수정 일시 |
-| is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자(`created_by`)인지 여부 |
-| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 201
-```
-
-```json
-{
-    "success": true,
-    "message": "페이지가 생성되었습니다.",
-    "data": {
-        "id": 11,
-        "slug": "example-key",
-        "title": {
-            "ko": "예시 제목",
-            "en": "Example Title"
-        },
-        "content": {
-            "ko": "<p>예시 내용입니다.</p>",
-            "en": "<p>Example body.</p>"
-        },
-        "content_mode": "html",
-        "published": true,
-        "published_at": "2026-07-08 10:51:59",
-        "seo_meta": {
-            "title": "예시 제목",
-            "description": "예시 내용입니다.",
-            "keywords": "예시,키워드"
-        },
-        "current_version": 1,
-        "creator": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 사용자"
-        },
-        "updater": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 사용자"
-        },
-        "attachments": [],
-        "created_at": "2026-07-08 10:51:59",
-        "updated_at": "2026-07-08 10:51:59",
-        "is_owner": true,
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -270,8 +198,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `slug` 중복/형식 위반(소문자·숫자·하이픈만), `title` 누락 또는 기본 로케일 값 누락, `content_mode` 가 html/text 이외. 첨부 개수 상한 초과 시에도 422 이며 `errors.code = attachment_limit_exceeded` 와 함께 허용/시도 개수를 담은 안내 문구가 응답 시점의 언어로 내려갑니다 |
-| 500 | Internal Server Error | 생성 처리 중 예외 (`페이지 생성에 실패했습니다.`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -310,27 +237,11 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| count | integer | `3` | 실제로 발행 상태가 변경된 페이지 건수 (메시지의 `:count` 에도 동일 값이 치환됨) |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "3개 페이지의 발행 상태가 변경되었습니다.",
-    "data": {
-        "count": 3
-    }
-}
-```
+<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -338,8 +249,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `ids` 누락/빈 배열, `ids.*` 가 존재하지 않는 페이지 ID, `published` 누락 또는 boolean 아님 |
-| 500 | Internal Server Error | 일괄 처리 중 예외 (`일괄 발행 상태 변경에 실패했습니다.`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -376,27 +286,11 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| exists | boolean | `false` | 해당 슬러그가 이미 사용 중인지 여부 (true: 중복 — 사용 불가, false: 사용 가능). `exclude_id` 를 넘기면 그 페이지는 중복 검사에서 제외 |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "슬러그 중복 확인이 완료되었습니다.",
-    "data": {
-        "exists": false
-    }
-}
-```
+<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -404,7 +298,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `slug` 누락, `exclude_id` 가 정수가 아님 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -426,7 +320,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-DELETE /api/modules/sirsoft-page/admin/pages/{page} HTTP/1.1
+DELETE /api/modules/sirsoft-page/admin/pages/10 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -434,7 +328,9 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — `data` 는 `null`)._
+
+
+<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
 
 **응답 예시**
 
@@ -478,7 +374,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-page/admin/pages/{page} HTTP/1.1
+GET /api/modules/sirsoft-page/admin/pages/10 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -602,15 +498,12 @@ HTTP/1.1 200
 | content_mode | body | string | 아니오 | `html`, `text` | 본문 편집 모드. `html` 은 리치 에디터 HTML, `text` 는 평문으로 저장·렌더링됩니다 (미지정 시 `html`) |
 | published | body | boolean | 아니오 | — | 발행 여부 (발행된 항목만 필터) |
 | seo_meta | body | array | 아니오 | — | SEO 메타 정보 맵. 하위 키 `title`(max 255)·`description`(max 500)·`keywords`(max 500)를 담습니다 |
-| seo_meta.title | body | string | 아니오 | max 255 | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
-| seo_meta.description | body | string | 아니오 | max 500 | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
-| seo_meta.keywords | body | string | 아니오 | max 500 | SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분) |
 | temp_key | body | string | 아니오 | max 64 | 저장 전 첨부 업로드 시 발급받은 임시 키. 새로 업로드한 첨부를 이 페이지에 귀속시키는 데 사용합니다 |
 
 **요청 예시**
 
 ```http
-PUT /api/modules/sirsoft-page/admin/pages/{page} HTTP/1.1
+PUT /api/modules/sirsoft-page/admin/pages/10 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -627,96 +520,26 @@ Content-Type: application/json
     "seo_meta": [
         "예시값"
     ],
-    "seo_meta.title": "예시 제목",
-    "seo_meta.description": "예시 내용입니다.",
-    "seo_meta.keywords": "예시값",
     "temp_key": "예시값"
 }
 ```
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (`PageResource` — `show` 와 동일 shape)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `10` | 기본 키 (내부 식별자) |
-| slug | string | `apidoc-sample-page` | URL 슬러그 (고유) |
-| title | object | `{"ko":"API 문서 샘플 페이지","en":"API Doc Sample Page"}` | 페이지 제목 (다국어 JSON) |
-| content | object | `{"ko":"<p>수정된 본문.</p>"}` | 페이지 본문 (다국어 JSON) |
-| content_mode | string | `html` | 본문 형식 (`html`, `text`) |
-| published | boolean | `true` | 발행 여부 (true: 발행, false: 미발행) |
-| published_at | string\|null | `2026-07-08 10:51:59` | 발행 일시 (미발행 시 null) |
-| seo_meta | object\|null | `{"title":"...","description":"...","keywords":"..."}` | SEO 메타 정보 (title, description, keywords) |
-| current_version | integer | `3` | 현재 버전 번호 (수정 시 이전 상태가 버전 이력으로 적재되며 증가) |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name — creator 관계 eager load) |
-| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name — updater 관계 eager load) |
-| attachments | array | `[{"id":4,"hash":"ninrdtsmhhta","original_filename":"nesciunt.jpg", ...}]` | 페이지에 귀속된 첨부파일 목록 (`PageAttachmentResource` 배열) |
-| created_at | string | `2026-07-08 10:51:59` | 생성 일시 |
-| updated_at | string | `2026-07-08 15:03:15` | 최종 수정 일시 |
-| is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자(`created_by`)인지 여부 |
-| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "페이지가 수정되었습니다.",
-    "data": {
-        "id": 10,
-        "slug": "apidoc-sample-page",
-        "title": {
-            "ko": "API 문서 샘플 페이지",
-            "en": "API Doc Sample Page"
-        },
-        "content": {
-            "ko": "<p>수정된 본문.</p>",
-            "en": "<p>Revised body.</p>"
-        },
-        "content_mode": "html",
-        "published": true,
-        "published_at": "2026-07-08 10:51:59",
-        "seo_meta": {
-            "title": "Dolorum et aut officia ipsam doloribus inventore.",
-            "description": "Sint ipsa impedit enim natus tempore quasi dignissimos praesentium numquam rerum tempore nam.",
-            "keywords": "illo,pariatur,quis,necessitatibus,aperiam"
-        },
-        "current_version": 3,
-        "creator": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 사용자"
-        },
-        "updater": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 사용자"
-        },
-        "attachments": [],
-        "created_at": "2026-07-08 10:51:59",
-        "updated_at": "2026-07-08 15:03:15",
-        "is_owner": true,
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없거나, 스코프 밖 리소스인 경우 (`auth.scope_denied`) |
-| 404 | Not Found | `{page}` ID 에 해당하는 페이지가 없는 경우 (`페이지를 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `title` 누락, `slug` 중복(자기 자신은 제외)/형식 위반, `content_mode` 가 html/text 이외. 첨부 개수 상한 초과 시에도 422 이며 `errors.code = attachment_limit_exceeded` 와 함께 허용/시도 개수를 담은 안내 문구가 응답 시점의 언어로 내려갑니다 |
-| 500 | Internal Server Error | 수정 처리 중 예외 (`페이지 수정에 실패했습니다.`) |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -739,7 +562,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-PATCH /api/modules/sirsoft-page/admin/pages/{page}/publish HTTP/1.1
+PATCH /api/modules/sirsoft-page/admin/pages/10/publish HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -818,8 +641,8 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -841,7 +664,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-page/admin/pages/{page}/versions HTTP/1.1
+GET /api/modules/sirsoft-page/admin/pages/10/versions HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -948,7 +771,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-page/admin/pages/{page}/versions/{versionId} HTTP/1.1
+GET /api/modules/sirsoft-page/admin/pages/10/versions/{versionId} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -956,67 +779,23 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (`PageVersionResource` — `versions.index` 항목과 동일 shape)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `14` | 버전 레코드의 기본 키 (내부 식별자) |
-| page_id | integer | `10` | 이 버전이 속한 페이지의 ID |
-| version | integer | `2` | 버전 순번 (1부터 증가, 페이지 수정 시마다 채번) |
-| title | object | `{"ko":"API 문서 샘플 페이지 (v2)","en":"API Doc Sample Page (v2)"}` | 그 시점의 페이지 제목 스냅샷 (다국어 JSON) |
-| content | object | `{"ko":"<p>수정 버전 본문.</p>"}` | 그 시점의 페이지 본문 스냅샷 (다국어 JSON) |
-| content_mode | string | `html` | 그 시점의 본문 형식 (`html`, `text` — 미지정 시 `html`) |
-| seo_meta | object\|null | `null` | 그 시점의 SEO 메타 스냅샷 (title, description, keywords) |
-| changes_summary | string\|null | `본문 보강` | 이 버전에서 무엇이 바뀌었는지 요약한 변경 설명 (없으면 null) |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 이 버전을 만든 사용자 정보 (uuid/name — creator 관계 eager load) |
-| created_at | string | `2026-07-08 10:51:59` | 버전 생성 일시 |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "페이지 정보를 조회했습니다.",
-    "data": {
-        "id": 14,
-        "page_id": 10,
-        "version": 2,
-        "title": {
-            "ko": "API 문서 샘플 페이지 (v2)",
-            "en": "API Doc Sample Page (v2)"
-        },
-        "content": {
-            "ko": "<p>수정 버전 본문.</p>",
-            "en": "<p>Revised version body.</p>"
-        },
-        "content_mode": "html",
-        "seo_meta": null,
-        "changes_summary": "본문 보강",
-        "creator": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 사용자"
-        },
-        "created_at": "2026-07-08 10:51:59"
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.read`)이 없거나, 스코프 밖 리소스인 경우 (`auth.scope_denied`) |
-| 404 | Not Found | `{page}` 페이지 또는 `{versionId}` 버전이 없는 경우 (`페이지를 찾을 수 없습니다.`) |
-| 500 | Internal Server Error | 조회 처리 중 예외 (`페이지 정보 조회에 실패했습니다.`) |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.read`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
-**설명** 특정 버전의 상세 스냅샷을 조회합니다. `{page}` 는 페이지 ID, `{versionId}` 는 버전 ID 입니다. 해당 버전의 전체 본문(`content`)과 메타를 담은 `PageVersionResource` 를 반환하며, 복원 전 미리보기·버전 간 비교에 사용합니다. `{versionId}` 는 라우트-모델 바인딩이 아니어서 문서 생성 시 자동 실측에서 제외되며, 응답 shape 은 `versions.index` 항목과 동일합니다. 미존재 404, 스코프 밖 403. `{versionId}`는 경로의 `{page}`에 속한 버전이어야 합니다 — 다른 페이지의 버전 ID를 지정하면 404를 반환합니다.
+**설명** 특정 버전의 상세 스냅샷을 조회합니다. `{page}` 는 페이지 ID, `{versionId}` 는 버전 ID 입니다. 해당 버전의 전체 본문(`content`)과 메타를 담은 `PageVersionResource` 를 반환하며, 복원 전 미리보기·버전 간 비교에 사용합니다. `{versionId}` 는 라우트-모델 바인딩이 아니어서 문서 생성 시 자동 실측에서 제외되며, 응답 shape 은 `versions.index` 항목과 동일합니다. 미존재 404, 스코프 밖 403.
 
 
 ### POST /api/modules/sirsoft-page/admin/pages/{page}/versions/{versionId}/restore
@@ -1035,7 +814,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/modules/sirsoft-page/admin/pages/{page}/versions/{versionId}/restore HTTP/1.1
+POST /api/modules/sirsoft-page/admin/pages/10/versions/{versionId}/restore HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1043,86 +822,23 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (복원된 페이지의 `PageResource` — `show` 와 동일 shape)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `10` | 기본 키 (내부 식별자) |
-| slug | string | `apidoc-sample-page` | URL 슬러그 (고유) |
-| title | object | `{"ko":"API 문서 샘플 페이지 (v1)","en":"API Doc Sample Page (v1)"}` | 복원된 페이지 제목 (다국어 JSON — 대상 버전의 스냅샷) |
-| content | object | `{"ko":"<p>초기 버전 본문.</p>"}` | 복원된 페이지 본문 (다국어 JSON — 대상 버전의 스냅샷) |
-| content_mode | string | `html` | 본문 형식 (`html`, `text`) |
-| published | boolean | `true` | 발행 여부 (true: 발행, false: 미발행) |
-| published_at | string\|null | `2026-07-08 10:51:59` | 발행 일시 (미발행 시 null) |
-| seo_meta | object\|null | `null` | SEO 메타 정보 (title, description, keywords — 대상 버전의 스냅샷) |
-| current_version | integer | `3` | 현재 버전 번호 (복원 자체도 새 버전으로 적재되어 증가) |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name — creator 관계 eager load) |
-| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자(복원 수행자) 정보 (uuid/name — updater 관계 eager load) |
-| attachments | array | `[]` | 페이지에 귀속된 첨부파일 목록 (`PageAttachmentResource` 배열) |
-| created_at | string | `2026-07-08 10:51:59` | 생성 일시 |
-| updated_at | string | `2026-07-08 15:10:02` | 최종 수정 일시 (복원 시각) |
-| is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자(`created_by`)인지 여부 |
-| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
+<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "이전 버전으로 복원되었습니다.",
-    "data": {
-        "id": 10,
-        "slug": "apidoc-sample-page",
-        "title": {
-            "ko": "API 문서 샘플 페이지 (v1)",
-            "en": "API Doc Sample Page (v1)"
-        },
-        "content": {
-            "ko": "<p>초기 버전 본문.</p>",
-            "en": "<p>Initial version body.</p>"
-        },
-        "content_mode": "html",
-        "published": true,
-        "published_at": "2026-07-08 10:51:59",
-        "seo_meta": null,
-        "current_version": 3,
-        "creator": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 사용자"
-        },
-        "updater": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 사용자"
-        },
-        "attachments": [],
-        "created_at": "2026-07-08 10:51:59",
-        "updated_at": "2026-07-08 15:10:02",
-        "is_owner": true,
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없거나, 스코프 밖 리소스인 경우 (`auth.scope_denied`) |
-| 404 | Not Found | `{page}` 페이지 또는 `{versionId}` 버전이 없는 경우 (`페이지를 찾을 수 없습니다.`) |
-| 500 | Internal Server Error | 복원 처리 중 예외 — 지정된 버전이 해당 페이지에 속하지 않는 경우 포함 (`버전 복원에 실패했습니다.`) |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
-**설명** 페이지를 특정 버전 시점으로 복원합니다. `{page}` 는 페이지 ID, `{versionId}` 는 복원 대상 버전 ID 입니다. `PageService::restoreVersion()` 이 그 버전의 내용을 현재 페이지에 반영하고(복원 자체도 새 버전으로 적재), 복원된 `PageResource` 를 반환합니다. 편집 화면 버전 이력 패널의 "이 버전으로 복원" 액션에 사용합니다. 미존재 404, 스코프 밖 403. `{versionId}`는 경로의 `{page}`에 속한 버전이어야 합니다 — 다른 페이지의 버전 ID를 지정하면 `versions.show` 와 동일하게 404를 반환합니다.
+**설명** 페이지를 특정 버전 시점으로 복원합니다. `{page}` 는 페이지 ID, `{versionId}` 는 복원 대상 버전 ID 입니다. `PageService::restoreVersion()` 이 그 버전의 내용을 현재 페이지에 반영하고(복원 자체도 새 버전으로 적재), 복원된 `PageResource` 를 반환합니다. 편집 화면 버전 이력 패널의 "이 버전으로 복원" 액션에 사용합니다. 미존재 404, 스코프 밖 403.
 
 
 ### GET /api/modules/sirsoft-page/pages/attachment/{hash}
@@ -1148,33 +864,17 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 원본 파일 바이트를 그대로 내려주는 파일 스트리밍 응답(`StreamedResponse`, `Content-Disposition: attachment`)이며, 실패 시에만 JSON 오류 봉투를 반환합니다._
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-Content-Type: image/jpeg
-Content-Disposition: attachment; filename="nesciunt.jpg"
-
-(파일 바이너리 스트림)
-```
-
-실패 시(첨부 미존재 · 미발행 페이지의 첨부를 권한 없이 요청 · 스토리지에 파일 없음):
-
-```json
-{
-    "success": false,
-    "message": "첨부파일을 찾을 수 없습니다.",
-    "errors": null
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | 해시에 해당하는 첨부가 없거나(`첨부파일을 찾을 수 없습니다.`), 미발행 페이지의 첨부를 `sirsoft-page.pages.read` 권한 없이 요청한 경우(존재를 숨기기 위해 동일하게 404), 또는 DB 레코드는 있으나 스토리지에 실제 파일이 없는 경우(`첨부파일이 스토리지에 존재하지 않습니다.`) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -1204,39 +904,21 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이미지 바이트를 인라인으로 내려주는 스트리밍 응답(`StreamedResponse`, `Content-Disposition: inline`)이며, 실패 시에만 JSON 오류 봉투를 반환합니다._
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-Content-Type: image/jpeg
-Content-Disposition: inline
-
-(이미지 바이너리 스트림)
-```
-
-실패 시(첨부 미존재 · 이미지가 아닌 첨부 · 스토리지에 파일 없음):
-
-```json
-{
-    "success": false,
-    "message": "첨부파일이 스토리지에 존재하지 않습니다.",
-    "errors": null
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | 해시에 해당하는 첨부가 없는 경우(`첨부파일을 찾을 수 없습니다.`), 미발행 페이지의 첨부를 `sirsoft-page.pages.read` 권한·유효 서명 없이 요청한 경우(존재를 숨기기 위해 동일하게 404), 첨부가 이미지가 아니거나 스토리지에 실제 파일이 없는 경우(`첨부파일이 스토리지에 존재하지 않습니다.`) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
 
-**설명** 이미지 첨부 썸네일을 인라인으로 미리봅니다(해시 기반, 12자). `download` 와 동일한 발행상태 게이트를 적용합니다 — 발행된 페이지의 썸네일은 누구나, 미발행 페이지의 썸네일은 `sirsoft-page.pages.read` 권한 관리자만 미리볼 수 있습니다. 무인가 사용자에게는 미발행 썸네일이 차단됩니다.
-
-브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 미발행 페이지의 관리자 응답(관리자 상세·미발행 미리보기)에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 `preview_url` 로 직렬화되며, 이 엔드포인트는 유효한 서명을 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 404 로 차단됩니다. 발행 페이지의 `preview_url` 은 종전과 동일한 무서명 공개 경로입니다. 이미지 스트리밍 응답이므로 실측 대상이 아닙니다.
+**설명** 이미지 첨부 썸네일을 인라인으로 미리봅니다(해시 기반, 12자). 썸네일 `<img>` 는 토큰을 실을 수 없으므로 발행/미발행과 무관하게 공개 서빙합니다. 미발행 콘텐츠의 썸네일은 해시를 보유해야만 조회 가능(비추측성)하며, 실제 파일 다운로드는 `download` 의 권한 게이트로 보호됩니다. 이미지 스트리밍 응답이므로 실측 대상이 아닙니다.
 
 
 ### GET /api/modules/sirsoft-page/pages/{slug}
@@ -1254,7 +936,7 @@ Content-Disposition: inline
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-page/pages/{slug} HTTP/1.1
+GET /api/modules/sirsoft-page/pages/terms HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
@@ -1271,7 +953,6 @@ _단건 응답: `data` 객체의 필드._
 | title | string | `이용약관` | 제목 |
 | content | string | `<h2 style="font-size: 1.25rem; font-w…` | 본문 내용 |
 | content_mode | string | `html` | 본문 형식 (html, text) |
-| content_thumbnail_url | string \| null | `null` | 본문 첫 내부 이미지 URL 캐시 — 페이지 표시 레이아웃의 공유 미리보기(og:image)가 소비한다. html 모드에서 본문에 내부 이미지가 있으면 채워지고, 외부 주소 이미지·text 모드·이미지 없음이면 `null` (1.1.0+) |
 | is_preview | boolean | `false` | preview 여부 |
 | published_at | string | `2026-07-08 10:44:43` | published 일시 |
 | seo_meta | null | `null` | SEO 메타 정보 (title, description, keywords) |

@@ -108,31 +108,6 @@ vendor/bin/pint --dirty
 
 ---
 
-## 목록 조회 (컬럼 프루닝 · 지연 조인)
-
-```php
-// 계속 쌓이는 목록 = 지연 조인. 정렬 컬럼이 요청 값이면 닫힌 집합으로 해석.
-use App\Repositories\Concerns\{PaginatesWithDeferredJoin, ResolvesSortSpec};
-
-return $this->paginateWithDeferredJoin(
-    query: $query,                                   // 필터/where 만. orderBy·with·select 금지
-    columns: self::LIST_COLUMNS,                     // ['*'] 도 위반 아님
-    sort: $this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at'),
-    perPage: $perPage,
-    relations: ['user'],                             // 관계는 반드시 이 인자로 (with() 는 지워진다)
-);
-```
-
-| 함정 | 결과 |
-| ------ | ------ |
-| `$query->with()` 만 하고 `relations:` 생략 | 관계가 조용히 사라짐 — 예외·오류 없음 |
-| `SUBSTRING(content,1,N)` 을 inner 에 둠 | 오버플로 페이지 읽기 그대로 발생 (프루닝 아님) |
-| 정렬을 비고유 컬럼으로만 끝냄 | 페이지 경계에서 행 중복·누락 (trait 이 PK 자동 append) |
-
-상세: [service-repository.md](backend/service-repository.md#목록-조회-컬럼-프루닝과-지연-조인)
-
----
-
 ## 마이그레이션
 
 ```bash
@@ -181,7 +156,7 @@ php artisan template:install [identifier] [--force]
 php artisan template:activate [identifier]
 php artisan template:deactivate [identifier]
 php artisan template:uninstall [identifier]
-php artisan template:cache-clear [identifier?]
+php artisan template:cache-clear
 php artisan template:check-updates [identifier?]
 php artisan template:update [identifier] [--layout-strategy=overwrite] [--force] [--source=auto|bundled|github]
 
@@ -207,21 +182,6 @@ php artisan hooks:clear                           # 캐시 삭제 (삭제 후 �
 ```
 
 > 훅 캐시는 확장 install/update 및 코어 업데이트(`clearAllCaches` → `extension:update-autoload`) 시 자동 재생성됩니다. 코어 리스너 코드 배포 시에만 `hooks:cache` 수동 실행. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](extension/hooks.md).
-
-### 부트스트랩 리소스 정적 게시
-
-```bash
-# 상태 점검 — 이상 발견 시 비-0 종료 (실행 계정·버전·게시 여부·실패 마커·잔존 버전)
-php artisan ext-static:status
-
-# 수동 게시 (웹 계정으로 — root 로 실행하면 캐시 폴더가 root 소유가 되어 이후 웹 요청이 500 을 낼 수 있다)
-sudo -u www-data php artisan ext-static:publish [--force]
-
-# 구버전 게시 디렉토리 정리 (현재 + 직전 1개 보존, 스케줄 일 1회 자동)
-php artisan ext-static:cleanup
-```
-
-> 관리자 화면에서는 환경설정 > 일반 「초기 화면 정적 파일」 카드에서 같은 상태를 보고 [지금 다시 만들기] 로 즉시 재게시할 수 있습니다. 상세: [backend/static-asset-publishing.md](backend/static-asset-publishing.md).
 
 ### 단발성 결함 보정 (hotfix)
 
@@ -289,47 +249,9 @@ php artisan seo:warmup --layout=shop/show  # 특정 레이아웃만
 php artisan seo:clear               # 전체 SEO 캐시 삭제
 php artisan seo:clear --layout=home # 특정 레이아웃만
 php artisan seo:stats               # 캐시 통계 출력
-php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치, mode=auto)
-php artisan seo:generate-sitemap --sync     # Sitemap 동기 생성
-php artisan seo:generate-sitemap --rebuild  # 전체 재생성 (mode=full)
-php artisan seo:generate-sitemap --mode=full|auto|incremental  # 재생성 모드 지정
+php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치)
+php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
 ```
-
-### 성능 계측 Artisan 커맨드
-
-```bash
-# 4축(목록/화면/쓰기/배치) 성능 계측. 계측 대상은 코어 config/benchmark.php + 확장 getBenchmarkProfiles() 선언.
-# 상세: docs/backend/benchmark.md
-php artisan g7:bench --list-profiles                       # 등록된 프로파일 목록
-php artisan g7:bench --profile=core/users_screen            # 화면 1장 응답 시간 + 쿼리 건수 + N+1 후보
-php artisan g7:bench --axis=list                           # 축 단위
-php artisan g7:bench --all --allow-write --report           # 전체 + 마크다운 리포트 (storage/app/benchmarks/)
-
-# 깊은 OFFSET 계측 — 대량 합성 행을 시딩하므로 운영 데이터가 있는 환경에서 --seed/--fresh 를 쓰지 않는다.
-php artisan --env=testing g7:bench --profile=sirsoft-board/board_posts --fresh --seed=200000
-php artisan --env=testing g7:bench --profile=sirsoft-board/board_posts --offsets=0,20000,50000,199980 --runs=3 --explain
-php artisan g7:bench --profile=sirsoft-ecommerce/orders --json   # 기계 판독용
-
-# 데이터를 변경하는 축(write/batch/비-GET screen)은 --allow-write 없이 거부된다.
-php artisan g7:bench --profile=sirsoft-ecommerce/order_create --allow-write
-```
-
-### 의존성 취약점 점검 Artisan 커맨드
-
-```bash
-# 저장소의 모든 잠금파일(npm·composer) 운영 의존성 취약점 전수 점검.
-# 루트만 감사하면 확장 전부가 사각이 되므로 하위 잠금파일까지 순회한다.
-php artisan security:audit-dependencies                 # 전체 (npm + composer)
-php artisan security:audit-dependencies --npm-only      # npm 잠금파일만
-php artisan security:audit-dependencies --composer-only # composer 잠금파일만
-php artisan security:audit-dependencies --json          # 기계 판독용
-```
-
-취약점이 발견되면 **비-0 으로 종료**한다. 이는 실행 실패가 아니라 조치 대상이 있다는 신호다.
-
-출력의 "대상 없음" 은 의존성이 없는 잠금파일이고, "점검 불가" 는 감사 도구가 실행되지 않은 것이다 — 후자는 "취약점 없음" 과 다르다.
-
-동봉(vendored) 제3자 자산은 어떤 잠금파일에도 없어 감사 도구가 원리상 볼 수 없다. 그 축은 판정하지 않고 목록으로 함께 출력하므로 사람이 확인한다.
 
 ### API 문서 Artisan 커맨드
 

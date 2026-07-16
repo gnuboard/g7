@@ -10,21 +10,18 @@
  *    채워져 가격(`원`) 텍스트가 나타나는지(= sampleData 가 실제 캔버스 바인딩을 채움) 검증한다.
  *    Vitest 는 JSON+격리 렌더, 본 spec 은 실제 편집기 chrome + 캔버스 통합 렌더.
  *
- * 축 요약(마커 아님 — 평문): route_select:data_dependent, sample_provider_source:bundled_editor_spec.
- * 효과 요약(마커 아님 — 평문): canvas_data_dependent_screen_filled_with_sample_data.
- * 효과 요약(마커 아님 — 평문): preview_canvas_uses_merged_editor_spec_sampledata.
+ * @scenario route_select:data_dependent + sample_provider_source:bundled_editor_spec
+ * @effects canvas_data_dependent_screen_filled_with_sample_data
+ * @effects preview_canvas_uses_merged_editor_spec_sampledata
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
 test.describe('@layout-editor 캔버스 샘플 데이터 렌더', () => {
-  /** @effects canvas_data_dependent_screen_filled_with_sample_data, preview_canvas_uses_merged_editor_spec_sampledata */
   test('sirsoft-basic — 상품 상세 라우트 선택 시 캔버스가 product 샘플로 채워진다', async ({ page }) => {
     const tokenAuth = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, tokenAuth);
 
-    // 상품 상세 라우트의 파라미터명은 `:product_code` 다 — `:id` 라우트는 존재하지 않아
-    // 레이아웃이 해석되지 않고 캔버스가 끝내 뜨지 않는다.
-    await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fshop%2Fproducts%2F%3Aproduct_code');
+    await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fshop%2Fproducts%2F%3Aid');
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
     const canvas = page.getByTestId('g7le-preview-canvas');

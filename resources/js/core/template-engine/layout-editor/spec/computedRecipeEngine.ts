@@ -24,7 +24,6 @@
 
 import type { ComputedRecipeSpec, ConditionParamSpec } from './specTypes';
 import { dataBindingEngine, type BindingContext } from '../../DataBindingEngine';
-import { hasPipes } from '../../PipeRegistry';
 
 // ── 친화 보기(프리셋) — spec 주도 build/match ─────────────────────────
 
@@ -599,14 +598,9 @@ export function evaluateComputedPreview(
   }
   const inner = stripOuterBraces(exprValue);
   try {
-    // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 런타임(DynamicRenderer /
-    // ActionDispatcher)의 computed 재계산과 같은 규칙이라야 편집기 미리보기가
-    // 실제 화면과 같은 값을 보여준다. @since engine-v1.54.10
-    const value = hasPipes(inner)
-      ? dataBindingEngine.evaluatePipeExpression(inner, sampleContext ?? {}, { skipCache: true })
-      : dataBindingEngine.evaluateExpression(inner, sampleContext ?? {}, {
-        skipCache: true,
-      });
+    const value = dataBindingEngine.evaluateExpression(inner, sampleContext ?? {}, {
+      skipCache: true,
+    });
     return { ok: true, value, type: classifyType(value) };
   } catch (e) {
     // 미리보기 평가 실패는 정상 경로(샘플 컨텍스트에 그 데이터가 없을 수 있음) —

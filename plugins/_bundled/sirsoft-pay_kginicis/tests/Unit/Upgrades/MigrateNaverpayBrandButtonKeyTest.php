@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Upgrades;
 
 use App\Extension\UpgradeContext;
-use App\Support\ExtensionStoragePath;
 use App\Upgrades\Data\Ext\Plugins\SirsoftPayKginicis\V1_0_0\Migrations\MigrateNaverpayBrandButtonKey;
 use Illuminate\Support\Facades\File;
-use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
+use Tests\TestCase;
 
 require_once dirname(__DIR__, 3).'/upgrades/data/1.0.0/migrations/MigrateNaverpayBrandButtonKey.php';
 
-class MigrateNaverpayBrandButtonKeyTest extends PluginTestCase
+class MigrateNaverpayBrandButtonKeyTest extends TestCase
 {
     private string $settingsPath;
 
@@ -24,7 +23,7 @@ class MigrateNaverpayBrandButtonKeyTest extends PluginTestCase
     {
         parent::setUp();
 
-        $this->settingsPath = ExtensionStoragePath::plugin('sirsoft-pay_kginicis', 'settings').'/setting.json';
+        $this->settingsPath = storage_path('app/plugins/sirsoft-pay_kginicis/settings/setting.json');
         $this->hadOriginalSettings = File::exists($this->settingsPath);
         $this->originalSettings = $this->hadOriginalSettings ? File::get($this->settingsPath) : null;
 

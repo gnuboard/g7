@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit;
 
-use App\Extension\ModuleManager;
 use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -19,7 +18,7 @@ class EcommerceModuleSeoTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->module = app(ModuleManager::class)->getModule('sirsoft-ecommerce')
+        $this->module = app(\App\Extension\ModuleManager::class)->getModule('sirsoft-ecommerce')
             ?? new Module(base_path('modules/sirsoft-ecommerce'));
     }
 
@@ -67,57 +66,6 @@ class EcommerceModuleSeoTest extends ModuleTestCase
         $this->assertArrayHasKey('image', $og);
         $this->assertStringStartsWith('http', $og['image'], 'og:image 는 절대 URL 이어야 페이스북·슬랙·쓰레드가 인식합니다');
         $this->assertStringContainsString('/api/modules/sirsoft-ecommerce/product-image/abc123', $og['image']);
-    }
-
-    /**
-     * 카테고리 og:image 출력 레벨 — thumbnail_url 이 있으면 image 가 절대 URL 로 방출된다.
-     *
-     * @scenario product-content-thumbnail-fallback
-     *
-     * @effects category_og_image_emitted_from_thumbnail_url
-     */
-    public function test_category_seo_og_defaults_emits_image_from_thumbnail_url(): void
-    {
-        $context = [
-            'category' => [
-                'data' => [
-                    'name' => ['ko' => '아우터', 'en' => 'Outer'],
-                    'thumbnail_url' => '/api/modules/sirsoft-ecommerce/category-image/cat123',
-                ],
-            ],
-        ];
-
-        $og = $this->module->seoOgDefaults('category', $context);
-
-        $this->assertArrayHasKey('image', $og);
-        $this->assertStringStartsWith('http', $og['image'], 'og:image 는 절대 URL 이어야 공유 카드가 인식합니다');
-        $this->assertStringContainsString('/api/modules/sirsoft-ecommerce/category-image/cat123', $og['image']);
-        $this->assertSame('아우터', $og['image_alt']);
-    }
-
-    /**
-     * 카테고리 og:image 출력 레벨 — 이미지 없는 카테고리는 image 키 자체가 미출력된다
-     * (빈 값은 array_filter 로 제거 → 코어 사이트 기본 OG 이미지 폴백에 위임).
-     *
-     * @scenario product-content-thumbnail-fallback
-     *
-     * @effects category_og_image_omitted_without_thumbnail
-     */
-    public function test_category_seo_og_defaults_omits_image_without_thumbnail(): void
-    {
-        $context = [
-            'category' => [
-                'data' => [
-                    'name' => '아우터',
-                    'thumbnail_url' => null,
-                ],
-            ],
-        ];
-
-        $og = $this->module->seoOgDefaults('category', $context);
-
-        $this->assertArrayNotHasKey('image', $og);
-        $this->assertSame('website', $og['type']);
     }
 
     /**
@@ -176,18 +124,7 @@ class EcommerceModuleSeoTest extends ModuleTestCase
     {
         $meta = $this->module->seoStructuredDataMeta('product');
 
-        // 제목/설명은 사용자 입력 meta(다국어) 우선 + 상품 필드 폴백 구조다.
-        // $localized() 로 현재 로케일 문자열을 뽑으므로 언어별 SEO 분기가 성립한다.
-        $this->assertSame(
-            '{{$localized(product.data.meta_title) ?? $localized(product.data.name)}}',
-            $meta['name']['expr']
-        );
-        $this->assertSame(
-            '{{$localized(product.data.meta_description) ?? $localized(product.data.short_description)}}',
-            $meta['description']['expr']
-        );
-
-        // 다국어 대상이 아닌 값은 점 경로를 그대로 선언한다.
+        $this->assertSame('{{product.data.name}}', $meta['name']['expr']);
         $this->assertSame('{{product.data.selling_price}}', $meta['offers.price']['expr']);
         $this->assertSame('{{product.data.sku}}', $meta['sku']['expr']);
     }

@@ -9,8 +9,6 @@ class VerifyPasswordRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -29,9 +27,6 @@ class VerifyPasswordRequest extends FormRequest
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
-        return HookManager::applyFiltersWithLegacyName(
-            'core.auth.verify_password_validation_rules',
-            'core.auth.verify_password_rules',
-            $rules);
+        return HookManager::applyFilters('core.auth.verify_password_rules', $rules);
     }
 }

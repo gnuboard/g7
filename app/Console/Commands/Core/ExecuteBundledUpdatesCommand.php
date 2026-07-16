@@ -2,13 +2,10 @@
 
 namespace App\Console\Commands\Core;
 
-use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
-use App\Search\SearchIndexMaintenanceManager;
-use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -48,8 +45,7 @@ class ExecuteBundledUpdatesCommand extends Command
 
     protected $signature = 'core:execute-bundled-updates
         {--manifest= : 업데이트 매니페스트 JSON 파일 경로 (필수)}
-        {--force : 강제 업데이트 플래그 (확장 매니저 update 호출에 전달)}
-        {--rebuild-search-index : 일괄 업데이트 후 검색 인덱스 재생성 (매니페스트의 선택보다 우선)}';
+        {--force : 강제 업데이트 플래그 (확장 매니저 update 호출에 전달)}';
 
     protected $description = '번들 확장 일괄 업데이트를 실행합니다 (CoreUpdateCommand 내부용 — fresh PHP 프로세스에서 호출)';
 
@@ -67,7 +63,7 @@ class ExecuteBundledUpdatesCommand extends Command
         // (Artisan::call 대신 직접 메서드 호출 — nested Artisan::call 이 outer 명령의
         // output buffer 를 덮어쓰는 Laravel 동작 회피)
         try {
-            app(ExtensionManager::class)->updateComposerAutoload();
+            app(\App\Extension\ExtensionManager::class)->updateComposerAutoload();
         } catch (\Throwable $e) {
             Log::warning('bundled update spawn 자식: updateComposerAutoload 호출 실패', [
                 'error' => $e->getMessage(),
@@ -80,9 +76,6 @@ class ExecuteBundledUpdatesCommand extends Command
 
             return self::FAILURE;
         }
-
-        // 부모(core:update)가 운영자 선택을 매니페스트에 실어 보낸다 — 자식이 임의로 정하지 않는다
-        $rebuildSearchIndex = (bool) $this->option('rebuild-search-index') || (bool) ($manifest['rebuild_search_index'] ?? false);
 
         $modules = $manifest['modules'] ?? [];
         $plugins = $manifest['plugins'] ?? [];
@@ -173,26 +166,6 @@ class ExecuteBundledUpdatesCommand extends Command
         $this->newLine();
         $this->info("업데이트 완료: 성공 {$success}, 실패 {$failed}");
 
-        // 검색 인덱스 재생성 — 운영자가 부모 단계에서 선택했을 때만 수행 (인덱스 잠금·재색인 비용)
-        if ($rebuildSearchIndex) {
-            $report = app(SearchIndexMaintenanceManager::class)->repairStale();
-            $this->newLine();
-            $this->info('검색 인덱스: '.$report->summary());
-
-            foreach ($report->failed as $identifier => $message) {
-                $this->warn('  '.__('search.index.rebuild_failed_item', ['index' => $identifier, 'error' => $message]));
-            }
-        }
-
-        // 이전 버전 부모가 남긴 빈 격리 디렉토리(core_{ts}/extracted 껍데기) 청소 —
-        // 부모의 정리 단계는 이 자식보다 먼저 끝나므로, 구버전 부모에서 올라오는
-        // 업데이트도 이 자리에서 껍데기 없이 마무리된다. 실패해도 업데이트 결과와 무관.
-        try {
-            app(CoreUpdateService::class)->sweepEmptyStagingDirectories();
-        } catch (\Throwable $e) {
-            Log::channel('upgrade')->warning('[spawn] 빈 격리 디렉토리 청소 실패', ['error' => $e->getMessage()]);
-        }
-
         // 부모 프로세스가 결과를 복원할 수 있도록 표식 라인으로 페이로드 출력
         $this->line(self::RESULT_PREFIX.json_encode([
             'success' => $success,
@@ -201,4 +174,5 @@ class ExecuteBundledUpdatesCommand extends Command
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
+
 }

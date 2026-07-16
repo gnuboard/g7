@@ -22,12 +22,6 @@ import {
 import { generateCopyProductCodeHandler } from './generateCopyProductCode';
 import { copyProductHandler } from './copyProduct';
 
-// 목록 확장 행 옵션 지연 로딩
-import {
-    loadExpandedOptionsHandler,
-    retryExpandedOptionsHandler,
-} from './expandedOptionsHandlers';
-
 // 카테고리 관련 핸들러
 import {
     selectCategoryHandler,
@@ -274,9 +268,6 @@ export const handlerMap = {
     toggleAllOptionsInRow: toggleAllOptionsInRowHandler,
     getProductOptionStates: getProductOptionStatesHandler,
     syncProductSelection: syncProductSelectionHandler,
-    // 목록 확장 행 옵션 지연 로딩
-    loadExpandedOptions: loadExpandedOptionsHandler,
-    retryExpandedOptions: retryExpandedOptionsHandler,
     // 상품 폼 모달 관련 핸들러
     generateCopyProductCode: generateCopyProductCodeHandler,
     copyProduct: copyProductHandler,

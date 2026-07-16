@@ -158,9 +158,7 @@
                                                     {
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/pages",
-                                                            "mergeQuery": true,
-                                                            "query": {}
+                                                            "path": "/admin/pages"
                                                         }
                                                     }
                                                 ],
@@ -657,9 +655,7 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/pages",
-                                            "mergeQuery": true,
-                                            "query": {}
+                                            "path": "/admin/pages"
                                         }
                                     }
                                 ],
@@ -695,9 +691,7 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/pages/{{route?.id}}/edit",
-                                            "mergeQuery": true,
-                                            "query": {}
+                                            "path": "/admin/pages/{{route?.id}}/edit"
                                         }
                                     }
                                 ],
@@ -1656,8 +1650,7 @@
                                                     "name": "Span",
                                                     "if": "{{row.version !== 1 && row.changes_summary?.changed_fields?.length > 0}}",
                                                     "props": {
-                                                        "className": "text-sm text-gray-600 dark:text-gray-400",
-                                                        "data-testid": "page-version-changed-fields"
+                                                        "className": "text-sm text-gray-600 dark:text-gray-400"
                                                     },
                                                     "text": "{{row.changes_summary?.changed_fields?.map(f => $t('sirsoft-page.admin.page.detail.versions.field_labels.' + f)).join(', ') ?? '-'}}"
                                                 },

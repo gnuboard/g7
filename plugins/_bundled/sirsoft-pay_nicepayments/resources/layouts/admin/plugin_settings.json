@@ -76,7 +76,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -198,7 +198,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                            "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -567,7 +567,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "bell",
-                                                    "className": "text-base text-blue-600 dark:text-blue-400"
+                                                    "className": "w-4 h-4 text-blue-600 dark:text-blue-400"
                                                 }
                                             },
                                             {
@@ -647,7 +647,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "copy",
-                                                            "className": "text-base"
+                                                            "className": "w-4 h-4"
                                                         }
                                                     },
                                                     {
@@ -1115,14 +1115,14 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "errors": "{{error.errors}}"
+                                                            "errors": "{{$error.errors}}"
                                                         }
                                                     },
                                                     {
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
+                                                            "message": "$t:admin.plugins.settings.save_error"
                                                         }
                                                     }
                                                 ]

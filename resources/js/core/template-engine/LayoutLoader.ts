@@ -17,7 +17,6 @@ import type { ComponentRegistry } from './ComponentRegistry';
 import type { ErrorHandlingMap } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
 import { fetchWithRetry } from './networkResilience';
-import { suffixed } from '../support/assetUrl';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 import { getApiClient } from '../api/ApiClient';
 
@@ -745,14 +744,14 @@ export class LayoutLoader {
     try {
       // API 엔드포인트 구성 (캐시 버전 쿼리 파라미터 추가)
       // 시스템 레이아웃 분기: __preview__ 는 별도 API 엔드포인트 사용
-      const version = this.cacheVersion > 0 ? this.cacheVersion : null;
-      let apiUrl: string;
+      let baseUrl: string;
       if (layoutPath.startsWith('__preview__/')) {
         const token = layoutPath.replace('__preview__/', '');
-        apiUrl = suffixed(`/api/layouts/preview/${token}`, 'json', version);
+        baseUrl = `/api/layouts/preview/${token}.json`;
       } else {
-        apiUrl = suffixed(`/api/layouts/${templateId}/${layoutPath}`, 'json', version);
+        baseUrl = `/api/layouts/${templateId}/${layoutPath}.json`;
       }
+      const apiUrl = this.cacheVersion > 0 ? `${baseUrl}?v=${this.cacheVersion}` : baseUrl;
 
       logger.log('Fetching layout from API:', apiUrl);
 

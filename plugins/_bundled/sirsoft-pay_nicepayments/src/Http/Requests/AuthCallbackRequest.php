@@ -7,7 +7,6 @@ namespace Plugins\Sirsoft\PayNicepayments\Http\Requests;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Plugins\Sirsoft\PayNicepayments\Support\ShopRedirectUrl;
 use Plugins\Sirsoft\PayNicepayments\Support\UrlHelper;
 
 /**
@@ -79,9 +78,9 @@ class AuthCallbackRequest extends FormRequest
     protected function failedValidation(Validator $validator): void
     {
         $settings = plugin_settings(self::PLUGIN_IDENTIFIER);
-        $baseUrl = ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL);
+        $baseUrl = $settings['redirect_fail_url'] ?? '/shop/checkout';
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
-        $url = $baseUrl.$separator.http_build_query(['error' => 'invalid_params']);
+        $url = $baseUrl . $separator . http_build_query(['error' => 'invalid_params']);
 
         throw new HttpResponseException(
             redirect(UrlHelper::toAbsolute($url))

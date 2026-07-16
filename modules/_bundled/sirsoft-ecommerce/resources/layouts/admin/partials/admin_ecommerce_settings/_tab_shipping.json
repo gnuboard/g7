@@ -96,7 +96,7 @@
                   },
                   "children": [
                     {
-                      "type": "composite",
+                      "type": "basic",
                       "name": "Toggle",
                       "props": {
                         "checked": "{{_local.form?.shipping?.international_shipping_enabled ?? false}}",

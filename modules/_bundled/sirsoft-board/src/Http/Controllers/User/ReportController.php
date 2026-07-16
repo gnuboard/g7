@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Enums\ReportType;
 use Modules\Sirsoft\Board\Exceptions\DuplicateReportException;
 use Modules\Sirsoft\Board\Http\Requests\StoreReportRequest;
 use Modules\Sirsoft\Board\Http\Resources\ReportResource;
-use Modules\Sirsoft\Board\Services\BoardService;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Services\BoardSettingsService;
 use Modules\Sirsoft\Board\Services\ReportService;
 
@@ -26,11 +26,9 @@ class ReportController extends AuthBaseController
      * ReportController 생성자
      *
      * @param  ReportService  $reportService  신고 서비스
-     * @param  BoardService  $boardService  게시판 서비스 (slug → 게시판 해석)
      */
     public function __construct(
-        private ReportService $reportService,
-        private BoardService $boardService
+        private ReportService $reportService
     ) {
         parent::__construct();
     }
@@ -77,12 +75,7 @@ class ReportController extends AuthBaseController
         ReportType $targetType
     ): JsonResponse {
         try {
-            // 신고는 게시판 읽기 스코프와 무관하게 slug 로만 해석한다 (기존 동작 유지).
-            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
-
-            if (! $board) {
-                return $this->notFound('sirsoft-board::messages.boards.error_404');
-            }
+            $board = Board::where('slug', $slug)->firstOrFail();
 
             if (! $board->use_report) {
                 return $this->error('sirsoft-board::messages.reports.report_disabled', 403);
@@ -141,4 +134,5 @@ class ReportController extends AuthBaseController
             return $this->error('sirsoft-board::messages.reports.create_failed', 500, $e->getMessage());
         }
     }
+
 }

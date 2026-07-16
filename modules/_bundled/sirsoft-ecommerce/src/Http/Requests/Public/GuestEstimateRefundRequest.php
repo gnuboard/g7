@@ -3,10 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Public;
 
 use App\Helpers\ResponseHelper;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesCancelItems;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 
 /**
@@ -17,8 +15,6 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
  */
 class GuestEstimateRefundRequest extends FormRequest
 {
-    use ValidatesCancelItems;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -45,26 +41,6 @@ class GuestEstimateRefundRequest extends FormRequest
     }
 
     /**
-     * 추가 검증 로직 — 각 항목이 대상 주문에 속하고 취소 가능한지 확인합니다.
-     *
-     * 회원판 EstimateRefundRequest 와 동일 강도. 대상 주문은 미들웨어가 전달한
-     * guest_order attribute 를 사용한다.
-     *
-     * @param  Validator  $validator  검증기
-     * @return void
-     */
-    protected function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator) {
-            if ($validator->errors()->any()) {
-                return;
-            }
-
-            $this->validateCancelItemsAgainstOrder($validator, $this->getOrder(), $this->input('items', []));
-        });
-    }
-
-    /**
      * 미들웨어가 검증한 대상 주문을 반환합니다.
      *
      * @return Order 토큰 검증을 통과한 비회원 주문
@@ -87,7 +63,7 @@ class GuestEstimateRefundRequest extends FormRequest
      */
     public function getCancelItems(): array
     {
-        return $this->validated('items') ?? [];
+        return $this->input('items', []);
     }
 
     /**

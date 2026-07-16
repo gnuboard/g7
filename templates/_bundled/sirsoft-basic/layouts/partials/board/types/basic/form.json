@@ -34,9 +34,7 @@
                   "type": "click",
                   "handler": "navigate",
                   "params": {
-                    "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}",
-                    "mergeQuery": true,
-                    "query": {}
+                    "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}"
                   }
                 }
               ],

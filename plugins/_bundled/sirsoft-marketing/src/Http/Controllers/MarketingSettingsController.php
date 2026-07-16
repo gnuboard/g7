@@ -84,6 +84,6 @@ class MarketingSettingsController extends PublicBaseController
             ];
         }, $channels);
 
-        return ResponseHelper::success('common.success', $data);
+        return ResponseHelper::success('messages.success', $data);
     }
 }

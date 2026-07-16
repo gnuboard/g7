@@ -59,7 +59,6 @@ return [
         'board_type_show' => '掲示板タイプ詳細閲覧 (:type_name)',
     ],
     'fields' => [
-        'name' => '掲示板名',
         'is_active' => '有効化',
         'per_page' => 'ページあたりの投稿数',
         'per_page_mobile' => 'モバイルページあたりの投稿数',
@@ -71,7 +70,6 @@ return [
         'use_comment' => 'コメント使用',
         'use_reply' => '返信使用',
         'max_reply_depth' => '最大返信深度',
-        'reply_delete_policy' => '返信の削除方式',
         'use_report' => '通報使用',
         'use_file_upload' => 'ファイルアップロード使用',
         'max_file_size' => '最大ファイルサイズ',

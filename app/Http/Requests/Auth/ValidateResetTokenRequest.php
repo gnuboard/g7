@@ -13,13 +13,11 @@ class ValidateResetTokenRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
-     * 공개 엔드포인트이므로 항상 통과시킨다 — 접근 제어는 미들웨어가 담당한다.
-     *
      * @return bool
      */
     public function authorize(): bool
     {
-        return true;
+        return true; // 공개 엔드포인트
     }
 
     /**
@@ -34,8 +32,7 @@ class ValidateResetTokenRequest extends FormRequest
             'email' => 'required|email',
         ];
 
-        return HookManager::applyFiltersWithLegacyName(
-            'core.auth.validate_reset_token_validation_rules',
+        return HookManager::applyFilters(
             'core.auth.validate_reset_token_rules',
             $rules,
             $this

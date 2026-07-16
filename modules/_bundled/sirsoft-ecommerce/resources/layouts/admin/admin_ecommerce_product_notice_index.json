@@ -134,8 +134,7 @@
                         "handler": "navigate",
                         "params": {
                           "path": "/admin/ecommerce/product-notices",
-                          "mergeQuery": true,
-                          "query": {}
+                          "mergeQuery": false
                         }
                       }
                     ],

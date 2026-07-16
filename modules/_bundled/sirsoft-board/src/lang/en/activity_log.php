@@ -35,7 +35,6 @@ return [
 
         // Board type (Admin)
         'board_type_index' => 'Board type list viewed',
-        'board_type_show' => 'Board type viewed (:type_name)',
         'board_type_create' => 'Board type created (:type_name)',
         'board_type_update' => 'Board type updated (:type_name)',
         'board_type_delete' => 'Board type deleted (:type_name)',
@@ -78,7 +77,6 @@ return [
     // ChangeDetector field labels
     'fields' => [
         // Board
-        'name' => 'Board Name',
         'is_active' => 'Active',
         'per_page' => 'Posts Per Page',
         'per_page_mobile' => 'Posts Per Page (Mobile)',
@@ -90,7 +88,6 @@ return [
         'use_comment' => 'Use Comments',
         'use_reply' => 'Use Replies',
         'max_reply_depth' => 'Max Reply Depth',
-        'reply_delete_policy' => 'Reply Delete Policy',
         'use_report' => 'Use Reports',
         'use_file_upload' => 'Use File Upload',
         'max_file_size' => 'Max File Size',

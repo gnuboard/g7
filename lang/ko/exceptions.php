@@ -3,9 +3,6 @@
 return [
     // 사용자 관련 예외
     'cannot_delete_super_admin' => '슈퍼 관리자는 삭제할 수 없습니다.',
-    'cannot_modify_super_admin' => '슈퍼 관리자 계정 또는 역할은 수정할 권한이 없습니다.',
-    'cannot_grant_unheld_permission' => '본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.',
-    'cannot_modify_protected_role' => '시스템 또는 확장이 소유한 역할은 수정할 권한이 없습니다.',
 
     'circular_reference' => '레이아웃 순환 참조 감지: :trace',
     'max_depth_exceeded' => '레이아웃 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',
@@ -81,13 +78,5 @@ return [
         'no_composer_lock' => 'composer.lock 파일이 필요합니다. 먼저 composer install을 실행하세요: :path',
         'vendor_dir_not_found' => 'vendor/ 디렉토리가 존재하지 않습니다. 먼저 composer install을 실행하세요: :path',
         'composer_binary_not_found' => 'Composer 바이너리를 찾을 수 없습니다. COMPOSER_BINARY 환경변수를 설정하거나 composer를 PATH에 추가하세요.',
-    ],
-
-    // SEO / Sitemap 관련 예외
-    'seo' => [
-        'sitemap_write_failed' => 'Sitemap 파일 기록에 실패했습니다: :path',
-        'sitemap_gzip_failed' => 'Sitemap 자식 파일 압축에 실패했습니다: :file',
-        'sitemap_temp_file_unreadable' => 'Sitemap 임시 파일을 읽을 수 없습니다: :file',
-        'sitemap_stat_group_column_unsupported' => '지원하지 않는 그룹 기준 컬럼입니다: :column',
     ],
 ];

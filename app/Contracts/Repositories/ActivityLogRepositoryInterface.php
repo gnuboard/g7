@@ -2,7 +2,6 @@
 
 namespace App\Contracts\Repositories;
 
-use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -19,22 +18,20 @@ interface ActivityLogRepositoryInterface
      * @param  array  $filters  필터 조건
      * @return LengthAwarePaginator 페이지네이션된 로그 목록
      */
-    public function getPaginatedForModel(Model $model, array $filters = []): LengthAwarePaginator;
 
+    public function getPaginatedForModel(Model $model, array $filters = []): LengthAwarePaginator;
     /**
      * 활동 로그 목록을 페이지네이션하여 조회합니다.
      *
-     * 요청에 `cursor` 가 있으면 키셋(커서) 방식으로 응답합니다.
-     *
      * @param  array  $filters  필터 조건
-     * @return LengthAwarePaginator|CursorPaginator 페이지네이션된 로그 목록
+     * @return LengthAwarePaginator 페이지네이션된 로그 목록
      */
-    public function getPaginated(array $filters = []): LengthAwarePaginator|CursorPaginator;
+    public function getPaginated(array $filters = []): LengthAwarePaginator;
 
     /**
      * 활동 로그를 삭제합니다.
      *
-     * @param  int  $id  삭제할 활동 로그 ID
+     * @param int $id 삭제할 활동 로그 ID
      * @return bool 삭제 성공 여부
      */
     public function delete(int $id): bool;
@@ -42,7 +39,7 @@ interface ActivityLogRepositoryInterface
     /**
      * 여러 활동 로그를 일괄 삭제합니다.
      *
-     * @param  array<int>  $ids  삭제할 활동 로그 ID 목록
+     * @param array<int> $ids 삭제할 활동 로그 ID 목록
      * @return int 삭제된 건수
      */
     public function deleteMany(array $ids): int;
@@ -65,12 +62,4 @@ interface ActivityLogRepositoryInterface
      * @return int 익명화된 row 수
      */
     public function anonymizeUserId(int $userId): int;
-
-    /**
-     * 보존 기간이 지난 활동 로그를 삭제합니다.
-     *
-     * @param  int  $days  보존 기간 (일)
-     * @return int 삭제된 건수
-     */
-    public function deleteOlderThan(int $days): int;
 }

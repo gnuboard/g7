@@ -204,10 +204,7 @@ class UserResource extends BaseApiResource
             'can_create' => 'core.users.create',
             'can_update' => 'core.users.update',
             'can_delete' => 'core.users.delete',
-            // 역할 부여는 "사용자 관리"(core.users.update)의 일부다 — "역할 정의 수정"
-            // (core.permissions.update: 역할에 권한을 가감)이 아니다. 부여 가능한 개별 역할의
-            // 범위는 서버 상한(PermissionEscalationGuard)이 역할별로 강제한다.
-            'can_assign_roles' => 'core.users.update',
+            'can_assign_roles' => 'core.permissions.update',
         ];
     }
 
@@ -263,14 +260,6 @@ class UserResource extends BaseApiResource
             'blocked_at' => $this->getValue('blocked_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('blocked_at'))
                 : null,
-            // 로그인 실패 누적 잠금 상태 — 관리자만 확인·해제할 수 있어야 하므로 관리자 응답에만 노출
-            'failed_login_attempts' => (int) ($this->getValue('failed_login_attempts') ?? 0),
-            'locked_permanently' => (bool) $this->getValue('locked_permanently'),
-            'locked_until' => $this->getValue('locked_until')
-                ? $this->formatDateTimeStringForUser($this->getValue('locked_until'))
-                : null,
-            'is_locked' => (bool) $this->getValue('locked_permanently')
-                || ($this->getValue('locked_until') !== null && $this->resource->locked_until?->isFuture()),
         ]);
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합

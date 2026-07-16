@@ -198,14 +198,14 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "errors": "{{error.errors}}"
+                                                            "errors": "{{$error.errors}}"
                                                         }
                                                     },
                                                     {
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
+                                                            "message": "$t:admin.plugins.settings.save_error"
                                                         }
                                                     }
                                                 ]

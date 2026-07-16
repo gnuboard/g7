@@ -19,18 +19,12 @@
  * dnd-kit 비호환(feedback_chrome_mcp_dnd_kit_incompatible) 회피 — 노드 선택은 합성 마우스
  * 이벤트 시퀀스로 드래그 핸들 pointer 가로채기를 우회한다.
  *
- * 축 요약(마커 아님 — 평문): property_modal_visibility_preset_recognition, visibility_compound_stays_advanced, numeric_array_preset_recognition, explicit_boolean_compare_preset_recognition, comparison_pattern_preset_recognition, coverage_gate_presets_served.
- * 효과 요약(마커 아님 — 평문): visibility_builder_renders, variant_defense_no_false_positive, stage2_numeric_array_presets_served, stage3_boolean_compare_presets_served, stage4_comparison_presets_served, stage5_gate_presets_served.
+ * @scenario property_modal_visibility_preset_recognition + visibility_compound_stays_advanced + numeric_array_preset_recognition + explicit_boolean_compare_preset_recognition + comparison_pattern_preset_recognition + coverage_gate_presets_served
+ * @effects visibility_builder_renders + variant_defense_no_false_positive + stage2_numeric_array_presets_served + stage3_boolean_compare_presets_served + stage4_comparison_presets_served + stage5_gate_presets_served
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
 type PwPage = import('@playwright/test').Page;
-
-// 관리자 템플릿의 라우트는 모두 `*/admin/...` 프리픽스를 갖는다. 예전에는 '/' 를 넘겼는데
-// 그런 라우트가 없어 레이아웃이 해석되지 않고 캔버스(g7le-preview-frame)가 끝내 뜨지 않았다.
-// `*/admin` 은 존재하지만 `redirect` 전용(레이아웃 없음)이라 역시 렌더할 대상이 없다 —
-// 레이아웃을 가진 라우트를 지목해야 한다.
-const ADMIN_ROUTE = '*/admin/dashboard';
 
 async function openEditor(page: PwPage, template: string, route: string): Promise<void> {
   await page.goto(`/admin/layout-editor/${template}?route=${encodeURIComponent(route)}`);
@@ -83,7 +77,6 @@ async function openVisibilityTab(page: PwPage, path: string): Promise<boolean> {
 }
 
 test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', () => {
-  /** @effects visibility_builder_renders */
   test('표시조건 탭이 빌더 또는 no-recipes 로 렌더 (인프라 배선 회귀 가드)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -111,11 +104,10 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     expect(opened).toBe(true);
   });
 
-  /** @effects stage2_numeric_array_presets_served */
   test('P2/P3 operator 가 served editor-spec 에 노출 + 숫자/배열 패턴 인식', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
-    await openEditor(page, 'sirsoft-admin_basic', ADMIN_ROUTE);
+    await openEditor(page, 'sirsoft-admin_basic', '/');
 
     // served editor-spec 의 conditionRecipes 에 단계 2 operator 가 모두 노출돼야 한다
     // (template:update 로 활성 디렉토리 반영 회귀 가드).
@@ -138,11 +130,10 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     }
   });
 
-  /** @effects stage3_boolean_compare_presets_served */
   test('P5 valueIsTrue/valueIsFalse 가 served editor-spec 에 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
-    await openEditor(page, 'sirsoft-admin_basic', ADMIN_ROUTE);
+    await openEditor(page, 'sirsoft-admin_basic', '/');
 
     // served editor-spec 의 conditionRecipes 에 단계 3 명시비교 operator 가 노출돼야 한다
     // (template:update 로 활성 디렉토리 반영 회귀 가드). 양 템플릿 동기.
@@ -169,11 +160,10 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     }
   });
 
-  /** @effects stage4_comparison_presets_served */
   test('단계 4 비교 패턴 operator 가 served editor-spec 에 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
-    await openEditor(page, 'sirsoft-admin_basic', ADMIN_ROUTE);
+    await openEditor(page, 'sirsoft-admin_basic', '/');
 
     // served editor-spec 의 conditionRecipes 에 단계 4 비교 패턴 net-new operator 가
     // 노출돼야 한다(template:update 활성 반영 회귀 가드). 양 템플릿 동기.
@@ -201,11 +191,10 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     }
   });
 
-  /** @effects stage5_gate_presets_served */
   test('60% 게이트 토대 프리셋 18종이 양 템플릿 served editor-spec 에 전부 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
-    await openEditor(page, 'sirsoft-admin_basic', ADMIN_ROUTE);
+    await openEditor(page, 'sirsoft-admin_basic', '/');
 
     // 단계 1~4 가 추가한 범용 프리셋(P1~P5 + 비교 패턴) 전부가 양 템플릿 활성 디렉토리
     // editor-spec 에 반영돼 있어야 60%+ 커버리지가 라이브에서 성립한다(template:update 회귀 가드).
@@ -236,7 +225,6 @@ test.describe('@layout-editor 표시조건 변종 방어 인프라 (단계 0)', 
     }
   });
 
-  /** @effects variant_defense_no_false_positive */
   test('콘솔/네트워크 에러 없이 표시조건 모달 진입 (variant-defense 무결성)', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('console', (msg) => {

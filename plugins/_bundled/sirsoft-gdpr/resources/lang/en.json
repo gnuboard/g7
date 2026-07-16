@@ -15,7 +15,6 @@
     "consent": {
         "granted": "Consent has been saved.",
         "granted_again": "Consent has been renewed.",
-        "rejected_saved": "Continuing without consent. Optional items will not be used.",
         "revoked": "Consent has been revoked.",
         "renew_all_success": "{renewed} active consent item(s) renewed to the new policy version.",
         "granting": "Granting...",
@@ -40,22 +39,12 @@
         "too_long_marketing": "Marketing — Domain cannot exceed 253 characters.",
         "must_be_array": "Each category must be an array of domain strings."
     },
-    "necessary_storage_allowlist": {
-        "invalid_format_local_storage": "Local storage — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)",
-        "invalid_format_session_storage": "Session storage — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)",
-        "invalid_format_cookie": "Cookie — invalid item format. (Letters, digits and _ . : @ + - ; a single trailing * is allowed)",
-        "too_long_local_storage": "Local storage — item cannot exceed 128 characters.",
-        "too_long_session_storage": "Session storage — item cannot exceed 128 characters.",
-        "too_long_cookie": "Cookie — item cannot exceed 128 characters.",
-        "must_be_array": "Each storage scope must be an array of item names.",
-        "invalid_scope": "Unknown storage scope: :scope (only local storage, session storage and cookies are allowed)"
-    },
     "settings": {
         "saved": "Settings have been saved.",
         "title": "GDPR Settings",
         "description": "Operators control the cookie consent banner and the MyPage privacy card.",
         "section": {
-            "operator": "Operator / Privacy Policy",
+            "operator": "Operator \/ Privacy Policy",
             "operator_desc": "Register the operator name, data storage location, and privacy policy page slug shown in the cookie banner and policy page.",
             "cookie_banner": "Cookie Consent Banner",
             "cookie_banner_desc": "Configure visibility, position, categories, and policy version of the cookie consent banner — all in one place.",
@@ -63,15 +52,12 @@
             "cookie_categories": "Cookie Categories",
             "cookie_policy_version": "Cookie Policy Version",
             "auto_blocking": "Auto-blocking Policy",
-            "auto_blocking_desc": "When the cookie banner is shown, external tracking resources matching the blocked-domain lists below are auto-blocked until the user consents.",
-            "necessary_storage": "Strictly Necessary Storage",
-            "necessary_storage_desc": "Manage the items allowed to persist for visitors who have not consented to functional cookies. Anything not listed is cleared on every visit."
+            "auto_blocking_desc": "When the cookie banner is shown, external tracking resources matching the blocked-domain lists below are auto-blocked until the user consents."
         },
         "nav": {
             "operator": "Operator",
             "cookie_banner": "Cookie Banner",
-            "auto_blocking_policy": "Auto-blocking Policy",
-            "necessary_storage": "Necessary Storage"
+            "auto_blocking_policy": "Auto-blocking Policy"
         },
         "status": {
             "enabled": "Enabled",
@@ -90,18 +76,18 @@
                 "placeholder": "e.g., privacy-policy"
             },
             "legal_entity_name": {
-                "label": "Legal Entity / Operator Name",
+                "label": "Legal Entity \/ Operator Name",
                 "hint": "The operator name shown in the cookie banner and MyPage.",
                 "placeholder": "e.g., Acme Corp."
             },
             "data_storage_location": {
                 "label": "Data Storage Location",
                 "hint": "Country where user data is stored, shown to users. e.g., \"United States (AWS)\", \"Germany\". Do not enter IP addresses, cloud region codes (e.g., ap-northeast-2), or datacenter addresses — these are security-sensitive.",
-                "placeholder": "e.g., Korea (self-hosted IDC) / United States (AWS)"
+                "placeholder": "e.g., Korea (self-hosted IDC) \/ United States (AWS)"
             },
             "banner_enabled": {
                 "label": "Show Cookie Banner",
-                "hint": "When enabled, the cookie banner and pre-consent auto-blocking are activated together. The MyPage consent management card is independent of this toggle and always shows for members with consent/withdrawal history."
+                "hint": "When enabled, the cookie banner, pre-consent auto-blocking, and the MyPage consent management card are activated together."
             },
             "banner_position": {
                 "label": "Banner Position",
@@ -117,34 +103,12 @@
                 "warning_visual_break": "Be careful when classifying external font/stylesheet domains. Misclassification can break the page silently.",
                 "warning_policy_bump": "Bump the cookie policy version after changing the blocked domain list. This prevents existing consenters from being implicitly enrolled into newly added trackers.",
                 "warning_domain_format": "Domain format: example.com, *.example.com (wildcard) are supported. Names without dots (like localhost) and non-ASCII domains are not supported.",
-                "warning_scope_limit": "Auto-blocking only covers scripts registered by plugins/modules. External scripts inserted directly into the head area by admins (e.g. via Template External Scripts) are outside this protection — verify their load conditions separately.",
                 "tag_input_placeholder": "Type a domain and press Enter (e.g., google-analytics.com, *.hotjar.com)",
                 "tag_no_options": "No suggestions. Type to add.",
                 "category": {
                     "functional": "Functional — Blocked Domains",
                     "analytics": "Analytics — Blocked Domains",
                     "marketing": "Marketing — Blocked Domains"
-                }
-            },
-            "necessary_storage_allowlist": {
-                "warnings_title": "Notes",
-                "warning_purpose": "Only the items listed here survive without functional consent. Anything else is cleared on every visit, with no error or warning — it surfaces only as a setting that will not save.",
-                "warning_wildcard": "A trailing * matches every name with that prefix. For example g7_filters_* covers g7_filters_orders_1. The * is only allowed at the end.",
-                "warning_discovery": "The item names a newly installed extension writes are listed in that extension documentation, or visible in browser devtools (Application → Storage).",
-                "warning_necessary_only": "List only what the site genuinely needs to work. Adding tracking or analytics items defeats the pre-consent blocking principle.",
-                "locked_label": "Locked items (cannot be removed)",
-                "locked_hint": "The site cannot operate without these. They cannot be removed from the list.",
-                "tag_input_placeholder": "Type an item name and press Enter (e.g., g7_locale, myplugin_*)",
-                "tag_no_options": "No suggestions. Type to add.",
-                "scope": {
-                    "local_storage": "Local storage (localStorage)",
-                    "session_storage": "Session storage (sessionStorage)",
-                    "cookie": "Cookies"
-                },
-                "scope_desc": {
-                    "local_storage": "Persists after the browser is closed. User choices such as language and theme, and admin display preferences, live here.",
-                    "session_storage": "Cleared when the tab closes. Used to restore the original screen when returning from a payment or identity verification window.",
-                    "cookie": "Values the browser sends back to the server. Both server-set and client-written cookies are judged by this list."
                 }
             },
             "cookie_categories": {
@@ -158,11 +122,11 @@
                     "scope_label": "Auto-blocking scope",
                     "tools_label": "Common tools",
                     "necessary": {
-                        "scope": "Not auto-blocked. Session/auth tokens, shopping basket identifier, user-selected language preference and display theme, and cookie consent records are essential to site operation and always allowed.",
-                        "tools": "Session IDs, authentication tokens, CSRF tokens, shopping basket identifier, language preference, display theme, etc. (no configuration required)"
+                        "scope": "Not auto-blocked. Session/auth tokens, shopping basket identifier, user-selected language preference at registration, and cookie consent records are essential to site operation and always allowed.",
+                        "tools": "Session IDs, authentication tokens, CSRF tokens, shopping basket identifier, language preference, etc. (no configuration required)"
                     },
                     "functional": {
-                        "scope": "External resources matching the functional blocked-domain list (in the Auto-blocking Policy tab) are auto-blocked until the user consents. User preferences such as currency selection are also persisted only after consent.",
+                        "scope": "External resources matching the functional blocked-domain list (in the Auto-blocking Policy tab) are auto-blocked until the user consents. User preferences such as dark mode and currency selection are also persisted only after consent.",
                         "tools": "Customer support chatbots (Crisp, Intercom, Tawk.to), translation widgets, user-preference synchronization services, etc."
                     },
                     "analytics": {
@@ -235,10 +199,7 @@
                 "open_policy_page": "Open policy page",
                 "no_policy_slug": "No privacy policy page registered."
             },
-            "not_found": "Policy version not found.",
-            "history_page_summary": "{total} total · page {current} / {last}",
-            "history_prev": "Previous",
-            "history_next": "Next"
+            "not_found": "Policy version not found."
         }
     },
     "admin": {
@@ -264,16 +225,12 @@
             },
             "action": {
                 "granted": "Granted",
-                "revoked": "Revoked",
-                "rejected": "Rejected"
+                "revoked": "Revoked"
             },
             "source": {
                 "banner": "Banner",
                 "preference_center": "Preferences",
-                "mypage": "MyPage",
-                "register": "Sign-up",
-                "mypage_renew_all": "MyPage bulk re-consent",
-                "withdraw": "Account withdrawal"
+                "mypage": "MyPage"
             },
             "col": {
                 "created_at": "Time",
@@ -290,7 +247,7 @@
                 "categories_label": "Categories Snapshot",
                 "categories_hint": "The member's category-by-category choices at the time of consent. This record stays immutable even after the policy is updated.",
                 "snapshot_granted": "Granted",
-                "snapshot_revoked": "Not Consented"
+                "snapshot_revoked": "Revoked"
             }
         }
     },
@@ -308,22 +265,13 @@
             "col_action": "Action",
             "consented": "Consented",
             "revoked": "Revoked",
-            "rejected_label": "Rejected",
             "revoke": "Revoke",
             "grant": "Consent",
             "grant_again": "Consent Again",
-            "label_suffix": "{label} cookies",
-            "locked_label": "Required",
-            "enable_all": "Consent to all",
-            "enable_all_hint": "You have optional items you haven't consented to. Consent to them all at once.",
-            "enable_all_success": "You have consented to all optional items.",
             "required_label": "Required",
             "required_hint": "This item is required for service operation and cannot be revoked.",
-            "grant_confirm_title": "Confirm Cookie Consent",
-            "grant_confirm_message": "Do you want to consent to this cookie? Once consented, this category's cookies will be used, and you can revoke it anytime.",
             "revoke_confirm_title": "Revoke Consent",
             "revoke_confirm_message": "Are you sure you want to revoke this consent? Revoking consent may limit features related to that category.",
-            "revoke_target_consented_at": "Consented · {date}",
             "no_consents": "No active consent items.",
             "needs_renewal": "The cookie policy has been updated. Please renew your consent.",
             "needs_renewal_with_version": "The cookie policy has been updated to version {version}. Please review the optional consent items.",
@@ -347,9 +295,9 @@
         "title": "Cookie Notice",
         "description": "This site uses cookies to improve user experience and for analytics. You can choose which cookies to allow.",
         "accept_all": "Accept All",
-        "reject_continue": "Continue without consent",
-        "preferences": "Select Consent",
-        "save": "Save Selection",
+        "reject_all": "Necessary Only",
+        "preferences": "Preferences",
+        "save": "Save Preferences",
         "policy_link": "Privacy Policy",
         "preferences_title": "Cookie Preferences",
         "preferences_description": "You can grant or revoke each category individually. Required categories cannot be turned off.",

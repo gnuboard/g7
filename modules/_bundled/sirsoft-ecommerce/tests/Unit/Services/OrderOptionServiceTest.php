@@ -72,7 +72,7 @@ class OrderOptionServiceTest extends ModuleTestCase
         $order = $this->makePaidOrderWithOptions(2);
         $items = $order->options->map(fn ($o) => ['option_id' => $o->id, 'quantity' => $o->quantity])->all();
 
-        $this->service->bulkChangeStatusWithQuantity($items, OrderStatusEnum::SHIPPING, $order->id);
+        $this->service->bulkChangeStatusWithQuantity($items, OrderStatusEnum::SHIPPING);
 
         $this->assertContains(OrderStatusEnum::PAYMENT_COMPLETE->value, $this->fired);
         $this->assertEquals(OrderStatusEnum::SHIPPING, $order->fresh()->order_status);
@@ -93,8 +93,7 @@ class OrderOptionServiceTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $firstOption->id, 'quantity' => $firstOption->quantity]],
-            OrderStatusEnum::SHIPPING,
-            $order->id,
+            OrderStatusEnum::SHIPPING
         );
 
         $this->assertSame([], $this->fired, '부모가 전이되지 않으면 after_status_change 미발화여야 함');
@@ -122,7 +121,6 @@ class OrderOptionServiceTest extends ModuleTestCase
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => $option->quantity]],
             OrderStatusEnum::SHIPPING,
-            $order->id,
             ['carrier_id' => 1, 'tracking_number' => 'SAVED-TRACK-108']
         );
 
@@ -155,7 +153,6 @@ class OrderOptionServiceTest extends ModuleTestCase
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => $option->quantity]],
             OrderStatusEnum::PAYMENT_COMPLETE,
-            $order->id,
             ['carrier_id' => 1, 'tracking_number' => 'SHOULD-NOT-SAVE']
         );
 
@@ -214,8 +211,7 @@ class OrderOptionServiceTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => $option->quantity]],
-            OrderStatusEnum::PAYMENT_COMPLETE,
-            $order->id,
+            OrderStatusEnum::PAYMENT_COMPLETE
         );
 
         $cleanup();
@@ -245,8 +241,7 @@ class OrderOptionServiceTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => $option->quantity]],
-            OrderStatusEnum::PAYMENT_COMPLETE,
-            $order->id,
+            OrderStatusEnum::PAYMENT_COMPLETE
         );
 
         $cleanup();
@@ -276,8 +271,7 @@ class OrderOptionServiceTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => $option->quantity]],
-            OrderStatusEnum::PAYMENT_COMPLETE,
-            $order->id,
+            OrderStatusEnum::PAYMENT_COMPLETE
         );
 
         $cleanup();
@@ -302,8 +296,7 @@ class OrderOptionServiceTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => $option->quantity]],
-            OrderStatusEnum::SHIPPING,
-            $order->id,
+            OrderStatusEnum::SHIPPING
         );
 
         $cleanup();

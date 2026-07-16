@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Listeners;
 
+use App\ActivityLog\ChangeDetector;
 use App\Enums\ActivityLogType;
 use App\Listeners\CoreActivityLogListener;
 use App\Models\ActivityLog;
-use App\Models\Attachment;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -62,6 +62,10 @@ class CoreActivityLogListenerTest extends TestCase
     /**
      * User mock 생성
      *
+     * @param int $id
+     * @param string $uuid
+     * @param string $email
+     * @param string $name
      * @return MockInterface|User
      */
     private function createUserMock(int $id = 1, string $uuid = 'uuid-123', string $email = 'test@test.com', string $name = 'Test User'): MockInterface
@@ -75,6 +79,8 @@ class CoreActivityLogListenerTest extends TestCase
     /**
      * Model mock 생성
      *
+     * @param int $id
+     * @param array $extraAttributes
      * @return MockInterface|Model
      */
     private function createModelMock(int $id = 1, array $extraAttributes = []): MockInterface
@@ -87,6 +93,11 @@ class CoreActivityLogListenerTest extends TestCase
 
     /**
      * logChannel->info() 기대 설정 헬퍼
+     *
+     * @param string $expectedAction
+     * @param ActivityLogType $expectedLogType
+     * @param string $expectedDescriptionKey
+     * @param bool $expectLoggable
      */
     private function expectLogInfo(
         string $expectedAction,
@@ -118,13 +129,12 @@ class CoreActivityLogListenerTest extends TestCase
     // getSubscribedHooks 테스트
     // ═══════════════════════════════════════════
 
-    public function test_get_subscribed_hooks_returns_all_hooks(): void
+    public function test_getSubscribedHooks_returns_all_hooks(): void
     {
         $hooks = CoreActivityLogListener::getSubscribedHooks();
 
-        // 65개 로깅(after_*) 훅 (mail_template 2개 제거됨, IDV/auth 후속 추가 분 포함,
-        // develop 머지 후 +2, 관리자 계정 잠금 해제(core.auth.account_unlocked) +1)
-        $this->assertCount(65, $hooks);
+        // 64개 로깅(after_*) 훅 (mail_template 2개 제거됨, IDV/auth 후속 추가 분 포함, develop 머지 후 +2)
+        $this->assertCount(64, $hooks);
     }
 
     public function test_handle_does_nothing(): void
@@ -138,7 +148,7 @@ class CoreActivityLogListenerTest extends TestCase
     // User 핸들러 테스트 (8개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_user_after_create_logs_activity(): void
+    public function test_handleUserAfterCreate_logs_activity(): void
     {
         $user = $this->createUserMock(1, 'uuid-abc', 'new@test.com', 'New User');
 
@@ -157,7 +167,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleUserAfterCreate($user, ['email' => 'new@test.com']);
     }
 
-    public function test_handle_user_after_update_logs_activity_with_changes(): void
+    public function test_handleUserAfterUpdate_logs_activity_with_changes(): void
     {
         $user = $this->createUserMock(1, 'uuid-abc');
 
@@ -176,7 +186,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleUserAfterUpdate($user, ['name' => 'Updated']);
     }
 
-    public function test_handle_user_after_update_accepts_snapshot_argument(): void
+    public function test_handleUserAfterUpdate_accepts_snapshot_argument(): void
     {
         $user = $this->createUserMock(1, 'uuid-abc');
         $snapshot = ['id' => 1, 'name' => 'Old Name'];
@@ -191,7 +201,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleUserAfterUpdate($user, [], $snapshot);
     }
 
-    public function test_handle_user_after_delete_logs_activity(): void
+    public function test_handleUserAfterDelete_logs_activity(): void
     {
         // id 없는 경우 — ActivityLog::where() 호출 스킵, 로깅만 검증
         $userData = ['uuid' => 'uuid-del', 'email' => 'del@test.com'];
@@ -209,7 +219,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleUserAfterDelete($userData);
     }
 
-    public function test_handle_user_after_delete_handles_missing_uuid(): void
+    public function test_handleUserAfterDelete_handles_missing_uuid(): void
     {
         // uuid 없는 경우 — 빈 문자열 fallback 검증
         $userData = [];
@@ -224,7 +234,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleUserAfterDelete($userData);
     }
 
-    public function test_handle_user_after_withdraw_logs_activity(): void
+    public function test_handleUserAfterWithdraw_logs_activity(): void
     {
         $user = $this->createUserMock(1, 'uuid-wd');
 
@@ -233,7 +243,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleUserAfterWithdraw($user);
     }
 
-    public function test_handle_user_after_show_logs_activity(): void
+    public function test_handleUserAfterShow_logs_activity(): void
     {
         $user = $this->createUserMock(1, 'uuid-show');
 
@@ -250,7 +260,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleUserAfterShow($user);
     }
 
-    public function test_handle_user_after_list_logs_activity(): void
+    public function test_handleUserAfterList_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -264,7 +274,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleUserAfterList(25);
     }
 
-    public function test_handle_user_after_search_logs_activity(): void
+    public function test_handleUserAfterSearch_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -279,7 +289,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleUserAfterSearch('john', 3);
     }
 
-    public function test_handle_user_after_bulk_update_logs_per_item(): void
+    public function test_handleUserAfterBulkUpdate_logs_per_item(): void
     {
         $users = collect([
             User::factory()->create(),
@@ -310,7 +320,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->assertCount(3, $loggedContexts);
     }
 
-    public function test_handle_user_after_bulk_update_skips_nonexistent_uuids(): void
+    public function test_handleUserAfterBulkUpdate_skips_nonexistent_uuids(): void
     {
         $user = User::factory()->create();
 
@@ -328,7 +338,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Auth 핸들러 테스트 (6개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_auth_after_login_logs_activity(): void
+    public function test_handleAuthAfterLogin_logs_activity(): void
     {
         $user = $this->createUserMock(1);
 
@@ -345,7 +355,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleAuthAfterLogin($user, ['ip' => '127.0.0.1']);
     }
 
-    public function test_handle_auth_logout_logs_activity(): void
+    public function test_handleAuthLogout_logs_activity(): void
     {
         $user = $this->createUserMock(2);
 
@@ -362,7 +372,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleAuthLogout($user);
     }
 
-    public function test_handle_auth_register_logs_activity_with_user_type(): void
+    public function test_handleAuthRegister_logs_activity_with_user_type(): void
     {
         // auth 경로는 사용자 화면이므로 User 타입으로 자동 결정
         $this->app->instance('request', Request::create('/api/auth/register'));
@@ -381,7 +391,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleAuthRegister($user, ['email' => 'new@test.com']);
     }
 
-    public function test_handle_auth_forgot_password_logs_activity(): void
+    public function test_handleAuthForgotPassword_logs_activity(): void
     {
         $this->app->instance('request', Request::create('/api/auth/forgot-password'));
         $user = $this->createUserMock(4);
@@ -399,7 +409,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleAuthForgotPassword($user);
     }
 
-    public function test_handle_auth_reset_password_logs_activity(): void
+    public function test_handleAuthResetPassword_logs_activity(): void
     {
         $this->app->instance('request', Request::create('/api/auth/reset-password'));
         $user = $this->createUserMock(5);
@@ -417,7 +427,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleAuthResetPassword($user);
     }
 
-    public function test_handle_auth_record_consents_logs_activity(): void
+    public function test_handleAuthRecordConsents_logs_activity(): void
     {
         $this->app->instance('request', Request::create('/api/auth/record-consents'));
         $user = $this->createUserMock(6);
@@ -440,7 +450,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Role 핸들러 테스트 (5개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_role_after_create_logs_activity(): void
+    public function test_handleRoleAfterCreate_logs_activity(): void
     {
         $role = $this->createModelMock(10, ['name' => 'Editor']);
 
@@ -458,7 +468,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleRoleAfterCreate($role);
     }
 
-    public function test_handle_role_after_update_logs_activity_with_changes(): void
+    public function test_handleRoleAfterUpdate_logs_activity_with_changes(): void
     {
         $role = $this->createModelMock(10, ['name' => 'SuperEditor']);
 
@@ -476,7 +486,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleRoleAfterUpdate($role);
     }
 
-    public function test_handle_role_after_update_accepts_snapshot_argument(): void
+    public function test_handleRoleAfterUpdate_accepts_snapshot_argument(): void
     {
         $role = $this->createModelMock(10, ['name' => 'Editor']);
         $snapshot = ['id' => 10, 'name' => 'Old Role'];
@@ -491,7 +501,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleRoleAfterUpdate($role, $snapshot);
     }
 
-    public function test_handle_role_after_delete_logs_activity(): void
+    public function test_handleRoleAfterDelete_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -506,7 +516,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleRoleAfterDelete(99);
     }
 
-    public function test_handle_role_after_sync_permissions_logs_activity(): void
+    public function test_handleRoleAfterSyncPermissions_logs_activity(): void
     {
         $role = $this->createModelMock(10);
         $previous = ['users.view', 'users.create'];
@@ -527,7 +537,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleRoleAfterSyncPermissions($role, $previous, $current);
     }
 
-    public function test_handle_role_after_toggle_status_logs_activity(): void
+    public function test_handleRoleAfterToggleStatus_logs_activity(): void
     {
         $role = $this->createModelMock(10);
 
@@ -540,7 +550,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Menu 핸들러 테스트 (6개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_menu_after_create_logs_activity(): void
+    public function test_handleMenuAfterCreate_logs_activity(): void
     {
         $menu = $this->createModelMock(5, ['title' => 'Settings']);
 
@@ -558,7 +568,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleMenuAfterCreate($menu);
     }
 
-    public function test_handle_menu_after_update_logs_activity_with_changes(): void
+    public function test_handleMenuAfterUpdate_logs_activity_with_changes(): void
     {
         $menu = $this->createModelMock(5, ['title' => 'Updated Settings']);
 
@@ -576,7 +586,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleMenuAfterUpdate($menu);
     }
 
-    public function test_handle_menu_after_update_accepts_snapshot_argument(): void
+    public function test_handleMenuAfterUpdate_accepts_snapshot_argument(): void
     {
         $menu = $this->createModelMock(5, ['title' => 'Settings']);
         $snapshot = ['id' => 5, 'title' => 'Old Title'];
@@ -591,7 +601,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleMenuAfterUpdate($menu, $snapshot);
     }
 
-    public function test_handle_menu_after_delete_logs_activity(): void
+    public function test_handleMenuAfterDelete_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -606,7 +616,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleMenuAfterDelete(77);
     }
 
-    public function test_handle_menu_after_update_order_logs_activity(): void
+    public function test_handleMenuAfterUpdateOrder_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -619,7 +629,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleMenuAfterUpdateOrder([['id' => 1, 'order' => 0], ['id' => 2, 'order' => 1]]);
     }
 
-    public function test_handle_menu_after_toggle_status_logs_activity(): void
+    public function test_handleMenuAfterToggleStatus_logs_activity(): void
     {
         $menu = $this->createModelMock(5);
 
@@ -628,7 +638,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleMenuAfterToggleStatus($menu);
     }
 
-    public function test_handle_menu_after_sync_roles_logs_activity(): void
+    public function test_handleMenuAfterSyncRoles_logs_activity(): void
     {
         $menu = $this->createModelMock(5);
         $previous = [1, 2, 3];
@@ -653,7 +663,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Settings 핸들러 테스트 (2개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_settings_after_save_logs_activity(): void
+    public function test_handleSettingsAfterSave_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -668,7 +678,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleSettingsAfterSave('general', ['site_name' => 'G7', 'site_url' => 'https://g7.dev'], true);
     }
 
-    public function test_handle_settings_after_set_logs_activity(): void
+    public function test_handleSettingsAfterSet_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -686,7 +696,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Schedule 핸들러 테스트 (6개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_schedule_after_create_logs_activity(): void
+    public function test_handleScheduleAfterCreate_logs_activity(): void
     {
         $schedule = $this->createModelMock(7);
 
@@ -703,7 +713,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleScheduleAfterCreate($schedule);
     }
 
-    public function test_handle_schedule_after_update_logs_activity_with_changes(): void
+    public function test_handleScheduleAfterUpdate_logs_activity_with_changes(): void
     {
         $schedule = $this->createModelMock(7);
 
@@ -721,7 +731,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleScheduleAfterUpdate($schedule);
     }
 
-    public function test_handle_schedule_after_update_accepts_snapshot_argument(): void
+    public function test_handleScheduleAfterUpdate_accepts_snapshot_argument(): void
     {
         $schedule = $this->createModelMock(7);
         $snapshot = ['id' => 7, 'command' => 'old:command'];
@@ -736,7 +746,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleScheduleAfterUpdate($schedule, $snapshot);
     }
 
-    public function test_handle_schedule_after_delete_logs_activity(): void
+    public function test_handleScheduleAfterDelete_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -751,7 +761,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleScheduleAfterDelete(15);
     }
 
-    public function test_handle_schedule_after_run_logs_activity(): void
+    public function test_handleScheduleAfterRun_logs_activity(): void
     {
         $schedule = $this->createModelMock(7);
         $history = $this->createModelMock(100);
@@ -769,7 +779,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleScheduleAfterRun($schedule, $history);
     }
 
-    public function test_handle_schedule_after_bulk_update_logs_per_item(): void
+    public function test_handleScheduleAfterBulkUpdate_logs_per_item(): void
     {
         $schedules = collect([
             Schedule::create(['name' => 'Schedule A', 'command' => 'test:a', 'expression' => '* * * * *']),
@@ -800,7 +810,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->assertCount(3, $loggedContexts);
     }
 
-    public function test_handle_schedule_after_bulk_update_skips_nonexistent_ids(): void
+    public function test_handleScheduleAfterBulkUpdate_skips_nonexistent_ids(): void
     {
         $schedule = Schedule::create(['name' => 'Schedule X', 'command' => 'test:x', 'expression' => '* * * * *']);
 
@@ -814,7 +824,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleScheduleAfterBulkUpdate([$schedule->id, 99999], true, 2);
     }
 
-    public function test_handle_schedule_after_bulk_delete_logs_per_item(): void
+    public function test_handleScheduleAfterBulkDelete_logs_per_item(): void
     {
         $ids = [4, 5];
 
@@ -844,7 +854,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Attachment 핸들러 테스트 (3개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_attachment_after_upload_logs_activity(): void
+    public function test_handleAttachmentAfterUpload_logs_activity(): void
     {
         $attachment = $this->createModelMock(20);
 
@@ -853,7 +863,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleAttachmentAfterUpload($attachment);
     }
 
-    public function test_handle_attachment_after_delete_logs_activity(): void
+    public function test_handleAttachmentAfterDelete_logs_activity(): void
     {
         $attachment = $this->createModelMock(20);
 
@@ -868,7 +878,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleAttachmentAfterDelete($attachment);
     }
 
-    public function test_handle_attachment_after_bulk_delete_creates_per_item_logs(): void
+    public function test_handleAttachmentAfterBulkDelete_creates_per_item_logs(): void
     {
         $ids = [10, 20, 30];
         $snapshots = [
@@ -887,7 +897,7 @@ class CoreActivityLogListenerTest extends TestCase
                 $loggedIds[] = $context['loggable_id'];
 
                 return $context['log_type'] === ActivityLogType::Admin
-                    && $context['loggable_type'] === Attachment::class
+                    && $context['loggable_type'] === \App\Models\Attachment::class
                     && $context['description_key'] === 'activity_log.description.attachment_bulk_delete'
                     && $context['description_params']['count'] === 1
                     && $context['properties']['identifier'] === 'post-images'
@@ -947,7 +957,7 @@ class CoreActivityLogListenerTest extends TestCase
         ];
     }
 
-    public function test_handle_module_after_install_includes_version_in_properties(): void
+    public function test_handleModuleAfterInstall_includes_version_in_properties(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -960,7 +970,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleModuleAfterInstall('sirsoft-ecommerce', ['version' => '2.0.0']);
     }
 
-    public function test_handle_module_after_uninstall_logs_activity(): void
+    public function test_handleModuleAfterUninstall_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -976,7 +986,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleModuleAfterUninstall('sirsoft-ecommerce', ['version' => '1.0.0'], true);
     }
 
-    public function test_handle_module_after_update_logs_activity(): void
+    public function test_handleModuleAfterUpdate_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -992,7 +1002,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleModuleAfterUpdate('sirsoft-ecommerce', ['success' => true], ['version' => '1.1.0']);
     }
 
-    public function test_handle_module_after_refresh_layouts_logs_activity(): void
+    public function test_handleModuleAfterRefreshLayouts_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1051,7 +1061,7 @@ class CoreActivityLogListenerTest extends TestCase
         ];
     }
 
-    public function test_handle_plugin_after_install_includes_version_in_properties(): void
+    public function test_handlePluginAfterInstall_includes_version_in_properties(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1064,7 +1074,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handlePluginAfterInstall('sirsoft-payment', ['version' => '3.0.0']);
     }
 
-    public function test_handle_plugin_after_uninstall_logs_activity(): void
+    public function test_handlePluginAfterUninstall_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1080,7 +1090,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handlePluginAfterUninstall('sirsoft-payment', false, true);
     }
 
-    public function test_handle_plugin_after_update_logs_activity(): void
+    public function test_handlePluginAfterUpdate_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1100,7 +1110,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Template 핸들러 테스트 (6개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_template_after_install_logs_activity(): void
+    public function test_handleTemplateAfterInstall_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1116,7 +1126,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleTemplateAfterInstall('sirsoft-admin_basic', ['version' => '1.0.0']);
     }
 
-    public function test_handle_template_after_activate_logs_activity(): void
+    public function test_handleTemplateAfterActivate_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1130,7 +1140,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleTemplateAfterActivate(['identifier' => 'sirsoft-admin_basic']);
     }
 
-    public function test_handle_template_after_activate_handles_missing_identifier(): void
+    public function test_handleTemplateAfterActivate_handles_missing_identifier(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1142,7 +1152,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleTemplateAfterActivate([]);
     }
 
-    public function test_handle_template_after_deactivate_logs_activity(): void
+    public function test_handleTemplateAfterDeactivate_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1156,7 +1166,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleTemplateAfterDeactivate('sirsoft-basic');
     }
 
-    public function test_handle_template_after_uninstall_logs_activity(): void
+    public function test_handleTemplateAfterUninstall_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1172,7 +1182,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleTemplateAfterUninstall('sirsoft-admin_basic', ['version' => '1.0.0'], true);
     }
 
-    public function test_handle_template_after_version_update_logs_activity(): void
+    public function test_handleTemplateAfterVersionUpdate_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1188,7 +1198,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleTemplateAfterVersionUpdate('sirsoft-admin_basic', ['success' => true], ['version' => '2.0.0']);
     }
 
-    public function test_handle_template_after_refresh_layouts_logs_activity(): void
+    public function test_handleTemplateAfterRefreshLayouts_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1206,7 +1216,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Layout 핸들러 테스트 (2개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_layout_after_update_logs_activity(): void
+    public function test_handleLayoutAfterUpdate_logs_activity(): void
     {
         $layout = $this->createModelMock(50);
 
@@ -1223,7 +1233,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleLayoutAfterUpdate($layout, 1, 'admin/users/index', ['content' => '{}']);
     }
 
-    public function test_handle_layout_after_version_restore_logs_activity(): void
+    public function test_handleLayoutAfterVersionRestore_logs_activity(): void
     {
         $newVersion = $this->createModelMock(51);
 
@@ -1244,7 +1254,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Module Settings 핸들러 테스트 (2개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_module_settings_after_save_logs_activity(): void
+    public function test_handleModuleSettingsAfterSave_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1260,7 +1270,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleModuleSettingsAfterSave('sirsoft-ecommerce', ['currency' => 'KRW', 'tax_rate' => 10], true);
     }
 
-    public function test_handle_module_settings_after_reset_logs_activity(): void
+    public function test_handleModuleSettingsAfterReset_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1278,7 +1288,7 @@ class CoreActivityLogListenerTest extends TestCase
     // Plugin Settings 핸들러 테스트 (2개)
     // ═══════════════════════════════════════════
 
-    public function test_handle_plugin_settings_after_save_logs_activity(): void
+    public function test_handlePluginSettingsAfterSave_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1294,7 +1304,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handlePluginSettingsAfterSave('sirsoft-payment', ['api_key' => 'xxx', 'sandbox' => true], true);
     }
 
-    public function test_handle_plugin_settings_after_reset_logs_activity(): void
+    public function test_handlePluginSettingsAfterReset_logs_activity(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1312,7 +1322,7 @@ class CoreActivityLogListenerTest extends TestCase
     // 에러 처리 테스트
     // ═══════════════════════════════════════════
 
-    public function test_log_activity_catches_exception_and_logs_error(): void
+    public function test_logActivity_catches_exception_and_logs_error(): void
     {
         $user = $this->createUserMock(1, 'uuid-err');
 

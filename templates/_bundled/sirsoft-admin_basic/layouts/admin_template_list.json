@@ -52,12 +52,10 @@
       "fallback": {
         "data": {
           "data": [],
-          "pagination": {
-            "current_page": 1,
-            "last_page": 1,
-            "per_page": 12,
-            "total": 0
-          }
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 12,
+          "total": 0
         }
       }
     },
@@ -172,7 +170,7 @@
                             "handler": "toast",
                             "params": {
                               "type": "success",
-                              "message": "{{response.data?.updated_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.updated_count : '$t:admin.templates.check_updates_no_updates'}}"
+                              "message": "{{response.data?.update_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.update_count : '$t:admin.templates.check_updates_no_updates'}}"
                             }
                           }
                         ],
@@ -188,7 +186,7 @@
                             "handler": "toast",
                             "params": {
                               "type": "error",
-                              "message": "{{error.message}}"
+                              "message": "{{$error.message}}"
                             }
                           }
                         ]
@@ -251,7 +249,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "upload",
-                      "className": "text-xl"
+                      "className": "w-5 h-5"
                     }
                   },
                   {
@@ -282,7 +280,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "globe",
-                      "className": "text-xl"
+                      "className": "w-5 h-5"
                     }
                   },
                   {
@@ -330,7 +328,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "upload",
-                      "className": "text-xl"
+                      "className": "w-5 h-5"
                     }
                   },
                   {
@@ -354,7 +352,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "globe",
-                      "className": "text-xl"
+                      "className": "w-5 h-5"
                     }
                   },
                   {
@@ -453,16 +451,7 @@
                                           "dataSourceId": "auto_deactivated_banner"
                                         }
                                       }
-                                    ],
-                                      "onError": [
-                                          {
-                                              "handler": "toast",
-                                              "params": {
-                                                  "type": "error",
-                                                  "message": "{{error.message}}"
-                                              }
-                                          }
-                                      ]
+                                    ]
                                   }
                                 ],
                                 "children": [
@@ -581,7 +570,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-              "className": "sticky-tab-nav-responsive"
+              "className": "sticky-tab-nav"
             },
             "children": [
               {
@@ -616,7 +605,6 @@
                         }
                       },
                       {
-                        "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다.",
                         "handler": "navigate",
                         "params": {
                           "path": "/admin/templates/{{$args[0]}}"

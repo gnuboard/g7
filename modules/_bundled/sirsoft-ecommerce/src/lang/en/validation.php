@@ -38,7 +38,6 @@ return [
 
     // List query common validation messages
     'list' => [
-        'per_page_max' => 'You can retrieve up to :max items at a time.',
         // Pagination
         'page' => [
             'integer' => 'Page number must be an integer.',
@@ -127,9 +126,6 @@ return [
         ],
         'shipping_policy_id' => [
             'integer' => 'Shipping policy ID must be a number.',
-        ],
-        'with_options' => [
-            'boolean' => 'Include-options flag must be true or false.',
         ],
         // Filters
         'is_active' => [
@@ -232,7 +228,6 @@ return [
             'array' => 'Countries must be an array.',
             'string' => 'Country must be a string.',
             'in' => 'Please select a valid country.',
-            'max' => 'Country code may not be greater than :max characters.',
         ],
     ],
 
@@ -247,9 +242,6 @@ return [
 
     // Product validation messages
     'product' => [
-        'mileage_percent_max' => 'The percentage earn rate cannot exceed 100%.',
-        'selling_price_lte_list' => 'The selling price cannot be greater than the list price.',
-        'price_min' => 'The price must be greater than 0.',
         // Human-readable field names shown in error messages (StoreProductRequest::attributes())
         'attributes' => [
             'name' => 'product name',
@@ -461,10 +453,6 @@ return [
         'slug_unique' => 'This slug is already in use.',
         'slug_format' => 'The slug must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens (-).',
         'parent_not_found' => 'Parent category not found.',
-        'parent_id' => [
-            'self' => 'A category cannot be its own parent.',
-            'circular' => 'A descendant category cannot be set as the parent.',
-        ],
     ],
 
     // Product image validation messages
@@ -785,19 +773,6 @@ return [
             'integer' => 'Maximum amount must be an integer.',
             'min' => 'Maximum amount must be at least 0.',
         ],
-        // Shipping fee range
-        'min_shipping_amount' => [
-            'integer' => 'Minimum shipping fee must be an integer.',
-            'min' => 'Minimum shipping fee must be at least 0.',
-        ],
-        'max_shipping_amount' => [
-            'integer' => 'Maximum shipping fee must be an integer.',
-            'min' => 'Maximum shipping fee must be at least 0.',
-        ],
-        // Shipping policy
-        'shipping_policy_id' => [
-            'integer' => 'Shipping policy ID must be an integer.',
-        ],
         // Country codes
         'country_codes' => [
             'array' => 'Country codes must be an array.',
@@ -834,6 +809,9 @@ return [
             'integer' => 'Page number must be an integer.',
             'min' => 'Page number must be at least 1.',
         ],
+        'admin_memo' => [
+            'max' => 'Admin memo cannot exceed 1000 characters.',
+        ],
     ],
 
     // Order option quantity split validation
@@ -862,7 +840,6 @@ return [
 
     // Order validation messages (backward compatibility - order.* format)
     'order' => [
-        'payment_method_unavailable' => 'This payment method is currently unavailable. Please choose another one.',
         'ids' => [
             'required' => 'Please select orders to update.',
             'array' => 'Order IDs must be an array.',
@@ -913,13 +890,6 @@ return [
         'guest_lookup_password_min' => 'The order lookup password must be at least 8 characters.',
         'guest_lookup_password_confirmed' => 'The order lookup password confirmation does not match.',
         'guest_lookup_password_confirmation_required' => 'Please confirm the order lookup password.',
-        'cash_receipt_type_required' => 'Please select the cash receipt purpose.',
-        'cash_receipt_type_invalid' => 'The selected cash receipt purpose is invalid.',
-        'cash_receipt_identifier_type_required' => 'Please select the cash receipt identifier type.',
-        'cash_receipt_identifier_type_invalid' => 'The selected cash receipt identifier type is invalid.',
-        'cash_receipt_identifier_required' => 'Please enter the number to use for the cash receipt.',
-        'refund_bank_required_with' => 'The refund account requires the bank, account number, and account holder.',
-        'refund_bank_required_for_vbank' => 'A refund account is required for a paid virtual account order.',
     ],
 
     // Guest order lookup verification validation messages
@@ -952,7 +922,13 @@ return [
 
     // Cart validation messages
     'cart' => [
-        'quantity_limit_exceeded' => 'You can add up to :limit item(s) per product to the cart. (requested: :attempted)',
+        'product_id_required' => 'Please select a product.',
+        'product_not_found' => 'Product not found.',
+        'option_id_required' => 'Please select a product option.',
+        'option_not_found' => 'Product option not found.',
+        'quantity_required' => 'Please enter quantity.',
+        'quantity_min' => 'Quantity must be at least 1.',
+        'quantity_max' => 'Quantity must be at most 9999.',
         'ids_required' => 'Please select items to delete.',
         'ids_array' => 'Item IDs must be an array.',
         'ids_min' => 'Please select at least one item.',
@@ -963,15 +939,10 @@ return [
         'option_not_found' => 'Option not found.',
         'quantity_required' => 'Please enter a quantity.',
         'quantity_min' => 'Quantity must be at least 1.',
-        'quantity_max' => 'Quantity cannot exceed :max.',
+        'quantity_max' => 'Quantity cannot exceed 9,999.',
         'items_required' => 'Please select items to add to cart.',
         'items_min' => 'Please select at least one item.',
-        'selected_ids_array' => 'Selected cart item IDs must be an array.',
-        'selected_ids_integer' => 'Selected cart item ID must be a number.',
-        'selected_ids_min' => 'Selected cart item ID must be at least 1.',
-        'cart_key_required' => 'Guest cart key is required.',
-        'invalid_cart_key' => 'Invalid cart key format.',
-        'login_required' => 'Login is required.',
+        'option_values_not_found' => 'Matching option combination not found.',
     ],
 
     // Wishlist validation messages
@@ -995,14 +966,6 @@ return [
         'use_points_min' => 'Points must be at least 0.',
         'coupon_issue_ids_array' => 'Coupon IDs must be an array.',
         'coupon_issue_id_integer' => 'Coupon ID must be a number.',
-        'item_coupons_array' => 'Item coupons must be an array.',
-        'item_coupons_max' => 'You can apply up to :max coupons per item.',
-        'item_coupon_integer' => 'Item coupon ID must be a number.',
-        'item_coupon_not_found' => 'Item coupon not found.',
-        'order_coupon_integer' => 'Order coupon ID must be a number.',
-        'order_coupon_not_found' => 'Order coupon not found.',
-        'shipping_coupon_integer' => 'Shipping coupon ID must be a number.',
-        'shipping_coupon_not_found' => 'Shipping coupon not found.',
         'country_code_size' => 'Country code must be 2 characters.',
         'zipcode_max' => 'Zipcode cannot exceed 20 characters.',
         'region_max' => 'Region cannot exceed 100 characters.',
@@ -1034,14 +997,6 @@ return [
             'tier_min_non_negative' => 'The tier start value must be 0 or greater.',
             'tier_max_non_negative' => 'The tier end value must be 0 or greater.',
             'unit_value_min' => 'The tier unit value must be greater than 0.',
-            'tiers_required' => 'A range-based charge policy requires at least one tier.',
-            'middle_max_required' => 'Every tier except the last one must have an end value.',
-            'tier_value_integer' => 'Quantity tier start and end values must be integers.',
-            'unit_value_required' => 'A per-unit charge policy requires a unit value.',
-        ],
-        'free_threshold_required' => 'A conditional free shipping policy requires a free shipping threshold.',
-        'extra_fee' => [
-            'zipcode_format' => 'The postal code must be in one of these formats: "63000", "63000-63999", "63*".',
         ],
         'country_settings' => [
             'required' => 'Please add at least one country shipping setting.',
@@ -1158,10 +1113,6 @@ return [
         ],
         'rating' => [
             'in' => 'Please select a valid rating.',
-            'required' => 'Please select a rating.',
-            'integer' => 'Rating must be an integer.',
-            'min' => 'Rating must be at least :min.',
-            'max' => 'Rating cannot exceed :max.',
         ],
         'reply_status' => [
             'in' => 'Please select a valid reply status.',
@@ -1171,8 +1122,6 @@ return [
         ],
         'status' => [
             'in' => 'Please select a valid review status.',
-            'required' => 'Please select a review status.',
-            'required_if' => 'Please select a review status when changing status.',
         ],
         'start_date' => [
             'date' => 'Start date must be a valid date.',
@@ -1195,44 +1144,6 @@ return [
         'page' => [
             'integer' => 'Page number must be an integer.',
             'min' => 'Page number must be at least 1.',
-        ],
-        // Review submission (user)
-        'product_id' => [
-            'required' => 'Please select a product.',
-            'exists' => 'Product not found.',
-        ],
-        'order_option_id' => [
-            'required' => 'Please select the ordered item to review.',
-            'exists' => 'Ordered item not found.',
-        ],
-        'content' => [
-            'required' => 'Please enter the review content.',
-            'min' => 'Review content must be at least :min characters.',
-            'max' => 'Review content may not be greater than :max characters.',
-        ],
-        'content_mode' => [
-            'in' => 'Please select a valid review content format.',
-        ],
-        // Review reply (admin)
-        'reply_content' => [
-            'required' => 'Please enter the reply content.',
-            'min' => 'Reply content must be at least :min characters.',
-            'max' => 'Reply content may not be greater than :max characters.',
-        ],
-        'reply_content_mode' => [
-            'in' => 'Please select a valid reply content format.',
-        ],
-        // Bulk review actions (admin)
-        'ids' => [
-            'required' => 'Please select reviews to process.',
-            'array' => 'Review IDs must be an array.',
-            'min' => 'Please select at least one review.',
-            'integer' => 'Review ID must be an integer.',
-            'exists' => 'Review not found.',
-        ],
-        'action' => [
-            'required' => 'Please select an action.',
-            'in' => 'Please select a valid action.',
         ],
     ],
 
@@ -1328,14 +1239,8 @@ return [
         ],
     ],
 
-    // Public asset disk (validated against the core catalog)
-    'public_asset_disk_invalid' => 'Please select a valid public asset disk.',
-
     // Field name translations (Laravel standard)
     'attributes' => [
-        // Public asset storage
-        'basic_info.public_asset_disk' => 'Public asset disk',
-
         // Shipping policy country settings
         'country_settings' => 'Country settings',
         'country_settings.*.country_code' => 'Country',
@@ -1415,8 +1320,6 @@ return [
         'mileage.currency_rules.*.use_unit' => 'Use Unit',
         'mileage.currency_rules.*.max_use_percent' => 'Max Use Percent',
         'mileage.currency_rules.*.max_use_value' => 'Max Use Amount',
-        'mileage.currency_rules.*.earn_rounding_unit' => 'Earning Rounding Unit',
-        'mileage.currency_rules.*.earn_rounding_method' => 'Earning Rounding Method',
         'mileage.expiry_days' => 'Expiry Days',
         'mileage.expiry_notification_days_before' => 'Expiry Notification Days',
 
@@ -1451,7 +1354,6 @@ return [
         'order_settings.bank_accounts.*.is_default' => 'Default Account',
         'order_settings.auto_cancel_expired' => 'Auto Cancel Unpaid Orders',
         'order_settings.auto_cancel_days' => 'Auto Cancel Days',
-        'order_settings.pending_order_expire_minutes' => 'Pending Payment Order Expiry (minutes)',
         'order_settings.cart_expiry_days' => 'Cart Expiry Days',
         'order_settings.default_pg_provider' => 'Default PG Provider',
         'order_settings.payment_methods.*.pg_provider' => 'PG Provider',
@@ -1487,16 +1389,6 @@ return [
         'label_color' => 'Label Color',
         'is_active' => 'Active Status',
         'sort_order' => 'Sort Order',
-
-        // Claim reason
-        'claim_reason_type' => 'Claim Type',
-        'claim_reason_code' => 'Claim Reason Code',
-        'claim_reason_name' => 'Claim Reason Name',
-        'claim_reason_fault_type' => 'Fault Type',
-        'claim_reason_is_user_selectable' => 'User Selectable',
-        'claim_reason_is_active' => 'Active Status',
-        'claim_reason_sort_order' => 'Sort Order',
-        'claim_reason_search' => 'Search Term',
     ],
 
     // Field-specific custom validation messages
@@ -1644,12 +1536,6 @@ return [
                     'min' => 'Max usable amount must be 0 or greater.',
                     'max' => 'Max usable amount is too large (max 1 billion).',
                 ],
-                'earn_rounding_unit' => [
-                    'in' => 'The earning rounding unit must be one of: 1, 10, 100.',
-                ],
-                'earn_rounding_method' => [
-                    'in' => 'The earning rounding method must be one of: floor, round, ceil.',
-                ],
             ],
         ],
         'seo' => [
@@ -1777,16 +1663,9 @@ return [
                 'boolean' => 'Auto cancel unpaid orders option must be true or false.',
             ],
             'auto_cancel_days' => [
-                'required' => 'Please enter the auto cancel days.',
                 'integer' => 'Auto cancel days must be an integer.',
-                'min' => 'Auto cancel days must be at least 1.',
+                'min' => 'Auto cancel days must be at least 0.',
                 'max' => 'Auto cancel days cannot exceed 30.',
-            ],
-            'pending_order_expire_minutes' => [
-                'required' => 'Please enter the pending payment order expiry.',
-                'integer' => 'Pending payment order expiry must be an integer.',
-                'min' => 'Pending payment order expiry must be at least 0 (0 disables cleanup).',
-                'max' => 'Pending payment order expiry cannot exceed 20160 minutes (14 days).',
             ],
             'cart_expiry_days' => [
                 'integer' => 'Cart expiry days must be an integer.',
@@ -1795,12 +1674,6 @@ return [
             ],
             'stock_restore_on_cancel' => [
                 'boolean' => 'Restore stock on cancel option must be true or false.',
-            ],
-        ],
-        'claim' => [
-            'refund_reasons' => [
-                'duplicate_code' => 'Duplicate refund reason code found.',
-                'name_required' => 'Refund reason name is required.',
             ],
         ],
         'shipping' => [
@@ -1945,17 +1818,5 @@ return [
         'first_must_be_default' => 'The first currency must be the default currency (:currency).',
         'currency_not_registered' => 'Currency (:currency) is not registered. Please add it in Language/Currency settings first.',
         'earn_rate_required_when_enabled' => 'The default earn rate must be greater than 0 to use mileage.',
-    ],
-
-    // Product option batch fetch validation
-    'options_list' => [
-        'product_ids' => [
-            'required' => 'Please select the products to look up.',
-            'array' => 'The product ID list must be an array.',
-            'min' => 'Please specify at least one product.',
-            'max' => 'You can look up at most :max products at a time.',
-            'integer' => 'Product ID must be a number.',
-            'item_min' => 'Product ID must be at least 1.',
-        ],
     ],
 ];

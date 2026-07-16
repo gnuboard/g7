@@ -142,9 +142,7 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/memos",
-                                                    "mergeQuery": true,
-                                                    "query": {}
+                                                    "path": "/admin/memos"
                                                 }
                                             }
                                         ],
@@ -185,9 +183,7 @@
                                                     {
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/memos",
-                                                            "mergeQuery": true,
-                                                            "query": {}
+                                                            "path": "/admin/memos"
                                                         }
                                                     }
                                                 ],

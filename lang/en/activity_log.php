@@ -13,10 +13,6 @@ return [
         'ids_required' => 'Please select activity logs to delete.',
         'ids_min' => 'Please select at least one activity log to delete.',
         'id_not_found' => 'The selected activity log was not found.',
-        'log_type_invalid' => 'The selected log type is invalid.',
-        'date_range_invalid' => 'The end date must be the same as or after the start date.',
-        'per_page_min' => 'Items per page must be at least 1.',
-        'per_page_max' => 'Items per page must not exceed 100.',
     ],
 
     // Log type labels
@@ -38,7 +34,6 @@ return [
         'logout' => 'Logout',
         'login_failed' => 'Login failed',
         'account_locked' => 'Account locked',
-        'account_unlocked' => 'Account unlocked',
         'request' => 'Request',
         'expired' => 'Expired',
         'verify' => 'Identity verified',
@@ -149,8 +144,6 @@ return [
         'auth_record_consents' => 'Consent recorded',
         'auth_login_failed' => 'Login failed (:email)',
         'auth_account_locked' => 'Account locked (:attempts attempts, :minutes min lockout)',
-        'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempts, administrator unlock required)',
-        'auth_account_unlocked' => 'Account unlocked (:email)',
 
         // Schedule management
         'schedule_index' => 'Schedule list viewed',
@@ -244,9 +237,6 @@ return [
         'template_install_from_file' => 'Template installed from file',
         'template_install_from_github' => 'Template installed from GitHub',
         'template_refresh_layouts' => 'Template layouts refreshed (:template_name)',
-        'custom_asset_save' => 'Custom asset saved (:identifier — :path)',
-        'custom_asset_upload' => 'Custom asset uploaded (:identifier — :path)',
-        'custom_asset_delete' => 'Custom asset deleted (:identifier — :path)',
 
         // Core update
         'core_update_check' => 'Core update checked',

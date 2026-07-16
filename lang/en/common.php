@@ -9,9 +9,6 @@ return [
     'unauthorized' => 'Authentication is required.',
     'forbidden' => 'Access denied.',
     'validation_failed' => 'Input validation failed.',
-    'created' => 'Created successfully.',
-    'updated' => 'Updated successfully.',
-    'deleted' => 'Deleted successfully.',
 
     // Button states
     'saving' => 'Saving...',

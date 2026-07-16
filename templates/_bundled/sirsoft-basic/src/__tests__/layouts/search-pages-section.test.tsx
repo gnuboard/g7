@@ -63,7 +63,7 @@ const pagesSectionFixture = {
           // 섹션 헤더 (all 탭에서만)
           type: 'basic',
           name: 'Div',
-          if: '{{(query?.type ?? "all") === "all"}}',
+          if: '{{(_global.searchActiveTab ?? "all") === "all"}}',
           props: { 'data-testid': 'section-header' },
           children: [
             { type: 'basic', name: 'Icon', props: { name: 'file-alt' } },
@@ -80,12 +80,11 @@ const pagesSectionFixture = {
               actions: [
                 {
                   type: 'click',
-                  handler: 'navigate',
-                  params: {
-                    path: '/search',
-                    mergeQuery: true,
-                    query: { type: 'pages', board_slug: '', page: '', cursor: '' },
-                  },
+                  handler: 'sequence',
+                  actions: [
+                    { handler: 'setState', params: { target: 'global', searchActiveTab: 'pages', searchPage: 1 } },
+                    { handler: 'refetchDataSource', params: { dataSourceId: 'searchResults' } },
+                  ],
                 },
               ],
             },
@@ -195,7 +194,7 @@ describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
     it('all 탭에서 섹션 헤더가 표시된다', async () => {
       const testUtils = createLayoutTest(pagesSectionFixture, {
         componentRegistry: registry,
-        queryParams: { type: 'all' },
+        initialState: { _global: { searchActiveTab: 'all' } },
         initialData: { searchResults: { data: { pages_count: 0, pages: { items: [] } } } },
       });
 
@@ -209,7 +208,7 @@ describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
     it('pages 탭에서는 섹션 헤더가 표시되지 않는다', async () => {
       const testUtils = createLayoutTest(pagesSectionFixture, {
         componentRegistry: registry,
-        queryParams: { type: 'pages' },
+        initialState: { _global: { searchActiveTab: 'pages' } },
         initialData: { searchResults: { data: { pages_count: 3, pages: { items: [makeFakePageItem()] } } } },
       });
 
@@ -220,10 +219,10 @@ describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
       testUtils.cleanup();
     });
 
-    it('query.type 미설정 시 all 탭으로 간주하여 헤더가 표시된다', async () => {
+    it('searchActiveTab 미설정 시 all 탭으로 간주하여 헤더가 표시된다', async () => {
       const testUtils = createLayoutTest(pagesSectionFixture, {
         componentRegistry: registry,
-        queryParams: {},
+        initialState: { _global: {} },
         initialData: { searchResults: { data: { pages_count: 0, pages: { items: [] } } } },
       });
 
@@ -239,7 +238,7 @@ describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
     it('pages_count가 0이면 전체보기 버튼이 표시되지 않는다', async () => {
       const testUtils = createLayoutTest(pagesSectionFixture, {
         componentRegistry: registry,
-        queryParams: { type: 'all' },
+        initialState: { _global: { searchActiveTab: 'all' } },
         initialData: { searchResults: { data: { pages_count: 0, pages: { items: [] } } } },
       });
 
@@ -253,7 +252,7 @@ describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
     it('pages_count가 1 이상이면 전체보기 버튼이 표시된다', async () => {
       const testUtils = createLayoutTest(pagesSectionFixture, {
         componentRegistry: registry,
-        queryParams: { type: 'all' },
+        initialState: { _global: { searchActiveTab: 'all' } },
         initialData: { searchResults: { data: { pages_count: 3, pages: { items: [makeFakePageItem()] } } } },
       });
 
@@ -269,7 +268,7 @@ describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
     it('아이템이 있으면 페이지 목록이 렌더링된다', async () => {
       const testUtils = createLayoutTest(pagesSectionFixture, {
         componentRegistry: registry,
-        queryParams: { type: 'all' },
+        initialState: { _global: { searchActiveTab: 'all' } },
         initialData: {
           searchResults: {
             data: {
@@ -291,7 +290,7 @@ describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
     it('아이템이 없으면 빈 상태 안내가 표시된다', async () => {
       const testUtils = createLayoutTest(pagesSectionFixture, {
         componentRegistry: registry,
-        queryParams: { type: 'all' },
+        initialState: { _global: { searchActiveTab: 'all' } },
         initialData: { searchResults: { data: { pages_count: 0, pages: { items: [] } } } },
       });
 
@@ -307,7 +306,7 @@ describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
       const item = makeFakePageItem({ url: '/page/terms' });
       const testUtils = createLayoutTest(pagesSectionFixture, {
         componentRegistry: registry,
-        queryParams: { type: 'all' },
+        initialState: { _global: { searchActiveTab: 'all' } },
         initialData: { searchResults: { data: { pages_count: 1, pages: { items: [item] } } } },
       });
 
@@ -326,7 +325,7 @@ describe('partials/search/pages/_section.json 렌더링 (Issue #99)', () => {
     it('searchResults 데이터가 없어도 에러 없이 렌더링된다', async () => {
       const testUtils = createLayoutTest(pagesSectionFixture, {
         componentRegistry: registry,
-        queryParams: { type: 'all' },
+        initialState: { _global: { searchActiveTab: 'all' } },
       });
 
       await testUtils.render();

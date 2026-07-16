@@ -12,7 +12,6 @@ use App\Http\Resources\MenuCollection;
 use App\Http\Resources\MenuResource;
 use App\Models\Menu;
 use App\Services\MenuService;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -30,22 +29,18 @@ class MenuController extends AdminBaseController
         parent::__construct();
     }
 
-    /**
-     * 관리용 메뉴 목록을 조회합니다.
-     *
-     * @param  MenuListRequest  $request  목록 필터·정렬 요청
-     * @return JsonResponse 메뉴 컬렉션을 담은 JSON 응답
-     */
     public function index(MenuListRequest $request): JsonResponse
     {
         try {
             $filters = $request->validated();
             $user = Auth::user();
 
-            // 필터 유무와 무관하게 같은 경로로 조회한다. 예전에는 필터가 없으면 filters 를
-            // 받지 않는 메서드로 분기했는데, 그 경로는 sort_by/sort_order 를 통째로 버려
-            // "필터를 하나라도 걸어야 정렬이 먹는" 상태가 됐다 (#492 D-22).
-            $menus = $this->menuService->getFilteredMenusForManagement($filters, $user);
+            // 필터가 있으면 필터링된 메뉴 조회, 없으면 전체 조회
+            if (isset($filters['is_active']) || ! empty($filters['filters'])) {
+                $menus = $this->menuService->getFilteredMenusForManagement($filters, $user);
+            } else {
+                $menus = $this->menuService->getTopLevelMenusForManagement($user);
+            }
 
             return $this->successWithResource(
                 'menu.fetch_success',
@@ -223,10 +218,6 @@ class MenuController extends AdminBaseController
             }
         } catch (ValidationException $e) {
             return $this->error('menu.order_update_failed', 422, $e->errors());
-        } catch (AuthorizationException $e) {
-            // 스코프 밖 메뉴가 포함된 경우. 제네릭 catch 보다 앞에 둬야 인가 거부가 500 으로
-            // 뭉개지지 않고 상세 경로(403)와 같은 응답이 된다.
-            return $this->error('auth.scope_denied', 403, $e->getMessage());
         } catch (\Exception $e) {
             return $this->error('menu.update_error', 500, $e->getMessage());
         }

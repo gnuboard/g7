@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Board\Exceptions\MenuAlreadyExistsException;
-use Modules\Sirsoft\Board\Http\Requests\Admin\IndexBoardRequest;
 use Modules\Sirsoft\Board\Http\Requests\StoreBoardRequest;
 use Modules\Sirsoft\Board\Http\Requests\UpdateBoardRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardCollection;
@@ -47,13 +46,14 @@ class BoardController extends AdminBaseController
     /**
      * 게시판 목록을 조회합니다.
      *
-     * @param  IndexBoardRequest  $request  목록 조회 요청 (정렬 컬럼·페이지 크기 화이트리스트 검증)
+     * @param  Request  $request  HTTP 요청
      * @return JsonResponse 게시판 목록 응답
      */
-    public function index(IndexBoardRequest $request): JsonResponse
+    // audit:allow controller-base-request-injection reason: GET 목록 조회. all()로 필터·페이징 파라미터만 읽음 (검증 불필요)
+    public function index(Request $request): JsonResponse
     {
         try {
-            $boards = $this->boardService->getBoards($request->validated());
+            $boards = $this->boardService->getBoards($request->all());
 
             // BoardCollection의 withPermissions 사용
             $collection = new BoardCollection($boards);
@@ -335,7 +335,7 @@ class BoardController extends AdminBaseController
 
             return $this->success('sirsoft-board::messages.boards.menu_added_success', ['menu' => $menu]);
         } catch (MenuAlreadyExistsException $e) {
-            return $this->error($e->getMessageKey(), $e->getCode(), null, $e->getMessageParams());
+            return $this->error($e->getMessage(), $e->getCode());
         } catch (ModelNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.boards.error_404');
         } catch (AccessDeniedHttpException $e) {

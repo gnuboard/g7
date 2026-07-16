@@ -12,7 +12,6 @@ use App\Services\LayoutService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
-use App\Support\AssetUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -95,39 +94,6 @@ class SeoRenderer implements SeoRendererInterface
 
         $queryParams = $request->query();
 
-        // 레이아웃 초기 상태를 프론트엔드(TemplateApp)와 동일한 순서로 반영한다:
-        // 레이아웃 최상위 initLocal/state·initGlobal(없는 키만) → init_actions setState
-        // initActions (camelCase, LayoutService 병합 결과) 또는 init_actions (snake_case, 원본 JSON) 둘 다 지원
-        $initActions = $mergedLayout['initActions'] ?? $mergedLayout['init_actions'] ?? [];
-
-        // 데이터소스 엔드포인트/params 표현식이 참조할 수 있도록 _global 을 먼저 구성한다.
-        // (예: 검색 결과 엔드포인트의 {{_global.searchActiveTab ?? 'all'}})
-        $preContext = [
-            'route' => array_merge($routeParams, ['path' => $url]),
-            'query' => $queryParams,
-            '_global' => $this->buildGlobalContext(),
-        ];
-
-        // 레이아웃 최상위 initGlobal → _global (기존 키는 보존)
-        foreach ($this->resolveInitStateBlock($mergedLayout['initGlobal'] ?? [], $preContext) as $key => $value) {
-            if (! array_key_exists($key, $preContext['_global'])) {
-                $preContext['_global'][$key] = $value;
-            }
-        }
-
-        // init_actions의 setState(target: global) → _global
-        $globalFromActions = $this->resolveInitActionState($initActions, 'global', $preContext);
-
-        // target: global 인 setState가 _local 하위 객체를 싣는 경우 _local로 병합
-        // (프론트엔드 setGlobalState가 globalState._local을 갱신하는 동작과 동일)
-        $localFromGlobalActions = [];
-        if (isset($globalFromActions['_local']) && is_array($globalFromActions['_local'])) {
-            $localFromGlobalActions = $globalFromActions['_local'];
-            unset($globalFromActions['_local']);
-        }
-
-        $preContext['_global'] = array_merge($preContext['_global'], $globalFromActions);
-
         $context = [];
         if (! empty($seoDataSourceIds)) {
             $context = $this->dataSourceResolver->resolve(
@@ -135,30 +101,25 @@ class SeoRenderer implements SeoRendererInterface
                 $seoDataSourceIds,
                 $routeParams,
                 $locale,
-                $queryParams,
-                $preContext
+                $queryParams
             );
         }
 
-        // route/query/_global 을 데이터소스 결과와 합쳐 렌더 컨텍스트를 구성
-        $context['route'] = $preContext['route'];
-        $context['query'] = $preContext['query'];
-        $context['_global'] = $preContext['_global'];
+        // route 정보를 context에 추가 (path: 현재 URL 경로, + 동적 파라미터)
+        $context['route'] = array_merge($routeParams, ['path' => $url]);
 
-        // 레이아웃 최상위 initLocal (없으면 state — 하위 호환) → _local
-        // _local 은 데이터소스 결과를 참조할 수 있어야 하므로 호출 이후에 평가한다.
-        $local = $this->resolveInitStateBlock(
-            $mergedLayout['initLocal'] ?? $mergedLayout['state'] ?? [],
-            $context
-        );
+        // query 파라미터도 context에 추가
+        $context['query'] = $queryParams;
 
-        $local = array_merge(
-            $local,
-            $this->resolveInitActionState($initActions, 'local', $context),
-            $localFromGlobalActions
-        );
+        // SEO 컨텍스트에 _global/_local 추가
+        // 프론트엔드에서 window.G7Config로 주입되는 설정을 서버사이드에서도 동일하게 제공
+        $context['_global'] = $this->buildGlobalContext();
 
-        $context['_local'] = $local;
+        // init_actions의 setState(target: local)을 평가하여 _local 초기화
+        // 프론트엔드에서 init_actions로 설정하는 _local 상태를 SEO 렌더링에서도 동일하게 반영
+        // initActions (camelCase, LayoutService 병합 결과) 또는 init_actions (snake_case, 원본 JSON) 둘 다 지원
+        $initActions = $mergedLayout['initActions'] ?? $mergedLayout['init_actions'] ?? [];
+        $context['_local'] = $this->resolveInitLocalState($initActions, $context);
 
         // 5.1. initGlobal 매핑: 데이터소스 결과를 _global 경로에 주입
         // 프론트엔드에서 data_source의 initGlobal 설정으로 _global에 매핑하는 것과 동일
@@ -485,18 +446,13 @@ class SeoRenderer implements SeoRendererInterface
 
         // stylesheets: 템플릿 자체 CSS + seo-config.json 선언 stylesheets 병합
         $templateCssUrls = $this->getTemplateCssUrls($templateIdentifier);
-        $configStylesheets = $this->resolveConfigStylesheets(
-            $seoTemplateConfig['stylesheets'] ?? [],
-            $templateIdentifier
-        );
+        $configStylesheets = $seoTemplateConfig['stylesheets'] ?? [];
         $allStylesheets = array_merge($templateCssUrls, $configStylesheets);
 
         $viewData = [
             'locale' => $locale,
             'title' => $meta['title'],
-            // filter 훅이 title 을 바꿨을 수 있으므로 최종 title 기준으로 접미사를 정규화한다
-            // (TrimStrings 로 선행 공백이 제거된 접미사 복원 + 빈 제목의 매달린 구분자 제거)
-            'titleSuffix' => SeoMetaResolver::composeTitleSuffix((string) ($meta['title'] ?? ''), (string) ($meta['titleSuffix'] ?? '')),
+            'titleSuffix' => $meta['titleSuffix'],
             'description' => $meta['description'],
             'keywords' => $meta['keywords'],
             'canonicalUrl' => $canonicalUrl,
@@ -704,71 +660,17 @@ class SeoRenderer implements SeoRendererInterface
     }
 
     /**
-     * `seo-config.json` 의 stylesheets 선언을 실제 URL 로 해석합니다.
-     *
-     * 절대 URL(`http://`·`https://`·`//`)이나 `/` 로 시작하는 경로는 그대로 쓴다.
-     * 그 외 값은 **템플릿이 자체 제공하는 자산의 `dist/` 이하 경로**로 보고 자산 URL 을
-     * 만든다 — 봇이 보는 화면도 사용자 화면과 같은 자산을 같은 origin 에서 받아야 한다.
-     *
-     * 정적 게시 경로는 쓰지 않는다(`allowStatic: false`). SEO 페이지는 캐시에 오래
-     * 남는데, 정적 게시본은 GC(현재+직전 1개 보존) 대상이라 캐시된 HTML 이 사라진
-     * 버전 디렉토리를 가리키게 된다.
-     *
-     * @param  array<int, mixed>  $stylesheets  선언 목록
-     * @param  string  $templateIdentifier  템플릿 식별자
-     * @return array<int, string> 해석된 URL 목록
-     */
-    private function resolveConfigStylesheets(array $stylesheets, string $templateIdentifier): array
-    {
-        $resolved = [];
-
-        foreach ($stylesheets as $stylesheet) {
-            if (! is_string($stylesheet) || $stylesheet === '') {
-                continue;
-            }
-
-            if (preg_match('#^(https?:)?//#i', $stylesheet) === 1 || str_starts_with($stylesheet, '/')) {
-                $resolved[] = $stylesheet;
-
-                continue;
-            }
-
-            $resolved[] = AssetUrl::templateAsset($templateIdentifier, $stylesheet, null, false);
-        }
-
-        return $resolved;
-    }
-
-    /**
-     * 템플릿 디렉토리의 절대 경로를 반환합니다.
-     *
-     * 테스트가 임시 디렉토리를 템플릿 루트로 쓸 수 있도록 분리한 seam 이다.
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @return string 템플릿 루트 절대 경로
-     */
-    protected function templateRootPath(string $identifier): string
-    {
-        return base_path("templates/{$identifier}");
-    }
-
-    /**
      * 템플릿의 CSS 에셋 URL 목록을 반환합니다.
      *
      * template.json의 assets.css 경로를 서빙 URL로 변환합니다.
      * 예: "dist/css/components.css" → "/api/templates/assets/{id}/css/components.css"
-     *
-     * `assets.css` 는 **선언**일 뿐이라 산출물이 없을 수 있다. 없는 경로를 그대로 링크하면
-     * 봇 화면에서만 404 가 나고 일반 화면에는 흔적이 없다 — 서버 로그에도 남지 않아
-     * 운영자가 알 방법이 없다. 그래서 파일이 실재하는 경로만 싣는다(0바이트는 정상).
      *
      * @param  string  $templateIdentifier  템플릿 식별자
      * @return array CSS URL 배열
      */
     private function getTemplateCssUrls(string $templateIdentifier): array
     {
-        $templateRoot = $this->templateRootPath($templateIdentifier);
-        $templateJsonPath = $templateRoot.'/template.json';
+        $templateJsonPath = base_path("templates/{$templateIdentifier}/template.json");
         if (! file_exists($templateJsonPath)) {
             return [];
         }
@@ -785,20 +687,9 @@ class SeoRenderer implements SeoRendererInterface
 
         $urls = [];
         foreach ($cssPaths as $cssPath) {
-            // 선언한 파일이 실재할 때만 링크한다 — 없는 경로의 <link> 는 봇 화면에서만
-            // 404 가 되고 어디에도 흔적을 남기지 않는다
-            if (! is_file($templateRoot.'/'.$cssPath)) {
-                continue;
-            }
-
             // dist/ 접두사 제거 (서빙 경로에서는 dist가 자동 추가됨)
             $servePath = preg_replace('#^dist/#', '', $cssPath);
-
-            // 정적 게시본(bake) 경로 금지 — 이 URL 은 SeoCacheManager(`seo.page.*`,
-            // 키에 cache_version 미포함)에 캐시된 HTML 에 박제되는데, 정적 디렉토리는
-            // GC 가 현재+직전 1개만 보존해 캐시 수명 안에 404 가 될 수 있다. SEO HTML 은
-            // asset-url-recovery 파샬도 없어 자가 복구가 불가하므로 무버전 API URL 고정.
-            $urls[] = AssetUrl::templateAsset($templateIdentifier, $servePath, allowStatic: false);
+            $urls[] = '/api/templates/assets/'.$templateIdentifier.'/'.$servePath;
         }
 
         return $urls;
@@ -1017,57 +908,28 @@ class SeoRenderer implements SeoRendererInterface
     }
 
     /**
-     * 레이아웃 최상위 초기 상태 블록(initLocal/state/initGlobal)의 값을 평가합니다.
+     * init_actions의 setState(target: local)을 평가하여 _local 초기값을 반환합니다.
      *
-     * 프론트엔드 TemplateApp이 레이아웃 레벨 initLocal/initGlobal을 상태에 적용하는 것과
-     * 동일하게, 각 값의 {{}} 표현식을 해석해 반환합니다.
-     *
-     * **데이터소스 레벨 `initLocal` 옵션은 의도적으로 처리하지 않는다** (2026-08-25 확정) —
-     * 그 옵션을 쓰는 화면(장바구니·주문서·프로필 수정·게시판 작성 폼 등)은 인증·인터랙션
-     * 화면이라 봇 렌더 가치가 없다. 봇 노출이 필요한 상태 시드는 레이아웃 최상위
-     * `initLocal`/`state` 를 사용한다 (docs/backend/seo-system.md 지원 노드 키 표 참조).
-     *
-     * @param  mixed  $block  초기 상태 블록 (키 → 값)
-     * @param  array  $context  현재 컨텍스트 (route, query 등 포함)
-     * @return array 평가된 초기 상태
-     */
-    private function resolveInitStateBlock(mixed $block, array $context): array
-    {
-        if (! is_array($block) || $block === []) {
-            return [];
-        }
-
-        $resolved = [];
-        foreach ($block as $key => $value) {
-            $resolved[$key] = $this->resolveInitActionValue($value, $context);
-        }
-
-        return $resolved;
-    }
-
-    /**
-     * init_actions의 setState를 대상(target)별로 평가하여 초기값을 반환합니다.
-     *
-     * 프론트엔드에서 init_actions 실행 시 setState로 설정하는 _local/_global 상태를
+     * 프론트엔드에서 init_actions 실행 시 setState로 설정하는 _local 상태를
      * SEO 렌더링에서도 동일하게 반영합니다. 이를 통해 탭 상태, 페이지네이션 초기값 등
-     * 상태 기반 조건부 렌더링이 SEO에서도 정상 동작합니다.
+     * _local 기반 조건부 렌더링이 SEO에서도 정상 동작합니다.
      *
      * 처리 대상:
-     * - handler: "setState" + params.target 이 $target 과 일치 (target 미지정은 local)
+     * - handler: "setState" + params.target: "local" (또는 target 미지정)
      * - params 내 {{}} 표현식을 ExpressionEvaluator로 평가
      * - 배열 리터럴, 객체 리터럴 등 정적 값은 그대로 사용
      *
      * 스킵 대상:
      * - handler가 setState가 아닌 항목 (loadFromLocalStorage, closeModal 등)
+     * - target이 "global"인 항목
      *
      * @param  array  $initActions  레이아웃의 init_actions 배열
-     * @param  string  $target  대상 상태 (`local` 또는 `global`)
      * @param  array  $context  현재 컨텍스트 (route, query 등 포함)
-     * @return array 평가된 초기값
+     * @return array _local 초기값
      */
-    private function resolveInitActionState(array $initActions, string $target, array $context): array
+    private function resolveInitLocalState(array $initActions, array $context): array
     {
-        $state = [];
+        $local = [];
 
         // setState에서 제외할 메타 키 (상태 값이 아닌 핸들러 제어용 키)
         $metaKeys = ['target', 'handler', 'comment'];
@@ -1079,7 +941,10 @@ class SeoRenderer implements SeoRendererInterface
             }
 
             $params = $action['params'] ?? [];
-            if (($params['target'] ?? 'local') !== $target) {
+            $target = $params['target'] ?? 'local';
+
+            // global 대상은 스킵 (_global은 buildGlobalContext + applyInitGlobalMapping이 담당)
+            if ($target === 'global') {
                 continue;
             }
 
@@ -1088,11 +953,11 @@ class SeoRenderer implements SeoRendererInterface
                     continue;
                 }
 
-                $state[$key] = $this->resolveInitActionValue($value, $context);
+                $local[$key] = $this->resolveInitActionValue($value, $context);
             }
         }
 
-        return $state;
+        return $local;
     }
 
     /**

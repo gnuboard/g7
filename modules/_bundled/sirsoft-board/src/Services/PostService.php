@@ -3,25 +3,18 @@
 namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\CacheInterface;
-use App\Enums\TotalRelation;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
-use App\Search\SearchPagePolicy;
-use App\Support\Query\BoundedCount;
-use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\Paginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Enums\PostStatus;
-use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
-use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
@@ -37,35 +30,6 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class PostService
 {
-    /**
-     * 게시글 수정·삭제용 검증 토큰을 싣는 요청 헤더 이름.
-     *
-     * 이 토큰은 종전에 GET 쿼리 파라미터로만 다녔다 — 자격증명이 주소에 실리면 웹서버
-     * 접근 기록과 Referer 에 그대로 남는다. 헤더로 옮기되, 이미 본문으로 보내는 저장·삭제
-     * 요청과 외부 연동을 깨지 않도록 기존 경로도 계속 받는다.
-     */
-    public const VERIFY_TOKEN_HEADER = 'X-Board-Post-Verify-Token';
-
-    /**
-     * 검색 정렬 이름 → [실제 컬럼, 방향] 선언
-     *
-     * 코어({@see SearchPagePolicy})가 이 선언을 읽어 커서 적용 여부를 판정한다.
-     * 여기에 없는 정렬 이름(관련도순 등)은 커서로 처리하지 않고 offset 을 유지한다.
-     */
-    public const SEARCH_SORT_MAP = [
-        'latest' => ['created_at', 'desc'],
-        'oldest' => ['created_at', 'asc'],
-        'views' => ['view_count', 'desc'],
-        'popular' => ['view_count', 'desc'],
-    ];
-
-    /**
-     * 커서(키셋) 경계로 쓸 수 있는 실제 컬럼 선언
-     *
-     * 커서는 정렬 키를 WHERE 절 경계로 삼으므로 계산값·별칭은 넣을 수 없다.
-     */
-    public const SEARCH_CURSOR_COLUMNS = ['created_at', 'view_count'];
-
     /**
      * PostService 생성자
      *
@@ -121,12 +85,11 @@ class PostService
      * @param  string  $slug  게시판 슬러그
      * @param  array  $filters  필터 조건
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
-     * @param  string  $context  호출 컨텍스트 (admin/user — 권한 스코프 판정용)
-     * @return BoundedCount 일반 게시글 수 + 정확도 (답글, 공지 제외)
+     * @return int 일반 게시글 수 (답글, 공지 제외)
      *
      * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
      */
-    public function getTotalNormalPosts(string $slug, array $filters = [], bool $withTrashed = false, string $context = 'admin'): BoundedCount
+    public function getTotalNormalPosts(string $slug, array $filters = [], bool $withTrashed = false, string $context = 'admin'): int
     {
         // 게시판 존재성 검증
         $this->validateBoardExists($slug);
@@ -151,9 +114,9 @@ class PostService
      * @param  array  $filters  필터 조건
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
      * @param  string  $context  컨텍스트 (admin 또는 user)
-     * @return BoundedCount 일반 게시글 수 + 정확도
+     * @return int 일반 게시글 수
      */
-    public function getCachedNormalPostCount(string $slug, int $boardId, array $filters = [], bool $withTrashed = false, string $context = 'admin'): BoundedCount
+    public function getCachedNormalPostCount(string $slug, int $boardId, array $filters = [], bool $withTrashed = false, string $context = 'admin'): int
     {
         // 필터가 적용된 경우 캐시 미사용 — 실제 COUNT 실행
         $hasActiveFilters = ! empty($filters['search'])
@@ -163,31 +126,17 @@ class PostService
             || ! empty($filters['created_at_from'])
             || ! empty($filters['created_at_to']);
 
-        if ($hasActiveFilters) {
+        if ($hasActiveFilters || $withTrashed) {
             return $this->getTotalNormalPosts($slug, $filters, $withTrashed, $context);
         }
 
-        // 관리자 목록은 삭제글 포함(withTrashed=true)이 기본이라, 이 조건에서 캐시를 건너뛰면
-        // 관리자가 목록을 열 때마다 전체 COUNT 가 실행된다. 포함 여부는 결과가 달라지는
-        // 축이므로 캐시를 우회하는 대신 **키를 나눈다** — 두 값이 서로를 덮어쓰지 않는다.
-        $cacheKey = $withTrashed
-            ? "board_normal_count_{$boardId}_with_trashed"
-            : "board_normal_count_{$boardId}";
+        $cacheKey = "board_normal_count_{$boardId}";
 
-        // 캐시에는 값 객체가 아니라 원시 배열을 담는다. 드라이버마다 직렬화 방식이 달라
-        // 객체를 그대로 넣으면 복원 시 클래스 정의에 묶이고, 정확도 필드가 하나라도
-        // 빠지면 잘린 건수가 정확한 것처럼 되살아난다.
-        $cached = $this->cache->remember(
+        return $this->cache->remember(
             $cacheKey,
-            fn () => $this->getTotalNormalPosts($slug, $filters, $withTrashed, $context)->toArray(),
+            fn () => $this->getTotalNormalPosts($slug, $filters, $withTrashed, $context),
             (int) g7_core_settings('cache.default_ttl', 86400),
             tags: ['board-stats']
-        );
-
-        return new BoundedCount(
-            (int) ($cached['total'] ?? 0),
-            TotalRelation::tryFrom($cached['total_relation'] ?? '') ?? TotalRelation::Exact,
-            $cached['result_cap'] ?? null,
         );
     }
 
@@ -196,7 +145,6 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
-     * @param  string  $context  호출 컨텍스트 (admin/user — 권한 스코프 판정용)
      * @return Post 게시글 모델
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
@@ -388,49 +336,25 @@ class PostService
      * ① 게시글 상태 변경(deleted) + 소프트 삭제
      * ② 살아있는 댓글을 cascade 로 소프트 삭제 (trigger_type='cascade')
      * ③ 살아있는 첨부를 cascade 로 소프트 삭제 (trigger_type='cascade')
-     * ④ 살아있는 자손 답글 전체를 cascade 로 소프트 삭제 (+ 그 답글들의 댓글/첨부)
      *
-     * 게시판 설정 `reply_delete_policy` 가 'block' 이면 살아있는 직계 답글 존재 시
-     * before_delete 훅 발화 전에 차단합니다(부수효과 0). 훅 경유 삭제는
-     * `options['cascade_replies']=true` 로 정책을 우회해 cascade 를 고정합니다
-     * (문의 답변은 시스템 생성이므로 block 정책에 막히면 안 됨).
-     *
-     * 이미 사용자가 직접 삭제한 답글/댓글/첨부(trigger_type='user' 등)는 영향을 받지
-     * 않으며, 게시글 복원 시 cascade 로 지워진 항목만 선택 복원됩니다.
-     * 위 단계는 단일 트랜잭션으로 묶여 부분 실패 시 전체 롤백됩니다.
-     * after_delete 훅은 부모 게시글에 대해서만 발화합니다 (자손별 발화 시 알림 폭주).
+     * 이미 사용자가 직접 삭제한 댓글/첨부(trigger_type='user' 등)는 영향을 받지 않으며,
+     * 게시글 복원 시 cascade 로 지워진 항목만 선택 복원됩니다.
+     * 위 3단계는 단일 트랜잭션으로 묶여 부분 실패 시 전체 롤백됩니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
      * @param  string|null  $triggerType  트리거 유형 (admin, report 등)
-     * @param  array  $options  옵션 배열 (skip_notification: 알림 발송 SKIP, cascade_replies: 답글 삭제 정책 우회)
+     * @param  array  $options  옵션 배열 (skip_notification: 알림 발송 SKIP)
      * @return Post 삭제 처리된 게시글
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
-     * @throws PostHasRepliesException block 정책 게시판에서 살아있는 답글이 있는 경우
      */
     public function deletePost(string $slug, int $id, ?string $triggerType = null, array $options = []): Post
     {
-        // 게시판 존재성 검증 (정책 판정에 게시판 모델이 필요해 직접 조회)
-        $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
-
-        if (! $board) {
-            throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
-        }
+        // 게시판 존재성 검증
+        $this->validateBoardExists($slug);
 
         $post = $this->postRepository->findOrFail($slug, $id);
-
-        // 답글 삭제 정책 판정 — 훅 경유 삭제(cascade_replies 옵션)는 시스템 생성 답글을
-        // 함께 정리해야 하므로 게시판 정책과 무관하게 cascade 고정
-        $policy = ($options['cascade_replies'] ?? false)
-            ? ReplyDeletePolicy::Cascade
-            : ($board->reply_delete_policy ?? ReplyDeletePolicy::Cascade);
-
-        // block 정책: 살아있는 직계 답글이 있으면 before_delete 훅 발화 전에 차단
-        // (차단 시 부수효과 0 — 훅 리스너의 외부 정리가 먼저 실행되면 되돌릴 수 없다)
-        if ($policy === ReplyDeletePolicy::Block && $this->postRepository->hasAliveReplies($slug, $id)) {
-            throw new PostHasRepliesException;
-        }
 
         // 훅: before_delete
         HookManager::doAction('sirsoft-board.post.before_delete', $post, $slug);
@@ -438,7 +362,7 @@ class PostService
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('delete', null);
 
-        // 게시글 + 하위 데이터(답글/댓글/첨부) 연쇄 소프트 삭제를 단일 트랜잭션으로 처리
+        // 게시글 + 하위 데이터(댓글/첨부) 연쇄 소프트 삭제를 단일 트랜잭션으로 처리
         $deletedPost = DB::transaction(function () use ($slug, $id, $actionLog, $triggerType) {
             // ① 상태 변경 (deleted로 변경하고 소프트 삭제)
             $deletedPost = $this->postRepository->updateStatus($slug, $id, 'deleted', $actionLog, $triggerType);
@@ -450,22 +374,10 @@ class PostService
             // ③ 첨부 cascade 소프트 삭제 (사용자가 이미 삭제한 항목은 미영향)
             $this->attachmentRepository->softDeleteByPostId($slug, $id);
 
-            // ④ 살아있는 자손 답글 cascade 소프트 삭제 — block 통과 시에도 실행
-            //    (끊긴 체인 밑 과거 고아 답글 스윕. 살아있는 직계가 없어도 고아 자손은 존재 가능)
-            $descendantIds = $this->postRepository->softDeleteCascadeByParentId($slug, $id);
-
-            // ⑤ 함께 지워진 자손 답글들의 댓글/첨부도 cascade 소프트 삭제
-            if ($descendantIds !== []) {
-                $this->commentRepository->softDeleteByPostIds($slug, $descendantIds);
-                $this->attachmentRepository->softDeleteByPostIds($slug, $descendantIds);
-            }
-
             return $deletedPost;
         });
 
         // 훅: after_delete ($options 전달 — skip_notification 등 수신 리스너에서 활용)
-        // 자손 답글별로는 발화하지 않는다 — 자손별 발화 시 알림이 폭주하며,
-        // 이커머스 문의 피벗은 문의 원글에만 걸려 있어 부모 발화만으로 충분하다.
         HookManager::doAction('sirsoft-board.post.after_delete', $deletedPost, $slug, $options);
 
         // 캐시 무효화
@@ -481,9 +393,8 @@ class PostService
      * @param  int  $id  게시글 ID
      * @param  string  $reason  블라인드 사유
      * @param  string|null  $triggerType  트리거 유형 (admin, report 등)
-     * @return Post 블라인드 처리된 게시글 모델
      *
-     * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
+     * @throws ModelNotFoundException
      */
     public function blindPost(string $slug, int $id, string $reason, ?string $triggerType = null): Post
     {
@@ -556,17 +467,6 @@ class PostService
             // ③ cascade 로 지워진 첨부만 선택 복원
             $this->attachmentRepository->restoreCascadedByPostId($slug, $id);
 
-            // ④ cascade 로 지워진 자손 답글만 top-down 선택 복원 — 정책값과 무관하게 항상 실행
-            //    (trigger_type='cascade' 로 마킹된 것만 복원되므로 안전. 사용자 직접 삭제 답글의
-            //    서브트리는 복원되지 않는다)
-            $restoredIds = $this->postRepository->restoreCascadedByParentId($slug, $id);
-
-            // ⑤ 되살아난 자손 답글들의 댓글/첨부도 cascade 분만 복원
-            if ($restoredIds !== []) {
-                $this->commentRepository->restoreCascadedByPostIds($slug, $restoredIds);
-                $this->attachmentRepository->restoreCascadedByPostIds($slug, $restoredIds);
-            }
-
             return $restoredPost;
         });
 
@@ -581,12 +481,11 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
-     * @param  int|null  $boardId  게시판 ID (전달 시 슬러그 재조회 생략)
      * @return int 증가된 조회수
      */
-    public function incrementViewCount(string $slug, int $id, ?int $boardId = null): int
+    public function incrementViewCount(string $slug, int $id): int
     {
-        return $this->postRepository->incrementViewCount($slug, $id, $boardId);
+        return $this->postRepository->incrementViewCount($slug, $id);
     }
 
     /**
@@ -597,10 +496,9 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
-     * @param  int|null  $boardId  게시판 ID (전달 시 슬러그 재조회 생략)
      * @return bool 조회수가 증가했으면 true, 이미 조회한 경우 false
      */
-    public function incrementViewCountOnce(string $slug, int $id, ?int $boardId = null): bool
+    public function incrementViewCountOnce(string $slug, int $id): bool
     {
         $identifier = Auth::id() ?? request()->ip();
         $key = "post_view_{$slug}_{$id}_{$identifier}";
@@ -609,7 +507,7 @@ class PostService
             return false;
         }
 
-        $this->incrementViewCount($slug, $id, $boardId);
+        $this->incrementViewCount($slug, $id);
         $ttl = (int) g7_module_settings('sirsoft-board', 'spam_security.view_count_cache_ttl', 86400);
         $this->cache->put($key, true, $ttl);
 
@@ -621,44 +519,21 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
-     * @param  int|null  $boardId  이미 검증된 게시판 ID (중복 조회 방지용)
-     * @param  Board|null  $board  이미 조회한 게시판 모델 (넘기면 관계 적재까지 생략)
-     * @param  string|null  $context  스코프 검사 컨텍스트 ('user' | 'admin'). null 이면 검사하지 않는다
      * @return Post 게시글 모델 (카운트 포함)
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
-     * @throws AccessDeniedHttpException 스코프 접근이 거부된 경우 ($context 지정 시)
      */
-    public function getPostWithCounts(
-        string $slug,
-        int $id,
-        ?int $boardId = null,
-        ?Board $board = null,
-        ?string $context = null
-    ): Post {
-        $boardId = $board?->id ?? $boardId;
-
+    public function getPostWithCounts(string $slug, int $id, ?int $boardId = null): Post
+    {
         // boardId가 전달되면 이미 검증된 것이므로 중복 조회 방지
         if (! $boardId) {
             $this->validateBoardExists($slug);
         }
 
-        $post = $this->postRepository->findWithCounts($slug, $id, $boardId, $board);
+        $post = $this->postRepository->findWithCounts($slug, $id, $boardId);
 
         if (! $post) {
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.post_not_found'));
-        }
-
-        // 컨텍스트가 주어지면 스코프 접근 검사를 이 인스턴스로 수행한다.
-        // 종전에는 권한 판정 전용으로 같은 행을 한 번 더 읽었다 (#519 F3).
-        if ($context !== null) {
-            $scopePermission = $context === 'admin'
-                ? "sirsoft-board.{$slug}.admin.posts.read"
-                : "sirsoft-board.{$slug}.posts.read";
-
-            if (! PermissionHelper::checkScopeAccess($post, $scopePermission)) {
-                throw new AccessDeniedHttpException(__('auth.scope_denied'));
-            }
         }
 
         return $post;
@@ -754,7 +629,6 @@ class PostService
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
      * @param  bool  $canViewDeleted  삭제된 게시글 조회 가능 여부
-     * @param  string  $context  호출 컨텍스트 (admin/user — 권한 스코프 판정용)
      * @return Post 상세 정보가 포함된 게시글 모델
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
@@ -768,12 +642,23 @@ class PostService
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
         }
 
-        // 조회수 증가 (캐시 기반 중복 방지) — 이미 조회한 게시판 ID 를 넘겨 재조회를 막는다
-        $this->incrementViewCountOnce($slug, $id, $board->id);
+        // 조회수 증가 (캐시 기반 중복 방지)
+        $this->incrementViewCountOnce($slug, $id);
 
-        // 댓글/첨부파일 카운트 포함하여 게시글 조회 + 컨텍스트 기반 스코프 접근 검사.
-        // 이미 조회한 Board 를 넘겨 게시판 재조회와 board 관계 적재를 함께 생략한다.
-        $post = $this->getPostWithCounts($slug, $id, board: $board, context: $context);
+        // 댓글/첨부파일 카운트 포함하여 게시글 조회 (boardId 전달로 Board 중복 조회 방지)
+        $post = $this->getPostWithCounts($slug, $id, $board->id);
+
+        // 컨텍스트 기반 스코프 접근 검사
+        $scopePermission = $context === 'admin'
+            ? "sirsoft-board.{$slug}.admin.posts.read"
+            : "sirsoft-board.{$slug}.posts.read";
+
+        if (! PermissionHelper::checkScopeAccess($post, $scopePermission)) {
+            throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        }
+
+        // board 관계 수동 설정
+        $post->setRelation('board', $board);
 
         // 댓글 로드 (게시판 comment_order 설정 적용, Board 객체 전달로 중복 조회 방지)
         $comments = $this->commentService->getCommentsByPostId($slug, $id, boardId: $board->id, board: $board);
@@ -840,9 +725,6 @@ class PostService
     ): void {
         // 방안 A: 업로드 완료된 첨부파일 ID로 연결 (신규 방식)
         if (! empty($attachmentIds)) {
-            // 개수 상한 최종 방어선 (기존 연결분과 합산) — Request 는 files[] 만 세므로 여기서 다시 판정한다
-            $this->attachmentService->assertAttachmentCountWithin($slug, $postId, count($attachmentIds));
-
             $linkedCount = $this->attachmentRepository->linkAttachmentsByIds($slug, $attachmentIds, $postId);
             if ($linkedCount > 0) {
                 Log::info("{$context} 시 첨부파일 ID로 연결 완료", [
@@ -941,12 +823,9 @@ class PostService
             $filters['user_id'] = $requestParams['user_id'] ?? null;
             $filters['created_at_from'] = $requestParams['created_at_from'] ?? null;
             $filters['created_at_to'] = $requestParams['created_at_to'] ?? null;
+        } else {
+            $filters['exclude_blinded'] = true;
         }
-        // 사용자 컨텍스트에는 추가 필터가 없다. 예전에는 여기서 `exclude_blinded` 를 세웠지만
-        // 저장소가 그 키를 읽지 않아 한 번도 적용되지 않았고, 뒤늦게 배선하면 블라인드 글이
-        // 사용자 목록에서 통째로 사라진다 — 이 모듈은 블라인드 글을 **행은 남기고 본문만
-        // 가리는** 방식으로 다루며(PostResource::getMaskedContentPreviewForList) 레이아웃도
-        // 블라인드 배지를 그린다. 죽은 키를 살리는 대신 제거해 표시만 오해를 주던 상태를 없앤다.
 
         // 페이지당 항목 수 계산
         $requestedPerPage = isset($requestParams['per_page']) ? (int) $requestParams['per_page'] : null;
@@ -1132,10 +1011,6 @@ class PostService
             }
         }
 
-        // 본인 활동 화면(`/me/board-activities`)이므로 열람자 = 대상 본인이다.
-        // 저장소는 이 값이 없으면 타인 관점으로 보고 비밀글·미발행글을 걸러낸다(fail-closed).
-        $filters['viewer_id'] = $userId;
-
         $result = $this->postRepository->getUserActivities($userId, $filters, $perPage);
 
         // 캐시 미적중 시 paginate 결과의 total을 캐시에 저장
@@ -1171,12 +1046,9 @@ class PostService
     /**
      * 사용자의 공개 게시글 목록을 조회합니다 (공개 프로필용).
      *
-     * 기존 getUserActivities()를 재사용합니다. 이 목록은 본문 일부(content_plain)를 함께
-     * 싣기 때문에, 열람자가 본인이 아니면 비밀글·블라인드 글의 **본문만** 비운다. 행과
-     * 제목은 남는다 — 게시판 목록에서 이미 같은 수준으로 보이고(PostResource 의 목록 규칙:
-     * 제목은 노출, 본문만 차단) 프로필 UI 가 그 배지를 그리므로, 행을 지우면 결함 차단에
-     * 필요한 범위를 넘어 기능이 깎인다.
-     * 판정은 저장소가 `viewer_id` 로 수행한다(fail-closed — 값이 없으면 타인 관점).
+     * 기존 getUserActivities()를 재사용합니다.
+     * 타인 프로필에서 해당 사용자의 모든 게시글을 표시합니다 (비밀글/블라인드 포함).
+     * UI에서 배지로 비밀글/블라인드 상태를 구분합니다.
      *
      * @param  int  $userId  사용자 ID
      * @param  array  $filters  필터 옵션 (board_slug, sort 등)
@@ -1185,9 +1057,10 @@ class PostService
      */
     public function getUserPublicPosts(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        // 기존 getUserActivities 재사용
+        // 타인 프로필에서 해당 사용자의 모든 게시글 표시 (비밀글/블라인드 포함, 배지로 구분)
         return $this->postRepository->getUserActivities($userId, array_merge($filters, [
             'activity_type' => 'authored',  // 작성글만
-            'viewer_id' => Auth::id(),      // 비로그인은 null → 타인 관점
         ]), $perPage);
     }
 
@@ -1237,15 +1110,14 @@ class PostService
      * @param  string  $slug  게시판 슬러그
      * @param  string  $keyword  검색 키워드
      * @param  string  $sort  정렬 옵션
-     * @param  int  $perPage  페이지당 항목 수
-     * @param  int  $page  페이지 번호
-     * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
+     * @param  int  $limit  조회할 최대 항목 수
+     * @return array{total: int, items: Collection}
      */
-    public function searchByKeyword(string $slug, string $keyword, string $sort = 'latest', int $perPage = 10, int $page = 1): BoundedPage
+    public function searchByKeyword(string $slug, string $keyword, string $sort = 'latest', int $limit = 10): array
     {
         [$orderBy, $direction] = $this->resolveSortColumn($sort);
 
-        return $this->postRepository->searchByKeyword($slug, $keyword, $orderBy, $direction, $perPage, $page);
+        return $this->postRepository->searchByKeyword($slug, $keyword, $orderBy, $direction, $limit);
     }
 
     /**
@@ -1253,9 +1125,9 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $keyword  검색 키워드
-     * @return BoundedCount 일치하는 게시글 수 (정확도 포함)
+     * @return int 일치하는 게시글 수
      */
-    public function countByKeyword(string $slug, string $keyword): BoundedCount
+    public function countByKeyword(string $slug, string $keyword): int
     {
         return $this->postRepository->countByKeyword($slug, $keyword);
     }
@@ -1268,9 +1140,9 @@ class PostService
      * @param  string  $sort  정렬 옵션
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
-     * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
+     * @return array{total: int, items: Collection}
      */
-    public function searchAcrossBoards(array $boardIds, string $keyword, string $sort = 'latest', int $perPage = 10, int $page = 1): BoundedPage
+    public function searchAcrossBoards(array $boardIds, string $keyword, string $sort = 'latest', int $perPage = 10, int $page = 1): array
     {
         [$orderBy, $direction] = $this->resolveSortColumn($sort);
 
@@ -1278,51 +1150,12 @@ class PostService
     }
 
     /**
-     * 여러 게시판에서 키워드로 게시글을 커서(키셋)로 검색합니다.
-     *
-     * 커서 적용 가능 여부는 코어({@see SearchPagePolicy})가 판정한다. 이 서비스는
-     * 정렬 선언({@see self::SEARCH_SORT_MAP})만 제공하고 규칙을 다시 쓰지 않는다.
-     * 적용할 수 없는 정렬(관련도순 등)이면 null 을 돌려주고 호출자는 offset 경로를 쓴다.
-     *
-     * @param  array  $boardIds  검색 대상 게시판 ID 목록
-     * @param  string  $keyword  검색 키워드
-     * @param  string  $sort  정렬 옵션
-     * @param  int  $perPage  페이지당 항목 수
-     * @param  string|null  $cursor  인코딩된 커서 (첫 페이지면 null)
-     * @param  int  $page  요청이 지목한 페이지 번호 (딥링크 판정용, 없으면 1)
-     * @return CursorPaginator|null 커서 페이지 결과 (커서 적용 불가 시 null)
-     */
-    public function searchAcrossBoardsByCursor(
-        array $boardIds,
-        string $keyword,
-        string $sort = 'latest',
-        int $perPage = 10,
-        ?string $cursor = null,
-        int $page = 1
-    ): ?CursorPaginator {
-        $sortKeys = SearchPagePolicy::sortKeys($sort, self::SEARCH_SORT_MAP);
-
-        if (! SearchPagePolicy::usesCursor($cursor, $sortKeys, self::SEARCH_CURSOR_COLUMNS, $page)) {
-            return null;
-        }
-
-        return $this->postRepository->searchAcrossBoardsByCursor(
-            $boardIds,
-            $keyword,
-            $sortKeys,
-            $perPage,
-            $cursor
-        );
-    }
-
-    /**
      * 여러 게시판에서 키워드와 일치하는 게시글 수를 조회합니다 (단일 쿼리).
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
-     * @return BoundedCount 일치하는 게시글 수 (정확도 포함)
      */
-    public function countAcrossBoards(array $boardIds, string $keyword): BoundedCount
+    public function countAcrossBoards(array $boardIds, string $keyword): int
     {
         return $this->postRepository->countAcrossBoards($boardIds, $keyword);
     }
@@ -1382,28 +1215,6 @@ class PostService
     }
 
     /**
-     * 게시글 비밀번호 검증 토큰이 유효한지 확인만 합니다 (소비하지 않음).
-     *
-     * 수정 화면은 「비밀번호 확인 → 폼 조회 → 저장」 순으로 같은 토큰을 여러 번 제시합니다.
-     * 폼 조회 단계가 토큰을 소비하면 저장 시점에는 남아 있지 않아, 비밀번호를 정확히 입력한
-     * 사용자가 수정 권한 없음으로 거부됩니다. 조회는 이 확인을, 상태를 바꾸는 요청만
-     * `consumeDeleteVerifyToken()` 을 씁니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int  $postId  게시글 ID
-     * @param  string  $token  검증 토큰
-     * @return bool 토큰 유효 여부
-     */
-    public function hasValidDeleteVerifyToken(string $slug, int $postId, string $token): bool
-    {
-        if ($token === '') {
-            return false;
-        }
-
-        return $this->cache->has("board_post_verify_{$slug}_{$postId}_{$token}");
-    }
-
-    /**
      * 게시글 비밀번호 검증 토큰의 유효성을 확인하고 소비합니다.
      *
      * 토큰이 유효하면 즉시 삭제하여 재사용을 방지합니다.
@@ -1422,67 +1233,6 @@ class PostService
         $this->cache->forget($key);
 
         return true;
-    }
-
-    /**
-     * 비밀글 열람 확인 토큰을 발급해 캐시에 저장합니다.
-     *
-     * 비밀번호를 맞혔다는 사실은 그 응답 하나에만 살아 있고 다음 요청으로 이어지지 않습니다
-     * (`$post->password_verified` 는 메모리 플래그입니다). 그런데 화면은 원문이 열린 사람에게
-     * 댓글·답글·신고를 내주므로, 그 후속 요청이 같은 사실을 제시할 통로가 필요합니다.
-     *
-     * 수정·삭제용 토큰(storeDeleteVerifyToken)과 달리 **소비하지 않습니다** — 열람자는 한
-     * 화면에서 댓글을 여러 번 달 수 있고, 1회용이면 두 번째부터 다시 비밀번호를 물어야 합니다.
-     * 대신 게시글 단위로 묶이고 유효기간이 있어, 권한 범위는 비밀번호를 아는 것과 같습니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int  $postId  게시글 ID
-     * @return array{token: string, expires_at: string} 토큰 및 만료 시각
-     */
-    public function issueSecretViewToken(string $slug, int $postId): array
-    {
-        $ttl = (int) g7_core_settings('cache.post_verify_token_ttl', 3600);
-        $token = Str::random(40);
-        $expiresAt = now()->addSeconds($ttl);
-
-        $this->cache->put(self::secretViewTokenKey($slug, $postId, $token), true, $ttl);
-
-        return [
-            'token' => $token,
-            'expires_at' => $expiresAt->toIso8601String(),
-        ];
-    }
-
-    /**
-     * 비밀글 열람 확인 토큰이 그 게시글에 대해 유효한지 확인합니다 (소비하지 않음).
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int  $postId  게시글 ID
-     * @param  string|null  $token  제시된 토큰
-     * @return bool 유효 여부
-     */
-    public function hasValidSecretViewToken(string $slug, int $postId, ?string $token): bool
-    {
-        if (! is_string($token) || $token === '') {
-            return false;
-        }
-
-        return $this->cache->has(self::secretViewTokenKey($slug, $postId, $token));
-    }
-
-    /**
-     * 비밀글 열람 확인 토큰의 캐시 키를 만듭니다.
-     *
-     * 게시판 슬러그와 게시글 ID 를 키에 넣어, 한 글에서 받은 토큰이 다른 글에 통하지 않게 합니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int  $postId  게시글 ID
-     * @param  string  $token  토큰
-     * @return string 캐시 키
-     */
-    private static function secretViewTokenKey(string $slug, int $postId, string $token): string
-    {
-        return "board_post_secret_view_{$slug}_{$postId}_{$token}";
     }
 
     /**

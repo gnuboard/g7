@@ -15,17 +15,11 @@ class DataSourceResolver
      * @param  array  $routeParams  라우트 파라미터 (예: ['id' => '123', 'slug' => 'clothes'])
      * @param  string  $locale  로케일
      * @param  array  $queryParams  URL 쿼리 파라미터 (예: ['page' => '2', 'sort' => 'latest'])
-     * @param  array  $extraContext  엔드포인트/params 표현식 평가에 사용할 추가 컨텍스트 (_global 등)
      * @return array data_source ID → 응답 데이터 매핑
      */
-    public function resolve(array $dataSources, array $seoDataSourceIds, array $routeParams, string $locale, array $queryParams = [], array $extraContext = []): array
+    public function resolve(array $dataSources, array $seoDataSourceIds, array $routeParams, string $locale, array $queryParams = []): array
     {
         $context = [];
-
-        $evalContext = array_merge($extraContext, [
-            'route' => array_merge($extraContext['route'] ?? [], $routeParams),
-            'query' => $queryParams,
-        ]);
 
         foreach ($dataSources as $ds) {
             $dsId = $ds['id'] ?? '';
@@ -40,11 +34,11 @@ class DataSourceResolver
                 continue;
             }
 
-            // 엔드포인트 표현식 치환 ({{route.id}}, {{query.q}}, {{_global.xxx}})
-            $endpoint = $this->resolveEndpoint($endpoint, $evalContext);
+            // 라우트 파라미터 치환 (예: {{route.id}} → 123)
+            $endpoint = $this->resolveEndpoint($endpoint, $routeParams);
 
             // params 해석 ({{query.xxx}}, {{route.xxx}} 표현식 치환)
-            $resolvedParams = $this->resolveParams($ds['params'] ?? [], $routeParams, $queryParams, $extraContext);
+            $resolvedParams = $this->resolveParams($ds['params'] ?? [], $routeParams, $queryParams);
 
             // API 호출
             $data = $this->callApi($endpoint, $ds, $locale, $resolvedParams);
@@ -57,21 +51,16 @@ class DataSourceResolver
     /**
      * 엔드포인트의 표현식을 치환합니다.
      *
-     * `{{route.xxx}}` 뿐 아니라 `{{query.xxx}}` / `{{_global.xxx}}` 등 컨텍스트 표현식을
-     * 모두 해석합니다 — 검색 결과처럼 엔드포인트 문자열 안에서 쿼리·전역 상태를 보간하는
-     * 데이터소스가 있기 때문입니다. 미해석 시 표현식이 URL에 그대로 남아 호출이 실패합니다.
-     *
      * @param  string  $endpoint  원본 엔드포인트
-     * @param  array  $evalContext  평가 컨텍스트 (route/query/_global 등)
+     * @param  array  $routeParams  라우트 파라미터
      * @return string 치환된 엔드포인트
      */
-    private function resolveEndpoint(string $endpoint, array $evalContext): string
+    private function resolveEndpoint(string $endpoint, array $routeParams): string
     {
-        if (! str_contains($endpoint, '{{')) {
-            return $endpoint;
-        }
-
-        return app(ExpressionEvaluator::class)->evaluate($endpoint, $evalContext);
+        // {{route.xxx}} 및 {{route?.xxx}} 패턴 치환 (optional chaining 포함)
+        return (string) preg_replace_callback('/\{\{route\??\.(\w+)\}\}/', function ($matches) use ($routeParams) {
+            return $routeParams[$matches[1]] ?? '';
+        }, $endpoint);
     }
 
     /**
@@ -83,20 +72,19 @@ class DataSourceResolver
      * @param  array  $params  원본 params 정의
      * @param  array  $routeParams  라우트 파라미터
      * @param  array  $queryParams  쿼리 파라미터
-     * @param  array  $extraContext  추가 평가 컨텍스트 (_global 등)
      * @return array 해석된 params (키 → 값)
      */
-    private function resolveParams(array $params, array $routeParams, array $queryParams, array $extraContext = []): array
+    private function resolveParams(array $params, array $routeParams, array $queryParams): array
     {
         if (empty($params)) {
             return [];
         }
 
         $resolved = [];
-        $evalContext = array_merge($extraContext, [
+        $evalContext = [
             'route' => $routeParams,
             'query' => $queryParams,
-        ]);
+        ];
 
         $evaluator = app(ExpressionEvaluator::class);
 

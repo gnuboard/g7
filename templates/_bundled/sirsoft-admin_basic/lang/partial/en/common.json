@@ -49,8 +49,6 @@
   "logout": "Logout",
   "expand_sidebar": "Expand sidebar",
   "collapse_sidebar": "Collapse sidebar",
-  "expand": "Expand",
-  "collapse": "Collapse",
   "module": "Module",
   "plugin": "Plugin",
   "status_active": "Active",
@@ -78,8 +76,5 @@
   "scope_type_role_desc": "Only resources from users with the same role",
   "multilingual": {
     "add_language": "Add Language"
-  },
-  "refresh": "Refresh",
-  "activate": "Activate",
-  "skip": "Skip"
+  }
 }

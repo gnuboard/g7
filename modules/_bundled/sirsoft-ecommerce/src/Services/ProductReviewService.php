@@ -15,9 +15,6 @@ use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
-use Modules\Sirsoft\Ecommerce\Support\ReviewWritePolicy;
-use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
  * 상품 리뷰 서비스
@@ -26,9 +23,6 @@ use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
  */
 class ProductReviewService
 {
-    use ReappliesPermissionScope;
-    use ResolvesRowStorage;
-
     /**
      * ProductReviewService 생성자
      *
@@ -102,9 +96,17 @@ class ProductReviewService
             return ['can_write' => false, 'reason' => 'not_confirmed'];
         }
 
-        // 작성 기간 확인 (판정 규칙은 ReviewWritePolicy 단일 SSoT)
-        if (ReviewWritePolicy::isDeadlinePassed($orderOption->confirmed_at)) {
-            return ['can_write' => false, 'reason' => 'deadline_passed'];
+        // 작성 기간 확인
+        $deadlineDays = (int) $this->settingsService->getSetting(
+            'review_settings.write_deadline_days',
+            config('ecommerce.review.write_deadline_days', 90)
+        );
+
+        if ($orderOption->confirmed_at && $deadlineDays > 0) {
+            $deadline = $orderOption->confirmed_at->addDays($deadlineDays);
+            if (now()->gt($deadline)) {
+                return ['can_write' => false, 'reason' => 'deadline_passed'];
+            }
         }
 
         // 중복 작성 확인
@@ -137,16 +139,10 @@ class ProductReviewService
         $orderOption = $this->orderOptionRepository->findOrFail($data['order_option_id']);
         $optionSnapshot = $orderOption->option_snapshot ?? [];
 
-        // product_id 는 클라이언트 payload 가 아니라 확정된 주문 옵션에서 도출한다(SSoT).
-        // canWrite 가 옵션 소유권/확정만 검증하므로, payload 의 product_id 를 그대로 신뢰하면
-        // 소유하지 않은 상품에 리뷰를 붙일 수 있다. 도출값이 유일한 진실이므로 payload 값은
-        // 옵션과 일치하든 아니든 무시한다.
-        $resolvedProductId = (int) $orderOption->product_id;
-
         HookManager::doAction('sirsoft-ecommerce.product-review.before_create', $data);
 
         $review = $this->repository->create([
-            'product_id' => $resolvedProductId,
+            'product_id' => $data['product_id'],
             'order_option_id' => $data['order_option_id'],
             'user_id' => $userId,
             'rating' => $data['rating'],
@@ -176,8 +172,6 @@ class ProductReviewService
      */
     public function updateStatus(ProductReview $review, string $status): ProductReview
     {
-        $this->assertWithinScope($review, 'sirsoft-ecommerce.reviews.update');
-
         return $this->repository->update($review, ['status' => $status]);
     }
 
@@ -210,8 +204,6 @@ class ProductReviewService
      */
     public function deleteReply(ProductReview $review): ProductReview
     {
-        $this->assertWithinScope($review, 'sirsoft-ecommerce.reviews.update');
-
         return $this->repository->update($review, [
             'reply_content' => null,
             'reply_content_mode' => 'text',
@@ -229,16 +221,13 @@ class ProductReviewService
      */
     public function deleteReview(ProductReview $review): bool
     {
-        $this->assertWithinScope($review, 'sirsoft-ecommerce.reviews.delete');
-
         HookManager::doAction('sirsoft-ecommerce.product-review.before_delete', $review);
 
         return DB::transaction(function () use ($review) {
-            // 이미지 파일 삭제 (StorageInterface 사용) — 행 disk 기준
+            // 이미지 파일 삭제 (StorageInterface 사용)
             foreach ($review->images as $image) {
-                $rowStorage = $this->storageForRow($image->disk);
-                if ($rowStorage->exists('images', $image->path)) {
-                    $rowStorage->delete('images', $image->path);
+                if ($this->storage->exists('images', $image->path)) {
+                    $this->storage->delete('images', $image->path);
                 }
             }
 
@@ -265,8 +254,6 @@ class ProductReviewService
      */
     public function bulkUpdateStatus(array $ids, string $status): int
     {
-        $this->assertAllWithinScope($this->repository->getByIdsWithImages($ids), 'sirsoft-ecommerce.reviews.update');
-
         return $this->repository->bulkUpdateStatus($ids, $status);
     }
 
@@ -280,20 +267,17 @@ class ProductReviewService
     {
         $reviews = $this->repository->getByIdsWithImages($ids);
 
-        $this->assertAllWithinScope($reviews, 'sirsoft-ecommerce.reviews.delete');
-
         // 삭제 전 스냅샷 캡처 (after_bulk_delete 훅에 전달)
         $snapshots = $reviews->keyBy('id')->map->toArray()->all();
 
         HookManager::doAction('sirsoft-ecommerce.product-review.before_bulk_delete', $ids, $reviews);
 
         return DB::transaction(function () use ($reviews, $ids, $snapshots) {
-            // 이미지 파일 일괄 삭제 — 행 disk 기준
+            // 이미지 파일 일괄 삭제
             foreach ($reviews as $review) {
                 foreach ($review->images as $image) {
-                    $rowStorage = $this->storageForRow($image->disk);
-                    if ($rowStorage->exists('images', $image->path)) {
-                        $rowStorage->delete('images', $image->path);
+                    if ($this->storage->exists('images', $image->path)) {
+                        $this->storage->delete('images', $image->path);
                     }
                 }
             }

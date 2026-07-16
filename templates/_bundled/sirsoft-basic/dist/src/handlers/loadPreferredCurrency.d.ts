@@ -1,9 +1,12 @@
-import { HandlerContext, TemplateActionDefinition } from '../types';
+import { HandlerContext } from '../types';
+interface LoadPreferredCurrencyParams {
+    defaultCurrency?: string;
+}
 /**
  * localStorage에서 선호 통화를 로드하여 전역 상태에 설정합니다.
  *
- * @param action - 액션 정의 (`params.defaultCurrency`)
- * @param _context - 핸들러 컨텍스트 (미사용 — 전역 상태는 G7Core.state.set() 으로 쓴다)
+ * @param params.defaultCurrency - 기본 통화 (선택, 기본값: 'KRW')
+ * @param context - 핸들러 컨텍스트
  * @returns 로드된 통화 코드
  *
  * @example
@@ -17,12 +20,12 @@ import { HandlerContext, TemplateActionDefinition } from '../types';
  *   ]
  * }
  */
-export declare function loadPreferredCurrencyHandler(action: TemplateActionDefinition, _context?: HandlerContext): string;
+export declare function loadPreferredCurrencyHandler(params: LoadPreferredCurrencyParams, context: HandlerContext): string;
 /**
  * 선호 통화를 localStorage에 저장합니다.
  *
- * @param action - 액션 정의 (`params.currencyCode`)
- * @param _context - 핸들러 컨텍스트 (미사용 — 전역 상태는 G7Core.state.set() 으로 쓴다)
+ * @param currencyCode - 저장할 통화 코드
+ * @param context - 핸들러 컨텍스트
  *
  * @example
  * // 통화 선택 드롭다운에서 사용
@@ -36,4 +39,7 @@ export declare function loadPreferredCurrencyHandler(action: TemplateActionDefin
  *   ]
  * }
  */
-export declare function savePreferredCurrencyHandler(action: TemplateActionDefinition, _context?: HandlerContext): void;
+export declare function savePreferredCurrencyHandler(params: {
+    currencyCode: string;
+}, context: HandlerContext): void;
+export {};

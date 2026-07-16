@@ -6,7 +6,6 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 require_once __DIR__.'/../../ModuleTestCase.php';
 
 use App\Models\User;
-use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Board\Models\Board;
@@ -43,7 +42,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
         // 일반 사용자 생성 (권한 없음)
         $this->normalUser = $this->createUser();
 
-        $this->settingsStoragePath = ExtensionStoragePath::module('sirsoft-board', 'settings');
+        $this->settingsStoragePath = storage_path('app/modules/sirsoft-board/settings');
 
         // 테스트 전 저장소 정리
         if (File::isDirectory($this->settingsStoragePath)) {
@@ -145,14 +144,13 @@ class BoardSettingsControllerTest extends ModuleTestCase
 
         $response->assertStatus(200);
 
-        // 저장 결과는 조회 API 로 확인한다 — settings 디스크는 테스트 하네스가 페이크로
-        // 대체하므로 실제 storage 경로를 직접 읽으면 저장 성공에도 파일이 없다.
-        $saved = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/settings/basic_defaults');
+        // 저장된 값이 파일에 반영되었는지 확인
+        $filePath = $this->settingsStoragePath.'/basic_defaults.json';
+        $this->assertFileExists($filePath);
 
-        $saved->assertStatus(200);
-        $this->assertEquals(30, $saved->json('data.settings.per_page'));
-        $this->assertEquals(10, $saved->json('data.settings.per_page_mobile'));
+        $content = json_decode(File::get($filePath), true);
+        $this->assertEquals(30, $content['per_page']);
+        $this->assertEquals(10, $content['per_page_mobile']);
     }
 
     /**
@@ -172,13 +170,13 @@ class BoardSettingsControllerTest extends ModuleTestCase
 
         $response->assertStatus(200);
 
-        // 저장 결과는 조회 API 로 확인한다 (settings 디스크 페이크 — 위 주석 참조).
-        $saved = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/settings/notifications');
+        // 저장된 값이 파일에 반영되었는지 확인
+        $filePath = $this->settingsStoragePath.'/notifications.json';
+        $this->assertFileExists($filePath);
 
-        $saved->assertStatus(200);
-        $this->assertIsArray($saved->json('data.settings.channels'));
-        $this->assertEquals('mail', $saved->json('data.settings.channels.0.id'));
+        $content = json_decode(File::get($filePath), true);
+        $this->assertIsArray($content['channels']);
+        $this->assertEquals('mail', $content['channels'][0]['id']);
     }
 
     /**
@@ -422,67 +420,6 @@ class BoardSettingsControllerTest extends ModuleTestCase
         $response->assertStatus(200);
     }
 
-    /**
-     * override_values 의 컬럼 값도 Store/Update 와 동일한 범위 제한(ReadsBoardLimits SSoT)을 받는다.
-     *
-     * 회귀: 일괄 적용 경로는 override_values 를 무검증(`['sometimes','array']`)으로 통과시켜
-     * boards 컬럼에 직접 기록했다. Store/Update 가 config/board.php SSoT 로 강제하는 바로 그 컬럼을
-     * 일괄 적용만 우회할 수 있어, new_display_hours=99999(상한 720) 같은 값이 저장됐다.
-     */
-    public function test_bulk_apply_rejects_out_of_range_override_new_display_hours(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->postJson('/api/modules/sirsoft-board/admin/settings/bulk-apply', [
-                'fields' => ['new_display_hours'],
-                'apply_all' => true,
-                'override_values' => ['new_display_hours' => 99999], // 상한 720 초과
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['override_values.new_display_hours']);
-    }
-
-    /**
-     * override_values 의 길이 제한 컬럼(min_title_length 등)도 상한을 넘으면 거부한다.
-     */
-    public function test_bulk_apply_rejects_out_of_range_override_min_title_length(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->postJson('/api/modules/sirsoft-board/admin/settings/bulk-apply', [
-                'fields' => ['min_title_length'],
-                'apply_all' => true,
-                'override_values' => ['min_title_length' => 999999], // 상한 200 초과
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['override_values.min_title_length']);
-    }
-
-    /**
-     * 범위 안의 override_values 는 정상 통과한다(정정이 유효값까지 막지 않음).
-     */
-    public function test_bulk_apply_accepts_in_range_override_values(): void
-    {
-        $board = Board::create([
-            'name' => ['ko' => '테스트', 'en' => 'Test'],
-            'slug' => 'settings-ov-'.substr(md5(microtime()), 0, 8),
-            'type' => 'gallery',
-            'new_display_hours' => 24,
-        ]);
-
-        $response = $this->actingAs($this->adminUser)
-            ->postJson('/api/modules/sirsoft-board/admin/settings/bulk-apply', [
-                'fields' => ['new_display_hours'],
-                'apply_all' => true,
-                'override_values' => ['new_display_hours' => 48], // 상한 720 이내
-            ]);
-
-        $response->assertStatus(200);
-
-        $board->refresh();
-        $this->assertEquals(48, $board->new_display_hours);
-    }
-
     // ========================================
     // StoreBoardSettingsRequest 검증 경계값 테스트 (회귀: issue#413)
     // ========================================
@@ -553,91 +490,6 @@ class BoardSettingsControllerTest extends ModuleTestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['basic_defaults.per_page_mobile']);
-    }
-
-    /**
-     * basic_defaults.max_file_count 는 config max_file_count_max(20)까지 허용 (#493 B2)
-     */
-    public function test_settings_request_max_file_count_allows_config_max(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                'basic_defaults' => ['max_file_count' => 20],
-            ]);
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * basic_defaults.max_file_count 가 config max(20) 초과 시 422 (#493 B2)
-     */
-    public function test_settings_request_max_file_count_rejects_above_config_max(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                'basic_defaults' => ['max_file_count' => 21],
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['basic_defaults.max_file_count']);
-    }
-
-    /**
-     * 제한값 설정을 바꾸면 저장 규칙이 따라오는지 확인 (#493 B2 — config 가 SSoT)
-     *
-     * 규칙이 리터럴로 되돌아가면 설정을 바꿔도 경계가 그대로라 이 테스트가 먼저 깨진다.
-     */
-    public function test_settings_request_bounds_follow_config(): void
-    {
-        config(['sirsoft-board.limits.max_file_count_max' => 3]);
-
-        $this->actingAs($this->adminUser)
-            ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                'basic_defaults' => ['max_file_count' => 3],
-            ])
-            ->assertStatus(200);
-
-        $this->actingAs($this->adminUser)
-            ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                'basic_defaults' => ['max_file_count' => 4],
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['basic_defaults.max_file_count']);
-    }
-
-    /**
-     * report_policy.auto_hide_threshold 는 0(자동 숨김 비활성)을 저장할 수 있다 (#493 B4)
-     *
-     * 화면 안내가 "0=비활성" 이므로 서버가 0 을 거부하면 비활성으로 되돌릴 방법이 없다.
-     */
-    public function test_settings_request_auto_hide_threshold_allows_zero(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                'report_policy' => ['auto_hide_threshold' => 0],
-            ]);
-
-        $response->assertStatus(200);
-
-        $saved = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/settings/report_policy');
-
-        $saved->assertStatus(200);
-        $this->assertSame(0, (int) $saved->json('data.settings.auto_hide_threshold'));
-    }
-
-    /**
-     * report_policy.auto_hide_threshold 가 config max(100) 초과 시 422 (#493 B4)
-     */
-    public function test_settings_request_auto_hide_threshold_rejects_above_config_max(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                'report_policy' => ['auto_hide_threshold' => 101],
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['report_policy.auto_hide_threshold']);
     }
 
     // ========================================
@@ -763,50 +615,5 @@ class BoardSettingsControllerTest extends ModuleTestCase
         // 컬럼 값 원복 확인
         $board->refresh();
         $this->assertEquals(10, $board->per_page);
-    }
-
-    /**
-     * 첨부 정리 설정이 general 탭 저장으로 실제 반영되는지 확인 (회귀)
-     *
-     * 화면은 general 탭에서 이 카테고리를 함께 제출한다. 서버가 카테고리를 허용하지 않으면
-     * 저장은 200 인데 값만 사라져, 운영자가 토글을 켜도 정리가 영원히 꺼진 상태로 남는다.
-     */
-    public function test_attachment_cleanup_settings_are_saved_on_general_tab(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                '_tab' => 'general',
-                'display' => ['date_display_format' => 'standard'],
-                'attachment_settings' => [
-                    'purge_enabled' => true,
-                    'purge_retention_days' => 15,
-                ],
-            ]);
-
-        $response->assertStatus(200);
-
-        $followUp = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/settings/attachment_settings');
-
-        $followUp->assertStatus(200);
-        $this->assertTrue($followUp->json('data.settings.purge_enabled'));
-        $this->assertSame(15, $followUp->json('data.settings.purge_retention_days'));
-    }
-
-    /**
-     * 보존기간 하한(1일) 미만은 거부되는지 확인 — 사용자 파일을 파기하는 설정이므로.
-     */
-    public function test_attachment_purge_retention_days_below_minimum_is_rejected(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                '_tab' => 'general',
-                'attachment_settings' => [
-                    'purge_enabled' => true,
-                    'purge_retention_days' => 0,
-                ],
-            ]);
-
-        $response->assertStatus(422);
     }
 }

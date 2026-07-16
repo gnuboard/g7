@@ -27,7 +27,6 @@ use Plugins\Sirsoft\PayKginicis\Http\Requests\AuthCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\MobileVbankNotifyRequest;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\VbankNotifyRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
-use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
 
 /**
  * KG 이니시스 결제 콜백 컨트롤러
@@ -255,11 +254,8 @@ class PaymentCallbackController
                     'result_msg' => $pgResponse['resultMsg'] ?? '',
                 ]);
 
-                // 승인이 성립하지 않았다 — 실제로 결제된 것이 없으므로 주문 상태를 바꾸지 않는다.
-                // 이 엔드포인트는 PG 서명도 IP 증명도 없는 비인증 브라우저 POST 이고 주문번호(moid)도
-                // 요청자가 고른 값이라, "승인 실패" 는 남의 주문번호와 위조 authToken 을 보내기만 해도
-                // 만들어낼 수 있는 상태다. 그것을 근거로 실패 처리하면 타인의 결제대기 주문이 취소된다.
-                // 정당한 결제창 닫힘은 소유권을 검증하는 close-report 가 기록한다.
+                $this->orderService->failPayment($order, $pgResultCode, $pgResponse['resultMsg'] ?? '');
+
                 return redirect($this->resolveFailUrl([
                     'error' => $pgResultCode,
                     'message' => $pgResponse['resultMsg'] ?? '',
@@ -374,7 +370,7 @@ class PaymentCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => 'authorize_failed',
-                'message' => __('sirsoft-pay_kginicis::messages.errors.payment_failed'),
+                'message' => $e->getMessage(),
                 'orderId' => $moid,
             ]));
         } finally {
@@ -695,15 +691,15 @@ class PaymentCallbackController
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
+        $urlTemplate = $settings['redirect_success_url'] ?? '/shop/orders/{orderId}/complete';
 
-        return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        return $this->absolutize(str_replace('{orderId}', $orderId, $urlTemplate));
     }
 
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $this->absolutize(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = $this->absolutize($settings['redirect_fail_url'] ?? '/shop/checkout');
 
         if (empty($queryParams)) {
             return $baseUrl;

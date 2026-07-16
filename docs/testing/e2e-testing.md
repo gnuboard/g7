@@ -6,12 +6,9 @@
 - 도구: Playwright 1.49+ (TypeScript, Vitest 와 동일 스택)
 - 인증: PlaywrightIssueToken artisan 커맨드가 Sanctum 토큰 발급 (CLI + G7_PLAYWRIGHT_BYPASS=1 + APP_DEBUG 3중 가드)
 - Base URL: PLAYWRIGHT_BASE_URL 환경변수 우선, .env APP_URL 차순위 (하드코딩 회피)
-- 로케일: 모든 config 에 use.locale = 'ko-KR' 고정 (미지정 시 Accept-Language 가 en-US 로 나가 화면이 영어로 렌더 → 한국어 단언 전멸)
 - 코어/확장 분리: 코어 = tests/Playwright/, 확장 = {확장 디렉토리}/tests/Playwright/
 - 데이터 생성: 데이터를 소유한 영역에 시드 커맨드 배치 (코어 ↔ 모듈 의존 역전 회피)
-- 편집기 저장 spec: 제품 화면 대신 전용 시드 화면(e2e_sandbox) 대상 — globalSetup 이 매 실행 원본으로 덮어씀 (§4.1)
 - 외부 의존: mock-first 전략 (page.route() 로 결제창/외부 API 가로채기)
-- 브라우저: 일상 E2E 는 Chromium 전용 — 확대 조건은 §3 브라우저 범위
 ```
 
 ## §1. 도구 선택 정당화
@@ -90,211 +87,25 @@ npm run test:e2e:ui                                 # UI 디버깅 모드
 
 base URL 은 코어 `.env` 의 `APP_URL` 에서 자동 해석된다 (`PLAYWRIGHT_BASE_URL` 로 덮어쓸 수 있다).
 
-### 로케일 고정 (`locale: 'ko-KR'`)
-
-코어와 확장의 모든 config 은 `use.locale` 을 `'ko-KR'` 로 고정한다. 생략하면 한국어 문구를 단언하는
-spec 이 전부 실패한다.
-
-엔진의 로케일 우선순위는 `localStorage.g7_locale` → 서버가 내려준 값 → `'ko'` 이고
-([TemplateApp.ts](../../resources/js/core/TemplateApp.ts) 생성자), 서버값은 `SetLocale` 미들웨어가
-**미로그인 요청에서 `Accept-Language` 헤더로** 결정한다. Playwright 의 `locale` 옵션이 그 헤더를
-만들므로, 지정하지 않으면 첫 페이지 로드가 `en-US` 로 나가 화면이 영어로 렌더되고 엔진이 그 값을
-`localStorage` 에 저장한다. 이후 인증해도 저장된 값이 최우선이라 세션 전체가 영어로 고정된다.
-
-`getByText('전체회원수')` 처럼 한국어만 단언하는 곳은 물론이고, `getByRole('button', { name: /저장/ })`
-같은 접근 가능한 이름 조회도 함께 깨진다.
-
-### 브라우저 UA 고정 (`userAgent`)
-
-코어와 확장의 모든 config 은 `use.userAgent` 에 실제 데스크탑 Chrome UA 를 지정한다.
-
-Playwright 의 기본 UA 에는 `HeadlessChrome` 이 들어 있고, `SeoMiddleware` 의 봇 판정이 그것을
-검색엔진 크롤러로 본다. 그러면 공개 사용자 경로 요청이 SPA 가 아니라 **검색엔진용 정적 HTML** 을
-받는다 — `window.G7Core` 도 엔진 스크립트도 없는 화면이다.
-
-이 상태가 위험한 이유는 실패가 아니라 **통과**로 나타나기 때문이다. 서버가 심은 글꼴·아이콘은
-그대로 정상이라 "페이지가 잘 뜬다" 로 보이고, 정작 재려던 SPA 동작(테마 적용·핸들러 등록·확장
-번들 로드·상태 바인딩)은 한 번도 실행되지 않은 채 단언이 통과한다. 실측(2026-08-26)에서
-사용자 홈을 재던 spec 들이 전부 이 경로였다.
-
-봇 화면을 의도적으로 검증하는 spec 은 UA 가 아니라 `?_escaped_fragment_=` 로 그 경로를 유발하므로,
-UA 를 실제 브라우저 값으로 고정해도 그 검증은 그대로 동작한다.
-
-측정으로 확인하려면 `typeof window.G7Core` 가 `'object'` 인지 본다 — `'undefined'` 면 SPA 가 아니라
-봇 화면을 재고 있는 것이다.
-
 ### 실행 시 유의 (경험칙)
 
 | 항목 | 내용 |
 | --- | --- |
 | 산출물 위치 | 리포트·trace 는 **코어 루트**의 `test-results/{type}/{id}/`, `playwright-report/{type}/{id}/` 에 쌓인다. 확장 디렉토리 안에 쌓으면 Windows 에서 `{module\|template}:update` 의 디렉토리 이동이 열린 핸들에 걸려 실패한다 |
 | 레이아웃 수정 후 | 레이아웃 JSON 을 고쳤으면 `{type}:update {id} --force` **+ `template:cache-clear {템플릿}`** 까지 해야 브라우저에 반영된다. 레이아웃은 템플릿 캐시(`/api/layouts/{template}/...`)로 서빙되므로 `cache:clear` 만으로는 갱신되지 않는다 |
-| 공유 상태 | 같은 관리자 설정 화면을 건드리는 spec 이 병렬로 돌면 서로의 저장 상태를 덮어써 실패할 수 있다. 실행 옵션에 맡기지 않고 그 `describe` 에 `test.describe.configure({ mode: 'serial' })` 를 둔다 |
-| 워커 수 | 관리자 SPA 는 번들이 크고 레이아웃을 여러 번 받아온다. 개발 머신에서 2워커 이상이면 `page.waitForLoadState` 가 30초를 넘겨 **비결정적으로** 실패한다(실측: 같은 스위트가 회차마다 다른 5~7건 실패, 테스트당 8초 → 25초). 판정은 `--workers=1` 결과로 한다 |
-| 편집기 spec 만 몰아 실행할 때 | 레이아웃 편집기 spec 만 골라 돌리면 워커 전부가 동시에 편집기 페이지를 연다 — 전체 스위트에서는 가벼운 spec 이 섞여 그 집중이 생기지 않는다. 실측: 편집기 7파일 27건을 7워커로 돌리면 `g7le-preview-frame` 대기가 전부 30초 타임아웃(27/27 실패), 같은 코드로 2워커는 26/27 통과. 편집기만 선택 실행할 때는 `--workers=2` 이하로 둔다 |
-| 봇 렌더 spec 의 IP 예산 | 검색봇 화면의 미스 렌더는 **IP 당 분당 상한**(`G7_SEO_RENDER_MISSES_PER_MINUTE`, 기본 60)을 쓴다. 자동 검사는 전부 같은 IP 에서 나가므로 봇 경로 spec 을 많이 몰아 돌리면 예산을 넘긴 요청이 SEO HTML 대신 SPA(`X-SEO-Cache: BYPASS`)를 받아 본문 단언이 실패한다. 오류가 아니라 200 이라 원인이 드러나지 않으므로, 봇 spec 이 간헐 실패하면 응답 헤더가 `BYPASS` 인지 먼저 본다 (실측: `seo-bot-rendering` 12건 + `page-og-image` 2건은 기본값에서 여유가 있다) |
-
-### 브라우저 범위
-
-일상 E2E 는 Chromium 전용이 정책이다. 코어 config 와 확장 config 모두 `projects` 에
-chromium 하나만 두며, `npx playwright install chromium` 만 안내하는 것(§2)이 곧 이 정책이다.
-문서상의 지원 브라우저 선언(`docs/requirements.md` §7)은 이 자동 검증 범위와 구분해서 읽는다 —
-Firefox/Safari 는 프론트엔드 의존성(React 19, Tailwind CSS 4)의 호환 범위 기준 지원이며
-상시 자동 테스트 대상이 아니다.
-
-이 정책의 근거는 위험 표면의 위치다. 엔진과 레이아웃에는 브라우저별 분기 코드가 없어 JS
-레벨의 브라우저 편차 위험이 낮고, 실질 위험은 CSS 렌더링과 contenteditable(위지윅) 거동에
-몰려 있다. 그 두 축은 브라우저 프로젝트를 늘리는 것보다 해당 spec 을 두껍게 쓰는 편이
-비용 대비 회수가 크다.
-
-Firefox/WebKit 프로젝트를 상시 스위트에 넣지 않은 이유:
-
-- 프로젝트 간 병렬 실행이 공유 서버 상태를 경합시킨다 — 시드 화면 PUT 저장(§4.1)과 관리자
-  설정 저장 spec 은 같은 레코드를 건드리므로 브라우저별 실행이 서로의 저장을 덮어쓴다.
-- 시나리오 매니페스트에 브라우저 축을 추가하면 cross product 가 브라우저 수만큼 배가된다.
-- 총 실행 시간이 프로젝트 수에 비례해 늘어, 개발 머신의 워커 예산(위 "실행 시 유의")과
-  정면으로 충돌한다.
-
-향후 도입할 경우 아래 4가지를 조건으로 한다:
-
-- 상시 스위트가 아니라 **별도 opt-in 스위트**로만 실행한다 (기본 실행 대상에 넣지 않는다).
-- 대상은 `@smoke` 로 한정한다 — 레이아웃 편집기 저장 spec 을 배제해 시드 화면 경합을 피한다.
-- `--workers=1` 로 고정한다.
-- CDP 를 쓰는 spec(`specs/smoke/localinit-multi-progressive-datasource.spec.ts` 의
-  `newCDPSession`)은 `test.skip(browserName !== 'chromium')` 로 제외한다.
+| 공유 상태 | 같은 관리자 설정 화면을 건드리는 spec 이 병렬로 돌면 서로의 저장 상태를 덮어써 실패할 수 있다. 설정 저장을 수반하는 spec 은 `--workers=1` 로 확인한다 |
 
 ## §4. 데이터 생성 위치 — 책임 분리 매트릭스
 
 | 데이터 종류 | 책임 영역 | 위치 | 호출 |
 |---|---|---|---|
-| 코어 권한/역할/유저/Sanctum 토큰 | 코어 | `app/Console/Commands/PlaywrightIssueToken.php` | `php artisan playwright:issue-token --permissions=core.xxx` (권한 경계 검증은 `--no-admin-role` 추가 — §5.1) |
-| 편집기 저장 spec 대상 시드 화면 | 코어 | `app/Console/Commands/PlaywrightSeedLayout.php` | `php artisan playwright:seed-layout [--remove]` (globalSetup/globalTeardown 자동 호출) |
-| 로그인 2단계 인증 계정·인증번호 | 코어 | `app/Console/Commands/PlaywrightSeedTwoFactor.php` | `php artisan playwright:seed-two-factor --ensure-user=… \| --plant=<challenge_id>` (§4.2) |
+| 코어 권한/역할/유저/Sanctum 토큰 | 코어 | `app/Console/Commands/PlaywrightIssueToken.php` | `php artisan playwright:issue-token --permissions=core.xxx` |
 | 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 | 코어 커맨드의 `--permissions=` 임의 식별자 | 동일 (Permission::firstOrCreate 자동 생성) |
 | 모듈 도메인 데이터 (상품/주문) | 모듈 | `modules/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | `php artisan playwright:seed-{id}` |
 | 플러그인 도메인 데이터 (결제 키) | 플러그인 | `plugins/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | 동일 |
 | 외부 의존 (토스 결제창 응답) | spec 안 mock | `page.route(...)` | 호출 없음 |
 
 **핵심 원칙**: 코어는 모듈 도메인을 모른다. 모듈 도메인 시드를 코어에 두면 의존 역전.
-
-### 4.2 로그인 2단계 인증 픽스처
-
-2단계 인증은 **사이트 설정과 메일 발송**에 의존하므로 브라우저만으로는 재현할 수 없다.
-`tests/Playwright/fixtures/two-factor.ts` 가 세 가지를 가역적으로 준비한다.
-
-| 준비 항목 | 방법 | 원복 |
-|---|---|---|
-| 보안 설정 `security.two_factor_auth` | 관리자 토큰으로 `/api/admin/settings` GET → POST (탭 전체를 되돌려 보낸다) | 읽어 둔 탭 전체 값을 그대로 되쓴다 |
-| 메일 발송 | 받아서 버리는 로컬 SMTP 싱크를 띄우고 `mail.json` 의 `host`/`port`/`encryption` 을 줄 단위 치환 | 백업 파일에서 바이트 그대로 복원 |
-| 인증번호 | `php artisan playwright:seed-two-factor --plant=<challenge_id> --code=135790` | 없음 (challenge 는 일회성) |
-| 테스트 계정 | `--ensure-user=` 로 생성 | `--purge-users` 로 종료 시 즉시 제거 |
-
-**메일을 `log` 메일러로 돌리지 않는 이유**: `log` 는 이 제품의 설정 스키마에 없다. 저장 검증이
-등록된 메일 드라이버(`smtp`·`mailgun`·`ses`)만 허용하고, 설정 파일을 직접 고쳐도 드라이버 해석
-단계에서 `smtp` 로 되돌아간다(실측 확인). 그래서 `tests/Playwright/fixtures/smtp-sink.ts` 가
-Node 기본 `net` 만으로 최소 SMTP 서버를 127.0.0.1 에 잠깐 띄우고 그쪽으로 돌린다 —
-인증도 TLS 도 요구하지 않으며 받은 메일은 어디에도 남기지 않는다.
-
-**메일 설정만 파일을 직접 다루는 이유**: 원래 값(빈 SMTP 호스트)은 저장 검증(`smtp` 이면 host
-필수)을 통과하지 못해 **API 로는 되돌릴 수 없다**. 보안 설정은 API 로, 메일 설정은 파일
-백업·복원으로 왕복한다.
-
-`playwright:seed-two-factor` 계약:
-
-| 옵션 | 하는 일 |
-|---|---|
-| `--ensure-user=<접미사>` | `playwright_2fa_<접미사>@example.test` 계정을 알려진 비밀번호로 생성/갱신하고 이메일을 출력. 잠금·실패 카운트도 초기화한다 |
-| `--admin` | 위 계정에 admin 역할 부여 (없으면 기존 역할을 떼어 관리자 거부 경로를 재현할 수 있게 한다) |
-| `--password=` | `--ensure-user` 가 설정할 비밀번호 (기본 `Passw0rd!2fa`) |
-| `--plant=<uuid>` | 그 challenge 에 알려진 인증번호의 해시를 심고 코드를 출력 |
-| `--code=` | `--plant` 가 심을 인증번호 (기본 `135790`) |
-| `--gc-hours=` | 이 시간보다 오래된 테스트 계정 정리 (기본 6, `0` 이면 정리 안 함) |
-| `--purge-users` | 나이와 무관하게 테스트 계정을 전부 제거 — 실측 종료 직후 호출한다. 이 계정들은 알려진 비밀번호를 갖고 관리자용은 관리자 역할까지 가지므로, 나이 기준 정리를 기다리는 사이가 그대로 열린 문이 된다 |
-
-가드는 `playwright:issue-token` 과 동형이다 — CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1` + `APP_DEBUG` 강제.
-
-인증번호는 해시로만 저장되어 되읽을 수 없다. 메일함을 실제로 여는 대신 알려진 값을 심는 이유이며,
-방식은 PHPUnit `TwoFactorAuthTest::issuedCode()` 와 같다 — 검증 대상은 코드 생성이 아니라
-로그인 흐름(코드 확인 전 토큰 미발급 / 확인 후 발급)이다.
-
-**원복 실패를 삼키지 않는다.** 되돌리지 못한 채 끝나면 사이트가 2단계 인증이 켜진 상태로 남아
-이후 **모든 로그인이 막힌다**. 그래서 이 spec 은 `test.describe.configure({ mode: 'serial' })`
-로 한 워커에서만 실행하고, `afterAll` 의 원복 실패는 그대로 던진다.
-
-### 4.1 저장(PUT)하는 spec 은 제품 화면을 대상으로 두지 않는다
-
-레이아웃 편집기 spec 이 저장까지 수행하면 그 편집 결과는 **그대로 영속된다**. 대상이 제품 화면
-(`home` / `admin_dashboard` 등)이면 실행할 때마다 노드가 누적돼 개발 사이트에 그대로 노출된다.
-
-실측(2026-07-30): `home` 에 빈 표 7개가 쌓여 20,321 → 33,696 bytes, 관리자 대시보드에 빈
-DonutChart 5개. 누적되면 캔버스 구조가 회차마다 달라져 같은 파일의 다른 테스트도 간헐 실패한다.
-
-spec 안에 "추가한 노드를 삭제하고 다시 저장" 원복을 넣는 것으로는 해결되지 않는다 — 원복 실행
-후에도 레이아웃이 오염 시점과 정확히 같은 크기로 되돌아왔다(편집기가 그 시점에 들고 있던 문서를
-통째로 다시 저장). 원복은 그 자체가 또 한 번의 저장이라, 실패하면 잔여물이 남는다.
-
-그래서 **저장 대상 자체를 전용 시드 화면으로 분리**한다.
-
-| 항목 | 값 |
-|---|---|
-| 레이아웃 이름 | `e2e_sandbox` |
-| 라우트 | 사용자 템플릿 `/e2e-sandbox`, 관리자 템플릿 `*/admin/e2e-sandbox` |
-| fixture 원본 | `tests/Playwright/fixtures/seed-layouts/{템플릿}.e2e_sandbox.json` |
-| 설치 위치 | **활성 템플릿 디렉토리만** (`_bundled` 배포 원본 무변경, 활성 디렉토리는 Git 무시 → 릴리스 미포함) |
-| 설치/제거 | `php artisan playwright:seed-layout [--remove]` (CLI + `G7_PLAYWRIGHT_BYPASS=1` 가드) |
-| 자동 호출 | `globalSetup` 설치 / `globalTeardown` 제거 |
-| spec 헬퍼 | `tests/Playwright/fixtures/seed-layout.ts` — `sandboxRouteParam()`, `SANDBOX_ROOT_ID` |
-
-설치는 3종을 함께 처리한다: 레이아웃 파일 + `routes.json` 라우트(마커 기반 멱등) + DB 행 upsert.
-편집기의 라우트 트리는 `routes.json` 에서, 조회/저장은 DB 행을 대상으로 하므로 셋 중 하나만
-빠지면 `?route=` 로 열 수 없거나 404 가 된다.
-
-`routes.json` 은 재직렬화하면 원본의 주석 그룹 사이 빈 줄 같은 서식이 사라지므로, 설치 시 원본을
-`routes.json.playwright-backup` 으로 보관하고 제거 때 그 파일을 그대로 되돌린다(바이트 동일 복원).
-백업이 이미 있으면 덮어쓰지 않는다 — 비정상 종료로 시드가 남은 상태의 파일을 "원본" 으로 굳히지
-않기 위함이다.
-
-시드 설치는 **시드 행 하나만** 건드린다. `template:refresh-layout`(전체 재동기화)을 쓰지 않는
-이유는 그 경로가 파일에 없는 DB 레이아웃을 지우고 모든 레이아웃을 파일 기준으로 되돌리기
-때문이다 — 편집기 UI 로 저장한 변경은 파일이 아니라 DB 에만 있으므로 E2E 를 돌릴 때마다 사람이
-편집기로 만든 결과가 사라진다.
-
-시드 화면은 매 실행 fixture 원본으로 덮어써지므로 회차 간 누적이 성립하지 않는다. 따라서 저장
-spec 에 원복 절차를 둘 필요가 없다.
-
-```typescript
-import { SANDBOX_ROOT_ID, sandboxRouteParam } from '../../fixtures/seed-layout';
-import { editorPath } from '../../fixtures/layout-editor';
-
-test('편집 후 저장 → PUT 200', async ({ page }) => {
-  await gotoEditor(page, sandboxRouteParam());          // 사용자 템플릿
-  const container = await editorPath(page, '', SANDBOX_ROOT_ID);  // 고정 id 컨테이너
-  // ... 편집 + 저장
-});
-```
-
-**저장하지 않는(읽기 전용) spec 은 계속 제품 화면을 대상으로 둔다** — 오염 위험이 없고, 실제
-제품 레이아웃에 대한 검증이 유지되는 편이 낫다.
-
-예외: **팔레트로 노드를 추가한 뒤 그 노드를 선택해야 하는** spec 은 저장하지 않아도 시드 화면을
-쓴다. 제품 화면에서는 삽입 위치가 "선택 가능한 Div 후보 순회" 로 정해지는데, 그 위치가 모듈이 주입한
-잠금 서브트리 안이면 선택이 조상 노드로 escalate 되어 추가한 노드를 지목할 수 없다(실측: 관리자
-대시보드에 BarChart 추가 시 오버레이 타입 라벨이 `↑Div` + ⓘ 미표시, 같은 절차를 시드 컨테이너에서
-하면 `↑BarChart` + ⓘ 표시). 시드 화면의 컨테이너는 고정 id 라 삽입 위치가 결정적이다.
-
-### 4.2 편집기 spec 작성 시 자주 틀리는 측정 기준
-
-전수 실행에서 드러난 실패의 상당수가 제품 결함이 아니라 **측정 방법**의 문제였다. 아래는 실측으로
-확인된 것들이다.
-
-| 하지 말 것 | 이유 (실측) | 대신 |
-|---|---|---|
-| 전환 오버레이 가림을 `toBeVisible()` 로 판정 | Playwright 의 가시성 판정은 **가림(occlusion)을 보지 않는다**. 오버레이는 타겟 안/head 에 덧붙는 방식이고 콘텐츠는 DOM 에 남으므로, 덮여 있어도 visible 로 판정된다 | 오버레이 엘리먼트의 attach/detach 시각으로 측정 (`#g7-skeleton-overlay` 또는 `style#g7-transition-overlay`) |
-| "캔버스 텍스트 길이가 늘어난다" 로 본체 렌더 판정 | 탭/상태를 바꾸면 **줄어들 수도** 있다. 실측: my_comments 서브탭이 정상 렌더되는데 881 → 669 로 감소(항목당 길이가 짧아서) | 그 데이터에만 있는 고유 문구 존재로 판정 |
-| 상태/옵션의 **총 개수**를 단언 | 상태 그룹은 편집기 스펙에서 계속 늘어난다. 체크아웃 상태가 3 → 4 로 늘면서 `toHaveCount(3)` 이 깨졌다 | 그 테스트가 실제로 쓰는 값의 존재로 판정 |
-| `waitForLoadState('networkidle')` | 관리자 SPA 는 실시간 연결·주기 폴링이 붙어 500ms 무통신 구간이 오지 않을 수 있다. 실측 30초 타임아웃 | 다음 단계에 필요한 구체 신호(클릭할 버튼의 가시성 등) |
-| `/admin/layout-editor/{id}` 에 모듈/플러그인 식별자 | 그 세그먼트는 **템플릿 식별자** 자리다. 모듈 라우트는 해당 타입 템플릿 트리에 병합되므로 템플릿으로 진입해야 한다 | 템플릿 식별자 (모듈 admin 라우트 → admin 템플릿) |
-| 테스트 예산과 내부 대기를 같은 값으로 | `test` 기본 예산 30초 안에서 30초 `waitForResponse` 를 걸면 앞 단계가 조금만 늦어도 구조적으로 완주 불가 | 내부 대기를 줄이거나 `test.setTimeout()` 상향 |
 
 ## §5. fixture 패턴
 
@@ -317,28 +128,6 @@ export const test = base.extend<AuthFixtures>({
   readOnlyToken: async ({}, use) => use(issueToken('core.templates.read')),
 });
 ```
-
-#### 권한 경계를 검증할 때는 `issueScopedToken`
-
-`issueToken` 은 커맨드 기본 동작대로 사이트의 `admin` 역할을 함께 부여한다. `admin` 역할은 전체
-권한을 보유하므로, `--permissions` 로 권한을 좁혀 넘겨도 **화면은 항상 최대 권한으로 렌더된다**.
-읽기 전용 분기·권한 미보유 분기처럼 권한 경계 자체를 검증하려면 `issueScopedToken` 을 쓴다 —
-`--no-admin-role` 을 붙여 지정한 권한만 가진 계정을 만든다.
-
-```typescript
-// ❌ 읽기 전용 분기를 만들 수 없다 — admin 역할이 update 권한까지 함께 부여된다
-await authenticatePage(page, issueToken('sirsoft-ecommerce.settings.read'));
-await expect(page.locator('input[name="..."]')).toBeDisabled();   // 실패: enabled
-
-// ✅ 지정한 권한만 가진 계정
-await authenticatePage(page, issueScopedToken('sirsoft-ecommerce.settings.read'));
-await expect(page.locator('input[name="..."]')).toBeDisabled();   // 통과
-```
-
-권한을 좁힌 계정은 코어 메뉴·알림 데이터소스에도 접근하지 못해 콘솔에 403 이 남을 수 있다.
-그 화면 자체의 검증과 무관한 잡음이므로, 콘솔 에러 0 을 단언하는 테스트에는 이 토큰을 쓰지 않는다.
-권한 밖 탭·라우트로 이동하면 403 에러 페이지로 전환되므로, 왕복 시나리오는 그 권한으로 접근
-가능한 대상만 경유해야 한다.
 
 ### 5.2 확장 fixture — 권한 + 시드 분리
 
@@ -441,7 +230,7 @@ test('unauthenticated_401 × no_token', async ({ page }) => {
 });
 ```
 
-정적 검사가 매니페스트 axes ↔ docblock 매칭을 자동 검증.
+`audit-branch.cjs` 의 `test-scenario-coverage` 룰이 매니페스트 axes ↔ docblock 매칭을 자동 검증.
 
 ## §8. 회귀 테스트 4단계
 

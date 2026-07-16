@@ -72,8 +72,6 @@
                   "props": {
                     "type": "number",
                     "name": "min_title_length",
-                    "min": "{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -128,8 +126,6 @@
                   "props": {
                     "type": "number",
                     "name": "max_title_length",
-                    "min": "{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -194,8 +190,6 @@
                   "props": {
                     "type": "number",
                     "name": "min_content_length",
-                    "min": "{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -250,8 +244,6 @@
                   "props": {
                     "type": "number",
                     "name": "max_content_length",
-                    "min": "{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -362,8 +354,6 @@
               "props": {
                 "type": "number",
                 "name": "new_display_hours",
-                "min": "{{_local?.form?._meta?.limits?.new_display_hours_min ?? 0}}",
-                "max": "{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}",
                 "disabled": "{{_computed.isReadOnly}}",
                 "className": ""
               }
@@ -463,8 +453,7 @@
               "props": {
                 "type": "number",
                 "name": "max_reply_depth",
-                "min": "{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}",
-                "max": "{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}",
+                "min": 1,
                 "disabled": "{{_computed.isReadOnly}}",
                 "className": ""
               }
@@ -486,70 +475,6 @@
                 "className": "form-error-xs mt-1"
               },
               "text": "{{_local.errors?.max_reply_depth?.[0] ?? ''}}"
-            }
-          ]
-        },
-        {
-          "id": "reply_delete_policy_field",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.form.use_reply}}",
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "id": "reply_delete_policy_label",
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.label"
-                }
-              ]
-            },
-            {
-              "id": "reply_delete_policy_select",
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "reply_delete_policy",
-                "options": [
-                  {
-                    "value": "cascade",
-                    "label": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.cascade"
-                  },
-                  {
-                    "value": "block",
-                    "label": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.block"
-                  }
-                ],
-                "disabled": "{{_computed.isReadOnly}}",
-                "className": ""
-              }
-            },
-            {
-              "id": "reply_delete_policy_hint",
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "form-hint"
-              },
-              "text": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.errors?.reply_delete_policy}}",
-              "props": {
-                "className": "form-error-xs mt-1"
-              },
-              "text": "{{_local.errors?.reply_delete_policy?.[0] ?? ''}}"
             }
           ]
         },
@@ -636,8 +561,6 @@
                   "props": {
                     "type": "number",
                     "name": "min_comment_length",
-                    "min": "{{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -692,8 +615,6 @@
                   "props": {
                     "type": "number",
                     "name": "max_comment_length",
-                    "min": "{{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -751,8 +672,6 @@
               "props": {
                 "type": "number",
                 "name": "max_comment_depth",
-                "min": "{{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}",
-                "max": "{{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}",
                 "disabled": "{{_computed.isReadOnly}}",
                 "className": ""
               }
@@ -906,8 +825,6 @@
                   "props": {
                     "type": "number",
                     "name": "max_file_count",
-                    "min": "{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -962,8 +879,6 @@
                   "props": {
                     "type": "number",
                     "name": "max_file_size",
-                    "min": "{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}",
-                    "max": "{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}",
                     "placeholder": "$t:sirsoft-board.admin.form.fields.max_file_size.placeholder",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""

@@ -4,12 +4,10 @@ namespace Tests\Unit\Seo;
 
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
-use App\Extension\AbstractModule;
 use App\Extension\HookManager;
 use App\Seo\ComponentHtmlMapper;
 use App\Seo\DataSourceResolver;
 use App\Seo\ExpressionEvaluator;
-use App\Seo\PipeRegistry;
 use App\Seo\SeoConfigMerger;
 use App\Seo\SeoMetaResolver;
 use App\Seo\SeoRenderer;
@@ -18,7 +16,6 @@ use App\Services\LayoutService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
-use App\Support\AssetUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use Mockery;
@@ -89,10 +86,8 @@ class SeoRendererTest extends TestCase
                 }
                 if (is_array($value)) {
                     $locale = app()->getLocale();
-
                     return (string) ($value[$locale] ?? reset($value) ?? '');
                 }
-
                 return (string) ($value ?? '');
             })
             ->byDefault();
@@ -110,7 +105,7 @@ class SeoRendererTest extends TestCase
         // 기본 evaluator mock (setTranslations, getPipeRegistry 허용)
         $this->evaluator->shouldReceive('setTranslations')
             ->byDefault();
-        $pipeRegistry = Mockery::mock(PipeRegistry::class);
+        $pipeRegistry = Mockery::mock(\App\Seo\PipeRegistry::class);
         $pipeRegistry->shouldReceive('setLocale')->byDefault();
         $this->evaluator->shouldReceive('getPipeRegistry')
             ->andReturn($pipeRegistry)
@@ -547,17 +542,9 @@ class SeoRendererTest extends TestCase
             ->andReturn($mergedLayout);
 
         // seo.data_sources에 'product'만 지정 → resolve에 전달되는 seoDataSourceIds 확인
-        // 6번째 인자는 엔드포인트 표현식 평가용 사전 컨텍스트 (route/query/_global)
         $this->dataSourceResolver
             ->shouldReceive('resolve')
-            ->with(
-                $allDataSources,
-                ['product'],
-                ['id' => '1'],
-                Mockery::any(),
-                Mockery::any(),
-                Mockery::on(fn ($preContext) => isset($preContext['_global']) && isset($preContext['route']))
-            )
+            ->with($allDataSources, ['product'], ['id' => '1'], Mockery::any(), Mockery::any())
             ->once()
             ->andReturn(['product' => ['data' => ['name' => '상품']]]);
 
@@ -766,15 +753,6 @@ class SeoRendererTest extends TestCase
             ],
         ], JSON_PRETTY_PRINT));
 
-        // 선언한 산출물이 실재해야 링크된다 — 없는 경로의 <link> 는 봇 화면에서만 404 가
-        // 되고 어디에도 흔적이 남지 않으므로 렌더러가 실재 파일만 싣는다.
-        mkdir("{$configDir}/dist/css", 0755, true);
-        file_put_contents("{$configDir}/dist/css/components.css", '');
-
-        // 자산 URL 모드를 고정 — 운영 설정(general.asset_url_mode)에 따라
-        // 확장자 유지/제거 두 형태가 나오므로 검증 대상 형태를 명시한다.
-        AssetUrl::forceMode(AssetUrl::MODE_EXTENSION);
-
         try {
             $request = Request::create('/test-css');
 
@@ -822,10 +800,6 @@ class SeoRendererTest extends TestCase
             $result = $this->renderer->render($request);
             $this->assertNotNull($result);
         } finally {
-            AssetUrl::forceMode(null);
-            @unlink("{$configDir}/dist/css/components.css");
-            @rmdir("{$configDir}/dist/css");
-            @rmdir("{$configDir}/dist");
             @unlink("{$configDir}/template.json");
             @rmdir($configDir);
         }
@@ -935,9 +909,6 @@ class SeoRendererTest extends TestCase
         ?array $structuredData = null,
         ?array $computed = null,
         ?array $extensions = null,
-        ?array $state = null,
-        ?array $initLocal = null,
-        ?array $initGlobal = null,
     ): array {
         $seo = [
             'enabled' => $seoEnabled,
@@ -975,18 +946,6 @@ class SeoRendererTest extends TestCase
 
         if ($computed !== null) {
             $layout['computed'] = $computed;
-        }
-
-        if ($state !== null) {
-            $layout['state'] = $state;
-        }
-
-        if ($initLocal !== null) {
-            $layout['initLocal'] = $initLocal;
-        }
-
-        if ($initGlobal !== null) {
-            $layout['initGlobal'] = $initGlobal;
         }
 
         return $layout;
@@ -2373,9 +2332,7 @@ class SeoRendererTest extends TestCase
                 Mockery::on(function ($queryParams) {
                     return isset($queryParams['page']) && $queryParams['page'] === '2'
                         && isset($queryParams['sort']) && $queryParams['sort'] === 'price_asc';
-                }),
-                // 엔드포인트 표현식 평가용 사전 컨텍스트에도 동일한 쿼리가 담긴다
-                Mockery::on(fn ($preContext) => ($preContext['query']['page'] ?? null) === '2')
+                })
             )
             ->once()
             ->andReturn(['products' => ['data' => []]]);
@@ -2594,145 +2551,6 @@ class SeoRendererTest extends TestCase
         $result = $this->renderer->render($request);
 
         $this->assertNotNull($result);
-    }
-
-    /**
-     * 레이아웃 최상위 state 블록이 _local 초기값으로 반영됩니다.
-     */
-    public function test_render_applies_layout_state_block_to_local(): void
-    {
-        $this->runInitialStateTest(
-            layoutArgs: ['state' => ['q' => '', 'view' => 'list']],
-            assertContext: fn ($context) => ($context['_local']['q'] ?? null) === ''
-                && ($context['_local']['view'] ?? null) === 'list',
-        );
-    }
-
-    /**
-     * initLocal 블록이 state 블록보다 우선합니다 (state 는 하위 호환 별칭).
-     */
-    public function test_render_prefers_init_local_over_state_block(): void
-    {
-        $this->runInitialStateTest(
-            layoutArgs: [
-                'state' => ['view' => 'list'],
-                'initLocal' => ['view' => 'grid'],
-            ],
-            assertContext: fn ($context) => ($context['_local']['view'] ?? null) === 'grid',
-        );
-    }
-
-    /**
-     * 레이아웃 최상위 initGlobal 블록이 _global 초기값으로 반영됩니다.
-     */
-    public function test_render_applies_layout_init_global_block(): void
-    {
-        $this->runInitialStateTest(
-            layoutArgs: ['initGlobal' => ['searchActiveTab' => 'all', 'searchPage' => 1]],
-            assertContext: fn ($context) => ($context['_global']['searchActiveTab'] ?? null) === 'all'
-                && ($context['_global']['searchPage'] ?? null) === 1,
-        );
-    }
-
-    /**
-     * init_actions의 setState(target: global)이 _global에 반영됩니다.
-     */
-    public function test_render_applies_init_actions_global_set_state_to_global(): void
-    {
-        $this->runInitialStateTest(
-            layoutArgs: [
-                'initActions' => [
-                    [
-                        'handler' => 'setState',
-                        'params' => ['target' => 'global', 'searchSortBy' => 'relevance'],
-                    ],
-                ],
-            ],
-            assertContext: fn ($context) => ($context['_global']['searchSortBy'] ?? null) === 'relevance',
-        );
-    }
-
-    /**
-     * init_actions의 setState(target: global)이 초기 initGlobal 값을 덮어씁니다.
-     */
-    public function test_render_init_actions_global_overrides_init_global_block(): void
-    {
-        $this->runInitialStateTest(
-            layoutArgs: [
-                'initGlobal' => ['searchActiveTab' => 'all'],
-                'initActions' => [
-                    [
-                        'handler' => 'setState',
-                        'params' => ['target' => 'global', 'searchActiveTab' => 'products'],
-                    ],
-                ],
-            ],
-            assertContext: fn ($context) => ($context['_global']['searchActiveTab'] ?? null) === 'products',
-        );
-    }
-
-    /**
-     * target: global 인 setState가 실은 _local 하위 객체는 _local로 병합됩니다.
-     */
-    public function test_render_global_set_state_nested_local_is_merged_into_local(): void
-    {
-        $this->runInitialStateTest(
-            layoutArgs: [
-                'initActions' => [
-                    [
-                        'handler' => 'setState',
-                        'params' => [
-                            'target' => 'global',
-                            'searchActiveTab' => 'all',
-                            '_local' => ['q' => '검색어'],
-                        ],
-                    ],
-                ],
-            ],
-            assertContext: fn ($context) => ($context['_local']['q'] ?? null) === '검색어'
-                && ! array_key_exists('_local', $context['_global']),
-        );
-    }
-
-    /**
-     * 레이아웃 초기 상태(state/initLocal/initGlobal/init_actions) 검증 공통 헬퍼입니다.
-     *
-     * @param  array  $layoutArgs  buildMergedLayout 에 전달할 명명 인자
-     * @param  \Closure  $assertContext  htmlMapper.render 에 전달된 컨텍스트 검증 클로저
-     */
-    private function runInitialStateTest(array $layoutArgs, \Closure $assertContext): void
-    {
-        $request = Request::create('/search');
-
-        $this->setupRouteResolver('/search', [
-            'templateIdentifier' => 'sirsoft-basic',
-            'layoutName' => 'search/index',
-            'routeParams' => [],
-            'moduleIdentifier' => null,
-            'routeMeta' => [],
-        ]);
-
-        $mergedLayout = $this->buildMergedLayout(...array_merge([
-            'seoEnabled' => true,
-            'components' => [['component' => 'Div', 'props' => []]],
-        ], $layoutArgs));
-
-        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
-
-        $this->metaResolver->shouldReceive('resolve')
-            ->once()
-            ->andReturn($this->buildMetaResult(title: '검색'));
-
-        $this->htmlMapper->shouldReceive('render')
-            ->with(Mockery::type('array'), Mockery::on($assertContext), Mockery::type(ExpressionEvaluator::class))
-            ->once()
-            ->andReturn('');
-
-        $viewMock = Mockery::mock(\Illuminate\View\View::class);
-        $viewMock->shouldReceive('render')->once()->andReturn('<html></html>');
-        View::shouldReceive('make')->with('seo', Mockery::type('array'))->once()->andReturn($viewMock);
-
-        $this->assertNotNull($this->renderer->render($request));
     }
 
     /**
@@ -3512,7 +3330,7 @@ class SeoRendererTest extends TestCase
         $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
 
         // 모듈 인스턴스 mock
-        $moduleMock = Mockery::mock(AbstractModule::class)->makePartial();
+        $moduleMock = Mockery::mock(\App\Extension\AbstractModule::class)->makePartial();
         $moduleMock->shouldReceive('seoVariables')->andReturn([
             '_common' => [
                 'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
@@ -3593,7 +3411,7 @@ class SeoRendererTest extends TestCase
         );
         $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
 
-        $moduleMock = Mockery::mock(AbstractModule::class)->makePartial();
+        $moduleMock = Mockery::mock(\App\Extension\AbstractModule::class)->makePartial();
         $moduleMock->shouldReceive('seoVariables')->andReturn([
             '_common' => [
                 'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
@@ -3668,7 +3486,7 @@ class SeoRendererTest extends TestCase
         );
         $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
 
-        $moduleMock = Mockery::mock(AbstractModule::class)->makePartial();
+        $moduleMock = Mockery::mock(\App\Extension\AbstractModule::class)->makePartial();
         $moduleMock->shouldReceive('seoVariables')->andReturn([
             '_common' => [
                 'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
@@ -3732,7 +3550,7 @@ class SeoRendererTest extends TestCase
         );
         $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
 
-        $moduleMock = Mockery::mock(AbstractModule::class)->makePartial();
+        $moduleMock = Mockery::mock(\App\Extension\AbstractModule::class)->makePartial();
         $moduleMock->shouldReceive('seoVariables')->andReturn([
             'product' => [
                 'product_name' => ['source' => 'data', 'required' => true],
@@ -3867,7 +3685,6 @@ class SeoRendererTest extends TestCase
         // 청취자: image_width 1200 으로 변경
         HookManager::addFilter('core.seo.filter_og_data', function (array $og) {
             $og['image_width'] = 1200;
-
             return $og;
         });
 
@@ -3888,10 +3705,7 @@ class SeoRendererTest extends TestCase
         $result = $this->renderer->render($request);
         $this->assertNotNull($result);
 
-        // resetAll() 은 부팅 시 등록된 코어/확장 리스너까지 통째로 지운다 — HookManager 가
-        // static 이라 같은 프로세스의 이후 테스트가 그 영향을 받는다. 이 테스트가 등록한
-        // 필터만 해제한다 (파일 내 다른 hook 테스트와 동일 패턴).
-        HookManager::clearFilter('core.seo.filter_og_data');
+        HookManager::resetAll();
     }
 
     /**
@@ -3924,11 +3738,8 @@ class SeoRendererTest extends TestCase
 
         // 청취자: review 배열 주입
         HookManager::addFilter('core.seo.filter_structured_data', function (?array $sd) {
-            if ($sd === null) {
-                return $sd;
-            }
+            if ($sd === null) return $sd;
             $sd['review'] = [['@type' => 'Review', 'reviewBody' => 'Great!']];
-
             return $sd;
         });
 
@@ -3944,7 +3755,6 @@ class SeoRendererTest extends TestCase
 
         $this->renderer->render($request);
 
-        // resetAll() 대신 이 테스트가 등록한 필터만 해제 (위 og_data 테스트와 동일 사유)
-        HookManager::clearFilter('core.seo.filter_structured_data');
+        HookManager::resetAll();
     }
 }

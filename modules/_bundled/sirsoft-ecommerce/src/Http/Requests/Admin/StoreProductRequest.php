@@ -13,8 +13,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductImageCollection;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesBaseCurrencyPrecision;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesMileageRate;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -27,9 +25,6 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
  */
 class StoreProductRequest extends FormRequest
 {
-    use ResolvesBaseCurrencyPrecision;
-    use ValidatesMileageRate;
-
     /**
      * 권한 확인
      *
@@ -49,7 +44,8 @@ class StoreProductRequest extends FormRequest
     {
         // 기본통화의 소수 자릿수 — 가격 입력 허용 자릿수 상한.
         // KRW(0) 이면 정수만, USD/EUR(2) 이면 소수 2자리까지 허용.
-        $priceRule = $this->basePriceRule();
+        $decimalPlaces = $this->baseCurrencyDecimalPlaces();
+        $priceRule = $decimalPlaces > 0 ? 'decimal:0,'.$decimalPlaces : 'integer';
 
         $rules = [
             // 기본 정보
@@ -262,8 +258,6 @@ class StoreProductRequest extends FormRequest
     {
         $validator->after(function (Validator $validator) {
             $this->validatePurchaseRestrictionRoles($validator);
-            // 정률 적립률 상한 — mileage_type 에 따라 의미가 달라 필드 규칙으로 표현 불가
-            $this->validateMileageRates($validator, 'options');
         });
     }
 
@@ -323,6 +317,28 @@ class StoreProductRequest extends FormRequest
             'options.*.option_name' => __('sirsoft-ecommerce::validation.product.attributes.option_name'),
             'options.*.option_code' => __('sirsoft-ecommerce::validation.product.attributes.option_code'),
         ];
+    }
+
+    /**
+     * 기본통화의 소수 자릿수를 반환합니다.
+     *
+     * 환경설정 language_currency 의 default_currency 에 매칭되는 통화의
+     * decimal_places 값(예: KRW=0, USD=2)을 반환합니다.
+     *
+     * @return int 소수 자릿수 (미설정 시 0)
+     */
+    protected function baseCurrencyDecimalPlaces(): int
+    {
+        $settings = g7_module_settings('sirsoft-ecommerce', 'language_currency');
+        $default = $settings['default_currency'] ?? 'KRW';
+
+        foreach ($settings['currencies'] ?? [] as $currency) {
+            if (($currency['code'] ?? null) === $default) {
+                return (int) ($currency['decimal_places'] ?? 0);
+            }
+        }
+
+        return 0;
     }
 
     /**

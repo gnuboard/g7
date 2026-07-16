@@ -6,15 +6,11 @@ use App\Enums\PermissionType;
 use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\TriggerType;
-use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
-use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
-use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
@@ -66,14 +62,6 @@ class PostResource extends BaseApiResource
             'navigation' => $this->navigation ?? null,
             'parent' => $this->relationLoaded('parent') ? $this->getParentInfo() : null,
             'comments' => $this->relationLoaded('comments') ? CommentResource::collection($this->comments) : null,
-
-            // 댓글이 상한에서 끊겼는지. 끊기지 않았으면 false 이고 총 건수는 실린 목록 길이와 같다.
-            // 조용히 잘라내면 사용자에게는 "댓글이 그만큼뿐" 으로 보이므로 사실을 함께 내보낸다.
-            'comments_truncated' => (bool) ($this->comments_truncated ?? false),
-            'comments_total' => $this->comments_total ?? ($this->relationLoaded('comments') ? $this->comments->count() : null),
-            'comments_total_is_exact' => (bool) ($this->comments_total_is_exact ?? true),
-            // 댓글 페이지네이션을 요청한 경우에만 실린다 (미요청 시 null — 기존 응답 형태 유지)
-            'comments_pagination' => $this->comments_pagination ?? null,
             'attachments' => $this->getAttachmentsForResponse($request, $slug),
             'replies' => $this->relationLoaded('replies') ? static::collection($this->replies) : null,
 
@@ -303,39 +291,30 @@ class PostResource extends BaseApiResource
      * 썸네일 URL을 관계 로딩 상태에 따라 반환합니다.
      *
      * thumbnailAttachment(경량 hasOne) 우선, attachments(전체) fallback.
-     * 첨부에서 URL 을 얻지 못한 모든 경우 본문 첫 내부 이미지 캐시
-     * (content_thumbnail_url)로 폴백하고, 그것도 없으면 null (공개 이슈 #22).
+     * 둘 다 미로딩 시 null 반환 (lazy loading 방지).
      *
      * @return string|null 썸네일 URL
      */
     private function getThumbnailUrlFromRelations(): ?string
     {
-        // 비밀글은 썸네일 URL 자체를 방출하지 않는다 — 서빙은 이미 차단되어 이미지가 보이지는
-        // 않지만, URL 에 실린 첨부 해시가 목록·상세 응답으로 나가 있었다(KVE-2026-1894).
-        // 판정은 첨부 목록과 같은 SecretContentGate(SSoT)를 쓴다. 필드는 남기고 값만 가린다.
-        // 본문 캐시 폴백도 반드시 이 게이트 뒤 — 에디터 이미지는 공개 hash 서빙이라
-        // 첨부와 달리 서빙측 차단이 없어, 이 게이트가 유일한 차단선이다.
-        if ($this->is_secret && ! $this->canViewSecretContent(request())) {
-            return null;
-        }
-
-        $url = null;
-
         // 목록용 경량 관계 우선 — slug를 직접 전달하여 Board::find() N+1 방지
         if ($this->relationLoaded('thumbnailAttachment') && $this->thumbnailAttachment) {
             $attachment = $this->thumbnailAttachment;
             $slug = request()->route('slug') ?? ($this->relationLoaded('board') ? $this->board?->slug : null);
 
             if ($slug && $attachment->hash) {
-                $url = $attachment->previewUrlForSlug($slug);
+                return '/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$attachment->hash.'/preview';
             }
-        } elseif ($this->relationLoaded('attachments')) {
-            // 상세 페이지 등에서 attachments가 로딩된 경우 fallback
-            $url = $this->getThumbnailUrl();
+
+            return null;
         }
 
-        // 이미지 첨부가 없을 때만 본문 첫 내부 이미지 캐시 폴백 (첨부 우선 정책)
-        return $url ?? ($this->content_thumbnail_url ?: null);
+        // 상세 페이지 등에서 attachments가 로딩된 경우 fallback
+        if ($this->relationLoaded('attachments')) {
+            return $this->getThumbnailUrl();
+        }
+
+        return null;
     }
 
     /**
@@ -549,13 +528,6 @@ class PostResource extends BaseApiResource
             return null;
         }
 
-        // 비밀글·삭제글 첨부는 무서명 preview 가 서빙 게이트에 차단되므로,
-        // 이 직렬화(게이트 통과가 확인된 응답)에 한해 <img> 렌더 가능한
-        // 한시 서명 preview URL 을 발급한다. 정상글은 무서명 공개 URL 유지.
-        $signedPreviewSlug = ($this->deleted_at || $this->is_secret)
-            ? ($slug ?? $this->getSlug($request))
-            : null;
-
         // 삭제된 게시글: 관리 권한자가 아니면 첨부 목록 미노출.
         // 단, 게시글 삭제로 함께 숨겨진(cascade) 첨부는 사용자가 직접 지운 것이 아니므로
         // 글을 볼 수 있는 사람에게는 노출한다 (cascade 댓글 노출과 일관).
@@ -565,14 +537,14 @@ class PostResource extends BaseApiResource
                     && $attachment->trigger_type === TriggerType::Cascade->value
             )->values();
 
-            return AttachmentResource::collectionFor($cascadeAttachments, $signedPreviewSlug);
+            return AttachmentResource::collection($cascadeAttachments);
         }
 
         if ($this->is_secret && ! $this->canViewSecretContent($request, $slug)) {
             return [];
         }
 
-        return AttachmentResource::collectionFor($this->attachments, $signedPreviewSlug);
+        return AttachmentResource::collection($this->attachments);
     }
 
     // =========================================================================
@@ -608,35 +580,7 @@ class PostResource extends BaseApiResource
             return [];
         }
 
-        // 이 권한 맵은 게시글이 아니라 (게시판, 화면 종류, 사용자) 로만 정해진다.
-        // 상세 화면의 답글 트리는 같은 게시판의 게시글을 N개 직렬화하므로, 메모가 없으면
-        // 같은 답을 노드 수만큼 다시 만든다. 캐시는 요청 인스턴스에 두어 요청 단위로 격리된다.
-        $isAdminRequest = $this->isAdminRequest($request);
-        $cacheKey = $slug.'|'.($isAdminRequest ? 'admin' : 'user').'|'.(Auth::id() ?? 'guest');
-        $cache = $request->attributes->get(BoardPermissionCacheKeys::ABILITIES, []);
-
-        if (isset($cache[$cacheKey])) {
-            return $cache[$cacheKey];
-        }
-
-        $abilities = $this->buildAbilities($slug, $isAdminRequest);
-
-        $cache[$cacheKey] = $abilities;
-        $request->attributes->set(BoardPermissionCacheKeys::ABILITIES, $cache);
-
-        return $abilities;
-    }
-
-    /**
-     * 게시판 권한 맵을 실제로 해석합니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  bool  $isAdminRequest  관리자 화면 요청 여부
-     * @return array<string, bool> 통합 권한 정보
-     */
-    private function buildAbilities(string $slug, bool $isAdminRequest): array
-    {
-        $permissionMap = $isAdminRequest
+        $permissionMap = $this->isAdminRequest($request)
             ? [
                 'can_read' => "sirsoft-board.{$slug}.admin.posts.read",
                 'can_write' => "sirsoft-board.{$slug}.admin.posts.write",
@@ -666,11 +610,28 @@ class PostResource extends BaseApiResource
 
         // 유저 상세 화면에서만: 관리자 게시판 화면 진입 게이트(Admin 타입 admin.manage).
         // Admin 요청에서는 can_manage 가 이미 admin.manage 이므로 중복 노출 불필요.
-        if (! $isAdminRequest) {
+        if (! $this->isAdminRequest($request)) {
             $abilities['can_access_admin'] = $this->checkPermissionByIdentifier("sirsoft-board.{$slug}.admin.manage");
         }
 
         return $abilities;
+    }
+
+    /**
+     * Admin 요청 여부를 확인합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool Admin 요청 여부
+     */
+    private function isAdminRequest(Request $request): bool
+    {
+        $controller = $request->route()?->getController();
+
+        if (! $controller) {
+            return false;
+        }
+
+        return str_contains(get_class($controller), '\\Admin\\');
     }
 
     /**
@@ -688,50 +649,30 @@ class PostResource extends BaseApiResource
      */
     private function canViewSecretContent(Request $request, ?string $slug = null): bool
     {
-        $post = $this->resolvePostModel();
+        // 1. 작성자 본인 (회원 게시글)
+        $user = Auth::user();
+        if ($user && $this->user_id && $this->user_id === $user->id) {
+            return true;
+        }
 
-        if ($post === null) {
-            // 원본 모델을 확인할 수 없으면 열람 불가로 판정한다 (fail-closed)
+        // 2. 비밀번호 검증 완료
+        if ($this->password_verified === true) {
+            return true;
+        }
+
+        // 3-4. 게시판별 권한 체크
+        $slug = $slug ?? $this->getSlug($request);
+        if (! $slug) {
             return false;
         }
 
-        // 판정 규칙은 SecretContentGate(SSoT)에 있다 — 리스너·댓글 경로와 규칙을 공유해
-        // 드리프트를 방지한다.
-        return self::canViewSecretForPost($post, $request);
-    }
-
-    /**
-     * 감싸인 원본 게시글 모델을 반환합니다.
-     *
-     * 컬렉션 경로에서는 리소스가 다시 리소스를 감싸고 있을 수 있어, $this->resource 가
-     * 곧 Post 라고 가정하면 타입 오류로 응답 전체가 실패합니다.
-     *
-     * @return Post|null 원본 게시글 모델 (해석 불가 시 null)
-     */
-    private function resolvePostModel(): ?Post
-    {
-        $candidate = $this->resource;
-
-        while ($candidate instanceof JsonResource) {
-            $candidate = $candidate->resource;
+        if ($this->isAdminRequest($request)) {
+            return $this->checkBoardPermission($slug, 'admin.posts.read-secret')
+                || $this->checkBoardPermission($slug, 'admin.manage');
         }
 
-        return $candidate instanceof Post ? $candidate : null;
-    }
-
-    /**
-     * 주어진 게시글의 비밀 원문 열람 권한을 판정합니다 (SSoT 진입점).
-     *
-     * PostResource 외 경로(이커머스 문의 연동 훅, 댓글 목록/리소스, 첨부 서빙)가
-     * 동일 규칙으로 서버측 마스킹을 수행하도록 공유합니다(KVE-2026-1914).
-     *
-     * @param  Post  $post  대상 게시글
-     * @param  Request|null  $request  HTTP 요청 (미지정 시 현재 요청)
-     * @return bool 열람 가능 여부
-     */
-    public static function canViewSecretForPost(Post $post, ?Request $request = null): bool
-    {
-        return app(SecretContentGate::class)->canView($post, $request);
+        return $this->checkBoardPermission($slug, 'posts.read-secret', PermissionType::User)
+            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
     }
 
     // =========================================================================

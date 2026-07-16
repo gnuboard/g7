@@ -1,7 +1,7 @@
 # 컴포넌트 타입별 개발 규칙
 
 > **메인 문서**: [components.md](components.md)
-> **관련 문서**: [layout-json-components.md](layout-json-components.md) | [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
+> **관련 문서**: [layout-json-components.md](layout-json-components.md) | [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
 
 ---
 
@@ -175,7 +175,7 @@ export const Foo = ({ /* 도메인 prop */, editorAttrs }: FooProps) => (
 
 - 사용자 페이지(비편집)에서는 `editorAttrs` 미주입 → `{...editorAttrs}` 가 no-op → DOM 구조/속성 불변 (프리뷰 ↔ 사용자 페이지 패리티 유지).
 - `editorAttrs` 만 spread 하므로 도메인 prop 누출/HTML 동명 prop 타입 충돌이 없다. (`React.HTMLAttributes` 상속 + `{...rest}` 방식은 도메인 prop 누출 위험으로 채택 안 함.)
-- 자동 검출: 정적 검사가 nesting.draggable 의 composite/layout 컴포넌트가 `editorAttrs` 를 받지 않으면 차단한다. 의도적 면제는 파일 헤더 `// editor-attrs:allow <사유>`.
+- 자동 검출: audit 룰 `editor-attrs-passthrough` (nesting.draggable 의 composite/layout 컴포넌트가 `editorAttrs` 미수신 시 error). 의도적 면제는 파일 헤더 `// editor-attrs:allow <사유>`.
 
 ### 요소 id 패스스루 (코어 일괄 ID)
 
@@ -452,5 +452,5 @@ export const Container: React.FC<ContainerProps> = ({ children }) => (
 - [컴포넌트 개발 규칙 인덱스](components.md)
 - [컴포넌트 패턴](components-patterns.md)
 - [컴포넌트 고급 기능](components-advanced.md)
-- [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
-- [sirsoft-basic 컴포넌트](../../templates/_bundled/sirsoft-basic/docs/components.md)
+- [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
+- [sirsoft-basic 컴포넌트](templates/sirsoft-basic/components.md)

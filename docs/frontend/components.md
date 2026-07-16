@@ -25,11 +25,14 @@
 | [components-advanced.md](components-advanced.md) | componentEvent, 아이콘, 체크리스트 | 이벤트 통신, 아이콘 규칙, 개발 체크리스트 |
 
 <!-- AUTO-GENERATED-START: frontend-template-reference -->
+### 템플릿별 레퍼런스
+
+| 템플릿 식별자 | 컴포넌트 | 핸들러 | 레이아웃 |
+|--------------|---------|--------|--------|
+| `sirsoft-admin_basic` | [components.md](templates/sirsoft-admin_basic/components.md) | [handlers.md](templates/sirsoft-admin_basic/handlers.md) | [layouts.md](templates/sirsoft-admin_basic/layouts.md) |
+| `sirsoft-basic` | [components.md](templates/sirsoft-basic/components.md) | [handlers.md](templates/sirsoft-basic/handlers.md) | [layouts.md](templates/sirsoft-basic/layouts.md) |
 
 <!-- AUTO-GENERATED-END: frontend-template-reference -->
-
-> `sirsoft-admin_basic` 은 문서를 그 템플릿이 직접 소유합니다 — [templates/_bundled/sirsoft-admin_basic/docs/](../../templates/_bundled/sirsoft-admin_basic/docs/README.md).
-> 템플릿별 문서 위치는 [templates/README.md](templates/README.md) 를 따릅니다.
 
 ---
 
@@ -139,7 +142,7 @@ import { Icon, IconName } from '../basic/Icon';
 
 ### 레이아웃 편집기 capability 선언 의무
 
-새 draggable 컴포넌트(레이아웃 편집기 팔레트/캔버스에 노출)는 위 4개 파일에 더해 호스트 템플릿 `editor-spec/componentCapabilities.json` 에 capability 를 선언해야 편집기에서 "편집 불가(no-editable)"가 되지 않는다. 표시 텍스트/아이콘/select/목록·배열·표 데이터 prop 별로 `propControls`(속성 탭) / `dataProps`(데이터 연결) / `nodeEditor`·`canvasOverlay`(구조 에디터) / `styleControls`(스타일 탭) / `events`(동작 탭) 를 선언한다. 데이터 표면을 가진 컴포넌트가 편집 슬롯도 비대상 allowlist 도 없으면 정적 검사가 차단한다. composite/layout 컴포넌트는 `editorAttrs` spread + `id` 패스스루도 필요하다.
+새 draggable 컴포넌트(레이아웃 편집기 팔레트/캔버스에 노출)는 위 4개 파일에 더해 호스트 템플릿 `editor-spec/componentCapabilities.json` 에 capability 를 선언해야 편집기에서 "편집 불가(no-editable)"가 되지 않는다. 표시 텍스트/아이콘/select/목록·배열·표 데이터 prop 별로 `propControls`(속성 탭) / `dataProps`(데이터 연결) / `nodeEditor`·`canvasOverlay`(구조 에디터) / `styleControls`(스타일 탭) / `events`(동작 탭) 를 선언한다. 데이터 표면을 가진 컴포넌트가 편집 슬롯도 비대상 allowlist 도 없으면 audit `editor-all-draggable-data-editable` 가 차단한다. composite/layout 컴포넌트는 `editorAttrs` spread + `id` 패스스루도 필요하다.
 
 상세: [editor-spec.md "componentCapabilities"](../extension/editor-spec.md) · [components-types.md "편집기 attribute 패스스루"](components-types.md)
 
@@ -150,7 +153,7 @@ import { Icon, IconName } from '../basic/Icon';
 - [g7core-api.md](g7core-api.md) - G7Core 전역 API 레퍼런스
 - [레이아웃 JSON 스키마](./layout-json.md) - 컴포넌트를 레이아웃 JSON에서 사용하는 방법
 - [데이터 바인딩](./data-binding.md) - props에서 데이터 바인딩 사용법
-- [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md) - Admin 컴포넌트 목록
-- [sirsoft-basic 컴포넌트](../../templates/_bundled/sirsoft-basic/docs/components.md) - User 컴포넌트 목록 (확장 소유)
+- [sirsoft-admin_basic 컴포넌트](./templates/sirsoft-admin_basic/components.md) - Admin 컴포넌트 목록 (111개)
+- [sirsoft-basic 컴포넌트](./templates/sirsoft-basic/components.md) - User 컴포넌트 목록 (58개)
 - [다크 모드](./dark-mode.md) - 컴포넌트 다크 모드 지원 가이드
 - [상태 관리](./state-management.md) - 전역/로컬 상태 관리 및 동기화 패턴

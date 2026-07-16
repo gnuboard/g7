@@ -1,12 +1,8 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 응답 계약 불변 — lang 키에서 :error 플레이스홀더가 제거되어 사문화된 messageParams 인자만 정리 (키·상태코드·payload 형태 무변경)
-
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Exceptions\CannotDeleteSuperAdminException;
-use App\Exceptions\CannotModifySuperAdminException;
-use App\Exceptions\PermissionEscalationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\User\BulkUpdateUserStatusRequest;
 use App\Http\Requests\User\CheckEmailRequest;
@@ -78,8 +74,6 @@ class UserController extends AdminBaseController
                 new UserResource($user),
                 201
             );
-        } catch (PermissionEscalationException $e) {
-            return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->error('user.create_failed', 422, $e->errors());
         } catch (Exception $e) {
@@ -128,40 +122,10 @@ class UserController extends AdminBaseController
                 'user.update_success',
                 new UserResource($updatedUser)
             );
-        } catch (CannotModifySuperAdminException $e) {
-            return $this->error('exceptions.cannot_modify_super_admin', 403);
-        } catch (PermissionEscalationException $e) {
-            return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->error('user.update_failed', 422, $e->errors());
         } catch (Exception $e) {
-            return $this->error('user.update_failed', 500, $e);
-        }
-    }
-
-    /**
-     * 사용자의 계정 잠금을 해제합니다.
-     *
-     * 로그인 실패 누적으로 잠긴 계정(특히 잠금 시간 0 = 무한대 설정으로 영구 잠긴 계정)을
-     * 관리자가 수동으로 풀어 줍니다. 이 경로가 없으면 영구 잠금 계정은 성공 로그인 자체가
-     * 불가하므로 복구 수단이 없습니다.
-     *
-     * @param  User  $user  잠금을 해제할 사용자 모델
-     * @return JsonResponse 갱신된 사용자 정보를 포함한 JSON 응답
-     */
-    public function unlock(User $user): JsonResponse
-    {
-        try {
-            $unlocked = $this->userService->unlockAccount($user);
-
-            return $this->successWithResource(
-                'auth.account_unlocked',
-                new UserResource($unlocked)
-            );
-        } catch (CannotModifySuperAdminException $e) {
-            return $this->error('exceptions.cannot_modify_super_admin', 403);
-        } catch (Exception $e) {
-            return $this->error('user.update_failed', 500, $e);
+            return $this->error('user.update_failed', 500, $e, ['error' => $e->getMessage()]);
         }
     }
 
@@ -329,13 +293,9 @@ class UserController extends AdminBaseController
             $validated = $request->validated();
             $result = $this->userService->bulkUpdateStatus($validated['ids'], $validated['status']);
 
-            // 메시지 키(user.bulk_status_updated)가 :count 플레이스홀더를 가지므로
-            // 치환 파라미터를 함께 전달한다 (생략 시 원문 ":count명의 …" 이 그대로 노출)
             return $this->success(
                 'user.bulk_status_updated',
-                $result,
-                200,
-                ['count' => $result['updated_count'] ?? 0]
+                $result
             );
         } catch (ValidationException $e) {
             return $this->error('user.bulk_update_status_failed', 422, $e->errors());

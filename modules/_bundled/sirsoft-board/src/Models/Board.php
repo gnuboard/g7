@@ -3,18 +3,15 @@
 namespace Modules\Sirsoft\Board\Models;
 
 use App\Casts\AsUnicodeJson;
-use App\Models\Permission;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Modules\Sirsoft\Board\Casts\AsAllowedExtensions;
 use Modules\Sirsoft\Board\Database\Factories\BoardFactory;
 use Modules\Sirsoft\Board\Enums\BoardOrderBy;
 use Modules\Sirsoft\Board\Enums\OrderDirection;
-use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\SecretMode;
 
 class Board extends Model
@@ -26,15 +23,14 @@ class Board extends Model
         'is_active' => ['label_key' => 'sirsoft-board::activity_log.fields.is_active', 'type' => 'boolean'],
         'per_page' => ['label_key' => 'sirsoft-board::activity_log.fields.per_page', 'type' => 'number'],
         'per_page_mobile' => ['label_key' => 'sirsoft-board::activity_log.fields.per_page_mobile', 'type' => 'number'],
-        'order_by' => ['label_key' => 'sirsoft-board::activity_log.fields.order_by', 'type' => 'enum', 'enum' => BoardOrderBy::class],
-        'order_direction' => ['label_key' => 'sirsoft-board::activity_log.fields.order_direction', 'type' => 'enum', 'enum' => OrderDirection::class],
+        'order_by' => ['label_key' => 'sirsoft-board::activity_log.fields.order_by', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\BoardOrderBy::class],
+        'order_direction' => ['label_key' => 'sirsoft-board::activity_log.fields.order_direction', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\OrderDirection::class],
         'type' => ['label_key' => 'sirsoft-board::activity_log.fields.type', 'type' => 'text'],
         'show_view_count' => ['label_key' => 'sirsoft-board::activity_log.fields.show_view_count', 'type' => 'boolean'],
-        'secret_mode' => ['label_key' => 'sirsoft-board::activity_log.fields.secret_mode', 'type' => 'enum', 'enum' => SecretMode::class],
+        'secret_mode' => ['label_key' => 'sirsoft-board::activity_log.fields.secret_mode', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\SecretMode::class],
         'use_comment' => ['label_key' => 'sirsoft-board::activity_log.fields.use_comment', 'type' => 'boolean'],
         'use_reply' => ['label_key' => 'sirsoft-board::activity_log.fields.use_reply', 'type' => 'boolean'],
         'max_reply_depth' => ['label_key' => 'sirsoft-board::activity_log.fields.max_reply_depth', 'type' => 'number'],
-        'reply_delete_policy' => ['label_key' => 'sirsoft-board::activity_log.fields.reply_delete_policy', 'type' => 'enum', 'enum' => ReplyDeletePolicy::class],
         'use_report' => ['label_key' => 'sirsoft-board::activity_log.fields.use_report', 'type' => 'boolean'],
         'use_file_upload' => ['label_key' => 'sirsoft-board::activity_log.fields.use_file_upload', 'type' => 'boolean'],
         'max_file_size' => ['label_key' => 'sirsoft-board::activity_log.fields.max_file_size', 'type' => 'number'],
@@ -128,7 +124,6 @@ class Board extends Model
         'use_comment',
         'use_reply',
         'max_reply_depth',
-        'reply_delete_policy',
         'use_report',
         'new_display_hours',
 
@@ -175,17 +170,13 @@ class Board extends Model
             'name' => AsUnicodeJson::class,
             'description' => AsUnicodeJson::class,
             'categories' => 'array',
-            // 빈 배열을 NULL 로 정규화해 "확장자 미지정" 표현을 하나로 유지합니다.
-            'allowed_extensions' => AsAllowedExtensions::class,
+            'allowed_extensions' => 'array',
             'blocked_keywords' => 'array',
             'is_active' => 'boolean',
             'show_view_count' => 'boolean',
             'use_comment' => 'boolean',
             'use_reply' => 'boolean',
             'max_reply_depth' => 'integer',
-            'reply_delete_policy' => ReplyDeletePolicy::class,
-            // Post::isNew() 가 Carbon 시간 연산에 넘기는 값 — 조회 시점과 무관하게 정수를 보장한다.
-            'new_display_hours' => 'integer',
             'use_report' => 'boolean',
             'use_file_upload' => 'boolean',
             'notify_author' => 'boolean',
@@ -202,8 +193,6 @@ class Board extends Model
 
     /**
      * 생성자와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 생성자 관계
      */
     public function creator(): BelongsTo
     {
@@ -212,8 +201,6 @@ class Board extends Model
 
     /**
      * 수정자와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 수정자 관계
      */
     public function updater(): BelongsTo
     {
@@ -222,8 +209,6 @@ class Board extends Model
 
     /**
      * 게시글 목록과의 관계를 정의합니다.
-     *
-     * @return HasMany 게시글 관계
      */
     public function posts(): HasMany
     {
@@ -232,8 +217,6 @@ class Board extends Model
 
     /**
      * 댓글 목록과의 관계를 정의합니다.
-     *
-     * @return HasMany 댓글 관계
      */
     public function comments(): HasMany
     {
@@ -242,8 +225,6 @@ class Board extends Model
 
     /**
      * 첨부파일 목록과의 관계를 정의합니다.
-     *
-     * @return HasMany 첨부파일 관계
      */
     public function attachments(): HasMany
     {
@@ -252,8 +233,6 @@ class Board extends Model
 
     /**
      * 신고 목록과의 관계를 정의합니다.
-     *
-     * @return HasMany 신고 관계
      */
     public function reports(): HasMany
     {
@@ -262,9 +241,6 @@ class Board extends Model
 
     /**
      * 지정된 로케일의 게시판명 반환
-     *
-     * @param  string|null  $locale  로케일 (null 이면 현재 로케일)
-     * @return string 해당 로케일의 게시판명
      */
     public function getLocalizedName(?string $locale = null): string
     {
@@ -335,9 +311,8 @@ class Board extends Model
      *
      * g7_permissions 및 role_permissions 테이블에서 권한 정보를 조회하여
      * 각 권한별로 할당된 역할 identifier 배열을 반환합니다.
-     * (접근자 결과: 키 permission_key, 값 [role_identifiers] 또는 null=전체 허용)
      *
-     * @return Attribute 권한 정보 접근자
+     * @return array 권한 정보 (키: permission_key, 값: [role_identifiers] or null)
      */
     protected function permissions(): Attribute
     {
@@ -350,7 +325,7 @@ class Board extends Model
                     $identifier = "sirsoft-board.{$this->slug}.{$key}";
 
                     // 권한 조회
-                    $permission = Permission::where('identifier', $identifier)->first();
+                    $permission = \App\Models\Permission::where('identifier', $identifier)->first();
 
                     if (! $permission) {
                         // 권한이 없으면 null (전체 허용)

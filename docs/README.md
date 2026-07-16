@@ -9,9 +9,9 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 37개 | 정상 |
-| [프론트엔드](frontend/) | 46개 | 정상 |
-| [확장 시스템](extension/) | 32개 | 정상 |
+| [백엔드](backend/) | 33개 | 정상 |
+| [프론트엔드](frontend/) | 51개 | 정상 |
+| [확장 시스템](extension/) | 31개 | 정상 |
 | 공통 | 20개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
@@ -43,7 +43,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | 4 | [레이아웃 JSON - 상속](frontend/layout-json-inheritance.md) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
 | 5 | [컴포넌트 개발 규칙](frontend/components.md) | HTML 태그 직접 사용 금지 |
 | 6 | [컴포넌트 Props 레퍼런스](frontend/component-props.md) | - |
-| 7 | [sirsoft-basic 컴포넌트](../templates/_bundled/sirsoft-basic/docs/components.md) | 확장 소유 문서 (basic / composite / layout) |
+| 7 | [sirsoft-admin_basic 컴포넌트](frontend/templates/sirsoft-admin_basic/components.md) | Basic (37개), Composite (66개), Layout (8개) |
 | 8 | [데이터 바인딩 및 표현식](frontend/data-binding.md) | API 데이터: {{user.name}}, URL 파라미터: {{route.id}} |
 | 9 | [데이터 바인딩 - 다국어 처리](frontend/data-binding-i18n.md) | - |
 | 10 | [액션 핸들러 가이드](frontend/actions.md) | 구조: type 또는 event(이벤트), handler(핸들러명), params(옵션) |
@@ -51,8 +51,6 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | 12 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
 | 13 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
 | 14 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
-
-sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templates/_bundled/sirsoft-admin_basic/docs/components.md](../templates/_bundled/sirsoft-admin_basic/docs/components.md) 를 참고하세요.
 
 ### 컨트롤러 작성
 
@@ -127,7 +125,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (37개)
+### 백엔드 (33개)
 
 | 문서 | 제목 |
 |------|------|
@@ -137,7 +135,6 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [api-documentation.md](backend/api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) |
 | [api-resources.md](backend/api-resources.md) | API 리소스 |
 | [authentication.md](backend/authentication.md) | 인증 및 세션 처리 |
-| [benchmark.md](backend/benchmark.md) | 성능 계측 시스템 (Benchmark) |
 | [broadcasting.md](backend/broadcasting.md) | Broadcasting (실시간 이벤트) |
 | [console-confirm.md](backend/console-confirm.md) | 콘솔 yes/no 프롬프트 (ConsoleConfirm) |
 | [controllers.md](backend/controllers.md) | 컨트롤러 계층 구조 |
@@ -154,22 +151,19 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [language-pack-service.md](backend/language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) |
 | [middleware.md](backend/middleware.md) | 미들웨어 등록 규칙 |
 | [notification-system.md](backend/notification-system.md) | 알림 시스템 (Notification System) |
-| [pagination.md](backend/pagination.md) | 대용량 목록 페이지네이션 (Pagination) |
 | [README.md](backend/README.md) | 백엔드 개발 가이드 |
 | [response-helper.md](backend/response-helper.md) | API 응답 규칙 (ResponseHelper) |
-| [reverse-proxy.md](backend/reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) |
 | [routing.md](backend/routing.md) | 라우트 네이밍 및 경로 |
 | [search-system.md](backend/search-system.md) | Scout 검색 엔진 시스템 (Search System) |
 | [seo-system.md](backend/seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) |
 | [service-provider.md](backend/service-provider.md) | 서비스 프로바이더 안전성 |
 | [service-repository.md](backend/service-repository.md) | Service-Repository 패턴 |
 | [settings-multilingual-enrichment.md](backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 |
-| [static-asset-publishing.md](backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) |
 | [translatable-seeders.md](backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) |
 | [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |
 
-### 프론트엔드 (46개)
+### 프론트엔드 (51개)
 
 | 문서 | 제목 |
 |------|------|
@@ -218,16 +212,20 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [tailwind-safelist.md](frontend/tailwind-safelist.md) | Tailwind Safelist 가이드 |
 | [template-development.md](frontend/template-development.md) | 템플릿 개발 가이드라인 |
 | [template-handlers.md](frontend/template-handlers.md) | 템플릿 전용 핸들러 |
-| [README.md](frontend/README.md) | 템플릿별 컴포넌트·핸들러·레이아웃 문서 |
+| [components.md](frontend/components.md) | sirsoft-admin_basic 컴포넌트 |
+| [handlers.md](frontend/handlers.md) | sirsoft-admin_basic 핸들러 |
+| [layouts.md](frontend/layouts.md) | sirsoft-admin_basic 레이아웃 |
+| [components.md](frontend/components.md) | sirsoft-basic 컴포넌트 |
+| [handlers.md](frontend/handlers.md) | sirsoft-basic 핸들러 |
+| [layouts.md](frontend/layouts.md) | sirsoft-basic 레이아웃 |
 
-### 확장 시스템 (32개)
+### 확장 시스템 (31개)
 
 | 문서 | 제목 |
 |------|------|
 | [cache-driver.md](extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) |
 | [changelog-rules.md](extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) |
 | [editor-spec.md](extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) |
-| [extension-documentation.md](extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) |
 | [extension-manager.md](extension/extension-manager.md) | ExtensionManager (확장 관리자) |
 | [extension-update-system.md](extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) |
 | [hooks.md](extension/hooks.md) | 훅 시스템 (Hook System) |

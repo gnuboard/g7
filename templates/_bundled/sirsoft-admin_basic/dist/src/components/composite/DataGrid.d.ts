@@ -104,18 +104,6 @@ export interface DataGridProps {
     selectedIds?: (string | number)[];
     onSelectionChange?: (ids: (string | number)[]) => void;
     idField?: string;
-    /**
-     * 선택의 유효 범위.
-     *
-     * - `'page'`: 선택은 지금 그려진 행에서만 유효하다. 검색·필터·페이지 이동으로
-     *   행이 목록에서 빠지면 그 행의 선택도 함께 버린다. 일괄 처리 버튼이 달린
-     *   목록 화면은 이 값을 쓴다 — 그래야 "보이지 않는 행이 일괄 처리 대상" 이
-     *   되는 상태가 만들어지지 않는다.
-     * - `'free'`(기본): 선택을 컴포넌트가 건드리지 않는다. 선택 자체가 저장 대상인
-     *   폼(쿠폰 적용 대상 고르기 등)처럼, 목록에 안 보이는 항목도 선택으로 남아야
-     *   하는 화면용.
-     */
-    selectionScope?: 'page' | 'free';
     showColumnSelector?: boolean;
     visibleColumns?: string[];
     onColumnVisibilityChange?: (fields: string[]) => void;
@@ -126,20 +114,7 @@ export interface DataGridProps {
     alwaysShowPagination?: boolean;
     serverSidePagination?: boolean;
     serverCurrentPage?: number;
-    /**
-     * 서버가 알려준 마지막 페이지 번호
-     *
-     * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `null` 을 보낸다.
-     * 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하므로 null 을 그대로 흘려보낸다.
-     */
-    serverTotalPages?: number | null;
-    /**
-     * 다음 페이지 존재 여부 (총 건수를 모르는 목록에서 사용)
-     *
-     * 총 건수를 몰라도 서버는 이 값을 정확히 판정한다. 마지막 페이지를 계산할 수 없어도
-     * "다음" 이동은 이 값으로 끝까지 열어 둘 수 있다.
-     */
-    serverHasMorePages?: boolean;
+    serverTotalPages?: number;
     onPageChange?: (page: number) => void;
     prevText?: string;
     nextText?: string;

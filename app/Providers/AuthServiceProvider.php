@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use App\Models\Role;
 use App\Models\User;
-use App\Support\GuestRoleResolver;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -12,6 +11,11 @@ use Illuminate\Support\Facades\Log;
 
 class AuthServiceProvider extends ServiceProvider
 {
+    /**
+     * guest role 캐시
+     */
+    protected static ?Role $guestRoleCache = null;
+
     /**
      * Register any authentication / authorization services.
      */
@@ -232,9 +236,9 @@ class AuthServiceProvider extends ServiceProvider
             return null; // guest role 없으면 다음 Gate 정의로 위임
         }
 
-        // 적재해 둔 권한 컬렉션에서 판정한다. 빌더를 다시 열면 캐시가 무의미해져
-        // Gate 호출마다 쿼리가 나간다.
-        return GuestRoleResolver::hasPermission($ability) ? true : null;
+        return $guestRole->permissions()
+            ->where('identifier', $ability)
+            ->exists() ? true : null;
     }
 
     /**
@@ -242,7 +246,13 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected static function getGuestRole(): ?Role
     {
-        return GuestRoleResolver::resolve();
+        if (self::$guestRoleCache === null) {
+            self::$guestRoleCache = Role::where('identifier', 'guest')
+                ->with('permissions')
+                ->first();
+        }
+
+        return self::$guestRoleCache;
     }
 
     /**
@@ -250,7 +260,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     public static function clearGuestRoleCache(): void
     {
-        GuestRoleResolver::flush();
+        self::$guestRoleCache = null;
     }
 
     /**
@@ -265,14 +275,16 @@ class AuthServiceProvider extends ServiceProvider
         $hasPermission = false;
 
         if ($guestRole) {
-            $hasPermission = GuestRoleResolver::hasPermission($ability);
+            $hasPermission = $guestRole->permissions()
+                ->where('identifier', $ability)
+                ->exists();
         }
 
         return [
             'result' => self::checkGuestPermission($ability),
             'guestRole' => $guestRole,
             'hasPermission' => $hasPermission,
-            'cachedRoleId' => $guestRole?->id,
+            'cachedRoleId' => self::$guestRoleCache?->id,
         ];
     }
 }
