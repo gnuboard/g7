@@ -240,6 +240,7 @@ class Plugin implements PluginInterface
 | `getDynamicRoleIdentifiers()` | `[]` | 런타임 생성 역할 식별자 — stale cleanup 보존 대상 |
 | `getDependencies()` | `[]` | 의존하는 모듈/플러그인 목록 |
 | `getHookListeners()` | `[]` | 훅 리스너 클래스 목록 |
+| `getMiddleware()` | `[]` | 확장 미들웨어 선언 (self-gate targets) — `{class, groups, timing?, targets}` ([middleware.md](../backend/middleware.md)) |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 플러그인은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `PluginManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
 > **동적 식별자 보존 규칙**: `Permission::updateOrCreate()` / `Role::firstOrCreate()` 등으로 런타임에 생성한 엔티티는 업데이트 시 `cleanupStalePluginEntries` 에 의해 "정적 정의에 없는 고아 레코드" 로 판정되어 삭제될 위험이 있습니다. 이를 방지하려면 동적 식별자 목록을 위 3개 훅에서 반환하세요 — 정적 정의 + 동적 식별자가 병합된 expected 목록을 기준으로 판정되어 보존됩니다. 상세는 [extension-update-system.md](extension-update-system.md) 참조.
@@ -394,6 +395,7 @@ class FooPluginServiceProvider extends BasePluginServiceProvider
 - **글로벌 `CacheInterface` / `StorageInterface` 바인딩 재정의 금지** — `$this->app->singleton(CacheInterface::class, ...)` 또는 `app()->bind(StorageInterface::class, ...)` 는 코어/타 확장 도메인을 누수시킨다. audit 룰 `extension-no-global-cache-rebind` 가 자동 차단한다.
 - **인라인 contextual binding 복제 금지** — `$this->app->when([X::class])->needs(StorageInterface::class)->give(...)` 패턴을 직접 작성하지 말고 `$storageServices` 배열에 등록한다.
 - **Listener 의 동적 인스턴스 생성에서 `app(CacheInterface::class)` 직접 호출 금지** — `app()->makeWith(MyService::class, [...])` 로 컨테이너 해석에 위임해야 contextual binding 이 적용된다.
+- **HTTP Kernel 미들웨어 그룹 직접 조작 금지** — SP `boot()` 에서 `HttpKernel::append/prepend/pushMiddlewareToGroup()` / `aliasMiddleware()`, 또는 라우트 파일에서 자기 `Http\Middleware\` FQCN 을 `->middleware(Foo::class)` 로 부착하지 않는다. 대신 `Plugin::getMiddleware()` 로 미들웨어와 부착 대상(targets)을 선언하면 코어 self-gate 게이트가 요청 시점에 실행한다. audit 룰 `extension-middleware-declarative-registration` / `extension-route-middleware-alias-reference` 가 자동 차단한다. 상세: [docs/backend/middleware.md "확장 미들웨어 선언 (self-gate)"](../backend/middleware.md#확장-미들웨어-선언-self-gate).
 
 상세: [cache-driver.md `## 확장에서 cache 바인딩`](cache-driver.md)
 

@@ -1,0 +1,313 @@
+{
+  "target_layout": "shop/order_complete",
+  "injections": [
+    {
+      "target_id": "order_complete_payment_summary",
+      "position": "append_child",
+      "components": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{orderData?.data?.payment?.pg_provider === 'nhnkcp' && orderData?.data?.payment?.vbank_name}}",
+          "props": {
+            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+              },
+              "text": "$t:sirsoft-pay_nhnkcp.user.vbank_title"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-1.5"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between text-sm"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-pay_nhnkcp.user.vbank_bank_name"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "{{orderData?.data?.payment?.vbank_name}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between text-sm"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-pay_nhnkcp.user.vbank_account"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium font-mono tracking-wide"
+                      },
+                      "text": "{{orderData?.data?.payment?.vbank_number}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between text-sm"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-pay_nhnkcp.user.vbank_holder"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "{{orderData?.data?.payment?.vbank_holder}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-between text-sm"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-pay_nhnkcp.user.vbank_due"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "{{orderData?.data?.payment?.due_date_formatted}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-amber-600 dark:text-amber-400"
+              },
+              "text": "$t:sirsoft-pay_nhnkcp.user.vbank_notice"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{orderData?.data?.payment?.pg_provider === 'nhnkcp' && orderData?.data?.payment?.transaction_id && !orderData?.data?.payment?.vbank_name}}",
+          "props": {
+            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary text-sm"
+                  },
+                  "text": "$t:sirsoft-pay_nhnkcp.user.receipt_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "if": "{{!_local._kcpOcReceiptLoaded}}",
+                      "props": {
+                        "type": "button",
+                        "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50",
+                        "disabled": "{{_local._kcpOcReceiptLoading === true}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "_kcpOcReceiptLoading": true
+                              }
+                            },
+                            {
+                              "handler": "apiCall",
+                              "auth_required": true,
+                              "target": "/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.id}}/receipt",
+                              "params": {
+                                "method": "GET"
+                              },
+                              "onSuccess": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "_kcpOcReceiptLoading": false,
+                                    "_kcpOcReceiptLoaded": true,
+                                    "_kcpOcReceiptUrl": "{{$response.receipt_url}}",
+                                    "_kcpOcCashReceiptUrl": "{{$response.cash_receipt_url}}"
+                                  }
+                                }
+                              ],
+                              "onError": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "_kcpOcReceiptLoading": false
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local._kcpOcReceiptLoading === true}}",
+                          "props": {
+                            "name": "spinner",
+                            "className": "w-3.5 h-3.5 animate-spin"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{!_local._kcpOcReceiptLoading}}",
+                          "props": {
+                            "name": "file-text",
+                            "className": "w-3.5 h-3.5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-pay_nhnkcp.user.receipt_view"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "A",
+                      "if": "{{_local._kcpOcReceiptLoaded && _local._kcpOcReceiptUrl}}",
+                      "props": {
+                        "href": "{{_local._kcpOcReceiptUrl}}",
+                        "target": "_blank",
+                        "rel": "noopener noreferrer",
+                        "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "file-text",
+                            "className": "w-3.5 h-3.5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-pay_nhnkcp.user.receipt_view"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "A",
+                      "if": "{{_local._kcpOcReceiptLoaded && _local._kcpOcCashReceiptUrl}}",
+                      "props": {
+                        "href": "{{_local._kcpOcCashReceiptUrl}}",
+                        "target": "_blank",
+                        "rel": "noopener noreferrer",
+                        "className": "inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "receipt",
+                            "className": "w-3.5 h-3.5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-pay_nhnkcp.user.cash_receipt_view"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

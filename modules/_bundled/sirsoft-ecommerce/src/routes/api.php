@@ -44,8 +44,6 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\User\UserCouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\UserCurrencyController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\UserMileageController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\UserShippingCountryController;
-use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
-use Modules\Sirsoft\Ecommerce\Http\Middleware\VerifyGuestOrderToken;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,7 +79,7 @@ Route::prefix('categories')->group(function () {
 // GET /api/modules/sirsoft-ecommerce/products/new - 신상품 조회
 // GET /api/modules/sirsoft-ecommerce/products/recent - 최근 본 상품 조회
 // GET /api/modules/sirsoft-ecommerce/products/{id} - 공개 상품 상세 조회
-Route::prefix('products')->middleware(['optional.sanctum', ResolveShippingCountry::class, 'permission:user,sirsoft-ecommerce.user-products.read'])->group(function () {
+Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirsoft-ecommerce.user-products.read'])->group(function () {
     Route::get('/', [PublicProductController::class, 'index'])
         ->name('products.index');
 
@@ -153,7 +151,7 @@ Route::get('review-image/{hash}', [ReviewImageController::class, 'download'])
 // DELETE /api/modules/sirsoft-ecommerce/cart/all - 전체 삭제
 // POST   /api/modules/sirsoft-ecommerce/cart/merge - 비회원→회원 병합
 // GET    /api/modules/sirsoft-ecommerce/cart/count - 아이템 수 조회
-Route::prefix('cart')->middleware(['optional.sanctum', ResolveShippingCountry::class])->group(function () {
+Route::prefix('cart')->middleware(['optional.sanctum'])->group(function () {
     // cart_key 발급 (비회원용) - 와일드카드보다 먼저 정의
     Route::post('/key', [CartController::class, 'issueCartKey'])
         ->name('cart.key');
@@ -208,7 +206,7 @@ Route::prefix('cart')->middleware(['optional.sanctum', ResolveShippingCountry::c
 // PUT    /api/modules/sirsoft-ecommerce/checkout - 임시 주문 업데이트 (쿠폰/마일리지 재계산)
 // DELETE /api/modules/sirsoft-ecommerce/checkout - 임시 주문 삭제
 // POST   /api/modules/sirsoft-ecommerce/checkout/extend - 임시 주문 만료 연장
-Route::prefix('checkout')->middleware(['optional.sanctum', ResolveShippingCountry::class])->group(function () {
+Route::prefix('checkout')->middleware(['optional.sanctum'])->group(function () {
     // 임시 주문 생성
     Route::post('/', [CheckoutController::class, 'store'])
         ->name('checkout.store');
@@ -255,7 +253,7 @@ Route::prefix('settings')->group(function () {
 // /api/modules/sirsoft-ecommerce/user/orders 한 경로만 매칭하기 때문 — 비회원 주문에서도
 // PG 결제창이 정상 노출되도록 단일 endpoint 로 통합. 회원/비회원 분기는 컨트롤러가 처리한다.
 Route::post('user/orders', [PublicOrderController::class, 'store'])
-    ->middleware(['optional.sanctum', ResolveShippingCountry::class, 'permission:user,sirsoft-ecommerce.user-orders.create'])
+    ->middleware(['optional.sanctum', 'permission:user,sirsoft-ecommerce.user-orders.create'])
     ->name('user.orders.store');
 
 // 비회원 주문 조회 인증 API (주문번호+전화번호+비밀번호 → 조회 토큰 발급)
@@ -273,7 +271,6 @@ Route::post('guest/orders/verify', [PublicOrderController::class, 'verify'])
 // (PublicOrderController::showByOrderNumber). 비회원 후속 액션 (cancel/estimate-refund/update-shipping-address/confirm-option)
 // 만 본 그룹에 둔다.
 Route::prefix('guest/orders/{orderNumber}')
-    ->middleware(VerifyGuestOrderToken::class)
     ->group(function () {
         // POST /guest/orders/{orderNumber}/cancel - 주문 취소
         Route::post('/cancel', [PublicOrderController::class, 'cancel'])

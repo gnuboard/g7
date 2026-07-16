@@ -33,12 +33,17 @@ class FilePermissionHelper
      * @param  bool  $removeOrphans  소스에 없는 대상 파일/디렉토리 삭제 여부
      * @param  bool  $preserveTopLevelOrphans  최상위 한 레벨의 orphan 보존 여부
      * @param  array<string, bool>|null  $applyList  적용 대상 파일 상대경로 화이트리스트
-     *   (이 디렉토리 루트 기준, `'sub/file.txt' => true` 형태의 lookup 맵). null 이면
-     *   전체 파일 복사(기존 동작). 지정 시 이 맵에 없는 파일은 복사를 스킵한다 — 코어
-     *   업데이트 증분 모드에서 "코어가 변경하지 않은 파일"을 건드리지 않기 위함. symlink
-     *   는 이 필터의 영향을 받지 않고 항상 재생성된다(링크는 목록 산출 대상이 아님).
+     *                                               (이 디렉토리 루트 기준, `'sub/file.txt' => true` 형태의 lookup 맵). null 이면
+     *                                               전체 파일 복사(기존 동작). 지정 시 이 맵에 없는 파일은 복사를 스킵한다 — 코어
+     *                                               업데이트 증분 모드에서 "코어가 변경하지 않은 파일"을 건드리지 않기 위함. symlink
+     *                                               는 이 필터의 영향을 받지 않고 항상 재생성된다(링크는 목록 산출 대상이 아님).
+     * @param  array<int, string>  $preserveLinkPaths  orphan 정리 시 삭제하지 않고 보존할
+     *                                                 symlink/junction 의 상대경로 화이트리스트(이 디렉토리 루트 기준, 예 `['storage']`).
+     *                                                 `removeOrphans=true` 라도 이 목록에 매칭되는 orphan 링크는 삭제하지 않는다 — 코어
+     *                                                 업데이트 prune 모드에서 `public/storage` symlink 가 orphan 으로 판정되어 삭제되던
+     *                                                 결함(#43) 차단. 화이트리스트 밖 orphan 링크는 기존대로 삭제된다.
      */
-    public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false, bool $preserveTopLevelOrphans = false, ?array $applyList = null): void
+    public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false, bool $preserveTopLevelOrphans = false, ?array $applyList = null, array $preserveLinkPaths = []): void
     {
         if (! File::isDirectory($destination)) {
             // 신규 디렉토리: 부모 디렉토리의 퍼미션/소유권 상속
@@ -81,7 +86,10 @@ class FilePermissionHelper
 
             if ($item->isDir()) {
                 // preserveTopLevelOrphans 는 최상위 한 레벨 한정 — 자식 재귀에는 항상 false 전달.
-                static::copyDirectory($item->getPathname(), $destPath, $onProgress, $excludes, $itemRelativePath, $removeOrphans, preserveTopLevelOrphans: false, applyList: $applyList);
+                // preserveLinkPaths 는 이 디렉토리 루트 기준 상대경로(예 `public/storage` → `storage`)라
+                // 재귀에 그대로 하향 전달 — removeOrphanItems 가 각 레벨에서 itemRelativePath 전체로
+                // 매칭하므로 중첩 보호 경로도 정확히 판정된다.
+                static::copyDirectory($item->getPathname(), $destPath, $onProgress, $excludes, $itemRelativePath, $removeOrphans, preserveTopLevelOrphans: false, applyList: $applyList, preserveLinkPaths: $preserveLinkPaths);
             } else {
                 // 증분 모드(applyList 지정): 화이트리스트에 없는 파일은 스킵 —
                 // 코어가 변경하지 않은 파일의 현재 디스크 상태(사용자 수정 포함)를 보존.
@@ -94,7 +102,7 @@ class FilePermissionHelper
 
         // 소스에 없는 대상 파일/디렉토리 삭제
         if ($removeOrphans && File::isDirectory($destination)) {
-            static::removeOrphanItems($source, $destination, $excludes, $relativePath, $preserveTopLevelOrphans);
+            static::removeOrphanItems($source, $destination, $excludes, $relativePath, $preserveTopLevelOrphans, $preserveLinkPaths);
         }
     }
 
@@ -202,8 +210,11 @@ class FilePermissionHelper
      * @param  array  $excludes  제외할 이름 또는 경로 목록
      * @param  string  $relativePath  현재 상대 경로
      * @param  bool  $preserveTopLevelOrphans  최상위 한 레벨의 orphan 보존 여부
+     * @param  array<int, string>  $preserveLinkPaths  삭제하지 않고 보존할 symlink/junction
+     *                                                 상대경로 화이트리스트(루트 기준). orphan 이 링크이면서 이 목록에 매칭되면 삭제하지
+     *                                                 않고 보존한다 — `public/storage` symlink 보호(#43). 화이트리스트 밖 orphan 링크는 삭제.
      */
-    protected static function removeOrphanItems(string $source, string $destination, array $excludes, string $relativePath, bool $preserveTopLevelOrphans = false): void
+    protected static function removeOrphanItems(string $source, string $destination, array $excludes, string $relativePath, bool $preserveTopLevelOrphans = false, array $preserveLinkPaths = []): void
     {
         // 최상위 한 레벨에서 소스에 없는 항목(사용자 추가) 보존 — `_bundled/my-project` 등.
         // 호출자(copyDirectory)는 최상위 진입 시에만 relativePath='' + 플래그 true 로 들어오며,
@@ -227,6 +238,21 @@ class FilePermissionHelper
 
             // 소스에 존재하지 않는 항목만 삭제
             if (! File::exists($srcPath) && ! File::isDirectory($srcPath)) {
+                // 보호 화이트리스트 매칭 링크/junction 은 orphan 이어도 보존 — 코어 업데이트
+                // prune 모드에서 `public/storage` symlink 가 릴리즈 소스에 없다는 이유로 삭제되어
+                // 업로드 파일이 404 되던 결함(#43) 차단. 화이트리스트 밖 orphan 링크는 아래에서 삭제.
+                if (
+                    in_array($itemRelativePath, $preserveLinkPaths, true)
+                    && (is_link($destItem->getPathname()) || static::isReparsePoint($destItem->getPathname()))
+                ) {
+                    Log::info('removeOrphanItems: 보호 대상 orphan 링크 보존', [
+                        'path' => $destItem->getPathname(),
+                        'relative' => $itemRelativePath,
+                    ]);
+
+                    continue;
+                }
+
                 // symlink / Windows junction 은 링크 자체만 제거 — File::deleteDirectory 는 is_dir()
                 // 추적 검사 후 재귀 삭제하므로 link-to-dir 인 경우 target 의 모든 파일을 삭제하는
                 // 사고 발생 가능. 링크 검사가 isDir() 보다 먼저 평가되어야 한다.

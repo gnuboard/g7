@@ -455,9 +455,16 @@ class SeoRendererTest extends TestCase
     }
 
     /**
-     * CSS 경로가 뷰 데이터에 포함됩니다.
+     * 코어 Laravel 에셋 빌드 산출물(app.css)은 뷰 데이터에 주입되지 않습니다.
+     *
+     * seo.blade.php 가 참조하던 코어 app.css 는 실제 사용자 화면
+     * (app.blade.php·admin.blade.php)에서 쓰이지 않는 Laravel 기본 빌드 파일이며,
+     * Vite manifest 구조상 해시 파일로만 생성되어 고정 경로 `/build/assets/app.css`
+     * 는 404 였다. 봇 렌더링에 필요한 스타일은 템플릿 CSS($stylesheets)가 담당하므로
+     * 코어 app.css 참조를 제거했다. 이 테스트는 cssPath 잔재가 재유입되지 않도록 가드한다.
+     * (공개#64 — 봇 SEO HTML CSS 404 제거)
      */
-    public function test_render_includes_css_path(): void
+    public function test_render_does_not_inject_core_app_css_path(): void
     {
         $request = Request::create('/about');
 
@@ -486,11 +493,12 @@ class SeoRendererTest extends TestCase
             ->andReturn('');
 
         $viewMock = Mockery::mock(\Illuminate\View\View::class);
-        $viewMock->shouldReceive('render')->once()->andReturn('<html><link rel="stylesheet"></html>');
+        $viewMock->shouldReceive('render')->once()->andReturn('<html></html>');
 
         View::shouldReceive('make')
             ->with('seo', Mockery::on(function ($data) {
-                return isset($data['cssPath']) && is_string($data['cssPath']);
+                // cssPath 키가 더 이상 뷰 데이터에 존재하지 않아야 한다.
+                return ! array_key_exists('cssPath', $data);
             }))
             ->once()
             ->andReturn($viewMock);

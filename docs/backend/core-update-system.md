@@ -210,6 +210,8 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 --prune 모드 (또는 백업 부재 fallback):
 - targets 전체 무조건 덮어쓰기 + orphan 삭제 (기존 동작)
 - 백업 부재 시 base 가 없어 3-way 불가 → 안전하게 전체 덮어쓰기로 회귀 + 안내 출력
+- `public/storage` symlink 는 orphan 삭제에서 보호됨 — `public` 타깃 정리 시
+  `preserveLinkPaths: ['storage']` 화이트리스트로 링크/junction 을 보존 (#43, 아래 §참조)
 
 공통:
 - 자동 발견 폴백: targets 에 미등재된 source 최상위 항목도 스캔하여 적용
@@ -221,6 +223,12 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 > **기본 동작 변경 배경 (공개 #64)**: 이전에는 Step 7 이 targets 전체를 무조건 재복사하고 orphan 을 삭제하여, 사용자가 수정한 `public/.htaccess` 커스텀 블록이나 `_bundled/` 아래 커스텀 확장이 소실되는 사고가 반복 제보되었다. 기본 동작을 "코어가 실제로 변경/추가한 파일만 적용(3-way)"으로 전환해 발생 표면을 제거했다. 전체 덮어쓰기 + 정리를 원하면 `--prune` 을 지정한다. "코어도 바꾸고 사용자도 바꾼" 파일은 코어 버전으로 갱신되지만 백업에 원본이 보존되어 복구 가능하다.
 
 > **증분 모드 잔존 stale 파일 정리**: 기본(증분) 모드는 orphan 을 삭제하지 않으므로, 신 버전에서 제거된 파일이 활성 디렉토리에 잔존할 수 있다. 완료 요약이 잔존을 안내하며, 정리하려면 다음 업데이트를 `--prune` 으로 실행하거나 단발성 정리 도구 `php artisan hotfix:rollback-stale-files --prune` 을 사용한다 (진단 모드 기본, `--prune` 시 확인 프롬프트 후 정리, symlink/protected_paths 가드 적용). 상세 사용법: [docs/cheatsheet.md](../cheatsheet.md) "단발성 결함 보정 (hotfix)".
+
+> **`public/storage` symlink 보존 + 종료 시 복구 (#43)**: 심층 방어 2층 구조로 `--prune` 실행 후에도 `public/storage` symlink 가 정상 유지된다.
+> - **층 1 (예방)**: `--prune` 은 `public` 타깃에서 orphan(릴리즈 소스에 없는 항목)을 삭제하는데, 런타임 symlink 인 `public/storage` 는 릴리즈 소스에 없어 orphan 으로 판정되어 삭제되던 결함이 있었다(업로드 파일 404). `applyUpdate` 가 `public` 타깃 처리 시 `FilePermissionHelper::copyDirectory(..., preserveLinkPaths: ['storage'])` 로 화이트리스트를 전달해, 매칭되는 orphan symlink/junction 만 삭제에서 제외한다. 화이트리스트 밖 orphan 링크는 기존대로 삭제된다(정밀 보호 — 무조건 보존 아님).
+> - **층 2 (복구)**: 업데이트 종료 시점(정상 Step 11 + 핸드오프 catch)에 `StorageLinkHelper::ensurePublicStorageLink()` 를 호출해 `public/storage` 가 정상 링크인지 확인하고, 부재/손상이면 `storage/app/public` 을 가리키는 링크를 (필요 시 `.broken.{YmdHis}` rename 백업 후) 재생성한다. 버전 무관 매 업데이트 실행. Windows `SeCreateSymbolicLink` 권한 부족 시 junction(`mklink /J`) 폴백까지 시도하고, 그래도 실패하면 rename 원복 + 수동 `storage:link` 안내(데이터 손실 없음). 롤백 catch 경로는 백업 복원이 링크를 원상 회복하므로 대상 아님.
+>   - **소유권 상속**: `symlink()` 은 소유권 인자가 없어 sudo 실행 시 링크가 root:root 로 생성된다. 재생성 직후 부모 `public/` 의 owner/group 을 기준으로 `lchown`/`lchgrp`(링크 자체 대상 — `chown` 은 target 을 따라감) 보정해 원래 앱 실행 유저 소유를 유지한다. 이 프로젝트의 "신규 항목은 부모 소유권 상속"(`FilePermissionHelper`) 컨벤션과 일치. 비-POSIX/함수 부재/권한 부족 시 무해하게 skip.
+> - 이 복구 로직은 beta.5 DataMigration `RecoverPublicStorageSymlink` 와 `StorageLinkHelper` 로 일원화되어 있다(부재→재생성 케이스까지 상위호환).
 
 > **자동 발견 폴백의 배경 (engine-v / beta.4 이후)**: Step 7 은 부모 프로세스의 `config('app.update.targets')` 를 사용한다. 부모는 업그레이드 *직전* 의 코드/메모리 상태이므로 신버전이 도입한 신규 최상위 디렉토리(예: beta.4 의 `lang-packs/`) 가 부모의 stale targets 에서 누락된다. 폴백은 이 결함을 안전망으로 차단하며, `config/app.php` 의 `update.protected_paths` 가 런타임 데이터(`storage`)·로컬 환경(`.env*`)·별도 파이프라인 산출물(`vendor`)·개발 메타(`.git`/`.claude`/`.serena` 등) 의 의도치 않은 덮어쓰기를 방지한다.
 
@@ -671,7 +679,8 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 
 | 메서드 | 시그니처 | 설명 |
 |--------|---------|------|
-| `applyUpdate()` | `(string $sourcePath, ?Closure $onProgress, bool $prune = false, ?array $applyList = null): void` | _pending → base_path 적용. `$applyList` 지정 + `!$prune` 이면 증분(코어 변경분만), 그 외 전체 덮어쓰기 + orphan 삭제 |
+| `applyUpdate()` | `(string $sourcePath, ?Closure $onProgress, bool $prune = false, ?array $applyList = null): void` | _pending → base_path 적용. `$applyList` 지정 + `!$prune` 이면 증분(코어 변경분만), 그 외 전체 덮어쓰기 + orphan 삭제. `public` 타깃은 `copyDirectory(..., preserveLinkPaths: ['storage'])` 로 `public/storage` symlink/junction 을 orphan 삭제에서 보호 (#43) |
+| `StorageLinkHelper::ensurePublicStorageLink()` | `(?\Psr\Log\LoggerInterface $logger = null): void` | `public/storage` 멱등 복구. 정상 링크면 no-op, 부재/손상이면 `storage/app/public` 링크 재생성(부재 시 신규, 손상 디렉토리는 `.broken.{YmdHis}` 백업 후). 재생성 링크는 부모 `public/` 의 소유자/그룹을 `lchown`/`lchgrp` 상속(sudo 후 root:root 잔존 차단). Windows junction 폴백. `CoreUpdateCommand` 종료 시점 + migration 05 가 호출 (#43) |
 | `runComposerInstallInPending()` | `(string $pendingPath, ?Closure $onProgress): void` | _pending에서 composer install (--no-scripts) |
 | `isComposerUnchangedForCore()` | `(string $pendingPath): bool` | composer.json/lock MD5 비교 |
 | `runComposerInstall()` | `(?Closure $onProgress): void` | base_path에서 composer install |

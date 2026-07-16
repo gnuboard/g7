@@ -422,6 +422,71 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
             );
         });
     });
+
+    // ─── PG 능력 기반 3분기 (#475) ───
+    // 배경: 과거에는 PG 필요 여부를 하드코딩 배열(['point','deposit','free','dbank'])로
+    // 정규식 판정해 간편결제를 "PG 불필요"로 오분류했다. 이제 결제수단 카탈로그의
+    // pg_locked / needs_pg 능력으로 직접 3분기한다:
+    //   ① pg_locked        → "PG 고정 · {PG명}" 배지 (관리자 변경 불가)
+    //   ② !pg_locked && needs_pg → PG 선택 셀렉트 (또는 미설치 안내)
+    //   ③ !pg_locked && !needs_pg → "PG 불필요"
+    // 이 분기가 능력 대신 다시 하드코딩/orphaned 로 회귀하면 #475 재발이다.
+    describe('PG 능력 3분기 (#475)', () => {
+        const tpl = layout.itemTemplate;
+        const findByTestidExpr = (needle: string) =>
+            findFirst(tpl, (n: any) =>
+                typeof n?.props?.['data-testid'] === 'string'
+                    && n.props['data-testid'].includes(needle),
+            );
+
+        it('PG 고정 배지가 $method.pg_locked 조건으로 렌더된다', () => {
+            const badge = findByTestidExpr('pg-locked-badge-');
+            expect(badge).not.toBeNull();
+            expect(badge.if).toBe('{{$method.pg_locked}}');
+            // 배지 텍스트에 PG 표시명(available_pg_providers 의 name)이 들어가야
+            // "PG 불필요"와 구분된다.
+            expect(badge.text).toContain('available_pg_providers');
+            expect(badge.text).toContain('pg_provider');
+        });
+
+        it('PG 선택 셀렉트가 !pg_locked && needs_pg && 제공자>0 조건으로만 렌더된다', () => {
+            const select = findByTestidExpr('pg-select-');
+            expect(select).not.toBeNull();
+            expect(select.name).toBe('Select');
+            expect(select.if).toContain('!$method.pg_locked');
+            expect(select.if).toContain('$method.needs_pg');
+            expect(select.if).toContain('length > 0');
+            // 셀렉트 변경이 pg_provider 를 배열에 반영해야 한다.
+            expect(select.actions[0].handler).toBe('setState');
+            expect(select.actions[0].params['form.order_settings.payment_methods']).toContain(
+                'pg_provider',
+            );
+        });
+
+        it('"PG 불필요" 표시가 !pg_locked && !needs_pg 조건으로만 렌더된다', () => {
+            const notRequired = findByTestidExpr('pg-not-required-');
+            expect(notRequired).not.toBeNull();
+            expect(notRequired.if).toContain('!$method.pg_locked');
+            expect(notRequired.if).toContain('!$method.needs_pg');
+            expect(notRequired.text).toBe(
+                '$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required',
+            );
+        });
+
+        it('세 분기가 상호배타적이다 (pg_locked 우선, 나머지는 !pg_locked)', () => {
+            const badge = findByTestidExpr('pg-locked-badge-');
+            const select = findByTestidExpr('pg-select-');
+            const notInstalled = findByTestidExpr('pg-not-installed-');
+            const notRequired = findByTestidExpr('pg-not-required-');
+
+            // pg_locked 분기만 pg_locked=true, 나머지 셋은 모두 !pg_locked 전제.
+            expect(badge.if).toBe('{{$method.pg_locked}}');
+            for (const branch of [select, notInstalled, notRequired]) {
+                expect(branch).not.toBeNull();
+                expect(branch.if).toContain('!$method.pg_locked');
+            }
+        });
+    });
 });
 
 // ─── _payment_methods_cards.json (모바일 Sortable) 구조 검증 ───
@@ -441,6 +506,42 @@ describe('결제수단 모바일 카드 구조 검증 (_payment_methods_cards.js
     it('고아 항목 classMap이 정의되어야 한다', () => {
         expect(layout.itemTemplate.classMap).toBeDefined();
         expect(layout.itemTemplate.classMap.variants.orphaned).toBeDefined();
+    });
+
+    // ─── PG 능력 3분기 (#475) — 모바일 카드도 PC 리스트와 동일하게 판정해야 한다 ───
+    describe('PG 능력 3분기 (#475)', () => {
+        const tpl = layout.itemTemplate;
+        const findByTestidExpr = (needle: string) =>
+            findFirst(tpl, (n: any) =>
+                typeof n?.props?.['data-testid'] === 'string'
+                    && n.props['data-testid'].includes(needle),
+            );
+
+        it('PG 고정 배지가 $method.pg_locked 조건으로 렌더된다', () => {
+            const badge = findByTestidExpr('pg-locked-badge-');
+            expect(badge).not.toBeNull();
+            expect(badge.if).toBe('{{$method.pg_locked}}');
+        });
+
+        it('PG 선택 셀렉트가 !pg_locked && needs_pg 조건으로만 렌더된다', () => {
+            const select = findByTestidExpr('pg-select-');
+            expect(select).not.toBeNull();
+            expect(select.if).toContain('!$method.pg_locked');
+            expect(select.if).toContain('$method.needs_pg');
+        });
+
+        it('"PG 불필요" 표시가 !pg_locked && !needs_pg 조건으로만 렌더된다', () => {
+            const notRequired = findByTestidExpr('pg-not-required-');
+            expect(notRequired).not.toBeNull();
+            expect(notRequired.if).toContain('!$method.pg_locked');
+            expect(notRequired.if).toContain('!$method.needs_pg');
+        });
+
+        it('PC 리스트와 카드가 동일한 3개 data-testid 접두사를 쓴다 (표시 일관성)', () => {
+            for (const needle of ['pg-locked-badge-', 'pg-select-', 'pg-not-required-']) {
+                expect(findByTestidExpr(needle)).not.toBeNull();
+            }
+        });
     });
 });
 

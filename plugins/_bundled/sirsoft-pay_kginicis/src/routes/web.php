@@ -1,13 +1,21 @@
 <?php
 
+use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\SetTimezone;
+use App\Http\Middleware\SyncBoostWithDebugMode;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Plugins\Sirsoft\PayKginicis\Controllers\CbtCallbackController;
 use Plugins\Sirsoft\PayKginicis\Controllers\CbtCvsNotifyController;
 use Plugins\Sirsoft\PayKginicis\Controllers\MobileCallbackController;
 use Plugins\Sirsoft\PayKginicis\Controllers\PaymentCallbackController;
 use Plugins\Sirsoft\PayKginicis\Controllers\PaymentCloseController;
 use Plugins\Sirsoft\PayKginicis\Controllers\UserEscrowConfirmController;
-use Plugins\Sirsoft\PayKginicis\Http\Middleware\InicisNotifyIpWhitelist;
 
 // 에스크로 구매결정: 사용자 인증 필요
 Route::get('/payment/escrow-confirm/{orderNumber}', [UserEscrowConfirmController::class, 'show'])
@@ -21,36 +29,34 @@ Route::get('/payment/escrow-confirm/close', [UserEscrowConfirmController::class,
 // PC 표준결제창 닫기 (KG 이니시스 closeUrl — 인증 불필요)
 Route::get('/payment/close', [PaymentCloseController::class, 'show'])
     ->withoutMiddleware([
-        \App\Http\Middleware\SyncBoostWithDebugMode::class,
-        \Illuminate\Cookie\Middleware\EncryptCookies::class,
-        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-        \Illuminate\Session\Middleware\StartSession::class,
-        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
-        \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        \App\Http\Middleware\SetLocale::class,
-        \App\Http\Middleware\SetTimezone::class,
+        SyncBoostWithDebugMode::class,
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        ValidateCsrfToken::class,
+        SubstituteBindings::class,
+        SetLocale::class,
+        SetTimezone::class,
     ])
     ->name('payment.close');
 
-Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])->group(function () {
+Route::withoutMiddleware([ValidateCsrfToken::class])->group(function () {
     Route::match(['get', 'post'], '/payment/cbt/callback', [CbtCallbackController::class, 'handle'])
         ->name('payment.cbt.callback');
 
+    // IP 화이트리스트(InicisNotifyIpWhitelist)는 코어 self-gate 로 이관 — Plugin::getMiddleware() 가
+    // cvs-notify/vbank-notify/mobile.vbank-notify webhook 라우트명에만 타게팅 (payment.callback 제외).
     Route::post('/payment/cbt/cvs-notify', [CbtCvsNotifyController::class, 'handle'])
-        ->middleware(InicisNotifyIpWhitelist::class)
         ->name('payment.cbt.cvs-notify');
 
     Route::post('/payment/callback', [PaymentCallbackController::class, 'authCallback'])
         ->name('payment.callback');
 
-    // KG 이니시스 공식 발송 IP 만 허용 (위변조/재처리 방어)
     Route::post('/payment/vbank-notify', [PaymentCallbackController::class, 'vbankNotify'])
-        ->middleware(InicisNotifyIpWhitelist::class)
         ->name('payment.vbank-notify');
 
     Route::post('/payment/mobile/vbank-notify', [PaymentCallbackController::class, 'mobileVbankNotify'])
-        ->middleware(InicisNotifyIpWhitelist::class)
         ->name('payment.mobile.vbank-notify');
 
     // (제거됨) /payment/escrow-notify — KG 이니시스 PC 에스크로 매뉴얼에는 webhook

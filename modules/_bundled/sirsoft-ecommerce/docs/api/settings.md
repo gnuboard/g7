@@ -3570,3 +3570,33 @@ _대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있
 **설명** 인증 없이 접근 가능한 공개 엔드포인트로, 체크아웃에서 필요한 배송 설정을 반환합니다. `EcommerceSettingsService::getSettings('shipping')`로 기본 배송 국가·이용 가능한 국가 목록·국제 배송 활성화 여부·배송 타입·무료 배송 설정 등을 `shipping` 으로 내려줍니다. 프론트가 배송지 선택과 배송비 안내를 구성하는 데 사용하며, `logApiUsage('settings.shipping')`로 사용 로그를 남깁니다.
 
 
+
+---
+
+## 결제수단 카탈로그 (`order_settings.payment_methods[]`)
+
+결제수단 카탈로그는 코어 8종(builtin)과 PG 플러그인이 훅으로 등록한 확장 결제수단을 함께 담는다.
+설정 조회/저장 응답의 `order_settings.payment_methods` 배열 각 항목이 이 구조를 따른다.
+
+아래 능력(capability) 필드는 **정의(builtin 은 코어, 확장은 플러그인 선언)가 SSoT** 이며 저장된 값으로
+덮이지 않는다 — 관리자가 편집하는 값이 아니라 결제수단의 성격이기 때문이다.
+
+| 이름 | 타입 | 용도 |
+| --- | --- | --- |
+| id | string | 결제수단 ID. builtin(`card` / `vbank` / `dbank` / `bank` / `phone` / `point` / `deposit` / `free`) 또는 확장 ID(예: `nhnkcp_naverpay`, `kginicis_lpay`) |
+| needs_pg | boolean | PG 결제창이 필요한 수단인지. `false` 면 관리자 화면에 "PG 불필요" 로 표시되고 주문도 PG 를 거치지 않는다 (무통장·포인트·예치금·무료) |
+| pg_locked | boolean | PG 가 특정 대행사로 고정된 수단인지. 간편결제처럼 특정 PG 전용인 수단은 `true` 이며, 관리자가 PG 를 바꿀 수 없고 화면에는 "PG 고정" 배지로 표시된다. `true` 일 때 `pg_provider` 는 저장값 대신 플러그인 선언값이 강제된다 |
+| refund_method | string | 환불 수단 분류 (`pg` / `bank` / `points`). 주문 취소 시 PG 취소를 호출할지 결정한다 |
+| pg_provider | string\|null | 이 결제수단을 처리할 PG. `pg_locked=true` 면 플러그인이 선언한 PG 로 고정되고, 아니면 관리자가 선택한다 (미선택 시 `default_pg_provider` 로 폴백) |
+| is_active | boolean | 주문서에 노출할지 여부 |
+| min_order_amount | number | 이 결제수단을 쓸 수 있는 최소 주문금액 |
+| stock_deduction_timing | string | 재고 차감 시점 (`order_placed` / `payment_complete` / `none`) |
+| mileage_deduction_timing | string | 마일리지 차감 시점 |
+| sort_order | number | 주문서 노출 순서 |
+| _cached_name / _cached_description | object | 다국어 표시명/설명 (locale => 문자열) |
+| _cached_icon | string | 표시 아이콘 |
+| _cached_source | string | 제공 주체 (`builtin` 또는 `plugin:{식별자}`) |
+
+확장 결제수단(간편결제)은 코어의 `card` 로 치환되지 않고 자기 ID 그대로 저장·조회된다.
+주문 생성 시 `payment_method` 로 확장 ID 를 그대로 보내면 되며, 서버는 이 카탈로그를 화이트리스트로
+사용해 검증한다.

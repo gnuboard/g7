@@ -26,16 +26,11 @@ class RegisterPgProviderListener implements HookListenerInterface
         'kginicis_kakaopay' => 'easy_pay_kakaopay',
     ];
 
-/**
-
- * getSubscribedHooks
-
- *
-
- * @return array
-
- */
-
+    /**
+     * 이 리스너가 구독하는 훅 정의를 반환합니다.
+     *
+     * @return array 훅 이름 => 구독 설정
+     */
     public static function getSubscribedHooks(): array
     {
         return [
@@ -73,25 +68,22 @@ class RegisterPgProviderListener implements HookListenerInterface
             'name' => localized_label(nameKey: 'sirsoft-pay_kginicis::provider.name'),
             'icon' => 'credit-card',
             'supported_methods' => ['card', 'bank_transfer', 'virtual_account', 'mobile'],
+            // 코어의 provider-agnostic 결제 진입 dispatch — 주문 응답의 pg_payment_handler 로
+            // 내려가 템플릿이 그대로 호출한다. 미선언 시 프론트가 응답을 변조해 결제창을
+            // 직접 띄우는 우회가 필요해진다(#475).
+            'payment_handler' => 'sirsoft-pay_kginicis.requestPayment',
         ];
 
         return $providers;
     }
 
-/**
-
- * getClientConfig
-
- *
-
- * @param  array  $config
-
- * @param  string  $provider
-
- * @return array
-
- */
-
+    /**
+     * KG 이니시스 결제창 진입에 필요한 클라이언트 설정을 반환합니다.
+     *
+     * @param  array  $config  기존 클라이언트 설정
+     * @param  string  $provider  요청된 PG provider id
+     * @return array KG 이니시스 설정이 병합된 클라이언트 설정 (다른 PG 면 원본 그대로)
+     */
     public function getClientConfig(array $config, string $provider): array
     {
         if ($provider !== 'kginicis') {
@@ -111,32 +103,32 @@ class RegisterPgProviderListener implements HookListenerInterface
                 ? 'https://stgstdpay.inicis.com/stdjs/INIStdPay.js'
                 : 'https://stdpay.inicis.com/stdjs/INIStdPay.js',
             'callback_urls' => [
-                'signature'           => '/plugins/sirsoft-pay_kginicis/payment/signature',
-                'close_report'        => '/plugins/sirsoft-pay_kginicis/payment/close-report',
-                'callback'            => '/plugins/sirsoft-pay_kginicis/payment/callback',
-                'close'               => '/plugins/sirsoft-pay_kginicis/payment/close',
-                'cbt_checkout_token'  => '/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token',
-                'cbt_hash_data'       => '/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data',
-                'cbt_callback'        => '/plugins/sirsoft-pay_kginicis/payment/cbt/callback',
-                'cbt_cvs_notify'      => '/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify',
-                'cbt_auth_url'        => $isTest ? self::CBT_AUTH_URL_TEST : self::CBT_AUTH_URL_LIVE,
-                'mobile_signature'    => '/plugins/sirsoft-pay_kginicis/payment/mobile/signature',
-                'mobile_callback'     => '/plugins/sirsoft-pay_kginicis/payment/mobile/callback',
+                'signature' => '/plugins/sirsoft-pay_kginicis/payment/signature',
+                'close_report' => '/plugins/sirsoft-pay_kginicis/payment/close-report',
+                'callback' => '/plugins/sirsoft-pay_kginicis/payment/callback',
+                'close' => '/plugins/sirsoft-pay_kginicis/payment/close',
+                'cbt_checkout_token' => '/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token',
+                'cbt_hash_data' => '/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data',
+                'cbt_callback' => '/plugins/sirsoft-pay_kginicis/payment/cbt/callback',
+                'cbt_cvs_notify' => '/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify',
+                'cbt_auth_url' => $isTest ? self::CBT_AUTH_URL_TEST : self::CBT_AUTH_URL_LIVE,
+                'mobile_signature' => '/plugins/sirsoft-pay_kginicis/payment/mobile/signature',
+                'mobile_callback' => '/plugins/sirsoft-pay_kginicis/payment/mobile/callback',
                 'mobile_vbank_notify' => '/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify',
             ],
-            'japan_enabled'                      => $settings['japan_enabled'] ?? false,
+            'japan_enabled' => $settings['japan_enabled'] ?? false,
             'japan_restrict_jpy_payment_methods' => (bool) ($settings['japan_restrict_jpy_payment_methods'] ?? false),
-            'japan_configured'                   => $this->isJapanConfigured($settings, $isTest),
-            'standard_configured'                => $this->isStandardConfigured($settings, $isTest),
-            'mobile_configured'                  => $this->isMobileConfigured($settings, $isTest),
-            'use_escrow'                         => $settings['use_escrow'] ?? false,
-            'japan_mid'                          => $isTest
+            'japan_configured' => $this->isJapanConfigured($settings, $isTest),
+            'standard_configured' => $this->isStandardConfigured($settings, $isTest),
+            'mobile_configured' => $this->isMobileConfigured($settings, $isTest),
+            'use_escrow' => $settings['use_escrow'] ?? false,
+            'japan_mid' => $isTest
                 ? KgInicisApiService::JAPAN_TEST_MID
                 : ($settings['live_japan_mid'] ?? ''),
-            'cbt_extra_data'                     => $this->buildCbtExtraData($settings),
-            'use_credit_point'                   => (bool) ($settings['use_credit_point'] ?? false),
-            'easy_pay_show_brand_button'         => (bool) ($settings['easy_pay_show_brand_button'] ?? false),
-            'easy_pay_enabled_methods'           => $this->enabledDomesticEasyPayMethods($settings),
+            'cbt_extra_data' => $this->buildCbtExtraData($settings),
+            'use_credit_point' => (bool) ($settings['use_credit_point'] ?? false),
+            'easy_pay_show_brand_button' => (bool) ($settings['easy_pay_show_brand_button'] ?? false),
+            'easy_pay_enabled_methods' => $this->enabledDomesticEasyPayMethods($settings),
         ]);
     }
 
@@ -196,8 +188,6 @@ class RegisterPgProviderListener implements HookListenerInterface
      * 현재 모드의 표준결제 MID/signKey 준비 여부를 반환합니다.
      *
      * @param  array<string, mixed>  $settings
-     * @param  bool  $isTest
-     * @return bool
      */
     private function isStandardConfigured(array $settings, bool $isTest): bool
     {
@@ -214,8 +204,6 @@ class RegisterPgProviderListener implements HookListenerInterface
      * 현재 모드의 모바일결제 MID/hashKey 준비 여부를 반환합니다.
      *
      * @param  array<string, mixed>  $settings
-     * @param  bool  $isTest
-     * @return bool
      */
     private function isMobileConfigured(array $settings, bool $isTest): bool
     {
@@ -259,7 +247,7 @@ class RegisterPgProviderListener implements HookListenerInterface
             return '';
         }
 
-        return str_starts_with($suffix, self::LIVE_MID_PREFIX) ? $suffix : self::LIVE_MID_PREFIX . $suffix;
+        return str_starts_with($suffix, self::LIVE_MID_PREFIX) ? $suffix : self::LIVE_MID_PREFIX.$suffix;
     }
 
     private function getPluginSettings(): array

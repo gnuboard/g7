@@ -151,7 +151,8 @@
       "pg_not_installed": "PG未インストール",
       "pg_select_first": "PG社をまず選択してください",
       "mileage_deduction_timing": "マイレージ差し引き時点",
-      "mileage_deduction_timing_disabled_hint": "マイレージ使用がオフになっているため、差し引き時点が適用されません。"
+      "mileage_deduction_timing_disabled_hint": "マイレージ使用がオフになっているため、差し引き時点が適用されません。",
+      "pg_fixed": "PG 固定"
     },
     "bank_accounts": {
       "title": "無通帳口座番号設定",

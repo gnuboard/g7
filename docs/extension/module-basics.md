@@ -141,6 +141,7 @@
 | `getHookListeners()` | `[]` | 훅 리스너 |
 | `getDependencies()` | `[]` | 의존성 |
 | `getMetadata()` | `[]` | 메타데이터 |
+| `getMiddleware()` | `[]` | 확장 미들웨어 선언 (self-gate targets) — `{class, groups, timing?, targets}` ([middleware.md](../backend/middleware.md)) |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 모듈은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `ModuleManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
 #### 동적 권한/역할/메뉴 보존 규칙

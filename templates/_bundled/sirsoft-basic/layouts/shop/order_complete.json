@@ -119,10 +119,10 @@
                 ]
               },
               {
-                "comment": "카드 결제 완료 헤더",
+                "comment": "즉시 결제완료 헤더 — 가상계좌/무통장(입금대기)이 아닌 모든 결제수단. 확장 결제수단(간편결제)도 결제수단 ID 가 'card' 가 아니라 확장 ID(예: nhnkcp_naverpay)로 저장되므로 'card' 하드코딩 대신 입금대기 수단의 여집합으로 판정한다(#475).",
                 "type": "basic",
                 "name": "Div",
-                "if": "{{orderData?.data?.payment?.payment_method === 'card'}}",
+                "if": "{{orderData?.data?.payment?.payment_method && orderData?.data?.payment?.payment_method !== 'vbank' && orderData?.data?.payment?.payment_method !== 'dbank'}}",
                 "props": { "className": "text-center mb-8" },
                 "responsive": {
                   "portable": {

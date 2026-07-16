@@ -31,7 +31,7 @@ class OrderPaymentFactory extends Factory
             'embedded_pg_provider' => null,
             'transaction_id' => $faker->uuid(),
             'merchant_order_id' => 'MO-'.strtoupper($faker->bothify('????-####-????')),
-            'payment_method' => PaymentMethodEnum::CARD,
+            'payment_method' => PaymentMethodEnum::CARD->value,
             'payment_device' => $faker->randomElement(['pc', 'mobile']),
             'paid_amount_local' => $amount,
             'paid_amount_base' => $amount,
@@ -130,7 +130,7 @@ class OrderPaymentFactory extends Factory
         $faker = \fake();
 
         return $this->state(fn (array $attributes) => [
-            'payment_method' => PaymentMethodEnum::CARD,
+            'payment_method' => PaymentMethodEnum::CARD->value,
             'card_name' => $faker->randomElement(['신한카드', '삼성카드', 'KB국민카드', '현대카드']),
             'card_number_masked' => $faker->numerify('####-****-****-####'),
         ]);
@@ -144,7 +144,7 @@ class OrderPaymentFactory extends Factory
         $faker = \fake();
 
         return $this->state(fn (array $attributes) => [
-            'payment_method' => PaymentMethodEnum::DBANK,
+            'payment_method' => PaymentMethodEnum::DBANK->value,
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
             'pg_provider' => '',
             'embedded_pg_provider' => null,
@@ -169,7 +169,7 @@ class OrderPaymentFactory extends Factory
         $faker = \fake();
 
         return $this->state(fn (array $attributes) => [
-            'payment_method' => PaymentMethodEnum::VBANK,
+            'payment_method' => PaymentMethodEnum::VBANK->value,
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
             'vbank_code' => '088',
             'vbank_name' => $faker->randomElement(['신한은행', '국민은행', '우리은행']),

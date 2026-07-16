@@ -8,6 +8,7 @@ use App\Exceptions\UpgradeHandoffException;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\FilePermissionHelper;
+use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -517,6 +518,12 @@ class CoreUpdateCommand extends Command
             $this->surfacePermissionWarnings($service, $log);
             $log('업데이트 경로 소유권 복원 완료');
 
+            // 소유권 복원 완료 후 · 유지보수 해제 전에 `public/storage` symlink 를 방어 복구한다.
+            // `--prune` 이 릴리즈 소스에 없는 symlink 를 orphan 으로 삭제했거나(#43) 손상된
+            // 경우에도, 첫 요청부터 `/storage/...` 가 200 을 반환하도록 링크를 재생성한다.
+            StorageLinkHelper::ensurePublicStorageLink();
+            $log('public/storage symlink 확인/복구 완료');
+
             $service->cleanupPending($pendingPath);
 
             if ($backupPath) {
@@ -622,6 +629,11 @@ class CoreUpdateCommand extends Command
                 $service->restoreOwnership($ownershipSnapshot, $onProgress, $detailedOwnershipSnapshot);
                 $this->surfacePermissionWarnings($service, $log);
                 $log('핸드오프 cleanup 완료 (버전 toVersion 고정 + 캐시 clear + 소유권 복원)');
+
+                // 핸드오프 시에도 파일은 이미 toVersion 으로 반영돼 `public/storage` symlink 가
+                // 삭제/손상됐을 수 있으므로 유지보수 해제 전에 동일하게 방어 복구한다(#43).
+                StorageLinkHelper::ensurePublicStorageLink();
+                $log('public/storage symlink 확인/복구 완료 (핸드오프)');
 
                 if (! empty($pendingPath)) {
                     $service->cleanupPending($pendingPath);

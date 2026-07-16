@@ -333,6 +333,30 @@ class Plugin extends AbstractPlugin
         return is_array($defaults) ? $defaults : [];
     }
 
+    /**
+     * 이 플러그인이 등록할 HTTP 미들웨어 선언을 반환합니다.
+     *
+     * IP 화이트리스트(InicisNotifyIpWhitelist)는 서버 발신 webhook 라우트에만 부착합니다.
+     * 브라우저 POST 콜백(payment.callback 등)은 사용자 IP 라 대상에서 제외 — self 로 뭉치면
+     * 결제 회귀. 코어 ExtensionMiddlewareGate 가 요청 시점에 실행합니다.
+     *
+     * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}>
+     */
+    public function getMiddleware(): array
+    {
+        return [
+            [
+                'class' => Http\Middleware\InicisNotifyIpWhitelist::class,
+                'groups' => ['web'],
+                'targets' => [
+                    'web.plugins.sirsoft-pay_kginicis.payment.cbt.cvs-notify',
+                    'web.plugins.sirsoft-pay_kginicis.payment.vbank-notify',
+                    'web.plugins.sirsoft-pay_kginicis.payment.mobile.vbank-notify',
+                ],
+            ],
+        ];
+    }
+
     public function getHookListeners(): array
     {
         return [

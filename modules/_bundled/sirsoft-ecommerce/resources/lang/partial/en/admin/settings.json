@@ -150,6 +150,7 @@
       "pg_use_default": "Default PG",
       "pg_not_required": "Not required",
       "pg_not_installed": "No PG",
+      "pg_fixed": "Fixed PG",
       "pg_select_first": "Select PG first"
     },
     "bank_accounts": {

@@ -347,6 +347,90 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
+     * 확장 결제수단(간편결제) 주문을 취소하면 PG 환불 훅이 실제로 진입해야 한다 (#475).
+     *
+     * 취소 서비스는 `$order->payment->needsPgProvider()` 가 true 일 때만 PG 환불
+     * 훅(`payment.refund`)에 진입한다(OrderCancellationService:279-281). 확장 ID 는
+     * enum case 가 없어 과거에는 이 게이트에서 false 로 떨어져 카드 취소가 누락됐다.
+     * 이 테스트는 게이트 판정값이 아니라 실제 훅 발화를 스파이로 관측한다 — 판정과
+     * 훅 진입 사이 로직이 바뀌어 환불 누락이 재발하면 이 테스트가 잡는다.
+     *
+     * @scenario method_kind=extension, capability_declared=declared, capability=refund_method
+     *
+     * @effects refund_method_is_pg, pg_refund_hook_invoked
+     */
+    #[Test]
+    public function admin_cancel_extension_payment_order_enters_pg_refund_hook(): void
+    {
+        $this->createCancelSequences();
+
+        // PG 플러그인이 하는 것과 동일하게 간편결제 수단을 카탈로그에 등록해
+        // needsPgProvider('nhnkcp_naverpay') 가 카탈로그 능력으로 true 가 되게 한다.
+        HookManager::addFilter(
+            'sirsoft-ecommerce.settings.filter_available_payment_methods',
+            fn (array $methods) => array_merge($methods, [[
+                'id' => 'nhnkcp_naverpay',
+                'name' => ['ko' => '네이버페이', 'en' => 'Naver Pay'],
+                'description' => ['ko' => '', 'en' => ''],
+                'icon' => 'credit-card',
+                'source' => 'plugin:sirsoft-pay_nhnkcp',
+                'defaults' => [
+                    'pg_provider' => 'nhnkcp',
+                    'pg_locked' => true,
+                    'needs_pg' => true,
+                    'refund_method' => 'pg',
+                    'is_active' => true,
+                    'min_order_amount' => 0,
+                    'stock_deduction_timing' => 'payment_complete',
+                    'mileage_deduction_timing' => 'payment_complete',
+                ],
+            ]])
+        );
+        app(\Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver::class)->flushCache();
+
+        $data = $this->createPaidOrderWithOptions(
+            optionCount: 1,
+            unitPrice: 30000,
+            quantity: 1,
+            withPayment: true,
+        );
+        $order = $data['order'];
+        // 결제 레코드를 확장 결제수단으로 지정 (기본 factory 는 card).
+        $order->payment()->update([
+            'payment_method' => 'nhnkcp_naverpay',
+            'pg_provider' => 'nhnkcp',
+        ]);
+
+        // PG 환불 훅 진입 여부를 관측하는 스파이 (성공 응답도 시뮬레이션).
+        $refundHook = new \ArrayObject(['count' => 0]);
+        HookManager::addFilter('sirsoft-ecommerce.payment.refund', function ($default) use ($refundHook) {
+            $refundHook['count']++;
+
+            return [
+                'success' => true,
+                'transaction_id' => 'TEST_TXN_EXT',
+                'error_code' => null,
+                'error_message' => null,
+            ];
+        }, 10);
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}/cancel", [
+                'type' => 'full',
+                'reason' => 'changed_mind',
+                'cancel_pg' => true,
+            ]);
+
+        $response->assertOk()->assertJsonPath('success', true);
+        $this->assertSame(
+            1,
+            $refundHook['count'],
+            '확장 결제수단(간편결제) 취소 시 PG 환불 훅이 진입해야 한다 '
+            .'(미진입 시 카드 취소가 누락되는 #475 안전 결함 재발)'
+        );
+    }
+
+    /**
      * cancel_pg=false로 취소 요청 시 PG 연동 없이 취소가 처리된다.
      */
     public function test_admin_cancel_without_pg(): void

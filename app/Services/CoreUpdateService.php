@@ -904,7 +904,7 @@ class CoreUpdateService
      * @param  \Closure|null  $onProgress  진행 콜백
      * @param  bool  $prune  true 면 전체 덮어쓰기 + orphan 삭제(기존 동작), false 면 증분 적용
      * @param  array<int, string>|null  $applyList  적용 대상 상대경로 목록(target 접두사 포함).
-     *   `CoreBackupHelper::computeApplyList()` 산출물. null 이면 증분 불가로 판단해 전체 덮어쓰기.
+     *                                              `CoreBackupHelper::computeApplyList()` 산출물. null 이면 증분 불가로 판단해 전체 덮어쓰기.
      */
     public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null, bool $prune = false, ?array $applyList = null): void
     {
@@ -953,6 +953,12 @@ class CoreUpdateService
                 // 소스(번들 확장만 포함)에 없다는 이유로 삭제되던 결함 차단.
                 // 번들 확장 디렉토리 *내부* stale 정리는 prune 모드에서만 수행된다.
                 $preserveTopLevelOrphans = str_ends_with($normalizedTarget, '_bundled');
+
+                // `public` 타깃 prune 시 `public/storage` symlink 를 orphan 삭제에서 보호한다 —
+                // 릴리즈 소스에는 런타임 symlink 가 없으므로 orphan 으로 판정되어 삭제되면
+                // 업로드 파일이 404 되는 결함(#43). 다른 타깃은 빈 배열이라 영향 없음.
+                $preserveLinkPaths = $normalizedTarget === 'public' ? ['storage'] : [];
+
                 FilePermissionHelper::copyDirectory(
                     $src,
                     $dest,
@@ -961,6 +967,7 @@ class CoreUpdateService
                     removeOrphans: $prune,
                     preserveTopLevelOrphans: $preserveTopLevelOrphans,
                     applyList: $targetApplyList,
+                    preserveLinkPaths: $preserveLinkPaths,
                 );
             } else {
                 // 단일 파일 target — 증분 모드에서는 적용 목록에 있을 때만 복사.

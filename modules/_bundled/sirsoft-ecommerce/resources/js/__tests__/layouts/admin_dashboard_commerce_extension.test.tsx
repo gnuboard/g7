@@ -229,9 +229,11 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
     });
 
     it('최신 리뷰 항목(latest_review_item)에 iteration 이 정의된다', () => {
+        // iteration 은 리스트 컨테이너가 아니라 반복 항목 노드에 있고, 항목 id 는
+        // index_var 를 붙인 형태(latest_review_item_{{i}})다.
         const list = findById(commerceExt as any, 'latest_reviews_list');
         expect(list.iteration).toBeUndefined();
-        const item = findById(commerceExt as any, 'latest_review_item');
+        const item = findById(commerceExt as any, 'latest_review_item_{{i}}');
         expect(item.iteration).toBeDefined();
         expect(item.iteration.source).toBe('commerce_recent_reviews?.data');
         expect(item.iteration.item_var).toBe('review');
@@ -241,7 +243,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
     it('미답변 문의 항목(pending_inquiry_item)에 iteration 이 정의된다', () => {
         const list = findById(commerceExt as any, 'pending_inquiries_list');
         expect(list.iteration).toBeUndefined();
-        const item = findById(commerceExt as any, 'pending_inquiry_item');
+        const item = findById(commerceExt as any, 'pending_inquiry_item_{{i}}');
         expect(item.iteration).toBeDefined();
         expect(item.iteration.source).toBe('commerce_pending_inquiries?.data?.items');
         expect(item.iteration.item_var).toBe('inquiry');
@@ -264,7 +266,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         // board_slug 미설정 시 링크 미노출
         expect(viewAll.if).toBe('{{!!commerce_pending_inquiries?.data?.board_slug}}');
 
-        const item = findById(commerceExt as any, 'pending_inquiry_item');
+        const item = findById(commerceExt as any, 'pending_inquiry_item_{{i}}');
         const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click.params.path).toBe('/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}');
     });

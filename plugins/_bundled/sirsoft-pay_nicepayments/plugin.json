@@ -1,0 +1,34 @@
+{
+    "identifier": "sirsoft-pay_nicepayments",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "나이스페이먼츠",
+        "en": "NicePayments"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_nicepayments",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_nicepayments/blob/main/CHANGELOG.md",
+    "description": {
+        "ko": "나이스페이먼츠 결제 게이트웨이 (통합결제창 연동)",
+        "en": "NicePayments gateway (integrated payment window)"
+    },
+    "g7_version": ">=7.0.5",
+    "dependencies": {
+        "modules": {
+            "sirsoft-ecommerce": ">=1.0.0-beta.5"
+        },
+        "plugins": {}
+    },
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

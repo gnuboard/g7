@@ -1292,6 +1292,69 @@ MD;
     }
 
     /**
+     * end-to-end 회귀 (#43): `applyUpdate(prune:true)` 가 `public` 타깃을 정리할 때
+     * `public/storage` symlink 를 orphan 으로 삭제하지 않고 보존합니다.
+     *
+     * 릴리즈 소스(`public/`)에는 런타임 symlink 가 없으므로 prune 이 orphan 으로 판정하여
+     * `@unlink` 하던 결함으로 업로드 파일이 404 되던 회귀를 차단한다. 층1 화이트리스트
+     * 전파(`public` → `preserveLinkPaths: ['storage']`) 합류 지점 검증.
+     */
+    public function test_apply_update_prune_preserves_public_storage_symlink(): void
+    {
+        [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['public']);
+
+        try {
+            // source(릴리즈): public/ 에 일반 파일만, storage symlink 는 없음
+            File::ensureDirectoryExists($source.DIRECTORY_SEPARATOR.'public');
+            File::put($source.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'index.php', "<?php // core\n");
+
+            // 활성(mine): public/storage symlink + 업로드 파일 target
+            File::ensureDirectoryExists($fakeBase.DIRECTORY_SEPARATOR.'public');
+            $linkTarget = $fakeBase.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'public';
+            File::ensureDirectoryExists($linkTarget);
+            File::put($linkTarget.DIRECTORY_SEPARATOR.'uploaded.txt', 'user upload');
+
+            $linkPath = $fakeBase.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'storage';
+            $created = @symlink($linkTarget, $linkPath);
+            if (! $created && PHP_OS_FAMILY === 'Windows') {
+                exec('cmd /c mklink /J '.escapeshellarg($linkPath).' '.escapeshellarg($linkTarget).' 2>&1', $out, $code);
+                $created = $code === 0 && is_dir($linkPath);
+            }
+            if (! $created) {
+                $this->markTestSkipped('symlink/junction 생성 권한 부족 (Windows SeCreateSymbolicLink)');
+            }
+
+            $this->service->applyUpdate($source, null, prune: true, applyList: null);
+
+            // symlink/junction 이 orphan 삭제되지 않고 보존되어야 함. Windows junction 은
+            // is_dir()/is_link() 이 stat 캐시에 따라 불안정하므로, 링크 존재는 readlink 로,
+            // 접근성은 업로드 파일 존재로 검증한다 (#43 — 404 회귀의 실측 지표).
+            clearstatcache(true, $linkPath);
+            $this->assertNotFalse(
+                @readlink($linkPath),
+                'public/storage 링크는 prune 후에도 보존되어야 한다 (#43)',
+            );
+            $this->assertFileExists(
+                $linkPath.DIRECTORY_SEPARATOR.'uploaded.txt',
+                'symlink 통과 시 업로드 파일에 접근 가능해야 한다 (404 회귀 차단)',
+            );
+
+            // 코어 변경분(index.php)은 정상 반영
+            $this->assertStringContainsString('core', File::get($fakeBase.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'index.php'));
+        } finally {
+            // 링크는 target 을 따라가지 않도록 먼저 제거 (tearDown 재귀 삭제 사고 차단).
+            // symlink → unlink, Windows junction → rmdir.
+            $linkPath = $fakeBase.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'storage';
+            if (is_link($linkPath)) {
+                @unlink($linkPath);
+            } elseif (PHP_OS_FAMILY === 'Windows' && @readlink($linkPath) !== false && ! @rmdir($linkPath)) {
+                @unlink($linkPath);
+            }
+            $restore();
+        }
+    }
+
+    /**
      * applyList=null (백업 부재 fallback): prune 이 아니어도 전체 덮어쓰기로 회귀.
      */
     public function test_apply_update_null_apply_list_falls_back_to_full_overwrite(): void

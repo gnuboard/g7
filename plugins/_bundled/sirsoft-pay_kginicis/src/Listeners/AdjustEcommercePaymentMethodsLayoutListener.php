@@ -7,7 +7,10 @@ namespace Plugins\Sirsoft\PayKginicis\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 
 /**
- * 이커머스 결제수단 설정 화면에서 KG 이니시스 간편결제를 PG 선택 불필요 항목으로 표시한다.
+ * 이커머스 결제수단 설정 화면에 KG 이니시스 테스트모드 경고를 주입한다.
+ *
+ * 간편결제의 PG 표시(PG 고정 배지)는 코어 레이아웃이 결제수단 카탈로그의 pg_locked /
+ * needs_pg 를 읽어 직접 처리하므로 이 리스너가 관여하지 않는다(#475).
  */
 class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterface
 {
@@ -24,10 +27,6 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
 
     private const TEST_MODE_CONDITION = 'kginicis_test_mode_status.data?.is_test_mode === true';
 
-    private const CORE_NO_PG_METHODS = "['point','deposit','free','dbank']";
-
-    private const KGINICIS_NO_PG_METHODS = "['point','deposit','free','dbank','kginicis_samsung_pay','kginicis_naverpay','kginicis_lpay','kginicis_kakaopay','kginicis_japan_paypay','kginicis_japan_cvs']";
-
     /**
      * 이 리스너가 구독하는 훅 정의를 반환합니다.
      *
@@ -37,7 +36,7 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
     {
         return [
             'core.layout_extension.after_apply' => [
-                'method' => 'markEasyPayMethodsAsPgNotRequired',
+                'method' => 'adjustPaymentMethodsLayout',
                 'type' => 'filter',
                 'priority' => 20,
             ],
@@ -52,48 +51,28 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
     public function handle(...$args): void {}
 
     /**
-     * 이커머스 결제수단 설정 레이아웃에 KG 이니시스 간편결제를 PG 선택 불필요 항목으로 반영합니다.
+     * 이커머스 결제수단 설정 레이아웃에 테스트모드 경고를 주입합니다.
+     *
+     * 과거에는 코어 레이아웃의 "PG 불필요 결제수단" 하드코딩 배열
+     * (`['point','deposit','free','dbank']`)을 문자열 치환해 간편결제를 그 목록에 끼워 넣어
+     * PG 선택 셀렉트를 숨겼다. 그러나 간편결제는 "PG 불필요" 가 아니라 "PG 고정" 이며,
+     * 이 표시 왜곡은 실제로 서버가 간편결제를 PG 없는 주문으로 오인하던 결함과 짝을 이뤘다(#475).
+     *
+     * 이제 결제수단 카탈로그가 `pg_locked` / `needs_pg` 를 내려주고 코어 레이아웃이 그 값으로
+     * 직접 3분기(PG 고정 배지 / PG 선택 / PG 불필요)하므로 문자열 치환이 불필요하다.
+     * (플러그인 간 누적 치환 충돌 위험도 함께 사라진다.)
      *
      * @param  array<string, mixed>  $layout  대상 레이아웃 정의
      * @param  int  $templateId  레이아웃이 속한 템플릿 ID
      * @return array<string, mixed> 보정된 레이아웃 정의
      */
-    public function markEasyPayMethodsAsPgNotRequired(array $layout, int $templateId): array
+    public function adjustPaymentMethodsLayout(array $layout, int $templateId): array
     {
         if (($layout['layout_name'] ?? '') !== self::TARGET_LAYOUT) {
             return $layout;
         }
 
-        $layout = $this->replaceNoPgMethodExpressions($layout);
-
         return $this->ensureTestModeWarning($layout);
-    }
-
-    /**
-     * 레이아웃 노드를 재귀 순회하며 코어의 PG 불필요 결제수단 목록을 이니시스 목록으로 치환합니다.
-     *
-     * @param  array<string, mixed>  $node  순회 대상 노드
-     * @return array<string, mixed> 치환이 반영된 노드
-     */
-    private function replaceNoPgMethodExpressions(array $node): array
-    {
-        foreach ($node as $key => $value) {
-            if (is_array($value)) {
-                $node[$key] = $this->replaceNoPgMethodExpressions($value);
-
-                continue;
-            }
-
-            if (is_string($value) && str_contains($value, self::CORE_NO_PG_METHODS)) {
-                $node[$key] = str_replace(
-                    self::CORE_NO_PG_METHODS,
-                    self::KGINICIS_NO_PG_METHODS,
-                    $value
-                );
-            }
-        }
-
-        return $node;
     }
 
     /**

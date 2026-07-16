@@ -464,7 +464,6 @@ class SeoRenderer implements SeoRendererInterface
             'googleAnalyticsId' => $meta['googleAnalyticsId'],
             'googleVerification' => $meta['googleVerification'],
             'naverVerification' => $meta['naverVerification'],
-            'cssPath' => $this->getCssPath(),
             'stylesheets' => $allStylesheets,
             'extraHeadTags' => '',
             'extraBodyEnd' => '',
@@ -730,28 +729,6 @@ class SeoRenderer implements SeoRendererInterface
         $tags .= '    <link rel="alternate" hreflang="x-default" href="'.e($baseUrl).'">'."\n";
 
         return $tags;
-    }
-
-    /**
-     * Vite 빌드 CSS 경로를 반환합니다.
-     *
-     * @return string CSS 경로
-     */
-    private function getCssPath(): string
-    {
-        $manifestPath = public_path('build/manifest.json');
-        if (file_exists($manifestPath)) {
-            $manifest = json_decode(file_get_contents($manifestPath), true);
-            foreach ($manifest as $entry) {
-                if (isset($entry['css'])) {
-                    foreach ($entry['css'] as $css) {
-                        return '/build/'.$css;
-                    }
-                }
-            }
-        }
-
-        return '/build/assets/app.css';
     }
 
     /**

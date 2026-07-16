@@ -12,6 +12,7 @@
 3. 실행 순서: 전역 → 그룹(web/api) → 라우트 → 컨트롤러
 4. permission 미들웨어: scope_type 기반 접근 제어 (except/only/menu 옵션 폐기)
 5. scope 체크: Permission.resource_route_key + owner_key + role_permissions.scope_type
+6. 확장 미들웨어 → getMiddleware() 선언(self-gate). SP Kernel 직접 조작·라우트 파일 자기 FQCN 금지
 ```
 
 ---
@@ -21,6 +22,7 @@
 - [핵심 원칙](#핵심-원칙)
 - [미들웨어 실행 순서](#미들웨어-실행-순서)
 - [미들웨어 등록 방식](#미들웨어-등록-방식)
+- [확장 미들웨어 선언 (self-gate)](#확장-미들웨어-선언-self-gate)
 - [올바른 등록 예시](#올바른-등록-예시)
 - [문제 상황과 해결책](#문제-상황과-해결책)
 - [디버깅 방법](#디버깅-방법)
@@ -81,6 +83,7 @@
 | `appendToGroup('api', ...)` | 인증 **후** | ✅ 가능 | 사용자별 설정 |
 | `appendToGroup('web', ...)` | 인증 **후** | ✅ 가능 | 사용자별 설정 |
 | `alias()` | 라우트 지정 시 | ✅ 가능 | 권한 체크 등 |
+| `getMiddleware()` (확장 self-gate) | 요청 시점 대상 매칭 | timing 에 따름 | 확장(모듈/플러그인)의 미들웨어 — [아래 절](#확장-미들웨어-선언-self-gate) |
 
 ### append vs appendToGroup 차이
 
@@ -90,6 +93,73 @@
 | **실행 시점** | 모든 요청의 최초 | 그룹 미들웨어 순서에 따름 |
 | **인증 상태** | 인증 전 | 인증 후 (Sanctum 이후) |
 | **적용 범위** | 모든 라우트 | 해당 그룹(web/api) 라우트만 |
+
+---
+
+## 확장 미들웨어 선언 (self-gate)
+
+확장(모듈/플러그인)은 자기 미들웨어를 web/api 그룹에 직접 넣지 않는다. 각 확장이 `getMiddleware()` 로 미들웨어와 그 부착 대상을 선언하고, 코어 게이트 래퍼(`ExtensionMiddlewareGate`)가 요청 시점에 라우트 이름·URI 를 대상 패턴과 대조해 매칭될 때만 해당 미들웨어를 실행한다. 코어 IDV 정책의 라우트명 인덱스 조회 모델과 동일하다.
+
+배경: 확장 라우트는 부팅 이후 지연 등록되고 확장 간 부팅 순서 보장이 없어, 부팅 시점에 다른 확장(또는 코어 특정 라우트)의 라우트를 순회해 미들웨어를 부착하는 방식은 성립하지 않는다. 요청 시점 매칭은 모든 라우트가 등록 완료된 뒤라 이 제약을 원천 회피한다.
+
+### getMiddleware() 스키마
+
+```php
+public function getMiddleware(): array
+{
+    return [
+        [
+            'class'   => VerifyGuestOrderToken::class,  // 미들웨어 FQCN (class_exists 검증)
+            'groups'  => ['api'],       // ['web'] | ['api'] | ['web','api']
+            'timing'  => 'after_core',  // 'after_core'(기본) | 'before_core'
+            'targets' => ['self'],      // 라우트명/URI 패턴 배열 (필수, 아래 카탈로그)
+        ],
+    ];
+}
+```
+
+| 필드 | 필수 | 의미 |
+|------|------|------|
+| `class` | O | 미들웨어 FQCN. `class_exists` 실패 시 등록 거부 |
+| `groups` | O | `['web']` \| `['api']` \| `['web','api']`. 빈 배열·미허용 그룹은 등록 거부 |
+| `timing` | X | `after_core`(기본, 코어 그룹 미들웨어 뒤) \| `before_core`(코어 전처리 전체보다 먼저). `before_core` 는 인증 결과·로케일에 의존하는 미들웨어에 쓰지 않는다 (응답 사전차단/전처리 전용) |
+| `targets` | O | 부착 대상 패턴 배열. 누락·빈 배열 시 등록 거부 |
+
+### targets 카탈로그
+
+| 값 | 의미 | 매칭 방식 |
+|----|------|----------|
+| `self` | 자기 확장 라우트 전체 | 항목 groups 의 각 그룹마다 `{group}.modules.{id}.*` / `{group}.plugins.{id}.*` prefix 로 치환 |
+| `all_extensions` | 모든 확장 라우트 (코어 제외) | 라우트명이 `*.modules.*` 또는 `*.plugins.*` |
+| `core` | 코어 라우트 전체 (확장 제외) | 라우트명이 확장 prefix 가 **아닌** 것 (negative 판별). 무명 라우트는 core 로 간주하지 않음 |
+| `everything` (별칭 `*`) | 코어 + 모든 확장 (전부) | 무조건 매칭 (무명 라우트 포함) |
+| `module:{id}` | 특정 모듈 라우트 전체 | `*.modules.{id}.*` |
+| `plugin:{id}` | 특정 플러그인 라우트 전체 | `*.plugins.{id}.*` |
+| 원시 glob 문자열 | 임의 라우트 이름 패턴 (`api.modules.foo.cart.*`) | `Str::is()` 라우트명 매칭 |
+| brace 문자열 | `{a,b}` 단일 그룹 전개 | 전개 후 각 glob 매칭 |
+| `/` 로 시작하는 URI 패턴 | 임의 요청 URI 패턴 (`/`, `/admin/*`) — 무명 라우트 타게팅용 | `$request->path()` 매칭 |
+
+`everything`·`*`, `all_extensions`, `core` 는 코어·타 확장에 개입하는 **광역 타게팅** 이다. 선언에 대상이 명문화되므로 감사 가능하며, 리뷰 시 주의 대상으로 표기한다. 자기 라우트 중 일부만 노려야 하면 `self` 대신 원시 glob 으로 정밀화한다.
+
+### 이중 매칭 (라우트명 + URI) — 무명 catch-all 대응
+
+target 이 `/` 로 시작하면 **URI 패턴**(`$request->path()` 매칭), 아니면 **라우트명 패턴**(`$request->route()?->getName()` 매칭)이다. 라우트명은 dot-notation 이라 `/` 로 시작하지 않으므로 구분이 명확하다. 코어 SSR 셸 catch-all 라우트는 `->name()` 이 없어(무명) 라우트명으로 타게팅할 수 없다 → 이런 무명 라우트를 대상으로 하려면 URI 패턴(`/`)이나 `everything` 을 쓴다. 라우트명 계열 target 은 무명 라우트에서 항상 miss 한다.
+
+### 게이트 동작과 무효화
+
+- 게이트 래퍼는 코어가 bootstrap 에서 web/api × before_core/after_core 로 4회 등록한다. 매칭 확장 미들웨어가 없으면 no-op 이라 확장 0개 환경에서도 무해하다.
+- registry 인덱스는 **활성 확장만** 포함한다. 비활성 확장의 미들웨어는 게이트가 실행하지 않는다.
+- 인덱스는 확장 활성/비활성/설치/제거/리로드 시 자동 무효화된다.
+
+### 금지 패턴
+
+| 금지 | 올바른 방식 |
+|------|------------|
+| 확장 SP `boot()` 에서 `HttpKernel::append/prepend/pushMiddlewareToGroup()` 직접 호출 | `getMiddleware()` 선언 |
+| 확장 SP 에서 `aliasMiddleware()` 직접 호출 | `getMiddleware()` 선언 |
+| 확장 라우트 파일에서 자기 `Http\Middleware\` FQCN 을 `->middleware(Foo::class)` 로 부착 | `getMiddleware()` 선언 |
+
+자동 차단: audit 룰 `extension-middleware-declarative-registration`, `extension-route-middleware-alias-reference`, `extension-middleware-gate-cache-coverage` (모두 error). 서드파티 확장의 구방식은 Laravel 공식 API 라 런타임 차단은 없고 문서로 안내한다.
 
 ---
 

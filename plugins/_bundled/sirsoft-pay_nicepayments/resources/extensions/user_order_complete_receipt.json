@@ -1,0 +1,196 @@
+{
+  "target_layout": "shop/order_complete",
+  "injections": [
+    {
+      "target_id": "order_complete_payment_summary",
+      "position": "append_child",
+      "components": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{orderData?.data?.payment?.pg_provider === 'nicepayments' && orderData?.data?.payment?.transaction_id && orderData?.data?.payment?.paid_at}}",
+          "props": {
+            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "comment": "간편결제 서비스명 표시",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(['NAVERPAY','KAKAOPAY','SAMSUNGPAY','APPLEPAY','PAYCO','SKPAY','SSGPAY','LPAY']).includes(orderData?.data?.payment?.payment_meta?.PayMethod)}}",
+              "props": {
+                "className": "flex-between mb-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary text-sm"
+                  },
+                  "text": "$t:sirsoft-pay_nicepayments.user.easy_pay_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-heading"
+                  },
+                  "text": "{{({'NAVERPAY':'네이버페이','KAKAOPAY':'카카오페이','SAMSUNGPAY':'삼성페이','APPLEPAY':'애플페이','PAYCO':'PAYCO','SKPAY':'11pay','SSGPAY':'SSG페이','LPAY':'L.pay'})[orderData?.data?.payment?.payment_meta?.PayMethod] ?? orderData?.data?.payment?.payment_meta?.PayMethod}}"
+                }
+              ]
+            },
+            {
+              "comment": "영수증 링크 행",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary text-sm"
+                  },
+                  "text": "$t:sirsoft-pay_nicepayments.user.receipt_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center gap-3"
+                  },
+                  "children": [
+                    {
+                      "comment": "결제 영수증",
+                      "type": "basic",
+                      "name": "A",
+                      "props": {
+                        "href": "https://npg.nicepay.co.kr/issue/IssueLoader.do?type=2&TID={{orderData?.data?.payment?.transaction_id}}",
+                        "target": "_blank",
+                        "rel": "noopener noreferrer",
+                        "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "file-text",
+                            "className": "w-3.5 h-3.5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-pay_nicepayments.user.view_receipt"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "현금영수증 조회 버튼",
+                      "type": "basic",
+                      "name": "Button",
+                      "if": "{{orderData?.data?.payment?.cash_receipt_type && !_local._npOcReceiptLoaded}}",
+                      "props": {
+                        "type": "button",
+                        "className": "inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline disabled:opacity-50"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "_npOcReceiptLoading": true
+                              }
+                            },
+                            {
+                              "handler": "apiCall",
+                              "auth_required": true,
+                              "target": "/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.id}}/receipt",
+                              "params": {
+                                "method": "GET"
+                              },
+                              "onSuccess": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "_npOcReceiptLoading": false,
+                                    "_npOcReceiptLoaded": true,
+                                    "_npOcCashReceiptUrl": "{{$response.cash_receipt_url}}"
+                                  }
+                                }
+                              ],
+                              "onError": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "_npOcReceiptLoading": false
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "receipt",
+                            "className": "w-3.5 h-3.5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-pay_nicepayments.user.view_cash_receipt"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "현금영수증 링크 (조회 후)",
+                      "type": "basic",
+                      "name": "A",
+                      "if": "{{_local._npOcReceiptLoaded && _local._npOcCashReceiptUrl}}",
+                      "props": {
+                        "href": "{{_local._npOcCashReceiptUrl}}",
+                        "target": "_blank",
+                        "rel": "noopener noreferrer",
+                        "className": "inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "receipt",
+                            "className": "w-3.5 h-3.5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-pay_nicepayments.user.view_cash_receipt"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

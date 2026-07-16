@@ -6,7 +6,6 @@ import { installOrderCompleteReceiptInjector } from './orderCompleteReceiptInjec
 import { installVbankInfoInjector } from './vbankInfoInjector';
 import { installPaymentCloseMessageListener } from './paymentCloseMessageListener';
 import { installCheckoutJpyPaymentMethodRestrictor } from './checkoutJpyPaymentMethodRestrictor';
-import { installCheckoutNaverpayBrandButton } from './checkoutNaverpayBrandButton';
 import { installAdminPaymentMethodBrandInjector } from './adminPaymentMethodBrandInjector';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
@@ -88,7 +87,6 @@ function initPlugin(): void {
 // (체크아웃 템플릿이 코어 영역이라 수정 불가하므로 클라이언트 사이드 우회)
 installOrderResponseInterceptor();
 installCheckoutJpyPaymentMethodRestrictor();
-installCheckoutNaverpayBrandButton();
 
 installMypageOrderShowInjector();
 installAdminOrderPaymentDisplayInjector();

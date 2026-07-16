@@ -16,6 +16,12 @@ interface PgPaymentData {
     order_name: string;
     amount: number;
     currency?: string;
+    /**
+     * 서버가 저장한 결제수단 ID — 확장 수단이면 확장 ID 그대로(예: 'kginicis_lpay').
+     * 이 값이 gopaymethod / CBT paymethod 매핑의 입력이 된다. 확장 결제수단이 1급 시민이
+     * 되면서 서버가 원본 수단을 알고 내려주므로, 프론트 인터셉터가 따로 전달할 필요가 없다(#475).
+     */
+    payment_method?: string;
     customer_name?: string;
     customer_email?: string;
     customer_phone?: string;
@@ -616,7 +622,11 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
     }
 
     const localState = window.__templateApp?.globalState?._local;
-    const paymentMethod = paramPaymentMethod ?? localState?.paymentMethod ?? 'card';
+    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다(#475).
+    const paymentMethod = paramPaymentMethod
+        ?? pgPaymentData.payment_method
+        ?? localState?.paymentMethod
+        ?? 'card';
 
     const G7Core = (window as any).G7Core;
 

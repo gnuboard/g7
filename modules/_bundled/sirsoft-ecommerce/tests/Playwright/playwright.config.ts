@@ -25,6 +25,18 @@ import { fileURLToPath } from 'node:url';
 // import.meta.url 로 재구성한다.
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * 코어 루트 (artisan / .env / Playwright 산출물의 기준 경로).
+ *
+ * 확장 config 는 확장 디렉토리에서 실행되지만, 산출물을 그 안에 쓰면 Windows 에서
+ * `{module|template}:update` 의 디렉토리 이동이 열린 핸들에 걸려 실패한다.
+ * 산출물은 코어 루트 아래로 모아 update 경로와 분리한다 (.gitignore 가 이미 덮는 위치).
+ */
+const CORE_ROOT = process.env.G7_ROOT || resolve(__dirname, '../../../../../');
+
+/** 확장별 산출물 격리 — 확장끼리 리포트를 덮어쓰지 않도록 slug 로 네임스페이스. */
+const ARTIFACT_SLUG = 'modules/sirsoft-ecommerce';
+
 function readEnvFile(filePath: string, key: string): string | null {
   if (!existsSync(filePath)) return null;
   const content = readFileSync(filePath, { encoding: 'utf-8' });
@@ -42,9 +54,7 @@ function resolveBaseUrl(): string {
   if (process.env.PLAYWRIGHT_BASE_URL) {
     return process.env.PLAYWRIGHT_BASE_URL;
   }
-  // 모듈 디렉토리 기준 6단계 상위 = 코어 루트 (.env 위치)
-  const coreRoot = process.env.G7_ROOT || resolve(__dirname, '../../../../../');
-  const appUrl = readEnvFile(resolve(coreRoot, '.env'), 'APP_URL');
+  const appUrl = readEnvFile(resolve(CORE_ROOT, '.env'), 'APP_URL');
   if (appUrl && !/^https?:\/\/localhost(:\d+)?\/?$/i.test(appUrl)) {
     return appUrl;
   }
@@ -55,12 +65,13 @@ function resolveBaseUrl(): string {
 
 export default defineConfig({
   testDir: './specs',
+  outputDir: resolve(CORE_ROOT, 'test-results', ARTIFACT_SLUG),
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['html', { outputFolder: resolve(CORE_ROOT, 'playwright-report', ARTIFACT_SLUG), open: 'never' }],
     ['list'],
   ],
   use: {

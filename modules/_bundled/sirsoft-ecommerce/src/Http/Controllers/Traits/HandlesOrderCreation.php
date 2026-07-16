@@ -8,7 +8,6 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\InsufficientStockException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
@@ -96,10 +95,13 @@ trait HandlesOrderCreation
 
             $order->load(['options', 'payment', 'shippingAddress']);
 
-            // PG 결제 필요 여부 판단
-            $paymentMethod = PaymentMethodEnum::tryFrom($order->payment->payment_method->value ?? $order->payment->payment_method);
-            $pgProvider = $this->orderProcessingService->determinePgProvider($paymentMethod->value);
-            $requiresPg = $paymentMethod->needsPgProvider()
+            // PG 결제 필요 여부 판단 — 확장 결제수단(간편결제)도 카탈로그 선언으로 올바르게 판정된다.
+            // enum 으로 판정하면 확장 ID 가 null → PG 불필요로 오인되어 관리자 알림이 오발송되고
+            // TempOrder 가 즉시 삭제되어 재결제가 막힌다(#475).
+            $pgProvider = $this->orderProcessingService->determinePgProvider(
+                $order->payment->paymentMethodId()
+            );
+            $requiresPg = $order->payment->needsPgProvider()
                 && ! in_array($pgProvider, ['manual', 'internal', 'none'])
                 // 결제할 금액이 0원이면(전액 마일리지/예치금 등 비현금 충당) PG 호출 불필요 —
                 // 주문 생성 시점에 이미 결제완료 확정됨. 결제수단 선택과 무관.
@@ -305,6 +307,11 @@ trait HandlesOrderCreation
             'customer_email' => $shippingAddress?->orderer_email,
             'customer_phone' => preg_replace('/[^0-9]/', '', $shippingAddress?->orderer_phone ?? ''),
             'customer_key' => $order->user_id ? "user_{$order->user_id}" : null,
+            // 선택된 결제수단 ID (확장 수단이면 확장 ID 그대로 — 예: 'kginicis_lpay').
+            // PG 플러그인의 결제 진입 핸들러가 이 값으로 결제창의 결제수단을 결정한다
+            // (예: kginicis_lpay → gopaymethod=LPAY). 서버가 확장 ID 를 1급 시민으로
+            // 저장하게 되면서 프론트 인터셉터가 원본 수단을 따로 전달할 필요가 없어졌다(#475).
+            'payment_method' => $order->payment?->paymentMethodId(),
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
  * 주문 생성 (결제하기) 요청
@@ -56,7 +57,14 @@ class CreateOrderRequest extends FormRequest
             'shipping.intl_postal_code' => 'required_with:shipping.address_line_1|nullable|string|max:20',
 
             // 결제 정보
-            'payment_method' => ['required', 'string', Rule::in(array_column(PaymentMethodEnum::cases(), 'value'))],
+            // 결제수단 화이트리스트는 카탈로그(builtin 8종 + 플러그인 등록 확장수단)가 SSoT.
+            // enum cases 로 제한하면 확장 결제수단(간편결제)이 422 로 막혀, 프론트가
+            // payment_method 를 'card' 로 위장해 보낼 수밖에 없게 된다(#475).
+            'payment_method' => [
+                'required',
+                'string',
+                Rule::in(app(PaymentMethodResolver::class)->allValidIds()),
+            ],
             'expected_total_amount' => 'required|numeric|min:0',
 
             // 배송 메모

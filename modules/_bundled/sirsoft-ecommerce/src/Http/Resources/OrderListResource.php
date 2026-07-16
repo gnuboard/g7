@@ -117,7 +117,7 @@ class OrderListResource extends BaseApiResource
             // 결제
             'payment' => $this->whenLoaded('payment', fn () => [
                 'payment_method' => $this->payment->payment_method,
-                'payment_method_label' => $this->payment->payment_method ? $this->payment->payment_method->label() : null,
+                'payment_method_label' => $this->payment->payment_method ? $this->payment->paymentMethodLabel() : null,
             ]),
 
             // 배송 (첫 번째)

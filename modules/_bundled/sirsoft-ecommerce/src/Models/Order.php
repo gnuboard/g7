@@ -404,7 +404,7 @@ class Order extends Model
      */
     public function getPaymentMethodLabel(): ?string
     {
-        return $this->payment?->payment_method?->getLabel();
+        return $this->payment?->paymentMethodLabel();
     }
 
     /**

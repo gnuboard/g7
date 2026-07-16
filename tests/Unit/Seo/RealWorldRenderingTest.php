@@ -770,27 +770,6 @@ class RealWorldRenderingTest extends TestCase
         }
     }
 
-    /**
-     * SeoRenderer.getCssPath()가 코어 Tailwind CSS를 반환해야 합니다.
-     * (코어 app.css가 아닌 Tailwind를 포함한 빌드 CSS)
-     */
-    public function test_css_path_includes_tailwind(): void
-    {
-        // getCssPath()는 Vite manifest에서 CSS를 찾으므로,
-        // manifest가 없으면 fallback '/build/assets/app.css'를 반환합니다.
-        // 실제로는 Tailwind 클래스가 포함된 CSS여야 합니다.
-        $renderer = app(\App\Seo\SeoRenderer::class);
-
-        // Reflection으로 getCssPath() 호출
-        $method = new \ReflectionMethod($renderer, 'getCssPath');
-        $method->setAccessible(true);
-        $cssPath = $method->invoke($renderer);
-
-        $this->assertIsString($cssPath);
-        // CSS 경로가 존재해야 함
-        $this->assertNotEmpty($cssPath);
-    }
-
     // ========================================================
     // 9. 복잡한 표현식 + 조건부 렌더링 검증
     // ========================================================
