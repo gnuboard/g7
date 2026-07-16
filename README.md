@@ -316,7 +316,7 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 | 가상 보호 행 | 코어/번들 확장에 내장된 한국어/영어는 별도 설치 없이 항상 활성/보호 상태로 노출 (수정/제거 차단) |
 | 보안 | 언어 번역 외의 PHP 실행 코드 포함 시 설치 차단 |
 
-공식 일본어(ja) 번들 12종(코어 + 주요 모듈/플러그인/템플릿) 이 즉시 사용 가능하며, 인스톨러 4단계에서 모듈/플러그인/템플릿 선택과 종속된 언어팩 카드가 자동 연동되어 함께 설치할 수 있습니다.
+공식 일본어(ja) 번들 14종(코어 + 주요 모듈/플러그인/템플릿) 이 즉시 사용 가능하며, 인스톨러 4단계에서 모듈/플러그인/템플릿 선택과 종속된 언어팩 카드가 자동 연동되어 함께 설치할 수 있습니다.
 
 > 상세: [docs/extension/language-packs.md](docs/extension/language-packs.md)
 
@@ -388,6 +388,8 @@ cp .env.example .env
 | 플러그인 | 설명 |
 |---------|------|
 | **sirsoft-pay_kginicis** | KG이니시스 결제 연동 |
+| **sirsoft-pay_nicepayments** | 나이스페이먼츠 결제 연동 (통합결제창) |
+| **sirsoft-pay_nhnkcp** | NHN KCP 결제 연동 (Standard Pay) |
 | **sirsoft-verification_kginicis** | KG이니시스 본인인증 |
 | **sirsoft-daum_postcode** | 다음 우편번호 검색 |
 | **sirsoft-marketing** | 마케팅 도구 |
@@ -416,6 +418,8 @@ cp .env.example .env
 | **g7-plugin-sirsoft-gdpr-ja** | 개인정보 보호(GDPR) 플러그인 일본어 |
 | **g7-plugin-sirsoft-marketing-ja** | 마케팅 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG이니시스 결제 플러그인 일본어 |
+| **g7-plugin-sirsoft-pay_nicepayments-ja** | 나이스페이먼츠 결제 플러그인 일본어 |
+| **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-verification_kginicis-ja** | KG이니시스 본인인증 플러그인 일본어 |
 | **g7-template-sirsoft-admin_basic-ja** | 관리자 기본 템플릿 일본어 |
 | **g7-template-sirsoft-basic-ja** | 사용자 기본 템플릿 일본어 |
