@@ -28,11 +28,11 @@ class OrderPaymentResource extends BaseApiResource
             'payment_status_label' => $this->payment_status ? $this->payment_status->label() : null,
             'payment_status_variant' => $this->payment_status ? $this->payment_status->variant() : null,
             'payment_method' => $this->payment_method,
-            'payment_method_label' => $this->payment_method ? $this->payment_method->label() : null,
-            'payment_type_label' => $this->payment_method ? $this->payment_method->label() : null,
+            'payment_method_label' => $this->payment_method ? $this->paymentMethodLabel() : null,
+            'payment_type_label' => $this->payment_method ? $this->paymentMethodLabel() : null,
             // PG 환불(취소)이 필요한 결제수단인지 — 취소 모달의 'PG 함께 취소' 체크박스·'환불 우선순위' 라디오
             // 노출 여부 SSoT(무통장/포인트/예치금/무료는 false → 두 UI 숨김). U1·A28 공유 플래그.
-            'requires_pg_cancellation' => (bool) $this->payment_method?->needsPgProvider(),
+            'requires_pg_cancellation' => $this->payment_method ? $this->needsPgProvider() : false,
             'pg_provider' => $this->pg_provider,
             'transaction_id' => $this->transaction_id,
             'merchant_order_id' => $this->merchant_order_id,
@@ -137,7 +137,7 @@ class OrderPaymentResource extends BaseApiResource
      */
     private function getAccountInfo(): ?string
     {
-        $method = $this->payment_method?->value ?? null;
+        $method = $this->paymentMethodId();
 
         if ($method === PaymentMethodEnum::CARD->value) {
             $info = $this->card_name ?? '';

@@ -208,8 +208,11 @@ describe('주문 목록 partial 구조 검증 (_list.json)', () => {
             expect(listJsonStr).not.toContain('order.multi_currency_total');
         });
 
-        it('다통화 단가가 item.mc_unit_price를 사용해야 함', () => {
-            expect(listJsonStr).toContain('item.mc_unit_price');
+        it('단가가 item.unit_price_formatted를 사용해야 함', () => {
+            // 마이페이지 주문목록은 옵션 소계(mc_subtotal_price) 로 다통화를 표시하고
+            // 단가는 포맷 문자열(unit_price_formatted) 로만 노출한다. 단가 단위의
+            // 다통화 필드(mc_unit_price)는 이 레이아웃에 존재하지 않는다(주문완료 화면 전용).
+            expect(listJsonStr).toContain('item.unit_price_formatted');
             expect(listJsonStr).not.toContain('item.multi_currency_unit_price');
         });
 
@@ -225,8 +228,11 @@ describe('주문 목록 partial 구조 검증 (_list.json)', () => {
             expect(listJsonStr).toContain('order.total_shipping_amount');
         });
 
-        it('다통화 배송비가 order.mc_total_shipping_amount를 사용해야 함', () => {
-            expect(listJsonStr).toContain('order.mc_total_shipping_amount');
+        it('다통화 총액이 order.mc_total_amount를 사용해야 함', () => {
+            // 배송비 단위의 다통화 필드(mc_total_shipping_amount)는 없다. 다통화 금액은
+            // 주문 총액(mc_total_amount) 단위로만 표시된다(위 '다통화 금액' 테스트와 동일 근거).
+            expect(listJsonStr).toContain('order.mc_total_amount');
+            expect(listJsonStr).not.toContain('order.mc_total_shipping_amount');
         });
     });
 

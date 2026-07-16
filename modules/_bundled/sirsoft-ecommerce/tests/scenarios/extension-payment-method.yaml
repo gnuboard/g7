@@ -1,0 +1,69 @@
+feature: extension_payment_method
+description: >
+  PG 플러그인이 등록하는 확장 결제수단(간편결제)을 1급 시민으로 처리한다.
+  능력(PG 필요 여부 / 라벨 / 환불수단 / PG 고정)의 해석은 결제수단 설정 카탈로그를 SSoT 로
+  삼으며, 코어 PaymentMethodEnum 에 case 가 없는 확장 ID 도 동일하게 판정된다.
+
+  이슈 #475: 확장 결제수단이 pg_provider=null 로 등록돼 서버가 "PG 결제가 아닌 주문" 으로
+  오인했고, 그 결과 (a) 결제 실패한 주문에 관리자 신규주문 알림이 발송되고 (b) 임시주문이
+  즉시 삭제돼 재결제가 불가능했다. 두 결함은 하나의 원인이다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Payment/ExtensionPaymentMethodRegressionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/OrderControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderCancellationControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/PaymentMethodResolverTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/OrderPaymentTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsOrder.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/payment-method-pg-locked.spec.ts
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Upgrades/BackfillEasyPayPgProviderTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Upgrades/BackfillEasyPayPgProviderTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Upgrades/BackfillEasyPayPgProviderTest.php
+
+# 입력 axis — 능력 해석에 영향을 주는 변수
+axes:
+  # 결제수단의 출처: 코어 8종 vs PG 플러그인이 등록한 확장 ID
+  method_kind: [builtin, extension]
+  # 카탈로그가 능력을 선언했는가 (플러그인이 신규 키를 안 쓰는 하위호환 경로)
+  capability_declared: [declared, undeclared]
+  # 능력별 판정 표면
+  capability: [needs_pg, label, refund_method, pg_locked]
+
+exclusions:
+  - method_kind: builtin
+    capability_declared: undeclared
+    reason: "builtin 은 코어가 enum 에서 능력을 항상 파생하므로 '미선언' 상태가 존재하지 않는다"
+
+# 후속 효과 체인 — 능력 오판이 낳는 실패들
+effects:
+  # 저장/조회
+  - extension_id_persisted_as_is          # payment_method 컬럼에 확장 ID 그대로 (enum 캐스트 ValueError 없음)
+  - builtin_capability_unchanged          # 코어 8종 판정 불변 (무통장 입금확인 · 가상계좌 환불 회귀 차단)
+  # 주문 생성
+  - extension_id_passes_validation        # 확장 ID 가 422 로 막히지 않음 (프론트 위장 불필요)
+  - unregistered_id_still_rejected        # 카탈로그 미등록 값은 여전히 차단 (검증 우회 방지)
+  - pg_provider_resolved_not_none         # determinePgProvider 가 'none' 이 아닌 실제 PG 반환
+  - requires_pg_payment_true              # 주문 응답의 requires_pg_payment=true
+  - pg_payment_handler_present            # provider 선언 핸들러가 응답에 실려 템플릿이 dispatch
+  - temp_order_preserved                  # PG 결제 주문이므로 임시주문 미삭제 → 재결제 가능
+  - admin_new_order_notification_deferred # 관리자 신규주문 알림이 주문 생성 시점에 발화하지 않음
+  # 취소/환불
+  - refund_method_is_pg                   # 환불수단 PG (BANK 로 떨어지면 카드 취소 누락)
+  - pg_refund_hook_invoked                # 취소 시 PG 환불 훅 진입
+  # 관리자 화면
+  - admin_shows_pg_locked_badge           # 확장 결제수단이 "PG 고정 · {PG명}" 배지로 표시
+  - admin_hides_pg_select_for_locked      # PG 고정 수단은 PG 선택 셀렉트 미노출
+  - admin_shows_pg_select_for_unlocked    # 일반 PG 수단은 셀렉트 노출 (회귀 차단)
+  # 기존 설치 환경
+  - saved_null_pg_provider_self_healed    # 저장된 pg_provider=null 이 정의값으로 덮임
+  - upgrade_step_backfills_settings_file  # upgrade step 이 저장 파일 자체도 정정 (멱등)
+
+sub_flows:
+  - id: legacy_card_orders
+    description: 기존에 payment_method='card' 로 저장된 간편결제 주문 (백필하지 않음)
+    effects:
+      - builtin_capability_unchanged
+      - refund_method_is_pg

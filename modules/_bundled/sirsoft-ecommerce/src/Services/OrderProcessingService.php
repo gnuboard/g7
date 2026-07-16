@@ -237,15 +237,11 @@ class OrderProcessingService
      */
     protected function orderRequiresPgPayment(Order $order): bool
     {
-        $methodValue = $order->payment?->payment_method;
-        $methodValue = $methodValue instanceof \BackedEnum ? $methodValue->value : $methodValue;
-        $paymentMethod = PaymentMethodEnum::tryFrom((string) $methodValue);
-
-        if ($paymentMethod === null || ! $paymentMethod->needsPgProvider()) {
+        if (! $order->payment || ! $order->payment->needsPgProvider()) {
             return false;
         }
 
-        $pgProvider = $this->determinePgProvider($paymentMethod->value);
+        $pgProvider = $this->determinePgProvider($order->payment->paymentMethodId());
 
         return ! in_array($pgProvider, ['manual', 'internal', 'none'], true)
             && (float) $order->total_due_amount > 0;
@@ -1495,7 +1491,7 @@ class OrderProcessingService
             }
 
             // 재고 차감 + 장바구니 처리 (payment_complete 타이밍: 트랜잭션 내부에서 실행)
-            $paymentMethodId = $order->payment->payment_method->value;
+            $paymentMethodId = $order->payment->paymentMethodId();
             $timing = $this->settingsService->getStockDeductionTiming($paymentMethodId);
             if ($timing === 'payment_complete') {
                 $this->stockService->deductStock($order->load('options'));

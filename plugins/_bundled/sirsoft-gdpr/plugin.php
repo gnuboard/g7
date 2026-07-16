@@ -8,6 +8,11 @@ use App\Enums\MenuPermissionType;
 use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Models\Menu;
+use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprUserWithdrawListener;
 
 /**
  * GDPR (일반 데이터 보호 규정) 플러그인
@@ -340,6 +345,28 @@ class Plugin extends AbstractPlugin
     }
 
     /**
+     * 이 플러그인이 등록할 HTTP 미들웨어 선언을 반환합니다.
+     *
+     * functional cookie 게이팅 미들웨어(CookieConsentMiddleware)를 코어 self-gate 방식으로
+     * 선언합니다. EDPB Guidelines 2/2023 §16(사전 차단) 충족을 위해 모든 web/api 응답을
+     * 대상으로 하므로 targets=['everything'](광역 타게팅) + timing=before_core(코어 전처리 전
+     * 응답 처리)로 지정합니다. 코어 ExtensionMiddlewareGate 가 요청 시점에 실행합니다.
+     *
+     * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}>
+     */
+    public function getMiddleware(): array
+    {
+        return [
+            [
+                'class' => CookieConsentMiddleware::class,
+                'groups' => ['web', 'api'],
+                'timing' => 'before_core',
+                'targets' => ['everything'],
+            ],
+        ];
+    }
+
+    /**
      * 플러그인 설정 값 반환 (기본값)
      *
      * @return array 설정 값 배열
@@ -537,10 +564,10 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
-            \Plugins\Sirsoft\Gdpr\Listeners\GdprUserWithdrawListener::class,
-            \Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener::class,
-            \Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener::class,
-            \Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener::class,
+            GdprUserWithdrawListener::class,
+            GdprUserDeleteListener::class,
+            GdprAuthLogoutListener::class,
+            GdprAuthConsentListener::class,
         ];
     }
 }

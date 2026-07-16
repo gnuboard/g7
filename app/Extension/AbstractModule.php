@@ -552,6 +552,37 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 이 모듈이 등록할 HTTP 미들웨어 선언을 반환합니다.
+     *
+     * 모듈이 web/api 그룹에 미들웨어를 직접 넣는 대신, 코어의 self-gate 게이트
+     * (`ExtensionMiddlewareGate`)가 요청 시점에 라우트 이름·URI 를 각 선언의 `targets`
+     * 패턴과 대조해 매칭될 때만 해당 미들웨어를 실행합니다. 코어 IDV 정책의 라우트명
+     * 인덱스 조회 모델과 동일합니다. 미들웨어 클래스 자체는 게이트 로직을 갖지 않아도
+     * 됩니다 (순수하게 유지).
+     *
+     * 기본적으로 빈 배열 반환. 미들웨어가 필요한 모듈만 오버라이드합니다.
+     *
+     * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}>
+     *                                                                                                                          [
+     *                                                                                                                          [
+     *                                                                                                                          'class'   => VerifyGuestOrderToken::class,  // 미들웨어 FQCN (class_exists 검증)
+     *                                                                                                                          'groups'  => ['api'],       // 등록 그룹 배열: ['web'] | ['api'] | ['web','api']
+     *                                                                                                                          'timing'  => 'after_core',  // 'after_core'(기본, 코어 그룹 미들웨어 뒤) | 'before_core'(코어 전처리보다 먼저)
+     *                                                                                                                          'targets' => ['self'],      // 라우트명/URI 패턴 배열. 'self' = 자기 확장 prefix 자동 치환
+     *                                                                                                                          ],
+     *                                                                                                                          ]
+     *
+     * targets 카탈로그: 'self'(자기 라우트) | 'all_extensions'(모든 확장, 코어 제외) |
+     * 'core'(코어만) | 'everything'·'*'(전부) | 'module:{id}' | 'plugin:{id}' |
+     * 원시 라우트명 glob·brace(`api.modules.x.*`, `{a,b}`) | '/' 로 시작하는 URI 패턴(무명 라우트용).
+     * targets 누락/빈배열 시 등록 거부. 상세: docs/backend/middleware.md "확장 미들웨어 선언".
+     */
+    public function getMiddleware(): array
+    {
+        return [];
+    }
+
+    /**
      * Declarative i18n getter family — 모듈이 선언하는 다국어/SSoT 데이터 4종.
      *
      * 모두 default `[]` 반환 (override 미선택 시 무영향). 각 메서드 결과는 `ModuleManager` 가
@@ -1022,11 +1053,11 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      *
      * @param  string  $pageType  레이아웃 meta.seo.page_type
      * @return array<string, array{expr: string, label: string|array<string, string>}>
-     *               키별 데이터 경로 메타 — 예:
-     *               [
-     *               'image' => ['expr' => '{{product.data.thumbnail_url}}', 'label' => 'vendor-module::seo.auto_value.product_image'],
-     *               'image_alt' => ['expr' => '{{product.data.name}}', 'label' => 'vendor-module::seo.auto_value.product_name'],
-     *               ]
+     *                                                                                 키별 데이터 경로 메타 — 예:
+     *                                                                                 [
+     *                                                                                 'image' => ['expr' => '{{product.data.thumbnail_url}}', 'label' => 'vendor-module::seo.auto_value.product_image'],
+     *                                                                                 'image_alt' => ['expr' => '{{product.data.name}}', 'label' => 'vendor-module::seo.auto_value.product_name'],
+     *                                                                                 ]
      */
     public function seoOgDefaultMeta(string $pageType): array
     {
@@ -1038,7 +1069,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      *
      * @param  string  $pageType  페이지 타입
      * @return array<string, array{expr: string, label: string|array<string, string>}> 키별 데이터 경로 메타
-     *               (label = 번역 키 권장 — seoOgDefaultMeta 참조)
+     *                                                                                 (label = 번역 키 권장 — seoOgDefaultMeta 참조)
      */
     public function seoTwitterDefaultMeta(string $pageType): array
     {
@@ -1054,11 +1085,11 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      *
      * @param  string  $pageType  페이지 타입
      * @return array<string, array{expr: string, label: string|array<string, string>}>
-     *               점 경로 키별 데이터 경로 메타 (label = 번역 키 권장 — seoOgDefaultMeta 참조) — 예:
-     *               [
-     *               'name' => ['expr' => '{{product.data.name}}', 'label' => 'vendor-module::seo.auto_value.product_name'],
-     *               'offers.price' => ['expr' => '{{product.data.selling_price}}', 'label' => 'vendor-module::seo.auto_value.product_price'],
-     *               ]
+     *                                                                                 점 경로 키별 데이터 경로 메타 (label = 번역 키 권장 — seoOgDefaultMeta 참조) — 예:
+     *                                                                                 [
+     *                                                                                 'name' => ['expr' => '{{product.data.name}}', 'label' => 'vendor-module::seo.auto_value.product_name'],
+     *                                                                                 'offers.price' => ['expr' => '{{product.data.selling_price}}', 'label' => 'vendor-module::seo.auto_value.product_price'],
+     *                                                                                 ]
      */
     public function seoStructuredDataMeta(string $pageType): array
     {

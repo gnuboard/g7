@@ -1,0 +1,34 @@
+{
+    "identifier": "sirsoft-pay_nhnkcp",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "NHN KCP",
+        "en": "NHN KCP"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_nhnkcp",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_nhnkcp/blob/main/CHANGELOG.md",
+    "description": {
+        "ko": "NHN KCP 결제 게이트웨이 (Standard Pay 연동)",
+        "en": "NHN KCP payment gateway (Standard Pay integration)"
+    },
+    "g7_version": ">=7.0.5",
+    "dependencies": {
+        "modules": {
+            "sirsoft-ecommerce": ">=1.0.0-beta.5"
+        },
+        "plugins": {}
+    },
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

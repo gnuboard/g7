@@ -257,6 +257,55 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
         $this->assertFalse($toss['is_active']); // 기본값: 비활성
     }
 
+    /**
+     * @scenario mark_form=svg, requires_ios=false, device=non_ios
+     *
+     * @effects brand_mark_flows_to_cached, requires_ios_flag_carried, none_form_cached_brand_mark_null
+     */
+    public function test_brand_mark_and_requires_ios_flow_from_definition_to_merged_catalog(): void
+    {
+        // 플러그인이 brand_mark(배지/SVG) + requires_ios 를 등록하면
+        // 병합 카탈로그가 _cached_brand_mark / requires_ios 로 노출해 레이아웃까지 전달한다.
+        $this->addPaymentMethodFilter(function (array $methods) {
+            $methods[] = [
+                'id' => 'pgtest_badge',
+                'name' => ['ko' => '배지결제', 'en' => 'Badge Pay'],
+                'description' => ['ko' => '배지 결제', 'en' => 'Badge Payment'],
+                'icon' => 'wallet',
+                'source' => 'plugin:sirsoft-pgtest',
+                'brand_mark' => ['text' => 'B', 'class' => 'bg-green-500 text-white'],
+                'defaults' => ['is_active' => true, 'min_order_amount' => 0, 'stock_deduction_timing' => 'payment_complete'],
+            ];
+            $methods[] = [
+                'id' => 'pgtest_svg_ios',
+                'name' => ['ko' => 'SVG결제', 'en' => 'SVG Pay'],
+                'description' => ['ko' => 'SVG 결제', 'en' => 'SVG Payment'],
+                'icon' => 'smartphone',
+                'source' => 'plugin:sirsoft-pgtest',
+                'brand_mark' => ['svg' => '<svg><rect fill="#03C75A"/></svg>'],
+                'requires_ios' => true,
+                'defaults' => ['is_active' => true, 'min_order_amount' => 0, 'stock_deduction_timing' => 'payment_complete'],
+            ];
+
+            return $methods;
+        });
+
+        $this->service->clearCache();
+        $methods = collect($this->service->getSettings('order_settings')['payment_methods'])->keyBy('id');
+
+        $badge = $methods->get('pgtest_badge');
+        $this->assertSame(['text' => 'B', 'class' => 'bg-green-500 text-white'], $badge['_cached_brand_mark']);
+        $this->assertArrayNotHasKey('requires_ios', $badge);
+
+        $svg = $methods->get('pgtest_svg_ios');
+        $this->assertSame(['svg' => '<svg><rect fill="#03C75A"/></svg>'], $svg['_cached_brand_mark']);
+        $this->assertTrue($svg['requires_ios']);
+
+        // brand_mark 없는 builtin 은 _cached_brand_mark 가 null.
+        $dbank = $methods->get('dbank');
+        $this->assertNull($dbank['_cached_brand_mark']);
+    }
+
     // ──────────────────────────────────────────────
     // 결제수단 병합 (사용자 저장 설정 오버라이드)
     // ──────────────────────────────────────────────

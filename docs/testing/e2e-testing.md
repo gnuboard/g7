@@ -74,13 +74,26 @@ test('@smoke 홈페이지 마운트', async ({ page }) => {
 
 기존 PHPUnit testsuite (`Unit`/`Feature`/`Module`/`Plugin`) 및 Vitest 의 코어/확장 분리 원칙과 동일.
 
-확장이 자체 config 를 가지므로 **확장 디렉토리에서 직접 실행**:
+확장은 `tests/Playwright/playwright.config.ts` 에 자체 config 를 가지므로 **확장 디렉토리에서 직접 실행**한다.
+config 가 확장 루트가 아니라 `tests/Playwright/` 아래에 있으므로 `npx playwright test` 를 인자 없이 부르면
+config 를 찾지 못한다 — `npm run test:e2e` (config 경로가 이미 묶여 있음) 를 쓴다.
 
 ```powershell
 cd modules/_bundled/sirsoft-ecommerce
-$env:PLAYWRIGHT_BASE_URL='https://g7.dev'
-npx playwright test
+npm run test:e2e                                    # 확장 전체
+npm run test:e2e -- specs/admin/some.spec.ts        # 단일 spec
+npm run test:e2e:ui                                 # UI 디버깅 모드
 ```
+
+base URL 은 코어 `.env` 의 `APP_URL` 에서 자동 해석된다 (`PLAYWRIGHT_BASE_URL` 로 덮어쓸 수 있다).
+
+### 실행 시 유의 (경험칙)
+
+| 항목 | 내용 |
+| --- | --- |
+| 산출물 위치 | 리포트·trace 는 **코어 루트**의 `test-results/{type}/{id}/`, `playwright-report/{type}/{id}/` 에 쌓인다. 확장 디렉토리 안에 쌓으면 Windows 에서 `{module\|template}:update` 의 디렉토리 이동이 열린 핸들에 걸려 실패한다 |
+| 레이아웃 수정 후 | 레이아웃 JSON 을 고쳤으면 `{type}:update {id} --force` **+ `template:cache-clear {템플릿}`** 까지 해야 브라우저에 반영된다. 레이아웃은 템플릿 캐시(`/api/layouts/{template}/...`)로 서빙되므로 `cache:clear` 만으로는 갱신되지 않는다 |
+| 공유 상태 | 같은 관리자 설정 화면을 건드리는 spec 이 병렬로 돌면 서로의 저장 상태를 덮어써 실패할 수 있다. 설정 저장을 수반하는 spec 은 `--workers=1` 로 확인한다 |
 
 ## §4. 데이터 생성 위치 — 책임 분리 매트릭스
 

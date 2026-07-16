@@ -509,6 +509,37 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
+     * 이 플러그인이 등록할 HTTP 미들웨어 선언을 반환합니다.
+     *
+     * 플러그인이 web/api 그룹에 미들웨어를 직접 넣는 대신, 코어의 self-gate 게이트
+     * (`ExtensionMiddlewareGate`)가 요청 시점에 라우트 이름·URI 를 각 선언의 `targets`
+     * 패턴과 대조해 매칭될 때만 해당 미들웨어를 실행합니다. 코어 IDV 정책의 라우트명
+     * 인덱스 조회 모델과 동일합니다. 미들웨어 클래스 자체는 게이트 로직을 갖지 않아도
+     * 됩니다 (순수하게 유지).
+     *
+     * 기본적으로 빈 배열 반환. 미들웨어가 필요한 플러그인만 오버라이드합니다.
+     *
+     * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}>
+     *                                                                                                                          [
+     *                                                                                                                          [
+     *                                                                                                                          'class'   => VbankNotifyIpWhitelist::class,  // 미들웨어 FQCN (class_exists 검증)
+     *                                                                                                                          'groups'  => ['web'],       // 등록 그룹 배열: ['web'] | ['api'] | ['web','api']
+     *                                                                                                                          'timing'  => 'after_core',  // 'after_core'(기본, 코어 그룹 미들웨어 뒤) | 'before_core'(코어 전처리보다 먼저)
+     *                                                                                                                          'targets' => ['web.plugins.vendor-plugin.payment.vbank-notify'],  // 라우트명/URI 패턴 배열
+     *                                                                                                                          ],
+     *                                                                                                                          ]
+     *
+     * targets 카탈로그: 'self'(자기 라우트) | 'all_extensions'(모든 확장, 코어 제외) |
+     * 'core'(코어만) | 'everything'·'*'(전부) | 'module:{id}' | 'plugin:{id}' |
+     * 원시 라우트명 glob·brace(`web.plugins.x.*`, `{a,b}`) | '/' 로 시작하는 URI 패턴(무명 라우트용).
+     * targets 누락/빈배열 시 등록 거부. 상세: docs/backend/middleware.md "확장 미들웨어 선언".
+     */
+    public function getMiddleware(): array
+    {
+        return [];
+    }
+
+    /**
      * 이 플러그인이 등록할 IDV(본인인증) 정책 선언을 반환합니다.
      *
      * 반환된 정책은 `PluginManager` 가 activate/update 시

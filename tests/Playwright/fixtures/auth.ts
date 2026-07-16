@@ -18,6 +18,25 @@
  */
 import { test as base, type Page } from '@playwright/test';
 import { execSync } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// ESM 환경(package.json "type": "module")에서는 __dirname 이 정의되지 않으므로
+// import.meta.url 로 재구성한다.
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * `php artisan` 을 실행할 코어 루트를 결정한다.
+ *
+ * 확장(모듈/플러그인/템플릿) 은 자기 디렉토리의 config 로 Playwright 를 띄우므로 `process.cwd()`
+ * 가 확장 디렉토리다 — 그 위치에는 artisan 이 없다. 본 파일은 항상 `<코어루트>/tests/Playwright/fixtures/`
+ * 에 있으므로 자기 위치에서 코어 루트를 역산한다 (경로 하드코딩 회피).
+ *
+ * @returns artisan 이 존재하는 코어 루트 절대경로
+ */
+function resolveCoreRoot(): string {
+  return process.env.G7_ROOT || resolve(__dirname, '../../../');
+}
 
 /**
  * 임의 권한 식별자(코어/모듈/플러그인) 로 Sanctum 토큰을 발급한다.
@@ -35,7 +54,7 @@ export function issueToken(...permissions: string[]): string {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const stdout = execSync(command, {
-        cwd: process.env.G7_ROOT || process.cwd(),
+        cwd: resolveCoreRoot(),
         encoding: 'utf-8',
         env: {
           ...process.env,

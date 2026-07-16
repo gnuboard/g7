@@ -16,6 +16,14 @@
 
 ---
 
+## 요청별 배송국가 해석 (ResolveShippingCountry 미들웨어)
+
+위 두 엔드포인트는 회원이 **저장해 둔** 선호 배송국가를 조회·저장한다. 이와 별개로, 상품 목록·장바구니·결제(`products/*`, `cart/*`, `checkout/*`)와 비회원 주문 생성(`user/orders`) 요청은 요청 시점의 배송국가를 해석하는 `ResolveShippingCountry` 미들웨어를 거친다. 이 미들웨어는 로그인 회원의 저장값·요청 파라미터·기본 배송국가를 순서대로 반영해 이후 배송비/배송가능 여부 계산의 기준 국가를 확정한다.
+
+이 미들웨어는 코어의 확장 미들웨어 self-gate(`Module::getMiddleware()` 의 `targets` 로 위 라우트명에만 정밀 타게팅)로 부착된다. 라우트 파일에서 직접 부착하던 이전 방식과 적용 대상·동작은 동일하다. 상세: [docs/backend/middleware.md "확장 미들웨어 선언 (self-gate)"](../../../../../docs/backend/middleware.md).
+
+---
+
 
 ### GET /api/modules/sirsoft-ecommerce/user/shipping-country
 <!-- @generated:start:api.modules.sirsoft-ecommerce.user.shipping-country.show -->

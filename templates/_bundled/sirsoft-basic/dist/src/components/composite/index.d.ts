@@ -10,6 +10,8 @@ export { default as MobileNav } from './MobileNav';
 export { NotificationCenter } from './NotificationCenter';
 export type { NotificationCenterProps, NotificationItem } from './NotificationCenter';
 export { default as ProductCard } from './ProductCard';
+export { BrandMark } from './BrandMark';
+export type { BrandMarkProps, BrandMarkData } from './BrandMark';
 export { default as ImageGallery } from './ImageGallery';
 export { default as ProductImageViewer } from './ProductImageViewer';
 export { default as QuantitySelector } from './QuantitySelector';
@@ -56,6 +58,7 @@ export declare const compositeComponents: {
     SlotContainer: () => Promise<typeof import("./SlotContainer")>;
     NotificationCenter: () => Promise<typeof import("./NotificationCenter")>;
     ProductCard: () => Promise<typeof import("./ProductCard")>;
+    BrandMark: () => Promise<typeof import("./BrandMark")>;
     ImageGallery: () => Promise<typeof import("./ImageGallery")>;
     ProductImageViewer: () => Promise<typeof import("./ProductImageViewer")>;
     QuantitySelector: () => Promise<typeof import("./QuantitySelector")>;

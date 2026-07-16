@@ -111,6 +111,9 @@ import { handlerMap } from './handlers';
 // IDV Modal Launcher (engine-v1.46.0+)
 import { registerSirsoftBasicIdentityLauncher } from './handlers/identityLauncher';
 
+// 서버 기기 감지값(appConfig.isIos) 클라이언트 보정 (iPadOS 데스크탑 UA 케이스)
+import { correctIosDeviceState } from './handlers/deviceCorrection';
+
 // 레이아웃 편집기 커스텀 위젯(icon-picker 등) 등록
 import { registerSirsoftBasicEditorWidgets } from './layout-editor/registerEditorWidgets';
 
@@ -151,6 +154,10 @@ export function initTemplate(): void {
 
         // IDV Modal Launcher 등록 (window.G7Core.identity.setLauncher 사용)
         registerSirsoftBasicIdentityLauncher();
+
+        // 서버 UA 판정이 놓친 iPadOS(데스크탑 UA) 를 클라 신호로 보정 → appConfig.isIos.
+        // 애플페이 iOS 게이팅(체크아웃 레이아웃 iteration 필터)이 이 값을 참조한다.
+        correctIosDeviceState();
       } else {
         retryCount++;
         if (retryCount <= maxRetries) {

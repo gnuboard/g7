@@ -198,7 +198,10 @@ class SettingsService
             $result[$frontendKey] = $this->castValue($value, $fieldSchema);
         }
 
-        return $result;
+        // 확장이 요청 컨텍스트 기반 값(예: 기기 유형)을 appConfig 에 주입할 수 있도록 필터 훅 제공.
+        // config/frontend.php 는 정적 config 값만 담으므로, 요청별로 달라지는 값은 이 훅으로 확장이 채운다.
+        // 프론트는 window.G7Config.appConfig → _global.appConfig 로 그대로 받는다.
+        return HookManager::applyFilters('core.frontend.filter_app_config', $result);
     }
 
     /**

@@ -164,7 +164,19 @@ test.describe('@sirsoft-ecommerce 배송국가 다국어', () => {
     const locales = Object.keys(localeNames);
     expect(locales.length, '설치된 언어를 못 읽었다').toBeGreaterThan(0);
 
-    await page.getByRole('button', { name: /Add Country|국가 추가|国追加/ }).click();
+    // "국가 추가" 버튼은 해외배송이 켜져 있을 때만 렌더된다
+    // (_tab_shipping.json: if "...international_shipping_enabled"). 시드 상태에서 꺼져
+    // 있을 수 있으므로, 다국어 입력칸 검증이 목적인 이 테스트에서는 해외배송을
+    // 로컬 상태로 켠 뒤 진행한다(토글 UI 자체 검증은 별도 spec 소관).
+    await page.evaluate(() => {
+      (window as any).G7Core?.state?.setLocal?.({ 'form.shipping.international_shipping_enabled': true });
+    });
+
+    const addCountryButton = page.getByRole('button', { name: /Add Country|국가 추가|国追加/ });
+    await expect(addCountryButton, '해외배송 활성 후 국가 추가 버튼이 노출돼야 한다').toBeVisible({
+      timeout: 10_000,
+    });
+    await addCountryButton.click();
 
     // 국가 코드 입력칸(placeholder="KR")이 있는 행이 곧 추가 폼이다.
     const codeInput = page.locator('input[placeholder="KR"]');

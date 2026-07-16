@@ -1,0 +1,97 @@
+{
+    "target_layout": "shop/checkout",
+    "data_sources": [
+        {
+            "id": "nhnkcp_easy_pay_config",
+            "label_key": "$t:sirsoft-pay_nhnkcp.editor.data_source.nhnkcp_easy_pay_config",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/payments/client-config/nhnkcp",
+            "method": "GET",
+            "auto_fetch": true
+        }
+    ],
+    "modals": [
+        {
+            "id": "nhnkcp_payment_error_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-pay_nhnkcp.payment_error.title",
+                "size": "sm",
+                "showCloseButton": true
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-center py-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-circle",
+                                "className": "text-red-500 text-4xl mb-4"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-pay_nhnkcp.payment_error.message"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_local.paymentErrorMessage}}",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400 mt-2"
+                            },
+                            "text": "{{_local.paymentErrorMessage}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-center mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                            },
+                            "text": "$t:common.confirm",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "paymentErrorMessage": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

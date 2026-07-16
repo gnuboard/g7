@@ -74,6 +74,8 @@ vendor-my-module → Modules\Vendor\My\Module
 | URL prefix | `modules/{module-name}` |
 | Name prefix | `web.modules.{module-name}.` |
 
+> 라우트 이름(`{web\|api}.modules.{module-name}.{name}`)은 확장 미들웨어 타게팅의 1급 키다. `Module::getMiddleware()` 의 `targets` 는 이 라우트명 패턴으로 미들웨어 부착 대상을 지정한다. 상세: [docs/backend/middleware.md "확장 미들웨어 선언 (self-gate)"](../backend/middleware.md#확장-미들웨어-선언-self-gate).
+
 ---
 
 ## 4. 라우트 파일 작성

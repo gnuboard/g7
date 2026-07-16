@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\ExpireMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyExpiringMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ReconcileMileageBalanceCommand;
+use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
 use Modules\Sirsoft\Ecommerce\Repositories\BrandRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CartRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CategoryImageRepository;
@@ -90,6 +91,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\UserAddressRepository;
 use Modules\Sirsoft\Ecommerce\Seo\EcommerceSitemapContributor;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
@@ -192,6 +194,9 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
 
         // ShippingPolicyResolver를 싱글톤으로 등록 (요청 내 기본 배송정책 조회 1회 캐시)
         $this->app->singleton(ShippingPolicyResolver::class);
+
+        // PaymentMethodResolver를 싱글톤으로 등록 (요청 내 결제수단 카탈로그 조회 1회 캐시)
+        $this->app->singleton(PaymentMethodResolver::class);
     }
 
     /**
@@ -205,6 +210,10 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands($this->commands);
         }
+
+        // 요청 기기 유형(iOS) 감지 미들웨어(DetectDevice)는 코어 self-gate 방식으로 이관됨.
+        // Module::getMiddleware() 가 targets=['/'](무명 User SSR 셸 URI 패턴)로 선언하고,
+        // 코어 ExtensionMiddlewareGate 가 요청 시점에 실행한다. (SP Kernel 직접 조작 제거)
 
         // Sitemap 기여자 등록
         $this->app->booted(function () {

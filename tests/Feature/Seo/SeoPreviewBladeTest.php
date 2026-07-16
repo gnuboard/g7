@@ -33,7 +33,6 @@ class SeoPreviewBladeTest extends TestCase
             'googleAnalyticsId' => 'G-XXXX',
             'googleVerification' => 'gverify123',
             'naverVerification' => 'nverify456',
-            'cssPath' => '/build/assets/app.css',
             'stylesheets' => ['/api/templates/assets/sirsoft-basic/css/components.css', 'https://cdnjs.cloudflare.com/font-awesome.css'],
             'extraHeadTags' => '',
             'extraBodyEnd' => '',

@@ -150,6 +150,7 @@
       "pg_use_default": "기본 PG",
       "pg_not_required": "PG 불필요",
       "pg_not_installed": "PG 미설치",
+      "pg_fixed": "PG 고정",
       "pg_select_first": "PG사를 먼저 선택하세요"
     },
     "bank_accounts": {

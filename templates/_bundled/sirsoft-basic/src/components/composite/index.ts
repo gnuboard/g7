@@ -15,6 +15,8 @@ export type { NotificationCenterProps, NotificationItem } from './NotificationCe
 
 // 상품 관련 컴포넌트
 export { default as ProductCard } from './ProductCard';
+export { BrandMark } from './BrandMark';
+export type { BrandMarkProps, BrandMarkData } from './BrandMark';
 export { default as ImageGallery } from './ImageGallery';
 export { default as ProductImageViewer } from './ProductImageViewer';
 export { default as QuantitySelector } from './QuantitySelector';
@@ -75,6 +77,8 @@ export const compositeComponents = {
 
   // 상품
   ProductCard: () => import('./ProductCard'),
+  // 결제 브랜드 마크(배지/SVG) — 카탈로그 _cached_brand_mark 를 데이터 기반 렌더
+  BrandMark: () => import('./BrandMark'),
   ImageGallery: () => import('./ImageGallery'),
   ProductImageViewer: () => import('./ProductImageViewer'),
   QuantitySelector: () => import('./QuantitySelector'),

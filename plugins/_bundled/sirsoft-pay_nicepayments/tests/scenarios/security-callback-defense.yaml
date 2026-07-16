@@ -1,0 +1,95 @@
+# audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 나이스페이먼츠 콜백 보안 매트릭스의 명세 문서. AuthToken Cache 기반 dedupe 와 replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
+
+feature: 콜백 보안 방어 (replay attack / authToken dedupe / post-approve net cancel)
+
+description: |
+  나이스페이먼츠 결제 콜백 처리 경로의 3가지 핵심 보안 위협에 대한 방어 매트릭스.
+
+  방어 대상 위협:
+    1. Replay attack (DB 영구) — 동일 transaction_id (TxTid) 로 콜백 재전송 시 두 번
+       결제 처리되어 알림/마일리지/재고 중복. PreventsReplayCallback trait +
+       DB unique index (ecommerce module beta.5) 로 영구 방어.
+    2. AuthToken replay (단기) — 동일 AuthToken+TxTid 가 60초 안에 재전송되면
+       정상 결제 흐름의 race condition / 의도된 재시도가 아니라 replay 의심.
+       CacheInterface 60초 TTL dedupe 키로 단기 윈도우 방어.
+    3. Post-approve 실패 시 net cancel 누락 — server-side 승인 성공 후 도메인 처리
+       (금액 검증, 주문 상태 전이) 가 실패하면 PG 측은 승인 상태이지만 G7 주문은 미생성.
+       sendNetCancel() 헬퍼로 PG 승인 자동 취소.
+
+axes:
+  context: [authorize_card, authorize_vbank, naverpay_callback, kakaopay_callback]
+  threat: [replay_db_long, replay_token_short, post_approve_failure]
+  callback_state: [first_arrival, second_arrival_outside_60s, second_arrival_within_60s, domain_succeeds, domain_fails]
+
+exclusions:
+  - { threat: replay_db_long, callback_state: domain_succeeds, reason: "replay 는 domain 처리 이전 단계" }
+  - { threat: replay_db_long, callback_state: domain_fails, reason: "replay 는 domain 처리 이전 단계" }
+  - { threat: replay_db_long, callback_state: second_arrival_within_60s, reason: "60s 윈도우는 token replay 단계 — DB 영구 분기와 중복 불필요" }
+  - { threat: replay_token_short, callback_state: domain_succeeds, reason: "token dedupe 는 domain 이전 단계" }
+  - { threat: replay_token_short, callback_state: domain_fails, reason: "token dedupe 는 domain 이전 단계" }
+  - { threat: replay_token_short, callback_state: second_arrival_outside_60s, reason: "60s 외 재전송은 token dedupe 가 아닌 DB 영구 분기로 처리" }
+  - { threat: replay_token_short, context: authorize_vbank, reason: "vbank 통보는 authToken 발급 없음 — token dedupe 무관" }
+  - { threat: post_approve_failure, callback_state: first_arrival, reason: "post-approve 실패는 도메인 결과 분기" }
+  - { threat: post_approve_failure, callback_state: second_arrival_outside_60s, reason: "post-approve 실패는 도메인 결과 분기" }
+  - { threat: post_approve_failure, callback_state: second_arrival_within_60s, reason: "post-approve 실패는 도메인 결과 분기" }
+  - { threat: post_approve_failure, context: authorize_vbank, reason: "vbank 는 비동기 입금 — post-approve 단계 없음" }
+
+effects:
+  # DB 영구 replay defense — PreventsReplayCallback trait
+  - replay_detected_on_second_arrival_db
+  - replay_response_is_idempotent_ok
+  - replay_no_double_completion
+  - replay_logged_with_context
+  - replay_first_arrival_proceeds_normally
+  - replay_db_unique_blocks_concurrent_insert
+
+  # 단기 AuthToken dedupe — CacheInterface 60s TTL
+  - auth_token_first_arrival_writes_cache
+  - auth_token_within_60s_blocked
+  - auth_token_outside_60s_proceeds
+  - auth_token_cache_key_uses_sha256_of_mid_token_txtid
+  - auth_token_blocked_returns_4xx_or_idempotent
+  - auth_token_logged_when_dedupe_hit
+
+  # Post-approve net cancel
+  - post_approve_failure_triggers_send_net_cancel
+  - net_cancel_sends_pg_cancel_api_call
+  - net_cancel_uses_browser_fetch_to_bypass_interceptor
+  - net_cancel_passes_approved_tid
+  - net_cancel_passes_full_amount
+
+test_files: []
+
+manual_verification:
+  - description: "Replay DB 영구 PoC — authorize_card 재전송"
+    steps:
+      - "정상 카드 결제 콜백 1차 → 200 OK, payment_status=paid"
+      - "1시간 후 동일 TxTid 페이로드 재전송 → 200 OK (멱등)"
+      - "Log 에 'NicePayments: replay detected' 확인"
+      - "DB: g7_ecommerce_order_payments 에 동일 transaction_id row 1건만 존재"
+  - description: "AuthToken 단기 dedupe PoC — 60초 내 재시도"
+    steps:
+      - "정상 카드 결제 콜백 1차 (AuthToken=AT001, TxTid=TX001) → 200 OK"
+      - "10초 후 동일 AuthToken+TxTid 재전송 → 차단 (4xx 또는 idempotent)"
+      - "Cache key nicepay_auth_token_seen:sha256(mid:AT001:TX001) 존재 확인"
+      - "61초 후 재전송 → Cache TTL 만료 → DB 영구 분기로 처리 (정상 replay 차단)"
+  - description: "Post-approve 실패 net cancel PoC"
+    steps:
+      - "정상 카드 콜백으로 authorize 진입"
+      - "PG 승인 성공 (resultCode=0000), TxTid 발급됨"
+      - "이후 OrderProcessingService 가 PaymentAmountMismatchException throw 시뮬"
+      - "sendNetCancel 가 browserFetch(__sirsoftPgOriginalFetch) 로 PG 취소 API 호출"
+      - "PG 측 거래 상태: 승인 후 취소 (정산 영향 없음)"
+      - "G7 주문: 미생성 상태 유지"
+
+notes: |
+  본 매니페스트는 Phase 2 보안 강화 작업의 SSoT.
+
+  관련 코드:
+   - src/Concerns/PreventsReplayCallback.php (DB 영구 replay 가드)
+   - src/Controllers/PaymentCallbackController.php (authorize + AuthToken Cache dedupe + sendNetCancel)
+
+  관련 modules (참고 — plugin scope 외):
+   - modules/_bundled/sirsoft-ecommerce/database/migrations/2026_05_16_000001_add_unique_index_to_transaction_id_on_ecommerce_order_payments_table.php
+
+  Phase 3 침투 PoC 에서 본 manual_verification 항목을 자동화 PoC 스크립트로 변환 예정.

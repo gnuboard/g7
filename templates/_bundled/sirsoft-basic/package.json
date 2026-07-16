@@ -1,6 +1,6 @@
 {
     "name": "sirsoft-basic",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Gnuboard7 Basic User Template Components - Nexibase Style",
     "type": "module",
     "main": "dist/components.js",
@@ -14,6 +14,8 @@
         "dev": "vite build --watch",
         "test": "vitest",
         "test:run": "vitest run",
+        "test:e2e": "playwright test --config=tests/Playwright/playwright.config.ts",
+        "test:e2e:ui": "playwright test --config=tests/Playwright/playwright.config.ts --ui",
         "test:coverage": "vitest run --coverage",
         "type-check": "tsc --noEmit"
     },

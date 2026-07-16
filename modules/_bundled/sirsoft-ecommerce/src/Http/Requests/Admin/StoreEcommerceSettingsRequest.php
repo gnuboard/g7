@@ -5,10 +5,10 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 use App\Rules\LocaleRequiredTranslatable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
  * 이커머스 설정 저장 요청 검증
@@ -525,13 +525,26 @@ class StoreEcommerceSettingsRequest extends FormRequest
             return;
         }
 
+        $resolver = app(PaymentMethodResolver::class);
+
         foreach ($methods as $index => $method) {
             $id = $method['id'] ?? '';
             $isActive = $method['is_active'] ?? false;
             $pgProvider = $method['pg_provider'] ?? null;
 
-            $enum = PaymentMethodEnum::tryFrom($id);
-            if ($enum && $enum->needsPgProvider() && $isActive && ! $pgProvider && ! $defaultPg) {
+            if ($id === '') {
+                continue;
+            }
+
+            // PG 고정 수단(간편결제 등)은 플러그인이 자기 PG 로 고정하므로 관리자가 선택할 수 없다.
+            // 검증 대상에서 제외하지 않으면 저장 자체가 막힌다.
+            if ($resolver->isPgLocked($id)) {
+                continue;
+            }
+
+            // 확장 결제수단도 카탈로그 선언으로 PG 필요 여부가 판정된다.
+            // enum tryFrom() 으로 판정하면 확장수단이 null → 검증이 통째로 스킵됐다(#475).
+            if ($resolver->needsPgProvider($id) && $isActive && ! $pgProvider && ! $defaultPg) {
                 $validator->errors()->add(
                     "order_settings.payment_methods.{$index}.pg_provider",
                     __('sirsoft-ecommerce::validation.custom.order_settings.payment_methods.pg_required_for_activation')

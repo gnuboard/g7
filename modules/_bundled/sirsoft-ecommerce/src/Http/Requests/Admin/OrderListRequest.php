@@ -8,8 +8,8 @@ use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderDateTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
  * 주문 목록 조회 요청
@@ -19,7 +19,7 @@ class OrderListRequest extends FormRequest
     /**
      * 권한 확인
      *
-     * @return bool
+     * @return bool 항상 true (권한 체크는 라우트의 permission 미들웨어에서 수행)
      */
     public function authorize(): bool
     {
@@ -29,7 +29,7 @@ class OrderListRequest extends FormRequest
     /**
      * 유효성 검사 규칙
      *
-     * @return array
+     * @return array 주문 목록 조회 파라미터 검증 규칙
      */
     public function rules(): array
     {
@@ -57,7 +57,8 @@ class OrderListRequest extends FormRequest
 
             // 결제수단 (다중선택)
             'payment_method' => ['nullable', 'array'],
-            'payment_method.*' => ['string', Rule::in(PaymentMethodEnum::values())],
+            // 확장 결제수단(간편결제)도 주문 목록에서 필터링할 수 있어야 한다 (#475).
+            'payment_method.*' => ['string', Rule::in(app(PaymentMethodResolver::class)->allValidIds())],
 
             // 카테고리
             'category_id' => ['nullable', 'integer'],

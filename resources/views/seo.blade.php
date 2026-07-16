@@ -27,8 +27,7 @@
     {{-- Twitter Card --}}
     {!! $twitterTags ?? '' !!}
 
-    {{-- CSS --}}
-    <link rel="stylesheet" href="{{ $cssPath }}">
+    {{-- CSS (템플릿 CSS만 — 코어 app.css 는 사용자 화면에서 미참조하는 Laravel 기본 빌드 파일이라 미포함) --}}
     @foreach($stylesheets as $stylesheet)
     <link rel="stylesheet" href="{{ $stylesheet }}">
     @endforeach

@@ -6,7 +6,6 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 
 /**
@@ -81,7 +80,7 @@ class ConfirmDepositRequest extends FormRequest
             $order->loadMissing('payment');
 
             // 무통장(dbank) 결제수단만 입금확인 대상
-            if ($order->payment?->payment_method !== PaymentMethodEnum::DBANK) {
+            if (! $order->payment?->isBankTransfer()) {
                 $validator->errors()->add(
                     'order',
                     __('sirsoft-ecommerce::messages.orders.deposit_not_dbank')

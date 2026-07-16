@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
  * 주문 결제 모델
@@ -106,11 +108,27 @@ class OrderPayment extends Model
         'paid_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'payment_status' => PaymentStatusEnum::class,
-        'payment_method' => PaymentMethodEnum::class,
+        // payment_method 는 의도적으로 캐스트하지 않는다 (순수 string) — 아래 주석 참조.
         // 다중 통화 컬럼 (JSON)
         'mc_paid_amount' => 'array',
         'mc_cancelled_amount' => 'array',
     ];
+
+    /*
+     * payment_method 에 enum 캐스트를 두지 않는 이유
+     *
+     * PG 플러그인이 등록하는 확장 결제수단(예: 'nhnkcp_naverpay')은 PaymentMethodEnum 에
+     * case 가 없다. Laravel 의 enum 캐스트는 내부적으로 tryFrom() 이 아니라 from() 을 쓰므로
+     * (HasAttributes::getEnumCaseFromValue), 확장 ID 를 저장하는 순간 ValueError → 500 이 된다.
+     *
+     * 능력 질의(PG 필요 여부 / 라벨 / 환불수단)는 아래 능력 메서드가 PaymentMethodResolver 에
+     * 위임해 답한다 — 소비처는 payment_method 를 직접 비교하지 않는다.
+     *
+     * 하위호환: BackedEnum 은 JsonSerializable 이라 API 응답에는 이미 값 문자열('card')이
+     * 나가고 있었다. 순수 string 으로 바꿔도 wire format 이 완전히 동일하다.
+     *
+     * @see https://github.com/gnuboard/dev-g7/issues/475
+     */
 
     /**
      * 주문 관계
@@ -139,7 +157,7 @@ class OrderPayment extends Model
      */
     public function isCardPayment(): bool
     {
-        return $this->payment_method === PaymentMethodEnum::CARD;
+        return $this->paymentMethodId() === PaymentMethodEnum::CARD->value;
     }
 
     /**
@@ -149,7 +167,78 @@ class OrderPayment extends Model
      */
     public function isVirtualAccount(): bool
     {
-        return $this->payment_method === PaymentMethodEnum::VBANK;
+        return $this->paymentMethodId() === PaymentMethodEnum::VBANK->value;
+    }
+
+    /**
+     * 무통장입금(수동 입금확인) 결제 여부 확인
+     *
+     * @return bool 무통장입금 여부
+     */
+    public function isBankTransfer(): bool
+    {
+        return $this->paymentMethodId() === PaymentMethodEnum::DBANK->value;
+    }
+
+    /**
+     * PG 결제창이 필요한 결제수단인지 확인합니다.
+     *
+     * 확장 결제수단(간편결제 등)도 카탈로그 선언을 통해 올바르게 판정된다.
+     *
+     * @return bool PG 결제창 필요 여부
+     */
+    public function needsPgProvider(): bool
+    {
+        return $this->resolver()->needsPgProvider($this->paymentMethodId());
+    }
+
+    /**
+     * 결제수단의 다국어 표시명을 반환합니다.
+     *
+     * @return string 표시명
+     */
+    public function paymentMethodLabel(): string
+    {
+        return $this->resolver()->label($this->paymentMethodId());
+    }
+
+    /**
+     * 결제수단에 대응하는 환불 수단을 반환합니다.
+     *
+     * @return RefundMethodEnum 환불 수단
+     */
+    public function refundMethod(): RefundMethodEnum
+    {
+        return $this->resolver()->refundMethod($this->paymentMethodId());
+    }
+
+    /**
+     * 결제수단 ID 를 문자열로 반환합니다.
+     *
+     * `payment_method` 는 순수 string 이지만, 과거 enum 캐스트 시절의 값이나 외부에서
+     * enum 을 대입한 경우를 방어적으로 흡수한다.
+     *
+     * @return string 결제수단 ID (미설정 시 빈 문자열)
+     */
+    public function paymentMethodId(): string
+    {
+        $method = $this->payment_method;
+
+        if ($method instanceof \BackedEnum) {
+            return (string) $method->value;
+        }
+
+        return (string) ($method ?? '');
+    }
+
+    /**
+     * 결제수단 능력 해석기를 반환합니다.
+     *
+     * @return PaymentMethodResolver 결제수단 능력 해석기
+     */
+    private function resolver(): PaymentMethodResolver
+    {
+        return app(PaymentMethodResolver::class);
     }
 
     /**

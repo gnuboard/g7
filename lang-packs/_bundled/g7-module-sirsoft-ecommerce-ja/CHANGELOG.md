@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-07-14
+
+### Added
+
+- 주문설정 결제수단 목록의 "PG 고정" 표시에 대한 일본어 번역을 추가했습니다.
+
 ## [1.0.3] - 2026-07-14
 
 ### Added

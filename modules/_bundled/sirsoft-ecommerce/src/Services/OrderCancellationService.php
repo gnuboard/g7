@@ -13,7 +13,6 @@ use Modules\Sirsoft\Ecommerce\Enums\CancelOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
@@ -278,7 +277,7 @@ class OrderCancellationService
                 // 무통장입금(dbank)·포인트·예치금·무료는 PG 리스너가 인식하지 못해 success=false → 트랜잭션 롤백.
                 // 이들은 PG 훅을 건너뛰고 운영자 수동 환불(APPROVED) 로 처리한다.
                 if ($cancelPg && $order->payment && $adjustmentResult->refundAmount > 0
-                    && $order->payment->payment_method?->needsPgProvider()) {
+                    && $order->payment->needsPgProvider()) {
                     $this->executePgRefund($order, $orderRefund, $adjustmentResult, $reason);
                 }
             }
@@ -740,14 +739,9 @@ class OrderCancellationService
             return RefundMethodEnum::BANK;
         }
 
-        $paymentMethod = $order->payment->payment_method;
-
-        return match ($paymentMethod) {
-            PaymentMethodEnum::CARD, PaymentMethodEnum::BANK, PaymentMethodEnum::VBANK, PaymentMethodEnum::PHONE => RefundMethodEnum::PG,
-            PaymentMethodEnum::DBANK => RefundMethodEnum::BANK,
-            PaymentMethodEnum::POINT => RefundMethodEnum::POINTS,
-            default => RefundMethodEnum::BANK,
-        };
+        // 확장 결제수단(간편결제 등)도 카탈로그 선언을 통해 올바른 환불수단으로 해석된다.
+        // enum match 로 두면 확장 ID 가 default → BANK 로 떨어져 카드 취소가 누락된다(#475).
+        return $order->payment->refundMethod();
     }
 
     // ───────────────────────────────────────────────

@@ -1,0 +1,76 @@
+feature: checkout_brand_mark_rendering
+description: >
+  체크아웃 간편결제 버튼의 브랜드 시각정보(색 배지 / 브랜드 SVG 로고)를 결제수단 카탈로그
+  (`_cached_brand_mark`)로 편입해, 코어 체크아웃 레이아웃의 BrandMark 컴포넌트가 데이터 기반
+  으로 직접 렌더한다. 과거에는 각 PG 플러그인의 체크아웃 DOM 인젝터(checkoutEasyPayInjector /
+  checkoutNaverpayBrandButton)가 렌더 후 DOM 을 후처리해 마크를 주입했고, injector 끼리 같은
+  버튼을 두고 경합하며 reconcileKginicisPatchedDuplicates 로 중복을 방어했다. 시각정보를
+  카탈로그로 옮기면서 세 injector + reconcile 을 제거했다.
+
+  애플페이 iOS 게이팅도 injector 밖으로 이관했다: 이커머스 모듈의 DetectDevice 미들웨어가
+  UA 로 기기를 감지해 컨테이너에 보관하고, InjectAppConfigDeviceListener 가 코어
+  `core.frontend.filter_app_config` 훅에서 이를 appConfig.isIos 로 주입해 내려준다(1차).
+  템플릿 부트스트랩이 iPadOS(데스크탑 UA)를 클라 신호(maxTouchPoints)로 보정한다(2차).
+  체크아웃 레이아웃 iteration source 필터가 requires_ios 수단을 _global.appConfig.isIos 에 따라
+  포함/제외한다. (미들웨어·감지 로직은 코어가 아닌 이커머스 모듈 소유 — 코어는 appConfig 필터 훅만 제공.)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsOrderSettingsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Helpers/DeviceDetectorTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Middleware/DetectDeviceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Providers/DetectDeviceMiddlewareRegistrationTest.php
+  - tests/Unit/Services/SettingsServiceAppConfigTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/BrandMark.test.tsx
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/deviceCorrection.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/checkout-payment-brand-mark.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/checkout-brand-mark.spec.ts
+
+# 입력 axis — 브랜드 마크 렌더 + iOS 게이팅에 영향을 주는 변수
+axes:
+  # 브랜드 마크 형태: 배지(nhnkcp/nicepay) / SVG 로고(kginicis) / 없음(무통장·카드 등 builtin)
+  mark_form: [badge, svg, none]
+  # iOS 전용 노출 수단 여부 (애플페이만 true)
+  requires_ios: [true, false]
+  # 요청 기기 (서버 UA 판정 + 클라 보정 결과)
+  device: [ios, non_ios, ipados_desktop_ua]
+
+exclusions:
+  - mark_form: none
+    requires_ios: true
+    reason: "브랜드 마크 없는 builtin(무통장/카드/가상계좌)에는 iOS 전용 수단이 없다"
+  - mark_form: svg
+    requires_ios: true
+    reason: "SVG 마크(kginicis)에는 애플페이 수단이 없다 — kginicis 는 애플페이 미제공"
+
+# 후속 효과 체인 — 시각정보 이관 + injector 제거가 낳는 관찰 가능 효과
+effects:
+  # 카탈로그 → 레이아웃 데이터 전달
+  - brand_mark_flows_to_cached           # brand_mark 등록값이 _cached_brand_mark 로 병합 카탈로그에 노출
+  - requires_ios_flag_carried            # requires_ios 가 method 최상위로 노출(레이아웃 접근 가능)
+  - none_form_cached_brand_mark_null     # 마크 없는 수단은 _cached_brand_mark=null (아이콘 폴백)
+  # 렌더 (BrandMark 컴포넌트)
+  - badge_renders_text_and_color         # 배지 형태는 text + Tailwind 색상 클래스로 렌더
+  - svg_renders_inline_logo              # SVG 형태는 인라인 SVG 로고로 렌더
+  - svg_dangerous_content_sanitized      # SVG 내부 script/onload/foreignObject 는 sanitize 제거(XSS 방어)
+  - none_form_falls_back_to_icon         # 마크 없는 수단은 Icon 폴백 렌더
+  # iOS 게이팅
+  - server_ua_sets_is_ios                # DetectDevice 미들웨어가 UA 로 appConfig.isIos 설정
+  - is_ios_flows_to_global_appconfig     # appConfig.isIos 가 _global.appConfig 로 전달
+  - client_corrects_ipados_desktop_ua    # 부트스트랩이 iPadOS 데스크탑 UA 를 클라 신호로 보정
+  - applepay_shown_on_ios                # iOS 기기에서 애플페이 버튼 노출
+  - applepay_hidden_on_non_ios           # 비-iOS 기기에서 애플페이 버튼 미노출(iteration 필터 제외)
+  - non_ios_methods_unaffected           # iOS 게이팅이 비-애플페이 수단 노출에 영향 없음
+  # injector 제거 (기술부채 상환)
+  - injectors_removed                    # 세 injector + reconcile + install 호출 제거
+  - shared_helpers_preserved             # applePayDevice(결제 시점 방어) / JPY restrictor / admin injector 잔존
+
+sub_flows:
+  - id: three_pg_coexist
+    description: 3사(kginicis/nhnkcp/nicepayments) 동시 활성 체크아웃에서 브랜드 버튼 공존
+    effects:
+      - badge_renders_text_and_color
+      - svg_renders_inline_logo
+      - none_form_falls_back_to_icon

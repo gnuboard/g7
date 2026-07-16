@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Public;
 
+use App\Extension\HookManager;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -324,6 +325,120 @@ class OrderControllerTest extends ModuleTestCase
 
         // 무통장(dbank)은 non-PG → 주문 생성 시점에 임시주문 즉시 삭제
         $this->assertDatabaseMissing('ecommerce_temp_orders', [
+            'id' => $tempOrder->id,
+        ]);
+    }
+
+    /**
+     * PG 플러그인이 하는 것과 동일하게 간편결제 수단·PG provider 를 카탈로그에 등록합니다.
+     *
+     * 확장 결제수단(nhnkcp_naverpay) 이 능력(PG 필요/고정/핸들러)을 갖도록 하여
+     * 주문 생성 응답과 임시주문 보존이 실제 계약대로 동작하는지 검증할 수 있게 한다.
+     */
+    private function registerExtensionEasyPayMethod(): void
+    {
+        HookManager::addFilter(
+            'sirsoft-ecommerce.settings.filter_available_payment_methods',
+            fn (array $methods) => array_merge($methods, [[
+                'id' => 'nhnkcp_naverpay',
+                'name' => ['ko' => '네이버페이', 'en' => 'Naver Pay'],
+                'description' => ['ko' => '', 'en' => ''],
+                'icon' => 'credit-card',
+                'source' => 'plugin:sirsoft-pay_nhnkcp',
+                'defaults' => [
+                    'pg_provider' => 'nhnkcp',
+                    'pg_locked' => true,
+                    'needs_pg' => true,
+                    'refund_method' => 'pg',
+                    'is_active' => true,
+                    'min_order_amount' => 0,
+                    'stock_deduction_timing' => 'payment_complete',
+                    'mileage_deduction_timing' => 'payment_complete',
+                ],
+            ]])
+        );
+
+        HookManager::addFilter(
+            'sirsoft-ecommerce.payment.registered_pg_providers',
+            fn (array $providers) => array_merge($providers, [[
+                'id' => 'nhnkcp',
+                'name' => 'NHN KCP',
+                'payment_handler' => 'sirsoft-pay_nhnkcp.requestPayment',
+            ]])
+        );
+
+        app(\Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver::class)->flushCache();
+        app(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class)->clearCache();
+    }
+
+    /**
+     * T9 — 간편결제(확장 결제수단) 주문 생성 응답이 PG 결제 계약을 내려준다 (#475).
+     *
+     * 과거에는 확장 ID 가 PG 결제로 인식되지 않아 응답이 non-PG 로 내려갔고, 프론트가
+     * payment_method 를 'card' 로 위장해야 결제창이 떴다. 이제 응답이
+     * `requires_pg_payment=true` 와 provider 가 선언한 `pg_payment_handler` 를 실어
+     * 템플릿이 위장 없이 표준 dispatch 한다.
+     *
+     * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
+     *
+     * @effects requires_pg_payment_true, pg_payment_handler_present, extension_id_passes_validation
+     */
+    public function test_간편결제_주문_생성_응답이_PG_결제_계약을_내려준다(): void
+    {
+        $this->registerExtensionEasyPayMethod();
+        $this->createGuestTempOrder();
+
+        $response = $this->postJson(
+            '/api/modules/sirsoft-ecommerce/user/orders',
+            $this->guestOrderPayload([
+                'payment_method' => 'nhnkcp_naverpay',
+                // 간편결제는 무통장 정보 불필요.
+                'depositor_name' => null,
+                'dbank' => null,
+            ]),
+            ['X-Cart-Key' => $this->cartKey]
+        );
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.requires_pg_payment', true)
+            ->assertJsonPath('data.pg_payment_handler', 'sirsoft-pay_nhnkcp.requestPayment');
+
+        // 저장된 결제수단이 확장 ID 그대로여야 한다 (card 위장 없음).
+        $order = Order::where('order_number', $response->json('data.order.order_number'))->first();
+        $this->assertSame('nhnkcp_naverpay', $order->payment->payment_method);
+    }
+
+    /**
+     * T10 — 간편결제 주문은 PG 결제 주문이므로 임시주문이 보존되어 재결제가 가능하다 (#475).
+     *
+     * 이슈의 핵심 증상: 결제 실패 후 재시도하면 "임시주문을 찾을 수 없습니다" 로 재결제가
+     * 막혔다. 원인은 확장 결제수단이 non-PG 로 오인되어 주문 생성 시점에 TempOrder 가
+     * 즉시 삭제된 것. 무통장(위 dbank 테스트)은 삭제가 정상이지만, PG 주문은 결제 완료
+     * 콜백 전까지 TempOrder 를 남겨 재결제 진입을 보장해야 한다.
+     *
+     * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
+     *
+     * @effects temp_order_preserved
+     */
+    public function test_간편결제_주문_생성후_임시주문이_보존된다(): void
+    {
+        $this->registerExtensionEasyPayMethod();
+        $tempOrder = $this->createGuestTempOrder();
+
+        $response = $this->postJson(
+            '/api/modules/sirsoft-ecommerce/user/orders',
+            $this->guestOrderPayload([
+                'payment_method' => 'nhnkcp_naverpay',
+                'depositor_name' => null,
+                'dbank' => null,
+            ]),
+            ['X-Cart-Key' => $this->cartKey]
+        );
+
+        $response->assertStatus(201);
+
+        // 간편결제(PG)는 결제 전 pending → 임시주문이 살아 있어야 재결제가 가능하다.
+        $this->assertDatabaseHas('ecommerce_temp_orders', [
             'id' => $tempOrder->id,
         ]);
     }

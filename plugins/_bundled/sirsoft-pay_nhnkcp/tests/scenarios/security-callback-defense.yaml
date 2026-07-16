@@ -1,0 +1,107 @@
+# audit:allow test-scenario-coverage reason: Phase 2 SSoT — 본 매니페스트는 NHN KCP 콜백 보안 매트릭스의 명세 문서. CLI sanitization 단위 테스트가 핵심 경로를 커버하며, replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
+
+feature: 콜백 보안 방어 (replay attack / CLI command injection / post-approve net cancel)
+
+description: |
+  NHN KCP 결제 콜백 처리 경로의 3가지 핵심 보안 위협에 대한 방어 매트릭스.
+
+  방어 대상 위협:
+    1. Replay attack — PG 거래 ID (tno) 로 콜백 재전송 시 두 번 결제 처리되어
+       알림/마일리지/재고 중복. PreventsReplayCallback trait + DB unique index
+       (ecommerce module beta.5) 로 이중 방어.
+    2. CLI command injection — NHN KCP 가 제공하는 결제 모듈 CLI 바이너리 호출 시
+       MID/금액/거래번호 등을 인수로 전달. 메타문자/제어문자가 포함되면 셸 인젝션
+       위험. assertSafeCliValue() allowlist + escapeshellarg() 이중 방어.
+    3. Post-approve 실패 시 net cancel 누락 — CLI 가 PG 승인 성공 응답을 반환했으나
+       이후 도메인 처리 (금액 검증, 주문 상태 전이) 가 실패하면 PG 측은 승인 상태이지만
+       G7 주문은 미생성. autoCancelIfApproved() 헬퍼로 PG 승인 자동 취소.
+
+axes:
+  context: [paymentCallback_card, paymentCallback_vbank, mobileApproval]
+  threat: [replay, cli_injection, post_approve_failure]
+  callback_state: [first_arrival, second_arrival_same_tno, cli_arg_normal, cli_arg_unsafe, domain_succeeds, domain_fails]
+
+exclusions:
+  - { threat: replay, callback_state: cli_arg_normal, reason: "replay 는 CLI 단계 이전 분기" }
+  - { threat: replay, callback_state: cli_arg_unsafe, reason: "replay 는 CLI 단계 이전 분기" }
+  - { threat: replay, callback_state: domain_succeeds, reason: "replay 는 domain 처리 이전 단계" }
+  - { threat: replay, callback_state: domain_fails, reason: "replay 는 domain 처리 이전 단계" }
+  - { threat: cli_injection, callback_state: first_arrival, reason: "CLI 단계는 도착 차수 무관" }
+  - { threat: cli_injection, callback_state: second_arrival_same_tno, reason: "CLI 단계는 도착 차수 무관" }
+  - { threat: cli_injection, callback_state: domain_succeeds, reason: "CLI 인젝션은 CLI 실행 단계 분기" }
+  - { threat: cli_injection, callback_state: domain_fails, reason: "CLI 인젝션은 CLI 실행 단계 분기" }
+  - { threat: cli_injection, context: mobileApproval, reason: "모바일 승인은 별도 callback flow 로 CLI 직접 호출 아님" }
+  - { threat: post_approve_failure, callback_state: first_arrival, reason: "post-approve 실패는 도메인 결과 분기" }
+  - { threat: post_approve_failure, callback_state: second_arrival_same_tno, reason: "post-approve 실패는 도메인 결과 분기" }
+  - { threat: post_approve_failure, callback_state: cli_arg_normal, reason: "post-approve 실패는 CLI 와 무관" }
+  - { threat: post_approve_failure, callback_state: cli_arg_unsafe, reason: "post-approve 실패는 CLI 와 무관" }
+  - { threat: post_approve_failure, context: paymentCallback_vbank, reason: "vbank 통보는 PG 측 비동기 입금 — post-approve 단계 없음" }
+
+effects:
+  # Replay defense — PreventsReplayCallback trait
+  - replay_detected_on_second_arrival
+  - replay_response_is_idempotent_ok
+  - replay_no_double_completion
+  - replay_logged_with_context
+  - replay_first_arrival_proceeds_normally
+  - replay_db_unique_blocks_concurrent_insert
+
+  # CLI sanitization — assertSafeCliValue + escapeshellarg
+  - cli_arg_rejects_double_quote
+  - cli_arg_rejects_backtick
+  - cli_arg_rejects_dollar_paren
+  - cli_arg_rejects_pipe
+  - cli_arg_rejects_redirect
+  - cli_arg_rejects_semicolon
+  - cli_arg_rejects_null_byte
+  - cli_arg_rejects_control_char_low
+  - cli_arg_rejects_control_char_high
+  - cli_arg_accepts_alnum_only
+  - cli_arg_accepts_normal_korean_label
+  - cli_arg_throws_runtime_exception_on_unsafe
+  - cli_exec_uses_escapeshellarg
+  - cli_no_shell_executed_on_unsafe_input
+
+  # Post-approve net cancel
+  - post_approve_failure_triggers_auto_cancel
+  - net_cancel_sends_pg_cancel_api_call
+  - net_cancel_passes_approved_tno
+  - net_cancel_passes_full_amount
+
+test_files: []
+
+manual_verification:
+  - description: "Replay PoC — paymentCallback 두 번 전송"
+    steps:
+      - "정상 카드 콜백 1차 전송 → 200 OK, payment_status=paid"
+      - "동일 페이로드 (tno 동일) 2차 전송 → 200 OK (멱등 응답)"
+      - "Log 에 'NHN KCP: replay detected' 확인"
+      - "DB: g7_ecommerce_order_payments 에 동일 tno row 1건만 존재"
+  - description: "CLI injection PoC — MID 위장"
+    steps:
+      - "관리자 PG 설정에서 site_cd (MID) 를 `SR_shop_001\"; id > /tmp/g7_kcp_poc; #` 로 설정 시도"
+      - "또는 KCP CLI 호출 시 amt 인수에 `1000;id>/tmp/g7_kcp_poc;echo` 전달"
+      - "assertSafeCliValue 가 RuntimeException throw → CLI 미실행"
+      - "/tmp/g7_kcp_poc 미생성 확인"
+  - description: "Post-approve 실패 net cancel PoC"
+    steps:
+      - "정상 carrier card 결제로 paymentCallback 진입"
+      - "PG CLI 응답: 승인 성공 (res_cd=0000), tno 발급됨"
+      - "이후 OrderProcessingService 에서 PaymentAmountMismatchException 발생 시뮬"
+      - "autoCancelIfApproved 가 NhnKcpApiService::cancelPayment(tno, amount) 호출"
+      - "PG 측 거래 상태: 승인 후 취소 (정산 영향 없음)"
+      - "G7 주문: 미생성 상태 유지"
+
+notes: |
+  본 매니페스트는 Phase 2 보안 강화 작업의 SSoT.
+
+  관련 코드:
+   - src/Concerns/PreventsReplayCallback.php (replay 가드)
+   - src/Controllers/PaymentCallbackController.php (paymentCallback + autoCancelIfApproved)
+   - src/Services/NhnKcpApiService.php (assertSafeCliValue + escapeshellarg)
+   - src/Exceptions/NhnKcpApiException.php (도메인 예외)
+
+  관련 modules (참고 — plugin scope 외):
+   - modules/_bundled/sirsoft-ecommerce/database/migrations/2026_05_16_000001_add_unique_index_to_transaction_id_on_ecommerce_order_payments_table.php
+
+  Phase 3 침투 PoC 에서 본 manual_verification 항목을 자동화 PoC 스크립트로 변환 예정.

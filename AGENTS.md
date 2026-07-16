@@ -750,6 +750,7 @@ BaseApiController (최상위)
 필수: 확장 코드 변경 시 manifest 버전 업 (미변경 시 업데이트 감지 불가)
 필수: 버전 업 시 CHANGELOG.md 기록 — Keep a Changelog 표준 (미기록 시 버전 업 불가)
 필수: StorageInterface 사용 (Storage::disk() 직접 호출 금지)
+필수: 확장 미들웨어는 getMiddleware() 로 부착 대상(targets) 명시 선언 (self-gate) — SP Kernel 미들웨어 그룹 직접 조작·라우트 파일 자기 미들웨어 FQCN 부착 금지, 무규율 전역 개입 금지
 필수: 코어 레이아웃에 모듈 UI 주입은 layout_extensions만 사용
 필수: 모든 확장 작업은 Artisan 커맨드로 수행
 ```

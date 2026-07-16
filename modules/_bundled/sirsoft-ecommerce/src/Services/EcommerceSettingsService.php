@@ -7,6 +7,8 @@ use App\Extension\HookManager;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 
 /**
  * 이커머스 모듈 환경설정 서비스
@@ -610,6 +612,12 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 'source' => $method['_cached_source'] ?? 'builtin',
                 'defaults' => [
                     'pg_provider' => $method['pg_provider'] ?? null,
+                    // 능력(capability) 선언 — builtin 은 enum 에서 파생한다.
+                    // 확장 결제수단은 PG 플러그인이 filter_available_payment_methods 훅에서
+                    // 직접 선언한다 (enum case 가 없으므로).
+                    'needs_pg' => $method['needs_pg'] ?? $this->builtinNeedsPg($id),
+                    'pg_locked' => $method['pg_locked'] ?? false,
+                    'refund_method' => $method['refund_method'] ?? $this->builtinRefundMethod($id),
                     'is_active' => $method['is_active'] ?? true,
                     'min_order_amount' => $method['min_order_amount'] ?? 0,
                     'stock_deduction_timing' => $method['stock_deduction_timing'] ?? 'payment_complete',
@@ -618,6 +626,35 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 ],
             ];
         }, $methods);
+    }
+
+    /**
+     * builtin 결제수단의 PG 필요 여부를 enum 에서 파생합니다.
+     *
+     * @param  string  $id  결제수단 ID
+     * @return bool PG 결제창 필요 여부
+     */
+    private function builtinNeedsPg(string $id): bool
+    {
+        return PaymentMethodEnum::tryFrom($id)?->needsPgProvider() ?? true;
+    }
+
+    /**
+     * builtin 결제수단의 환불 수단을 enum 에서 파생합니다.
+     *
+     * @param  string  $id  결제수단 ID
+     * @return string 환불 수단 값 (pg / bank / points)
+     */
+    private function builtinRefundMethod(string $id): string
+    {
+        return match (PaymentMethodEnum::tryFrom($id)) {
+            PaymentMethodEnum::CARD,
+            PaymentMethodEnum::BANK,
+            PaymentMethodEnum::VBANK,
+            PaymentMethodEnum::PHONE => RefundMethodEnum::PG->value,
+            PaymentMethodEnum::POINT => RefundMethodEnum::POINTS->value,
+            default => RefundMethodEnum::BANK->value,
+        };
     }
 
     /**
@@ -744,10 +781,33 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             $id = $definition['id'];
             $savedItem = $savedById->get($id);
 
+            // 능력(capability) 선언은 정의(enum 파생 또는 플러그인 선언)가 SSoT — saved 로 덮지 않는다.
+            // 관리자가 편집하는 값이 아니며, 플러그인이 자기 결제수단의 성격(PG 필요/환불수단/PG 고정)을
+            // 바꾸면 그 선언이 즉시 반영되어야 한다.
+            $needsPg = (bool) ($definition['defaults']['needs_pg'] ?? $this->builtinNeedsPg($id));
+            $pgLocked = (bool) ($definition['defaults']['pg_locked'] ?? false);
+            $refundMethod = $definition['defaults']['refund_method'] ?? $this->builtinRefundMethod($id);
+
+            // PG 고정 수단(간편결제 등)은 특정 PG 에 종속되므로 관리자가 다른 PG 로 바꿀 수 없다.
+            // saved 에 남은 과거 값(예: null)이 있어도 정의의 PG 를 강제한다.
+            $capabilities = [
+                'needs_pg' => $needsPg,
+                'pg_locked' => $pgLocked,
+                'refund_method' => $refundMethod,
+            ];
+
+            // iOS 전용 노출 플래그(애플페이 등) — 정의가 SSoT. 관리자가 편집하는 값이 아니며,
+            // 체크아웃 레이아웃이 비-iOS 기기에서 해당 수단을 렌더하지 않는 데 쓰인다.
+            if (! empty($definition['requires_ios'])) {
+                $capabilities['requires_ios'] = true;
+            }
+
             if ($savedItem) {
-                $merged[] = [
+                $merged[] = array_merge([
                     'id' => $id,
-                    'pg_provider' => $savedItem['pg_provider'] ?? null,
+                    'pg_provider' => $pgLocked
+                        ? ($definition['defaults']['pg_provider'] ?? null)
+                        : ($savedItem['pg_provider'] ?? null),
                     'sort_order' => $savedItem['sort_order'] ?? count($merged) + 1,
                     'is_active' => $savedItem['is_active'] ?? $definition['defaults']['is_active'] ?? true,
                     'min_order_amount' => $savedItem['min_order_amount'] ?? $definition['defaults']['min_order_amount'] ?? 0,
@@ -756,11 +816,12 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     '_cached_name' => $definition['name'],
                     '_cached_description' => $definition['description'] ?? ['ko' => '', 'en' => ''],
                     '_cached_icon' => $definition['icon'] ?? 'circle-question',
+                    '_cached_brand_mark' => $definition['brand_mark'] ?? null,
                     '_cached_source' => $definition['source'] ?? 'builtin',
-                ];
+                ], $capabilities);
             } else {
                 // 신규 결제수단 (기본값 적용)
-                $merged[] = [
+                $merged[] = array_merge([
                     'id' => $id,
                     'pg_provider' => $definition['defaults']['pg_provider'] ?? null,
                     'sort_order' => count($merged) + 1,
@@ -771,8 +832,9 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     '_cached_name' => $definition['name'],
                     '_cached_description' => $definition['description'] ?? ['ko' => '', 'en' => ''],
                     '_cached_icon' => $definition['icon'] ?? 'circle-question',
+                    '_cached_brand_mark' => $definition['brand_mark'] ?? null,
                     '_cached_source' => $definition['source'] ?? 'builtin',
-                ];
+                ], $capabilities);
             }
         }
 
@@ -820,6 +882,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 $savedMethods[$index]['_cached_name'] = $def['name'] ?? $method['_cached_name'] ?? null;
                 $savedMethods[$index]['_cached_description'] = $def['description'] ?? $method['_cached_description'] ?? null;
                 $savedMethods[$index]['_cached_icon'] = $def['icon'] ?? $method['_cached_icon'] ?? null;
+                $savedMethods[$index]['_cached_brand_mark'] = $def['brand_mark'] ?? $method['_cached_brand_mark'] ?? null;
                 $savedMethods[$index]['_cached_source'] = $def['source'] ?? $method['_cached_source'] ?? 'builtin';
             }
             // 고아 항목은 기존 _cached_* 유지

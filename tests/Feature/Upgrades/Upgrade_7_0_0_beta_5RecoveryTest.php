@@ -434,18 +434,44 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
     }
 
     /**
-     * public/storage 자체가 부재 (storage:link 미실행 환경) → skip.
+     * public/storage 자체가 부재 (prune 삭제 또는 storage:link 미실행) → 재생성 (#43).
+     *
+     * `StorageLinkHelper` 위임 이후 동작이 상위호환으로 확장됐다 — 기존 스텝은 "부재" 를
+     * skip 했지만, 헬퍼는 Laravel storage:link source 가 존재하면 symlink 를 신규 생성한다.
+     * 이는 `--prune` 이 orphan 으로 삭제한 갭을 복구하는 핵심 케이스다.
      */
-    public function test_recover_public_storage_symlink_skips_when_public_storage_absent(): void
+    public function test_recover_public_storage_symlink_recreates_when_public_storage_absent(): void
     {
         $fakeBase = $this->arrangeFakeBase();
         File::ensureDirectoryExists($fakeBase.'/public');
         File::ensureDirectoryExists($fakeBase.'/storage/app/public');
-        // public/storage 의도적 미생성 — storage:link 가 한 번도 실행되지 않은 환경
+        // public/storage 의도적 미생성 — prune 이 삭제했거나 storage:link 미실행 환경
+
+        // symlink 생성 권한 확인 (Windows 일반 사용자면 skip)
+        if (! @symlink($fakeBase.'/storage/app/public', $fakeBase.'/symlink_probe')) {
+            $this->markTestSkipped('symlink 생성 권한 부족 (Windows SeCreateSymbolicLink)');
+        }
+        @unlink($fakeBase.'/symlink_probe');
 
         $this->invokeRecoverPublicStorageSymlink();
 
-        $this->assertFalse(is_link($fakeBase.'/public/storage'), 'public/storage 부재 시 자동 생성 안 함');
+        $this->assertTrue(is_link($fakeBase.'/public/storage'), 'source 존재 시 부재 public/storage 를 symlink 로 재생성해야 한다 (#43)');
+        $this->assertSame($fakeBase.'/storage/app/public', readlink($fakeBase.'/public/storage'));
+    }
+
+    /**
+     * public/storage 부재 + Laravel storage:link source(storage/app/public) 도 부재 →
+     * 표준 미사용 환경으로 보고 skip (false positive 차단).
+     */
+    public function test_recover_public_storage_symlink_skips_when_both_absent(): void
+    {
+        $fakeBase = $this->arrangeFakeBase();
+        File::ensureDirectoryExists($fakeBase.'/public');
+        // public/storage 와 storage/app/public 모두 의도적 미생성
+
+        $this->invokeRecoverPublicStorageSymlink();
+
+        $this->assertFalse(is_link($fakeBase.'/public/storage'), 'source 부재 시 자동 생성 안 함');
         $this->assertFalse(file_exists($fakeBase.'/public/storage'), 'public/storage 자체가 생성되지 않아야 한다');
     }
 

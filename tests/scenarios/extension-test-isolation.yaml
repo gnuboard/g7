@@ -23,9 +23,18 @@ description: |
     ModuleManager::loadModules / PluginManager::loadPlugins (hook listener / config /
     채널 등록 경로) 에는 가드를 적용하지 않는다. 그 경로는 fixture 확장을 직접
     생성해 loadModules/loadPlugins 를 호출하는 다수의 확장 테스트가 의존하므로
-    가드 적용 시 광범위한 회귀를 유발한다. 격리의 핵심 목적인 전역 미들웨어
-    (GDPR CookieConsentMiddleware 등) 차단은 ServiceProvider register 가드만으로
-    충족된다 — 미들웨어는 provider boot 단계에서 등록되기 때문이다.
+    가드 적용 시 광범위한 회귀를 유발한다.
+
+  확장 미들웨어와 self-gate:
+    확장 미들웨어(GDPR CookieConsentMiddleware 등)는 더 이상 provider boot 에서
+    web/api 그룹에 직접 등록되지 않는다. 코어 ExtensionMiddlewareGate 래퍼가 항상
+    web/api 그룹에 등록되고, 각 확장이 getMiddleware() 로 선언한 미들웨어를 요청
+    시점에 대상 매칭될 때만 실행한다. 미들웨어를 실제로 실행하는 후보로 삼으려면
+    확장이 ExtensionMiddlewareRegistry 인덱스에 수집돼야 하며, 인덱스는 활성 확장
+    (getActive{Modules,Plugins}) 만 포함한다. 따라서 core-only 테스트는 비활성 GDPR
+    미들웨어를 게이트가 실행하지 않고, allowlist 로 GDPR 을 활성화한 테스트에서만
+    게이트가 그 미들웨어를 매칭한다. 격리의 핵심 목적(비대상 확장 미들웨어 미개입)은
+    ServiceProvider register 가드 + registry 활성 확장 필터의 이중으로 충족된다.
 
 axes:
   app_env: [testing, production]

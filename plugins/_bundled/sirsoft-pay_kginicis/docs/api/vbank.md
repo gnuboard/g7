@@ -73,4 +73,6 @@ HTTP/1.1 200
 
 가상계좌 입금통보를 받을 콜백 URL(PC 웹용 `url`, 모바일용 `mobile_url`)을 관리자 설정 페이지에 표시하기 위해 반환하는 엔드포인트입니다. 라우트 파일 내 클로저로 정의되어 있으며, `url()` 헬퍼로 현재 사이트 도메인 기준의 절대 URL(`/plugins/sirsoft-pay_kginicis/payment/vbank-notify` 및 `.../payment/mobile/vbank-notify`)을 조합해 내려줍니다. 운영자는 이 URL 을 KG 이니시스 가맹점 설정에 입금통보 URL 로 등록해, 구매자가 가상계좌에 실제로 입금했을 때 KG 이니시스가 이 주소로 통보를 보내도록 합니다. 관리자 인증(`auth:sanctum`)과 `sirsoft-ecommerce.settings.read` 권한이 필요하며, 토큰 누락·만료는 401, 권한 부족은 403 으로 응답합니다.
 
+> **입금통보 수신 엔드포인트의 발신 서버 확인**: 위 URL 이 가리키는 실제 입금통보 수신 경로(`payment/vbank-notify` · `payment/mobile/vbank-notify` · CBT `payment/cbt/cvs-notify`)는 위변조·재처리 방어를 위해 KG 이니시스 공식 발신 IP 만 허용한다. 이 IP 화이트리스트 검사는 코어의 확장 미들웨어 self-gate(`Plugin::getMiddleware()` 의 `targets` 로 입금통보 계열 라우트명에만 정밀 타게팅)로 수행되며, 브라우저가 접속하는 결제 콜백(`payment/callback`)에는 적용되지 않는다. 검사 자체의 동작·허용 범위는 이전과 동일하다.
+
 

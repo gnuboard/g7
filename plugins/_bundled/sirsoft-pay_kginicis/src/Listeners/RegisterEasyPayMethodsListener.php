@@ -25,11 +25,35 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
 {
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
 
+    /**
+     * 이 플러그인이 제공하는 PG 식별자 (RegisterPgProviderListener 의 provider id 와 일치).
+     */
+    private const PG_PROVIDER_ID = 'kginicis';
+
     private const DOMESTIC_EASY_PAY_SETTINGS = [
         'kginicis_samsung_pay' => 'easy_pay_samsung_pay',
         'kginicis_naverpay' => 'easy_pay_naverpay',
         'kginicis_lpay' => 'easy_pay_lpay',
         'kginicis_kakaopay' => 'easy_pay_kakaopay',
+    ];
+
+    /**
+     * 결제수단별 브랜드 마크(인라인 SVG 로고).
+     *
+     * 코어 카탈로그가 `_cached_brand_mark` 로 전달하고, 체크아웃 레이아웃의 BrandMark
+     * 컴포넌트가 화이트리스트 sanitize 후 렌더한다. 과거에는 체크아웃 DOM 인젝터
+     * (checkoutNaverpayBrandButton.ts) 가 렌더 후 이 SVG 를 주입했으나, 시각정보를
+     * 카탈로그로 편입해 인젝터를 제거했다.
+     *
+     * @var array<string, string>
+     */
+    private const BRAND_MARK_SVG = [
+        'kginicis_naverpay' => '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 40 40" role="img" aria-label="Naver Pay"><rect width="40" height="40" rx="8" fill="#03C75A"/><text x="20" y="17" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="12" font-weight="700">N</text><text x="20" y="29" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="9" font-weight="700">Pay</text></svg>',
+        'kginicis_samsung_pay' => '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 40 40" role="img" aria-label="Samsung Pay"><rect width="40" height="40" rx="8" fill="#1428A0"/><text x="20" y="18" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" font-weight="700">S</text><text x="20" y="29" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="9" font-weight="700">Pay</text></svg>',
+        'kginicis_lpay' => '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 40 40" role="img" aria-label="L.pay"><rect width="40" height="40" rx="8" fill="#D71920"/><text x="20" y="18" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="12" font-weight="700">L</text><text x="20" y="29" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="8" font-weight="700">pay</text></svg>',
+        'kginicis_kakaopay' => '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 40 40" role="img" aria-label="Kakao Pay"><rect width="40" height="40" rx="8" fill="#FEE500"/><text x="20" y="18" text-anchor="middle" fill="#111111" font-family="Arial, sans-serif" font-size="9" font-weight="700">Kakao</text><text x="20" y="29" text-anchor="middle" fill="#111111" font-family="Arial, sans-serif" font-size="9" font-weight="700">Pay</text></svg>',
+        'kginicis_japan_paypay' => '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 40 40" role="img" aria-label="PayPay"><rect width="40" height="40" rx="8" fill="#E60012"/><text x="20" y="18" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="8" font-weight="700">Pay</text><text x="20" y="29" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="8" font-weight="700">Pay</text></svg>',
+        'kginicis_japan_cvs' => '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 40 40" role="img" aria-label="Convenience Store"><rect width="40" height="40" rx="8" fill="#0072CE"/><text x="20" y="18" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="9" font-weight="700">CVS</text><text x="20" y="29" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="8" font-weight="700">JP</text></svg>',
     ];
 
     /**
@@ -59,7 +83,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
      * 이커머스 결제수단 목록에 KG 이니시스 전용 결제수단 inject.
      *
      * @param  array  $methods  builtin 결제수단 배열 (코어 EcommerceSettingsService::getBuiltinPaymentMethods)
-     * @return array  KG 이니시스 entry 가 phone~point 사이에 삽입된 배열
+     * @return array KG 이니시스 entry 가 phone~point 사이에 삽입된 배열
      */
     public function injectEasyPayMethods(array $methods): array
     {
@@ -153,8 +177,6 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
 
     /**
      * 간편결제 버튼에 브랜드 중심 설명을 사용할지 반환합니다.
-     *
-     * @return bool
      */
     private function usesBrandButton(): bool
     {
@@ -163,9 +185,6 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
 
     /**
      * 기존 플러그인 설정의 국내 간편결제 활성값을 읽습니다.
-     *
-     * @param  string  $id
-     * @return bool
      */
     private function domesticMethodEnabled(string $id): bool
     {
@@ -178,7 +197,6 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
      * KG 이니시스 플러그인 boolean 설정을 조회합니다.
      *
      * @param  string  $key  설정 키
-     * @return bool
      */
     private function settingEnabled(string $key): bool
     {
@@ -194,7 +212,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
      */
     private function buildEntry(string $id, string $nameKey, string $descriptionKey, string $icon, bool $isActive = false): array
     {
-        return [
+        $entry = [
             'id' => $id,
             'name' => [
                 'ko' => __($nameKey, [], 'ko'),
@@ -207,13 +225,26 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
             'icon' => $icon,
             'source' => 'plugin:sirsoft-pay_kginicis',
             'defaults' => [
-                // PG 선택 불필요 — orderResponseInterceptor 가 prefix 'kginicis_' 를 인식해
-                // 기본 PG 사 설정과 무관하게 KG 이니시스 결제 흐름으로 강제.
-                'pg_provider' => null,
+                // 간편결제는 KG 이니시스 결제창을 통해서만 처리되므로 PG 를 자기 자신으로 고정한다.
+                // null 로 두면 코어가 PG 없는 결제수단으로 오인해 결제 실패 주문에 관리자 알림이
+                // 발송되고 임시주문이 삭제되어 재결제가 막힌다(#475).
+                'pg_provider' => self::PG_PROVIDER_ID,
+                'pg_locked' => true,
+                'needs_pg' => true,
+                'refund_method' => 'pg',
                 'is_active' => $isActive,
                 'min_order_amount' => 0,
                 'stock_deduction_timing' => 'payment_complete',
+                'mileage_deduction_timing' => 'payment_complete',
             ],
         ];
+
+        // 브랜드 마크(SVG 로고)가 정의된 수단만 카탈로그에 실어 내린다.
+        // 레이아웃 BrandMark 컴포넌트가 svg 키를 화이트리스트 sanitize 후 렌더한다.
+        if (isset(self::BRAND_MARK_SVG[$id])) {
+            $entry['brand_mark'] = ['svg' => self::BRAND_MARK_SVG[$id]];
+        }
+
+        return $entry;
     }
 }

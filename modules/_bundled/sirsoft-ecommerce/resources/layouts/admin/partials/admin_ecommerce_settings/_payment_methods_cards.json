@@ -113,7 +113,7 @@
                 "if": "{{!$method._orphaned}}",
                 "props": {
                   "value": "{{$method.is_active}}",
-                  "disabled": "{{_computed.isReadOnly || !['point','deposit','free','dbank'].includes($method.id) && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider}}"
+                  "disabled": "{{_computed.isReadOnly || (!$method.pg_locked && $method.needs_pg && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider)}}"
                 },
                 "actions": [
                   {
@@ -192,10 +192,22 @@
                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider"
                   },
                   {
+                    "comment": "PG 고정 수단(간편결제 등) — 플러그인이 자기 PG 로 고정 선언했으므로 관리자가 바꿀 수 없다. PG 이름을 읽기전용으로 표시.",
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{$method.pg_locked}}",
+                    "props": {
+                      "data-testid": "{{'pg-locked-badge-' + $method.id}}",
+                      "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                    },
+                    "text": "{{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_fixed') + ' · ' + (((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider))?.name ? $localized(((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider)).name) : ($method.pg_provider ?? ''))}}"
+                  },
+                  {
                     "type": "basic",
                     "name": "Select",
-                    "if": "{{!['point','deposit','free','dbank'].includes($method.id) && (_local.form?.available_pg_providers ?? []).length > 0}}",
+                    "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length > 0}}",
                     "props": {
+                      "data-testid": "{{'pg-select-' + $method.id}}",
                       "value": "{{$method.pg_provider ?? ''}}",
                       "className": "w-full",
                       "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}",
@@ -216,8 +228,9 @@
                   {
                     "type": "basic",
                     "name": "Span",
-                    "if": "{{!['point','deposit','free','dbank'].includes($method.id) && (_local.form?.available_pg_providers ?? []).length === 0}}",
+                    "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length === 0}}",
                     "props": {
+                      "data-testid": "{{'pg-not-installed-' + $method.id}}",
                       "className": "text-hint italic"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed"
@@ -225,8 +238,9 @@
                   {
                     "type": "basic",
                     "name": "Span",
-                    "if": "{{['point','deposit','free','dbank'].includes($method.id)}}",
+                    "if": "{{!$method.pg_locked && !$method.needs_pg}}",
                     "props": {
+                      "data-testid": "{{'pg-not-required-' + $method.id}}",
                       "className": "text-hint"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required"

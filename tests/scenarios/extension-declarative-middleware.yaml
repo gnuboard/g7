@@ -1,0 +1,89 @@
+# audit:allow test-scenario-coverage reason: axes cross product(extension_type×group×timing×target_kind×extension_status×route_match = 256)는 조합 열거로, 실질 회귀 가드는 effects 가 담당한다. effects 는 test_files 의 메서드 docblock @effects 로 전수 매핑되어 개별 검증된다. target_kind 8종 매칭식·group 펼침·timing 분리·활성 필터·라우트명 vs URI 매칭은 registry 단위 테스트가 값별로 직접 관측하고, 게이트 실행/무명 라우트/실요청 파싱은 gate 테스트가 커버한다. 조합 개별 docblock 마킹은 effects 매핑과 중복이므로 생략.
+
+feature: 확장 선언 미들웨어 self-gate (getMiddleware + ExtensionMiddlewareGate)
+
+description: |
+  확장(모듈/플러그인)이 getMiddleware() 로 선언한 미들웨어를 코어가 요청 시점에
+  대상 매칭으로 실행하는 self-gate 아키텍처.
+
+  핵심 동작:
+    - AbstractModule/AbstractPlugin::getMiddleware() 가 [class, groups, timing, targets]
+      배열을 선언 (기본 []). interface 가 아닌 Abstract 에만 정의 — registry 는
+      method_exists 로 게이트.
+    - ExtensionMiddlewareRegistry 가 활성 확장의 선언을 수집해 [group.timing => 술어]
+      인덱스로 캐시. targets 는 술어(op=name|name_ext|name_core|uri|always)로 정규화.
+    - 코어 ExtensionMiddlewareGate 래퍼가 bootstrap 에서 web/api × before_core/after_core
+      로 4회 등록. 요청 시점에 라우트명·URI 를 술어와 대조해 매칭 미들웨어만 Pipeline 실행.
+    - 무명 SSR 셸 catch-all 대응: routeName='' 이어도 URI 패턴(op=uri)·everything(op=always)
+      술어는 매칭. 라우트명 계열(op=name*)은 무명에서 miss.
+    - 인덱스는 확장 활성/비활성/설치/제거/리로드 시 ExtensionMiddlewareRegistry::flush()
+      로 무효화 (Module/PluginManager 상태 변경 지점).
+
+  targets 카탈로그 (target_kind 축):
+    self / all_extensions / core / everything(·*) / module:{id} / plugin:{id} /
+    원시 라우트명 glob / brace / URI 패턴('/' 시작).
+
+  정밀도 (pay IP 화이트리스트):
+    self 로 뭉치지 않고 webhook 라우트명만 정밀 타게팅해 브라우저 콜백(payment.callback)에는
+    IP 가드가 부착되지 않도록 한다 — 결제 회귀 방지.
+
+axes:
+  extension_type: [module, plugin]
+  group: [web, api]
+  timing: [before_core, after_core]
+  target_kind: [self, all_extensions, core, everything, module_id, plugin_id, glob, brace, uri]
+  extension_status: [active, inactive]
+  route_match: [hit, miss]
+
+exclusions:
+  - { extension_status: inactive, route_match: hit, reason: "비활성 확장은 registry 인덱스에서 제외 → 어떤 라우트도 hit 불가" }
+
+effects:
+  # registry 매칭 (target_kind 값별)
+  - self_target_expands_to_own_extension_prefix_per_group
+  - all_extensions_matches_extension_routes_only
+  - core_target_matches_core_routes_only_negative_predicate
+  - everything_and_star_match_all_routes_including_unnamed
+  - module_id_and_plugin_id_target_scope_to_that_extension
+  - raw_glob_target_matches_route_name
+  - brace_target_expands_to_or_of_names
+  - uri_pattern_target_matches_path_not_route_name
+  # groups / timing / 검증
+  - groups_array_expands_to_per_group_entries
+  - empty_or_disallowed_groups_declaration_is_rejected
+  - missing_targets_declaration_is_rejected
+  - nonexistent_middleware_class_is_skipped
+  - before_core_and_after_core_timing_are_separated
+  - default_timing_is_after_core
+  - inactive_extension_is_excluded_from_index
+  - flush_rebuilds_index
+  # 게이트 실행
+  - gate_runs_matched_middleware_via_pipeline
+  - gate_passes_through_when_no_match
+  - gate_matched_middleware_can_short_circuit_response
+  - gate_execution_order_follows_matched_list
+  - gate_reaches_registry_and_runs_matched_for_unnamed_route
+  - gate_param_string_parses_group_and_timing_on_real_request
+  # 번들 이전 정밀도
+  - detect_device_declared_and_resolved_for_root_uri_web_only
+  - pay_ip_guard_matched_for_webhook_routes
+  - pay_ip_guard_not_matched_for_browser_callback
+  - gdpr_cookie_consent_declared_everything_before_core
+
+test_files:
+  - tests/Feature/Extension/ExtensionMiddlewareRegistryTest.php
+  - tests/Unit/Http/Middleware/ExtensionMiddlewareGateTest.php
+  - tests/Feature/Extension/ExtensionMiddlewareGateIntegrationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Providers/DetectDeviceMiddlewareRegistrationTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Middleware/RestrictKcpIpTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Middleware/InicisNotifyIpWhitelistGateTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Middleware/VbankNotifyIpWhitelistGateTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/PluginMiddlewareDeclarationTest.php
+
+rules_layer_coverage:
+  - rule: extension-middleware-declarative-registration
+    coverage: 번들 SP 의 Kernel 미들웨어 그룹 직접 조작 금지 — 이전 후 무검출, 이전 전 패턴 검출로 회귀 가드
+  - rule: extension-route-middleware-alias-reference
+    coverage: 번들 라우트 파일의 자기 미들웨어 FQCN 부착 금지 — 동일
+  - rule: extension-middleware-gate-cache-coverage
+    coverage: Abstract 에 getMiddleware 존재 시 Manager 에 registry flush 존재 — 배치 완전성은 flush_rebuilds_index effect 가 병행

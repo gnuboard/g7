@@ -9,6 +9,9 @@ use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\SequenceSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingCarrierSeeder;
+use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
+use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
+use Modules\Sirsoft\Ecommerce\Http\Middleware\VerifyGuestOrderToken;
 use Modules\Sirsoft\Ecommerce\Listeners\ActivityLogDescriptionResolver;
 use Modules\Sirsoft\Ecommerce\Listeners\AssignDefaultCurrencyOnRegisterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\AssignDefaultShippingCountryOnRegisterListener;
@@ -19,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceUserActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\InjectAppConfigDeviceListener;
 use Modules\Sirsoft\Ecommerce\Listeners\MergeCartOnLoginListener;
 use Modules\Sirsoft\Ecommerce\Listeners\MileageTransactionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\OrderActivityLogListener;
@@ -2007,6 +2011,7 @@ class Module extends AbstractModule
             UserMileageCleanupListener::class,
             EcommerceNotificationDataListener::class,
             OrderStatusNotificationListener::class,
+            InjectAppConfigDeviceListener::class,
         ];
     }
 
@@ -2071,6 +2076,51 @@ class Module extends AbstractModule
                 'schedule' => 'hourly',
                 'description' => '대시보드 판매 현황 집계',
                 'enabled_config' => 'sirsoft-ecommerce.dashboard.scheduler_enabled',
+            ],
+        ];
+    }
+
+    /**
+     * 이 모듈이 등록할 HTTP 미들웨어 선언을 반환합니다.
+     *
+     * 코어 self-gate 게이트가 요청 시점에 targets 패턴 매칭으로 실행합니다.
+     *
+     * - DetectDevice: 무명 User SSR 셸 catch-all(routes/web.php)에 라우트명이 없어 URI 패턴 '/' 로
+     *   타게팅(모든 web 요청 = 기존 web 그룹 append 와 동등). InjectAppConfigDeviceListener 가
+     *   appConfig.isIos 로 주입(체크아웃 애플페이 iOS 게이팅).
+     * - ResolveShippingCountry: 상품/장바구니/체크아웃/주문생성 라우트에만 부착 (배송국가 해석).
+     * - VerifyGuestOrderToken: 비회원 주문 후속 액션 4개 라우트에만 부착 (verify 는 미부착 —
+     *   토큰 발급 전 단계라 개별 지정).
+     *
+     * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}>
+     */
+    public function getMiddleware(): array
+    {
+        return [
+            [
+                'class' => DetectDevice::class,
+                'groups' => ['web'],
+                'targets' => ['/'],
+            ],
+            [
+                'class' => ResolveShippingCountry::class,
+                'groups' => ['api'],
+                'targets' => [
+                    'api.modules.sirsoft-ecommerce.products.*',
+                    'api.modules.sirsoft-ecommerce.cart.*',
+                    'api.modules.sirsoft-ecommerce.checkout.*',
+                    'api.modules.sirsoft-ecommerce.user.orders.store',
+                ],
+            ],
+            [
+                'class' => VerifyGuestOrderToken::class,
+                'groups' => ['api'],
+                'targets' => [
+                    'api.modules.sirsoft-ecommerce.guest.orders.cancel',
+                    'api.modules.sirsoft-ecommerce.guest.orders.estimate-refund',
+                    'api.modules.sirsoft-ecommerce.guest.orders.update-shipping-address',
+                    'api.modules.sirsoft-ecommerce.guest.orders.confirm-option',
+                ],
             ],
         ];
     }

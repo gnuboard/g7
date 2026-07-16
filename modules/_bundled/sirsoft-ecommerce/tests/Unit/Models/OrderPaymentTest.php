@@ -39,13 +39,28 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertEquals($order->id, $payment->order->id);
     }
 
-    public function test_order_payment_casts_method_to_enum(): void
+    public function test_order_payment_method_is_stored_as_plain_string(): void
     {
+        // payment_method 는 enum 캐스트를 두지 않는다 (#475) — PG 플러그인이 등록하는
+        // 확장 결제수단(예: nhnkcp_naverpay)은 enum case 가 없어 캐스트가 ValueError 를 던지기 때문.
+        // 능력 질의는 모델의 능력 메서드가 PaymentMethodResolver 에 위임해 답한다.
         $order = OrderFactory::new()->create();
         $payment = OrderPaymentFactory::new()->forOrder($order)->card()->create();
 
-        $this->assertInstanceOf(PaymentMethodEnum::class, $payment->payment_method);
-        $this->assertEquals(PaymentMethodEnum::CARD, $payment->payment_method);
+        $this->assertSame(PaymentMethodEnum::CARD->value, $payment->fresh()->payment_method);
+        $this->assertTrue($payment->isCardPayment());
+    }
+
+    public function test_order_payment_accepts_extension_payment_method_id(): void
+    {
+        // 확장 결제수단 ID 를 1급 시민으로 저장할 수 있어야 한다 (캐스트가 있으면 ValueError).
+        $order = OrderFactory::new()->create();
+        $payment = OrderPaymentFactory::new()->forOrder($order)->create([
+            'payment_method' => 'nhnkcp_naverpay',
+            'pg_provider' => 'nhnkcp',
+        ]);
+
+        $this->assertSame('nhnkcp_naverpay', $payment->fresh()->payment_method);
     }
 
     public function test_order_payment_casts_status_to_enum(): void
@@ -64,7 +79,7 @@ class OrderPaymentTest extends ModuleTestCase
             'card_name' => '신한카드',
         ]);
 
-        $this->assertEquals(PaymentMethodEnum::CARD, $payment->payment_method);
+        $this->assertTrue($payment->isCardPayment());
         $this->assertEquals('신한카드', $payment->card_name);
     }
 
@@ -73,7 +88,7 @@ class OrderPaymentTest extends ModuleTestCase
         $order = OrderFactory::new()->create();
         $payment = OrderPaymentFactory::new()->forOrder($order)->virtualAccount()->create();
 
-        $this->assertEquals(PaymentMethodEnum::VBANK, $payment->payment_method);
+        $this->assertTrue($payment->isVirtualAccount());
         $this->assertNotNull($payment->vbank_name);
         $this->assertNotNull($payment->vbank_number);
     }

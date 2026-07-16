@@ -35,7 +35,7 @@
 | order_status | query | array | 아니오 | — | 주문상태 다중 선택 필터 (OrderStatusEnum 값 배열, 해당 상태의 주문만 조회) |
 | option_status | query | array | 아니오 | — | 주문옵션 상태 다중 선택 필터 (OrderStatusEnum 값 배열, 해당 옵션 상태를 가진 주문만 조회) |
 | shipping_type | query | array | 아니오 | — | 배송유형 다중 선택 필터 (ShippingType 코드 배열) |
-| payment_method | query | array | 아니오 | — | 결제수단 다중 선택 필터 (PaymentMethodEnum 값 배열) |
+| payment_method | query | array | 아니오 | 결제수단 카탈로그에 등록된 ID | 결제수단 다중 선택 필터. 코어 8종과 PG 플러그인이 등록한 확장 결제수단 ID(예: `nhnkcp_naverpay`)를 모두 허용 |
 | category_id | query | integer | 아니오 | — | category 식별자 |
 | min_amount | query | integer | 아니오 | min 0 | 주문금액 범위 필터 하한 (이 금액 이상 주문만 조회) |
 | max_amount | query | integer | 아니오 | min 0 | 주문금액 범위 필터 상한 (이 금액 이하 주문만 조회) |
@@ -1330,7 +1330,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| payment_method | body | string | 예 | — | 결제수단 (PaymentMethodEnum 값 — card/vbank/dbank 등) |
+| payment_method | body | string | 예 | 결제수단 카탈로그에 등록된 ID | 결제수단. 코어 8종(`card`/`vbank`/`dbank`/`bank`/`phone`/`point`/`deposit`/`free`) 과 PG 플러그인이 등록한 확장 결제수단 ID(예: `nhnkcp_naverpay`, `kginicis_lpay`)를 모두 허용한다. 확장 결제수단도 1급 시민으로 그대로 저장된다. 카탈로그에 없는 값은 422 |
 | expected_total_amount | body | number | 예 | min 0 | 프론트가 계산한 예상 결제금액 (서버 재계산값과 대조해 금액 위변조 검증) |
 | shipping_memo | body | string | 아니오 | max 500 | 배송 요청사항 메모 |
 | depositor_name | body | string | 아니오 | max 50 | depositor 이름 (식별자) |
@@ -1362,18 +1362,33 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+| 이름 | 타입 | 조건 | 용도 |
+| --- | --- | --- | --- |
+| order | object | 항상 | 생성된 주문 리소스 |
+| redirect_url | string | 항상 | 결제가 필요 없는 주문의 이동 대상 (주문완료 페이지) |
+| requires_pg_payment | boolean | 항상 | PG 결제창을 거쳐야 하는 주문인지. 결제수단이 PG 를 요구하고(`needs_pg`), 해석된 PG 가 `manual`/`internal`/`none` 이 아니며, 잔여 결제액이 0보다 클 때 `true` |
+| pg_provider | string | `requires_pg_payment=true` | 결제를 처리할 PG (`sirsoft-` 접두사 부착 — 예: `sirsoft-nhnkcp`) |
+| pg_payment_data | object | `requires_pg_payment=true` | PG 결제창에 전달할 결제 정보 (아래 표) |
+| pg_payment_handler | string | `requires_pg_payment=true` **이고** PG 가 결제 진입 핸들러를 선언한 경우 | 프론트가 그대로 dispatch 할 결제 진입 핸들러 풀네임 (예: `sirsoft-pay_nhnkcp.requestPayment`). PG 가 미선언이면 이 키가 없으며, 템플릿은 PG 분기를 발화하지 않고 비-PG 흐름으로 안전 강하한다 |
 
-**응답 예시**
+`pg_payment_data` 필드:
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+| 이름 | 타입 | 용도 |
+| --- | --- | --- |
+| order_number | string | 주문번호 |
+| order_name | string | 주문명 (첫 상품명 + 외 N건) |
+| amount | number | PG 청구액 (결제 통화의 최소 화폐단위 정수) |
+| currency | string | 결제 통화 코드 |
+| customer_name / customer_email / customer_phone | string\|null | 주문자 정보 |
+| customer_key | string\|null | 회원 주문의 고객 식별자 (`user_{id}`), 비회원은 null |
+| payment_method | string | 선택된 결제수단 ID. 확장 결제수단이면 확장 ID 그대로(예: `nhnkcp_naverpay`) — PG 플러그인이 이 값으로 결제창의 결제수단을 결정한다 |
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다 |
 
 <!-- @generated:end -->
 

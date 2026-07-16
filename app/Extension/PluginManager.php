@@ -494,6 +494,9 @@ class PluginManager implements PluginManagerInterface
         // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
         $this->incrementExtensionCacheVersion();
 
+        // 확장 미들웨어 인덱스 무효화 — 새 플러그인의 미들웨어 선언이 즉시 게이트에 반영.
+        ExtensionMiddlewareRegistry::flush();
+
         // 훅 발행: 플러그인 설치 완료
         HookManager::doAction('core.plugins.installed', $pluginName);
 
@@ -629,6 +632,10 @@ class PluginManager implements PluginManagerInterface
             // 본인인증 route scope 캐시 무효화 — 재활성화 시 이 플러그인이 선언한 정책이
             // 다시 enforce 대상에 포함되도록 한다 (applyActiveExtensionScope 재평가).
             IdentityPolicy::flushRouteScopeCache();
+
+            // 확장 미들웨어 인덱스 무효화 — 재활성화 시 이 플러그인이 선언한 미들웨어가
+            // 게이트 매칭 후보에 다시 포함되도록 한다.
+            ExtensionMiddlewareRegistry::flush();
         }
 
         // 훅 발행: 플러그인 활성화 완료
@@ -774,6 +781,9 @@ class PluginManager implements PluginManagerInterface
             // 대상에서 즉시 제외되도록 한다. 정책 행은 변경하지 않으므로(enabled 보존)
             // IdentityPolicy 모델 이벤트가 발화하지 않아, 라이프사이클에서 명시적으로 호출한다.
             IdentityPolicy::flushRouteScopeCache();
+
+            // 확장 미들웨어 인덱스 무효화 — 비활성 플러그인의 미들웨어가 게이트 매칭에서 즉시 제외.
+            ExtensionMiddlewareRegistry::flush();
 
             // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
             HookManager::doAction('core.plugins.after_deactivate', $plugin->getIdentifier());
@@ -990,6 +1000,9 @@ class PluginManager implements PluginManagerInterface
 
                 // 플러그인 상태 캐시 무효화
                 self::invalidatePluginStatusCache();
+
+                // 확장 미들웨어 인덱스 무효화 — 제거된 플러그인의 미들웨어가 게이트 매칭에서 즉시 제외.
+                ExtensionMiddlewareRegistry::flush();
 
                 // 활성 플러그인 디렉토리 전체 삭제 (_pending/_bundled에 원본 보존되므로 재설치 가능)
                 $onProgress?->__invoke('files', '파일 삭제 중...');
@@ -3920,6 +3933,9 @@ class PluginManager implements PluginManagerInterface
             // pending/bundled 목록에서 제거
             unset($this->pendingPlugins[$pluginName]);
             unset($this->bundledPlugins[$pluginName]);
+
+            // 확장 미들웨어 인덱스 무효화 — 재로드된 플러그인의 갱신된 미들웨어 선언 반영.
+            ExtensionMiddlewareRegistry::flush();
         }
     }
 

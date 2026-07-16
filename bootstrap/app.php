@@ -7,6 +7,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckTemplateDependencies;
 use App\Http\Middleware\CheckUserStatus;
 use App\Http\Middleware\EnforceIdentityPolicy;
+use App\Http\Middleware\ExtensionMiddlewareGate;
 use App\Http\Middleware\GzipEncodeResponse;
 use App\Http\Middleware\MaintenanceModePage;
 use App\Http\Middleware\OptionalSanctumMiddleware;
@@ -106,6 +107,17 @@ $app = Application::configure(basePath: dirname(__DIR__))
             EnforceIdentityPolicy::class,
         ]);
 
+        // 확장 선언 미들웨어 self-gate 래퍼 — 확장이 getMiddleware() 로 선언한 미들웨어를
+        // 요청 시점에 라우트명·URI 매칭으로 실행. web/api × before_core/after_core 로 4회 등록.
+        //   - before_core → 그룹 선두(prepend): 코어 전처리(인증·SetLocale·IDV) 전체보다 먼저 실행
+        //   - after_core  → 그룹 후미(append): 코어 그룹 미들웨어 뒤에서 실행
+        // Kernel 의 prepend/append 는 코어 내부 구현이고, 확장 개발자·게이트 파라미터는
+        // before_core/after_core 의도 명칭만 본다. 매칭 확장 미들웨어가 없으면 no-op.
+        foreach (['web', 'api'] as $extGroup) {
+            $middleware->prependToGroup($extGroup, ExtensionMiddlewareGate::class.":{$extGroup},before_core");
+            $middleware->appendToGroup($extGroup, ExtensionMiddlewareGate::class.":{$extGroup},after_core");
+        }
+
         // 비인증 게스트 redirect 경로 가드 (공개#39).
         // Laravel 12 기본값은 `redirectGuestsTo(fn () => route('login'))` 인데,
         // 이 프로젝트엔 'login' 이름 라우트가 없어 Accept 헤더 없는 /api/* 비인증 요청이
@@ -134,6 +146,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'start.api.session' => StartApiSession::class,
             'seo' => SeoMiddleware::class,
             'identity.policy' => EnforceIdentityPolicy::class,
+            'extension.middleware' => ExtensionMiddlewareGate::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

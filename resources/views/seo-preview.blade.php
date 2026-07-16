@@ -4,7 +4,7 @@
   검색엔진 탭·레이아웃·모듈/코어 SEO 환경설정이 "설정/정의한 것의 산출물" 만 렌더한다.
   운영 seo.blade.php 와 달리 다음은 SEO 설정 산출물이 아니므로 미포함:
    - body 컴포넌트 마크업($bodyHtml) — 페이지 본문(검색엔진 탭과 무관)
-   - CSS($cssPath/$stylesheets) — 에셋
+   - CSS($stylesheets) — 에셋
    - 시스템 기본 메타(charset/viewport/generatorTag) — SEO 설정과 무관
    - Google Analytics 스크립트 — 추적(검색 노출 산출물 아님)
    - extraHeadTags/extraBodyEnd — 훅 주입 비-SEO 슬롯

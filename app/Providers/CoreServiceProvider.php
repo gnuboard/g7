@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Contracts\Extension\StorageInterface;
@@ -42,6 +43,7 @@ use App\Enums\DeactivationReason;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\CoreVersionChecker;
 use App\Extension\ExtensionManager;
+use App\Extension\ExtensionMiddlewareRegistry;
 use App\Extension\HookCacheManager;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
@@ -250,6 +252,9 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(CacheInterface::class, function () {
             return new CoreCacheDriver(config('cache.default'));
         });
+
+        // 확장 선언 미들웨어 self-gate 인덱스 (요청 내 인덱스 1회 빌드 → singleton)
+        $this->app->singleton(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
     }
 
     /**
