@@ -37,6 +37,38 @@ return [
         'save_failed_unexpected' => 'Unexpected error occurred while saving layout version.',
     ],
 
+    // Layout authoring format (.g7.html) compile exceptions
+    'layout_markup' => [
+        // Location prefix (common envelope for every compile error)
+        'error_at' => ':file (line :line, column :column): :detail [:code]',
+        'error_at_inline' => 'line :line, column :column: :detail [:code]',
+
+        // Markup structure
+        'unsupported_markup' => 'Unsupported markup: :found — .g7.html only uses elements, text and comments (<!-- -->).',
+        'unescaped_lt' => 'A < in text is parsed as the start of a tag. Write &lt; for a literal character.',
+        'eof_in_tag' => 'Tag <:tag> was not closed before the end of file. Add > or />.',
+        'eof_in_comment' => 'Comment was not closed before the end of file. Add -->.',
+
+        // Tag name
+        'empty_tag_name' => 'Tag name is empty.',
+        'tag_uppercase' => 'Tag names are lowercase: <:found> → <:suggestion>',
+        'invalid_tag_name' => 'Invalid tag name: <:found> — use lowercase letters and hyphens only (e.g. <data-grid>).',
+        'end_tag_self_closing' => 'End tags cannot be self-closing: </:tag/> → </:tag>',
+        'end_tag_with_attributes' => 'End tags cannot have attributes: </:tag>',
+        'void_end_tag' => '<:tag> cannot have content, so it has no end tag: remove </:tag>.',
+
+        // Attributes
+        'invalid_attribute_name' => 'Invalid attribute name: :found',
+        'unquoted_attribute_value' => 'Attribute values are always quoted: :attr=:found → :attr=":found"',
+        'unterminated_attribute_value' => 'The value of attribute :attr was not closed. Match the opening quote (:quote).',
+        'duplicate_attribute' => 'Attribute :attr is duplicated on <:tag>.',
+        'missing_attribute_separator' => 'Attributes must be separated by whitespace: add a space before :attr on <:tag>.',
+
+        // Character references
+        'unknown_entity' => 'Unknown character reference: :found — write &amp; for a literal ampersand.',
+        'invalid_entity' => 'Invalid character reference: :found',
+    ],
+
     // Settings related exceptions
     'settings' => [
         'backup_creation_failed' => 'Failed to create settings backup file.',

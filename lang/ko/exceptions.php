@@ -37,6 +37,38 @@ return [
         'save_failed_unexpected' => '레이아웃 버전 저장 중 예기치 않은 오류가 발생했습니다.',
     ],
 
+    // 레이아웃 저작 포맷(.g7.html) 컴파일 예외
+    'layout_markup' => [
+        // 위치 접두어 (모든 컴파일 오류 공통 봉투)
+        'error_at' => ':file (:line행 :column열): :detail [:code]',
+        'error_at_inline' => ':line행 :column열: :detail [:code]',
+
+        // 마크업 구조
+        'unsupported_markup' => '지원하지 않는 마크업입니다: :found — .g7.html 은 요소·텍스트·주석(<!-- -->)만 사용합니다.',
+        'unescaped_lt' => '텍스트에 사용된 < 는 태그 시작으로 해석됩니다. 문자 그대로 쓰려면 &lt; 로 표기하세요.',
+        'eof_in_tag' => '태그 <:tag> 가 닫히지 않은 채 파일이 끝났습니다. > 또는 /> 를 추가하세요.',
+        'eof_in_comment' => '주석이 닫히지 않은 채 파일이 끝났습니다. --> 를 추가하세요.',
+
+        // 태그명
+        'empty_tag_name' => '태그명이 비어 있습니다.',
+        'tag_uppercase' => '태그명은 소문자로 씁니다: <:found> → <:suggestion>',
+        'invalid_tag_name' => '사용할 수 없는 태그명입니다: <:found> — 소문자와 하이픈만 사용합니다 (예: <data-grid>).',
+        'end_tag_self_closing' => '종료 태그는 자기닫힘 표기를 쓸 수 없습니다: </:tag/> → </:tag>',
+        'end_tag_with_attributes' => '종료 태그에는 속성을 쓸 수 없습니다: </:tag>',
+        'void_end_tag' => '<:tag> 는 내용을 가질 수 없는 요소라 종료 태그가 없습니다: </:tag> 를 삭제하세요.',
+
+        // 속성
+        'invalid_attribute_name' => '사용할 수 없는 속성명입니다: :found',
+        'unquoted_attribute_value' => '속성값은 항상 따옴표로 감쌉니다: :attr=:found → :attr=":found"',
+        'unterminated_attribute_value' => '속성 :attr 의 값이 닫히지 않았습니다. 여는 따옴표(:quote)와 짝을 맞추세요.',
+        'duplicate_attribute' => '속성 :attr 가 <:tag> 에 중복 지정되었습니다.',
+        'missing_attribute_separator' => '속성 사이에는 공백이 필요합니다: <:tag> 의 :attr 앞을 띄우세요.',
+
+        // 문자 참조
+        'unknown_entity' => '알 수 없는 문자 참조입니다: :found — & 자체를 쓰려면 &amp; 로 표기하세요.',
+        'invalid_entity' => '유효하지 않은 문자 참조입니다: :found',
+    ],
+
     // 설정 관련 예외
     'settings' => [
         'backup_creation_failed' => '설정 백업 파일 생성에 실패했습니다.',

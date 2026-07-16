@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.5] - 2026-07-16
+
+### Added
+
+- 아직 공개하지 않은 레이아웃 저작 포맷의 문법 오류 안내 문구 일본어 번역 추가 (`exceptions.layout_markup.*`) — 향후 정식 공개에 대비한 것으로, 저작한 화면 파일에 잘못된 표기가 있을 때 어느 줄을 어떻게 고쳐야 하는지 알리는 안내가 일본어 로케일에서 자연스럽게 표시됩니다.
+
 ## [1.0.4] - 2026-07-16
 
 ### Added

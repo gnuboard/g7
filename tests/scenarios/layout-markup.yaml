@@ -1,0 +1,80 @@
+feature: 레이아웃 저작 포맷 (.g7.html) 컴파일러
+
+description: |
+  JSON 레이아웃 엔진을 런타임 SSoT 로 유지한 채, HTML 유사 저작 포맷 `.g7.html` 을
+  설치 시 서버(PHP)가 JSON 으로 컴파일하는 파이프라인.
+
+  본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S3 액션 → S4 문서 5계층
+  → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는 **S1(토크나이저)** 이며,
+  이후 단계가 axes/effects/test_files 를 확장한다.
+
+  S1 범위 — MarkupTokenizer + CompileError:
+    - 소스 문자열 → 평면 토큰 스트림(start_tag/end_tag/text/comment). 중첩·짝 맞춤은
+      다루지 않는다(트리 구성은 S2).
+    - HTML5 부분집합만 인정하고 나머지는 라인·컬럼이 붙은 CompileError 로 거부한다.
+      브라우저 파서의 오류 복구(미닫힘 자동 보정)를 쓰지 않는 이유가 이것이다 —
+      침묵 보정은 컴파일러의 존재 이유와 정반대다.
+    - 부분집합: 속성값 항상 인용 / 불리언 속성은 존재·부재 / 태그명 소문자·kebab /
+      속성명 원문 보존(대소문자·대괄호·콜론) / 문자 참조는 세미콜론 필수 / raw text 요소 없음.
+    - void 요소 = HTML5 표준 14종 − `meta` = 13종. G7 에서 `<meta>` 는 `<seo>` 를 품는
+      컨테이너 섹션이므로 void 일 수 없다(매핑 사전 A).
+
+# 축은 토큰 종류 × 소스 적법성 두 개다. 태그 형태(container/self_closing/void)·속성 표기·
+# 값 내용은 축으로 두면 조합이 4천 건대로 발산하는데, 그 대부분이 구조적으로 성립하지
+# 않는다(텍스트 토큰에 속성 표기가 없고, 불리언 속성에 값 내용이 없다). 조합 열거로
+# 부풀리는 대신 effects 에서 값별로 직접 관측한다 — 아래 effects 는 전부 테스트 docblock
+# @effects 로 개별 매핑되어 기계 검증된다.
+axes:
+  token_kind: [start_tag, end_tag, text, comment]
+  source_health: [valid, invalid]
+
+effects:
+  # 토큰 방출
+  - start_tag_carries_name_attributes_and_source_position
+  - end_tag_and_text_and_comment_tokens_are_emitted_in_authoring_order
+  - self_closing_tag_is_marked_without_end_tag
+  - void_element_is_auto_closed_without_slash
+  - meta_is_a_container_not_a_void_element
+  - script_is_a_normal_element_not_raw_text
+  - empty_source_yields_no_tokens
+  # 직렬화 충실도
+  - boolean_attribute_value_is_null_and_distinct_from_empty_string
+  - attribute_names_are_preserved_verbatim_including_case_brackets_and_colon
+  - attribute_order_is_preserved
+  - tag_names_are_lowercased_while_attribute_case_is_kept
+  - character_references_are_decoded_in_text_and_attribute_values
+  - bare_ampersand_is_preserved_for_expressions
+  - angle_brackets_inside_quoted_values_pass_through
+  - comment_content_is_verbatim_and_not_entity_decoded
+  - text_whitespace_is_preserved_and_flagged_for_upper_layers
+  - bom_is_stripped_and_crlf_is_normalized_to_lf
+  # 좌표
+  - line_and_column_are_tracked_across_lines
+  - column_counts_characters_not_bytes
+  - attribute_positions_are_recorded
+  - tokenizer_instance_resets_state_between_runs
+  # 거부 (부분집합 위반)
+  - doctype_cdata_and_processing_instruction_are_rejected
+  - unescaped_lt_in_text_is_rejected_with_entity_suggestion
+  - eof_inside_tag_or_comment_is_rejected
+  - uppercase_tag_is_rejected_with_lowercase_suggestion
+  - invalid_tag_name_is_rejected
+  - end_tag_with_attributes_or_self_closing_is_rejected
+  - void_end_tag_is_rejected
+  - unquoted_attribute_value_is_rejected
+  - unterminated_attribute_value_is_rejected
+  - duplicate_attribute_is_rejected
+  - missing_attribute_separator_is_rejected
+  - unknown_or_invalid_character_reference_is_rejected
+  # 오류 보고 계약
+  - error_carries_code_line_column_and_path
+  - error_message_is_translated_per_locale
+  - error_detail_is_not_mangled_by_envelope_replacement
+  - every_error_code_has_ko_and_en_messages
+  # 견고성
+  - random_input_terminates_with_tokens_or_compile_error
+  - mutated_valid_document_terminates_with_tokens_or_compile_error
+
+test_files:
+  - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
+  - tests/Unit/Enums/LayoutMarkupErrorCodeTest.php
