@@ -1369,7 +1369,7 @@ Accept: application/json
 
 <!-- @generated:end -->
 
-**설명** 플러그인의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 편집 모드 부팅 시 ComponentRegistry 가 활성 확장 매니페스트를 네임스페이스 병합하기 위해 fetch 하며, 구버전 플러그인처럼 파일이 없으면 빈 components 로 폴백합니다. 응답은 1시간 캐시됩니다. 플러그인 미존재 시 404.
+**설명** 플러그인의 컴포넌트 정의 파일(components.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 구버전 플러그인처럼 파일이 없으면 빈 components 로 폴백합니다. 응답은 1시간 캐시됩니다. 플러그인 미존재 시 404. 코어 프론트엔드에는 이 엔드포인트의 호출자가 없습니다 — 런타임 ComponentRegistry 와 레이아웃 편집기는 `/api/templates/{identifier}/components.json` 만 조회하고, 확장 UI 는 매니페스트가 아니라 레이아웃 확장(`extension_point`)으로 주입됩니다. 확장이 자체적으로 소비하거나 제3자 도구가 읽는 공개 표면으로 제공됩니다.
 
 
 ### GET /api/plugins/{identifier}/editor-spec

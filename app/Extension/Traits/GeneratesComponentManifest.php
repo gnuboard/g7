@@ -9,9 +9,16 @@ namespace App\Extension\Traits;
  * 소스를 스캔해 `{ identifier, version, components: { basic[], composite[], layout[] } }`
  * 매니페스트를 빌드 경로 루트에 작성한다.
  *
- * 편집 모드 부팅 시 코어 `ComponentRegistry` 가 활성 확장의 components.json 을
- * 네임스페이스 병합해 자동 컨트롤 생성(props 메타)의 입력으로 쓴다. 본 매니페스트가
- * 없으면 그 확장 컴포넌트는 메타데이터 없이 무손실 보존만 된다(원칙 4.6 디그레이드).
+ * 현재 이 매니페스트를 읽는 코어 소비자는 없다 — 런타임 `ComponentRegistry` 와 레이아웃
+ * 편집기는 `/api/templates/{id}/components.json`(대상 템플릿 것) 만 fetch 하고
+ * (ComponentRegistry.ts:250, LayoutEditorChrome.tsx:226), 확장 components.json 을 부르는
+ * 프론트 호출자는 0건이며 네임스페이스 병합 로직도 없다. 확장 UI 는 매니페스트가 아니라
+ * `extension_point` 로 주입된다. 네임스페이스 병합을 하는 것은 **editor-spec.json**
+ * (editorSpecLoader.ts) 이지 components.json 이 아니다 — 두 매니페스트를 섞지 말 것.
+ *
+ * 즉 본 트레이트는 아직 소비자가 없는 산출물을 만든다(`/api/{modules,plugins}/{id}/components.json`
+ * 공개 표면으로만 노출). 확장 컴포넌트에 메타데이터를 붙이는 소비 경로가 생기면 이 서술을
+ * 갱신한다.
  *
  * 스캔 규칙:
  *  - 컴포넌트 소스는 확장의 `resources/js/components/{basic,composite,layout}/` 하위
