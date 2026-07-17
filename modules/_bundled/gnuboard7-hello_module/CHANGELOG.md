@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.2.0] - 2026-07-17
+
+### Added
+
+- 모듈이 화면 컴포넌트를 제공하는 예시로 `MemoCard` 를 추가했습니다. 레이아웃에서는 모듈
+  식별자가 앞에 붙은 태그로 씁니다 — `<gnuboard7-hello-module-memo-card title="..."/>`.
+- 관리자 템플릿에서만 다른 모양으로 나오는 `MemoCard` 판본을 함께 넣었습니다. 같은 태그로
+  저작하면 어느 템플릿을 쓰는지에 따라 알맞은 판본이 자동으로 선택됩니다.
+- 모듈이 자기 컴포넌트를 코어에 등록하는 최소 코드를 프론트엔드 진입 파일에 담았습니다.
+
 ## [0.1.0] - 2026-07-01
 
 ### Changed

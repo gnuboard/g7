@@ -941,3 +941,19 @@ const renderChildren = useMemo(() => {
 - [데이터 바인딩](data-binding.md) - `{{}}` 표현식, `$t:` 다국어
 - [데이터 소스](data-sources.md) - API 데이터 자동 fetch
 - [상태 관리](state-management.md) - `_global` 전역 상태
+
+## 확장이 제공하는 컴포넌트
+
+노드 `name` 에 `{확장식별자}.{이름}` 을 그대로 쓴다.
+
+```json
+{
+  "type": "composite",
+  "name": "sirsoft-ecommerce.ProductCard",
+  "props": { "title": "{{product.name}}" }
+}
+```
+
+저작 어휘는 템플릿 `components.json` 단독이 아니라 템플릿 + 활성 모듈 + 활성 플러그인 3계통이다. 템플릿이 그 컴포넌트를 오버라이드했더라도 노드 `name` 은 바뀌지 않는다 — 대체는 같은 이름 아래에서 일어난다.
+
+규약 전문: [../extension/extension-components.md](../extension/extension-components.md)

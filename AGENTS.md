@@ -98,13 +98,14 @@
 | [handlers.md](docs/frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
 | [layouts.md](docs/frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 | 베이스: _user_base.json (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯) |
 
-### 확장 시스템 [extension/](docs/extension/) (30개)
+### 확장 시스템 [extension/](docs/extension/) (31개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
 | [cache-driver.md](docs/extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) | 모든 캐시 저장은 CacheInterface 사용 (Cache:: 직접 호출 금지) |
 | [changelog-rules.md](docs/extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) | 확장/코어 버전 업 시 CHANGELOG.md에 변경사항 기록 필수 (미기록 시 버전 업 불가) |
 | [editor-spec.md](docs/extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) | editor-spec.json = 편집기 팔레트/스타일 컨트롤/중첩 규칙/샘플 데이터/레시피의 선언 (... |
+| [extension-components.md](docs/extension/extension-components.md) | 확장 컴포넌트 (Extension Components) | 확장 컴포넌트 이름 = {확장식별자}.{이름} / 저작 태그 = <{정규화된-식별자}-{kebab}> ... |
 | [extension-manager.md](docs/extension/extension-manager.md) | ExtensionManager (확장 관리자) | composer.json 수정 없음 - 런타임 오토로드 방식 사용 |
 | [extension-update-system.md](docs/extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) | 업데이트 감지 우선순위: GitHub > _bundled (2단계, _pending 미참여) |
 | [hooks.md](docs/extension/hooks.md) | 훅 시스템 (Hook System) | Action 훅: doAction() - 부가 작업 (로그, 알림, 캐시) |
@@ -153,7 +154,7 @@
 | 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 35 / 291 |
 
 
-### 확장 API 레퍼런스 (9개 확장, 자동 스캔)
+### 확장 API 레퍼런스 (11개 확장, 자동 스캔)
 
 > 각 확장이 소유하는 API 문서 목차. `php artisan api:docgen` 이 생성하며, 이 표는 `{modules,plugins}/_bundled/*/docs/api/README.md` 를 패턴 스캔해 자동 편입된다(확장명 하드코딩 없음).
 
@@ -167,6 +168,8 @@
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
 | `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 22 |
+| `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 0 / 0 |
+| `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |
 | `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 1 / 1 |
 
 
@@ -751,6 +754,11 @@ BaseApiController (최상위)
 필수: 버전 업 시 CHANGELOG.md 기록 — Keep a Changelog 표준 (미기록 시 버전 업 불가)
 필수: StorageInterface 사용 (Storage::disk() 직접 호출 금지)
 필수: 확장 미들웨어는 getMiddleware() 로 부착 대상(targets) 명시 선언 (self-gate) — SP Kernel 미들웨어 그룹 직접 조작·라우트 파일 자기 미들웨어 FQCN 부착 금지, 무규율 전역 개입 금지
+필수: 확장 컴포넌트는 `{확장식별자}.{이름}` 으로 등록 (핸들러 네임스페이스 관례와 동일). 접두어 없는 이름은 템플릿 소유 컴포넌트를 덮어쓰므로 거부됨. 저작 태그는 식별자의 `_` 를 `-` 로 접은 프리픽스가 앞에 붙음 — `<sirsoft-ecommerce-product-card>`
+필수: 확장 컴포넌트 등록은 확장 번들이 자가 수행 — `G7Core.getComponentRegistry().registerExtensionComponent()`. 템플릿처럼 매니페스트 + 전역 변수 경로로 실릴 자리가 확장에는 없음
+절대 금지: 확장이 `resources/js/components/overrides/` 를 두는 것 → 다른 확장의 컴포넌트를 대체할 권한은 템플릿 전용 (레이아웃 오버라이드가 `source_type=template` 일 때만 성립하는 것과 같은 규약). 자기 컴포넌트의 특정 템플릿 전용 판본이라면 `components/for/{템플릿식별자}/`
+필수: 템플릿이 확장 컴포넌트를 대체할 때는 `components/overrides/{확장식별자}/` + 매니페스트 `overrides[]`(대상·버전 제약). 비호환이면 대체본 폐기 후 원본 폴백. 대체는 같은 이름 아래에서 일어나므로 저작 표면 불변
+필수: 템플릿 전용 판본(`for`) 선택은 코어가 전담 — 확장은 `forTemplate` 으로 선언만 하고 활성 템플릿을 읽어 스스로 분기하지 않음
 필수: 코어 레이아웃에 모듈 UI 주입은 layout_extensions만 사용
 필수: 모든 확장 작업은 Artisan 커맨드로 수행
 ```

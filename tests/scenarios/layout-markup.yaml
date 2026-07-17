@@ -4,9 +4,9 @@ description: |
   JSON 레이아웃 엔진을 런타임 SSoT 로 유지한 채, HTML 유사 저작 포맷 `.g7.html` 을
   설치 시 서버(PHP)가 JSON 으로 컴파일하는 파이프라인.
 
-  본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S3 액션 → S4 문서 5계층
-  → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는 **S1~S2** 이며,
-  이후 단계가 axes/effects/test_files 를 확장한다.
+  본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
+  S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는
+  **S1~S2.5** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
 
   S1 범위 — MarkupTokenizer + CompileError:
     - 소스 문자열 → 평면 토큰 스트림(start_tag/end_tag/text/comment). 중첩·짝 맞춤은
@@ -22,13 +22,24 @@ description: |
   S2 범위 — ComponentRegistry + MarkupTreeBuilder + NodeCompiler + StateTreeCompiler:
     - 토큰 스트림 → 요소 트리 → JSON 노드(매핑 사전 C). 액션(`<on>`)·임베딩 hoist
       (`<cell>`·`<responsive>`)·문서 루트(`<layout>`)는 각각 S3·S5·S4 몫이다.
-    - 태그 해석 소스 = **대상 템플릿의 components.json 단일**. 확장 매니페스트는 런타임
-      소비 경로가 없어(프론트 호출자 0건 + 번들 확장 전부 빈 컴포넌트) 병합하지 않는다.
     - 속성 3분할: 무접두 = props(원문 통과) / `data-*` 예약 = 엔진 지시자 / `:attr` = 타입 리터럴.
     - props 는 화이트리스트로 검증하지 않는다 — components.json 의 prop 선언 커버리지가
       실측 75~77% 에 그치고 미선언 상위가 `Button.type`·`Input.value` 같은 정상 props 다.
     - 표현식은 어느 위치에서도 선평가하지 않는다. 컴파일러가 표현식에 관여하는 지점은
       `data-if` 혼합형 판정 하나뿐이다(계획 D3/D4).
+
+  S2.5 범위 — ComponentManifest + ComponentOverrideResolver + 런타임 self-register:
+    - 태그 해석 소스 = **템플릿 + 활성 모듈 + 활성 플러그인 3계통**. 확장이 자기 컴포넌트를
+      제공할 수 있게 되면서 저작 어휘가 템플릿 단독 소유에서 벗어났다(D25 — D20 개정).
+    - 좌표계는 소유자로 갈린다: 템플릿은 `DataGrid`/`<data-grid>`, 확장은
+      `{식별자}.{이름}`/`<{정규화된-식별자}-{kebab}>`. 프리픽스 덕에 템플릿↔확장·확장↔확장
+      이름 충돌이 구조적으로 불가능하다.
+    - 태그 프리픽스는 식별자의 `_` 를 `-` 로 접는다 — 번들 확장 14개 중 7개가 언더스코어를
+      품는데 저작 태그명은 소문자·하이픈만 허용하기 때문이다. 접은 결과가 겹치는 두 확장은 거부.
+    - 세 개념을 섞지 않는다: **제공**(확장) / **오버라이드**(템플릿만 — 남의 것을 대체) /
+      **템플릿 전용 판본 `for`**(확장 — 자기 것을 그 템플릿에서만 다르게).
+    - 오버라이드 승패는 **집합 필터링**이지 priority 가 아니고, 비호환이면 원본 폴백이다
+      (레이아웃 오버라이드 규약 계승). 판본 **선택**은 런타임 관심사라 컴파일러가 모른다.
 
 # 축은 컴파일 단위 × 소스 적법성 두 개다. 값 형태(태그 형태·토큰 종류·속성 표기·값 타입)를
 # 축으로 두면 조합이 수천 건대로 발산하는데 그 대부분이 구조적으로 성립하지 않는다(텍스트
@@ -134,10 +145,37 @@ effects:
   - state_tree_leaf_type_follows_type_literal_rule
   # --- S2 선평가 금지 (skipBindingKeys 패리티)
   - expressions_and_translation_keys_are_never_pre_evaluated
+  # --- S2.5 매니페스트 소유자 (스키마 통일)
+  - manifest_owner_kind_resolved_from_declaring_field
+  - manifest_without_owner_is_rejected
+  - manifest_with_two_owners_is_rejected
+  # --- S2.5 ① 제공 (프리픽스 태그)
+  - extension_component_gets_prefixed_tag_and_namespaced_name
+  - template_component_tag_unchanged_by_extension_merge
+  - underscored_extension_id_normalizes_to_hyphenated_tag_prefix
+  - colliding_normalized_extension_ids_are_rejected
+  - undeclared_tag_conflict_across_sources_is_rejected
+  - suggestion_covers_extension_component_tags
+  # --- S2.5 ② 오버라이드 (템플릿 전용 권한)
+  - template_override_replaces_extension_component_in_place
+  - incompatible_override_falls_back_to_original
+  - override_for_absent_extension_is_inert
+  - override_naming_unknown_component_of_active_extension_is_rejected
+  - extension_declaring_overrides_is_rejected
+  - duplicate_override_of_same_component_is_rejected
+  # --- S2.5 ③ 템플릿 전용 판본
+  - for_variant_does_not_change_tag_resolution
+  - for_variant_without_an_original_is_rejected
+  - template_declaring_for_variants_is_rejected
+  # --- S2.5 저작 표면 (세 개념이 같은 태그로 저작된다)
+  - extension_component_authoring_is_identical_across_three_concepts
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
   - tests/Unit/Support/LayoutMarkup/ComponentRegistryTest.php
+  - tests/Unit/Support/LayoutMarkup/ExtensionComponentRegistryTest.php
   - tests/Unit/Support/LayoutMarkup/MarkupTreeBuilderTest.php
   - tests/Unit/Support/LayoutMarkup/NodeCompilerTest.php
   - tests/Unit/Enums/LayoutMarkupErrorCodeTest.php
+  # 런타임 self-register 계약 — 판본 선택·오버라이드 우선순위는 코어가 판정한다
+  - resources/js/core/template-engine/__tests__/ComponentRegistry.extension.test.ts

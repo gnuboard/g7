@@ -122,6 +122,46 @@ enum LayoutMarkupErrorCode: string
     case AmbiguousComponentTag = 'ambiguous_component_tag';
 
     /**
+     * 매니페스트가 소유자를 두 가지로 밝힘 (`templateId` 와 `identifier` 동시 선언).
+     */
+    case ManifestOwnerAmbiguous = 'manifest_owner_ambiguous';
+
+    /**
+     * 매니페스트가 소유자를 밝히지 않음 (`templateId`·`identifier` 둘 다 없음).
+     */
+    case ManifestOwnerMissing = 'manifest_owner_missing';
+
+    /**
+     * 확장이 컴포넌트 오버라이드를 선언함 (오버라이드 권한은 템플릿 전용).
+     */
+    case ExtensionOverridesForbidden = 'extension_overrides_forbidden';
+
+    /**
+     * 템플릿이 템플릿 전용 판본(`for`)을 선언함 (판본 선언은 확장 전용).
+     */
+    case TemplateForVariantForbidden = 'template_for_variant_forbidden';
+
+    /**
+     * 오버라이드가 대상 확장에 없는 컴포넌트를 지목함.
+     */
+    case OverrideTargetComponentUnknown = 'override_target_component_unknown';
+
+    /**
+     * 같은 대상 컴포넌트를 두 번 오버라이드함.
+     */
+    case DuplicateOverrideTarget = 'duplicate_override_target';
+
+    /**
+     * 템플릿 전용 판본이 그 확장에 없는 컴포넌트를 지목함.
+     */
+    case ForVariantComponentUnknown = 'for_variant_component_unknown';
+
+    /**
+     * 두 확장 식별자가 같은 태그 프리픽스로 정규화됨 (`a_b` 와 `a-b`).
+     */
+    case ExtensionIdTagCollision = 'extension_id_tag_collision';
+
+    /**
      * 열린 태그가 없는데 종료 태그를 만남 (`</div>` 단독).
      */
     case UnexpectedEndTag = 'unexpected_end_tag';

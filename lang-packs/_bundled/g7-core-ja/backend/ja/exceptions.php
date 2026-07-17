@@ -120,5 +120,13 @@ return [
             'embedding' => '埋め込み',
             'document_section' => 'ドキュメントセクション',
         ],
+        'manifest_owner_ambiguous' => 'コンポーネントレジストリが templateId と identifier を一緒に宣言しました。テンプレートなら templateId、モジュール·プラグインなら identifier だけ残してください。',
+        'manifest_owner_missing' => 'コンポーネントレジストリに所有者がありません。テンプレートなら templateId、モジュール·プラグインなら identifier を宣言してください。',
+        'extension_overrides_forbidden' => ':extension は拡張なので overrides を宣言できません。他の拡張のコンポーネントを代替することはテンプレートだけできて、自分のコンポーネントを特定のテンプレートでのみ異なるようにするなら for を使ってください。',
+        'template_for_variant_forbidden' => 'テンプレートは for を宣言できません。for は拡張が自分のコンポーネントのテンプレート専用版を出すときだけ使います。',
+        'override_target_component_unknown' => ':target 拡張に :component コンポーネントがありません。名前を確認するか targetVersion 制約を合わせてください。',
+        'duplicate_override_target' => ':component を2回オーバーライドしました。代替コンポーネントは1つだけ宣言してください。',
+        'for_variant_component_unknown' => 'for.:template が指し示す :component はこの拡張が提供するコンポーネントではありません。専用版は原本があるべきです。',
+        'extension_id_tag_collision' => ':first と :second が同じタグ接頭辞(:prefix)で重なっています。2つの拡張のコンポーネントをタグで区別できません。',
     ],
 ];

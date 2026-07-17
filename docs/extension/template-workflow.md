@@ -40,6 +40,12 @@
 
 ---
 
+## 확장 컴포넌트 오버라이드
+
+확장이 제공한 컴포넌트를 이 템플릿의 서식으로 갈아끼우려면 `src/components/overrides/{확장식별자}/{이름}.tsx` + `components.json` 의 `overrides[]` 선언을 함께 둔다. 레이아웃 오버라이드(`layouts/overrides/`)와 같은 규약이며, 비호환 버전이면 원본으로 폴백한다.
+
+규약 전문: **[extension-components.md](extension-components.md)**
+
 ## 템플릿 생성 체크리스트
 
 새 템플릿 생성 시 아래 체크리스트를 순서대로 완료합니다:

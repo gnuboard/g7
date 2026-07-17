@@ -475,6 +475,14 @@ php artisan extension:update-autoload
 
 ---
 
+## 화면 컴포넌트 제공
+
+모듈은 자기 화면 컴포넌트를 제공할 수 있다. 소스는 `resources/js/components/{basic,composite,layout}/` 에 두고, 이름은 `{모듈식별자}.{이름}` 으로 등록하며(저작 태그는 `<sirsoft-ecommerce-product-card>` 처럼 식별자 프리픽스가 붙는다), 등록은 모듈 번들이 스스로 한다.
+
+모듈은 **다른 확장의 컴포넌트를 대체할 수 없다** — 그 권한은 템플릿 전용이다. 자기 컴포넌트를 특정 템플릿에서만 다르게 내려면 `resources/js/components/for/{템플릿식별자}/` 를 쓴다. `resources/js/components/overrides/` 를 두면 audit 이 차단한다.
+
+규약 전문(디렉토리·이름·등록 API·판본 선택·오버라이드 폴백): **[extension-components.md](extension-components.md)**
+
 ## 모듈 디렉토리 구조
 
 ```

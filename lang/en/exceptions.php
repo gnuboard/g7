@@ -74,6 +74,14 @@ return [
         'manifest_invalid_json' => 'The component registry is not valid JSON: :reason',
         'manifest_invalid' => 'The component registry is missing a required field or has the wrong shape: :field',
         'ambiguous_component_tag' => 'Two components resolve to <:tag>: :first, :second — give them distinct names in the registry.',
+        'manifest_owner_ambiguous' => 'The component registry declares both templateId and identifier. Keep templateId for a template, or identifier for a module/plugin.',
+        'manifest_owner_missing' => 'The component registry has no owner. Declare templateId for a template, or identifier for a module/plugin.',
+        'extension_overrides_forbidden' => ':extension is an extension and cannot declare overrides. Only a template may replace another extension\'s component; to ship a template-specific edition of your own component, use for.',
+        'template_for_variant_forbidden' => 'A template cannot declare for. Only an extension uses for, to ship a template-specific edition of its own component.',
+        'override_target_component_unknown' => 'The :target extension has no component named :component. Check the name, or fix the targetVersion constraint.',
+        'duplicate_override_target' => ':component is overridden twice. Declare only one replacement.',
+        'for_variant_component_unknown' => 'for.:template names :component, which this extension does not provide. A template-specific edition needs an original.',
+        'extension_id_tag_collision' => ':first and :second collapse to the same tag prefix (:prefix). Their components cannot be told apart by tag.',
 
         // Tree structure
         'unexpected_end_tag' => 'End tag with no open tag: </:tag>',

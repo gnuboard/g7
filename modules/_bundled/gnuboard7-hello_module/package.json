@@ -1,0 +1,35 @@
+{
+  "name": "@gnuboard7/hello-module",
+  "version": "0.2.0",
+  "description": "Gnuboard7 Hello Module - 학습용 최소 샘플 모듈 (Memo CRUD + 컴포넌트 제공)",
+  "type": "module",
+  "files": [
+    "dist",
+    "components.json"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "g7",
+    "module",
+    "hello",
+    "sample",
+    "learning"
+  ],
+  "author": "gnuboard7",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "typescript": "^5.7.0",
+    "vite": "^7.0.4"
+  }
+}

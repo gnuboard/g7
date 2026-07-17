@@ -74,6 +74,14 @@ return [
         'manifest_invalid_json' => '컴포넌트 레지스트리가 올바른 JSON 이 아닙니다: :reason',
         'manifest_invalid' => '컴포넌트 레지스트리에 필수 항목이 없거나 형식이 다릅니다: :field',
         'ambiguous_component_tag' => '<:tag> 로 해석되는 컴포넌트가 둘입니다: :first, :second — 레지스트리에서 이름을 구분하세요.',
+        'manifest_owner_ambiguous' => '컴포넌트 레지스트리가 templateId 와 identifier 를 함께 선언했습니다. 템플릿이면 templateId, 모듈·플러그인이면 identifier 만 남기세요.',
+        'manifest_owner_missing' => '컴포넌트 레지스트리에 주인이 없습니다. 템플릿이면 templateId, 모듈·플러그인이면 identifier 를 선언하세요.',
+        'extension_overrides_forbidden' => ':extension 은 확장이라 overrides 를 선언할 수 없습니다. 다른 확장의 컴포넌트를 대체하는 것은 템플릿만 할 수 있고, 자기 컴포넌트를 특정 템플릿에서만 다르게 내려면 for 를 사용하세요.',
+        'template_for_variant_forbidden' => '템플릿은 for 를 선언할 수 없습니다. for 는 확장이 자기 컴포넌트의 템플릿 전용 판본을 낼 때만 사용합니다.',
+        'override_target_component_unknown' => ':target 확장에 :component 컴포넌트가 없습니다. 이름을 확인하거나 targetVersion 제약을 맞추세요.',
+        'duplicate_override_target' => ':component 를 두 번 오버라이드했습니다. 대체본은 하나만 선언하세요.',
+        'for_variant_component_unknown' => 'for.:template 이 지목한 :component 는 이 확장이 제공하는 컴포넌트가 아닙니다. 전용 판본은 원본이 있어야 합니다.',
+        'extension_id_tag_collision' => ':first 와 :second 가 같은 태그 앞자리(:prefix)로 겹칩니다. 두 확장의 컴포넌트를 태그로 구분할 수 없습니다.',
 
         // 트리 구조
         'unexpected_end_tag' => '열린 태그가 없는데 종료 태그를 만났습니다: </:tag>',

@@ -2,20 +2,32 @@
 
 namespace App\Support\LayoutMarkup;
 
+use App\Enums\ComponentOwnerKind;
 use App\Enums\LayoutMarkupErrorCode;
 
 /**
  * 저작 태그(`<data-grid>`)를 JSON 노드의 `name`+`type` 으로 해석하는 컴파일 시점 레지스트리.
  *
- * **소스는 대상 템플릿의 `components.json` 단일이다.** 모듈·플러그인도 각자 `components.json`
- * 을 갖고 있으나 실측상 소비 경로가 없다 — 프론트에서 `/api/{modules,plugins}/{id}/components.json`
- * 을 부르는 호출자가 0건이고(런타임 레지스트리는 `/api/templates/{id}/components.json` 만
- * fetch — ComponentRegistry.ts:250), 번들 확장의 매니페스트는 전부 컴포넌트 0개다. 확장 UI 는
- * 컴포넌트 등록이 아니라 `extension_point` 노드로 주입되어 레지스트리를 우회한다. 따라서
- * 컴파일러가 확장 매니페스트를 병합하면 런타임에 없는 태그를 저작 가능하게 만드는 셈이 된다.
+ * **소스는 3계통이다 — 대상 템플릿 + 활성 모듈 + 활성 플러그인**(D25, D20 개정). 확장이 자기
+ * 컴포넌트를 제공할 수 있게 되면서 저작 어휘가 템플릿 단독 소유에서 벗어났다. 좌표계는 소유자로
+ * 갈린다:
  *
- * 런타임 매니페스트 검증(ComponentRegistry.ts:287-347)과 **같은 강도로** 검증한다. 저작 시점에
- * 통과시켜 봐야 런타임이 `MANIFEST_INVALID` 로 거부하면 화면이 통째로 죽기 때문이다.
+ *  - 템플릿 소유: `DataGrid` → `<data-grid>`
+ *  - 확장 소유: `sirsoft-ecommerce.ProductCard` → `<sirsoft-ecommerce-product-card>`
+ *
+ * 확장 프리픽스 덕에 템플릿↔확장, 확장↔확장 이름 충돌은 구조적으로 불가능하다. 남는 충돌은
+ * ① 템플릿이 확장 프리픽스와 겹치는 이름을 쓴 경우(`Gnuboard7HelloModuleMemoCard`) ② 서로 다른
+ * 확장 식별자가 같은 태그 프리픽스로 정규화되는 경우(`a_b` 와 `a-b`) 둘뿐이고, 양쪽 다 거부한다.
+ * 런타임은 나중 등록이 조용히 이기지만(ComponentRegistry.ts:456-458) 그 침묵 승자를 저작 시점
+ * 오류로 끌어올린다(D24 침묵 차단 원칙의 연장).
+ *
+ * 태그 해석은 **전방 매핑**이다 — (소유자, 이름)에서 태그를 만들어 평면 맵에 넣고 정확히 조회한다.
+ * 태그를 (확장 id, 이름)으로 **역파싱**하지 않으므로 D25 가 우려한 최장 일치 모호성이 해석 경로에
+ * 생기지 않는다. 모호성은 서로 다른 두 정의가 **같은 태그를 만들어 낼 때**만 성립하며, 그것은
+ * 맵 구축 시점에 결정적으로 검출된다(`AmbiguousComponentTag`).
+ *
+ * 런타임 매니페스트 검증(ComponentRegistry.ts:287-347)과 같은 강도로 검증하되, version/식별자는
+ * 의도적으로 더 엄격하게 본다(D24 ⑧ — 런타임의 falsy 검사를 그대로 옮기면 오히려 느슨해진다).
  *
  * prop 선언(`props`)은 타입 판정 **힌트로만** 쓰고 화이트리스트로 쓰지 않는다 — 실측상 선언
  * 커버리지가 75~77% 에 그치고 미선언 목록 상위가 `Button.type`·`Input.value` 같은 정상
@@ -32,59 +44,56 @@ final class ComponentRegistry
      */
     public const DEFAULT_SKIP_BINDING_KEYS = ['cellChildren', 'expandChildren', 'expandContext', 'render'];
 
-    /** 매니페스트가 반드시 배열로 담아야 하는 컴포넌트 분류 (런타임 검증과 동일) */
-    private const CATEGORIES = ['basic', 'composite', 'layout'];
-
     /** 오타 제안을 시도할 최대 편집 거리 — 이보다 멀면 제안이 오히려 혼란을 준다 */
     private const SUGGESTION_MAX_DISTANCE = 3;
 
     /** @var array<string, ComponentDefinition> 태그명 → 정의 */
     private array $byTag = [];
 
-    /** @var array<string, ComponentDefinition> 컴포넌트명 → 정의 */
+    /** @var array<string, ComponentDefinition> 노드 name → 정의 */
     private array $byName = [];
 
     /**
-     * @param  string  $templateId  매니페스트가 선언한 템플릿 식별자
-     * @param  array<int, ComponentDefinition>  $definitions  컴포넌트 정의 목록
+     * @param  string  $templateId  대상 템플릿 식별자
+     * @param  array<int, ComponentDefinition>  $definitions  컴포넌트 정의 목록 (오버라이드 적용 후)
+     * @param  string|null  $path  대상 템플릿 매니페스트 경로 (오류 메시지용)
+     *
+     * @throws CompileError 두 정의가 같은 태그로 해석되는 경우
      */
-    private function __construct(public readonly string $templateId, array $definitions)
+    private function __construct(public readonly string $templateId, array $definitions, ?string $path = null)
     {
         foreach ($definitions as $definition) {
+            if (isset($this->byTag[$definition->tag])) {
+                throw CompileError::inFile(LayoutMarkupErrorCode::AmbiguousComponentTag, $path, [
+                    'tag' => $definition->tag,
+                    'first' => $this->byTag[$definition->tag]->name,
+                    'second' => $definition->name,
+                ]);
+            }
+
             $this->byTag[$definition->tag] = $definition;
             $this->byName[$definition->name] = $definition;
         }
     }
 
     /**
-     * 매니페스트 파일에서 레지스트리를 로드합니다.
+     * 템플릿 매니페스트 파일 하나에서 레지스트리를 로드합니다.
      *
-     * @param  string  $path  `components.json` 경로
+     * 확장 컴포넌트가 없는 경로(단위 테스트·확장 미설치 환경)용 편의 생성자다. 확장 컴포넌트를
+     * 함께 해석하려면 `fromManifests()` 를 쓴다.
+     *
+     * @param  string  $path  템플릿 `components.json` 경로
      * @return self 레지스트리
      *
      * @throws CompileError 파일을 읽을 수 없거나 매니페스트가 스키마를 위반한 경우
      */
     public static function fromFile(string $path): self
     {
-        $contents = is_file($path) ? file_get_contents($path) : false;
-
-        if ($contents === false) {
-            throw CompileError::inFile(LayoutMarkupErrorCode::ManifestUnreadable, $path);
-        }
-
-        $manifest = json_decode($contents, true);
-
-        if (! is_array($manifest)) {
-            throw CompileError::inFile(LayoutMarkupErrorCode::ManifestInvalidJson, $path, [
-                'reason' => json_last_error_msg(),
-            ]);
-        }
-
-        return self::fromArray($manifest, $path);
+        return self::fromManifests(ComponentManifest::fromFile($path));
     }
 
     /**
-     * 이미 디코드된 매니페스트 배열에서 레지스트리를 만듭니다.
+     * 이미 디코드된 템플릿 매니페스트 배열에서 레지스트리를 만듭니다.
      *
      * @param  array<mixed>  $manifest  매니페스트 배열
      * @param  string|null  $path  오류 메시지에 실을 매니페스트 경로
@@ -94,102 +103,80 @@ final class ComponentRegistry
      */
     public static function fromArray(array $manifest, ?string $path = null): self
     {
-        // 런타임(ComponentRegistry.ts:289-303)은 version/templateId 를 falsy 검사만 하고
-        // name/type 에만 typeof 를 건다. 컴파일러가 그 비대칭을 그대로 옮기면 `false`·`0`
-        // 같은 값이 통과하고(런타임보다 오히려 느슨하다), templateId 는 아래에서 문자열로
-        // 캐스팅되므로 배열이 들어오면 조용히 "Array" 라는 식별자가 된다. 저작 시점에
-        // 걸러야 할 값이 런타임까지 흘러가지 않도록 두 필드 모두 비지 않은 문자열로 못박는다.
-        foreach (['version', 'templateId'] as $field) {
-            if (! is_string($manifest[$field] ?? null) || $manifest[$field] === '') {
-                throw CompileError::inFile(LayoutMarkupErrorCode::ManifestInvalid, $path, ['field' => $field]);
-            }
-        }
-
-        if (! is_array($manifest['components'] ?? null)) {
-            throw CompileError::inFile(LayoutMarkupErrorCode::ManifestInvalid, $path, ['field' => 'components']);
-        }
-
-        $definitions = [];
-        $tagOwners = [];
-
-        foreach (self::CATEGORIES as $category) {
-            $entries = $manifest['components'][$category] ?? null;
-
-            if (! is_array($entries) || ! array_is_list($entries)) {
-                throw CompileError::inFile(LayoutMarkupErrorCode::ManifestInvalid, $path, [
-                    'field' => 'components.'.$category,
-                ]);
-            }
-
-            foreach ($entries as $index => $entry) {
-                $definition = self::makeDefinition($entry, $category, $index, $path);
-
-                // 태그가 겹치면 어느 컴포넌트를 뜻하는지 저작자도 컴파일러도 알 수 없다.
-                // 런타임은 나중에 등록된 쪽이 조용히 덮어쓰지만(ComponentRegistry.ts:456),
-                // 침묵 승자를 만드는 대신 매니페스트를 고치게 한다.
-                if (isset($tagOwners[$definition->tag])) {
-                    throw CompileError::inFile(LayoutMarkupErrorCode::AmbiguousComponentTag, $path, [
-                        'tag' => $definition->tag,
-                        'first' => $tagOwners[$definition->tag],
-                        'second' => $definition->name,
-                    ]);
-                }
-
-                $tagOwners[$definition->tag] = $definition->name;
-                $definitions[] = $definition;
-            }
-        }
-
-        return new self($manifest['templateId'], $definitions);
+        return self::fromManifests(ComponentManifest::fromArray($manifest, $path));
     }
 
     /**
-     * 매니페스트 엔트리 하나를 정의로 변환합니다.
+     * 템플릿 + 활성 확장 매니페스트를 병합해 레지스트리를 만듭니다.
      *
-     * @param  mixed  $entry  매니페스트 엔트리
-     * @param  string  $category  엔트리가 실린 분류 배열 이름
-     * @param  int  $index  분류 배열 내 위치 (오류 메시지용)
-     * @param  string|null  $path  매니페스트 경로 (오류 메시지용)
-     * @return ComponentDefinition 컴포넌트 정의
+     * @param  ComponentManifest  $template  대상 템플릿의 매니페스트
+     * @param  array<int, ComponentManifest>  $extensions  활성 모듈·플러그인의 매니페스트 목록
+     * @return self 레지스트리
      *
-     * @throws CompileError 엔트리에 name/type 이 없거나 type 이 알 수 없는 값인 경우
+     * @throws CompileError 소유자 종류가 어긋나거나, 확장 식별자 프리픽스가 겹치거나, 태그가 모호한 경우
      */
-    private static function makeDefinition(mixed $entry, string $category, int $index, ?string $path): ComponentDefinition
+    public static function fromManifests(ComponentManifest $template, array $extensions = []): self
     {
-        $at = sprintf('components.%s[%d]', $category, $index);
-
-        if (! is_array($entry) || ! is_string($entry['name'] ?? null) || $entry['name'] === '') {
-            throw CompileError::inFile(LayoutMarkupErrorCode::ManifestInvalid, $path, ['field' => $at.'.name']);
+        if ($template->ownerKind !== ComponentOwnerKind::Template) {
+            throw CompileError::inFile(LayoutMarkupErrorCode::ManifestInvalid, $template->path, [
+                'field' => ComponentOwnerKind::Template->ownerField(),
+            ]);
         }
 
-        if (! is_string($entry['type'] ?? null) || ! in_array($entry['type'], self::CATEGORIES, true)) {
-            throw CompileError::inFile(LayoutMarkupErrorCode::ManifestInvalid, $path, ['field' => $at.'.type']);
-        }
+        self::assertExtensionKinds($extensions);
+        self::assertDistinctTagPrefixes($extensions);
 
-        // 노드 `type` 은 **엔트리의 type 필드**를 따른다. 분류 배열과 어긋나는 실사용이 있고
-        // (admin_basic 의 RichSelect·DropdownButton·DropdownMenuItem 은 layout 배열에 있으나
-        // type=composite), 레이아웃 JSON 도 엔트리 값을 쓴다. 런타임이 등록하는 메타데이터가
-        // 엔트리 객체 자체라 실동작이 엔트리 값으로 정해지기 때문이다.
-        $propTypes = [];
+        $definitions = (new ComponentOverrideResolver)->resolve($template, $extensions);
 
-        foreach ((array) ($entry['props'] ?? []) as $prop => $meta) {
-            if (is_string($prop) && is_array($meta) && is_string($meta['type'] ?? null)) {
-                $propTypes[$prop] = $meta['type'];
+        return new self($template->ownerId, $definitions, $template->path);
+    }
+
+    /**
+     * 확장 자리에 온 매니페스트가 모두 확장 소유인지 확인합니다.
+     *
+     * @param  array<int, ComponentManifest>  $extensions  확장 매니페스트 목록
+     *
+     * @throws CompileError 템플릿 매니페스트가 확장 자리에 온 경우
+     */
+    private static function assertExtensionKinds(array $extensions): void
+    {
+        foreach ($extensions as $extension) {
+            if ($extension->ownerKind !== ComponentOwnerKind::Extension) {
+                throw CompileError::inFile(LayoutMarkupErrorCode::ManifestInvalid, $extension->path, [
+                    'field' => ComponentOwnerKind::Extension->ownerField(),
+                ]);
             }
         }
+    }
 
-        $declaredSkip = array_values(array_filter(
-            (array) ($entry['skipBindingKeys'] ?? []),
-            static fn ($key): bool => is_string($key),
-        ));
+    /**
+     * 확장 식별자들이 서로 다른 태그 프리픽스로 정규화되는지 확인합니다.
+     *
+     * 식별자는 시스템 유일이지만 태그 프리픽스는 `_` 를 `-` 로 접은 결과라 유일성이 보장되지
+     * 않는다 — `sirsoft-pay_kginicis` 와 가상의 `sirsoft-pay-kginicis` 는 같은 프리픽스가 된다.
+     * 그대로 두면 두 확장의 컴포넌트가 같은 태그 공간을 나눠 갖게 되므로 미리 거부한다.
+     *
+     * @param  array<int, ComponentManifest>  $extensions  확장 매니페스트 목록
+     *
+     * @throws CompileError 두 식별자가 같은 프리픽스로 정규화되는 경우
+     */
+    private static function assertDistinctTagPrefixes(array $extensions): void
+    {
+        $owners = [];
 
-        return new ComponentDefinition(
-            name: $entry['name'],
-            tag: self::toTag($entry['name']),
-            type: $entry['type'],
-            propTypes: $propTypes,
-            skipBindingKeys: array_values(array_unique([...self::DEFAULT_SKIP_BINDING_KEYS, ...$declaredSkip])),
-        );
+        foreach ($extensions as $extension) {
+            $prefix = ComponentManifest::tagPrefix($extension->ownerId);
+
+            if (isset($owners[$prefix]) && $owners[$prefix] !== $extension->ownerId) {
+                throw CompileError::inFile(LayoutMarkupErrorCode::ExtensionIdTagCollision, $extension->path, [
+                    'first' => $owners[$prefix],
+                    'second' => $extension->ownerId,
+                    'prefix' => $prefix,
+                ]);
+            }
+
+            $owners[$prefix] = $extension->ownerId;
+        }
     }
 
     /**
@@ -204,9 +191,9 @@ final class ComponentRegistry
     }
 
     /**
-     * 컴포넌트명으로 정의를 찾습니다.
+     * 노드 name 으로 정의를 찾습니다.
      *
-     * @param  string  $name  컴포넌트명
+     * @param  string  $name  노드 name (템플릿 소유는 `DataGrid`, 확장 소유는 `{식별자}.{이름}`)
      * @return ComponentDefinition|null 정의, 미등록이면 null
      */
     public function findByName(string $name): ?ComponentDefinition
@@ -228,7 +215,8 @@ final class ComponentRegistry
      * 미등록 태그에 가장 가까운 등록 태그를 제안합니다.
      *
      * 제안 없는 거부는 저작자를 같은 실수로 되돌리므로(CompileError 규약), 오타 거리 안에
-     * 후보가 있으면 함께 알려 준다.
+     * 후보가 있으면 함께 알려 준다. 확장 컴포넌트도 같은 평면에 있으므로
+     * `<sirsoft-ecommerce-produkt-card>` 는 `<sirsoft-ecommerce-product-card>` 를 제안받는다.
      *
      * @param  string  $tag  저작자가 쓴 태그명
      * @return string|null 제안 태그, 마땅한 후보가 없으면 null
@@ -255,6 +243,8 @@ final class ComponentRegistry
      *
      * `DataGrid` → `data-grid`, `H1` → `h1`, `RichSelect` → `rich-select`. 번들 템플릿 전수
      * (admin_basic 117종 / basic 65종 / hello_user 8종) 실측 결과 이 변환의 태그 충돌은 0건이다.
+     *
+     * 확장 컴포넌트의 태그는 여기에 프리픽스가 앞에 붙는다(ComponentManifest::tagPrefix).
      *
      * @param  string  $name  컴포넌트명 (Pascal)
      * @return string 태그명 (소문자 kebab)

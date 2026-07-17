@@ -60,6 +60,26 @@
 
 ---
 
+## 확장 컴포넌트 등록 (self-register)
+
+확장 번들은 액션 핸들러와 같은 방식으로 자기 화면 컴포넌트를 코어 레지스트리에 직접 등록한다 — 템플릿 컴포넌트처럼 매니페스트 + 전역 변수 경로로 실릴 자리가 확장에는 없기 때문이다.
+
+```ts
+const registry = (window as any).G7Core?.getComponentRegistry?.();
+
+registry?.registerExtensionComponent(
+    `${MODULE_IDENTIFIER}.ProductCard`,
+    ProductCard,
+    { name: `${MODULE_IDENTIFIER}.ProductCard`, type: 'composite' }
+);
+```
+
+**등록 시점은 안전하다.** 코어가 확장 번들 로드를 초기 라우트 처리 전에 기다리므로 이 등록은 첫 렌더보다 먼저 끝난다. 번들 로드가 실패하면 등록이 오지 않고 그 컴포넌트 노드는 화면에서 조용히 사라지며(미발견 컴포넌트는 `null` 렌더), 그 침묵은 `registry.getMissingExtensionComponents(names)` 로 관측한다.
+
+React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품으면 훅 호출이 다른 인스턴스에 걸려 "Invalid hook call" 로 죽는다.
+
+규약 전문(이름 프리픽스·판본 선택·오버라이드 우선순위): **[extension-components.md](extension-components.md)**
+
 ## 에셋 매니페스트 스키마
 
 ### module.json (통합 스키마)

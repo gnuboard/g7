@@ -11,11 +11,12 @@ namespace App\Support\LayoutMarkup;
 final class ComponentDefinition
 {
     /**
-     * @param  string  $name  컴포넌트명 — JSON 노드의 `name` 으로 그대로 방출 (예: `DataGrid`)
-     * @param  string  $tag  저작 태그명 — kebab (예: `data-grid`)
+     * @param  string  $name  컴포넌트명 — JSON 노드의 `name` 으로 그대로 방출. 템플릿 소유는 `DataGrid`, 확장 소유는 `{식별자}.{이름}` (예: `sirsoft-ecommerce.ProductCard`)
+     * @param  string  $tag  저작 태그명 — kebab (예: `data-grid`, `sirsoft-ecommerce-product-card`)
      * @param  string  $type  JSON 노드의 `type` (`basic`|`composite`|`layout`)
      * @param  array<string, string>  $propTypes  prop 명 → 선언 타입 (`:attr` 판정 힌트, 부분 목록)
      * @param  array<int, string>  $skipBindingKeys  선평가 금지 키 (DEFAULT + 매니페스트 선언 병합 결과)
+     * @param  string|null  $owner  이 컴포넌트를 제공한 확장 식별자. 템플릿 소유면 null
      */
     public function __construct(
         public readonly string $name,
@@ -23,7 +24,18 @@ final class ComponentDefinition
         public readonly string $type,
         public readonly array $propTypes = [],
         public readonly array $skipBindingKeys = [],
+        public readonly ?string $owner = null,
     ) {}
+
+    /**
+     * 이 컴포넌트를 확장이 제공했는지 판정합니다.
+     *
+     * @return bool 확장 소유면 true, 템플릿 소유면 false
+     */
+    public function isExtensionOwned(): bool
+    {
+        return $this->owner !== null;
+    }
 
     /**
      * 해당 prop 값을 컴파일러가 선평가하면 안 되는지 판정합니다.

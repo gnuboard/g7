@@ -1,0 +1,43 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "identifier": "gnuboard7-hello_module",
+    "version": "0.2.0",
+    "components": {
+        "basic": [],
+        "composite": [
+            {
+                "name": "MemoCard",
+                "type": "composite",
+                "path": "modules/_bundled/gnuboard7-hello_module/resources/js/components/composite/MemoCard.tsx",
+                "props": {
+                    "title": {
+                        "type": "string",
+                        "required": false,
+                        "description": "메모 제목"
+                    },
+                    "body": {
+                        "type": "string",
+                        "required": false,
+                        "description": "메모 본문"
+                    },
+                    "highlighted": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "강조 표시 여부"
+                    },
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            }
+        ],
+        "layout": []
+    },
+    "for": {
+        "gnuboard7-hello_admin_template": [
+            "MemoCard"
+        ]
+    }
+}

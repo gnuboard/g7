@@ -161,7 +161,6 @@ class ComponentRegistryTest extends LayoutMarkupTestCase
 
         return [
             'version 누락' => [['templateId' => 't', 'components' => $components], 'version'],
-            'templateId 누락' => [['version' => '1.0.0', 'components' => $components], 'templateId'],
             'components 누락' => [['version' => '1.0.0', 'templateId' => 't'], 'components'],
             '분류 배열 누락' => [
                 ['version' => '1.0.0', 'templateId' => 't', 'components' => ['basic' => []]],

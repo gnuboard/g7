@@ -288,6 +288,14 @@ class Plugin implements PluginInterface
 
 ---
 
+## 화면 컴포넌트 제공
+
+플러그인도 모듈과 같은 방식으로 자기 화면 컴포넌트를 제공한다. 소스는 `resources/js/components/{basic,composite,layout}/`, 이름은 `{플러그인식별자}.{이름}`(저작 태그에 식별자 프리픽스 필수), 등록은 플러그인 번들이 스스로 한다.
+
+플러그인은 **다른 확장의 컴포넌트를 대체할 수 없다** — 그 권한은 템플릿 전용이다. 자기 컴포넌트의 특정 템플릿 전용 판본은 `resources/js/components/for/{템플릿식별자}/` 에 둔다.
+
+규약 전문: **[extension-components.md](extension-components.md)**
+
 ## 플러그인 디렉토리 구조
 
 ```text

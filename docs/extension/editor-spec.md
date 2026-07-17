@@ -22,6 +22,14 @@
 - 서빙 엔드포인트: `/api/{templates|modules|plugins}/{id}/editor-spec`
 - 로더: `editorSpecLoader.ts` — 편집 대상 템플릿 + 활성 모듈/플러그인 스펙을 fetch 해 네임스페이스 병합한다.
 
+## 확장 컴포넌트의 팔레트 등재
+
+확장이 제공하는 컴포넌트도 `componentPalette.entries` / `componentCapabilities` 에 등재해야 편집기 팔레트에 나타난다. 편집기 스펙은 이미 확장 것을 병합하므로(모듈 → 플러그인 → 템플릿) 그 경로를 그대로 쓴다. 팔레트에 쓰는 이름은 레지스트리 등록 이름 `{확장식별자}.{이름}` 이다.
+
+prop 컨트롤은 확장 `components.json` 의 `props` 선언에서 나오고, 그 선언은 빌드가 컴포넌트 소스의 `{이름}Props` 인터페이스에서 추출한다 — 인터페이스를 선언하지 않으면 컨트롤이 생기지 않는다.
+
+규약 전문: **[extension-components.md](extension-components.md)**
+
 ## 파일 구조 — manifest + 분할 블록
 
 editor-spec.json 이 커지면(코어 admin 템플릿은 단일 파일 18,000줄을 넘었다) 상위 블록 단위로 분할한다. manifest 에 메타와 소형 설정을 인라인으로 두고, 대형 블록은 `$include` 맵으로 `editor-spec/{block}.json` 을 참조한다.
