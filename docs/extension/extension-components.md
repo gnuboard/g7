@@ -228,13 +228,43 @@ JSON 레이아웃에서는 노드 `name` 에 등록 이름을 그대로 쓴다.
 
 **"미등록 컴포넌트 확인" 규율의 대상이 넓어졌다** — 저작 어휘는 이제 대상 템플릿의 `components.json` 단독이 아니라 **템플릿 + 활성 모듈 + 활성 플러그인 3계통**이다. 어떤 판본이 실제로 쓰이는지(원본/템플릿 대체본/전용 판본)는 저작자가 알 필요가 없다 — 셋 다 같은 태그·같은 이름이다.
 
-## 편집기 팔레트
+## 편집기
 
-확장 컴포넌트는 `editor-spec.json` 의 `componentPalette.entries` / `componentCapabilities` 에 등재해야 팔레트에 나타난다. 편집기 스펙은 이미 확장 것을 병합하므로(모듈 → 플러그인 → 템플릿) 그 경로를 그대로 쓴다.
+### 팔레트 등재
 
-팔레트 라벨은 확장의 언어팩(ko/en/ja)에 둔다.
+확장 컴포넌트는 확장의 `editor-spec.json` 에 `componentPalette` 를 선언해야 팔레트에 나타난다. 편집기 스펙은 이미 확장 것을 병합하므로(모듈 → 플러그인 → 템플릿) 그 경로를 그대로 쓴다.
 
-prop 컨트롤은 매니페스트의 `props` 선언에서 나온다 — 컴포넌트 소스에 `{이름}Props` 인터페이스를 선언해야 빌드가 그것을 추출한다.
+```json
+{
+  "moduleId": "sirsoft-ecommerce",
+  "componentPalette": {
+    "groups": [
+      { "label": "$t:sirsoft-ecommerce.editor.palette.group", "kind": "content",
+        "components": ["sirsoft-ecommerce.ProductCard"] }
+    ],
+    "entries": {
+      "sirsoft-ecommerce.ProductCard": {
+        "label": "$t:sirsoft-ecommerce.editor.palette.product_card.label",
+        "requiresDefaultNode": true,
+        "defaultNode": { "type": "composite", "name": "sirsoft-ecommerce.ProductCard", "props": {} }
+      }
+    }
+  },
+  "componentCapabilities": {
+    "sirsoft-ecommerce.ProductCard": { "label": "...", "coreProps": ["id"], "styleControls": ["marginAll"] }
+  }
+}
+```
+
+팔레트 키는 레지스트리 등록 이름(`{확장식별자}.{이름}`)을 그대로 쓴다. 라벨은 **확장 자신의 언어팩 네임스페이스**(`$t:{확장식별자}.editor.palette.*`)에 두고 코어의 `editor.*` 를 침범하지 않는다.
+
+prop 컨트롤은 `components.json` 의 `props` 선언에서 나오고, 그 선언은 빌드가 컴포넌트 소스의 `{이름}Props` 인터페이스에서 추출한다 — 인터페이스를 선언하지 않으면 컨트롤이 생기지 않는다.
+
+### 캔버스 미리보기
+
+편집기는 호스트 페이지와 **별도의 격리 레지스트리**를 만들어 편집 대상 템플릿을 렌더한다. 확장 IIFE 는 호스트 부팅 때 이미 실행이 끝났으므로, 코어는 확장의 **선언 전체**를 클래스에 보관해 두고 격리 인스턴스가 `applyExtensionComponents()` 로 자기 몫을 다시 고른다.
+
+이것이 단순 복사가 아닌 이유: 호스트가 admin 템플릿을 띄운 채 user 템플릿을 편집하면 **같은 선언에서 호스트는 기본 판본을, 캔버스는 user 전용 판본을** 골라야 한다. 확장 저작자가 신경 쓸 일은 없다 — 선언만 하면 각 레지스트리가 알아서 고른다.
 
 ## 샘플
 
@@ -246,6 +276,7 @@ prop 컨트롤은 매니페스트의 `props` 선언에서 나온다 — 컴포�
 | ① 등록 | `modules/_bundled/gnuboard7-hello_module/resources/js/index.ts` |
 | ② 오버라이드 | `templates/_bundled/gnuboard7-hello_user_template/src/components/overrides/gnuboard7-hello_module/MemoCard.tsx` |
 | ③ 전용 판본 | `modules/_bundled/gnuboard7-hello_module/resources/js/components/for/gnuboard7-hello_admin_template/MemoCard.tsx` |
+| 팔레트 등재 | `modules/_bundled/gnuboard7-hello_module/editor-spec.json` |
 
 ## 관련 문서
 

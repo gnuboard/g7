@@ -169,6 +169,17 @@ effects:
   - template_declaring_for_variants_is_rejected
   # --- S2.5 저작 표면 (세 개념이 같은 태그로 저작된다)
   - extension_component_authoring_is_identical_across_three_concepts
+  # --- S2.5 런타임 등록 (확장 self-register — 코어가 판정)
+  - extension_component_requires_identifier_prefix
+  - template_override_wins_over_extension_self_registration
+  - core_selects_the_variant_matching_the_active_template
+  - variant_choice_is_independent_of_registration_order
+  - missing_extension_components_are_observable
+  # --- S2.5 편집기 격리 인스턴스 (확장 IIFE 는 그 전에 끝났다)
+  - isolated_registry_created_after_extension_boot_still_gets_extension_components
+  - host_and_canvas_resolve_variants_independently
+  - edited_template_override_wins_in_the_canvas
+  - applying_extension_components_twice_is_idempotent
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php

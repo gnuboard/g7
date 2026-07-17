@@ -124,6 +124,22 @@ export interface ComponentOverrideDeclaration extends ComponentMetadata {
 }
 
 /**
+ * 확장이 선언한 컴포넌트 판본 하나
+ *
+ * @since engine-v1.54.0
+ */
+export interface ExtensionComponentDeclaration {
+  /** 컴포넌트 구현체 */
+  component: ComponentType<any>;
+
+  /** 컴포넌트 메타데이터 */
+  metadata: ComponentMetadata;
+
+  /** 이 판본이 전용으로 쓰일 템플릿 id (미지정이면 기본 판본) */
+  forTemplate?: string;
+}
+
+/**
  * 레지스트리 맵 인터페이스
  */
 export interface RegistryMap {
@@ -189,14 +205,28 @@ export class ComponentRegistry {
   private overriddenByTemplate: Set<string> = new Set();
 
   /**
-   * 이 템플릿 전용 판본으로 등록된 확장 컴포넌트 이름.
+   * 확장이 선언한 컴포넌트 판본 — **인스턴스가 아니라 클래스에 보관**한다.
    *
-   * 확장이 기본 판본과 전용 판본을 어느 순서로 등록하든 결과가 같아야 하므로, 전용 판본이
-   * 이미 자리를 잡았으면 뒤늦은 기본 판본이 되덮지 못하게 한다.
+   * 확장 IIFE 는 페이지당 한 번 실행되고 그때 싱글톤에 등록한다. 그런데 레이아웃 편집기는
+   * **그 뒤에** 격리 인스턴스를 만들어 다른 템플릿을 렌더한다(`createIsolatedInstance`) —
+   * 선언을 인스턴스에만 담아 두면 그 격리 인스턴스에는 확장 컴포넌트가 영원히 없고, 편집기
+   * 미리보기에서 그 노드만 조용히 사라진다.
+   *
+   * 또 판본 선택은 **인스턴스마다 답이 다르다**. 호스트가 admin 템플릿을 띄운 채
+   * user 템플릿을 편집하면, 같은 선언에서 호스트는 기본 판본을, 편집기는 user 전용 판본을
+   * 골라야 한다. 그래서 "고른 결과" 가 아니라 **"선언 전체"** 를 보관하고 각 인스턴스가
+   * 자기 `templateId` 로 고른다.
    *
    * @since engine-v1.54.0
    */
-  private templateScopedComponents: Set<string> = new Set();
+  private static extensionDeclarations = new Map<string, ExtensionComponentDeclaration[]>();
+
+  /**
+   * 이 인스턴스가 확장 컴포넌트별로 실제 채택한 구현체 — 중복 등록(덮어쓰기 warn) 방지용.
+   *
+   * @since engine-v1.54.0
+   */
+  private appliedExtensionChoice: Map<string, ComponentType<any>> = new Map();
 
   /**
    * private 생성자 (싱글톤 패턴)
@@ -235,6 +265,9 @@ export class ComponentRegistry {
    */
   public static resetInstance(): void {
     ComponentRegistry.instance = null;
+    // 확장 선언은 클래스에 살아 있어 인스턴스를 새로 만들어도 남는다 — 테스트가 서로
+    // 오염되지 않도록 함께 비운다.
+    ComponentRegistry.extensionDeclarations.clear();
   }
 
   /**
@@ -599,7 +632,7 @@ export class ComponentRegistry {
    * @param component 컴포넌트 구현체
    * @param metadata 컴포넌트 메타데이터
    * @param options 등록 옵션 — `forTemplate` 은 이 판본이 전용으로 쓰일 템플릿 id
-   * @returns 등록되었으면 true, 규칙에 따라 무시되었으면 false
+   * @returns **이 판본이 채택되었으면** true, 규칙에 따라 물러났으면 false (다른 판본이 이겼거나 템플릿이 대체했거나 접두어가 없는 경우)
    *
    * @since engine-v1.54.0
    */
@@ -616,33 +649,87 @@ export class ComponentRegistry {
       return false;
     }
 
-    // 템플릿의 오버라이드가 이미 이 자리를 차지했으면 확장의 원본은 물러난다.
+    const declarations = ComponentRegistry.extensionDeclarations.get(name) ?? [];
+    const forTemplate = options?.forTemplate;
+    const existing = declarations.findIndex(d => d.forTemplate === forTemplate);
+
+    // 같은 자리를 두 번 선언하면 나중 것으로 갱신한다(핫 리로드 등). 판본이 다르면 나란히 쌓인다.
+    if (existing >= 0) {
+      declarations[existing] = { component, metadata, forTemplate };
+    } else {
+      declarations.push({ component, metadata, forTemplate });
+    }
+
+    ComponentRegistry.extensionDeclarations.set(name, declarations);
+
+    this.applyExtensionDeclaration(name);
+
+    // 이 인스턴스가 이 이름을 서빙하는지가 아니라 **방금 넘긴 이 판본이 채택됐는지**를
+    // 돌려준다 — 호출자가 알고 싶은 것은 자기 판본의 운명이다.
+    return this.appliedExtensionChoice.get(name) === component;
+  }
+
+  /**
+   * 확장이 선언해 둔 컴포넌트를 이 인스턴스에 반영합니다.
+   *
+   * 확장 IIFE 는 페이지당 한 번만 실행되므로, **그 뒤에 만들어지는 레지스트리**(레이아웃 편집기의
+   * 격리 인스턴스)는 이 메서드를 직접 불러야 확장 컴포넌트를 갖는다. 부르지 않으면 편집기
+   * 미리보기에서 그 노드만 조용히 사라진다.
+   *
+   * 템플릿 오버라이드를 먼저 알아야 하므로 `loadComponents()` **뒤에** 호출한다.
+   *
+   * @returns 이 인스턴스에 반영된 컴포넌트 수
+   *
+   * @since engine-v1.54.0
+   */
+  public applyExtensionComponents(): number {
+    let applied = 0;
+
+    for (const name of ComponentRegistry.extensionDeclarations.keys()) {
+      if (this.applyExtensionDeclaration(name)) applied++;
+    }
+
+    if (applied > 0) {
+      logger.log(`[ComponentRegistry] 확장 컴포넌트 ${applied}개를 ${this.templateId} 에 반영했습니다`);
+    }
+
+    return applied;
+  }
+
+  /**
+   * 이름 하나에 대해 이 인스턴스가 쓸 판본을 골라 등록합니다.
+   *
+   * 판정은 **선언 전체를 매번 다시 본다** — 그래서 확장이 기본 판본과 전용 판본을 어느 순서로
+   * 등록하든 결과가 같다(순서에 결과가 걸리면 그것 자체가 침묵 승자다).
+   *
+   * @param name 컴포넌트 이름 (`{확장식별자}.{컴포넌트명}`)
+   * @returns 등록되었으면 true, 규칙에 따라 물러났으면 false
+   */
+  private applyExtensionDeclaration(name: string): boolean {
+    // 템플릿의 오버라이드가 이 자리를 차지했으면 확장의 판본은 모두 물러난다.
     if (this.overriddenByTemplate.has(name)) {
       logger.log(`[ComponentRegistry] '${name}' 은 템플릿이 오버라이드했습니다 — 확장 등록을 건너뜁니다`);
       return false;
     }
 
-    const forTemplate = options?.forTemplate;
+    const declarations = ComponentRegistry.extensionDeclarations.get(name) ?? [];
+    const scoped = declarations.find(d => d.forTemplate === this.templateId);
+    const base = declarations.find(d => d.forTemplate === undefined);
+    const chosen = scoped ?? base;
 
-    if (forTemplate !== undefined && forTemplate !== this.templateId) {
-      logger.log(
-        `[ComponentRegistry] '${name}' 의 ${forTemplate} 전용 판본은 활성 템플릿(${this.templateId})과 달라 건너뜁니다`
-      );
+    if (!chosen) {
+      // 다른 템플릿 전용 판본만 선언된 경우 — 이 인스턴스에는 쓸 것이 없다.
       return false;
     }
 
-    // 기본 판본이 전용 판본을 되덮지 않게 한다 — 확장이 두 판본을 어느 순서로 등록하든
-    // 결과가 같아야 한다(등록 순서에 결과가 걸리면 그것 자체가 침묵 승자다).
-    if (forTemplate === undefined && this.templateScopedComponents.has(name)) {
-      logger.log(`[ComponentRegistry] '${name}' 은 이 템플릿 전용 판본이 이미 등록되어 기본 판본을 건너뜁니다`);
-      return false;
+    // 같은 구현체를 다시 넣으면 registerComponent 가 덮어쓰기 warn 을 낸다. 결과가 같은
+    // 재적용은 조용히 통과시킨다(편집기가 applyExtensionComponents 를 다시 부를 수 있다).
+    if (this.appliedExtensionChoice.get(name) === chosen.component) {
+      return true;
     }
 
-    if (forTemplate !== undefined) {
-      this.templateScopedComponents.add(name);
-    }
-
-    this.registerComponent(name, component, metadata);
+    this.appliedExtensionChoice.set(name, chosen.component);
+    this.registerComponent(name, chosen.component, { ...chosen.metadata, name });
 
     return true;
   }
@@ -785,7 +872,7 @@ export class ComponentRegistry {
     this.templateId = null;
     this.templateType = null;
     this.overriddenByTemplate.clear();
-    this.templateScopedComponents.clear();
+    this.appliedExtensionChoice.clear();
     logger.log('Registry cleared');
   }
 }

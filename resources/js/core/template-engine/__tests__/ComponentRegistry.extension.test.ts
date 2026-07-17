@@ -40,6 +40,7 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
     ComponentRegistry.resetInstance();
   });
 
+  /** @effects extension_component_requires_identifier_prefix */
   it('프리픽스 있는 이름으로 등록하면 그 이름으로 조회된다', () => {
     const registry = registryFor('sirsoft-basic');
 
@@ -53,6 +54,7 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
     expect(registry.hasComponent('sirsoft-ecommerce.ProductCard')).toBe(true);
   });
 
+  /** @effects extension_component_requires_identifier_prefix */
   it('프리픽스 없는 이름은 거부된다 (템플릿 컴포넌트 덮어쓰기 방지)', () => {
     const registry = registryFor('sirsoft-basic');
 
@@ -62,6 +64,7 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
     expect(registry.hasComponent('ProductCard')).toBe(false);
   });
 
+  /** @effects template_override_wins_over_extension_self_registration */
   it('템플릿이 오버라이드한 이름은 확장이 되덮지 못한다', () => {
     const registry = registryFor('sirsoft-basic');
     registry.markOverriddenByTemplate(['sirsoft-ecommerce.ProductCard']);
@@ -76,6 +79,7 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
     expect(registry.hasComponent('sirsoft-ecommerce.ProductCard')).toBe(false);
   });
 
+  /** @effects core_selects_the_variant_matching_the_active_template */
   it('활성 템플릿과 맞는 전용 판본은 채택된다', () => {
     const registry = registryFor('sirsoft-basic');
 
@@ -90,6 +94,7 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
     expect(registry.hasComponent('sirsoft-ecommerce.ProductCard')).toBe(true);
   });
 
+  /** @effects core_selects_the_variant_matching_the_active_template */
   it('다른 템플릿용 판본은 무시된다 — 확장이 아니라 코어가 고른다', () => {
     const registry = registryFor('sirsoft-basic');
 
@@ -104,6 +109,7 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
     expect(registry.hasComponent('sirsoft-ecommerce.ProductCard')).toBe(false);
   });
 
+  /** @effects variant_choice_is_independent_of_registration_order */
   it('전용 판본이 기본 판본을 이긴다 (전용 → 기본 순서)', () => {
     const registry = registryFor('sirsoft-basic');
     const name = 'sirsoft-ecommerce.ProductCard';
@@ -115,6 +121,7 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
     expect(registry.hasComponent(name)).toBe(true);
   });
 
+  /** @effects variant_choice_is_independent_of_registration_order */
   it('등록 순서가 바뀌어도 전용 판본이 이긴다 (기본 → 전용 순서)', () => {
     const registry = registryFor('sirsoft-basic');
     const name = 'sirsoft-ecommerce.ProductCard';
@@ -137,7 +144,87 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
   });
 });
 
+/**
+ * 편집기 격리 인스턴스 가드.
+ *
+ * 확장 IIFE 는 호스트 페이지 부팅 때 한 번만 실행된다. 레이아웃 편집기는 그 **뒤에** 격리
+ * 인스턴스를 만들어 다른 템플릿을 렌더하므로, 선언을 인스턴스에만 담아 두면 캔버스에서
+ * 확장 컴포넌트가 조용히 사라진다. 이 블록이 그 회귀를 잠근다.
+ */
+describe('ComponentRegistry.applyExtensionComponents (편집기 격리 인스턴스)', () => {
+  beforeEach(() => {
+    ComponentRegistry.resetInstance();
+  });
+
+  /** @effects isolated_registry_created_after_extension_boot_still_gets_extension_components */
+  it('확장 등록 뒤에 만들어진 격리 인스턴스도 확장 컴포넌트를 갖는다', () => {
+    const host = registryFor('sirsoft-admin_basic');
+    const name = 'sirsoft-ecommerce.ProductCard';
+    host.registerExtensionComponent(name, Base, meta(name));
+
+    // 확장 IIFE 는 이미 끝났다. 편집기가 이제서야 격리 인스턴스를 만든다.
+    const canvas = registryFor('sirsoft-basic');
+    expect(canvas.hasComponent(name)).toBe(false);
+
+    expect(canvas.applyExtensionComponents()).toBe(1);
+    expect(canvas.hasComponent(name)).toBe(true);
+  });
+
+  /** @effects host_and_canvas_resolve_variants_independently */
+  it('호스트와 캔버스가 서로 다른 판본을 고른다 (싱글톤 결과 복사가 아님)', () => {
+    const name = 'sirsoft-ecommerce.ProductCard';
+
+    // 호스트는 admin 템플릿 — user 전용 판본은 호스트에서 채택되지 않는다.
+    const host = registryFor('sirsoft-admin_basic');
+    host.registerExtensionComponent(name, Base, meta(name));
+    host.registerExtensionComponent(name, Variant, meta(name), { forTemplate: 'sirsoft-basic' });
+
+    expect((host as any).appliedExtensionChoice.get(name)).toBe(Base);
+
+    // 캔버스는 user 템플릿을 편집한다 — 같은 선언에서 전용 판본을 골라야 한다.
+    const canvas = registryFor('sirsoft-basic');
+    canvas.applyExtensionComponents();
+
+    expect((canvas as any).appliedExtensionChoice.get(name)).toBe(Variant);
+  });
+
+  /** @effects edited_template_override_wins_in_the_canvas */
+  it('편집 대상 템플릿이 오버라이드한 이름은 확장 판본이 물러난다', () => {
+    const name = 'sirsoft-ecommerce.ProductCard';
+    const host = registryFor('sirsoft-admin_basic');
+    host.registerExtensionComponent(name, Base, meta(name));
+
+    const canvas = registryFor('sirsoft-basic');
+    canvas.markOverriddenByTemplate([name]);
+    canvas.applyExtensionComponents();
+
+    expect(canvas.hasComponent(name)).toBe(false);
+  });
+
+  /** @effects applying_extension_components_twice_is_idempotent */
+  it('두 번 호출해도 결과가 같다 (재적용 안전)', () => {
+    const name = 'sirsoft-ecommerce.ProductCard';
+    registryFor('sirsoft-admin_basic').registerExtensionComponent(name, Base, meta(name));
+
+    const canvas = registryFor('sirsoft-basic');
+    expect(canvas.applyExtensionComponents()).toBe(1);
+    expect(canvas.applyExtensionComponents()).toBe(1);
+    expect(canvas.hasComponent(name)).toBe(true);
+  });
+
+  it('다른 템플릿 전용 판본만 있으면 이 인스턴스에는 반영하지 않는다', () => {
+    const name = 'sirsoft-ecommerce.ProductCard';
+    const host = registryFor('sirsoft-admin_basic');
+    host.registerExtensionComponent(name, Variant, meta(name), { forTemplate: 'sirsoft-basic' });
+
+    const other = registryFor('gnuboard7-hello_user_template');
+    expect(other.applyExtensionComponents()).toBe(0);
+    expect(other.hasComponent(name)).toBe(false);
+  });
+});
+
 describe('ComponentRegistry.getMissingExtensionComponents', () => {
+  /** @effects missing_extension_components_are_observable */
   it('등록되지 않은 확장 컴포넌트만 보고한다 (번들 로드 실패 관측)', () => {
     const registry = registryFor('sirsoft-basic');
     registry.registerExtensionComponent('sirsoft-ecommerce.ProductCard', Base, meta('sirsoft-ecommerce.ProductCard'));
