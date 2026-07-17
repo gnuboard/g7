@@ -42,6 +42,7 @@ return [
         // 위치 접두어 (모든 컴파일 오류 공통 봉투)
         'error_at' => ':file (:line행 :column열): :detail [:code]',
         'error_at_inline' => ':line행 :column열: :detail [:code]',
+        'error_in_file' => ':file: :detail [:code]',
 
         // 마크업 구조
         'unsupported_markup' => '지원하지 않는 마크업입니다: :found — .g7.html 은 요소·텍스트·주석(<!-- -->)만 사용합니다.',
@@ -67,6 +68,54 @@ return [
         // 문자 참조
         'unknown_entity' => '알 수 없는 문자 참조입니다: :found — & 자체를 쓰려면 &amp; 로 표기하세요.',
         'invalid_entity' => '유효하지 않은 문자 참조입니다: :found',
+
+        // 레지스트리 (components.json)
+        'manifest_unreadable' => '컴포넌트 레지스트리 파일을 읽을 수 없습니다.',
+        'manifest_invalid_json' => '컴포넌트 레지스트리가 올바른 JSON 이 아닙니다: :reason',
+        'manifest_invalid' => '컴포넌트 레지스트리에 필수 항목이 없거나 형식이 다릅니다: :field',
+        'ambiguous_component_tag' => '<:tag> 로 해석되는 컴포넌트가 둘입니다: :first, :second — 레지스트리에서 이름을 구분하세요.',
+
+        // 트리 구조
+        'unexpected_end_tag' => '열린 태그가 없는데 종료 태그를 만났습니다: </:tag>',
+        'mismatched_end_tag' => '<:open> (:open_line행) 이 열려 있는데 </:tag> 로 닫았습니다.',
+        'unclosed_tag' => '<:tag> 가 닫히지 않았습니다. </:tag> 를 추가하거나 <:tag/> 로 표기하세요.',
+        'mixed_text_and_children' => '<:tag> 에 글자와 자식 태그를 함께 쓸 수 없습니다: ":found" — 글자는 자식 태그로 감싸세요.',
+        'text_outside_element' => '태그 밖의 글자는 화면에 표시되지 않습니다: ":found"',
+        'consecutive_comments' => '한 태그 앞에 주석을 둘 이상 쓸 수 없습니다. 하나의 <!-- --> 안에 줄바꿈으로 쓰세요.',
+        'dangling_comment' => '주석 뒤에 설명할 태그가 없습니다. 주석은 바로 다음 태그의 설명이 됩니다.',
+
+        // 태그 해석
+        'unknown_tag' => '<:tag> 는 :template 템플릿에 등록되지 않은 태그입니다.',
+        'unknown_tag_with_suggestion' => '<:tag> 는 등록되지 않은 태그입니다: <:suggestion> 을(를) 쓰려던 것 아닌가요?',
+        'root_tag_in_node_position' => '<:tag> 는 문서 맨 바깥에만 쓰는 태그입니다.',
+        'tag_not_yet_supported' => '<:tag> 는 :owner 표기라 아직 이 단계에서 다루지 않습니다.',
+
+        // tag_not_yet_supported 의 :owner 자리 — 낱말을 코드에 두면 다른 언어 문장에 한국어가 박힌다.
+        'tag_owner' => [
+            'action' => '액션',
+            'embedding' => '임베딩',
+            'document_section' => '문서 섹션',
+        ],
+
+        // 속성 표기
+        'foreign_idiom' => ':found 는 G7 문법이 아닙니다: :suggestion 을(를) 사용하세요.',
+        'invalid_type_literal' => '":attr" 의 값이 JSON 이 아닙니다: :found — 표현식·문자열은 콜론 없이 :suggestion="..." 로 쓰세요.',
+        'boolean_attribute_false' => ':attr 는 있고 없고로 참·거짓을 표기합니다: 참이면 :attr, 거짓이면 속성을 지우세요. 값 자체를 전달하려면 ::attr="false" 로 쓰세요.',
+        'directive_needs_value' => ':attr 에는 값이 필요합니다.',
+        'directive_rejects_type_literal' => '::attr 표기는 쓰지 않습니다. 값의 타입이 하나로 정해져 있으니 :suggestion="..." 로 쓰세요.',
+        'directive_needs_integer' => ':attr 의 값은 정수여야 합니다: :found',
+        'invalid_each_syntax' => 'data-each 는 "아이템[, 인덱스] in 소스" 형식입니다: :found',
+        'mixed_if_expression' => ':attr 는 식 전체를 {{ }} 로 감싸야 합니다: :found — 일부만 감싸면 문자열이 되어 조건이 항상 참이 됩니다.',
+        'condition_boolean_literal' => ':attr=":found" 대신 :suggestion=":found" 로 쓰세요 — 참·거짓 값 자체를 전달하는 표기입니다.',
+        'node_key_as_attribute' => ':attr 는 속성이 아니라 노드 설정입니다: :suggestion 로 쓰세요. 속성으로 쓰면 컴포넌트에 전달만 되고 아무 동작도 하지 않습니다.',
+        'attribute_not_supported' => ':attr 속성은 지원하지 않습니다. 태그명 자체가 컴포넌트를 정하므로 필요하지 않습니다.',
+
+        // 구조 태그
+        'unexpected_structural_child' => '<:tag> 는 <:parent> 안에서만 쓸 수 있습니다.',
+        'missing_required_attribute' => '<:tag> 에는 :attr 속성이 필요합니다.',
+        'duplicate_node_key' => ':key 를 두 번 지정했습니다.',
+        'invalid_json_body' => '<:tag> 의 내용이 올바른 JSON 이 아닙니다: :reason',
+        'field_value_and_children' => '<field name=":name"> 에 값과 하위 field 를 함께 쓸 수 없습니다.',
     ],
 
     // 설정 관련 예외

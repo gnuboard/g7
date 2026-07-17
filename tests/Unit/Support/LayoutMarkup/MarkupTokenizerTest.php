@@ -8,7 +8,6 @@ use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\MarkupToken;
 use App\Support\LayoutMarkup\MarkupTokenizer;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
 
 /**
  * MarkupTokenizer 단위 테스트 (`.g7.html` 저작 포맷 S1).
@@ -22,7 +21,7 @@ use Tests\TestCase;
  *  3. **엣지·퍼지** — 부분집합을 벗어난 입력이 좌표 붙은 CompileError 로 거부되는가,
  *     그리고 어떤 쓰레기 입력에도 매달리거나 PHP 오류를 내지 않는가.
  */
-class MarkupTokenizerTest extends TestCase
+class MarkupTokenizerTest extends LayoutMarkupTestCase
 {
     private MarkupTokenizer $tokenizer;
 
@@ -38,7 +37,7 @@ class MarkupTokenizerTest extends TestCase
     // ---------------------------------------------------------------------
 
     /**
-     * @scenario token_kind=start_tag,source_health=valid
+     * @scenario compile_unit=tokenize,source_health=valid
      *
      * @effects start_tag_carries_name_attributes_and_source_position,
      *          end_tag_and_text_and_comment_tokens_are_emitted_in_authoring_order
@@ -113,7 +112,7 @@ class MarkupTokenizerTest extends TestCase
     }
 
     /**
-     * @scenario token_kind=end_tag,source_health=valid
+     * @scenario compile_unit=tokenize,source_health=valid
      *
      * @effects meta_is_a_container_not_a_void_element
      */
@@ -222,7 +221,7 @@ class MarkupTokenizerTest extends TestCase
     // ---------------------------------------------------------------------
 
     /**
-     * @scenario token_kind=comment,source_health=valid
+     * @scenario compile_unit=tokenize,source_health=valid
      *
      * @effects comment_content_is_verbatim_and_not_entity_decoded
      */
@@ -291,7 +290,7 @@ class MarkupTokenizerTest extends TestCase
     }
 
     /**
-     * @scenario token_kind=text,source_health=valid
+     * @scenario compile_unit=tokenize,source_health=valid
      *
      * @effects bare_ampersand_is_preserved_for_expressions
      */
@@ -504,7 +503,7 @@ class MarkupTokenizerTest extends TestCase
     }
 
     /**
-     * @scenario token_kind=start_tag,source_health=invalid
+     * @scenario compile_unit=tokenize,source_health=invalid
      *
      * @effects uppercase_tag_is_rejected_with_lowercase_suggestion
      */
@@ -518,7 +517,7 @@ class MarkupTokenizerTest extends TestCase
     }
 
     /**
-     * @scenario token_kind=end_tag,source_health=invalid
+     * @scenario compile_unit=tokenize,source_health=invalid
      *
      * @effects void_end_tag_is_rejected
      */
@@ -532,7 +531,7 @@ class MarkupTokenizerTest extends TestCase
     }
 
     /**
-     * @scenario token_kind=text,source_health=invalid
+     * @scenario compile_unit=tokenize,source_health=invalid
      *
      * @effects unescaped_lt_in_text_is_rejected_with_entity_suggestion
      */
@@ -546,7 +545,7 @@ class MarkupTokenizerTest extends TestCase
     }
 
     /**
-     * @scenario token_kind=comment,source_health=invalid
+     * @scenario compile_unit=tokenize,source_health=invalid
      *
      * @effects eof_inside_tag_or_comment_is_rejected
      */

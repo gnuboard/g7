@@ -46,6 +46,23 @@ class CompileError extends Exception
     }
 
     /**
+     * 저작 파일의 좌표가 아닌, **파일 전체**에 대한 오류를 만듭니다.
+     *
+     * 레지스트리 매니페스트(`components.json`)처럼 저작자가 쓴 `.g7.html` 의 특정 지점을
+     * 가리킬 수 없는 오류가 있다. 이때 라인·컬럼을 0 으로 두고 위치 봉투도 파일명만 싣는다 —
+     * 있지도 않은 "1행 1열" 을 지어내면 저작자가 그 자리를 들여다보게 만든다.
+     *
+     * @param  LayoutMarkupErrorCode  $code  실패 사유 코드
+     * @param  string|null  $path  대상 파일 경로
+     * @param  array<string, string|int>  $params  메시지 치환 파라미터
+     * @return self 컴파일 오류
+     */
+    public static function inFile(LayoutMarkupErrorCode $code, ?string $path, array $params = []): self
+    {
+        return new self($code, 0, 0, $params, $path);
+    }
+
+    /**
      * 실패 사유 코드를 반환합니다.
      *
      * @return LayoutMarkupErrorCode 에러 코드
@@ -134,9 +151,15 @@ class CompileError extends Exception
             'code' => $this->errorCode->value,
         ];
 
-        $message = $this->sourcePath === null
-            ? __('exceptions.layout_markup.error_at_inline', $replace)
-            : __('exceptions.layout_markup.error_at', $replace + ['file' => $this->sourcePath]);
+        $message = match (true) {
+            // 좌표 없는 파일 오류 (inFile) — 라인·컬럼을 지어내지 않는다.
+            $this->sourceLine === 0 => __('exceptions.layout_markup.error_in_file', [
+                'file' => (string) $this->sourcePath,
+                'code' => $this->errorCode->value,
+            ]),
+            $this->sourcePath === null => __('exceptions.layout_markup.error_at_inline', $replace),
+            default => __('exceptions.layout_markup.error_at', $replace + ['file' => $this->sourcePath]),
+        };
 
         // 본문은 봉투 치환이 모두 끝난 뒤에 끼워 넣는다. 본문에는 저작자가 쓴 원문
         // (속성명 등)이 실리므로, 함께 치환하면 `:line` 같은 이름의 속성이 라인 번호로

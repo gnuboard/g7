@@ -5,7 +5,7 @@ description: |
   설치 시 서버(PHP)가 JSON 으로 컴파일하는 파이프라인.
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S3 액션 → S4 문서 5계층
-  → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는 **S1(토크나이저)** 이며,
+  → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는 **S1~S2** 이며,
   이후 단계가 axes/effects/test_files 를 확장한다.
 
   S1 범위 — MarkupTokenizer + CompileError:
@@ -19,17 +19,28 @@ description: |
     - void 요소 = HTML5 표준 14종 − `meta` = 13종. G7 에서 `<meta>` 는 `<seo>` 를 품는
       컨테이너 섹션이므로 void 일 수 없다(매핑 사전 A).
 
-# 축은 토큰 종류 × 소스 적법성 두 개다. 태그 형태(container/self_closing/void)·속성 표기·
-# 값 내용은 축으로 두면 조합이 4천 건대로 발산하는데, 그 대부분이 구조적으로 성립하지
-# 않는다(텍스트 토큰에 속성 표기가 없고, 불리언 속성에 값 내용이 없다). 조합 열거로
-# 부풀리는 대신 effects 에서 값별로 직접 관측한다 — 아래 effects 는 전부 테스트 docblock
-# @effects 로 개별 매핑되어 기계 검증된다.
+  S2 범위 — ComponentRegistry + MarkupTreeBuilder + NodeCompiler + StateTreeCompiler:
+    - 토큰 스트림 → 요소 트리 → JSON 노드(매핑 사전 C). 액션(`<on>`)·임베딩 hoist
+      (`<cell>`·`<responsive>`)·문서 루트(`<layout>`)는 각각 S3·S5·S4 몫이다.
+    - 태그 해석 소스 = **대상 템플릿의 components.json 단일**. 확장 매니페스트는 런타임
+      소비 경로가 없어(프론트 호출자 0건 + 번들 확장 전부 빈 컴포넌트) 병합하지 않는다.
+    - 속성 3분할: 무접두 = props(원문 통과) / `data-*` 예약 = 엔진 지시자 / `:attr` = 타입 리터럴.
+    - props 는 화이트리스트로 검증하지 않는다 — components.json 의 prop 선언 커버리지가
+      실측 75~77% 에 그치고 미선언 상위가 `Button.type`·`Input.value` 같은 정상 props 다.
+    - 표현식은 어느 위치에서도 선평가하지 않는다. 컴파일러가 표현식에 관여하는 지점은
+      `data-if` 혼합형 판정 하나뿐이다(계획 D3/D4).
+
+# 축은 컴파일 단위 × 소스 적법성 두 개다. 값 형태(태그 형태·토큰 종류·속성 표기·값 타입)를
+# 축으로 두면 조합이 수천 건대로 발산하는데 그 대부분이 구조적으로 성립하지 않는다(텍스트
+# 토큰에 속성이 없고, 레지스트리 검증에 토큰 종류가 없다). 조합 열거로 부풀리는 대신 effects
+# 에서 값별로 직접 관측한다 — 아래 effects 는 전부 테스트 docblock @effects 로 개별 매핑되어
+# 기계 검증된다.
 axes:
-  token_kind: [start_tag, end_tag, text, comment]
+  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag]
   source_health: [valid, invalid]
 
 effects:
-  # 토큰 방출
+  # --- S1 토큰 방출
   - start_tag_carries_name_attributes_and_source_position
   - end_tag_and_text_and_comment_tokens_are_emitted_in_authoring_order
   - self_closing_tag_is_marked_without_end_tag
@@ -37,7 +48,7 @@ effects:
   - meta_is_a_container_not_a_void_element
   - script_is_a_normal_element_not_raw_text
   - empty_source_yields_no_tokens
-  # 직렬화 충실도
+  # --- S1 직렬화 충실도
   - boolean_attribute_value_is_null_and_distinct_from_empty_string
   - attribute_names_are_preserved_verbatim_including_case_brackets_and_colon
   - attribute_order_is_preserved
@@ -48,12 +59,12 @@ effects:
   - comment_content_is_verbatim_and_not_entity_decoded
   - text_whitespace_is_preserved_and_flagged_for_upper_layers
   - bom_is_stripped_and_crlf_is_normalized_to_lf
-  # 좌표
+  # --- S1 좌표
   - line_and_column_are_tracked_across_lines
   - column_counts_characters_not_bytes
   - attribute_positions_are_recorded
   - tokenizer_instance_resets_state_between_runs
-  # 거부 (부분집합 위반)
+  # --- S1 거부 (부분집합 위반)
   - doctype_cdata_and_processing_instruction_are_rejected
   - unescaped_lt_in_text_is_rejected_with_entity_suggestion
   - eof_inside_tag_or_comment_is_rejected
@@ -66,15 +77,67 @@ effects:
   - duplicate_attribute_is_rejected
   - missing_attribute_separator_is_rejected
   - unknown_or_invalid_character_reference_is_rejected
-  # 오류 보고 계약
+  # --- 오류 보고 계약
   - error_carries_code_line_column_and_path
   - error_message_is_translated_per_locale
   - error_detail_is_not_mangled_by_envelope_replacement
-  - every_error_code_has_ko_and_en_messages
-  # 견고성
+  # ko/en(코어) + 번들 언어팩 로케일까지 — supported_locales 만 보면 ja 팩이 통째로 비어도 green 이 된다
+  - every_error_code_has_a_message_in_every_shipped_locale
+  # 위는 열거형 케이스만 본다 — 봉투 키(error_at*)와 tag_owner.* 는 ko 파일 리프 전체를 기준으로 따로 검사
+  - every_layout_markup_message_key_exists_in_every_shipped_locale
+  # --- S1 견고성
   - random_input_terminates_with_tokens_or_compile_error
   - mutated_valid_document_terminates_with_tokens_or_compile_error
+  # --- S2 레지스트리
+  - component_name_maps_to_kebab_tag
+  - bundled_template_manifests_resolve_without_tag_collision
+  - entry_type_field_wins_over_category_array
+  - skip_binding_keys_merge_defaults_with_manifest_declarations
+  - manifest_violating_runtime_schema_is_rejected
+  - ambiguous_tag_registration_is_rejected
+  - unreadable_or_malformed_manifest_file_is_rejected
+  # --- S2 트리 구성
+  - nesting_is_reconstructed_with_authoring_order
+  - unclosed_and_mismatched_tags_are_rejected_instead_of_auto_corrected
+  - text_outside_any_element_is_rejected
+  - indent_whitespace_is_stripped_while_meaningful_whitespace_survives
+  - empty_element_content_differs_from_self_closing
+  - comment_attaches_to_the_following_element
+  - comment_without_a_target_is_rejected_instead_of_dropped
+  # --- S2 노드 컴파일
+  - tag_resolves_to_component_name_and_type
+  - unknown_tag_is_rejected_with_registry_suggestion
+  - deferred_g7_tag_is_named_not_mistaken_for_a_typo
+  - root_only_tag_in_node_position_is_rejected
+  - auto_generated_id_is_not_emitted
+  - node_json_key_order_is_deterministic
+  - text_and_children_cannot_coexist
+  # --- S2 속성 3분할
+  - attributes_split_into_props_directives_and_type_literals
+  - props_are_passed_through_without_whitelist_validation
+  - boolean_attribute_is_present_or_absent_and_literal_false_needs_type_prefix
+  - type_literal_holds_json_typed_values
+  - directive_value_types_are_fixed_per_key
+  - bare_condition_is_wrapped_and_mixed_interpolation_is_rejected
+  - literal_boolean_condition_has_one_spelling
+  - each_dsl_preserves_source_verbatim
+  - foreign_framework_idioms_are_rejected_with_g7_equivalent
+  # 같은 자리를 두 표기가 다투면 거부 — 속성 별칭 / 타입 리터럴 / <prop> 자식 태그 세 경로 공통
+  - node_key_written_as_attribute_is_rejected
+  - unsupported_standard_attribute_is_rejected
+  # --- S2 구조 태그 (노드 키 운반체)
+  - structural_tag_outside_its_parent_is_rejected
+  - structural_tag_requires_its_named_attribute
+  - structural_tag_json_body_must_be_valid_json
+  - structural_tag_may_sit_next_to_text
+  - duplicate_node_key_is_rejected
+  - state_tree_leaf_type_follows_type_literal_rule
+  # --- S2 선평가 금지 (skipBindingKeys 패리티)
+  - expressions_and_translation_keys_are_never_pre_evaluated
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
+  - tests/Unit/Support/LayoutMarkup/ComponentRegistryTest.php
+  - tests/Unit/Support/LayoutMarkup/MarkupTreeBuilderTest.php
+  - tests/Unit/Support/LayoutMarkup/NodeCompilerTest.php
   - tests/Unit/Enums/LayoutMarkupErrorCodeTest.php

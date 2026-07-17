@@ -42,6 +42,7 @@ return [
         // Location prefix (common envelope for every compile error)
         'error_at' => ':file (line :line, column :column): :detail [:code]',
         'error_at_inline' => 'line :line, column :column: :detail [:code]',
+        'error_in_file' => ':file: :detail [:code]',
 
         // Markup structure
         'unsupported_markup' => 'Unsupported markup: :found — .g7.html only uses elements, text and comments (<!-- -->).',
@@ -67,6 +68,55 @@ return [
         // Character references
         'unknown_entity' => 'Unknown character reference: :found — write &amp; for a literal ampersand.',
         'invalid_entity' => 'Invalid character reference: :found',
+
+        // Registry (components.json)
+        'manifest_unreadable' => 'Cannot read the component registry file.',
+        'manifest_invalid_json' => 'The component registry is not valid JSON: :reason',
+        'manifest_invalid' => 'The component registry is missing a required field or has the wrong shape: :field',
+        'ambiguous_component_tag' => 'Two components resolve to <:tag>: :first, :second — give them distinct names in the registry.',
+
+        // Tree structure
+        'unexpected_end_tag' => 'End tag with no open tag: </:tag>',
+        'mismatched_end_tag' => '<:open> (line :open_line) is open but was closed with </:tag>.',
+        'unclosed_tag' => '<:tag> was never closed. Add </:tag> or write <:tag/>.',
+        'mixed_text_and_children' => '<:tag> cannot hold text and child tags at once: ":found" — wrap the text in a child tag.',
+        'text_outside_element' => 'Text outside any tag is never rendered: ":found"',
+        'consecutive_comments' => 'A tag cannot be preceded by more than one comment. Use line breaks inside a single <!-- -->.',
+        'dangling_comment' => 'The comment has no tag to describe. A comment documents the tag that follows it.',
+
+        // Tag resolution
+        'unknown_tag' => '<:tag> is not registered in the :template template.',
+        'unknown_tag_with_suggestion' => '<:tag> is not a registered tag: did you mean <:suggestion>?',
+        'root_tag_in_node_position' => '<:tag> is only used at the outermost level of a document.',
+        'tag_not_yet_supported' => '<:tag> is :owner syntax and is not handled at this stage yet.',
+
+        // Fills the :owner slot of tag_not_yet_supported — keeping the word in code would embed
+        // Korean in the middle of English and Japanese sentences.
+        'tag_owner' => [
+            'action' => 'action',
+            'embedding' => 'embedding',
+            'document_section' => 'document section',
+        ],
+
+        // Attributes
+        'foreign_idiom' => ':found is not G7 syntax: use :suggestion instead.',
+        'invalid_type_literal' => 'The value of ":attr" is not JSON: :found — for expressions and strings drop the colon and write :suggestion="...".',
+        'boolean_attribute_false' => ':attr is true when present and false when omitted: write :attr for true, or remove it for false. To pass the value itself, write ::attr="false".',
+        'directive_needs_value' => ':attr needs a value.',
+        'directive_rejects_type_literal' => 'Do not write ::attr. Its value has a single fixed type, so write :suggestion="..." instead.',
+        'directive_needs_integer' => 'The value of :attr must be an integer: :found',
+        'invalid_each_syntax' => 'data-each takes the form "item[, index] in source": :found',
+        'mixed_if_expression' => ':attr must wrap the whole expression in {{ }}: :found — wrapping only part of it yields a string, so the condition is always true.',
+        'condition_boolean_literal' => 'Write :suggestion=":found" instead of :attr=":found" — that is the form that passes the true/false value itself.',
+        'node_key_as_attribute' => ':attr is a node setting, not an attribute: write :suggestion instead. As an attribute it is merely handed to the component and does nothing.',
+        'attribute_not_supported' => 'The :attr attribute is not supported. The tag name itself picks the component, so it is not needed.',
+
+        // Structural tags
+        'unexpected_structural_child' => '<:tag> is only valid inside <:parent>.',
+        'missing_required_attribute' => '<:tag> requires the :attr attribute.',
+        'duplicate_node_key' => ':key was specified twice.',
+        'invalid_json_body' => 'The content of <:tag> is not valid JSON: :reason',
+        'field_value_and_children' => '<field name=":name"> cannot have both a value and nested fields.',
     ],
 
     // Settings related exceptions
