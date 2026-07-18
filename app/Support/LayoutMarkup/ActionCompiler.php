@@ -167,6 +167,43 @@ final class ActionCompiler
     }
 
     /**
+     * named_actions 항목 하나를 컴파일합니다 (문서 섹션 층 S4 가 `<action name>` 에서 호출).
+     *
+     * 이름으로 참조돼 `actionRef`/`resultTo` 로 실행되는 재사용 액션이다. `<action name>` 은 본문을
+     * 감싸는 봉투이므로 그 본문을 `<on>` 블록과 같은 규칙으로 컴파일한다 — 자식이 하나면 그 액션,
+     * 여럿이면 암묵 sequence. 진입점처럼 컴파일해(entry=true) confirm 을 허용한다 — named action 도
+     * 이벤트에 직접 연결될 수 있고, init 루트와 달리 축소 화이트리스트를 적용하지 않는다
+     * (executeInitActions 를 거치지 않으므로).
+     *
+     * @param  MarkupElement  $wrapper  `<action name>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 액션 객체
+     *
+     * @throws CompileError 액션이 없거나 표기 규칙을 벗어난 경우
+     */
+    public function compileNamedAction(MarkupElement $wrapper, ?string $path): array
+    {
+        return $this->compileBlockBody($wrapper, [], true, $path);
+    }
+
+    /**
+     * `<error-handling>` 섹션을 에러맵으로 컴파일합니다 (문서·데이터소스 층 S4 가 호출).
+     *
+     * 노드 층의 액션 부속 `<error-handling>` 과 같은 구조(`{코드: 액션, default: 액션}`)를 최상위
+     * `errorHandling` 키·데이터소스 `errorHandling` 키에도 쓴다. 규칙을 복제하지 않고 재사용한다.
+     *
+     * @param  MarkupElement  $element  `<error-handling>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> `{코드: 액션, default: 액션}` 에러맵
+     *
+     * @throws CompileError 자식이 `<on-code>`/`<default>` 가 아닌 경우
+     */
+    public function compileErrorHandlingSection(MarkupElement $element, ?string $path): array
+    {
+        return $this->compileErrorHandling($element, $path);
+    }
+
+    /**
      * `<on listen>` 을 onComponentEvent 항목으로 붙입니다.
      *
      * @param  MarkupElement  $on  `<on>` 요소

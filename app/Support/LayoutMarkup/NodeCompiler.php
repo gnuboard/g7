@@ -149,7 +149,8 @@ final class NodeCompiler
      * 이냐 컴포넌트냐, CardGrid 셀 hoist 냐 Card 컴포넌트냐를 **위치로** 갈라야 한다.
      *
      * 액션 태그(`<on>`·`<switch>` 등)는 S3 에서 구현되어 여기 없다 — 이벤트 컨텍스트 전용이므로
-     * 노드 자리에 오면 ACTION_ONLY_TAGS 가 별도 에러로 잡는다.
+     * 노드 자리에 오면 ACTION_ONLY_TAGS 가 별도 에러로 잡는다. 문서 최상위 섹션(`<data-source>`
+     * 등)도 S4 에서 구현되어 여기 없다 — 노드 자리에 오면 SECTION_ONLY_TAGS 가 잡는다.
      *
      * @var array<string, string>
      */
@@ -158,10 +159,27 @@ final class NodeCompiler
         'footer-cell' => 'embedding', 'footer-card' => 'embedding', 'title-prefix' => 'embedding',
         'responsive' => 'embedding', 'item-template' => 'embedding', 'default' => 'embedding',
         'callback' => 'embedding', 'switch-value' => 'embedding',
-        'from-source' => 'document_section', 'seo' => 'document_section', 'data-source' => 'document_section',
-        'computed' => 'document_section', 'init' => 'document_section', 'init-local' => 'document_section',
-        'init-global' => 'document_section', 'init-isolated' => 'document_section',
-        'include' => 'document_section', 'inject' => 'document_section', 'extension-point' => 'document_section',
+        // include(조각 참조 — S7)·extension-point(주입 지점 노드 — S5)는 아직 미구현.
+        'include' => 'document_section', 'extension-point' => 'document_section',
+    ];
+
+    /**
+     * 문서 최상위·중첩 섹션 태그 — 컴포넌트(노드) 자리에 오면 문서 구조를 잘못 이해한 것 (S4 소관).
+     *
+     * `<data-source>`·`<meta>` 등은 문서 봉투 직속(또는 그 하위 섹션)에만 오는 메타데이터라, 노드
+     * 자리에서는 이월(TagNotYetSupported)이 아니라 자리 오류로 안내한다 — 이미 구현됐으므로
+     * "아직 다루지 않음" 이 아니라 "여기 쓸 수 없음" 이다(ACTION_ONLY_TAGS 와 같은 규율).
+     *
+     * `<slot>` 은 뺐다 — 노드 위치의 `<slot name>` 은 베이스 레이아웃의 자리표시 노드(`type: slot`)라
+     * 정상 저작이다(아래 compileSlotNode). `<modal>` 도 뺐다 — 노드 자리에서는 Modal 컴포넌트다.
+     *
+     * @var array<int, string>
+     */
+    private const SECTION_ONLY_TAGS = [
+        'meta', 'seo', 'data-source', 'computed', 'init', 'init-local', 'init-global', 'init-isolated',
+        'from-source', 'permissions', 'defines', 'error-handling', 'global-headers', 'transition-overlay',
+        'script', 'inject', 'override', 'permission', 'define', 'match', 'wait-for', 'skeleton', 'spinner',
+        'og', 'vars', 'extensions', 'structured-data', 'data-sources',
     ];
 
     /**
@@ -235,6 +253,12 @@ final class NodeCompiler
      */
     public function compile(MarkupElement $element, ?string $path = null): array
     {
+        // 베이스 레이아웃의 슬롯 자리표시 — `<slot name="content"/>` → `{type: slot, name: content}`.
+        // 자식 레이아웃이 채우는 `<slot name>` 섹션은 문서 층(S4)이 직속에서 먼저 가로챈다.
+        if ($element->name === 'slot') {
+            return $this->compileSlotNode($element, $path);
+        }
+
         $definition = $this->resolveComponent($element, $path);
 
         $node = ['type' => $definition->type, 'name' => $definition->name];
@@ -296,6 +320,35 @@ final class NodeCompiler
     }
 
     /**
+     * `<slot name>` 을 슬롯 자리표시 노드로 컴파일합니다 (베이스 레이아웃의 slot 노드).
+     *
+     * 서버의 extends 병합이 이 자리를 자식 레이아웃의 `slots[name]` 으로 채운 뒤 제거한다. 자식이
+     * 채우지 않으면 자식 태그(있으면)가 기본 콘텐츠로 남는다.
+     *
+     * @param  MarkupElement  $element  `<slot name>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 슬롯 노드
+     *
+     * @throws CompileError name 이 없거나 자식 표기가 규칙을 벗어난 경우
+     */
+    private function compileSlotNode(MarkupElement $element, ?string $path): array
+    {
+        $node = ['type' => 'slot', 'name' => $this->requiredAttribute($element, 'name', $path)];
+
+        $children = array_map(fn (MarkupElement $child): array => $this->compile($child, $path), $element->children);
+
+        if ($children !== []) {
+            $node['children'] = $children;
+        }
+
+        if ($element->comment !== null) {
+            $node['comment'] = $element->comment;
+        }
+
+        return $node;
+    }
+
+    /**
      * 태그를 레지스트리 컴포넌트로 해석합니다.
      *
      * @param  MarkupElement  $element  요소
@@ -312,6 +365,10 @@ final class NodeCompiler
 
         if (in_array($element->name, self::ACTION_ONLY_TAGS, true)) {
             throw $this->error($element, LayoutMarkupErrorCode::ActionTagInNodePosition, $path, ['tag' => $element->name]);
+        }
+
+        if (in_array($element->name, self::SECTION_ONLY_TAGS, true)) {
+            throw $this->error($element, LayoutMarkupErrorCode::SectionTagInNodePosition, $path, ['tag' => $element->name]);
         }
 
         if (in_array($element->name, self::STRUCTURAL_TAGS, true) || isset(self::NESTED_ONLY_TAGS[$element->name])) {

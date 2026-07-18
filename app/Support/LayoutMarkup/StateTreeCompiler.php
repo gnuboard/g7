@@ -66,6 +66,143 @@ final class StateTreeCompiler
     }
 
     /**
+     * `<init-local>`/`<init-global>`/`<init-isolated>` 블록 하나를 상태 키 기여로 컴파일합니다.
+     *
+     * `<isolated-state>`(노드 층)와 달리 문서·데이터소스 초기화는 세 가지가 더 있다 — 데이터소스에서
+     * 값을 끌어오는 `<from-source>`, 한 상태 키로 묶는 `key` 속성, 병합 전략 `merge`. 그래서 이
+     * 메서드는 **여러 키를 낼 수도**(무-key 블록의 `<field>` 들이 각각 상태 키가 됨) **한 키를 낼 수도**
+     * (`key` 지정 시 블록 전체가 그 키의 값) 있어, `{name: value}` 객체 하나를 돌려주는 `compile()`과
+     * 반환 계약이 다르다.
+     *
+     * @param  MarkupElement  $block  `<init-*>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 초기화 대상 객체에 병합할 `{상태키: 값}` 기여
+     *
+     * @throws CompileError 표기 규칙을 벗어난 경우
+     */
+    public function compileInitBlock(MarkupElement $block, ?string $path = null): array
+    {
+        $key = $block->attribute('key');
+        $merge = $block->attribute('merge');
+        $sources = $block->childrenNamed('from-source');
+
+        // key 없는 블록 = 리프 `<field>` 들이 각각 상태 키가 되는 평면 매핑(레이아웃 루트의 표준형).
+        // `<from-source>`(값 전체를 데이터에서 끌어옴)는 담을 상태 키가 없어 key 를 요구한다.
+        if ($key === null || $key->value === null || $key->value === '') {
+            if ($sources !== []) {
+                throw $this->error($sources[0], LayoutMarkupErrorCode::StateSourceNeedsKey, $path, ['tag' => $block->name]);
+            }
+
+            if ($merge !== null) {
+                throw $this->error($block, LayoutMarkupErrorCode::StateMergeNeedsKey, $path, ['tag' => $block->name]);
+            }
+
+            return $this->compile($block, $path);
+        }
+
+        return [$key->value => $this->compileKeyedValue($block, $sources, $merge?->value, $path)];
+    }
+
+    /**
+     * `key` 로 묶인 초기화 블록의 값을 결정합니다.
+     *
+     * 값은 셋 중 하나다 — `<field>` 들이 이루는 매핑 객체, `<from-source>` 하나가 끌어오는 소스 값
+     * (문자열 소스 또는 `{key, path}`), `<from-source>` 여럿이 이루는 혼합 배열. `merge` 는 매핑
+     * 객체에만 `_merge` 로 얹는다(엔진이 최상위 키 레벨에만 병합 전략을 두므로).
+     *
+     * @param  MarkupElement  $block  `<init-*>` 요소
+     * @param  array<int, MarkupElement>  $sources  `<from-source>` 자식들
+     * @param  string|null  $merge  병합 전략 (`deep`/`shallow`/`replace`), 없으면 null
+     * @param  string|null  $path  소스 파일 경로
+     * @return mixed 상태 키의 값
+     *
+     * @throws CompileError `<field>` 와 `<from-source>` 를 섞었거나 표기가 규칙을 벗어난 경우
+     */
+    private function compileKeyedValue(MarkupElement $block, array $sources, ?string $merge, ?string $path): mixed
+    {
+        $fields = $block->childrenNamed('field');
+
+        if ($fields !== [] && $sources !== []) {
+            throw $this->error($sources[0], LayoutMarkupErrorCode::StateFieldSourceMixed, $path, ['tag' => $block->name]);
+        }
+
+        if ($sources !== []) {
+            if ($merge !== null) {
+                throw $this->error($block, LayoutMarkupErrorCode::StateMergeNeedsMapping, $path, ['tag' => $block->name]);
+            }
+
+            $values = array_map(fn (MarkupElement $s): mixed => $this->compileSource($s, $path), $sources);
+
+            return count($values) === 1 ? $values[0] : $values;
+        }
+
+        // `<field>` 매핑 — compile() 이 `{name: value}` 를 만든다. merge 는 최상위 `_merge` 로.
+        $value = $this->compile($block, $path);
+
+        if ($merge !== null) {
+            $value['_merge'] = $merge;
+        }
+
+        return $value;
+    }
+
+    /**
+     * `<from-source>` 하나를 소스 값으로 컴파일합니다.
+     *
+     * `<from-source>src</from-source>`(본문만) 는 전체 데이터를 저장하는 문자열 소스, `key`/`path`
+     * 속성이 있으면 `{key, path}` 객체다(path 는 배열 인덱스 표기 `[0].name` 을 그대로 보존).
+     *
+     * @param  MarkupElement  $source  `<from-source>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return string|array<string, string> 소스 값
+     *
+     * @throws CompileError 표기 규칙을 벗어난 경우
+     */
+    private function compileSource(MarkupElement $source, ?string $path): string|array
+    {
+        if ($source->children !== []) {
+            throw $this->error($source->children[0], LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                'tag' => $source->children[0]->name,
+                'parent' => 'from-source',
+            ]);
+        }
+
+        $keyAttr = $source->attribute('key');
+        $pathAttr = $source->attribute('path');
+
+        // 본문 문자열 형태 — key/path 속성과 함께 쓸 수 없다(값이 문자열인지 {key,path} 인지 갈린다).
+        if ($keyAttr === null && $pathAttr === null) {
+            if ($source->text === null || trim($source->text) === '') {
+                throw $this->error($source, LayoutMarkupErrorCode::MissingRequiredAttribute, $path, [
+                    'tag' => 'from-source',
+                    'attr' => 'key',
+                ]);
+            }
+
+            return trim($source->text);
+        }
+
+        if ($source->text !== null && trim($source->text) !== '') {
+            throw $this->error($source, LayoutMarkupErrorCode::StateSourceValueAndKey, $path, ['found' => trim($source->text)]);
+        }
+
+        if ($keyAttr === null || $keyAttr->value === null || $keyAttr->value === '') {
+            throw $this->error($source, LayoutMarkupErrorCode::MissingRequiredAttribute, $path, [
+                'tag' => 'from-source',
+                'attr' => 'key',
+            ]);
+        }
+
+        $value = ['key' => $keyAttr->value];
+
+        if ($pathAttr !== null && $pathAttr->value !== null) {
+            $value['path'] = $pathAttr->value;
+        }
+
+        return $value;
+    }
+
+    /**
      * `<field>` 하나의 값을 결정합니다.
      *
      * @param  MarkupElement  $field  `<field>` 요소

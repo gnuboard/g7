@@ -6,7 +6,20 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는
-  **S1~S3** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+  **S1~S4** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+
+  S4 범위 — DocumentCompiler:
+    - 루트 태그가 문서 종류를 정한다: `<layout>`(본 레이아웃)·`<partial>`(루트=노드)·
+      `<extension>`(주입 fragment — 다른 봉투)·`<override>`(템플릿 오버라이드). 노드 층은 이 넷을
+      노드 자리에서 거부한다(RootTagInNodePosition).
+    - 최상위 섹션은 `<body>` 대신 섹션 태그로 온다: `<meta>`+`<seo>`·`<data-source>`(사전 B)·
+      `<computed>`·`<init-*>`·`<init>`·`<action name>`·`<permissions>`·`<defines>`·`<error-handling>`·
+      `<global-headers>`·`<transition-overlay>`·`<script>`·`<slot>`·`<modal>` → 각 JSON 최상위 키.
+    - 같은 이름의 컴포넌트가 있는 태그는 위치로 갈린다: `<modal>` 은 문서 직속이면 섹션(modals),
+      노드 안이면 Modal 컴포넌트. `<slot>` 은 문서 직속이면 slots 섹션, 노드 안이면 slot 자리표시 노드.
+    - 상태 초기화는 `<field>`/`<from-source>` 트리다(JSON 리터럴 금지 — D5). `key` 없는 블록은
+      필드가 각각 상태 키가 되고(레이아웃 루트 표준), `key` 지정 시 블록 전체가 그 키의 값이며
+      `merge` 는 `<field>` 매핑에 `_merge` 로 얹는다(소스 값 블록에는 금지).
 
   S3 범위 — ActionCompiler + ActionHandlerManifest:
     - `<on>` 이 세 노드 키로 갈린다: type/event=actions[], mount/unmount=lifecycle, listen=onComponentEvent.
@@ -55,7 +68,7 @@ description: |
 # 에서 값별로 직접 관측한다 — 아래 effects 는 전부 테스트 docblock @effects 로 개별 매핑되어
 # 기계 검증된다.
 axes:
-  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action]
+  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action, document]
   source_health: [valid, invalid]
 
 effects:
@@ -209,6 +222,23 @@ effects:
   - host_and_canvas_resolve_variants_independently
   - edited_template_override_wins_in_the_canvas
   - applying_extension_components_twice_is_idempotent
+  # --- S4 루트 판별 (문서 다섯 계층 봉투)
+  - document_root_selects_layout_partial_extension_or_override
+  - empty_or_multiple_or_unknown_document_root_is_rejected
+  - partial_root_must_be_a_single_node
+  # --- S4 최상위 섹션 (사전 A·B)
+  - top_level_sections_emit_as_json_keys
+  - document_json_key_order_is_deterministic
+  - duplicate_singleton_section_is_rejected
+  - unknown_root_attribute_is_rejected
+  - document_section_tag_in_node_position_is_rejected
+  # --- S4 상태 초기화 (field/from-source 트리 — JSON 리터럴 금지)
+  - state_init_tree_emits_as_init_objects
+  - state_source_without_key_is_rejected
+  - state_field_and_source_mixed_is_rejected
+  # --- S4 fragment 봉투 (target-layout XOR extension-point)
+  - fragment_target_conflict_or_missing_is_rejected
+  - fragment_inject_props_and_components_are_exclusive
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -217,6 +247,7 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTreeBuilderTest.php
   - tests/Unit/Support/LayoutMarkup/NodeCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/ActionCompilerTest.php
+  - tests/Unit/Support/LayoutMarkup/DocumentCompilerTest.php
   - tests/Unit/Enums/LayoutMarkupErrorCodeTest.php
   # 런타임 self-register 계약 — 판본 선택·오버라이드 우선순위는 코어가 판정한다
   - resources/js/core/template-engine/__tests__/ComponentRegistry.extension.test.ts

@@ -351,6 +351,105 @@ enum LayoutMarkupErrorCode: string
      */
     case InitActionKeyForbidden = 'init_action_key_forbidden';
 
+    // 문서 구조 (S4)
+
+    /**
+     * 문서 최상위 섹션 태그를 노드 위치에 사용함 (`<data-source>`·`<meta>` 는 문서 직속 전용).
+     */
+    case SectionTagInNodePosition = 'section_tag_in_node_position';
+
+    /**
+     * 파일에 요소가 하나도 없음 (빈 문서).
+     */
+    case EmptyDocument = 'empty_document';
+
+    /**
+     * 문서 루트가 둘 이상임 (한 파일에는 봉투 하나).
+     */
+    case MultipleDocumentRoots = 'multiple_document_roots';
+
+    /**
+     * 루트 태그가 문서 봉투가 아님 (`<layout>`·`<partial>`·`<extension>`·`<override>`).
+     */
+    case UnknownDocumentRoot = 'unknown_document_root';
+
+    /**
+     * 문서 봉투에 알 수 없는 속성을 사용함 (`<layout foo>`).
+     */
+    case UnknownRootAttribute = 'unknown_root_attribute';
+
+    /**
+     * 한 번만 올 수 있는 섹션을 두 번 지정함 (`<meta>`·`<computed name>` 중복 등).
+     */
+    case DuplicateSection = 'duplicate_section';
+
+    /**
+     * 문서 봉투에 올 수 없는 자식을 사용함 (`<override>` 안의 비허용 섹션 등).
+     */
+    case UnexpectedDocumentChild = 'unexpected_document_child';
+
+    /**
+     * `<partial>` 의 루트 노드가 하나가 아님 (조각은 루트가 노드 하나).
+     */
+    case PartialRootNotSingleNode = 'partial_root_not_single_node';
+
+    /**
+     * `<modal src>` 에 본문을 함께 씀 (참조와 인라인은 배타적).
+     */
+    case ModalSrcWithBody = 'modal_src_with_body';
+
+    /**
+     * 인라인 `<modal>` 의 루트 노드가 하나가 아님.
+     */
+    case ModalInlineNotSingleNode = 'modal_inline_not_single_node';
+
+    /**
+     * `<extension>` 이 target-layout 과 extension-point 를 함께 선언함 (둘은 배타적).
+     */
+    case FragmentTargetConflict = 'fragment_target_conflict';
+
+    /**
+     * `<extension>` 이 target-layout·extension-point 를 둘 다 선언하지 않음.
+     */
+    case FragmentTargetMissing = 'fragment_target_missing';
+
+    /**
+     * fragment 봉투에 올 수 없는 자식을 사용함 (extension-point 형에 `<inject>` 등).
+     */
+    case UnexpectedFragmentChild = 'unexpected_fragment_child';
+
+    /**
+     * `<inject>` 가 `<props>` 와 컴포넌트 노드를 함께 가짐 (둘은 배타적).
+     */
+    case FragmentInjectAmbiguous = 'fragment_inject_ambiguous';
+
+    // 상태 초기화 (S4)
+
+    /**
+     * `<from-source>` 를 담을 상태 키가 없음 (`<init-* key="...">` 필요).
+     */
+    case StateSourceNeedsKey = 'state_source_needs_key';
+
+    /**
+     * `merge` 를 `key` 없이 사용함 (병합 전략은 묶는 키가 있어야 함).
+     */
+    case StateMergeNeedsKey = 'state_merge_needs_key';
+
+    /**
+     * `<field>` 와 `<from-source>` 를 한 블록에 섞음 (리터럴과 소스 값은 배타적).
+     */
+    case StateFieldSourceMixed = 'state_field_source_mixed';
+
+    /**
+     * `merge` 를 소스 값 블록에 사용함 (병합 전략은 매핑 객체에만).
+     */
+    case StateMergeNeedsMapping = 'state_merge_needs_mapping';
+
+    /**
+     * `<from-source>` 에 본문과 key/path 속성을 함께 씀 (문자열 소스와 `{key,path}` 는 배타적).
+     */
+    case StateSourceValueAndKey = 'state_source_value_and_key';
+
     /**
      * 다국어 오류 본문을 반환합니다.
      *

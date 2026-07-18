@@ -137,6 +137,29 @@ return [
         'duplicate_action_key' => ':key 를 두 번 지정했습니다. 속성과 태그가 같은 자리를 다투지 않는지 확인하세요.',
         'confirm_not_at_root' => 'confirm 은 이벤트에 직접 연결된 액션에서만 확인창을 띄웁니다. 중첩 액션의 confirm 은 무시되므로 진입 액션으로 옮기세요.',
         'init_action_key_forbidden' => '초기화 액션에는 :key 를 쓸 수 없습니다 — 초기화 단계에서 조용히 무시됩니다. 후속 동작은 <success> 안에 두거나 named action 으로 참조하세요.',
+
+        // 문서 구조 (S4)
+        'section_tag_in_node_position' => '<:tag> 는 문서 최상위 섹션이라 컴포넌트 자리에 쓸 수 없습니다. 문서 봉투 직속에 두세요.',
+        'empty_document' => '문서가 비어 있습니다. <layout>·<partial>·<extension>·<override> 중 하나로 감싸세요.',
+        'multiple_document_roots' => '한 파일에는 문서 봉투가 하나만 옵니다: <:tag> 는 별도 파일로 나누세요.',
+        'unknown_document_root' => '<:tag> 는 문서 봉투가 아닙니다. <layout>·<partial>·<extension>·<override> 중 하나를 쓰세요.',
+        'unknown_root_attribute' => '<:tag> 에 :attr 속성은 쓸 수 없습니다.',
+        'duplicate_section' => ':tag 섹션을 두 번 지정했습니다.',
+        'unexpected_document_child' => '<:tag> 는 <:parent> 안에 올 수 없습니다.',
+        'partial_root_not_single_node' => '<partial> 은 루트가 노드 하나입니다. 조각의 루트 컴포넌트를 하나만 두세요.',
+        'modal_src_with_body' => '<modal src="..."> 는 조각을 참조하므로 본문을 함께 쓸 수 없습니다. 인라인 모달은 src 없이 노드로 쓰세요.',
+        'modal_inline_not_single_node' => '인라인 <modal> 은 노드 하나만 담습니다.',
+        'fragment_target_conflict' => '<extension> 은 target-layout 과 extension-point 를 함께 쓸 수 없습니다. 특정 레이아웃에 주입하면 target-layout, 확장 지점에 주입하면 extension-point 하나만 쓰세요.',
+        'fragment_target_missing' => '<extension> 에는 target-layout 또는 extension-point 가 필요합니다.',
+        'unexpected_fragment_child' => '<:tag> 는 이 fragment 형태에 올 수 없습니다. target-layout 형은 <inject>, extension-point 형은 컴포넌트 노드를 쓰세요.',
+        'fragment_inject_ambiguous' => '<inject> 는 <props> 로 속성을 병합하거나 컴포넌트 노드를 주입합니다. 둘을 함께 쓸 수 없습니다.',
+
+        // 상태 초기화 (S4)
+        'state_source_needs_key' => '<:tag> 안의 <from-source> 는 담을 상태 키가 필요합니다: <:tag key="..."> 로 묶으세요.',
+        'state_merge_needs_key' => 'merge 는 key 로 묶은 블록에만 씁니다: <:tag key="..." merge="..."> 로 쓰세요.',
+        'state_field_source_mixed' => '<:tag> 에 <field> 와 <from-source> 를 함께 쓸 수 없습니다. 리터럴 값은 <field>, 데이터에서 끌어오는 값은 <from-source> 로 나누세요.',
+        'state_merge_needs_mapping' => 'merge 는 <field> 매핑 객체에만 씁니다. <from-source> 값에는 병합 전략을 둘 수 없습니다.',
+        'state_source_value_and_key' => '<from-source> 는 본문(문자열 소스)과 key/path 속성을 함께 쓸 수 없습니다: ":found"',
     ],
 
     // 설정 관련 예외

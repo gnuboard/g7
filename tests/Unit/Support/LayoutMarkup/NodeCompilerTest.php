@@ -155,7 +155,36 @@ class NodeCompilerTest extends LayoutMarkupTestCase
             '임베딩 <cell>' => ['<cell/>', '임베딩'],
             '임베딩 <expand>' => ['<expand/>', '임베딩'],
             '임베딩 <responsive>' => ['<responsive on="portable"/>', '임베딩'],
-            '문서 섹션 <data-source>' => ['<data-source id="users"/>', '문서 섹션'],
+            '노드 주입 지점 <extension-point>' => ['<extension-point name="x"/>', '문서 섹션'],
+        ];
+    }
+
+    /**
+     * @scenario compile_unit=node,source_health=invalid
+     *
+     * @effects document_section_tag_in_node_position_is_rejected
+     */
+    #[DataProvider('sectionTagProvider')]
+    public function test_document_section_tag_in_node_position_is_rejected(string $source): void
+    {
+        // 문서 최상위 섹션(S4 구현)은 문서 봉투 직속 전용이다. 컴포넌트 자리에 오면 이월이 아니라
+        // 자리 오류이므로 "아직 다루지 않음" 이 아니라 "여기 쓸 수 없음" 으로 안내한다.
+        $this->assertSame(
+            LayoutMarkupErrorCode::SectionTagInNodePosition,
+            $this->compileError($source)->getErrorCode(),
+        );
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public static function sectionTagProvider(): array
+    {
+        return [
+            '문서 섹션 <data-source>' => ['<data-source id="users"/>'],
+            '문서 섹션 <meta>' => ['<meta title="x"/>'],
+            '문서 섹션 <computed>' => ['<computed name="total">{{a}}</computed>'],
+            '중첩 섹션 <from-source>' => ['<from-source>src</from-source>'],
         ];
     }
 

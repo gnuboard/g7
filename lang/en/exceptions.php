@@ -138,6 +138,29 @@ return [
         'duplicate_action_key' => ':key was specified twice. Check that an attribute and a tag are not competing for the same slot.',
         'confirm_not_at_root' => 'confirm only prompts on the action bound directly to the event. confirm on a nested action is ignored, so move it to the entry action.',
         'init_action_key_forbidden' => ':key cannot be used on an init action — it is silently dropped during initialization. Put follow-up work inside <success> or reference a named action.',
+
+        // Document structure (S4)
+        'section_tag_in_node_position' => '<:tag> is a top-level document section and cannot be used in a component position. Place it directly under the document envelope.',
+        'empty_document' => 'The document is empty. Wrap it in one of <layout>, <partial>, <extension>, or <override>.',
+        'multiple_document_roots' => 'A file holds a single document envelope: move <:tag> into its own file.',
+        'unknown_document_root' => '<:tag> is not a document envelope. Use one of <layout>, <partial>, <extension>, or <override>.',
+        'unknown_root_attribute' => 'The :attr attribute cannot be used on <:tag>.',
+        'duplicate_section' => 'The :tag section is specified twice.',
+        'unexpected_document_child' => '<:tag> cannot appear inside <:parent>.',
+        'partial_root_not_single_node' => '<partial> has a single root node. Keep exactly one root component for the fragment.',
+        'modal_src_with_body' => '<modal src="..."> references a fragment, so it cannot also have a body. Write an inline modal as a node without src.',
+        'modal_inline_not_single_node' => 'An inline <modal> holds a single node.',
+        'fragment_target_conflict' => '<extension> cannot use both target-layout and extension-point. Use target-layout to inject into a specific layout, or extension-point to inject at an extension point.',
+        'fragment_target_missing' => '<extension> requires either target-layout or extension-point.',
+        'unexpected_fragment_child' => '<:tag> cannot appear in this fragment form. Use <inject> for the target-layout form and component nodes for the extension-point form.',
+        'fragment_inject_ambiguous' => '<inject> either merges attributes via <props> or injects component nodes. It cannot do both.',
+
+        // State initialization (S4)
+        'state_source_needs_key' => '<from-source> inside <:tag> needs a state key to hold it: wrap it with <:tag key="...">.',
+        'state_merge_needs_key' => 'merge only applies to a block wrapped with key: write <:tag key="..." merge="...">.',
+        'state_field_source_mixed' => '<:tag> cannot mix <field> and <from-source>. Use <field> for literal values and <from-source> for values pulled from data.',
+        'state_merge_needs_mapping' => 'merge only applies to a <field> mapping object. A <from-source> value cannot carry a merge strategy.',
+        'state_source_value_and_key' => '<from-source> cannot have both a body (string source) and key/path attributes: ":found"',
     ],
 
     // Settings related exceptions
