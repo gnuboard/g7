@@ -175,6 +175,9 @@ effects:
   - core_selects_the_variant_matching_the_active_template
   - variant_choice_is_independent_of_registration_order
   - missing_extension_components_are_observable
+  # --- S2.5 ② 오버라이드 런타임 (좌표는 확장의 이름 — export 별칭은 좌표가 아니다)
+  - template_override_registers_at_the_extension_coordinate
+  - template_override_missing_implementation_falls_back_to_original
   # --- S2.5 편집기 격리 인스턴스 (확장 IIFE 는 그 전에 끝났다)
   - isolated_registry_created_after_extension_boot_still_gets_extension_components
   - host_and_canvas_resolve_variants_independently

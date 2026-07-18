@@ -468,7 +468,10 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 
 ```
 □ 레이아웃 구조가 layout-json.md 스키마와 일치하는가?
-□ 사용할 컴포넌트가 components.md에 정의되어 있는가?
+□ 사용할 컴포넌트가 3소스 중 하나에 정의되어 있는가?
+  → 템플릿 소유: components.md
+  → 확장 제공: {확장식별자}.{이름} — extension-components.md
+  → 템플릿이 대체한 확장 컴포넌트: 이름은 확장 것 그대로 (저작 표면 불변)
 □ 컴포넌트 props가 component-props.md에 정의된 것만 사용하는가?
 □ 사용할 핸들러가 actions.md에 정의되어 있는가?
 □ 핸들러의 params 구조가 actions-handlers.md와 일치하는가?

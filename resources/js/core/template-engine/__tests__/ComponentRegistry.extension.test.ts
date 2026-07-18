@@ -145,6 +145,105 @@ describe('ComponentRegistry.registerExtensionComponent', () => {
 });
 
 /**
+ * 템플릿 오버라이드 런타임 경로 가드.
+ *
+ * 저작 태그가 방출하는 좌표는 `{확장식별자}.{이름}` 하나뿐이다. 대체본이 그 좌표에 정확히
+ * 들어앉지 못하면 아무도 안 보는 키에 등록되고, 확장 원본이 경고 한 줄 없이 그대로 렌더된다
+ * — 이 규약이 막으려던 바로 그 침묵이다. `exportName` 은 번들 전역의 평면성을 피하는 로컬
+ * 별칭일 뿐 좌표가 아니며, 미선언 시 `name` 으로 폴백해 결함이 잠복하므로 별칭이 실제로
+ * 쓰이는 경우를 직접 잠근다.
+ */
+describe('ComponentRegistry.registerTemplateOverrides', () => {
+  beforeEach(() => {
+    ComponentRegistry.resetInstance();
+  });
+
+  /**
+   * 템플릿 번들 로딩을 네트워크 없이 재현합니다.
+   *
+   * `loadComponents()` 는 매니페스트를 fetch 하지만, 오버라이드 등록은 그 뒤의
+   * `registerComponentsFromManifest` 가 전담하므로 매니페스트만 세우고 그 경로를 직접 탄다.
+   */
+  async function loadTemplateBundle(
+    registry: ComponentRegistry,
+    overrides: any[],
+    module: Record<string, unknown>
+  ): Promise<void> {
+    (registry as any).manifest = {
+      templateId: (registry as any).templateId,
+      version: '1.0.0',
+      components: { basic: [], composite: [], layout: [] },
+      overrides,
+    };
+
+    await (registry as any).registerComponentsFromManifest(module);
+  }
+
+  /** @effects template_override_registers_at_the_extension_coordinate */
+  it('export 별칭을 써도 대체본은 확장의 좌표에 등록된다', async () => {
+    const registry = registryFor('sirsoft-basic');
+
+    await loadTemplateBundle(
+      registry,
+      [{ target: 'sirsoft-ecommerce', name: 'ProductCard', exportName: 'EcommerceProductCard', type: 'composite' }],
+      { EcommerceProductCard: Variant }
+    );
+
+    // 저작 태그가 방출하는 좌표
+    expect(registry.hasComponent('sirsoft-ecommerce.ProductCard')).toBe(true);
+    // 별칭이 섞인 유령 좌표는 존재해선 안 된다
+    expect(registry.hasComponent('sirsoft-ecommerce.EcommerceProductCard')).toBe(false);
+  });
+
+  /** @effects template_override_wins_over_extension_self_registration */
+  it('별칭으로 대체한 좌표도 확장의 자가등록이 되덮지 못한다', async () => {
+    const registry = registryFor('sirsoft-basic');
+    const name = 'sirsoft-ecommerce.ProductCard';
+
+    await loadTemplateBundle(
+      registry,
+      [{ target: 'sirsoft-ecommerce', name: 'ProductCard', exportName: 'EcommerceProductCard', type: 'composite' }],
+      { EcommerceProductCard: Variant }
+    );
+
+    // 확장 번들은 이보다 나중에 실행된다 (TemplateApp :468 → :687).
+    expect(registry.registerExtensionComponent(name, Base, meta(name))).toBe(false);
+    expect(registry.getComponent(name)).not.toBeNull();
+    expect((registry as any).appliedExtensionChoice.has(name)).toBe(false);
+  });
+
+  /** @effects template_override_registers_at_the_extension_coordinate */
+  it('exportName 미선언이면 name 으로 번들을 조회한다', async () => {
+    const registry = registryFor('sirsoft-basic');
+
+    await loadTemplateBundle(
+      registry,
+      [{ target: 'sirsoft-ecommerce', name: 'ProductCard', type: 'composite' }],
+      { ProductCard: Variant }
+    );
+
+    expect(registry.hasComponent('sirsoft-ecommerce.ProductCard')).toBe(true);
+  });
+
+  /** @effects template_override_missing_implementation_falls_back_to_original */
+  it('번들에 대체본 구현이 없으면 확장 원본이 그대로 쓰인다', async () => {
+    const registry = registryFor('sirsoft-basic');
+    const name = 'sirsoft-ecommerce.ProductCard';
+
+    await loadTemplateBundle(
+      registry,
+      [{ target: 'sirsoft-ecommerce', name: 'ProductCard', exportName: 'EcommerceProductCard', type: 'composite' }],
+      {} // 템플릿이 선언만 하고 구현을 안 내보냈다
+    );
+
+    expect(registry.hasComponent(name)).toBe(false);
+    // 대체가 성립하지 않았으므로 확장의 원본을 막아서는 안 된다.
+    expect(registry.registerExtensionComponent(name, Base, meta(name))).toBe(true);
+    expect(registry.hasComponent(name)).toBe(true);
+  });
+});
+
+/**
  * 편집기 격리 인스턴스 가드.
  *
  * 확장 IIFE 는 호스트 페이지 부팅 때 한 번만 실행된다. 레이아웃 편집기는 그 **뒤에** 격리

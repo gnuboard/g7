@@ -478,15 +478,19 @@ class TemplateManagerOverrideTest extends TestCase
     }
 
     /**
-     * 캐시 버전이 설정되지 않은 경우 0 반환
+     * 캐시 버전 키가 없으면 새 버전을 재생성해 반환
+     *
+     * 종전 계약은 "미설정 시 0 반환" 이었으나, 0 은 캐시 무효화를 붕괴시킨다 — 번들 URL 의
+     * `?v=0` 이 갱신되지 않아 브라우저가 낡은 확장 번들을 계속 쓴다. 그래서 키 부재/무효값을
+     * 정상 상태로 보지 않고 그 자리에서 유효 버전을 재생성하도록 바뀌었다.
      */
-    public function test_get_extension_cache_version_returns_zero_when_not_set(): void
+    public function test_get_extension_cache_version_regenerates_when_not_set(): void
     {
         Cache::forget('g7:core:ext.cache_version');
 
         $version = \App\Extension\Traits\ClearsTemplateCaches::getExtensionCacheVersion();
 
-        $this->assertEquals(0, $version);
+        $this->assertGreaterThan(0, $version);
     }
 
     /**

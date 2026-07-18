@@ -565,7 +565,10 @@ export class ComponentRegistry {
         continue;
       }
 
-      const registryKey = `${declaration.target}.${exportName}`;
+      // 좌표는 언제나 대상 확장이 붙인 이름이다. `exportName` 은 번들 전역의 평면성을 피하려고
+      // 템플릿이 붙인 로컬 별칭일 뿐이라 좌표에 섞이면 컴파일러가 방출한 노드 이름
+      // (`{확장식별자}.{이름}`) 과 갈라져 대체본이 아무도 안 보는 키에 등록된다.
+      const registryKey = `${declaration.target}.${declaration.name}`;
 
       this.overriddenByTemplate.add(registryKey);
       this.registerComponent(registryKey, component, { ...declaration, name: registryKey });
