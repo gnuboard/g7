@@ -6,7 +6,7 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는
-  **S1~S4** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+  **S1~S5** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
 
   S4 범위 — DocumentCompiler:
     - 루트 태그가 문서 종류를 정한다: `<layout>`(본 레이아웃)·`<partial>`(루트=노드)·
@@ -68,7 +68,7 @@ description: |
 # 에서 값별로 직접 관측한다 — 아래 effects 는 전부 테스트 docblock @effects 로 개별 매핑되어
 # 기계 검증된다.
 axes:
-  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action, document]
+  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action, embedding, document]
   source_health: [valid, invalid]
 
 effects:
@@ -239,6 +239,14 @@ effects:
   # --- S4 fragment 봉투 (target-layout XOR extension-point)
   - fragment_target_conflict_or_missing_is_rejected
   - fragment_inject_props_and_components_are_exclusive
+  # --- S5 임베딩 (서브트리 hoist · 노드 키 hoist · 정적 옵션 리프트)
+  - subtree_is_hoisted_to_its_props_or_node_key
+  - static_options_are_lifted_conditionally
+  - card_is_a_hoist_only_under_a_grid_parent
+  - embedding_tag_outside_its_parent_is_rejected
+  - embedding_tag_requires_its_named_attribute
+  - item_template_holds_exactly_one_node
+  - duplicate_hoist_key_is_rejected
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -248,6 +256,7 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/NodeCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/ActionCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/DocumentCompilerTest.php
+  - tests/Unit/Support/LayoutMarkup/EmbeddingCompilerTest.php
   - tests/Unit/Enums/LayoutMarkupErrorCodeTest.php
   # 런타임 self-register 계약 — 판본 선택·오버라이드 우선순위는 코어가 판정한다
   - resources/js/core/template-engine/__tests__/ComponentRegistry.extension.test.ts

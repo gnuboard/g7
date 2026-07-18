@@ -143,10 +143,11 @@ final class NodeCompiler
      * 값은 표기 갈래의 **다국어 키**다(`exceptions.layout_markup.tag_owner.{값}`). 한국어 낱말을
      * 그대로 두면 일본어·영어 메시지 한가운데에 한국어가 박힌다.
      *
-     * 여기 없는 이월 태그가 셋 있다 — `<modal>`·`<option>`·`<card>`. 레지스트리에 같은 이름의
-     * 컴포넌트(Modal/Option/Card)가 있어 태그 해석이 **먼저** 성공하므로 이 목록에 넣어도 죽은
-     * 항목이 된다. 이름이 겹친다는 것 자체가 상위 단계의 숙제다: 같은 태그가 문서 섹션(`<modal src>`)
-     * 이냐 컴포넌트냐, CardGrid 셀 hoist 냐 Card 컴포넌트냐를 **위치로** 갈라야 한다.
+     * 임베딩 태그(`<column>`·`<responsive>` 등)는 S5 에서 구현되어 여기 없다 — 자식 hoist 전용이라
+     * 컴포넌트 자리(루트·잘못된 부모)에 오면 EmbeddingCompiler 가 부모 문맥 오류로 잡는다.
+     * `<modal>`·`<option>`·`<card>` 는 레지스트리에 같은 이름의 컴포넌트가 있어 태그 해석이 **먼저**
+     * 성공하므로, 같은 태그가 컴포넌트냐 임베딩이냐를 **위치로** 가른다 — `<card>` 는 그리드 부모
+     * 아래에서만 cardColumns hoist 이고 그 밖에서는 Card 컴포넌트다(child 루프의 embedding 분기).
      *
      * 액션 태그(`<on>`·`<switch>` 등)는 S3 에서 구현되어 여기 없다 — 이벤트 컨텍스트 전용이므로
      * 노드 자리에 오면 ACTION_ONLY_TAGS 가 별도 에러로 잡는다. 문서 최상위 섹션(`<data-source>`
@@ -155,12 +156,8 @@ final class NodeCompiler
      * @var array<string, string>
      */
     private const DEFERRED_TAGS = [
-        'cell' => 'embedding', 'column' => 'embedding', 'expand' => 'embedding', 'sub-row' => 'embedding',
-        'footer-cell' => 'embedding', 'footer-card' => 'embedding', 'title-prefix' => 'embedding',
-        'responsive' => 'embedding', 'item-template' => 'embedding', 'default' => 'embedding',
-        'callback' => 'embedding', 'switch-value' => 'embedding',
-        // include(조각 참조 — S7)·extension-point(주입 지점 노드 — S5)는 아직 미구현.
-        'include' => 'document_section', 'extension-point' => 'document_section',
+        // include(조각 참조)는 S7 미구현.
+        'include' => 'document_section',
     ];
 
     /**
@@ -210,7 +207,22 @@ final class NodeCompiler
     private const ROOT_TAGS = ['layout', 'partial', 'extension', 'override'];
 
     /** 노드 키를 나르는 구조 태그 — 컴포넌트 자식이 아니라 부모 노드의 키가 된다 */
-    private const STRUCTURAL_TAGS = ['class-map', 'isolated-state', 'blur-until-loaded', 'prop', 'all-of', 'any-of'];
+    private const STRUCTURAL_TAGS = ['class-map', 'isolated-state', 'blur-until-loaded', 'prop', 'all-of', 'any-of', 'sortable'];
+
+    /**
+     * `<sortable>` 속성명(kebab) → sortable 구조체 키(camel).
+     *
+     * sortable 은 노드 키 객체(`{source, itemKey, strategy, handle, itemVar, indexVar}`)이며 짝인
+     * itemTemplate 은 `<item-template>` 이 맡는다(EmbeddingCompiler). 저작 태그명은 kebab 이므로
+     * 실측 키(camelCase)로 되돌린다 — 왕복 시 이 표를 역으로 적용하면 원문이 복원된다.
+     *
+     * @var array<string, string>
+     */
+    private const SORTABLE_KEYS = [
+        'source' => 'source', 'item-key' => 'itemKey', 'strategy' => 'strategy',
+        'handle' => 'handle', 'item-var' => 'itemVar', 'index-var' => 'indexVar',
+        'group' => 'group', 'disabled' => 'disabled',
+    ];
 
     /** 구조 태그 안에서만 유효한 태그 → 부모 태그명 */
     private const NESTED_ONLY_TAGS = [
@@ -227,12 +239,16 @@ final class NodeCompiler
     private const KEY_ORDER = [
         'comment', 'id', 'type', 'name', 'if', 'conditions', 'iteration', 'slot', 'slotOrder',
         'dataKey', 'trackChanges', 'debounce', 'classMap', 'blur_until_loaded',
-        'isolatedState', 'isolatedScopeId', 'lifecycle', 'onComponentEvent', 'actions',
-        'props', 'text', 'children',
+        'isolatedState', 'isolatedScopeId', 'sortable', 'itemTemplate', 'component_layout',
+        'responsive', 'lifecycle', 'onComponentEvent', 'actions',
+        'props', 'text', 'children', 'default', 'callbacks',
     ];
 
     /** 액션 컴파일러 — `<on>` 블록을 노드의 actions/lifecycle/onComponentEvent 키로 흡수 (S3) */
     private readonly ActionCompiler $actions;
+
+    /** 임베딩 컴파일러 — `<column>`·`<responsive>` 등 자식 서브트리를 props/노드 키로 hoist (S5) */
+    private readonly EmbeddingCompiler $embedding;
 
     /**
      * @param  ComponentRegistry  $registry  대상 템플릿의 컴포넌트 레지스트리
@@ -240,6 +256,7 @@ final class NodeCompiler
     public function __construct(private readonly ComponentRegistry $registry)
     {
         $this->actions = new ActionCompiler;
+        $this->embedding = new EmbeddingCompiler($this);
     }
 
     /**
@@ -259,6 +276,12 @@ final class NodeCompiler
             return $this->compileSlotNode($element, $path);
         }
 
+        // 확장 주입 지점 — `<extension-point name="html_editor">` → `{type: extension_point, name}`.
+        // 자식 `<default>`/`<callback>` 을 폴백 콘텐츠·콜백 채널로 흡수한다 (S5).
+        if ($element->name === 'extension-point') {
+            return $this->compileExtensionPoint($element, $path);
+        }
+
         $definition = $this->resolveComponent($element, $path);
 
         $node = ['type' => $definition->type, 'name' => $definition->name];
@@ -268,7 +291,21 @@ final class NodeCompiler
             $this->applyAttribute($attribute, $element, $node, $props, $path);
         }
 
+        // 정적 옵션 리프트 — 전 자식이 정적 `<option>` 이고 multiple/size 가 없을 때만 options 배열로
+        // 끌어올린다. 그 밖(multiple/size/혼합)이면 Option 을 일반 children 노드로 그대로 방출한다.
+        if ($this->shouldLiftOptions($definition, $element, $props)) {
+            $props['options'] = $this->liftOptions($element, $path);
+            $node['props'] = $props;
+
+            if ($element->comment !== null) {
+                $node['comment'] = $element->comment;
+            }
+
+            return $this->order($node);
+        }
+
         $children = [];
+        $hoist = [];
 
         foreach ($element->children as $child) {
             if ($child->name === 'on') {
@@ -283,6 +320,12 @@ final class NodeCompiler
                 continue;
             }
 
+            if ($this->embedding->handlesChild($child->name, $definition)) {
+                $this->embedding->applyChild($child, $definition, $node, $props, $hoist, $path);
+
+                continue;
+            }
+
             if (isset(self::NESTED_ONLY_TAGS[$child->name])) {
                 throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
                     'tag' => $child->name,
@@ -291,6 +334,12 @@ final class NodeCompiler
             }
 
             $children[] = $this->compile($child, $path);
+        }
+
+        // props 배열 hoist(columns/footerCells/…)를 옮긴다 — `:attr`·`<prop>` 으로 이미 찬 자리와
+        // 충돌하면 여기서 잡힌다(같은 키를 두 표기가 다투는 침묵 덮어쓰기 차단).
+        foreach ($hoist as $key => $value) {
+            $this->assignProp($props, $key, $value, $element->name, $element->line, $element->column, $path);
         }
 
         if ($props !== []) {
@@ -346,6 +395,220 @@ final class NodeCompiler
         }
 
         return $node;
+    }
+
+    /**
+     * `<extension-point>` 을 확장 주입 지점 노드로 컴파일합니다.
+     *
+     * `name` 은 주입 지점 이름(노드 `name`)이라 컴포넌트 props 의 `name` 과 자리가 다르다 — props 에
+     * `name` 이 필요하면 `<prop name="name">` 으로 쓴다. 자식 `<default>` 는 확장 미설치 시 폴백
+     * 콘텐츠(node[]), `<callback name>` 은 확장에 넘길 콜백 채널(`{이름: 액션}`)이다.
+     *
+     * @param  MarkupElement  $element  `<extension-point>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> extension_point 노드
+     *
+     * @throws CompileError name 이 없거나 자식이 `<default>`/`<callback>` 가 아닌 경우
+     */
+    private function compileExtensionPoint(MarkupElement $element, ?string $path): array
+    {
+        $node = ['type' => 'extension_point', 'name' => $this->requiredAttribute($element, 'name', $path)];
+        $props = [];
+
+        foreach ($element->attributes as $attribute) {
+            if ($attribute->name === 'name') {
+                continue;
+            }
+
+            $this->applyAttribute($attribute, $element, $node, $props, $path);
+        }
+
+        $default = null;
+        $callbacks = [];
+
+        foreach ($element->children as $child) {
+            switch ($child->name) {
+                case 'prop':
+                    // props 의 `name` 은 노드 `name`(주입 지점 이름)과 자리가 겹치므로 `<prop>` 으로 쓴다.
+                    $name = $this->requiredAttribute($child, 'name', $path);
+                    $this->assignProp(
+                        $props,
+                        self::ATTRIBUTE_ALIASES[$name] ?? $name,
+                        $this->decodeJsonBody($child, $path),
+                        $child->name,
+                        $child->line,
+                        $child->column,
+                        $path,
+                    );
+                    break;
+
+                case 'default':
+                    if ($default !== null) {
+                        throw $this->error($child, LayoutMarkupErrorCode::DuplicateNodeKey, $path, ['key' => 'default']);
+                    }
+
+                    $default = array_map(fn (MarkupElement $node): array => $this->compile($node, $path), $child->children);
+                    break;
+
+                case 'callback':
+                    $name = $this->requiredAttribute($child, 'name', $path);
+
+                    if (array_key_exists($name, $callbacks)) {
+                        throw $this->error($child, LayoutMarkupErrorCode::DuplicateNodeKey, $path, ['key' => 'callbacks.'.$name]);
+                    }
+
+                    $callbacks[$name] = $this->actions->compileNamedAction($child, $path);
+                    break;
+
+                default:
+                    throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                        'tag' => $child->name,
+                        'parent' => 'extension-point',
+                    ]);
+            }
+        }
+
+        if ($props !== []) {
+            $node['props'] = $props;
+        }
+
+        if ($default !== null) {
+            $node['default'] = $default;
+        }
+
+        if ($callbacks !== []) {
+            $node['callbacks'] = $callbacks;
+        }
+
+        if ($element->comment !== null) {
+            $node['comment'] = $element->comment;
+        }
+
+        return $this->order($node);
+    }
+
+    /**
+     * `<responsive on="{bp}">` 본문을 브레이크포인트 부분 노드로 컴파일합니다 (EmbeddingCompiler 호출).
+     *
+     * 브레이크포인트 값은 `{props?, children?, text?, if?, iteration?}` — props 는 얕은 머지, 나머지는
+     * 완전 교체다(엔진). `on` 은 브레이크포인트 선택자라 부모가 소비하므로 여기서는 건너뛴다. 그 밖
+     * 속성은 일반 노드처럼 3분할(props/`data-if`→if/`data-each`→iteration)한다.
+     *
+     * @param  MarkupElement  $element  `<responsive>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 브레이크포인트 부분 노드
+     *
+     * @throws CompileError 표기 규칙을 벗어난 경우
+     */
+    public function compileResponsiveOverride(MarkupElement $element, ?string $path): array
+    {
+        $override = [];
+        $props = [];
+
+        foreach ($element->attributes as $attribute) {
+            if ($attribute->name === 'on') {
+                continue;
+            }
+
+            $this->applyAttribute($attribute, $element, $override, $props, $path);
+        }
+
+        $children = array_map(fn (MarkupElement $child): array => $this->compile($child, $path), $element->children);
+
+        if ($props !== []) {
+            $override['props'] = $props;
+        }
+
+        if ($children !== []) {
+            $override['children'] = $children;
+        } elseif ($element->text !== null) {
+            $override['text'] = $element->text;
+        }
+
+        return $this->order($override);
+    }
+
+    /**
+     * `<select>` 의 정적 `<option>` 자식을 options props 로 리프트할 수 있는지 판정합니다.
+     *
+     * 리프트 조건: 부모가 Select · 자식이 하나 이상 전부 `<option>`(반복·중첩 없음) · props 에
+     * multiple/size/options 미지정. 하나라도 어긋나면 Option 을 일반 children 노드로 방출한다
+     * (multiple/size 나 Optgroup 은 노드형 저작이 정당하므로 기능을 축소하지 않는다).
+     *
+     * @param  ComponentDefinition  $definition  부모 컴포넌트 정의
+     * @param  MarkupElement  $element  부모 요소
+     * @param  array<string, mixed>  $props  현재까지 모은 props
+     * @return bool 리프트 가능하면 true
+     */
+    private function shouldLiftOptions(ComponentDefinition $definition, MarkupElement $element, array $props): bool
+    {
+        if ($definition->name !== 'Select' || $element->children === []) {
+            return false;
+        }
+
+        if (isset($props['multiple']) || isset($props['size']) || array_key_exists('options', $props)) {
+            return false;
+        }
+
+        // 리프트가 읽는 것은 value/:value/label(본문)/disabled 뿐이다. 그 밖 속성(data-if·data-each·
+        // 임의 props)이 있으면 조용히 버려지므로, 그런 옵션은 리프트하지 않고 Option 노드로 방출한다.
+        foreach ($element->children as $child) {
+            if ($child->name !== 'option' || $child->children !== []) {
+                return false;
+            }
+
+            foreach ($child->attributes as $attribute) {
+                if (! in_array($attribute->name, ['value', ':value', 'disabled'], true)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * `<option>` 자식들을 `{value, label, disabled?}` options 배열로 리프트합니다.
+     *
+     * `value` 는 문자열(`value=`) 또는 타입 리터럴(`:value=`), `label` 은 본문 텍스트, `disabled` 는
+     * 불리언 속성이다. 표현식·`$t:` 는 원문 그대로 싣는다(선평가 금지).
+     *
+     * @param  MarkupElement  $element  `<select>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<int, array<string, mixed>> options 배열
+     *
+     * @throws CompileError value 가 없는 경우
+     */
+    private function liftOptions(MarkupElement $element, ?string $path): array
+    {
+        $options = [];
+
+        foreach ($element->children as $child) {
+            $typed = $child->attribute(':value');
+            $plain = $child->attribute('value');
+
+            if ($typed !== null) {
+                $option = ['value' => $this->decodeTypeLiteral($typed, $path)];
+            } elseif ($plain !== null && $plain->value !== null) {
+                $option = ['value' => $plain->value];
+            } else {
+                throw $this->error($child, LayoutMarkupErrorCode::MissingRequiredAttribute, $path, [
+                    'tag' => $child->name,
+                    'attr' => 'value',
+                ]);
+            }
+
+            $option['label'] = (string) ($child->text ?? '');
+            $disabled = $child->attribute('disabled');
+
+            if ($disabled !== null) {
+                $option['disabled'] = true;
+            }
+
+            $options[] = $option;
+        }
+
+        return $options;
     }
 
     /**
@@ -624,7 +887,50 @@ final class NodeCompiler
                 $this->assertNotDuplicated($child, $node, 'conditions', $path);
                 $node['conditions'] = $this->compileConditions($child, $path);
                 break;
+
+            case 'sortable':
+                $this->assertNotDuplicated($child, $node, 'sortable', $path);
+                $node['sortable'] = $this->compileSortable($child, $path);
+                break;
         }
+    }
+
+    /**
+     * `<sortable>` 을 sortable 구조체로 컴파일합니다.
+     *
+     * 속성은 kebab → camel 로 되돌려 실측 키(itemKey/itemVar/indexVar 등)로 방출한다. 짝인
+     * itemTemplate 은 `<item-template>` 이 별도 노드 키로 배치한다(EmbeddingCompiler).
+     *
+     * @param  MarkupElement  $element  `<sortable>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> sortable 구조체
+     *
+     * @throws CompileError source 가 없거나 알 수 없는 속성인 경우
+     */
+    private function compileSortable(MarkupElement $element, ?string $path): array
+    {
+        $sortable = [];
+
+        foreach ($element->attributes as $attribute) {
+            $key = self::SORTABLE_KEYS[$attribute->name] ?? null;
+
+            if ($key === null) {
+                throw $this->attributeError($attribute, LayoutMarkupErrorCode::InvalidAttributeName, $path, [
+                    'found' => $attribute->name,
+                ]);
+            }
+
+            $sortable[$key] = $attribute->isBoolean() ? true : (string) $attribute->value;
+        }
+
+        if (! array_key_exists('source', $sortable)) {
+            throw $this->error($element, LayoutMarkupErrorCode::MissingRequiredAttribute, $path, [
+                'tag' => $element->name,
+                'attr' => 'source',
+            ]);
+        }
+
+        return $sortable;
     }
 
     /**

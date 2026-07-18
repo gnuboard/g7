@@ -158,5 +158,7 @@ return [
         'state_field_source_mixed' => '<:tag> に <field> と <from-source> を一緒に使用することはできません。リテラル値は <field>、データから引き出す値は <from-source> に分けてください。',
         'state_merge_needs_mapping' => 'merge は <field> マッピングオブジェクトにのみ使用します。<from-source> 値にはマージ戦略を指定できません。',
         'state_source_value_and_key' => '<from-source> は本文（文字列ソース）と key/path 属性を一緒に使用できません：":found"',
+        'embedding_tag_wrong_parent' => '<:tag> は <:parent> の中でのみ使用できます (現在は <:found> の中にあります)。',
+        'embedding_single_node_required' => '<:tag> には1つのノードのみが含まれます。',
     ],
 ];

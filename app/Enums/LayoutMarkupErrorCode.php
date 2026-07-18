@@ -450,6 +450,18 @@ enum LayoutMarkupErrorCode: string
      */
     case StateSourceValueAndKey = 'state_source_value_and_key';
 
+    // 임베딩 (S5)
+
+    /**
+     * 임베딩 태그를 요구하는 부모 밖에 사용함 (`<column>` 은 `<data-grid>` 안, `<cell>` 은 `<column>` 안).
+     */
+    case EmbeddingTagWrongParent = 'embedding_tag_wrong_parent';
+
+    /**
+     * 노드 하나만 담아야 하는 임베딩 태그에 자식이 하나가 아님 (`<item-template>`).
+     */
+    case EmbeddingSingleNodeRequired = 'embedding_single_node_required';
+
     /**
      * 다국어 오류 본문을 반환합니다.
      *

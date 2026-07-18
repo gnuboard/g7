@@ -161,6 +161,10 @@ return [
         'state_field_source_mixed' => '<:tag> cannot mix <field> and <from-source>. Use <field> for literal values and <from-source> for values pulled from data.',
         'state_merge_needs_mapping' => 'merge only applies to a <field> mapping object. A <from-source> value cannot carry a merge strategy.',
         'state_source_value_and_key' => '<from-source> cannot have both a body (string source) and key/path attributes: ":found"',
+
+        // Embedding (S5)
+        'embedding_tag_wrong_parent' => '<:tag> may only be used inside <:parent> (it is currently inside <:found>).',
+        'embedding_single_node_required' => '<:tag> holds exactly one node.',
     ],
 
     // Settings related exceptions

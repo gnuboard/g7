@@ -160,6 +160,10 @@ return [
         'state_field_source_mixed' => '<:tag> 에 <field> 와 <from-source> 를 함께 쓸 수 없습니다. 리터럴 값은 <field>, 데이터에서 끌어오는 값은 <from-source> 로 나누세요.',
         'state_merge_needs_mapping' => 'merge 는 <field> 매핑 객체에만 씁니다. <from-source> 값에는 병합 전략을 둘 수 없습니다.',
         'state_source_value_and_key' => '<from-source> 는 본문(문자열 소스)과 key/path 속성을 함께 쓸 수 없습니다: ":found"',
+
+        // 임베딩 (S5)
+        'embedding_tag_wrong_parent' => '<:tag> 는 <:parent> 안에서만 쓸 수 있습니다 (지금은 <:found> 안에 있습니다).',
+        'embedding_single_node_required' => '<:tag> 에는 노드를 하나만 담습니다.',
     ],
 
     // 설정 관련 예외

@@ -151,11 +151,10 @@ class NodeCompilerTest extends LayoutMarkupTestCase
      */
     public static function deferredTagProvider(): array
     {
+        // 임베딩(cell/expand/responsive 등)·extension-point 는 S5 에서 구현되어 더 이상 이월이 아니다.
+        // 조각 참조 `<include>`(S7) 만 남는다.
         return [
-            '임베딩 <cell>' => ['<cell/>', '임베딩'],
-            '임베딩 <expand>' => ['<expand/>', '임베딩'],
-            '임베딩 <responsive>' => ['<responsive on="portable"/>', '임베딩'],
-            '노드 주입 지점 <extension-point>' => ['<extension-point name="x"/>', '문서 섹션'],
+            '조각 참조 <include>' => ['<include src="x"/>', '문서 섹션'],
         ];
     }
 
