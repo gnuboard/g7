@@ -10,7 +10,7 @@
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
 | [백엔드](backend/) | 33개 | 정상 |
-| [프론트엔드](frontend/) | 51개 | 정상 |
+| [프론트엔드](frontend/) | 52개 | 정상 |
 | [확장 시스템](extension/) | 32개 | 정상 |
 | 공통 | 20개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
@@ -163,7 +163,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |
 
-### 프론트엔드 (51개)
+### 프론트엔드 (52개)
 
 | 문서 | 제목 |
 |------|------|
@@ -201,6 +201,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [layout-json-features.md](frontend/layout-json-features.md) | 레이아웃 JSON - 기능 (에러 핸들링, 초기화, 모달, 액션) |
 | [layout-json-inheritance.md](frontend/layout-json-inheritance.md) | 레이아웃 JSON - 상속 (Extends, Partial, 병합) |
 | [layout-json.md](frontend/layout-json.md) | 레이아웃 JSON 스키마 |
+| [layout-markup.md](frontend/layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 저작 포맷 |
 | [layout-testing.md](frontend/layout-testing.md) | 그누보드7 레이아웃 파일 렌더링 테스트 가이드 |
 | [modal-usage.md](frontend/modal-usage.md) | Modal 컴포넌트 사용 가이드 |
 | [README.md](frontend/README.md) | 그누보드7 프론트엔드 개발 가이드 |

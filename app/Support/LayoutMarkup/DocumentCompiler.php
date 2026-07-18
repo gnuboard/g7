@@ -538,19 +538,40 @@ final class DocumentCompiler
     }
 
     /**
-     * `<permissions>` 의 `<permission>` 자식들을 문자열 배열로 컴파일합니다.
+     * `<permissions>` 를 컴파일합니다 — 평면 문자열 배열 또는 조건형(`{or|and: [...]}`).
+     *
+     * 두 형태:
+     *   1. 평면 AND: `<permission>` 자식들 → `["a", "b"]` (전부 필요)
+     *   2. 조건형: 단일 `<any-of>`/`<all-of>` → `{"or": ["a", "b"]}` / `{"and": [...]}`
+     *      (예: 생성 OR 수정 권한). data-source 조건(`<all-of>/<any-of>`)과 동형 관용구.
+     * 두 형태 혼용은 금지(평면 `<permission>` 과 조건 블록을 섞을 수 없다).
      *
      * @param  MarkupElement  $element  `<permissions>` 요소
      * @param  string|null  $path  소스 파일 경로
-     * @return array<int, string> 권한 문자열 배열
+     * @return array<int|string, mixed> 권한 문자열 배열 또는 조건 객체
      *
-     * @throws CompileError 자식이 `<permission>` 이 아닌 경우
+     * @throws CompileError 자식이 `<permission>`/`<any-of>`/`<all-of>` 가 아니거나 두 형태를 혼용한 경우
      */
     private function compilePermissions(MarkupElement $element, ?string $path): array
     {
-        $permissions = [];
+        $conditional = null;
+        $flat = [];
 
         foreach ($element->children as $child) {
+            if ($child->name === 'any-of' || $child->name === 'all-of') {
+                // 조건 블록은 단독이어야 한다 — 평면 권한과 섞이거나 둘 이상일 수 없다.
+                if ($conditional !== null || $flat !== []) {
+                    throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                        'tag' => $child->name,
+                        'parent' => 'permissions',
+                    ]);
+                }
+
+                $conditional = $this->compilePermissionCondition($child, $path);
+
+                continue;
+            }
+
             if ($child->name !== 'permission') {
                 throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
                     'tag' => $child->name,
@@ -558,10 +579,49 @@ final class DocumentCompiler
                 ]);
             }
 
-            $permissions[] = (string) ($child->text ?? '');
+            if ($conditional !== null) {
+                throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                    'tag' => $child->name,
+                    'parent' => 'permissions',
+                ]);
+            }
+
+            $flat[] = (string) ($child->text ?? '');
         }
 
-        return $permissions;
+        return $conditional ?? $flat;
+    }
+
+    /**
+     * 조건형 권한(`<any-of>`/`<all-of>`)을 `{or|and: [...]}` 로 컴파일합니다.
+     *
+     * 피연산자는 권한 문자열(`<permission>`) 또는 중첩 조건(`<any-of>`/`<all-of>`)이다.
+     * 조건식(`<expr>`)을 받는 data-source `compileConditions` 와 달리, 권한은 피연산자가
+     * 권한 문자열이라 `<permission>` 자식을 받는다.
+     *
+     * @param  MarkupElement  $element  `<any-of>` 또는 `<all-of>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, array<int, mixed>> `{or|and: [...]}`
+     *
+     * @throws CompileError 자식이 `<permission>`/`<any-of>`/`<all-of>` 가 아닌 경우
+     */
+    private function compilePermissionCondition(MarkupElement $element, ?string $path): array
+    {
+        $operator = $element->name === 'all-of' ? 'and' : 'or';
+        $operands = [];
+
+        foreach ($element->children as $child) {
+            $operands[] = match ($child->name) {
+                'permission' => (string) ($child->text ?? ''),
+                'all-of', 'any-of' => $this->compilePermissionCondition($child, $path),
+                default => throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                    'tag' => $child->name,
+                    'parent' => $element->name,
+                ]),
+            };
+        }
+
+        return [$operator => $operands];
     }
 
     /**
@@ -919,6 +979,14 @@ final class DocumentCompiler
             // 부수 섹션 — 두 형태 모두 data-source/script/modal 을 허용한다.
             if (in_array($child->name, ['data-source', 'script', 'modal'], true)) {
                 $this->applySection($child, $doc, $path);
+
+                continue;
+            }
+
+            // `<init>` — 주입 시 실행할 초기 액션 (축소 화이트리스트, 본 레이아웃과 동일).
+            // 예: 통화 선택기 주입 시 현재 통화 로드. 두 형태(target_layout/extension_point) 모두 허용.
+            if ($child->name === 'init') {
+                $doc['init_actions'] = $this->compileInitActions($child, $path);
 
                 continue;
             }

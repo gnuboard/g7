@@ -47,8 +47,14 @@ final class EmbeddingCompiler
         'footer-card' => 'footerCardChildren',
     ];
 
-    /** Modal 전용 자식 태그 → props 배열 키 */
-    private const MODAL_TAGS = ['title-prefix' => 'titlePrefix', 'title-suffix' => 'titleSuffix'];
+    /**
+     * Modal 전용 자식 태그 → props 배열 키.
+     *
+     * `title-prefix`/`title-suffix` 는 등록 컴포넌트와 이름이 겹치지 않아 문맥 자유(CONTEXT_FREE_TAGS)지만,
+     * `footer` 는 `Footer` 컴포넌트(사용자 템플릿 페이지 푸터)와 겹치므로 Modal 부모일 때만 임베딩이다
+     * (`<card>` 가 그리드 부모일 때만 임베딩인 것과 동일 — handlesChild 참조).
+     */
+    private const MODAL_TAGS = ['title-prefix' => 'titlePrefix', 'title-suffix' => 'titleSuffix', 'footer' => 'footer'];
 
     /** 부모 문맥 없이 항상 임베딩인 자식 태그 (등록 컴포넌트와 이름이 겹치지 않는다) */
     private const CONTEXT_FREE_TAGS = [
@@ -78,7 +84,12 @@ final class EmbeddingCompiler
             return true;
         }
 
-        return $tag === 'card' && in_array($parent->name, self::GRID_PARENTS, true);
+        if ($tag === 'card' && in_array($parent->name, self::GRID_PARENTS, true)) {
+            return true;
+        }
+
+        // `<footer>` 는 Modal 부모일 때만 footer 임베딩 — 그 밖에서는 `Footer` 컴포넌트로 해석된다.
+        return $tag === 'footer' && $parent->name === 'Modal';
     }
 
     /**
@@ -124,6 +135,7 @@ final class EmbeddingCompiler
 
             case 'title-prefix':
             case 'title-suffix':
+            case 'footer':
                 $this->requireParent($child, $parent, ['Modal'], 'modal', $path);
                 $hoist[self::MODAL_TAGS[$child->name]] = $this->compileChildNodes($child, $path);
 

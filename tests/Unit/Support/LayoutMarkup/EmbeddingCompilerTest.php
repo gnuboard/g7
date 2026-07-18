@@ -124,6 +124,30 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
         $this->assertSame('c1', $grid['props']['cardColumns'][0]['id']);
     }
 
+    /**
+     * S8 — `<footer>` 는 Modal 부모일 때만 footer 임베딩(→ props.footer), 그 밖에서는 `Footer` 컴포넌트.
+     * (`<card>` 와 동일한 부모-문맥 게이팅 — footer 는 등록 컴포넌트명과 겹치므로 CONTEXT_FREE 가 아니다.)
+     *
+     * @scenario compile_unit=embedding,source_health=valid
+     *
+     * @effects subtree_is_hoisted_to_its_props_or_node_key
+     */
+    public function test_footer_is_a_modal_hoist_only_under_a_modal_parent(): void
+    {
+        // Modal 안: footer 서브트리를 props.footer 로 끌어올린다.
+        $modal = $this->compile('<modal title="t"><footer><button type="button" text="저장"/></footer></modal>');
+        $this->assertSame('Modal', $modal['name']);
+        $this->assertCount(1, $modal['props']['footer']);
+        $this->assertSame('Button', $modal['props']['footer'][0]['name']);
+
+        // Modal 밖: 임베딩이 아니라 컴포넌트 해석 경로로 넘어간다(조용한 props 흡수가 아니다).
+        // admin_basic 레지스트리에 Footer 컴포넌트가 없어 미지 태그로 잡히는 것이 그 증거다.
+        $this->assertSame(
+            LayoutMarkupErrorCode::UnknownTagWithSuggestion,
+            $this->compileError('<div><footer><span/></footer></div>')->getErrorCode(),
+        );
+    }
+
     // ---------------------------------------------------------------------
     // 필수 속성·단일 노드
     // ---------------------------------------------------------------------

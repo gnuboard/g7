@@ -125,6 +125,7 @@
 |------|------|
 | [identity-guard-interceptor.md](identity-guard-interceptor.md) | IdentityGuardInterceptor — 코어 본인인증 인터셉터 레퍼런스 |
 | [identity-verification-ui.md](identity-verification-ui.md) | 본인인증(IDV) 공통 UI 가이드 |
+| [layout-markup.md](layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 저작 포맷 |
 
 
 <!-- AUTO-GENERATED-END: frontend-readme-docs -->

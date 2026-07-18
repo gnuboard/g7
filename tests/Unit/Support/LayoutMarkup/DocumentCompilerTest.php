@@ -290,6 +290,106 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
         );
     }
 
+    /**
+     * S8 A1 — 확장 주입 fragment 가 `<init>`(주입 시 실행할 초기 액션)을 받는다.
+     * 예: 통화 선택기 주입 시 현재 통화 로드(header-currency-selector-admin).
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects fragment_init_actions_emit_for_injection
+     */
+    public function test_fragment_target_layout_accepts_init_actions(): void
+    {
+        $doc = $this->compile(
+            '<extension target-layout="admin_user_list"><init><set-state target="_local" ready="true"/></init></extension>',
+        );
+
+        $this->assertArrayHasKey('init_actions', $doc);
+        $this->assertCount(1, $doc['init_actions']);
+        $this->assertSame('setState', $doc['init_actions'][0]['handler']);
+    }
+
+    /**
+     * S8 A1 — extension-point 형도 `<init>` 을 받는다(두 형태 모두 허용).
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects fragment_init_actions_emit_for_injection
+     */
+    public function test_fragment_extension_point_accepts_init_actions(): void
+    {
+        $doc = $this->compile(
+            '<extension extension-point="dashboard.widgets"><init><set-state target="_local" ready="true"/></init><div class="x"/></extension>',
+        );
+
+        $this->assertArrayHasKey('init_actions', $doc);
+    }
+
+    // ---------------------------------------------------------------------
+    // 권한 (평면 배열 + 조건형 {or/and}) — S8 A2
+    // ---------------------------------------------------------------------
+
+    /**
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects permissions_flat_emits_string_array
+     */
+    public function test_permissions_flat_emits_string_array(): void
+    {
+        $doc = $this->compile(
+            '<layout name="t"><permissions><permission>a</permission><permission>b</permission></permissions></layout>',
+        );
+
+        $this->assertSame(['a', 'b'], $doc['permissions']);
+    }
+
+    /**
+     * S8 A2 — 조건형 권한 `<any-of>` → `{"or": [...]}` (예: 생성 OR 수정 권한).
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects permissions_conditional_emits_or_and_object
+     */
+    public function test_permissions_any_of_emits_or_object(): void
+    {
+        $doc = $this->compile(
+            '<layout name="t"><permissions><any-of><permission>a</permission><permission>b</permission></any-of></permissions></layout>',
+        );
+
+        $this->assertSame(['or' => ['a', 'b']], $doc['permissions']);
+    }
+
+    /**
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects permissions_conditional_emits_or_and_object
+     */
+    public function test_permissions_all_of_emits_and_object(): void
+    {
+        $doc = $this->compile(
+            '<layout name="t"><permissions><all-of><permission>a</permission><permission>b</permission></all-of></permissions></layout>',
+        );
+
+        $this->assertSame(['and' => ['a', 'b']], $doc['permissions']);
+    }
+
+    /**
+     * 평면 권한과 조건 블록을 섞으면 거부한다(둘 중 하나만).
+     *
+     * @scenario compile_unit=document,source_health=invalid
+     *
+     * @effects permissions_mixed_form_is_rejected
+     */
+    public function test_permissions_mixed_flat_and_conditional_is_rejected(): void
+    {
+        $this->assertSame(
+            LayoutMarkupErrorCode::UnexpectedStructuralChild,
+            $this->compileError(
+                '<layout name="t"><permissions><permission>a</permission><any-of><permission>b</permission></any-of></permissions></layout>',
+            )->getErrorCode(),
+        );
+    }
+
     // ---------------------------------------------------------------------
     // partial 봉투
     // ---------------------------------------------------------------------

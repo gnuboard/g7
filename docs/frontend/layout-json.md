@@ -1,6 +1,8 @@
 # 레이아웃 JSON 스키마
 
 > **관련 문서**: [컴포넌트 개발](components.md) | [데이터 바인딩](data-binding.md) | [데이터 소스](data-sources.md)
+>
+> **저작 포맷**: 이 문서는 런타임 JSON 계약(엔진이 소비하는 스키마)이다. 사람·AI 가 직접 작성하는 저작 포맷은 `.g7.html`([layout-markup.md](layout-markup.md), 2026-07-18 문법 동결)이며 설치 시 서버가 이 JSON 으로 컴파일한다. 산출 JSON 키는 이 스키마 그대로다 — 여기 키 이름 ↔ `.g7.html` 태그·속성명 매핑은 layout-markup.md 참조.
 
 ---
 

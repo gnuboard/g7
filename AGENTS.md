@@ -43,7 +43,7 @@
 | [user-overrides.md](docs/backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array $trackable... |
 | [validation.md](docs/backend/validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
 
-### 프론트엔드 [frontend/](docs/frontend/) (50개)
+### 프론트엔드 [frontend/](docs/frontend/) (51개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
@@ -81,6 +81,7 @@
 | [layout-json-features.md](docs/frontend/layout-json-features.md) | 레이아웃 JSON - 기능 (에러 핸들링, 초기화, 모달, 액션) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
 | [layout-json-inheritance.md](docs/frontend/layout-json-inheritance.md) | 레이아웃 JSON - 상속 (Extends, Partial, 병합) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
 | [layout-json.md](docs/frontend/layout-json.md) | 레이아웃 JSON 스키마 | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
+| [layout-markup.md](docs/frontend/layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 저작 포맷 | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 포맷이고 설치 시 서버(P... |
 | [layout-testing.md](docs/frontend/layout-testing.md) | 그누보드7 레이아웃 파일 렌더링 테스트 가이드 | createLayoutTest()로 테스트 헬퍼 생성, mockApi()로 API 응답 모킹 |
 | [modal-usage.md](docs/frontend/modal-usage.md) | Modal 컴포넌트 사용 가이드 | modals 섹션 모달은 openModal 핸들러로 열고, closeModal 핸들러로 닫음 |
 | [responsive-layout.md](docs/frontend/responsive-layout.md) | 반응형 레이아웃 개발 (engine-v1.1.0+) | responsive 속성: 컴포넌트 레벨 breakpoint 오버라이드 (권장) |
