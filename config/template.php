@@ -86,4 +86,31 @@ return [
         // 캐시 TTL (초)
         'cache_ttl' => 3600,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | .g7.html 저작 포맷 컴파일러 (S6 검증기) 정책
+    |--------------------------------------------------------------------------
+    |
+    | layout:compile 이 산출 JSON 을 검증할 때 참조하는 화이트리스트. 코드가 아닌 설정으로
+    | 두어 새 CDN·특수 화면이 생겨도 PO 가 코드 수정 없이 정책을 조정할 수 있게 한다.
+    */
+    'layout_markup' => [
+        // <script src> 외부 JS 로더가 실을 수 있는 호스트. 전 번들 실측(2026-07-18): 우편번호
+        // 검색(daum) + 리치 에디터(ckeditor) 두 곳뿐이다. 결제·본인인증 SDK 는 레이아웃이 아니라
+        // 핸들러(JS)에서 로드하므로 여기 없다. https 와 protocol-relative(//) 두 스킴만 허용하며
+        // (http 는 거부), 같은 origin 상대경로(/, /api/…)는 외부가 아니므로 검사에서 제외된다.
+        'script_src_allowlist' => [
+            't1.daumcdn.net',   // Daum 우편번호 API (주소 검색)
+            'cdn.ckeditor.com', // CKEditor 5 UMD (리치 텍스트 에디터)
+        ],
+
+        // 플러그인이 완전 레이아웃을 두는 것은 관례상 금지(layout_extensions·설정만 허용)이나,
+        // 이 layout_name 은 예외로 경고하지 않는다. gdpr_consent_log = 동의 기록 특수 화면
+        // (PO 확정 07-16), plugin_settings = 코어 플러그인 설정 페이지 표준 이름.
+        'plugin_complete_layout_allowlist' => [
+            'gdpr_consent_log',
+            'plugin_settings',
+        ],
+    ],
 ];

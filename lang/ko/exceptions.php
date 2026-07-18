@@ -164,6 +164,24 @@ return [
         // 임베딩 (S5)
         'embedding_tag_wrong_parent' => '<:tag> 는 <:parent> 안에서만 쓸 수 있습니다 (지금은 <:found> 안에 있습니다).',
         'embedding_single_node_required' => '<:tag> 에는 노드를 하나만 담습니다.',
+
+        // 강검증 (S6) — 산출 JSON 의미·보안 검증
+        'layout_structure_invalid' => '완성된 레이아웃 구조가 올바르지 않습니다: :reason',
+        'fragment_structure_invalid' => '확장 fragment 구조가 올바르지 않습니다: :reason',
+        'endpoint_not_whitelisted' => 'API 엔드포인트가 허용 경로를 벗어났습니다: :reason',
+        'external_url_forbidden' => '외부 URL·위험 스킴을 쓸 수 없습니다: :reason',
+        'component_not_in_registry' => '레지스트리에 없는 컴포넌트입니다: :name',
+        'wait_for_source_never_resolves' => 'transition_overlay 의 wait_for 가 완료 신호가 오지 않는 데이터소스(:reason)를 가리킵니다: :id',
+        'script_src_not_allowed' => '<script> 로 실을 수 없는 외부 JS 입니다 (허용 목록 밖): :src',
+    ],
+
+    // .g7.html 정적 lint 경고 (S6) — 컴파일을 막지 않는 경고
+    'layout_markup_lint' => [
+        'unregistered_handler' => '등록되지 않은 핸들러입니다: :handler — 코어·템플릿·확장 어디에도 없습니다.',
+        'plugin_complete_layout' => '플러그인이 완전 레이아웃을 정의했습니다: :layout — 플러그인은 layout_extensions·설정 화면만 두는 것이 관례입니다.',
+        'nesting_violation' => ':parent 는 자식으로 :child 를 받도록 선언되지 않았습니다.',
+        'responsive_breakpoint_mix' => 'portable 프리셋과 mobile/tablet 프리셋을 함께 썼습니다 — 범위가 겹쳐 예측이 어렵습니다.',
+        'standalone_missing_global_host' => '독립 레이아웃이 toast·모달을 발화하지만 Toast·Modal 호스트를 마운트하지 않았습니다 — 화면에 나타나지 않습니다.',
     ],
 
     // 설정 관련 예외

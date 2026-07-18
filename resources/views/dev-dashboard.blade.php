@@ -888,6 +888,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>레이아웃 미리보기 정리</span>
                                     <span class="text-[10px] opacity-60">(layout-previews:cleanup)</span>
                                 </button>
+                                <button onclick="runCommand('layout:compile --all --check')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>.g7.html 컴파일 검증</span>
+                                    <span class="text-[10px] opacity-60">(layout:compile --all --check)</span>
+                                </button>
                                 <button onclick="runCommand('ext-bundles:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>확장 번들 정리</span>
                                     <span class="text-[10px] opacity-60">(ext-bundles:cleanup)</span>

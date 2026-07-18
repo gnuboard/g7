@@ -6,7 +6,21 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는
-  **S1~S5** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+  **S1~S6** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+
+  S6 범위 — LayoutValidator + LayoutLinter + LayoutMarkupCompiler(파사드) + layout:compile 커맨드:
+    - 강검증은 컴파일 산출 JSON 을 대상으로 한다. 현행 파일 설치 경로엔 구조 검증이 없어(계획서
+      "검증·서빙 파이프라인 사실"), 편집기 저장 경로가 쓰는 `app/Rules/*`(ValidLayoutStructure·
+      WhitelistedEndpoint·NoExternalUrls·ValidLayoutExtensionStructure)를 **그대로 재사용**해 동등
+      강도로 잡고, 위반을 CompileError 로 승격한다. 규칙이 못 보는 셋 — wait_for cross-field
+      (websocket·background 데이터소스는 오버레이가 안 걷힘)·`<script src>` 호스트 화이트리스트
+      (NoExternalUrls 사각지대, Q4)·컴포넌트 존재 그물 — 은 직접 검사한다.
+    - lint 은 컴파일을 막지 않는 경고 5종이다: 미등록 핸들러(코어 44·템플릿 등록·확장 `.` 밖)·
+      플러그인 완전 레이아웃(gdpr_consent_log·plugin_settings 예외)·nesting 위반(빈 accepts 부모
+      제외 — 오검출 회피)·responsive portable↔mobile/tablet 혼용·독립 레이아웃의 글로벌 호스트
+      누락(toast·모달 silent failure). 강검증이 "못 만든다" 라면 lint 은 "만들되 권하지 않는다".
+    - 파사드가 토큰→트리→문서→강검증→lint 사슬을 한 줄로 잇는다. layout:compile 은 단일 파일/
+      `--all` 스캔·`--check` 건조 실행·원 위치 `.json` 병존 방출을 담당한다.
 
   S4 범위 — DocumentCompiler:
     - 루트 태그가 문서 종류를 정한다: `<layout>`(본 레이아웃)·`<partial>`(루트=노드)·
@@ -68,8 +82,14 @@ description: |
 # 에서 값별로 직접 관측한다 — 아래 effects 는 전부 테스트 docblock @effects 로 개별 매핑되어
 # 기계 검증된다.
 axes:
-  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action, embedding, document]
+  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action, embedding, document, validator, linter, facade]
   source_health: [valid, invalid]
+
+# S6 lint 은 컴파일을 막지 않는 경고라 "잘못된 소스" 축이 없다 — 항상 컴파일되는(valid) 산출
+# JSON 을 대상으로 안티패턴을 경고할 뿐이다. 그래서 linter 단위는 invalid 와 짝짓지 않는다.
+# 어떤 lint 이 무엇을 잡는가는 축이 아니라 effects 로 개별 관측한다(각 lint warn/no-warn 쌍).
+exclusions:
+  - { compile_unit: linter, source_health: invalid, reason: "lint 은 경고라 잘못된 소스 개념이 없음 — valid 산출 JSON 만 대상" }
 
 effects:
   # --- S1 토큰 방출
@@ -247,6 +267,37 @@ effects:
   - embedding_tag_requires_its_named_attribute
   - item_template_holds_exactly_one_node
   - duplicate_hoist_key_is_rejected
+  # --- S6 강검증 (app/Rules 재사용 + 컴파일러 고유 검사)
+  - valid_layout_passes_all_strong_checks
+  - layout_missing_required_top_level_field_is_rejected
+  - endpoint_outside_whitelist_is_rejected
+  - external_url_or_dangerous_scheme_is_rejected
+  - component_name_not_in_registry_is_rejected
+  - fragment_structure_violation_is_rejected
+  - wait_for_pointing_at_never_resolving_source_is_rejected
+  - wait_for_pointing_at_missing_id_is_ignored
+  - script_src_outside_allowlist_is_rejected
+  - allowlisted_protocol_relative_script_src_passes
+  - same_origin_script_src_is_not_treated_as_external
+  # --- S6 정적 lint (경고 — 컴파일 중단 없음, 오검출 회피 포함)
+  - unregistered_handler_is_warned
+  - core_template_extension_handlers_are_not_warned
+  - plugin_complete_layout_is_warned
+  - allowlisted_plugin_layout_is_not_warned
+  - module_complete_layout_is_not_warned
+  - disallowed_child_is_warned
+  - empty_accepts_parent_is_not_checked
+  - portable_mixed_with_split_presets_is_warned
+  - consistent_breakpoints_are_not_warned
+  - standalone_layout_firing_toast_without_host_is_warned
+  - standalone_layout_with_toast_host_is_not_warned
+  - extends_layout_delegates_host_to_base
+  # --- S6 파사드 종단 + lint 코드 다국어
+  - valid_source_compiles_to_json_with_no_warnings
+  - strong_validation_violation_stops_compilation
+  - lint_warning_is_surfaced_without_stopping_compilation
+  - context_drives_source_kind_dependent_lint
+  - every_lint_code_has_a_message_in_every_shipped_locale
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -257,6 +308,10 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/ActionCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/DocumentCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/EmbeddingCompilerTest.php
+  - tests/Unit/Support/LayoutMarkup/LayoutValidatorTest.php
+  - tests/Unit/Support/LayoutMarkup/LayoutLinterTest.php
+  - tests/Unit/Support/LayoutMarkup/LayoutMarkupCompilerTest.php
   - tests/Unit/Enums/LayoutMarkupErrorCodeTest.php
+  - tests/Unit/Enums/LayoutMarkupLintCodeTest.php
   # 런타임 self-register 계약 — 판본 선택·오버라이드 우선순위는 코어가 판정한다
   - resources/js/core/template-engine/__tests__/ComponentRegistry.extension.test.ts

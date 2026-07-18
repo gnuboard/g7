@@ -165,6 +165,24 @@ return [
         // Embedding (S5)
         'embedding_tag_wrong_parent' => '<:tag> may only be used inside <:parent> (it is currently inside <:found>).',
         'embedding_single_node_required' => '<:tag> holds exactly one node.',
+
+        // Strong validation (S6) — semantic/security checks on compiled JSON
+        'layout_structure_invalid' => 'The compiled layout structure is invalid: :reason',
+        'fragment_structure_invalid' => 'The extension fragment structure is invalid: :reason',
+        'endpoint_not_whitelisted' => 'The API endpoint is outside the allowed paths: :reason',
+        'external_url_forbidden' => 'External URLs / dangerous schemes are not allowed: :reason',
+        'component_not_in_registry' => 'Component is not in the registry: :name',
+        'wait_for_source_never_resolves' => "transition_overlay's wait_for points at a data source that never signals completion (:reason): :id",
+        'script_src_not_allowed' => 'This external JS cannot be loaded via <script> (host not allowlisted): :src',
+    ],
+
+    // .g7.html static lint warnings (S6) — non-fatal warnings that do not stop compilation
+    'layout_markup_lint' => [
+        'unregistered_handler' => 'Unregistered handler: :handler — not a core, template, or extension handler.',
+        'plugin_complete_layout' => 'A plugin defined a complete layout: :layout — plugins are expected to provide only layout_extensions / settings screens.',
+        'nesting_violation' => ':parent is not declared to accept :child as a child.',
+        'responsive_breakpoint_mix' => 'The portable preset is mixed with the mobile/tablet presets — overlapping ranges make behavior hard to predict.',
+        'standalone_missing_global_host' => 'A standalone layout fires toast/modal actions but does not mount a Toast/Modal host — nothing appears on screen.',
     ],
 
     // Settings related exceptions

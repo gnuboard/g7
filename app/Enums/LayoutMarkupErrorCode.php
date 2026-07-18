@@ -462,6 +462,44 @@ enum LayoutMarkupErrorCode: string
      */
     case EmbeddingSingleNodeRequired = 'embedding_single_node_required';
 
+    // 강검증 (S6) — 컴파일 산출 JSON 을 대상으로 한 의미·보안 검증
+
+    /**
+     * 완성된 레이아웃 구조가 스키마를 위반함 (version/layout_name 누락·컴포넌트 형식 이탈 등).
+     * 노드 층이 잡지 못하는 문서 전역 필수 필드를 ValidLayoutStructure 상당으로 검사한다.
+     */
+    case LayoutStructureInvalid = 'layout_structure_invalid';
+
+    /**
+     * fragment 구조가 확장 스키마를 위반함 (ValidLayoutExtensionStructure 상당).
+     */
+    case FragmentStructureInvalid = 'fragment_structure_invalid';
+
+    /**
+     * data_sources·액션의 endpoint 가 화이트리스트 경로를 벗어남 (WhitelistedEndpoint 상당).
+     */
+    case EndpointNotWhitelisted = 'endpoint_not_whitelisted';
+
+    /**
+     * props·액션에 외부 URL·위험 스킴이 있음 (NoExternalUrls 상당 — http/https/data/javascript 등).
+     */
+    case ExternalUrlForbidden = 'external_url_forbidden';
+
+    /**
+     * 컴파일 산출 노드의 컴포넌트 name 이 레지스트리에 없음 (ComponentExists 상당 — 방어 그물).
+     */
+    case ComponentNotInRegistry = 'component_not_in_registry';
+
+    /**
+     * transition_overlay.wait_for 가 완료 신호가 오지 않는 데이터소스를 가리킴 (websocket·background).
+     */
+    case WaitForSourceNeverResolves = 'wait_for_source_never_resolves';
+
+    /**
+     * `<script src>` 의 호스트·스킴이 허용 목록 밖임 (외부 JS 로더 화이트리스트 — Q4).
+     */
+    case ScriptSrcNotAllowed = 'script_src_not_allowed';
+
     /**
      * 다국어 오류 본문을 반환합니다.
      *
