@@ -6,7 +6,15 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는
-  **S1~S2.5** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+  **S1~S3** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+
+  S3 범위 — ActionCompiler + ActionHandlerManifest:
+    - `<on>` 이 세 노드 키로 갈린다: type/event=actions[], mount/unmount=lifecycle, listen=onComponentEvent.
+    - 병렬 3형태를 저작 형태로 구분한다: 같은 이벤트 여러 `<on>` 블록=fire-and-forget, 한 블록
+      여러 자식=암묵 sequence, `<parallel>`=명시 병렬. 기계 이관이 시맨틱을 조용히 바꾸지 않게.
+    - 키가 top-level 이냐 params 냐는 핸들러가 정한다(매니페스트). target 은 apiCall 이면 엔드포인트,
+      setState 면 상태 스코프라 위치가 다르다 — 넣는 자리가 틀리면 엔진이 조용히 무시한다.
+    - confirm 은 이벤트에 직접 연결된 진입 액션에서만, init 루트는 축소 화이트리스트로 더 좁게.
 
   S1 범위 — MarkupTokenizer + CompileError:
     - 소스 문자열 → 평면 토큰 스트림(start_tag/end_tag/text/comment). 중첩·짝 맞춤은
@@ -47,7 +55,7 @@ description: |
 # 에서 값별로 직접 관측한다 — 아래 effects 는 전부 테스트 docblock @effects 로 개별 매핑되어
 # 기계 검증된다.
 axes:
-  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag]
+  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action]
   source_health: [valid, invalid]
 
 effects:
@@ -145,6 +153,24 @@ effects:
   - state_tree_leaf_type_follows_type_literal_rule
   # --- S2 선평가 금지 (skipBindingKeys 패리티)
   - expressions_and_translation_keys_are_never_pre_evaluated
+  # --- S3 <on> 세 갈래 (actions / lifecycle / onComponentEvent)
+  - on_type_or_event_becomes_an_actions_entry
+  - mount_and_unmount_become_lifecycle
+  - listen_becomes_on_component_event
+  - action_tag_in_node_position_is_rejected
+  # --- S3 제어 흐름 + 병렬 3형태 왕복
+  - switch_case_conditions_parallel_sequence_compile_to_flow_handlers
+  - parallel_forms_are_distinguished_for_roundtrip
+  - action_json_key_order_is_deterministic
+  - on_component_event_and_success_carry_multiple_actions_as_array
+  # --- S3 키 배치 (핸들러별 top-level vs params — 매니페스트)
+  - handler_attributes_split_into_top_level_and_params
+  - action_if_follows_the_single_binding_rule
+  - generic_action_carries_extension_or_dynamic_handler
+  # --- S3 진입점 규칙 (confirm 루트 한정 · init 축소 화이트리스트)
+  - confirm_is_allowed_only_at_the_entry_action
+  - init_root_action_is_limited_to_the_reduced_whitelist
+  - malformed_on_block_is_rejected
   # --- S2.5 매니페스트 소유자 (스키마 통일)
   - manifest_owner_kind_resolved_from_declaring_field
   - manifest_without_owner_is_rejected
@@ -190,6 +216,7 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/ExtensionComponentRegistryTest.php
   - tests/Unit/Support/LayoutMarkup/MarkupTreeBuilderTest.php
   - tests/Unit/Support/LayoutMarkup/NodeCompilerTest.php
+  - tests/Unit/Support/LayoutMarkup/ActionCompilerTest.php
   - tests/Unit/Enums/LayoutMarkupErrorCodeTest.php
   # 런타임 self-register 계약 — 판본 선택·오버라이드 우선순위는 코어가 판정한다
   - resources/js/core/template-engine/__tests__/ComponentRegistry.extension.test.ts

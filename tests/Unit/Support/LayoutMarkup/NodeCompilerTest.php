@@ -139,7 +139,7 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     public function test_deferred_g7_tag_is_reported_as_such(string $source, string $owner): void
     {
         // 이 목록이 없으면 오타 제안이 G7 어휘를 엉뚱한 컴포넌트로 짚는다 —
-        // `<on>` → "<ol> 을 쓰려던 것 아닌가요?", `<cell>` → "<ul>...", `<expand>` → "<span>...".
+        // `<cell>` → "<ul> 을 쓰려던 것 아닌가요?", `<expand>` → "<span>...".
         $error = $this->compileError($source);
 
         $this->assertSame(LayoutMarkupErrorCode::TagNotYetSupported, $error->getErrorCode());
@@ -152,12 +152,40 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     public static function deferredTagProvider(): array
     {
         return [
-            '액션 <on>' => ['<on event="click"/>', '액션'],
-            '액션 <case>' => ['<case when="edit"/>', '액션'],
             '임베딩 <cell>' => ['<cell/>', '임베딩'],
             '임베딩 <expand>' => ['<expand/>', '임베딩'],
             '임베딩 <responsive>' => ['<responsive on="portable"/>', '임베딩'],
             '문서 섹션 <data-source>' => ['<data-source id="users"/>', '문서 섹션'],
+        ];
+    }
+
+    /**
+     * @scenario compile_unit=node,source_health=invalid
+     *
+     * @effects action_tag_in_node_position_is_rejected
+     */
+    #[DataProvider('actionTagProvider')]
+    public function test_action_tag_in_node_position_is_rejected(string $source): void
+    {
+        // 액션 태그(S3 구현)는 이벤트 컨텍스트(`<on>` 안) 전용이다. 컴포넌트 자리에 오면 이월이
+        // 아니라 자리 오류이므로 "아직 다루지 않음" 이 아니라 "여기 쓸 수 없음" 으로 안내한다.
+        $this->assertSame(
+            LayoutMarkupErrorCode::ActionTagInNodePosition,
+            $this->compileError($source)->getErrorCode(),
+        );
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public static function actionTagProvider(): array
+    {
+        return [
+            '<on> 루트' => ['<on event="click"><navigate path="/x"/></on>'],
+            '<switch> 노드 자리' => ['<switch value="{{x}}"/>'],
+            '<case> 노드 자리' => ['<case when="edit"/>'],
+            '<sequence> 노드 자리' => ['<sequence/>'],
+            '<success> 노드 자리' => ['<success/>'],
         ];
     }
 

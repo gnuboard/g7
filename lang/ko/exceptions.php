@@ -124,6 +124,19 @@ return [
         'duplicate_node_key' => ':key 를 두 번 지정했습니다.',
         'invalid_json_body' => '<:tag> 의 내용이 올바른 JSON 이 아닙니다: :reason',
         'field_value_and_children' => '<field name=":name"> 에 값과 하위 field 를 함께 쓸 수 없습니다.',
+
+        // 액션 (S3)
+        'action_tag_in_node_position' => '<:tag> 는 이벤트 처리 태그라 컴포넌트 자리에 쓸 수 없습니다. 컴포넌트 안에서 <on event="..."> 으로 감싸세요.',
+        'action_trigger_missing' => '<on> 에는 이벤트가 필요합니다: 컴포넌트 이벤트는 event=, DOM 이벤트는 type=, 다른 곳의 이벤트 구독은 listen= 을 쓰세요.',
+        'action_trigger_conflict' => '<on> 의 이벤트 표기가 충돌합니다: listen 은 event·type 과 함께 쓸 수 없고, mount·unmount 는 type 과 함께 쓸 수 없습니다.',
+        'empty_action_block' => '<:tag> 안에 실행할 액션이 없습니다.',
+        'unexpected_action_child' => '<:tag> 는 <:parent> 안에서 이 자리에 올 수 없습니다.',
+        'unknown_action_tag' => '<:tag> 는 내장 핸들러가 아닙니다. 확장·동적 핸들러는 <action handler="이름"> 으로 쓰세요.',
+        'unknown_action_tag_with_suggestion' => '<:tag> 는 내장 핸들러가 아닙니다: <:suggestion> 을(를) 쓰려던 것 아닌가요? (확장·동적 핸들러는 <action handler="이름">)',
+        'duplicate_case_key' => ':case 케이스를 두 번 지정했습니다.',
+        'duplicate_action_key' => ':key 를 두 번 지정했습니다. 속성과 태그가 같은 자리를 다투지 않는지 확인하세요.',
+        'confirm_not_at_root' => 'confirm 은 이벤트에 직접 연결된 액션에서만 확인창을 띄웁니다. 중첩 액션의 confirm 은 무시되므로 진입 액션으로 옮기세요.',
+        'init_action_key_forbidden' => '초기화 액션에는 :key 를 쓸 수 없습니다 — 초기화 단계에서 조용히 무시됩니다. 후속 동작은 <success> 안에 두거나 named action 으로 참조하세요.',
     ],
 
     // 설정 관련 예외

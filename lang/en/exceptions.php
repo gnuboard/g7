@@ -125,6 +125,19 @@ return [
         'duplicate_node_key' => ':key was specified twice.',
         'invalid_json_body' => 'The content of <:tag> is not valid JSON: :reason',
         'field_value_and_children' => '<field name=":name"> cannot have both a value and nested fields.',
+
+        // Actions (S3)
+        'action_tag_in_node_position' => '<:tag> handles events and cannot sit where a component is expected. Wrap it in <on event="..."> inside a component.',
+        'action_trigger_missing' => '<on> needs an event: use event= for a component event, type= for a DOM event, or listen= to subscribe to an event from elsewhere.',
+        'action_trigger_conflict' => 'The event notation on <on> conflicts: listen cannot be combined with event/type, and mount/unmount cannot be combined with type.',
+        'empty_action_block' => '<:tag> has no action to run.',
+        'unexpected_action_child' => '<:tag> cannot appear here inside <:parent>.',
+        'unknown_action_tag' => '<:tag> is not a built-in handler. Use <action handler="name"> for extension or dynamic handlers.',
+        'unknown_action_tag_with_suggestion' => '<:tag> is not a built-in handler: did you mean <:suggestion>? (extension/dynamic handlers use <action handler="name">)',
+        'duplicate_case_key' => 'The :case case was specified twice.',
+        'duplicate_action_key' => ':key was specified twice. Check that an attribute and a tag are not competing for the same slot.',
+        'confirm_not_at_root' => 'confirm only prompts on the action bound directly to the event. confirm on a nested action is ignored, so move it to the entry action.',
+        'init_action_key_forbidden' => ':key cannot be used on an init action — it is silently dropped during initialization. Put follow-up work inside <success> or reference a named action.',
     ],
 
     // Settings related exceptions

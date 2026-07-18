@@ -148,20 +148,34 @@ final class NodeCompiler
      * 항목이 된다. 이름이 겹친다는 것 자체가 상위 단계의 숙제다: 같은 태그가 문서 섹션(`<modal src>`)
      * 이냐 컴포넌트냐, CardGrid 셀 hoist 냐 Card 컴포넌트냐를 **위치로** 갈라야 한다.
      *
+     * 액션 태그(`<on>`·`<switch>` 등)는 S3 에서 구현되어 여기 없다 — 이벤트 컨텍스트 전용이므로
+     * 노드 자리에 오면 ACTION_ONLY_TAGS 가 별도 에러로 잡는다.
+     *
      * @var array<string, string>
      */
     private const DEFERRED_TAGS = [
-        'on' => 'action', 'switch' => 'action', 'case' => 'action', 'conditions' => 'action',
-        'when' => 'action', 'else' => 'action', 'parallel' => 'action', 'sequence' => 'action',
-        'success' => 'action', 'fail' => 'action', 'confirm' => 'action', 'switch-value' => 'action',
         'cell' => 'embedding', 'column' => 'embedding', 'expand' => 'embedding', 'sub-row' => 'embedding',
         'footer-cell' => 'embedding', 'footer-card' => 'embedding', 'title-prefix' => 'embedding',
         'responsive' => 'embedding', 'item-template' => 'embedding', 'default' => 'embedding',
-        'callback' => 'embedding',
+        'callback' => 'embedding', 'switch-value' => 'embedding',
         'from-source' => 'document_section', 'seo' => 'document_section', 'data-source' => 'document_section',
         'computed' => 'document_section', 'init' => 'document_section', 'init-local' => 'document_section',
         'init-global' => 'document_section', 'init-isolated' => 'document_section',
         'include' => 'document_section', 'inject' => 'document_section', 'extension-point' => 'document_section',
+    ];
+
+    /**
+     * 이벤트 컨텍스트(`<on>` 안) 전용 태그 — 컴포넌트(노드) 자리에 오면 문서 구조를 잘못 이해한 것.
+     *
+     * `<on>` 은 부모의 child 루프가 먼저 가로채 액션 컴파일러로 넘기므로 여기 목록은 그 태그들이
+     * **잘못된 자리**(직속 컴포넌트 자식이거나 루트)에 왔을 때의 안내를 담당한다. `<on>` 자신도
+     * 루트로 직접 컴파일되면 이 목록에 걸린다.
+     *
+     * @var array<int, string>
+     */
+    private const ACTION_ONLY_TAGS = [
+        'on', 'switch', 'case', 'conditions', 'when', 'else', 'parallel', 'sequence',
+        'success', 'fail', 'error-handling', 'on-code', 'body', 'query', 'action',
     ];
 
     /**
@@ -195,13 +209,20 @@ final class NodeCompiler
     private const KEY_ORDER = [
         'comment', 'id', 'type', 'name', 'if', 'conditions', 'iteration', 'slot', 'slotOrder',
         'dataKey', 'trackChanges', 'debounce', 'classMap', 'blur_until_loaded',
-        'isolatedState', 'isolatedScopeId', 'props', 'text', 'children',
+        'isolatedState', 'isolatedScopeId', 'lifecycle', 'onComponentEvent', 'actions',
+        'props', 'text', 'children',
     ];
+
+    /** 액션 컴파일러 — `<on>` 블록을 노드의 actions/lifecycle/onComponentEvent 키로 흡수 (S3) */
+    private readonly ActionCompiler $actions;
 
     /**
      * @param  ComponentRegistry  $registry  대상 템플릿의 컴포넌트 레지스트리
      */
-    public function __construct(private readonly ComponentRegistry $registry) {}
+    public function __construct(private readonly ComponentRegistry $registry)
+    {
+        $this->actions = new ActionCompiler;
+    }
 
     /**
      * 요소 하나를 JSON 노드로 컴파일합니다.
@@ -226,6 +247,12 @@ final class NodeCompiler
         $children = [];
 
         foreach ($element->children as $child) {
+            if ($child->name === 'on') {
+                $this->actions->applyOn($child, $node, $path);
+
+                continue;
+            }
+
             if (in_array($child->name, self::STRUCTURAL_TAGS, true)) {
                 $this->applyStructuralChild($child, $node, $props, $path);
 
@@ -281,6 +308,10 @@ final class NodeCompiler
     {
         if (in_array($element->name, self::ROOT_TAGS, true)) {
             throw $this->error($element, LayoutMarkupErrorCode::RootTagInNodePosition, $path, ['tag' => $element->name]);
+        }
+
+        if (in_array($element->name, self::ACTION_ONLY_TAGS, true)) {
+            throw $this->error($element, LayoutMarkupErrorCode::ActionTagInNodePosition, $path, ['tag' => $element->name]);
         }
 
         if (in_array($element->name, self::STRUCTURAL_TAGS, true) || isset(self::NESTED_ONLY_TAGS[$element->name])) {
@@ -702,35 +733,7 @@ final class NodeCompiler
      */
     private function normalizeExpression(MarkupAttribute $attribute, string $value, string $name, ?string $path): string
     {
-        // `data-if="false"` 는 자동 래핑을 거쳐 `"{{false}}"` 로 나가는데, 같은 뜻의 `:data-if="false"`
-        // 는 불리언 `false` 를 낸다 — 뜻이 같은데 산출 JSON 이 갈리면 역변환이 어느 쪽을 골라야
-        // 할지 알 수 없다. 리터럴 불리언은 타입 리터럴 한 표기로 모은다.
-        if (in_array(strtolower(trim($value)), ['true', 'false'], true)) {
-            throw $this->attributeError($attribute, LayoutMarkupErrorCode::ConditionBooleanLiteral, $path, [
-                'attr' => $name,
-                'found' => trim($value),
-                'suggestion' => ':'.$name,
-            ]);
-        }
-
-        if (! str_contains($value, '{{')) {
-            return '{{'.$value.'}}';
-        }
-
-        $trimmed = trim($value);
-        $isSingleBinding = str_starts_with($trimmed, '{{')
-            && str_ends_with($trimmed, '}}')
-            && ! str_contains(substr($trimmed, 2, -2), '{{')
-            && ! str_contains(substr($trimmed, 2, -2), '}}');
-
-        if (! $isSingleBinding) {
-            throw $this->attributeError($attribute, LayoutMarkupErrorCode::MixedIfExpression, $path, [
-                'attr' => $name,
-                'found' => $value,
-            ]);
-        }
-
-        return $trimmed;
+        return MarkupValue::normalizeCondition($value, $attribute->line, $attribute->column, $name, ':'.$name, $path);
     }
 
     /**
@@ -744,21 +747,7 @@ final class NodeCompiler
      */
     private function decodeTypeLiteral(MarkupAttribute $attribute, ?string $path): mixed
     {
-        if ($attribute->isBoolean()) {
-            throw $this->attributeError($attribute, LayoutMarkupErrorCode::DirectiveNeedsValue, $path, ['attr' => $attribute->name]);
-        }
-
-        $value = json_decode((string) $attribute->value, true);
-
-        if ($value === null && strtolower(trim((string) $attribute->value)) !== 'null') {
-            throw $this->attributeError($attribute, LayoutMarkupErrorCode::InvalidTypeLiteral, $path, [
-                'attr' => $attribute->name,
-                'found' => (string) $attribute->value,
-                'suggestion' => ltrim($attribute->name, ':'),
-            ]);
-        }
-
-        return $value;
+        return MarkupValue::decodeTypeLiteral($attribute, ltrim($attribute->name, ':'), $path);
     }
 
     /**

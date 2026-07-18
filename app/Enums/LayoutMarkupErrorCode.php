@@ -297,6 +297,61 @@ enum LayoutMarkupErrorCode: string
     case ConditionBooleanLiteral = 'condition_boolean_literal';
 
     /**
+     * 액션 태그를 컴포넌트(노드) 자리에 사용함 (`<on>`·`<switch>` 는 이벤트 컨텍스트 전용).
+     */
+    case ActionTagInNodePosition = 'action_tag_in_node_position';
+
+    /**
+     * `<on>` 에 트리거가 없음 (event·type·listen 중 하나 필요).
+     */
+    case ActionTriggerMissing = 'action_trigger_missing';
+
+    /**
+     * `<on>` 의 트리거 표기가 충돌함 (listen 과 event/type 병기, mount 와 type 병기 등).
+     */
+    case ActionTriggerConflict = 'action_trigger_conflict';
+
+    /**
+     * 액션을 담아야 할 블록이 비어 있음 (`<on>`·`<sequence>`·`<case>` 등).
+     */
+    case EmptyActionBlock = 'empty_action_block';
+
+    /**
+     * 액션 컨텍스트에 올 수 없는 태그 (제어 태그의 자식·핸들러 태그의 자식 규칙 위반).
+     */
+    case UnexpectedActionChild = 'unexpected_action_child';
+
+    /**
+     * 등록되지 않은 액션 태그 (내장 핸들러가 아님 — `<action handler>` 안내).
+     */
+    case UnknownActionTag = 'unknown_action_tag';
+
+    /**
+     * 등록되지 않은 액션 태그 (오타로 보이는 핸들러 후보 있음).
+     */
+    case UnknownActionTagWithSuggestion = 'unknown_action_tag_with_suggestion';
+
+    /**
+     * 같은 케이스·에러코드 키를 두 번 지정함 (`<case when>`·`<on-code code>` 중복).
+     */
+    case DuplicateCaseKey = 'duplicate_case_key';
+
+    /**
+     * 같은 액션 키를 두 번 지정함 (`<success>` 중복·`<body>` 와 속성 충돌 등).
+     */
+    case DuplicateActionKey = 'duplicate_action_key';
+
+    /**
+     * confirm 을 진입점이 아닌 중첩 액션에 표기함 (엔진은 진입점에서만 발화).
+     */
+    case ConfirmNotAtRoot = 'confirm_not_at_root';
+
+    /**
+     * init 루트 액션에 축소 화이트리스트 밖 키를 사용함 (executeInitActions 가 침묵 탈락).
+     */
+    case InitActionKeyForbidden = 'init_action_key_forbidden';
+
+    /**
      * 다국어 오류 본문을 반환합니다.
      *
      * @param  array<string, string|int>  $params  메시지 치환 파라미터
