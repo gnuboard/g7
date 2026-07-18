@@ -4,8 +4,10 @@ namespace App\Extension\Traits;
 
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\PluginInterface;
+use App\Enums\LayoutMarkupErrorCode;
 use App\Enums\LayoutSourceType;
 use App\Services\LayoutExtensionService;
+use App\Support\LayoutMarkup\LayoutProvenance;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -42,6 +44,12 @@ trait RefreshesLayoutExtensions
         $identifier = $extension->getIdentifier();
         $extensionType = $sourceType === LayoutSourceType::Module ? 'module' : 'plugin';
         $stats = ['refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'skipped' => 0];
+
+        // fragment `.g7.html` 산출 JSON 공존 provenance 검증 (S7).
+        // 확장 등록은 산출 `.json` 을 읽으므로, `.g7.html` 옆의 `.json` 이 그 소스에서 컴파일된
+        // 것인지 표식으로 확인한다. 두 SSoT 가 다투면(손저작 중복·미컴파일) 등록을 시작하기 전에
+        // 세워 부분 상태를 남기지 않는다 (본 레이아웃 검증과 동일 규율).
+        $this->assertExtensionMarkupCoexistence($extension->getExtensionsPath(), $identifier);
 
         if ($adminTemplates->isEmpty()) {
             return $stats;
@@ -134,5 +142,59 @@ trait RefreshesLayoutExtensions
         }
 
         return $stats;
+    }
+
+    /**
+     * 확장 fragment 의 `.g7.html` 산출 JSON 공존 provenance 를 검증합니다 (S7).
+     *
+     * 확장 디렉토리의 `.g7.html` 마다 짝 `.json` 이 그 소스에서 컴파일된 것인지 표식으로 확인하고,
+     * 하나라도 어긋나면(미컴파일·손저작 중복·미재컴파일) 등록 전에 예외로 세운다.
+     *
+     * @param  string  $extensionsPath  확장 fragment 디렉토리 경로
+     * @param  string  $identifier  확장 식별자 (오류 메시지용)
+     *
+     * @throws \RuntimeException 공존 provenance 위반 시
+     */
+    protected function assertExtensionMarkupCoexistence(string $extensionsPath, string $identifier): void
+    {
+        if (! File::isDirectory($extensionsPath)) {
+            return;
+        }
+
+        $errors = [];
+
+        foreach (File::glob(rtrim($extensionsPath, '/\\').DIRECTORY_SEPARATOR.'*.g7.html') ?: [] as $markupFile) {
+            $relativeMarkup = str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', $markupFile));
+            $jsonFile = preg_replace('/\.g7\.html$/i', '.json', $markupFile);
+
+            if (! File::exists($jsonFile)) {
+                $errors[] = LayoutMarkupErrorCode::UncompiledMarkupSource->message(['source' => $relativeMarkup]);
+
+                continue;
+            }
+
+            $jsonData = json_decode(File::get($jsonFile), true);
+
+            if (json_last_error() !== JSON_ERROR_NONE || ! is_array($jsonData)) {
+                continue;
+            }
+
+            if (! LayoutProvenance::matches($jsonData, File::get($markupFile))) {
+                $reasonKey = LayoutProvenance::isStamped($jsonData) ? 'stale' : 'missing';
+
+                $errors[] = LayoutMarkupErrorCode::HandAuthoredDuplicate->message([
+                    'source' => $relativeMarkup,
+                    'json' => str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', $jsonFile)),
+                    'reason' => __('exceptions.layout_markup.provenance_reason.'.$reasonKey),
+                ]);
+            }
+        }
+
+        if ($errors !== []) {
+            throw new \RuntimeException(
+                __('exceptions.layout_markup.fragment_coexistence_failed', ['identifier' => $identifier])
+                ."\n- ".implode("\n- ", $errors)
+            );
+        }
     }
 }

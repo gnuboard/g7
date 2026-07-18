@@ -131,30 +131,40 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @scenario compile_unit=node,source_health=invalid
+     * @scenario compile_unit=node,source_health=valid
      *
-     * @effects deferred_g7_tag_is_named_not_mistaken_for_a_typo
+     * @effects include_compiles_to_a_partial_reference_node
      */
-    #[DataProvider('deferredTagProvider')]
-    public function test_deferred_g7_tag_is_reported_as_such(string $source, string $owner): void
+    public function test_include_compiles_to_a_partial_reference_node(): void
     {
-        // 이 목록이 없으면 오타 제안이 G7 어휘를 엉뚱한 컴포넌트로 짚는다 —
-        // `<cell>` → "<ul> 을 쓰려던 것 아닌가요?", `<expand>` → "<span>...".
-        $error = $this->compileError($source);
-
-        $this->assertSame(LayoutMarkupErrorCode::TagNotYetSupported, $error->getErrorCode());
-        $this->assertStringContainsString($owner, $error->getDetail());
+        // `<include src>` → `{partial: src}` — 설치 시 resolveAllPartials 가 인라인한다.
+        $this->assertSame(
+            ['partial' => 'partials/_summary.json'],
+            $this->compile('<include src="partials/_summary.json"/>'),
+        );
     }
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * @scenario compile_unit=node,source_health=invalid
+     *
+     * @effects include_reference_rejects_extra_attributes_and_children
      */
-    public static function deferredTagProvider(): array
+    #[DataProvider('invalidIncludeProvider')]
+    public function test_include_reference_rejects_extra_attributes_and_children(string $source, LayoutMarkupErrorCode $code): void
     {
-        // 임베딩(cell/expand/responsive 등)·extension-point 는 S5 에서 구현되어 더 이상 이월이 아니다.
-        // 조각 참조 `<include>`(S7) 만 남는다.
+        // 참조 노드는 partial 하나로 치환되므로 다른 속성/자식은 침묵 소실된다 — 표기 오류로 세운다.
+        $this->assertSame($code, $this->compileError($source)->getErrorCode());
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: LayoutMarkupErrorCode}>
+     */
+    public static function invalidIncludeProvider(): array
+    {
         return [
-            '조각 참조 <include>' => ['<include src="x"/>', '문서 섹션'],
+            'src 누락' => ['<include/>', LayoutMarkupErrorCode::MissingRequiredAttribute],
+            '추가 속성' => ['<include src="x" class="y"/>', LayoutMarkupErrorCode::NodeKeyAsAttribute],
+            '자식 존재' => ['<include src="x"><div/></include>', LayoutMarkupErrorCode::MixedTextAndChildren],
         ];
     }
 
@@ -218,7 +228,7 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @effects deferred_g7_tag_is_named_not_mistaken_for_a_typo
+     * @effects tags_colliding_with_component_names_resolve_to_the_component
      */
     public function test_tags_that_collide_with_component_names_resolve_to_the_component(): void
     {

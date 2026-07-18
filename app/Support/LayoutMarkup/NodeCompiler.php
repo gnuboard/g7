@@ -156,8 +156,7 @@ final class NodeCompiler
      * @var array<string, string>
      */
     private const DEFERRED_TAGS = [
-        // include(조각 참조)는 S7 미구현.
-        'include' => 'document_section',
+        // 현재 이월 태그 없음 — include(조각 참조)는 S7 에서 구현됨(compileInclude).
     ];
 
     /**
@@ -282,6 +281,13 @@ final class NodeCompiler
             return $this->compileExtensionPoint($element, $path);
         }
 
+        // 조각 참조 — `<include src="path"/>` → `{partial: "path"}` (S7). 설치 시
+        // resolveAllPartials 가 참조 지점에 조각을 인라인 병합하며, 그때 이 노드는 소멸한다.
+        // 참조 노드는 `partial` 키 하나뿐이므로(형제 키는 병합이 버린다) 다른 자식·속성을 받지 않는다.
+        if ($element->name === 'include') {
+            return $this->compileInclude($element, $path);
+        }
+
         $definition = $this->resolveComponent($element, $path);
 
         $node = ['type' => $definition->type, 'name' => $definition->name];
@@ -369,16 +375,54 @@ final class NodeCompiler
     }
 
     /**
-     * `<slot name>` 을 슬롯 자리표시 노드로 컴파일합니다 (베이스 레이아웃의 slot 노드).
+     * `<include src="path"/>` 를 조각 참조 노드 `{partial: "path"}` 로 컴파일합니다 (S7).
      *
-     * 서버의 extends 병합이 이 자리를 자식 레이아웃의 `slots[name]` 으로 채운 뒤 제거한다. 자식이
-     * 채우지 않으면 자식 태그(있으면)가 기본 콘텐츠로 남는다.
+     * 참조 노드는 설치 시 resolveAllPartials 가 그 자리에 조각을 인라인하며 통째로 치환하므로,
+     * `partial`(+왕복용 `comment`) 외의 형제 키를 남기면 침묵 소실된다. 그래서 `src` 만 받고
+     * 자식·다른 속성은 두지 않는다(있으면 표기 오류).
      *
-     * @param  MarkupElement  $element  `<slot name>` 요소
+     * @param  MarkupElement  $element  `<include>` 요소
      * @param  string|null  $path  소스 파일 경로
-     * @return array<string, mixed> 슬롯 노드
+     * @return array<string, mixed> `{partial: ...}` 노드
      *
-     * @throws CompileError name 이 없거나 자식 표기가 규칙을 벗어난 경우
+     * @throws CompileError src 누락·자식/추가 속성 존재 시
+     */
+    private function compileInclude(MarkupElement $element, ?string $path): array
+    {
+        $src = $this->requiredAttribute($element, 'src', $path);
+
+        // 참조 노드는 partial 하나로 치환되므로 다른 속성/자식은 조용히 버려진다 — 표기 오류로 세운다.
+        foreach ($element->attributes as $attribute) {
+            if ($attribute->name !== 'src') {
+                throw $this->error($element, LayoutMarkupErrorCode::NodeKeyAsAttribute, $path, [
+                    'attr' => $attribute->name,
+                    'suggestion' => 'src',
+                ]);
+            }
+        }
+
+        if ($element->children !== []) {
+            throw $this->error($element, LayoutMarkupErrorCode::MixedTextAndChildren, $path, [
+                'tag' => $element->name,
+                'found' => $src,
+            ]);
+        }
+
+        $node = ['partial' => $src];
+
+        if ($element->comment !== null) {
+            $node = ['comment' => $element->comment, 'partial' => $src];
+        }
+
+        return $node;
+    }
+
+    /**
+     * `<slot name="content"/>` 를 슬롯 자리표시 노드로 컴파일합니다.
+     *
+     * @param  MarkupElement  $element  `<slot>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> `{type: slot, name}` 노드
      */
     private function compileSlotNode(MarkupElement $element, ?string $path): array
     {

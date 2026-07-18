@@ -1,0 +1,36 @@
+{
+    "version": "1.0.0",
+    "layout_name": "hello_admin_markup_demo",
+    "components": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-6 space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "text": "Hello Markup Demo"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "text": "{{message ?? ''}}"
+                    }
+                }
+            ]
+        }
+    ],
+    "meta": {
+        "authoring": {
+            "source": "modules/_bundled/gnuboard7-hello_module/resources/layouts/admin/admin_markup_demo.g7.html",
+            "source_hash": "20bd09d6dedc54c6991c5afc7a62994af9b06c485d0ff79fd06871f12649dfa2",
+            "compiler_version": "1.0.0"
+        }
+    }
+}

@@ -6,6 +6,8 @@ use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
+use App\Support\LayoutMarkup\LayoutProvenance;
+use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
@@ -37,6 +39,21 @@ class LayoutCompileCommand extends Command
      * @var string
      */
     protected $description = '.g7.html 저작 파일을 JSON 레이아웃으로 컴파일하고 강검증·lint 합니다';
+
+    /**
+     * 경로 → 레지스트리·문맥 해석기 (`layout:install-diff` 와 공유 — 규칙 드리프트 차단).
+     */
+    private readonly MarkupCompileContextResolver $resolver;
+
+    /**
+     * 커맨드를 생성합니다.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->resolver = new MarkupCompileContextResolver;
+    }
 
     /**
      * 커맨드를 실행합니다.
@@ -98,9 +115,11 @@ class LayoutCompileCommand extends Command
             return [false, false];
         }
 
+        $source = File::get($file);
+
         try {
             $result = (new LayoutMarkupCompiler($registry))->compile(
-                File::get($file),
+                $source,
                 $file,
                 $this->resolveContext($file),
             );
@@ -115,7 +134,7 @@ class LayoutCompileCommand extends Command
         }
 
         if (! $this->option('check')) {
-            $this->writeOutput($file, $result->json);
+            $this->writeOutput($file, $result->json, $source);
         }
 
         $this->line("<info>✓</info> {$file}".($result->hasWarnings() ? ' <comment>(경고 '.count($result->warnings).'건)</comment>' : ''));
@@ -126,12 +145,20 @@ class LayoutCompileCommand extends Command
     /**
      * 산출 JSON 을 원 위치(또는 --out)에 씁니다.
      *
+     * 산출 파일에는 `meta.authoring` provenance 표식을 얹는다(S7). 이 표식이 설치 시 공존 판별의
+     * 근거이자 편집기 drift 마커다 — 컴파일러 자체는 표식을 붙이지 않으므로(왕복·fixture deep-equal
+     * 보전) 파일로 쓰는 이 지점에서만 얹는다.
+     *
      * @param  string  $file  소스 `.g7.html` 경로
      * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string  $source  `.g7.html` 원문 (provenance 해시 계산용)
      */
-    private function writeOutput(string $file, array $json): void
+    private function writeOutput(string $file, array $json, string $source): void
     {
         $out = $this->option('out') ?? preg_replace('/\.g7\.html$/i', '.json', $file);
+
+        $relativeSource = str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', $file));
+        $json = LayoutProvenance::stamp($json, $source, $relativeSource);
 
         File::put($out, json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n");
     }
@@ -144,17 +171,7 @@ class LayoutCompileCommand extends Command
      */
     private function resolveRegistry(string $file): ?ComponentRegistry
     {
-        $templateId = $this->targetTemplateId($file);
-
-        foreach (["templates/{$templateId}/components.json", "templates/_bundled/{$templateId}/components.json"] as $candidate) {
-            $manifest = base_path($candidate);
-
-            if (File::exists($manifest)) {
-                return ComponentRegistry::fromFile($manifest);
-            }
-        }
-
-        return null;
+        return $this->resolver->registryFor($file, $this->option('template') ? (string) $this->option('template') : null);
     }
 
     /**
@@ -165,122 +182,7 @@ class LayoutCompileCommand extends Command
      */
     private function resolveContext(string $file): CompileContext
     {
-        $normalized = str_replace('\\', '/', $file);
-        $sourceKind = match (true) {
-            str_contains($normalized, '/plugins/') => 'plugin',
-            str_contains($normalized, '/modules/') => 'module',
-            str_contains($normalized, '/templates/') => 'template',
-            default => null,
-        };
-
-        $templateId = $this->targetTemplateId($file);
-
-        return new CompileContext(
-            sourceKind: $sourceKind,
-            identifier: $this->extensionIdentifier($normalized),
-            templateHandlers: $this->scanTemplateHandlers($templateId),
-            nestingRules: $this->loadNestingRules($templateId),
-        );
-    }
-
-    /**
-     * 대상 템플릿 식별자를 결정합니다 (`--template` 우선, 없으면 admin/·user/ 디렉토리로 판별).
-     *
-     * @param  string  $file  `.g7.html` 경로
-     * @return string 템플릿 식별자
-     */
-    private function targetTemplateId(string $file): string
-    {
-        if ($this->option('template')) {
-            return (string) $this->option('template');
-        }
-
-        $normalized = str_replace('\\', '/', $file);
-
-        // 템플릿 자신의 레이아웃이면 그 템플릿.
-        if (preg_match('#/templates/(?:_bundled/)?([^/]+)/#', $normalized, $m) === 1) {
-            return $m[1];
-        }
-
-        // 모듈·플러그인 레이아웃은 admin/·user/ 로 대상 템플릿이 갈린다.
-        return str_contains($normalized, '/user/') ? 'sirsoft-basic' : 'sirsoft-admin_basic';
-    }
-
-    /**
-     * 확장 레이아웃 경로에서 소유 확장 식별자를 뽑습니다.
-     *
-     * @param  string  $normalized  슬래시 정규화된 경로
-     * @return string|null 확장 식별자, 확장 소속이 아니면 null
-     */
-    private function extensionIdentifier(string $normalized): ?string
-    {
-        if (preg_match('#/(?:modules|plugins|templates)/(?:_bundled/)?([^/]+)/#', $normalized, $m) === 1) {
-            return $m[1];
-        }
-
-        return null;
-    }
-
-    /**
-     * 템플릿이 등록한 핸들러 이름을 `src/handlers/index.ts` 에서 정적 파싱합니다.
-     *
-     * TS 를 실행하지 않고 객체 리터럴 키만 뽑는다 — lint 은 경고이므로 완벽한 파싱보다 흔한
-     * 형태(따옴표/무따옴표 키)를 넉넉히 잡는 편이 오검출을 줄인다.
-     *
-     * @param  string  $templateId  템플릿 식별자
-     * @return array<int, string> 등록 핸들러 이름 목록
-     */
-    private function scanTemplateHandlers(string $templateId): array
-    {
-        foreach (["templates/{$templateId}/src/handlers/index.ts", "templates/_bundled/{$templateId}/src/handlers/index.ts"] as $candidate) {
-            $file = base_path($candidate);
-
-            if (! File::exists($file)) {
-                continue;
-            }
-
-            $source = File::get($file);
-            $handlers = [];
-
-            // `key:` / `'key':` / `"key":` 형태의 객체 리터럴 키 (핸들러 맵) 를 모은다.
-            if (preg_match_all('/^\s*[\'"]?([A-Za-z][\w.$-]*)[\'"]?\s*:/m', $source, $matches) !== false) {
-                $handlers = $matches[1];
-            }
-
-            return array_values(array_unique($handlers));
-        }
-
-        return [];
-    }
-
-    /**
-     * 템플릿의 nesting.json 에서 컨테이너 → accepts 맵을 읽습니다.
-     *
-     * @param  string  $templateId  템플릿 식별자
-     * @return array<string, array<int, string>> 컨테이너 name → 허용 자식 name 목록
-     */
-    private function loadNestingRules(string $templateId): array
-    {
-        foreach (["templates/{$templateId}/editor-spec/nesting.json", "templates/_bundled/{$templateId}/editor-spec/nesting.json"] as $candidate) {
-            $file = base_path($candidate);
-
-            if (! File::exists($file)) {
-                continue;
-            }
-
-            $data = json_decode(File::get($file), true);
-            $rules = [];
-
-            foreach ($data['containers'] ?? [] as $name => $spec) {
-                if (isset($spec['accepts']) && is_array($spec['accepts'])) {
-                    $rules[$name] = $spec['accepts'];
-                }
-            }
-
-            return $rules;
-        }
-
-        return [];
+        return $this->resolver->contextFor($file, $this->option('template') ? (string) $this->option('template') : null);
     }
 
     /**

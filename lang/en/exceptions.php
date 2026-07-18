@@ -174,6 +174,18 @@ return [
         'component_not_in_registry' => 'Component is not in the registry: :name',
         'wait_for_source_never_resolves' => "transition_overlay's wait_for points at a data source that never signals completion (:reason): :id",
         'script_src_not_allowed' => 'This external JS cannot be loaded via <script> (host not allowlisted): :src',
+
+        // Install integration (S7) — coexistence provenance for compiled JSON
+        'hand_authored_duplicate' => 'The :json next to :source is not compiled from it (:reason). Two sources of truth cannot coexist: remove the .json, or run layout:compile to regenerate it.',
+        'uncompiled_markup_source' => ':source has no compiled .json beside it. Installation reads the compiled JSON, so run layout:compile first.',
+        'fragment_coexistence_failed' => 'The .g7.html fragments of :identifier failed coexistence validation:',
+
+        // Fills the :reason slot of hand_authored_duplicate — keeps the phrase out of the
+        // middle of the localized sentence.
+        'provenance_reason' => [
+            'missing' => 'no authoring marker — it looks hand-written',
+            'stale' => 'the source has changed since it was compiled',
+        ],
     ],
 
     // .g7.html static lint warnings (S6) — non-fatal warnings that do not stop compilation

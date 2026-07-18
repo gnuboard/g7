@@ -6,7 +6,14 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는
-  **S1~S6** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+  **S1~S7** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+
+  S7 범위 — 설치 통합 (ValidatesLayoutFiles·RefreshesLayoutExtensions·layout:install-diff):
+    - 설치는 산출 `.json` 을 등록 소스로 읽고(Architecture B), `.g7.html` 은 `meta.authoring`
+      provenance 표식으로 짝만 확인한다. 표식 일치=정상 병존(표식은 DB 로 흘러 편집기 drift 마커가
+      된다), 표식 없음=손저작 중복, 해시 불일치=미재컴파일, 짝 부재=미컴파일 → 뒤 셋은 설치 거부.
+    - 컴파일러 자체는 표식을 붙이지 않는다(왕복·fixture deep-equal 보전). layout:compile 이 파일로
+      쓸 때만 얹고, install-diff·왕복 비교는 strip 후 수행한다.
 
   S6 범위 — LayoutValidator + LayoutLinter + LayoutMarkupCompiler(파사드) + layout:compile 커맨드:
     - 강검증은 컴파일 산출 JSON 을 대상으로 한다. 현행 파일 설치 경로엔 구조 검증이 없어(계획서
@@ -82,7 +89,7 @@ description: |
 # 에서 값별로 직접 관측한다 — 아래 effects 는 전부 테스트 docblock @effects 로 개별 매핑되어
 # 기계 검증된다.
 axes:
-  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action, embedding, document, validator, linter, facade]
+  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action, embedding, document, validator, linter, facade, install]
   source_health: [valid, invalid]
 
 # S6 lint 은 컴파일을 막지 않는 경고라 "잘못된 소스" 축이 없다 — 항상 컴파일되는(valid) 산출
@@ -159,7 +166,11 @@ effects:
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
   - unknown_tag_is_rejected_with_registry_suggestion
-  - deferred_g7_tag_is_named_not_mistaken_for_a_typo
+  # `<include>`(조각 참조) 는 S7 에서 구현되어 이월 목록이 비었다 — 노드 자리 이월 효과는 은퇴.
+  # 같은 이름의 컴포넌트가 있는 태그(modal/option/card)는 이월이 아니라 컴포넌트로 해석된다(S2 관측).
+  - include_compiles_to_a_partial_reference_node
+  - include_reference_rejects_extra_attributes_and_children
+  - tags_colliding_with_component_names_resolve_to_the_component
   - root_only_tag_in_node_position_is_rejected
   - auto_generated_id_is_not_emitted
   - node_json_key_order_is_deterministic
@@ -298,6 +309,25 @@ effects:
   - lint_warning_is_surfaced_without_stopping_compilation
   - context_drives_source_kind_dependent_lint
   - every_lint_code_has_a_message_in_every_shipped_locale
+  # --- S7 설치 통합: 산출 JSON 공존 provenance (Architecture B — 설치는 산출 .json 을 읽고
+  #     .g7.html 은 표식으로 짝만 확인, 표식은 편집기 drift 마커로 DB 에 남는다)
+  - stamp_records_source_hash_and_matches_the_same_source
+  - a_changed_source_no_longer_matches
+  - json_without_marker_never_matches
+  - normalized_line_endings_hash_identically
+  - strip_restores_the_pre_stamp_shape
+  - strip_preserves_other_meta_keys
+  - compiled_json_with_authoring_registers_and_keeps_the_drift_marker
+  - hand_authored_duplicate_is_rejected
+  - stale_compiled_json_is_rejected
+  - uncompiled_markup_source_is_rejected
+  - reinstall_is_idempotent
+  - keep_strategy_hash_is_source_format_agnostic
+  - hello_extension_markup_layout_installs_from_compiled_json
+  - fragment_with_matching_provenance_passes
+  - fragment_hand_authored_duplicate_is_rejected
+  - fragment_uncompiled_markup_source_is_rejected
+  - fragment_keep_strategy_hash_is_source_format_agnostic
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -315,3 +345,7 @@ test_files:
   - tests/Unit/Enums/LayoutMarkupLintCodeTest.php
   # 런타임 self-register 계약 — 판본 선택·오버라이드 우선순위는 코어가 판정한다
   - resources/js/core/template-engine/__tests__/ComponentRegistry.extension.test.ts
+  # S7 설치 통합 — provenance 헬퍼 + 본 레이아웃·fragment 공존 판별
+  - tests/Unit/Support/LayoutMarkup/LayoutProvenanceTest.php
+  - tests/Feature/LayoutMarkup/MarkupCoexistenceInstallTest.php
+  - tests/Feature/LayoutMarkup/FragmentMarkupCoexistenceTest.php

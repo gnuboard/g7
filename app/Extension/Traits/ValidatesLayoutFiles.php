@@ -2,7 +2,9 @@
 
 namespace App\Extension\Traits;
 
+use App\Enums\LayoutMarkupErrorCode;
 use App\Exceptions\LayoutIncludeException;
+use App\Support\LayoutMarkup\LayoutProvenance;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -54,7 +56,13 @@ trait ValidatesLayoutFiles
             }
         }
 
-        if (empty($layoutFiles)) {
+        // `.g7.html` 산출 JSON 공존 provenance 검증 (S7).
+        // 설치는 산출 `.json` 을 읽으므로, `.g7.html` 옆의 `.json` 이 그 소스에서 컴파일된
+        // 것인지 표식으로 확인한다. `.g7.html` 만 있고 산출 `.json` 이 없거나(미컴파일),
+        // 표식이 없거나 해시가 어긋나면(손저작 중복·미재컴파일) 두 SSoT 가 다투므로 거부한다.
+        $errors = array_merge($errors, $this->validateMarkupCoexistence($layoutsPath, $recursive));
+
+        if (empty($layoutFiles) && empty($errors)) {
             return $validatedLayouts;
         }
 
@@ -328,6 +336,103 @@ trait ValidatesLayoutFiles
         }
 
         return $files;
+    }
+
+    /**
+     * `.g7.html` 저작 파일의 공존 provenance 를 검증합니다 (S7).
+     *
+     * 설치는 산출 `.json` 을 등록 소스로 읽으므로, 여기서는 `.g7.html` 자체를 파싱하지 않고
+     * **짝 `.json` 이 그 소스에서 컴파일된 것인지**만 표식으로 확인한다:
+     *
+     *  - 짝 `.json` 이 없으면 → 미컴파일 (`layout:compile` 필요).
+     *  - 짝 `.json` 에 표식이 없거나 `source_hash` 가 어긋나면 → 손저작 중복 또는 미재컴파일.
+     *
+     * @param  string  $layoutsPath  레이아웃 디렉토리 경로
+     * @param  bool  $recursive  재귀 스캔 여부 (본 레이아웃 스캔과 동일 전략)
+     * @return array<int, string> 에러 메시지 배열 (없으면 빈 배열)
+     */
+    protected function validateMarkupCoexistence(string $layoutsPath, bool $recursive): array
+    {
+        $errors = [];
+
+        foreach ($this->scanMarkupLayoutFiles($layoutsPath, $recursive) as $markupFile) {
+            $relativeMarkup = $this->toRelativePath($markupFile);
+            $jsonFile = preg_replace('/\.g7\.html$/i', '.json', $markupFile);
+
+            if (! File::exists($jsonFile)) {
+                $errors[] = LayoutMarkupErrorCode::UncompiledMarkupSource->message([
+                    'source' => $relativeMarkup,
+                ]);
+
+                continue;
+            }
+
+            $jsonData = json_decode(File::get($jsonFile), true);
+
+            // JSON 파싱 오류는 본 스캔(json 루프)이 별도로 보고하므로 여기서는 표식 판별만 한다.
+            if (json_last_error() !== JSON_ERROR_NONE || ! is_array($jsonData)) {
+                continue;
+            }
+
+            if (! LayoutProvenance::matches($jsonData, File::get($markupFile))) {
+                $reasonKey = LayoutProvenance::isStamped($jsonData) ? 'stale' : 'missing';
+
+                $errors[] = LayoutMarkupErrorCode::HandAuthoredDuplicate->message([
+                    'source' => $relativeMarkup,
+                    'json' => $this->toRelativePath($jsonFile),
+                    'reason' => __('exceptions.layout_markup.provenance_reason.'.$reasonKey),
+                ]);
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * 레이아웃 디렉토리에서 `.g7.html` 저작 파일을 스캔합니다 (본 레이아웃 스캔과 동일 전략).
+     *
+     * @param  string  $layoutsPath  스캔할 기본 경로
+     * @param  bool  $recursive  재귀 스캔 여부
+     * @return array<int, string> `.g7.html` 파일 경로 배열
+     */
+    protected function scanMarkupLayoutFiles(string $layoutsPath, bool $recursive): array
+    {
+        if ($recursive) {
+            $files = [];
+
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($layoutsPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::LEAVES_ONLY
+            );
+
+            foreach ($iterator as $file) {
+                if ($file->isFile() && str_ends_with(strtolower($file->getFilename()), '.g7.html')) {
+                    $files[] = $file->getPathname();
+                }
+            }
+
+            return $files;
+        }
+
+        $files = File::glob("{$layoutsPath}/*.g7.html") ?: [];
+
+        $errorsPath = "{$layoutsPath}/errors";
+        if (File::exists($errorsPath)) {
+            $files = array_merge($files, File::glob("{$errorsPath}/*.g7.html") ?: []);
+        }
+
+        return $files;
+    }
+
+    /**
+     * 절대 경로를 base_path 기준 상대 경로(슬래시 정규화)로 변환합니다.
+     *
+     * @param  string  $path  절대 경로
+     * @return string 상대 경로
+     */
+    private function toRelativePath(string $path): string
+    {
+        return str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', $path));
     }
 
     /**

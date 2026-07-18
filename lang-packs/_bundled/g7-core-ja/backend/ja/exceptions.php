@@ -167,6 +167,13 @@ return [
         'component_not_in_registry' => 'レジストリに存在しないコンポーネントです: :name',
         'wait_for_source_never_resolves' => 'transition_overlay の wait_for が完了シグナルが来ないデータソース(:reason)を指しています: :id',
         'script_src_not_allowed' => '<script> で読み込めない外部 JS です (許可リスト外): :src',
+        'hand_authored_duplicate' => ':source の隣の :json がそのソースからコンパイルされたものではありません (:reason)。2つの SSoT が共存することはできません：.json を削除するか layout:compile で再生成してください。',
+        'uncompiled_markup_source' => ':source の隣にコンパイル出力 .json がありません。インストールは出力 JSON を読むため、まず layout:compile を実行してください。',
+        'fragment_coexistence_failed' => ':identifier の .g7.html フラグメント共存検証に失敗しました：',
+        'provenance_reason' => [
+            'missing' => 'authoring マークがないため、手書きのように見えます',
+            'stale' => 'コンパイル後にソースが変更されました',
+        ],
     ],
     'layout_markup_lint' => [
         'unregistered_handler' => '登録されていないハンドラーです: :handler — コア·テンプレート·拡張のどこにもありません。',
