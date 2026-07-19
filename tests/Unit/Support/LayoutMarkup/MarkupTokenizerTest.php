@@ -101,7 +101,7 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
      */
     public function test_void_element_closes_itself_without_slash(): void
     {
-        $tokens = $this->tokenizer->tokenize('<input class="a"><hr><img src="/logo.png"/>');
+        $tokens = $this->tokenizer->tokenize('<br class="a"><hr><wbr/>');
 
         $this->assertCount(3, $tokens);
 
@@ -489,7 +489,7 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
             '숫자 시작 태그' => ['<1div/>', 'unescaped_lt'],
             '자기닫힘 종료 태그' => ['<div></div/>', 'end_tag_self_closing'],
             '속성 붙은 종료 태그' => ['<div></div class="a">', 'end_tag_with_attributes'],
-            'void 종료 태그' => ['<input></input>', 'void_end_tag'],
+            'void 종료 태그' => ['<hr></hr>', 'void_end_tag'],
             '속성명 없음' => ['<div ="a"/>', 'invalid_attribute_name'],
             '무인용 값' => ['<div class=admin-card/>', 'unquoted_attribute_value'],
             '값 미종료' => ['<div class="a/>', 'unterminated_attribute_value'],
@@ -523,10 +523,10 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
      */
     public function test_void_element_end_tag_is_rejected_at_the_tag_position(): void
     {
-        $error = $this->captureError("<div>\n  <input>\n  </input>\n</div>");
+        $error = $this->captureError("<div>\n  <hr>\n  </hr>\n</div>");
 
         $this->assertSame(LayoutMarkupErrorCode::VoidEndTag, $error->getErrorCode());
-        $this->assertSame(['tag' => 'input'], $error->getParams());
+        $this->assertSame(['tag' => 'hr'], $error->getParams());
         $this->assertSame([3, 3], [$error->getSourceLine(), $error->getSourceColumn()]);
     }
 

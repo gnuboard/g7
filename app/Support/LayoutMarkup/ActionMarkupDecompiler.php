@@ -1,0 +1,361 @@
+<?php
+
+namespace App\Support\LayoutMarkup;
+
+/**
+ * 액션 JSON 을 `<on>`/핸들러/제어 태그로 되돌리는 역변환 층 (S9 — ActionCompiler 의 역).
+ *
+ * 역변환이 단순해지는 핵심 관찰 둘:
+ *
+ * **① 마크업 속성은 배치 중립이다.** 컴파일러는 `target`·params 키가 top-level 로 갈지 params 로 갈지
+ * 핸들러별 매니페스트로 정하지만, **저작 표면에서는 둘 다 그냥 태그 속성**이다 — `<api-call target=..>`
+ * 이든 `<set-state target=..>` 이든 `target="..."` 한 표기다. 그래서 역변환은 매니페스트를 볼 필요가
+ * 없다: 소스 액션의 top-level 스칼라와 params 스칼라를 **어디에 있든** 속성으로 찍으면 컴파일러가
+ * 같은 자리로 되돌린다((handler,키)→위치가 결정적이라 소스가 넣은 자리와 일치).
+ *
+ * **② `body`/`query` 도 타입 리터럴 속성으로 접힌다.** `<body name=..>` 대신 `:body='{...}'` 로 찍어도
+ * 같은 params.body 객체로 컴파일된다(decodeTypeLiteral == compileFieldMap 산출). 그래서 자식 태그가
+ * 꼭 필요한 것은 **액션 구조**를 담는 셋뿐이다 — `onSuccess`(`<success>`)·`onError`(`<fail>`)·
+ * `errorHandling`(`<error-handling>`), 그리고 제어 핸들러의 자식(`cases`/`conditions`/`actions`).
+ */
+final class ActionMarkupDecompiler
+{
+    use EmitsMarkup;
+
+    /** 제어 핸들러 — 전용 태그 + 자식 문법 */
+    private const CONTROL_HANDLERS = ['switch', 'conditions', 'sequence', 'parallel'];
+
+    /**
+     * 코어 단순 핸들러 40종 → kebab 태그. 이 목록 밖(템플릿·확장·점 네임스페이스)은 `<action handler>`.
+     *
+     * @var array<string, string>
+     */
+    private const HANDLER_TAGS = [
+        'navigate' => 'navigate', 'navigateBack' => 'navigate-back', 'navigateForward' => 'navigate-forward',
+        'openWindow' => 'open-window', 'replaceUrl' => 'replace-url', 'apiCall' => 'api-call',
+        'login' => 'login', 'logout' => 'logout', 'refetchDataSource' => 'refetch-data-source',
+        'appendDataSource' => 'append-data-source', 'updateDataSource' => 'update-data-source',
+        'ensureIdentityVerified' => 'ensure-identity-verified', 'resolveIdentityChallenge' => 'resolve-identity-challenge',
+        'setState' => 'set-state', 'setError' => 'set-error', 'updateProductField' => 'update-product-field',
+        'updateOptionField' => 'update-option-field', 'openModal' => 'open-modal', 'closeModal' => 'close-modal',
+        'showAlert' => 'show-alert', 'toast' => 'toast', 'scrollIntoView' => 'scroll-into-view',
+        'suppress' => 'suppress', 'startInterval' => 'start-interval', 'stopInterval' => 'stop-interval',
+        'showErrorPage' => 'show-error-page', 'saveToLocalStorage' => 'save-to-local-storage',
+        'loadFromLocalStorage' => 'load-from-local-storage', 'setLocale' => 'set-locale', 'emitEvent' => 'emit-event',
+        'loadScript' => 'load-script', 'callExternal' => 'call-external', 'callExternalEmbed' => 'call-external-embed',
+        'reloadExtensions' => 'reload-extensions', 'reloadRoutes' => 'reload-routes', 'refresh' => 'refresh',
+        'remount' => 'remount', 'reloadTranslations' => 'reload-translations',
+        'reloadModuleHandlers' => 'reload-module-handlers', 'reloadPluginHandlers' => 'reload-plugin-handlers',
+    ];
+
+    /** 조건식 정규화가 걸리는 top-level 키 — 문자열은 무접두, 불리언은 타입 */
+    private const CONDITION_KEYS = ['if'];
+
+    /** 액션 객체에서 속성이 아닌 구조 키 (자식 태그·트리거·컨테이너) */
+    private const STRUCTURAL_KEYS = [
+        'handler', 'comment', 'type', 'event', 'params',
+        'cases', 'conditions', 'actions', 'onSuccess', 'onError', 'errorHandling',
+    ];
+
+    /**
+     * 노드의 액션 3계통(actions/lifecycle/onComponentEvent)을 `<on>` 요소 목록으로 찍습니다.
+     *
+     * @param  array<string, mixed>  $node  노드 JSON
+     * @return array<int, MarkupElement> `<on>` 요소 목록
+     */
+    public function nodeActions(array $node): array
+    {
+        $ons = [];
+
+        foreach ($node['actions'] ?? [] as $entry) {
+            $ons[] = $this->selfEventOn($entry);
+        }
+
+        foreach (['onMount' => 'mount', 'onUnmount' => 'unmount'] as $key => $event) {
+            if (! empty($node['lifecycle'][$key])) {
+                $ons[] = $this->el(
+                    'on',
+                    [$this->attr('event', $event)],
+                    array_map(fn (array $action): MarkupElement => $this->action($action), $node['lifecycle'][$key]),
+                );
+            }
+        }
+
+        foreach ($node['onComponentEvent'] ?? [] as $entry) {
+            $listen = $entry['event'] ?? '';
+            unset($entry['event']);
+            $ons[] = $this->el('on', [$this->attr('listen', (string) $listen)], $this->blockBody($entry));
+        }
+
+        return $ons;
+    }
+
+    /**
+     * self-event `<on>` 하나를 찍습니다 (트리거는 태그로, 본문은 block-body 규칙).
+     *
+     * @param  array<string, mixed>  $entry  actions[] 항목
+     * @return MarkupElement `<on>` 요소
+     */
+    private function selfEventOn(array $entry): MarkupElement
+    {
+        $attributes = [];
+
+        if (isset($entry['type'])) {
+            $attributes[] = $this->attr('type', (string) $entry['type']);
+        }
+
+        if (isset($entry['event'])) {
+            $attributes[] = $this->attr('event', (string) $entry['event']);
+        }
+
+        unset($entry['type'], $entry['event']);
+
+        return $this->el('on', $attributes, $this->blockBody($entry));
+    }
+
+    /**
+     * `<action name="x">` 본문 요소(들)를 찍습니다 (named_actions 값).
+     *
+     * @param  array<string, mixed>  $action  named action JSON
+     * @return array<int, MarkupElement> 본문 요소
+     */
+    public function namedActionBody(array $action): array
+    {
+        return $this->blockBody($action);
+    }
+
+    /**
+     * `<init>` 자식 액션 하나를 찍습니다 (축소 화이트리스트 — 단일 루트 액션).
+     *
+     * @param  array<string, mixed>  $action  init action JSON
+     * @return MarkupElement 액션 요소
+     */
+    public function initAction(array $action): MarkupElement
+    {
+        return $this->action($action);
+    }
+
+    /**
+     * `errorHandling` 맵을 `<on-code>`/`<default>` 자식 목록으로 찍습니다.
+     *
+     * @param  array<string, mixed>  $map  `{code|default: action}`
+     * @return array<int, MarkupElement> 자식 요소
+     */
+    public function errorHandlingChildren(array $map): array
+    {
+        $children = [];
+
+        foreach ($map as $code => $action) {
+            $children[] = $code === 'default'
+                ? $this->el('default', [], $this->blockBody($action))
+                : $this->el('on-code', [$this->attr('code', (string) $code)], $this->blockBody($action));
+        }
+
+        return $children;
+    }
+
+    /**
+     * 콜백(onSuccess/onError/onReceive) 값을 액션 요소 목록으로 찍습니다 (단일 객체=1개, 배열=N개).
+     *
+     * @param  mixed  $callback  콜백 값 (객체 또는 배열)
+     * @return array<int, MarkupElement> 액션 요소
+     */
+    public function callbackChildren(mixed $callback): array
+    {
+        if ($this->isList($callback)) {
+            return array_map(fn (array $action): MarkupElement => $this->action($action), $callback);
+        }
+
+        return [$this->action($callback)];
+    }
+
+    /**
+     * 블록 본문 규칙 — 암묵 sequence(트리거만 있는 sequence)는 자식을 직접 펼치고, 그 밖은 단일 액션.
+     *
+     * @param  array<string, mixed>  $action  본문 액션 (트리거 제거 후)
+     * @return array<int, MarkupElement> 자식 요소
+     */
+    private function blockBody(array $action): array
+    {
+        if (($action['handler'] ?? null) === 'sequence' && $this->onlyKeys($action, ['handler', 'actions'])) {
+            return array_map(fn (array $child): MarkupElement => $this->action($child), $action['actions'] ?? []);
+        }
+
+        return [$this->action($action)];
+    }
+
+    /**
+     * 액션 객체 하나를 요소로 찍습니다 (핸들러 태그 / 제어 태그 / 제네릭 `<action>`).
+     *
+     * @param  array<string, mixed>  $action  액션 JSON
+     * @return MarkupElement 액션 요소
+     */
+    private function action(array $action): MarkupElement
+    {
+        $handler = $action['handler'] ?? '';
+
+        if (in_array($handler, self::CONTROL_HANDLERS, true)) {
+            return $this->control($action);
+        }
+
+        $tag = self::HANDLER_TAGS[$handler] ?? null;
+        $attributes = [];
+
+        if ($tag === null) {
+            $tag = 'action';
+            $attributes[] = $this->attr('handler', (string) $handler);
+        }
+
+        $attributes = array_merge($attributes, $this->attributes($action));
+        $children = $this->subStructural($action);
+
+        return $this->el($tag, $attributes, $children, null, $action['comment'] ?? null);
+    }
+
+    /**
+     * 제어 액션(switch/conditions/sequence/parallel)을 전용 태그로 찍습니다.
+     *
+     * @param  array<string, mixed>  $action  제어 액션 JSON
+     * @return MarkupElement 제어 요소
+     */
+    private function control(array $action): MarkupElement
+    {
+        $handler = $action['handler'];
+        $attributes = $this->attributes($action);
+        $comment = $action['comment'] ?? null;
+
+        // 제어 자식(cases/conditions/actions)은 top-level 이 정본이나 일부 레거시 소스는 params 안에 둔다.
+        // params 폴백으로 읽어 유효한 마크업을 내면(빈 블록 방지) 컴파일이 서고, params 형은 노드 자기검증이
+        // actions 키만 `<json>` 으로 정밀 탈출한다(무너지면 노드 전 키가 통째로 탈출하는 캐스케이드 방지).
+        $cases = $action['cases'] ?? $action['params']['cases'] ?? [];
+        $conditions = $action['conditions'] ?? $action['params']['conditions'] ?? [];
+        $actions = $action['actions'] ?? $action['params']['actions'] ?? [];
+
+        return match ($handler) {
+            'switch' => $this->el('switch', $attributes, $this->switchChildren($cases), null, $comment),
+            'conditions' => $this->el('conditions', $attributes, $this->conditionsChildren($conditions), null, $comment),
+            'sequence' => $this->el('sequence', $attributes, array_map(fn (array $a): MarkupElement => $this->action($a), $actions), null, $comment),
+            'parallel' => $this->el('parallel', $attributes, array_map(fn (array $a): MarkupElement => $this->action($a), $actions), null, $comment),
+        };
+    }
+
+    /**
+     * `cases` 맵을 `<case>`/`<default>` 자식으로 찍습니다 (block-body 규칙, 순서 보존).
+     *
+     * @param  array<string, mixed>  $cases  `{when|default: action}`
+     * @return array<int, MarkupElement> 자식 요소
+     */
+    private function switchChildren(array $cases): array
+    {
+        $children = [];
+
+        foreach ($cases as $when => $action) {
+            $children[] = $when === 'default'
+                ? $this->el('default', [], $this->blockBody($action))
+                : $this->el('case', [$this->attr('when', (string) $when)], $this->blockBody($action));
+        }
+
+        return $children;
+    }
+
+    /**
+     * `conditions` 배열을 `<when>`/`<else>` 자식으로 찍습니다 (then 은 flat actions).
+     *
+     * @param  array<int, array<string, mixed>>  $branches  조건 분기 목록
+     * @return array<int, MarkupElement> 자식 요소
+     */
+    private function conditionsChildren(array $branches): array
+    {
+        $children = [];
+
+        foreach ($branches as $branch) {
+            $then = array_map(fn (array $a): MarkupElement => $this->action($a), $branch['then'] ?? []);
+
+            $children[] = array_key_exists('if', $branch)
+                ? $this->el('when', [$this->conditionAttr('if', $branch['if'])], $then)
+                : $this->el('else', [], $then);
+        }
+
+        return $children;
+    }
+
+    /**
+     * 액션 구조 자식(onSuccess/onError/errorHandling)을 찍습니다.
+     *
+     * @param  array<string, mixed>  $action  액션 JSON
+     * @return array<int, MarkupElement> 자식 요소
+     */
+    private function subStructural(array $action): array
+    {
+        $children = [];
+
+        if (isset($action['onSuccess'])) {
+            $children[] = $this->el('success', [], $this->callbackChildren($action['onSuccess']));
+        }
+
+        if (isset($action['onError'])) {
+            $children[] = $this->el('fail', [], $this->callbackChildren($action['onError']));
+        }
+
+        if (isset($action['errorHandling'])) {
+            $children[] = $this->el('error-handling', [], $this->errorHandlingChildren($action['errorHandling']));
+        }
+
+        return $children;
+    }
+
+    /**
+     * 액션의 top-level 스칼라 + params 스칼라를 속성으로 모읍니다 (배치 중립 — §① 참조).
+     *
+     * @param  array<string, mixed>  $action  액션 JSON
+     * @return array<int, MarkupAttribute> 속성 목록
+     */
+    private function attributes(array $action): array
+    {
+        $attributes = [];
+
+        foreach ($action as $key => $value) {
+            if (in_array($key, self::STRUCTURAL_KEYS, true)) {
+                continue;
+            }
+
+            $attributes[] = in_array($key, self::CONDITION_KEYS, true)
+                ? $this->conditionAttr($key, $value)
+                : $this->valueAttr($key, $value);
+        }
+
+        foreach ($action['params'] ?? [] as $key => $value) {
+            // 제어 자식이 params 안에 온 레거시 shape 는 자식으로 방출하므로 속성으로 중복하지 않는다.
+            if (in_array($key, ['actions', 'cases', 'conditions'], true)) {
+                continue;
+            }
+
+            $attributes[] = $this->valueAttr($key, $value);
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * 배열이 리스트(순차 배열)인지 판정합니다.
+     *
+     * @param  mixed  $value  값
+     * @return bool 리스트면 true
+     */
+    private function isList(mixed $value): bool
+    {
+        return is_array($value) && ($value === [] || array_is_list($value));
+    }
+
+    /**
+     * 액션이 주어진 키들만 가졌는지 판정합니다.
+     *
+     * @param  array<string, mixed>  $action  액션
+     * @param  array<int, string>  $keys  허용 키
+     * @return bool 허용 키만 있으면 true
+     */
+    private function onlyKeys(array $action, array $keys): bool
+    {
+        return array_diff(array_keys($action), $keys) === [];
+    }
+}

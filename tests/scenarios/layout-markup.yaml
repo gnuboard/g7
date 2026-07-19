@@ -89,7 +89,7 @@ description: |
 # 에서 값별로 직접 관측한다 — 아래 effects 는 전부 테스트 docblock @effects 로 개별 매핑되어
 # 기계 검증된다.
 axes:
-  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action, embedding, document, validator, linter, facade, install]
+  compile_unit: [tokenize, tree, registry, node, attribute, structural_tag, action, embedding, document, validator, linter, facade, install, decompile]
   source_health: [valid, invalid]
 
 # S6 lint 은 컴파일을 막지 않는 경고라 "잘못된 소스" 축이 없다 — 항상 컴파일되는(valid) 산출
@@ -97,6 +97,7 @@ axes:
 # 어떤 lint 이 무엇을 잡는가는 축이 아니라 effects 로 개별 관측한다(각 lint warn/no-warn 쌍).
 exclusions:
   - { compile_unit: linter, source_health: invalid, reason: "lint 은 경고라 잘못된 소스 개념이 없음 — valid 산출 JSON 만 대상" }
+  - { compile_unit: decompile, source_health: invalid, reason: "역변환은 컴파일 산출 JSON(항상 valid)을 입력받아 .g7.html 로 되돌린다 — 잘못된 소스 개념이 없음" }
 
 effects:
   # --- S1 토큰 방출
@@ -189,6 +190,9 @@ effects:
   - node_key_written_as_attribute_is_rejected
   - unsupported_standard_attribute_is_rejected
   # --- S2 구조 태그 (노드 키 운반체)
+  # D36: 노드 레벨 <permissions> 구조 태그 + input/img void 제외(액션 자식 허용)
+  - node_level_permissions_compiles_to_permissions_key
+  - input_is_not_void_and_holds_action_children
   - structural_tag_outside_its_parent_is_rejected
   - structural_tag_requires_its_named_attribute
   - structural_tag_json_body_must_be_valid_json
@@ -328,6 +332,25 @@ effects:
   - fragment_hand_authored_duplicate_is_rejected
   - fragment_uncompiled_markup_source_is_rejected
   - fragment_keep_strategy_hash_is_source_format_agnostic
+  # --- S9 역변환기: JSON → .g7.html → JSON 왕복 (LayoutMarkupDecompiler + Serializer + RoundTrip 하네스)
+  #     역변환은 컴파일러의 역이라, 첫 급부 문법으로 되돌리고(불가하면 `<json>` 탈출구) 재컴파일이
+  #     원본과 정규화 후 deep-equal 임을 확인한다. 정규화는 컴파일러가 파생·생략하는 값(derived type·
+  #     is_partial·빈 props·콜백 단일배열·params.actions·Select 옵션 리프트)을 비교에서 뺀다.
+  - decompile_round_trips_document_layers
+  - round_trip_is_deterministic_after_normalization
+  - state_init_tree_round_trips_with_key_order_and_merge_and_leaf_types
+  - value_shapes_round_trip_through_their_notations
+  - action_branches_and_control_flow_round_trip
+  # --- S9 표기 탈출구: 첫 급부 문법이 표현 못하는 결함 키·shape 를 `<json>` 으로 보존해 100% 왕복
+  - escape_hatch_preserves_unrepresentable_node_key
+  - escape_hatch_preserves_unrepresentable_top_level_key
+  # --- D36 문법 신설(S8 동결 재개정): void 에서 input/img 제외 → 액션 첫 급부 / 노드 레벨 <permissions>
+  - input_with_actions_round_trips_first_class
+  - node_level_permissions_round_trip_first_class
+  # --- S9 정밀 격리(감사 정정): 되컴파일 throw 시 결함 키만 최소 escape (정상 키 blob 금지)
+  - throw_isolation_escapes_only_the_defect_key_not_standard_keys
+  # --- S9 전량 회귀: 번들 전 레이아웃 왕복 불일치 0
+  - every_bundled_layout_round_trips_through_decompile_and_compile
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -349,3 +372,7 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/LayoutProvenanceTest.php
   - tests/Feature/LayoutMarkup/MarkupCoexistenceInstallTest.php
   - tests/Feature/LayoutMarkup/FragmentMarkupCoexistenceTest.php
+  # S9 역변환기 — 왕복 하네스·직렬화기·표기 탈출구·전량 회귀
+  - tests/Unit/Support/LayoutMarkup/LayoutMarkupDecompilerTest.php
+  - tests/Unit/Support/LayoutMarkup/LayoutMarkupSerializerTest.php
+  - tests/Unit/Support/LayoutMarkup/LayoutMarkupRoundTripCorpusTest.php

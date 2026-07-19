@@ -52,11 +52,11 @@ class MarkupTreeBuilderTest extends LayoutMarkupTestCase
      */
     public function test_void_element_is_closed_without_end_tag(): void
     {
-        $roots = $this->build('<div><hr><img src="/a.png"></div>');
+        $roots = $this->build('<div><hr><br></div>');
 
         $this->assertCount(2, $roots[0]->children);
         $this->assertSame('hr', $roots[0]->children[0]->name);
-        $this->assertSame('/a.png', $roots[0]->children[1]->attribute('src')?->value);
+        $this->assertSame('br', $roots[0]->children[1]->name);
     }
 
     // ---------------------------------------------------------------------

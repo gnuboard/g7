@@ -168,12 +168,14 @@ final class NodeCompiler
      *
      * `<slot>` 은 뺐다 — 노드 위치의 `<slot name>` 은 베이스 레이아웃의 자리표시 노드(`type: slot`)라
      * 정상 저작이다(아래 compileSlotNode). `<modal>` 도 뺐다 — 노드 자리에서는 Modal 컴포넌트다.
+     * `<permissions>` 도 뺐다(D36) — 노드 자리의 `<permissions>` 는 그 노드의 조건 렌더 권한이다
+     * (STRUCTURAL_TAGS 에서 처리). 문서 직속이면 레이아웃 권한 섹션 — 위치로 갈린다(modal/slot 과 동일).
      *
      * @var array<int, string>
      */
     private const SECTION_ONLY_TAGS = [
         'meta', 'seo', 'data-source', 'computed', 'init', 'init-local', 'init-global', 'init-isolated',
-        'from-source', 'permissions', 'defines', 'error-handling', 'global-headers', 'transition-overlay',
+        'from-source', 'defines', 'error-handling', 'global-headers', 'transition-overlay',
         'script', 'inject', 'override', 'permission', 'define', 'match', 'wait-for', 'skeleton', 'spinner',
         'og', 'vars', 'extensions', 'structured-data', 'data-sources',
     ];
@@ -206,7 +208,7 @@ final class NodeCompiler
     private const ROOT_TAGS = ['layout', 'partial', 'extension', 'override'];
 
     /** 노드 키를 나르는 구조 태그 — 컴포넌트 자식이 아니라 부모 노드의 키가 된다 */
-    private const STRUCTURAL_TAGS = ['class-map', 'isolated-state', 'blur-until-loaded', 'prop', 'all-of', 'any-of', 'sortable'];
+    private const STRUCTURAL_TAGS = ['class-map', 'isolated-state', 'blur-until-loaded', 'prop', 'all-of', 'any-of', 'sortable', 'permissions'];
 
     /**
      * `<sortable>` 속성명(kebab) → sortable 구조체 키(camel).
@@ -288,6 +290,12 @@ final class NodeCompiler
             return $this->compileInclude($element, $path);
         }
 
+        // 노드 자리의 `<json>JSON</json>`(무키) — 표기 탈출구(S9). 노드 자체가 표현 불가한 shape
+        // (결함 컴포넌트·void 자식·비정규 노드)일 때 역변환기가 노드 통째로 방출한 것을 되읽는다.
+        if ($element->name === 'json' && ! $element->hasAttribute('key')) {
+            return $this->decodeJsonBody($element, $path);
+        }
+
         $definition = $this->resolveComponent($element, $path);
 
         $node = ['type' => $definition->type, 'name' => $definition->name];
@@ -316,6 +324,22 @@ final class NodeCompiler
         foreach ($element->children as $child) {
             if ($child->name === 'on') {
                 $this->actions->applyOn($child, $node, $path);
+
+                continue;
+            }
+
+            // `<json>` — 표기 탈출구(S9). 첫 급부 문법이 표현하지 못하는 것을 JSON 본문 그대로 실어
+            // 100% 왕복을 보장한다. `key` 가 있으면 이 노드의 한 키(결함 키·비정규 shape)를, `key` 가
+            // 없으면 자식 노드 하나 전체(void 자식 등 노드 자리에서 표현 불가한 경우)를 방출한다.
+            // 역변환기가 자기검증에서 왕복이 깨지는 자리에만 쓰며, 그 사용량은 예산 리포트로 봉인된다.
+            if ($child->name === 'json') {
+                $keyAttr = $child->attribute('key');
+
+                if ($keyAttr === null) {
+                    $children[] = $this->decodeJsonBody($child, $path);
+                } else {
+                    $node[(string) $keyAttr->value] = $this->decodeJsonBody($child, $path);
+                }
 
                 continue;
             }
@@ -935,6 +959,12 @@ final class NodeCompiler
             case 'sortable':
                 $this->assertNotDuplicated($child, $node, 'sortable', $path);
                 $node['sortable'] = $this->compileSortable($child, $path);
+                break;
+
+            case 'permissions':
+                // 노드 레벨 조건 렌더 권한 (D36) — 문서 최상위 `<permissions>` 와 같은 문법(공용 컴파일러).
+                $this->assertNotDuplicated($child, $node, 'permissions', $path);
+                $node['permissions'] = (new PermissionsCompiler)->compile($child, $path);
                 break;
         }
     }

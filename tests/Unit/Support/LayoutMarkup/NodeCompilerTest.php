@@ -740,6 +740,36 @@ class NodeCompilerTest extends LayoutMarkupTestCase
         $this->assertSame('{{row.name}}', $node['props']['render']['cell']);
     }
 
+    /**
+     * 노드 레벨 `<permissions>` (D36) — 요소별 조건 렌더 권한을 node['permissions'] 로 컴파일한다.
+     *
+     * @scenario compile_unit=node,source_health=valid
+     *
+     * @effects node_level_permissions_compiles_to_permissions_key
+     */
+    public function test_node_level_permissions_compiles_to_permissions_key(): void
+    {
+        $node = $this->compile('<div><permissions><permission>core.modules.read</permission></permissions></div>');
+
+        $this->assertSame(['core.modules.read'], $node['permissions']);
+    }
+
+    /**
+     * `<input>` 은 void 에서 빠져(D36) `<on>` 액션 자식을 담는다.
+     *
+     * @scenario compile_unit=node,source_health=valid
+     *
+     * @effects input_is_not_void_and_holds_action_children
+     */
+    public function test_input_is_not_void_and_holds_action_children(): void
+    {
+        $node = $this->compile('<input type="text"><on type="change"><set-state target="local" value="{{$event.target.value}}"/></on></input>');
+
+        $this->assertSame('Input', $node['name']);
+        $this->assertSame('change', $node['actions'][0]['type']);
+        $this->assertSame('setState', $node['actions'][0]['handler']);
+    }
+
     // ---------------------------------------------------------------------
     // 헬퍼
     // ---------------------------------------------------------------------

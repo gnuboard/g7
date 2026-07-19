@@ -40,14 +40,15 @@ final class MarkupTokenizer
     /**
      * 내용을 가질 수 없어 종료 태그 없이 자동으로 닫히는 요소.
      *
-     * HTML5 표준 void 요소 14종에서 **`meta` 를 제외한 13종**이다. G7 에서 `<meta>` 는
+     * HTML5 표준 void 요소 14종에서 **`meta`·`img`·`input` 을 제외한 11종**이다. `<meta>` 는
      * 문서 메타 섹션이며 하위에 `<seo>` 를 두므로(매핑 사전 A) 컨테이너다 — void 로
      * 두면 `<seo>` 저작이 문법상 불가능해진다.
      *
-     * 나머지 이름은 레지스트리(components.json 133종)와 대조 시 `hr`/`img`/`input` 만
-     * 실제 컴포넌트와 대응하고 그 외에는 미등록 태그로 거부되지만, 목록에 남겨 둔다 —
-     * `<br>` 을 쓴 저작자가 "미등록 태그" 라는 정확한 안내 대신 "닫히지 않은 태그" 라는
-     * 엉뚱한 오류를 받지 않게 하기 위해서다.
+     * `<img>`·`<input>` 도 void 에서 뺐다(D36) — G7 의 Img·Input 컴포넌트는 `<on>` 액션을
+     * 실을 수 있는데(클릭 이미지·onChange 폼필드), void 로 두면 자식을 못 실어 액션 있는 노드가
+     * 저작 문법으로 표현되지 못한다. 빈 경우는 자가닫힘(`<input .../>`)으로, 액션이 있으면 열고
+     * 닫아(`<input>…<on/>…</input>`) 담는다. 나머지(`br`/`hr`/`col` 등)는 액션 대상이 아니라 존치 —
+     * `<br>` 을 쓴 저작자가 "미등록 태그" 대신 "닫히지 않은 태그" 라는 엉뚱한 오류를 받지 않게 한다.
      */
     public const VOID_ELEMENTS = [
         'area',
@@ -56,8 +57,6 @@ final class MarkupTokenizer
         'col',
         'embed',
         'hr',
-        'img',
-        'input',
         'link',
         'param',
         'source',

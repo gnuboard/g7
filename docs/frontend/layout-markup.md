@@ -39,7 +39,7 @@
 
 ### void 요소 (닫는 태그 없음)
 
-`<br>` `<hr>` `<img>` `<input>` `<area>` `<base>` `<col>` `<embed>` `<link>` `<param>` `<source>` `<track>` `<wbr>` (13종 — 표준 14종 − `<meta>`; G7 의 `<meta>` 는 `<seo>` 를 담는 컨테이너다). void 요소에 종료 태그를 쓰면 `void_end_tag` 에러.
+`<br>` `<hr>` `<area>` `<base>` `<col>` `<embed>` `<link>` `<param>` `<source>` `<track>` `<wbr>` (11종 — 표준 14종 − `<meta>`·`<img>`·`<input>`). `<meta>` 는 `<seo>` 를 담는 컨테이너다. **`<img>`·`<input>` 은 void 에서 뺐다(D36)** — Img·Input 은 `<on>` 액션(클릭 이미지·onChange 폼필드)을 실을 수 있어야 하므로 자식을 갖는다. 빈 경우는 자가닫힘(`<input type="text"/>`), 액션이 있으면 열고 닫아 담는다(`<input type="text"><on type="change">…</on></input>`). void 요소에 종료 태그를 쓰면 `void_end_tag` 에러.
 
 ---
 
@@ -264,3 +264,46 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`dat
 3. **결함 키는 살리지 않는다** — 엔진 미소비 사어·오기(`data_binding`·`iterator`·`bindings`·`html`·`name_attr`)는 태그 승격 금지(결함 인벤토리 대상).
 
 W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`<script>`·`<template>`).
+
+---
+
+## 11. 역변환 (JSON → `.g7.html`) 과 표기 탈출구 (S9)
+
+`layout:decompile {path?|--all}` 이 산출 JSON 을 짝 `.g7.html` 로 되돌린다(이관 웨이브용). 컴파일의 역이라, 각 최상위 키·노드 키를 첫 급부 문법으로 되돌리고 재컴파일이 원본과 **정규화 후 deep-equal** 임을 확인한다(`--roundtrip`). 왕복 하네스는 번들 전 레이아웃을 상시 검사한다(`LayoutMarkupRoundTripCorpusTest`).
+
+### 표기 탈출구 `<json>` — 100% 왕복 보장
+
+첫 급부 문법이 표현하지 못하는 것(결함 키·비정규 shape·미표현 노드)은 `<json>` 으로 원문 그대로 실어 왕복을 보장한다. 역변환기는 노드·문서를 되컴파일해 원본과 대조하고 **어긋나는 키에만** 방출한다(정밀 탈출).
+
+- `<json key="X">JSON</json>` — 최상위(`<layout>`/`<override>` 직속) 또는 노드 구조 자식으로 두면 그 자리의 키 `X` 를 JSON 값 그대로 설정한다(결함 키·비정규 shape 보존).
+- `<json>JSON</json>`(무키) — 노드 자리에 두면 그 자식 노드 하나 전체를 JSON 그대로 설정한다(void 태그처럼 노드 자리에서 표현 불가한 경우).
+
+방출은 **결함 인벤토리 키 또는 문법 갭**에 한정된다(정상 지원 키가 탈출구로 새면 회귀). 저작 시 `<json>` 을 직접 쓰지 않는다 — 역변환기가 이관 시에만 방출한다.
+
+### 정규화 인벤토리 ("입력만 받고 정규화")
+
+왕복 비교는 컴파일러가 **결정적으로 파생·생략**하는 값을 양쪽에서 지워 비교한다. 손저작 소스에 낡은 값이 남아 있어도 이관 산출은 컴파일 정본으로 수렴하며, 그 수렴을 왕복 실패로 세지 않는다:
+
+| 정규화 대상 | 컴파일 정본 | 근거 |
+| --- | --- | --- |
+| 노드 `type`(basic/composite/layout) | 레지스트리(name)에서 파생 | name 비교는 엄격 유지 — 태그 오방출은 name 으로 잡힘 |
+| `meta.is_partial` | `<partial>` 이 항상 주입 | 소스 부재해도 산출엔 존재 |
+| 빈 `props`/`children`(`[]`) | 항상 생략 | `props:[]` 는 방출되지 않음 |
+| 콜백 단일 원소 배열(`onSuccess:[{x}]`) | 객체(`{x}`) | 런타임 동치, compileCallbackActions 1개=객체 |
+| 제어 `params.{actions,cases,conditions}` | top-level | 런타임 동치(ActionDispatcher params.actions fallback) |
+| Select 리프트 가능 `<option>` 자식 | `props.options` | shouldLiftOptions |
+
+### 노드 레벨 `<permissions>` (D36)
+
+문서 최상위 `<permissions>`(레이아웃 전체 권한)와 **같은 태그를 노드 안에** 두면 그 요소의 조건 렌더 권한이 된다(`<modal>`·`<slot>` 이 위치로 갈리는 것과 동일). 평면·조건형 문법은 §3 permissions 와 동일.
+
+```html
+<div data-ref="modules_badge">
+  <permissions>
+    <permission>core.modules.read</permission>
+  </permissions>
+  …
+</div>
+```
+
+> S9 실측으로 드러난 문법 갭 2건(void `<input>` 액션·노드 permissions)은 **D36 으로 문법 신설해 해소**됐다 — 이제 첫 급부로 저작되며 `<json>` 방출 대상이 아니다.
