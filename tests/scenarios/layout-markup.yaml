@@ -190,8 +190,9 @@ effects:
   - node_key_written_as_attribute_is_rejected
   - unsupported_standard_attribute_is_rejected
   # --- S2 구조 태그 (노드 키 운반체)
-  # D36: 노드 레벨 <permissions> 구조 태그 + input/img void 제외(액션 자식 허용)
+  # D36: 노드 레벨 <permissions>·<meta> 구조 태그 + input/img void 제외(액션 자식 허용)
   - node_level_permissions_compiles_to_permissions_key
+  - node_level_meta_compiles_to_meta_key
   - input_is_not_void_and_holds_action_children
   - structural_tag_outside_its_parent_is_rejected
   - structural_tag_requires_its_named_attribute
@@ -347,6 +348,7 @@ effects:
   # --- D36 문법 신설(S8 동결 재개정): void 에서 input/img 제외 → 액션 첫 급부 / 노드 레벨 <permissions>
   - input_with_actions_round_trips_first_class
   - node_level_permissions_round_trip_first_class
+  - node_level_meta_round_trip_first_class
   # --- S9 정밀 격리(감사 정정): 되컴파일 throw 시 결함 키만 최소 escape (정상 키 blob 금지)
   - throw_isolation_escapes_only_the_defect_key_not_standard_keys
   # --- S9 전량 회귀: 번들 전 레이아웃 왕복 불일치 0

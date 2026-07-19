@@ -191,7 +191,6 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     {
         return [
             '문서 섹션 <data-source>' => ['<data-source id="users"/>'],
-            '문서 섹션 <meta>' => ['<meta title="x"/>'],
             '문서 섹션 <computed>' => ['<computed name="total">{{a}}</computed>'],
             '중첩 섹션 <from-source>' => ['<from-source>src</from-source>'],
         ];
@@ -768,6 +767,20 @@ class NodeCompilerTest extends LayoutMarkupTestCase
         $this->assertSame('Input', $node['name']);
         $this->assertSame('change', $node['actions'][0]['type']);
         $this->assertSame('setState', $node['actions'][0]['handler']);
+    }
+
+    /**
+     * 노드 레벨 `<meta>` (D36) — 편집기 메타(editor_label 등)를 node['meta'] 로 컴파일한다.
+     *
+     * @scenario compile_unit=node,source_health=valid
+     *
+     * @effects node_level_meta_compiles_to_meta_key
+     */
+    public function test_node_level_meta_compiles_to_meta_key(): void
+    {
+        $node = $this->compile('<div><meta editor_label="$t:admin.modal_label.delete"/></div>');
+
+        $this->assertSame(['editor_label' => '$t:admin.modal_label.delete'], $node['meta']);
     }
 
     // ---------------------------------------------------------------------

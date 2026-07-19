@@ -168,13 +168,14 @@ final class NodeCompiler
      *
      * `<slot>` 은 뺐다 — 노드 위치의 `<slot name>` 은 베이스 레이아웃의 자리표시 노드(`type: slot`)라
      * 정상 저작이다(아래 compileSlotNode). `<modal>` 도 뺐다 — 노드 자리에서는 Modal 컴포넌트다.
-     * `<permissions>` 도 뺐다(D36) — 노드 자리의 `<permissions>` 는 그 노드의 조건 렌더 권한이다
-     * (STRUCTURAL_TAGS 에서 처리). 문서 직속이면 레이아웃 권한 섹션 — 위치로 갈린다(modal/slot 과 동일).
+     * `<permissions>`·`<meta>` 도 뺐다(D36) — 노드 자리의 `<permissions>` 는 그 노드의 조건 렌더 권한,
+     * `<meta>` 는 그 노드의 편집기 메타(editor_label 등)다(STRUCTURAL_TAGS 에서 처리). 문서 직속이면 각각
+     * 레이아웃 권한/문서 메타 섹션 — 위치로 갈린다(modal/slot 과 동일). `<seo>` 는 문서 `<meta>` 전용 존치.
      *
      * @var array<int, string>
      */
     private const SECTION_ONLY_TAGS = [
-        'meta', 'seo', 'data-source', 'computed', 'init', 'init-local', 'init-global', 'init-isolated',
+        'seo', 'data-source', 'computed', 'init', 'init-local', 'init-global', 'init-isolated',
         'from-source', 'defines', 'error-handling', 'global-headers', 'transition-overlay',
         'script', 'inject', 'override', 'permission', 'define', 'match', 'wait-for', 'skeleton', 'spinner',
         'og', 'vars', 'extensions', 'structured-data', 'data-sources',
@@ -208,7 +209,7 @@ final class NodeCompiler
     private const ROOT_TAGS = ['layout', 'partial', 'extension', 'override'];
 
     /** 노드 키를 나르는 구조 태그 — 컴포넌트 자식이 아니라 부모 노드의 키가 된다 */
-    private const STRUCTURAL_TAGS = ['class-map', 'isolated-state', 'blur-until-loaded', 'prop', 'all-of', 'any-of', 'sortable', 'permissions'];
+    private const STRUCTURAL_TAGS = ['class-map', 'isolated-state', 'blur-until-loaded', 'prop', 'all-of', 'any-of', 'sortable', 'permissions', 'meta'];
 
     /**
      * `<sortable>` 속성명(kebab) → sortable 구조체 키(camel).
@@ -966,7 +967,56 @@ final class NodeCompiler
                 $this->assertNotDuplicated($child, $node, 'permissions', $path);
                 $node['permissions'] = (new PermissionsCompiler)->compile($child, $path);
                 break;
+
+            case 'meta':
+                // 노드 레벨 편집기 메타 (D36) — editor_label 등 평면 스칼라. 문서 `<meta>`(+`<seo>`)와 위치 분기.
+                $this->assertNotDuplicated($child, $node, 'meta', $path);
+                $node['meta'] = $this->compileNodeMeta($child, $path);
+                break;
         }
+    }
+
+    /**
+     * 노드 레벨 `<meta>` 를 평면 메타 객체로 컴파일합니다 (속성 → 키, 자식 불가).
+     *
+     * 노드 메타는 편집기 메타데이터(editor_label 등)라 평면 스칼라다 — `<seo>` 같은 중첩 자식은 문서
+     * `<meta>` 전용이므로 노드 자리에서는 받지 않는다. `:attr` 은 타입 리터럴(불리언·숫자)로 읽는다.
+     *
+     * @param  MarkupElement  $element  `<meta>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 메타 객체
+     *
+     * @throws CompileError 자식이 있거나 속성명이 비었거나 중복인 경우
+     */
+    private function compileNodeMeta(MarkupElement $element, ?string $path): array
+    {
+        if ($element->children !== []) {
+            throw $this->error($element->children[0], LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                'tag' => $element->children[0]->name,
+                'parent' => 'meta',
+            ]);
+        }
+
+        $meta = [];
+
+        foreach ($element->attributes as $attribute) {
+            $typed = str_starts_with($attribute->name, ':');
+            $key = $typed ? substr($attribute->name, 1) : $attribute->name;
+
+            if ($key === '') {
+                throw $this->attributeError($attribute, LayoutMarkupErrorCode::InvalidAttributeName, $path, ['found' => $attribute->name]);
+            }
+
+            if (array_key_exists($key, $meta)) {
+                throw $this->attributeError($attribute, LayoutMarkupErrorCode::DuplicateAttribute, $path, ['tag' => 'meta', 'attr' => $key]);
+            }
+
+            $meta[$key] = $typed
+                ? MarkupValue::decodeTypeLiteral($attribute, $key, $path)
+                : ($attribute->isBoolean() ? true : $attribute->value);
+        }
+
+        return $meta;
     }
 
     /**

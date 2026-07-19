@@ -212,6 +212,33 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 노드 레벨 편집기 메타 첫 급부 왕복 (D36) — 노드 안 `<meta>` 로 editor_label 을 적는다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects node_level_meta_round_trip_first_class
+     */
+    public function test_node_level_meta_round_trip_first_class(): void
+    {
+        $json = [
+            'layout_name' => 'node_meta',
+            'slots' => [
+                'content' => [[
+                    'id' => 'delete_modal',
+                    'type' => 'composite',
+                    'name' => 'Modal',
+                    'meta' => ['editor_label' => '$t:admin.modal_label.delete'],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringContainsString('<meta editor_label="$t:admin.modal_label.delete"/>', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
      * 표기 탈출구 — 미지 최상위 키(state)는 layout 안에서 `<json key>` 섹션으로 보존.
      *
      * @scenario compile_unit=decompile,source_health=valid

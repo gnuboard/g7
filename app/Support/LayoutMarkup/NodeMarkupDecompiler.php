@@ -438,6 +438,17 @@ final class NodeMarkupDecompiler
             $children[] = $this->permissionsElement($node['permissions']);
         }
 
+        // 노드 레벨 편집기 메타(editor_label 등) → `<meta>` (평면 스칼라 속성).
+        if (isset($node['meta']) && is_array($node['meta'])) {
+            $attrs = [];
+
+            foreach ($node['meta'] as $key => $value) {
+                $attrs[] = $this->valueAttr((string) $key, $value);
+            }
+
+            $children[] = $this->el('meta', $attrs);
+        }
+
         if (isset($node['isolatedState']) && is_array($node['isolatedState'])) {
             $attrs = isset($node['isolatedScopeId']) ? [$this->attr('scope-id', (string) $node['isolatedScopeId'])] : [];
             $children[] = $this->el('isolated-state', $attrs, $this->state->fields($node['isolatedState']));

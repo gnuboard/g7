@@ -293,9 +293,12 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 | 제어 `params.{actions,cases,conditions}` | top-level | 런타임 동치(ActionDispatcher params.actions fallback) |
 | Select 리프트 가능 `<option>` 자식 | `props.options` | shouldLiftOptions |
 
-### 노드 레벨 `<permissions>` (D36)
+### 노드 레벨 `<permissions>`·`<meta>` (D36)
 
-문서 최상위 `<permissions>`(레이아웃 전체 권한)와 **같은 태그를 노드 안에** 두면 그 요소의 조건 렌더 권한이 된다(`<modal>`·`<slot>` 이 위치로 갈리는 것과 동일). 평면·조건형 문법은 §3 permissions 와 동일.
+문서 최상위 섹션과 **같은 태그를 노드 안에** 두면 그 요소의 것이 된다(`<modal>`·`<slot>` 이 위치로 갈리는 것과 동일):
+
+- **`<permissions>`** — 그 요소의 조건 렌더 권한. 평면·조건형 문법은 §3 permissions 와 동일.
+- **`<meta>`** — 그 요소의 편집기 메타(editor_label 등, 평면 스칼라). `<seo>` 같은 중첩 자식은 문서 `<meta>` 전용.
 
 ```html
 <div data-ref="modules_badge">
@@ -304,6 +307,11 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
   </permissions>
   …
 </div>
+
+<modal data-ref="delete_modal">
+  <meta editor_label="$t:admin.modal_label.delete"/>
+  …
+</modal>
 ```
 
-> S9 실측으로 드러난 문법 갭 2건(void `<input>` 액션·노드 permissions)은 **D36 으로 문법 신설해 해소**됐다 — 이제 첫 급부로 저작되며 `<json>` 방출 대상이 아니다.
+> S9 실측으로 드러난 문법 갭 3건(void `<input>`/`<img>` 액션·노드 permissions·노드 meta)은 **D36 으로 문법 신설해 해소**됐다 — 이제 첫 급부로 저작되며 `<json>` 방출 대상이 아니다.
