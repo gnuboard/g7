@@ -48,6 +48,7 @@ final class NodeMarkupDecompiler
     private const SORTABLE_ATTRS = [
         'source' => 'source', 'itemVar' => 'item-var', 'itemKey' => 'item-key', 'indexVar' => 'index-var',
         'strategy' => 'strategy', 'group' => 'group', 'handle' => 'handle', 'disabled' => 'disabled',
+        'wrapperElement' => 'wrapper-element',
     ];
 
     /** void 태그 — `<json>` 자식을 실을 수 없어 노드 전체를 `<json>` 으로 방출 (직렬화기 VOID 와 동일 11종, img/input 제외) */
@@ -355,8 +356,16 @@ final class NodeMarkupDecompiler
             $attributes[] = $this->attr('data-track-changes');
         }
 
-        if (array_key_exists('if', $node)) {
-            $attributes[] = $this->conditionAttr('data-if', $node['if']);
+        // `condition` 은 `if` 의 완전 별칭 — 정본 하나로 방출한다. 접는 조건(감싼 식·`if` 부재)은
+        // LayoutMarkupRoundTrip::normalize 와 같다(맨 문자열은 접으면 동작이 바뀌므로 escape 유지).
+        $condition = array_key_exists('if', $node)
+            ? $node['if']
+            : ((isset($node['condition']) && is_string($node['condition']) && str_contains($node['condition'], '{{'))
+                ? $node['condition']
+                : null);
+
+        if ($condition !== null) {
+            $attributes[] = $this->conditionAttr('data-if', $condition);
         }
 
         if (array_key_exists('iteration', $node)) {
@@ -568,6 +577,11 @@ final class NodeMarkupDecompiler
             $attributes[] = $this->attr('data-each', $this->eachExpression($override['iteration']));
         }
 
+        // 구조 노드 키도 브레이크포인트별로 오버라이드된다(portable 전용 classMap 실사용).
+        if (isset($override['classMap'])) {
+            $children[] = $this->classMap($override['classMap']);
+        }
+
         $this->applyProps($override['props'] ?? [], '', false, $attributes, $children);
 
         foreach ($override['children'] ?? [] as $child) {
@@ -632,10 +646,16 @@ final class NodeMarkupDecompiler
             return true;
         }
 
+        // DataGrid 전용 태그는 **부모가 DataGrid 일 때만** 임베딩으로 찍는다 — 컴파일러가 같은 게이트를
+        // 걸기 때문이다(EmbeddingCompiler::requireParent(['DataGrid'])). 게이트를 안 걸면 `columns`
+        // props 를 가진 다른 컴포넌트(ColumnSettings 등)에서 `<column>` 을 뱉고, 되컴파일이
+        // embedding_tag_wrong_parent 로 죽어 노드 props 전체가 통째로 `<json>` 탈출한다.
+        $isDataGrid = $componentName === 'DataGrid';
+
         return match ($key) {
-            'columns' => $this->appendColumns($value, $children),
+            'columns' => $isDataGrid && $this->appendColumns($value, $children),
             'cardColumns' => $this->appendCards($value, $children),
-            'footerCells' => $this->appendFooterCells($value, $children),
+            'footerCells' => $isDataGrid && $this->appendFooterCells($value, $children),
             'footer' => $componentName === 'Modal' ? $this->appendWrap('footer', $value, $children) : false,
             'options' => $componentName === 'Select' && $this->appendOptions($value, $props, $children),
             default => false,

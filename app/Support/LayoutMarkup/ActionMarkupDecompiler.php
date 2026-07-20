@@ -108,7 +108,12 @@ final class ActionMarkupDecompiler
             $attributes[] = $this->attr('event', (string) $entry['event']);
         }
 
-        unset($entry['type'], $entry['event']);
+        // 키 한정자는 트리거의 일부다 — 핸들러 속성이 아니라 `<on>` 에 얹는다(ActionCompiler::applyOn).
+        if (isset($entry['key'])) {
+            $attributes[] = $this->attr('key', (string) $entry['key']);
+        }
+
+        unset($entry['type'], $entry['event'], $entry['key']);
 
         return $this->el('on', $attributes, $this->blockBody($entry));
     }
@@ -198,6 +203,18 @@ final class ActionMarkupDecompiler
             return $this->control($action);
         }
 
+        // 핸들러 없이 actionRef 만 있는 액션 = named_actions 참조 — 전용 태그로 찍는다.
+        // (`<action>` 은 handler 필수라 이 형태를 지을 수 없다 — ActionCompiler::compileActionRef)
+        if ($handler === '' && isset($action['actionRef']) && $this->onlyKeys($action, ['actionRef', 'comment'])) {
+            return $this->el(
+                'action-ref',
+                [$this->attr('name', (string) $action['actionRef'])],
+                [],
+                null,
+                $action['comment'] ?? null,
+            );
+        }
+
         $tag = self::HANDLER_TAGS[$handler] ?? null;
         $attributes = [];
 
@@ -270,10 +287,11 @@ final class ActionMarkupDecompiler
 
         foreach ($branches as $branch) {
             $then = array_map(fn (array $a): MarkupElement => $this->action($a), $branch['then'] ?? []);
+            $comment = $branch['comment'] ?? null;
 
             $children[] = array_key_exists('if', $branch)
-                ? $this->el('when', [$this->conditionAttr('if', $branch['if'])], $then)
-                : $this->el('else', [], $then);
+                ? $this->el('when', [$this->conditionAttr('if', $branch['if'])], $then, null, $comment)
+                : $this->el('else', [], $then, null, $comment);
         }
 
         return $children;

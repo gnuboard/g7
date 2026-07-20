@@ -17,6 +17,22 @@ namespace App\Support\LayoutMarkup;
 final class LayoutMarkupRoundTrip
 {
     /**
+     * 사어 최상위 키 — 엔진 소비 0건이라 이관 산출에 옮기지 않는다 (PO 확정 07-20).
+     *
+     * @var array<int, string>
+     */
+    private const DEAD_TOP_LEVEL_KEYS = ['schema', 'pageConfig'];
+
+    /**
+     * 사어 주석 변형 접두어 — `_comment_hidden`·`_comment_removed`·`_comment_initLocal` 등.
+     *
+     * 정본 주석 채널은 `comment`(그리고 `_comment`)뿐이다. 이 변형들은 `LayoutService` 의 서빙 strip
+     * 대상도 아니라(그 함수는 `comment`/`_comment` 두 키만 unset) 읽히지도 않으면서 브라우저까지
+     * 실려 가는 순수 잡음이다 — 이관이 옮기지 않는다.
+     */
+    private const DEAD_COMMENT_PREFIX = '_comment_';
+
+    /**
      * JSON 레이아웃 하나의 왕복을 검증합니다.
      *
      * @param  array<string, mixed>  $json  원본 JSON 레이아웃
@@ -38,9 +54,54 @@ final class LayoutMarkupRoundTrip
             return ['ok' => false, 'error' => $error->getMessage(), 'markup' => $markup ?? null, 'source' => $source, 'recompiled' => null];
         }
 
-        $ok = self::encode(self::canonicalize(self::normalize($source))) === self::encode(self::canonicalize(self::normalize($recompiled)));
+        $ok = self::encode(self::canonicalize(self::normalize(self::normalizeDocument($source))))
+            === self::encode(self::canonicalize(self::normalize(self::normalizeDocument($recompiled))));
 
         return ['ok' => $ok, 'error' => null, 'markup' => $markup, 'source' => $source, 'recompiled' => $recompiled];
+    }
+
+    /**
+     * 문서 **최상위에만** 성립하는 별칭을 정본 키로 접습니다 ("입력만 받고 정규화" 의 문서 층).
+     *
+     * `state` 는 `initLocal` 의 deprecated 별칭이다 — 엔진은 `layoutData.initLocal || layoutData.state`
+     * 로 읽으므로([TemplateApp.ts:1177](resources/js/core/TemplateApp.ts#L1177)) 별칭만 있는 문서에서
+     * 둘은 동치이고, 신포맷은 initLocal 로만 방출한다(계획 §288).
+     *
+     * **둘 다 있으면 접지 않는다** — 그때 `state` 는 엔진이 읽지 않는 죽은 키라, 접으면 initLocal 을
+     * 덮어써 동작이 바뀐다. 접지 않으면 왕복이 어긋나 `<json>` 으로 계량되고 결함(S16)으로 분류된다.
+     *
+     * 노드 층에는 적용하지 않는다 — 노드 키 `state` 는 이 별칭과 무관한 남남이다(코퍼스 실사용 0건).
+     *
+     * @param  mixed  $value  문서 루트
+     * @return mixed 정규화된 문서 루트
+     */
+    public static function normalizeDocument(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        // 사어(死語) 최상위 키 — 엔진 소비 0건이라 이관이 옮기지 않는다(PO 확정 07-20).
+        // `schema`/`pageConfig` 는 plugin_settings 잔재로 런타임 도달 자체가 없고(프론트 참조 0건,
+        // 설정 검증은 PHP `getSettingsSchema()` 별도 축), 최상위 `actions` 는 named_actions 만 소비하는
+        // 엔진에서 읽히지 않는다(extends 조립 화이트리스트에도 부재).
+        foreach (self::DEAD_TOP_LEVEL_KEYS as $dead) {
+            unset($value[$dead]);
+        }
+
+        // modals 객체-맵 이형 → 배열. 엔진은 배열 전용이고 백엔드 병합의 array_values 로 우연 동작
+        // 중이라, 배열이 정본이다. 맵 키는 각 모달의 `id` 로 중복 보유되므로 무손실이다.
+        if (isset($value['modals']) && is_array($value['modals']) && ! array_is_list($value['modals'])) {
+            $value['modals'] = array_values($value['modals']);
+        }
+
+        // `state` 별칭 승격 (조건은 아래 주석 참조).
+        if (isset($value['state']) && is_array($value['state']) && ! isset($value['initLocal'])) {
+            $value['initLocal'] = $value['state'];
+            unset($value['state']);
+        }
+
+        return $value;
     }
 
     /**
@@ -61,6 +122,35 @@ final class LayoutMarkupRoundTrip
     {
         if (! is_array($value)) {
             return $value;
+        }
+
+        // 사어 주석 변형(`_comment_*`)은 위치 불문 제거 — 읽히지도, 서빙에서 걷히지도 않는 잡음이다.
+        foreach (array_keys($value) as $key) {
+            if (is_string($key) && str_starts_with($key, self::DEAD_COMMENT_PREFIX)) {
+                unset($value[$key]);
+            }
+        }
+
+        // `_comment`(정확히 이 이름)는 여기서 접지 않는다 — 서빙 strip 대상이라 `comment` 와 동치이지만,
+        // **정규화가 키 이름을 바꾸면 방출기도 같이 바꿔야** 한다. 방출기는 `_comment` 를 `<!-- -->` 로
+        // 내지 않으므로, 여기서만 접으면 원본에 없는 `comment` 키가 escape 대상으로 지목돼 터진다
+        // (`$json['comment']` undefined — 실제로 3파일이 이 방식으로 깨졌다). `<!-- -->` 방출까지
+        // 함께 갖추는 것은 S16 `_comment_*`→`comment` 정규화 트랙 소관이다.
+        //
+        // `condition` 은 `if` 의 완전 별칭이다 — 같은 평가기를 타고 `if` 가 이긴다
+        // ([RenderHelpers.ts:551-559](resources/js/core/template-engine/helpers/RenderHelpers.ts#L551)).
+        // 신포맷은 `data-if` 하나로만 방출하므로 별칭을 정본으로 접는다.
+        //
+        // 접는 조건이 둘 있다:
+        //  - `if` 가 없을 것 — 있으면 `condition` 은 엔진이 안 읽는 죽은 키라, 접으면 덮어써 동작이 바뀐다.
+        //  - **`{{}}` 로 감싼 식일 것** — 맨 문자열 `condition` 은 보간만 거쳐 `Boolean("...")` = 항상 참인
+        //    잠복 결함이다(CLAUDE.md `if` 혼합형 함정). `data-if` 로 접으면 컴파일러가 식으로 감싸 실제
+        //    평가되기 시작하므로 **동작이 바뀐다** — 기계 이관이 건드릴 수 없다. 접지 않고 `<json>` 으로
+        //    남겨 결함(S16 U-COND)으로 계량한다.
+        if (isset($value['condition']) && is_string($value['condition'])
+            && ! array_key_exists('if', $value) && str_contains($value['condition'], '{{')) {
+            $value['if'] = $value['condition'];
+            unset($value['condition']);
         }
 
         // 노드(name + 파생 type)에서 파생 type 제거.
@@ -106,8 +196,12 @@ final class LayoutMarkupRoundTrip
         // 소스가 Option 자식으로, 산출이 options 배열로 갈리는 이형을 정본(options)으로 수렴시킨다.
         $value = self::liftSelectOptions($value);
 
-        // 컴파일러가 항상 생략하는 빈 컨테이너(빈 props/children)를 제거 — `props:[]` 는 방출되지 않는다.
-        foreach (['props', 'children'] as $container) {
+        // 컴파일러가 항상 생략하는 빈 컨테이너를 제거 — `props:[]` 는 방출되지 않는다.
+        //
+        // 빈 섹션(`data_sources:[]`·`modals:[]`·`computed:[]`·`footer:[]`)도 같다: 저작 표기가 없으면
+        // 방출도 없고, 엔진은 "빈 목록" 과 "키 부재" 를 구분하지 않는다(양쪽 다 순회할 것이 없음).
+        // 손저작 소스의 빈 껍데기가 산출에서 사라지는 수렴을 왕복 실패로 세면 안 된다.
+        foreach (['props', 'children', 'data_sources', 'modals', 'computed', 'footer'] as $container) {
             if (array_key_exists($container, $value) && $value[$container] === []) {
                 unset($value[$container]);
             }

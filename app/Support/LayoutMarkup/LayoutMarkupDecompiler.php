@@ -44,7 +44,7 @@ final class LayoutMarkupDecompiler
     /**
      * JSON 레이아웃을 `.g7.html` 소스 문자열로 역변환합니다.
      *
-     * @param  array<string, mixed>  $json  JSON 레이아웃 (provenance 표식 strip 후)
+     * @param  array<string, mixed>  $json  JSON 레이아웃
      * @return string `.g7.html` 소스 (끝 개행 포함)
      */
     public function decompile(array $json): string
@@ -109,8 +109,10 @@ final class LayoutMarkupDecompiler
         // 정규화 후 비교 — 컴파일러가 생략·파생하는 값(빈 props·params.actions·derived type 등)을
         // 최상위 키 escape 사유에서 뺀다(노드 differingKeys 와 동일 규율). 없으면 slots 등 정상 섹션이
         // 그 안의 정규화 대상 노드 때문에 통째로 blob 된다.
-        $source = LayoutMarkupRoundTrip::normalize($source);
-        $recompiled = LayoutMarkupRoundTrip::normalize($recompiled);
+        // 문서 층 별칭(state→initLocal)도 함께 접는다 — 왕복 오라클과 같은 기준이어야 escape 판정이
+        // 오라클과 어긋나지 않는다(접히는 문서를 여기서만 불일치로 세면 불필요한 blob).
+        $source = LayoutMarkupRoundTrip::normalize(LayoutMarkupRoundTrip::normalizeDocument($source));
+        $recompiled = LayoutMarkupRoundTrip::normalize(LayoutMarkupRoundTrip::normalizeDocument($recompiled));
         $diff = [];
 
         foreach ($source as $key => $value) {
@@ -305,13 +307,18 @@ final class LayoutMarkupDecompiler
 
         $attributes = [];
 
+        // 최상위 `layout_name` 은 `<partial name>` 으로 — `<layout name>` 과 같은 규율.
+        if (isset($json['layout_name'])) {
+            $attributes[] = $this->attr('name', (string) $json['layout_name']);
+        }
+
         foreach ($meta as $key => $value) {
             $attributes[] = $this->valueAttr((string) $key, $value);
         }
 
         $dataSources = $json['data_sources'] ?? [];
         $nodeJson = $json;
-        unset($nodeJson['meta'], $nodeJson['data_sources']);
+        unset($nodeJson['meta'], $nodeJson['data_sources'], $nodeJson['layout_name']);
 
         $node = $this->nodes->node($nodeJson);
 
@@ -437,7 +444,17 @@ final class LayoutMarkupDecompiler
             $children[] = $this->dataSource($dataSource);
         }
 
-        foreach (['initLocal' => 'init-local', 'initGlobal' => 'init-global', 'initIsolated' => 'init-isolated'] as $key => $tag) {
+        // `state` 는 `initLocal` 의 deprecated 별칭이다 — 엔진은 `initLocal || state` 로 읽고
+        // (TemplateApp.ts:1177) initLocal 이 이긴다. 신포맷은 initLocal 로만 방출하므로(계획 §288)
+        // initLocal 이 없을 때만 별칭을 승격한다. **둘 다 있으면 state 는 엔진이 무시하는 죽은 키**라
+        // 승격하면 동작이 바뀐다 — 승격하지 않고 `<json>` 으로 남겨 결함(S16)으로 계량되게 둔다.
+        $initSections = ['initLocal' => 'init-local', 'initGlobal' => 'init-global', 'initIsolated' => 'init-isolated'];
+
+        if (isset($json['state']) && is_array($json['state']) && ! isset($json['initLocal'])) {
+            $json['initLocal'] = $json['state'];
+        }
+
+        foreach ($initSections as $key => $tag) {
             if (isset($json[$key]) && is_array($json[$key])) {
                 $children[] = $this->el($tag, [], $this->state->fields($json[$key]));
             }

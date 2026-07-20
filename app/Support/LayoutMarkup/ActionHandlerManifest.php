@@ -73,6 +73,19 @@ final class ActionHandlerManifest
     ];
 
     /**
+     * 커스텀(비-코어) 핸들러 중 `target` 을 액션 top-level 로 읽는 것 — 전 번들 실측.
+     *
+     * 커스텀 핸들러는 dispatch default 갈래에서 top-level `target` 을 해석해 받고
+     * (`handleCustomAction({...action, target: resolvedTarget})` — ActionDispatcher.ts:2472-2480),
+     * 동시에 구현이 `params.target` 을 읽어도 된다. 이름만으로는 못 가르므로 실측이 유일한 근거다:
+     * 전 코퍼스에서 top-level 은 `initTheme` 3건뿐이고 나머지(`sirsoft-ecommerce.toggleArrayValue`
+     * 15·`scrollTo` 1)는 전부 `params.target` → 기본을 params 로 두고 여기만 지목한다.
+     *
+     * @var array<int, string>
+     */
+    private const CUSTOM_TARGET_TOP_LEVEL_HANDLERS = ['initTheme'];
+
+    /**
      * 핸들러 무관 공통 top-level 키 — 나머지 속성은 전부 `params` 로 간다.
      *
      * 트리거(`type`/`event`)·구조(`cases`/`conditions`/`actions`/`onSuccess`/`onError`/`errorHandling`)·
@@ -82,10 +95,15 @@ final class ActionHandlerManifest
      * `condition`(=if 오기)·`trigger`·`stopPropagation` 은 결함 키라 넣지 않는다(속성으로 쓰면
      * NodeCompiler 와 같은 "노드/액션 키를 속성으로" 거부에 걸리게 둔다 — 결함 인벤토리 S16).
      *
+     * `key`(keydown/keypress 필터)도 여기 없다 — 그것은 핸들러 인자가 아니라 **트리거 한정자**라
+     * `<on type="keypress" key="Enter">` 로 실린다(ActionCompiler::applyOn). 여기 두면 `params.key`
+     * 를 쓰는 핸들러(saveToLocalStorage·loadFromLocalStorage)의 인자가 트리거 키로 오해석돼
+     * 조용히 소실된다 — U-ESCAPE 실측에서 32건이 이 충돌로 `<json>` 탈출했다.
+     *
      * @var array<int, string>
      */
     private const UNIVERSAL_TOP_LEVEL_KEYS = [
-        'if', 'confirm', 'key', 'auth_mode', 'auth_required', 'identity_target',
+        'if', 'confirm', 'auth_mode', 'auth_required', 'identity_target',
         'resultTo', 'debounce', 'actionRef', 'render', 'onLoad',
     ];
 
@@ -155,7 +173,16 @@ final class ActionHandlerManifest
      */
     public function targetIsTopLevel(string $handler): bool
     {
-        return in_array($handler, self::TARGET_TOP_LEVEL_HANDLERS, true);
+        if (in_array($handler, self::TARGET_TOP_LEVEL_HANDLERS, true)) {
+            return true;
+        }
+
+        // 커스텀(비-코어) 핸들러는 dispatch default 갈래에서 `target` 을 top-level 로도 받고
+        // (`handleCustomAction({...action, target: resolvedTarget})` — ActionDispatcher.ts:2472-2480)
+        // `params.target` 으로도 받는다(핸들러 구현이 params 를 읽으면 그만). **양쪽 다 유효**하므로
+        // 핸들러 이름만으로는 가를 수 없다 — 전 코퍼스 실측도 두 배치가 공존한다(top-level 3 : params 16).
+        // 그래서 기본은 params(다수형)로 두고, top-level 을 쓰는 핸들러만 아래 목록으로 지목한다.
+        return in_array($handler, self::CUSTOM_TARGET_TOP_LEVEL_HANDLERS, true);
     }
 
     /**

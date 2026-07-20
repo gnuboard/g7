@@ -802,10 +802,21 @@ final class DocumentCompiler
             throw $this->error($root, LayoutMarkupErrorCode::PartialRootNotSingleNode, $path);
         }
 
-        $meta = ['is_partial' => true] + $this->attributesToObject($root, $path);
+        $attributes = $this->attributesToObject($root, $path);
+
+        // `<partial name>` 은 `<layout name>` 과 같이 최상위 `layout_name` 이다 — meta 로 흘리지 않는다.
+        // partial 은 DB 미등록이라 이 이름이 라우팅에 쓰이진 않으나, 원본이 지닌 값이므로 왕복 보존한다.
+        $layoutName = $attributes['name'] ?? null;
+        unset($attributes['name']);
+
+        $meta = ['is_partial' => true] + $attributes;
         [$node, $dataSources] = $this->compilePartialNode($root->children[0], $path);
 
         $doc = ['meta' => $meta];
+
+        if ($layoutName !== null) {
+            $doc['layout_name'] = (string) $layoutName;
+        }
 
         if ($dataSources !== []) {
             $doc['data_sources'] = $dataSources;

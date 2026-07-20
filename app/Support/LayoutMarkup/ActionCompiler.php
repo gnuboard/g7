@@ -125,7 +125,7 @@ final class ActionCompiler
             throw $this->error($on, LayoutMarkupErrorCode::ActionTriggerMissing, $path);
         }
 
-        // 자기 이벤트 — actions[] 에 항목 하나로 붙인다. 트리거(type/event)를 루트 액션에 병합.
+        // 자기 이벤트 — actions[] 에 항목 하나로 붙인다. 트리거(type/event/key)를 루트 액션에 병합.
         $trigger = [];
 
         if ($typeValue !== null) {
@@ -134,6 +134,14 @@ final class ActionCompiler
 
         if ($eventValue !== null) {
             $trigger['event'] = $eventValue;
+        }
+
+        // 키 한정자 — keydown/keypress 에서 특정 키만 통과시키는 트리거 필터(ActionDispatcher:7079).
+        // 핸들러 인자가 아니라 트리거의 일부라 `<on>` 속성으로 받는다.
+        $keyValue = $on->attribute('key')?->value;
+
+        if ($keyValue !== null) {
+            $trigger['key'] = $keyValue;
         }
 
         $action = $this->compileBlockBody($on, $trigger, true, $path);
@@ -318,6 +326,10 @@ final class ActionCompiler
             return $this->compileGenericHandler($element, $entry, $path);
         }
 
+        if ($element->name === 'action-ref') {
+            return $this->compileActionRef($element, $path);
+        }
+
         $handler = $this->manifest->resolveTag($element->name);
 
         if ($handler === null) {
@@ -344,6 +356,47 @@ final class ActionCompiler
      *
      * @throws CompileError handler 속성이 없거나 표기 규칙을 벗어난 경우
      */
+    /**
+     * `<action-ref name="x"/>` 를 named_actions 참조 액션으로 컴파일합니다.
+     *
+     * `actionRef` 는 핸들러 없이 단독으로 성립하는 유일한 액션 형태다 — 엔진이 이름으로 named_actions
+     * 를 찾아 그 액션을 대신 실행한다(ActionDispatcher::resolveActionRef). `<action>` 은 handler 를
+     * 필수로 요구하므로 이 형태를 지을 수 없었고, U-ESCAPE 실측에서 38건이 `<json>` 으로 탈출했다.
+     *
+     * @param  MarkupElement  $element  `<action-ref>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 액션 객체
+     *
+     * @throws CompileError name 누락·자식 존재 시
+     */
+    private function compileActionRef(MarkupElement $element, ?string $path): array
+    {
+        $name = $element->attribute('name')?->value;
+
+        if ($name === null || $name === '') {
+            throw $this->error($element, LayoutMarkupErrorCode::MissingRequiredAttribute, $path, [
+                'tag' => 'action-ref',
+                'attr' => 'name',
+            ]);
+        }
+
+        // 참조는 대상 액션을 그대로 실행할 뿐이라 부속 채널(success/fail 등)을 가질 수 없다.
+        foreach ($element->children as $child) {
+            throw $this->error($child, LayoutMarkupErrorCode::UnexpectedActionChild, $path, [
+                'tag' => $child->name,
+                'parent' => 'action-ref',
+            ]);
+        }
+
+        $action = ['actionRef' => $name];
+
+        if ($element->comment !== null) {
+            $action['comment'] = $element->comment;
+        }
+
+        return $this->order($action);
+    }
+
     private function compileGenericHandler(MarkupElement $element, bool $entry, ?string $path): array
     {
         $handlerAttr = $element->attribute('handler');
@@ -499,6 +552,11 @@ final class ActionCompiler
 
         foreach ($element->children as $child) {
             $branch = [];
+
+            // 분기 주석 — `comment` 는 전 위치 횡단 키다(서빙 strip, 편집 모드 보존).
+            if ($child->comment !== null) {
+                $branch['comment'] = $child->comment;
+            }
 
             if ($child->name === 'when') {
                 $ifAttr = $this->requiredAttribute($child, 'if', $path);

@@ -166,6 +166,76 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `key` 는 핸들러 인자가 아니라 트리거 한정자 — `<on>` 에 실리고, 핸들러의 `key` 는 params 로 간다.
+     *
+     * 둘을 한 자리에 두면 `params.key` 를 쓰는 핸들러(saveToLocalStorage)의 인자가 트리거 키로
+     * 오해석돼 조용히 소실된다 (U-ESCAPE 실측 32건).
+     *
+     * @scenario compile_unit=action,source_health=valid
+     *
+     * @effects trigger_key_qualifier_is_distinct_from_handler_params
+     */
+    public function test_trigger_key_is_on_level_and_handler_key_stays_in_params(): void
+    {
+        $trigger = $this->compile('<div data-ref="d"><on type="keypress" key="Enter"><action-ref name="searchX"/></on></div>')['actions'][0];
+        $this->assertSame('keypress', $trigger['type']);
+        $this->assertSame('Enter', $trigger['key']);
+
+        $handler = $this->compile('<div data-ref="d"><on type="click"><save-to-local-storage key="g7_filter" value="v"/></on></div>')['actions'][0];
+        $this->assertArrayNotHasKey('key', $handler);
+        $this->assertSame('g7_filter', $handler['params']['key']);
+        $this->assertSame('v', $handler['params']['value']);
+    }
+
+    /**
+     * `<action-ref>` — 핸들러 없이 named_actions 를 참조하는 유일한 액션 형태.
+     *
+     * @scenario compile_unit=action,source_health=valid
+     *
+     * @effects action_ref_compiles_without_handler
+     */
+    public function test_action_ref_compiles_to_action_ref_key(): void
+    {
+        $action = $this->compile('<div data-ref="d"><on type="click"><action-ref name="searchOrders"/></on></div>')['actions'][0];
+
+        $this->assertSame('searchOrders', $action['actionRef']);
+        $this->assertArrayNotHasKey('handler', $action);
+    }
+
+    /**
+     * `<action-ref>` 는 name 이 필수이고 부속 채널을 가질 수 없다.
+     *
+     * @scenario compile_unit=action,source_health=invalid
+     *
+     * @effects action_ref_requires_name
+     */
+    public function test_action_ref_rejects_missing_name_and_children(): void
+    {
+        $this->expectException(CompileError::class);
+        $this->compile('<div data-ref="d"><on type="click"><action-ref/></on></div>');
+    }
+
+    /**
+     * `conditions` 분기 주석 — `comment` 는 전 위치 횡단 키라 분기에서도 왕복해야 한다.
+     *
+     * @scenario compile_unit=action,source_health=valid
+     *
+     * @effects condition_branch_comment_round_trips
+     */
+    public function test_condition_branch_comment_is_preserved(): void
+    {
+        $action = $this->compile(
+            '<div data-ref="d"><on type="click"><conditions>'
+            .'<!-- 수정 모드 --><when if="{{a}}"><toast message="x"/></when>'
+            .'<!-- 등록 모드 --><else><toast message="y"/></else>'
+            .'</conditions></on></div>'
+        )['actions'][0];
+
+        $this->assertSame('수정 모드', $action['conditions'][0]['comment']);
+        $this->assertSame('등록 모드', $action['conditions'][1]['comment']);
+    }
+
+    /**
      * @effects handler_attributes_split_into_top_level_and_params
      */
     public function test_universal_keys_are_top_level_and_typed_literals_decode(): void

@@ -193,6 +193,7 @@ final class NodeCompiler
     private const ACTION_ONLY_TAGS = [
         'on', 'switch', 'case', 'conditions', 'when', 'else', 'parallel', 'sequence',
         'success', 'fail', 'error-handling', 'on-code', 'body', 'query', 'action',
+        'action-ref',
     ];
 
     /**
@@ -223,7 +224,7 @@ final class NodeCompiler
     private const SORTABLE_KEYS = [
         'source' => 'source', 'item-key' => 'itemKey', 'strategy' => 'strategy',
         'handle' => 'handle', 'item-var' => 'itemVar', 'index-var' => 'indexVar',
-        'group' => 'group', 'disabled' => 'disabled',
+        'group' => 'group', 'disabled' => 'disabled', 'wrapper-element' => 'wrapperElement',
     ];
 
     /** 구조 태그 안에서만 유효한 태그 → 부모 태그명 */
@@ -582,7 +583,20 @@ final class NodeCompiler
             $this->applyAttribute($attribute, $element, $override, $props, $path);
         }
 
-        $children = array_map(fn (MarkupElement $child): array => $this->compile($child, $path), $element->children);
+        // 오버라이드도 노드와 같은 구조 태그를 받는다 — `<class-map>` 등이 브레이크포인트별로 달라지는
+        // 실사용이 있다(portable 에서만 다른 classMap). 구조 태그를 노드 자식으로 컴파일하면 존재하지
+        // 않는 컴포넌트를 찾다 실패한다.
+        $children = [];
+
+        foreach ($element->children as $child) {
+            if (in_array($child->name, self::STRUCTURAL_TAGS, true)) {
+                $this->applyStructuralChild($child, $override, $props, $path);
+
+                continue;
+            }
+
+            $children[] = $this->compile($child, $path);
+        }
 
         if ($props !== []) {
             $override['props'] = $props;
@@ -592,6 +606,11 @@ final class NodeCompiler
             $override['children'] = $children;
         } elseif ($element->text !== null) {
             $override['text'] = $element->text;
+        }
+
+        // 오버라이드 주석 — `comment` 는 전 위치 횡단 키다(서빙 strip, 편집 모드 보존).
+        if ($element->comment !== null) {
+            $override['comment'] = $element->comment;
         }
 
         return $this->order($override);
@@ -1089,7 +1108,14 @@ final class NodeCompiler
             $variants[$this->requiredAttribute($child, 'when', $path)] = (string) ($child->text ?? '');
         }
 
-        $classMap['variants'] = $variants;
+        // `<variant>` 이 없으면 `variants` 를 만들지 않는다 — 저작하지 않은 것을 방출하지 않는다는
+        // 빈 컨테이너 규율과 같다. 엔진도 동치로 읽는다(`classMap.variants && key in variants` 가
+        // 거짓 → default 폴백 — RenderHelpers::resolveClassMap). 실사용: default 만 두는 responsive
+        // 오버라이드용 classMap.
+        if ($variants !== []) {
+            $classMap['variants'] = $variants;
+        }
+
         $default = $element->attribute('default');
 
         if ($default !== null) {
