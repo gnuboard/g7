@@ -25,12 +25,5 @@
                 }
             ]
         }
-    ],
-    "meta": {
-        "authoring": {
-            "source": "modules/_bundled/gnuboard7-hello_module/resources/layouts/admin/admin_markup_demo.g7.html",
-            "source_hash": "20bd09d6dedc54c6991c5afc7a62994af9b06c485d0ff79fd06871f12649dfa2",
-            "compiler_version": "1.0.0"
-        }
-    }
+    ]
 }

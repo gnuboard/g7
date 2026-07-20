@@ -2,9 +2,10 @@
 
 namespace App\Extension\Traits;
 
-use App\Enums\LayoutMarkupErrorCode;
 use App\Exceptions\LayoutIncludeException;
-use App\Support\LayoutMarkup\LayoutProvenance;
+use App\Support\LayoutMarkup\CompileError;
+use App\Support\LayoutMarkup\LayoutMarkupCompiler;
+use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\Log;
  */
 trait ValidatesLayoutFiles
 {
+    use ResolvesLayoutInstallSource;
+
     /**
      * Partial 순환 참조 추적용 스택
      */
@@ -41,47 +44,53 @@ trait ValidatesLayoutFiles
             return $validatedLayouts;
         }
 
-        // 레이아웃 파일 스캔
-        if ($recursive) {
-            $layoutFiles = $this->scanLayoutFilesRecursively($layoutsPath);
-        } else {
-            // 루트 디렉토리의 JSON 파일만 스캔
-            $layoutFiles = File::glob("{$layoutsPath}/*.json");
+        // 레이아웃 소스 수집 — `.g7.html`(저작 SSoT · 있으면 우선) + 짝 `.g7.html` 이 없는 `.json`.
+        // `.g7.html` 은 설치 시점에 메모리로 컴파일해 등록하고(디스크 산출 JSON 미기록), `.json` 은
+        // 직접 등록한다(병존 · 선택 설치원). 두 SSoT 가 애초에 공존하지 않으므로 provenance 판별이 없다.
+        $layoutSources = $this->collectLayoutSources($layoutsPath, $recursive);
 
-            // errors/ 디렉토리만 추가 스캔 (에러 페이지 레이아웃용)
-            $errorsPath = "{$layoutsPath}/errors";
-            if (File::exists($errorsPath)) {
-                $errorLayoutFiles = File::glob("{$errorsPath}/*.json");
-                $layoutFiles = array_merge($layoutFiles, $errorLayoutFiles);
-            }
-        }
-
-        // `.g7.html` 산출 JSON 공존 provenance 검증 (S7).
-        // 설치는 산출 `.json` 을 읽으므로, `.g7.html` 옆의 `.json` 이 그 소스에서 컴파일된
-        // 것인지 표식으로 확인한다. `.g7.html` 만 있고 산출 `.json` 이 없거나(미컴파일),
-        // 표식이 없거나 해시가 어긋나면(손저작 중복·미재컴파일) 두 SSoT 가 다투므로 거부한다.
-        $errors = array_merge($errors, $this->validateMarkupCoexistence($layoutsPath, $recursive));
-
-        if (empty($layoutFiles) && empty($errors)) {
+        if (empty($layoutSources)) {
             return $validatedLayouts;
         }
 
-        foreach ($layoutFiles as $layoutFile) {
+        foreach ($layoutSources as $source) {
+            $layoutFile = $source['path'];
             $relativePath = str_replace(base_path().DIRECTORY_SEPARATOR, '', $layoutFile);
             // Windows/Linux 호환을 위해 슬래시로 통일
             $relativePath = str_replace('\\', '/', $relativePath);
 
-            // JSON 파싱 검증
-            $jsonContent = File::get($layoutFile);
-            $layoutData = json_decode($jsonContent, true);
+            if ($source['markup']) {
+                // `.g7.html` 저작 파일을 설치 시점에 메모리로 컴파일 (강검증 포함).
+                try {
+                    $layoutData = $this->compileMarkupLayoutFile($layoutFile);
+                } catch (CompileError $e) {
+                    $errors[] = $this->formatLayoutValidationError($sourceType, 'markup_error', [
+                        'file' => $relativePath,
+                        'error' => $e->getDetail(),
+                    ]);
 
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $errors[] = $this->formatLayoutValidationError($sourceType, 'json_error', [
-                    'file' => $relativePath,
-                    'error' => json_last_error_msg(),
-                ]);
+                    continue;
+                } catch (\RuntimeException $e) {
+                    $errors[] = $this->formatLayoutValidationError($sourceType, 'markup_error', [
+                        'file' => $relativePath,
+                        'error' => $e->getMessage(),
+                    ]);
 
-                continue;
+                    continue;
+                }
+            } else {
+                // JSON 파싱 검증
+                $jsonContent = File::get($layoutFile);
+                $layoutData = json_decode($jsonContent, true);
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $errors[] = $this->formatLayoutValidationError($sourceType, 'json_error', [
+                        'file' => $relativePath,
+                        'error' => json_last_error_msg(),
+                    ]);
+
+                    continue;
+                }
             }
 
             // is_partial이 true면 검증 스킵 (DB 저장 안 함, partial 전용 파일)
@@ -339,53 +348,117 @@ trait ValidatesLayoutFiles
     }
 
     /**
-     * `.g7.html` 저작 파일의 공존 provenance 를 검증합니다 (S7).
+     * 등록할 레이아웃 소스를 수집합니다 — `.g7.html`(있으면 우선) + 짝 `.g7.html` 이 없는 `.json`.
      *
-     * 설치는 산출 `.json` 을 등록 소스로 읽으므로, 여기서는 `.g7.html` 자체를 파싱하지 않고
-     * **짝 `.json` 이 그 소스에서 컴파일된 것인지**만 표식으로 확인한다:
+     * 같은 논리 레이아웃에 `.g7.html` 과 `.json` 이 나란히 있으면(병존) 저작 SSoT 인 `.g7.html` 을
+     * 소스로 삼는다. `.g7.html` 은 설치 시점 메모리 컴파일로 등록 content 를 만들고(디스크 산출
+     * JSON 미기록), `.json` 은 직접 등록한다.
      *
-     *  - 짝 `.json` 이 없으면 → 미컴파일 (`layout:compile` 필요).
-     *  - 짝 `.json` 에 표식이 없거나 `source_hash` 가 어긋나면 → 손저작 중복 또는 미재컴파일.
+     * `config('template.layout_markup.install_source') === 'json'`(커맨드 `--layout-source=json`) 이면
+     * 우선순위가 뒤집혀 짝 `.json` 이 있는 마크업을 건너뛴다. 짝이 없는 마크업 전용 레이아웃은
+     * 대안이 없으므로 그대로 남긴다 — 조용히 누락시키면 등록 자체가 사라져 빈 화면이 되기 때문이다.
      *
      * @param  string  $layoutsPath  레이아웃 디렉토리 경로
      * @param  bool  $recursive  재귀 스캔 여부 (본 레이아웃 스캔과 동일 전략)
-     * @return array<int, string> 에러 메시지 배열 (없으면 빈 배열)
+     * @return array<int, array{path: string, markup: bool}> 소스 디스크립터 목록
      */
-    protected function validateMarkupCoexistence(string $layoutsPath, bool $recursive): array
+    protected function collectLayoutSources(string $layoutsPath, bool $recursive): array
     {
-        $errors = [];
+        // `.json` 목록 (본 레이아웃 스캔 전략)
+        if ($recursive) {
+            $jsonFiles = $this->scanLayoutFilesRecursively($layoutsPath);
+        } else {
+            $jsonFiles = File::glob("{$layoutsPath}/*.json") ?: [];
 
-        foreach ($this->scanMarkupLayoutFiles($layoutsPath, $recursive) as $markupFile) {
-            $relativeMarkup = $this->toRelativePath($markupFile);
-            $jsonFile = preg_replace('/\.g7\.html$/i', '.json', $markupFile);
-
-            if (! File::exists($jsonFile)) {
-                $errors[] = LayoutMarkupErrorCode::UncompiledMarkupSource->message([
-                    'source' => $relativeMarkup,
-                ]);
-
-                continue;
-            }
-
-            $jsonData = json_decode(File::get($jsonFile), true);
-
-            // JSON 파싱 오류는 본 스캔(json 루프)이 별도로 보고하므로 여기서는 표식 판별만 한다.
-            if (json_last_error() !== JSON_ERROR_NONE || ! is_array($jsonData)) {
-                continue;
-            }
-
-            if (! LayoutProvenance::matches($jsonData, File::get($markupFile))) {
-                $reasonKey = LayoutProvenance::isStamped($jsonData) ? 'stale' : 'missing';
-
-                $errors[] = LayoutMarkupErrorCode::HandAuthoredDuplicate->message([
-                    'source' => $relativeMarkup,
-                    'json' => $this->toRelativePath($jsonFile),
-                    'reason' => __('exceptions.layout_markup.provenance_reason.'.$reasonKey),
-                ]);
+            $errorsPath = "{$layoutsPath}/errors";
+            if (File::exists($errorsPath)) {
+                $jsonFiles = array_merge($jsonFiles, File::glob("{$errorsPath}/*.json") ?: []);
             }
         }
 
-        return $errors;
+        // `.g7.html` 목록 + 그 짝 `.json` 경로 색인 (마크업 우선 판별용).
+        $sources = [];
+        $markupJsonSiblings = [];
+        $jsonForced = $this->layoutInstallSourceIsJsonForced();
+
+        $jsonFileKeys = [];
+        foreach ($jsonFiles as $jsonFile) {
+            $jsonFileKeys[$this->normalizePathKey($jsonFile)] = true;
+        }
+
+        foreach ($this->scanMarkupLayoutFiles($layoutsPath, $recursive) as $markupFile) {
+            $sibling = preg_replace('/\.g7\.html$/i', '.json', $markupFile);
+            $siblingKey = $this->normalizePathKey($sibling);
+
+            // `--layout-source=json`: 짝 `.json` 이 실재하면 마크업을 건너뛰고 원본 JSON 으로 설치한다.
+            if ($jsonForced) {
+                if (isset($jsonFileKeys[$siblingKey])) {
+                    continue;
+                }
+
+                // 짝이 없으면 대안이 없다 — 조용히 누락시키면 등록 자체가 사라져 빈 화면이 되므로
+                // 마크업을 그대로 컴파일하되 플래그 미이행을 남긴다.
+                Log::warning('레이아웃 설치 소스 JSON 강제를 이행하지 못했습니다 (짝 .json 부재 — 마크업 컴파일로 대체)', [
+                    'markup' => str_replace(base_path().DIRECTORY_SEPARATOR, '', $markupFile),
+                ]);
+            }
+
+            $markupJsonSiblings[$siblingKey] = true;
+            $sources[] = ['path' => $markupFile, 'markup' => true];
+        }
+
+        foreach ($jsonFiles as $jsonFile) {
+            // 짝 `.g7.html` 이 있으면 마크업이 SSoT — `.json` 은 건너뛴다.
+            if (isset($markupJsonSiblings[$this->normalizePathKey($jsonFile)])) {
+                continue;
+            }
+
+            $sources[] = ['path' => $jsonFile, 'markup' => false];
+        }
+
+        return $sources;
+    }
+
+    /**
+     * `.g7.html` 저작 파일을 설치 시점에 메모리로 컴파일합니다 (강검증 포함, 디스크 미기록).
+     *
+     * 경로에서 대상 템플릿 레지스트리·문맥을 끌어와(`MarkupCompileContextResolver`) 컴파일러 파사드로
+     * 토큰→트리→문서→강검증 사슬을 태운다. 산출 JSON 은 곧바로 등록 content 로 쓰이고 파일로 쓰이지
+     * 않는다.
+     *
+     * @param  string  $markupFile  `.g7.html` 절대 경로
+     * @return array<string, mixed> 컴파일된 JSON 레이아웃
+     *
+     * @throws CompileError 컴파일·강검증 실패 시
+     * @throws \RuntimeException 대상 템플릿 컴포넌트 매니페스트를 찾지 못하면
+     */
+    protected function compileMarkupLayoutFile(string $markupFile): array
+    {
+        $resolver = new MarkupCompileContextResolver;
+        $registry = $resolver->registryFor($markupFile);
+
+        if ($registry === null) {
+            throw new \RuntimeException(__('exceptions.layout_markup.registry_not_found'));
+        }
+
+        $result = (new LayoutMarkupCompiler($registry))->compile(
+            File::get($markupFile),
+            $markupFile,
+            $resolver->contextFor($markupFile),
+        );
+
+        return $result->json;
+    }
+
+    /**
+     * 경로 비교용 키로 정규화합니다 (슬래시 통일 + 소문자 — 대소문자 무시 파일시스템 대응).
+     *
+     * @param  string  $path  경로
+     * @return string 정규화 키
+     */
+    private function normalizePathKey(string $path): string
+    {
+        return strtolower(str_replace('\\', '/', $path));
     }
 
     /**
@@ -425,17 +498,6 @@ trait ValidatesLayoutFiles
     }
 
     /**
-     * 절대 경로를 base_path 기준 상대 경로(슬래시 정규화)로 변환합니다.
-     *
-     * @param  string  $path  절대 경로
-     * @return string 상대 경로
-     */
-    private function toRelativePath(string $path): string
-    {
-        return str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', $path));
-    }
-
-    /**
      * 파일 경로를 기반으로 레이아웃 이름을 생성합니다.
      *
      * @param  string  $basePath  레이아웃 기본 경로
@@ -448,8 +510,8 @@ trait ValidatesLayoutFiles
         // 상대 경로 추출 (basePath 기준)
         $relativePath = str_replace($basePath.DIRECTORY_SEPARATOR, '', $filePath);
 
-        // .json 확장자 제거
-        $relativePath = preg_replace('/\.json$/i', '', $relativePath);
+        // .g7.html / .json 확장자 제거 (저작 소스·산출 어느 쪽이든 같은 논리 이름)
+        $relativePath = preg_replace('/\.(g7\.html|json)$/i', '', $relativePath);
 
         // 디렉토리 구분자를 언더스코어로 변환
         $layoutPath = str_replace([DIRECTORY_SEPARATOR, '/'], '_', $relativePath);

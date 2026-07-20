@@ -11,9 +11,8 @@ namespace App\Support\LayoutMarkup;
  *
  * **정규화 = 키 순서 무관, 리스트 순서 유지.** 실 레이아웃은 저자 임의 순서라 top-level 키 순서가
  * 컴파일러 KEY_ORDER 와 다르다(예: 손저작 순서 vs `order()`). 객체 키는 재귀 ksort 로 순서를 지우고
- * 리스트는 순서를 지켜 비교한다 — JSON 의미론적 동등성 그대로다. provenance 표식(meta.authoring)은
- * 비교 전 strip 한다(컴파일러 산출엔 없으므로). 빈 `{}`↔`[]` 는 `json_decode(assoc)` 가 양쪽에서
- * 똑같이 접어 발산하지 않는다.
+ * 리스트는 순서를 지켜 비교한다 — JSON 의미론적 동등성 그대로다. 빈 `{}`↔`[]` 는 `json_decode(assoc)`
+ * 가 양쪽에서 똑같이 접어 발산하지 않는다.
  */
 final class LayoutMarkupRoundTrip
 {
@@ -27,7 +26,7 @@ final class LayoutMarkupRoundTrip
      */
     public function verify(array $json, ComponentRegistry $registry, ?string $path = null): array
     {
-        $source = LayoutProvenance::strip($json);
+        $source = $json;
 
         try {
             $markup = (new LayoutMarkupDecompiler($registry))->decompile($source);

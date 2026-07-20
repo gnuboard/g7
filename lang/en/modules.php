@@ -184,6 +184,7 @@ return [
         'layout_validation_json_error' => 'Failed to parse JSON in layout file :file: :error',
         'layout_validation_missing_name' => 'Layout file :file is missing layout_name.',
         'layout_validation_partial_error' => 'Failed to process partial in layout file :file: :error (partial: :partial)',
+        'layout_validation_markup_error' => 'Failed to compile markup in layout file :file: :error',
         'layout_validation_validation_failed' => 'Layout validation failed for module :identifier. :count errors found: :error',
         'operation_in_progress' => 'Module ":name" is currently :status. Please wait until the operation is complete.',
         'github_api_failed' => 'GitHub API call failed: :error',

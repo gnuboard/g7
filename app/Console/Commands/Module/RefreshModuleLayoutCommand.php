@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Models\Module;
 use App\Services\ModuleService;
 use Illuminate\Console\Command;
@@ -14,11 +15,14 @@ use Illuminate\Support\Facades\Log;
  */
 class RefreshModuleLayoutCommand extends Command
 {
+    use SelectsLayoutInstallSource;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'module:refresh-layout
-        {identifier? : 특정 모듈의 식별자 (생략 시 모든 활성 모듈)}';
+        {identifier? : 특정 모듈의 식별자 (생략 시 모든 활성 모듈)}
+        {--layout-source=auto : 레이아웃 설치 소스 (auto|json) — json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
 
     /**
      * The console command description.
@@ -36,6 +40,11 @@ class RefreshModuleLayoutCommand extends Command
      */
     public function handle(): int
     {
+        // `--layout-source` 검증 + 런타임 반영 (알 수 없는 값이면 즉시 실패).
+        if (! $this->applyLayoutInstallSource()) {
+            return self::FAILURE;
+        }
+
         $identifier = $this->argument('identifier');
 
         try {

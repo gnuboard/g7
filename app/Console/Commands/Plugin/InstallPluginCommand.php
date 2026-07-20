@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Validator;
 class InstallPluginCommand extends Command
 {
     use HasProgressBar;
+    use SelectsLayoutInstallSource;
 
     /**
      * The name and signature of the console command.
@@ -23,7 +25,8 @@ class InstallPluginCommand extends Command
     protected $signature = 'plugin:install
         {identifier : 설치할 플러그인 식별자}
         {--vendor-mode=auto : Vendor 설치 모드 (auto|composer|bundled)}
-        {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}';
+        {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}
+        {--layout-source=auto : 레이아웃 설치 소스 (auto|json) — json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
 
     /**
      * The console command description.
@@ -45,6 +48,11 @@ class InstallPluginCommand extends Command
      */
     public function handle(): int
     {
+        // `--layout-source` 검증 + 런타임 반영 (알 수 없는 값이면 즉시 실패).
+        if (! $this->applyLayoutInstallSource()) {
+            return self::FAILURE;
+        }
+
         $identifier = $this->argument('identifier');
 
         // 식별자 형식 검증

@@ -500,20 +500,6 @@ enum LayoutMarkupErrorCode: string
      */
     case ScriptSrcNotAllowed = 'script_src_not_allowed';
 
-    // 설치 통합 (S7) — 산출 JSON 공존 provenance 판별
-
-    /**
-     * `.g7.html` 옆의 `.json` 이 그 소스의 컴파일 산출이 아님 (provenance 표식 없음 또는
-     * `source_hash` 불일치). 손으로 쓴 중복이거나 소스 편집 후 미재컴파일 — 두 SSoT 가 다툰다.
-     */
-    case HandAuthoredDuplicate = 'hand_authored_duplicate';
-
-    /**
-     * `.g7.html` 은 있으나 컴파일 산출 `.json` 이 원 위치에 없음 (설치는 산출 JSON 을 읽으므로
-     * `layout:compile` 을 먼저 실행해야 한다).
-     */
-    case UncompiledMarkupSource = 'uncompiled_markup_source';
-
     /**
      * 다국어 오류 본문을 반환합니다.
      *

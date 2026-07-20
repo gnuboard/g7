@@ -3,10 +3,10 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 포맷이고 설치 시 서버(PHP)가 JSON 으로 컴파일한다
+1. 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 SSoT 이고 설치 시 서버(PHP)가 설치 시점에 메모리로 JSON 컴파일해 DB 등록(디스크 산출 JSON 미기록)
 2. 문법 3원칙: 접두어 없음(지시 속성만 data-*) / 소문자·kebab 태그 / 속성값에 JSON 금지(구조체=자식 태그, 배열=반복 태그)
 3. 태그명이 컴포넌트를 정한다(레지스트리 kebab 해석). 조건표시=data-if, 반복=data-each, 참조=data-ref (무접두 if/each/ref·v-if 는 컴파일 에러)
-4. 컴파일러: app/Support/LayoutMarkup/* — 토큰→트리→문서(강검증→lint). 커맨드 `layout:compile {path} --check`
+4. 용어(D38): compile=JSON→HTML(저작 소스 산출) / decompile=HTML→JSON(설치·검증). 컴파일러: app/Support/LayoutMarkup/* — 토큰→트리→문서(강검증→lint)
 5. 문서루트 4갈래(layout/partial/extension/override). 태그·속성명은 명명 3순위 규칙으로 확정(S8 동결, 2026-07-18)
 ```
 
@@ -14,10 +14,12 @@
 
 ## 위치
 
-- 저작 파일: `.g7.html` (본 레이아웃·partial·확장 주입·오버라이드)
+- 저작 파일: `.g7.html` (본 레이아웃·partial·확장 주입·오버라이드) — 저작 SSoT
 - 컴파일러: `app/Support/LayoutMarkup/`
-- 산출물: 짝 `.json` (기존 레이아웃 엔진이 그대로 소비). `meta.authoring` provenance 표식으로 병존 판별
-- 검증/컴파일 커맨드: `php artisan layout:compile {path} --check` (건조 실행) / `--all` / `--template={id}`
+- 설치(D38·D39): 디스크에는 `.g7.html`(기본) + 원본 `.json`(선택 설치원) 병존. 설치·갱신은 `.g7.html` 을 **설치 시점에 메모리로 컴파일**해 DB(template_layouts)에 등록하고 **산출 JSON 을 디스크에 쓰지 않는다**. `.g7.html` 이 없으면 `.json` 을 직접 등록. 둘이 나란히 있으면 저작 SSoT 인 `.g7.html` 이 이긴다
+- 검증 커맨드: `php artisan layout:decompile {path|--all}` (HTML→JSON 강검증·lint, 산출 JSON 미기록 — `--out` 지정 시 단일 파일 진단 덤프) / `--template={id}`
+- 이관(생성) 커맨드: `php artisan layout:compile {path|--all}` (JSON→HTML 저작 소스 산출) / `--roundtrip` (왕복 동등성 검증)
+- 설치 소스 강제: `{module|plugin|template}:{install|update|refresh-layout} --layout-source=json` — 컴파일러 회귀가 의심될 때 짝 `.json` 이 있는 레이아웃을 원본 JSON 기준으로 되돌려 설치하는 진단·복구 탈출구(기본 `auto`). 짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 그대로 컴파일하고 로그에 미이행을 남긴다(조용히 누락시키면 등록이 사라져 빈 화면). 환경 기본값은 `LAYOUT_INSTALL_SOURCE`, SSoT 는 `config/template.php` 의 `layout_markup.install_source`. `{type}:update` 의 기존 `--source=auto|bundled|github`(업데이트 패키지 출처)와는 별개 옵션이다
 
 ---
 
@@ -269,7 +271,7 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 
 ## 11. 역변환 (JSON → `.g7.html`) 과 표기 탈출구 (S9)
 
-`layout:decompile {path?|--all}` 이 산출 JSON 을 짝 `.g7.html` 로 되돌린다(이관 웨이브용). 컴파일의 역이라, 각 최상위 키·노드 키를 첫 급부 문법으로 되돌리고 재컴파일이 원본과 **정규화 후 deep-equal** 임을 확인한다(`--roundtrip`). 왕복 하네스는 번들 전 레이아웃을 상시 검사한다(`LayoutMarkupRoundTripCorpusTest`).
+`layout:compile {path?|--all}`(PO 정의: compile=JSON→HTML) 이 JSON 레이아웃을 짝 `.g7.html` 저작 소스로 산출한다(이관 웨이브용). 내부 구현 클래스는 `LayoutMarkupDecompiler`(JSON→요소 트리 역변환) 로, 각 최상위 키·노드 키를 첫 급부 문법으로 되돌리고 재컴파일이 원본과 **정규화 후 deep-equal** 임을 확인한다(`--roundtrip`). 왕복 하네스는 번들 전 레이아웃을 상시 검사한다(`LayoutMarkupRoundTripCorpusTest`). 이관된 `.g7.html` 은 원본 `.json` 과 100% 동등하고 `<json>` 탈출구가 0 건이어야 한다(회귀 게이트).
 
 ### 표기 탈출구 `<json>` — 100% 왕복 보장
 

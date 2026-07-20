@@ -177,6 +177,7 @@ return [
         'update_failed' => 'モジュール":module"のアップデートに失敗しました: :error',
         'invalid_layout_strategy' => '無効なレイアウト戦略です。(overwriteまたはkeepのみ許可)',
         'invalid_vendor_mode' => '無効なVendor インストール モードです。(auto、composer、bundledのみ許可)',
+        'layout_validation_markup_error' => 'レイアウトファイル :file のマークアップコンパイルに失敗しました: :error',
     ],
     'validation' => [
         'name_required' => 'モジュール名は必須です。',

@@ -31,6 +31,7 @@ return [
         'layout_validation_json_error' => ':file - JSON 파싱 오류: :error',
         'layout_validation_missing_name' => ':file - layout_name 필드가 누락되었습니다.',
         'layout_validation_partial_error' => ':file - Partial 처리 오류 (:partial): :error',
+        'layout_validation_markup_error' => ':file - 마크업 컴파일 오류: :error',
         'override_layout_registration_failed' => '오버라이드 레이아웃 등록에 실패했습니다: :error',
         'file_not_found' => '파일을 찾을 수 없습니다.',
         'file_type_not_allowed' => '허용되지 않은 파일 타입입니다.',
@@ -315,6 +316,12 @@ return [
             'backup_restored' => '백업에서 이전 버전이 복원되었습니다.',
             'force_mode' => '강제 업데이트 모드: 버전 비교를 건너뛰고 재설치합니다.',
         ],
+    ],
+
+    // 레이아웃 설치 소스 선택 (--layout-source=auto|json)
+    'layout_install_source' => [
+        'invalid' => '❌ --layout-source 는 auto 또는 json 이어야 합니다. (입력값: :value)',
+        'json_notice' => '⚠️  레이아웃 설치 소스를 JSON 강제로 전환합니다 — 짝 .json 이 있는 .g7.html 은 무시됩니다.',
     ],
 
     // 레이아웃 첨부 파일 (배경 이미지 등)

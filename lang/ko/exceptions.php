@@ -174,16 +174,8 @@ return [
         'wait_for_source_never_resolves' => 'transition_overlay 의 wait_for 가 완료 신호가 오지 않는 데이터소스(:reason)를 가리킵니다: :id',
         'script_src_not_allowed' => '<script> 로 실을 수 없는 외부 JS 입니다 (허용 목록 밖): :src',
 
-        // 설치 통합 (S7) — 산출 JSON 공존 provenance 판별
-        'hand_authored_duplicate' => ':source 옆의 :json 이 그 소스에서 컴파일된 것이 아닙니다 (:reason). 두 SSoT 가 공존할 수 없습니다: .json 을 지우거나 layout:compile 로 재생성하세요.',
-        'uncompiled_markup_source' => ':source 옆에 컴파일 산출 .json 이 없습니다. 설치는 산출 JSON 을 읽으므로 layout:compile 을 먼저 실행하세요.',
-        'fragment_coexistence_failed' => ':identifier 의 .g7.html fragment 공존 검증에 실패했습니다:',
-
-        // hand_authored_duplicate 의 :reason 자리 — 문장 중간에 어구가 박히지 않도록 분리
-        'provenance_reason' => [
-            'missing' => 'authoring 표식이 없어 손으로 쓴 것으로 보입니다',
-            'stale' => '컴파일 이후 소스가 바뀌었습니다',
-        ],
+        // 설치 통합 — .g7.html 을 설치 시점에 컴파일할 때 대상 템플릿 레지스트리를 못 찾은 경우
+        'registry_not_found' => '대상 템플릿의 컴포넌트 매니페스트(components.json)를 찾을 수 없습니다.',
     ],
 
     // .g7.html 정적 lint 경고 (S6) — 컴파일을 막지 않는 경고

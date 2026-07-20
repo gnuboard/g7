@@ -5,17 +5,19 @@ description: |
   설치 시 서버(PHP)가 JSON 으로 컴파일하는 파이프라인.
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
-  S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7 설치 통합). 현재 커버 범위는
-  **S1~S7** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+  S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7~S9 → S10 설치 재아키텍처).
+  현재 커버 범위는 **S1~S10** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
 
-  S7 범위 — 설치 통합 (ValidatesLayoutFiles·RefreshesLayoutExtensions·layout:install-diff):
-    - 설치는 산출 `.json` 을 등록 소스로 읽고(Architecture B), `.g7.html` 은 `meta.authoring`
-      provenance 표식으로 짝만 확인한다. 표식 일치=정상 병존(표식은 DB 로 흘러 편집기 drift 마커가
-      된다), 표식 없음=손저작 중복, 해시 불일치=미재컴파일, 짝 부재=미컴파일 → 뒤 셋은 설치 거부.
-    - 컴파일러 자체는 표식을 붙이지 않는다(왕복·fixture deep-equal 보전). layout:compile 이 파일로
-      쓸 때만 얹고, install-diff·왕복 비교는 strip 후 수행한다.
+  용어(PO 정의, D38): **compile = JSON → HTML**(저작 소스 산출), **decompile = HTML → JSON**(설치·검증).
 
-  S6 범위 — LayoutValidator + LayoutLinter + LayoutMarkupCompiler(파사드) + layout:compile 커맨드:
+  S10 범위 — 설치 재아키텍처 (ValidatesLayoutFiles·RefreshesLayoutExtensions, D38·D39):
+    - 저작 SSoT 는 `.g7.html`. 설치는 `.g7.html` 을 **설치 시점에 메모리로 컴파일**(강검증 포함)해
+      DB 에 등록하고 산출 JSON 을 디스크에 쓰지 않는다. `.g7.html` 이 없으면 `.json` 을 직접 등록한다
+      (병존 · 선택 설치원). 같은 논리 레이아웃에 둘이 나란히 있으면 저작 SSoT 인 `.g7.html` 이 이긴다.
+    - 두 SSoT 가 애초에 공존하지 않으므로 provenance 표식·공존 판별·install-diff 는 폐기됐다.
+    - fragment(확장 주입)도 대칭으로 `.g7.html`(있으면 우선)을 등록 시점에 컴파일한다.
+
+  S6 범위 — LayoutValidator + LayoutLinter + LayoutMarkupCompiler(파사드) + layout:decompile 커맨드:
     - 강검증은 컴파일 산출 JSON 을 대상으로 한다. 현행 파일 설치 경로엔 구조 검증이 없어(계획서
       "검증·서빙 파이프라인 사실"), 편집기 저장 경로가 쓰는 `app/Rules/*`(ValidLayoutStructure·
       WhitelistedEndpoint·NoExternalUrls·ValidLayoutExtensionStructure)를 **그대로 재사용**해 동등
@@ -26,8 +28,8 @@ description: |
       플러그인 완전 레이아웃(gdpr_consent_log·plugin_settings 예외)·nesting 위반(빈 accepts 부모
       제외 — 오검출 회피)·responsive portable↔mobile/tablet 혼용·독립 레이아웃의 글로벌 호스트
       누락(toast·모달 silent failure). 강검증이 "못 만든다" 라면 lint 은 "만들되 권하지 않는다".
-    - 파사드가 토큰→트리→문서→강검증→lint 사슬을 한 줄로 잇는다. layout:compile 은 단일 파일/
-      `--all` 스캔·`--check` 건조 실행·원 위치 `.json` 병존 방출을 담당한다.
+    - 파사드가 토큰→트리→문서→강검증→lint 사슬을 한 줄로 잇는다. 이 사슬은 `layout:decompile`
+      (HTML→JSON 검증) 과 설치 시점 인메모리 컴파일이 공유한다 — 단일 파일/`--all` 스캔·검증 전용.
 
   S4 범위 — DocumentCompiler:
     - 루트 태그가 문서 종류를 정한다: `<layout>`(본 레이아웃)·`<partial>`(루트=노드)·
@@ -314,25 +316,26 @@ effects:
   - lint_warning_is_surfaced_without_stopping_compilation
   - context_drives_source_kind_dependent_lint
   - every_lint_code_has_a_message_in_every_shipped_locale
-  # --- S7 설치 통합: 산출 JSON 공존 provenance (Architecture B — 설치는 산출 .json 을 읽고
-  #     .g7.html 은 표식으로 짝만 확인, 표식은 편집기 drift 마커로 DB 에 남는다)
-  - stamp_records_source_hash_and_matches_the_same_source
-  - a_changed_source_no_longer_matches
-  - json_without_marker_never_matches
-  - normalized_line_endings_hash_identically
-  - strip_restores_the_pre_stamp_shape
-  - strip_preserves_other_meta_keys
-  - compiled_json_with_authoring_registers_and_keeps_the_drift_marker
-  - hand_authored_duplicate_is_rejected
-  - stale_compiled_json_is_rejected
-  - uncompiled_markup_source_is_rejected
-  - reinstall_is_idempotent
-  - keep_strategy_hash_is_source_format_agnostic
-  - hello_extension_markup_layout_installs_from_compiled_json
-  - fragment_with_matching_provenance_passes
-  - fragment_hand_authored_duplicate_is_rejected
-  - fragment_uncompiled_markup_source_is_rejected
-  - fragment_keep_strategy_hash_is_source_format_agnostic
+  # --- S10 설치 재아키텍처 (D38·D39): .g7.html 을 설치 시점에 인메모리 컴파일→DB, 산출 JSON 미기록.
+  #     .json 은 선택 설치원(병존), 둘이 나란히 있으면 저작 SSoT 인 .g7.html 이 이긴다. provenance 폐기.
+  - markup_source_compiles_in_memory_and_registers
+  - install_writes_no_json_to_disk
+  - markup_wins_when_both_present
+  - json_only_installs_directly
+  - invalid_markup_source_is_rejected
+  - hello_extension_markup_layout_installs_from_in_memory_compile
+  - fragment_markup_wins_over_json_sibling
+  - fragment_json_used_when_no_markup
+  # 설치 레이어 3자 등가성 — 컴파일 레이어(코퍼스 게이트) 위에 얹히는 소스 선택·partial 해석·
+  # data_source 검증·layout_name 결정까지 두 소스가 같은 등록 content 를 내는지 봉인
+  - html_install_equals_json_install_equals_original_json
+  # 설치 소스 강제(`--layout-source=json`, §195) — 컴파일러 회귀 의심 시 원본 .json 기준으로 되돌려
+  # 설치하는 진단·복구 탈출구. 짝 .json 이 없는 마크업 전용 레이아웃은 누락시키지 않는다(빈 화면 방지).
+  - json_forced_source_overrides_markup_priority
+  - json_forced_source_keeps_markup_only_layouts
+  - unknown_install_source_falls_back_to_auto
+  # --- S10 W1 이관 회귀: 이관된 .g7.html 이 원본 .json 과 100% 동등하고 escape-0 (명시 목록형)
+  - every_migrated_markup_file_matches_its_json_and_is_escape_free
   # --- S9 역변환기: JSON → .g7.html → JSON 왕복 (LayoutMarkupDecompiler + Serializer + RoundTrip 하네스)
   #     역변환은 컴파일러의 역이라, 첫 급부 문법으로 되돌리고(불가하면 `<json>` 탈출구) 재컴파일이
   #     원본과 정규화 후 deep-equal 임을 확인한다. 정규화는 컴파일러가 파생·생략하는 값(derived type·
@@ -370,10 +373,10 @@ test_files:
   - tests/Unit/Enums/LayoutMarkupLintCodeTest.php
   # 런타임 self-register 계약 — 판본 선택·오버라이드 우선순위는 코어가 판정한다
   - resources/js/core/template-engine/__tests__/ComponentRegistry.extension.test.ts
-  # S7 설치 통합 — provenance 헬퍼 + 본 레이아웃·fragment 공존 판별
-  - tests/Unit/Support/LayoutMarkup/LayoutProvenanceTest.php
-  - tests/Feature/LayoutMarkup/MarkupCoexistenceInstallTest.php
-  - tests/Feature/LayoutMarkup/FragmentMarkupCoexistenceTest.php
+  # S10 설치 재아키텍처 — .g7.html 인메모리 컴파일 설치 + fragment 소스 선택
+  - tests/Feature/LayoutMarkup/MarkupInstallTest.php
+  - tests/Feature/LayoutMarkup/MarkupFragmentInstallTest.php
+  - tests/Feature/LayoutMarkup/MarkupInstallSourceOverrideTest.php
   # S9 역변환기 — 왕복 하네스·직렬화기·표기 탈출구·전량 회귀
   - tests/Unit/Support/LayoutMarkup/LayoutMarkupDecompilerTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutMarkupSerializerTest.php

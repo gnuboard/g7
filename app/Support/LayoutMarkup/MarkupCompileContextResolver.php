@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\File;
  * 컴파일 자체는 소스만 있으면 되지 않는다 — 태그를 해석할 대상 템플릿의 `components.json`(레지스트리)
  * 과, 강검증·lint 이 참조하는 소속 정보(소스 종류·확장 식별자·템플릿 핸들러·nesting 규칙)를 파일
  * 경로에서 끌어와야 한다. 이 규칙(admin/·user/ 로 대상 템플릿 판별, `_bundled` 폴백, TS 핸들러 맵
- * 정적 파싱 등)은 `layout:compile` 과 `layout:install-diff` 가 **똑같이** 써야 하므로 한 곳에 둔다 —
- * 두 커맨드가 각자 해석하면 규칙이 갈려 "커맨드는 통과하는데 이관 검증은 실패" 같은 드리프트가 난다.
+ * 정적 파싱 등)은 `layout:compile`·`layout:decompile` 과 설치 시점 인메모리 컴파일이 **똑같이** 써야
+ * 하므로 한 곳에 둔다 — 각자 해석하면 규칙이 갈려 "커맨드는 통과하는데 설치는 실패" 같은 드리프트가 난다.
  */
 final class MarkupCompileContextResolver
 {

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
@@ -13,6 +14,7 @@ class UpdateTemplateCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use SelectsLayoutInstallSource;
 
     /**
      * The name and signature of the console command.
@@ -22,7 +24,8 @@ class UpdateTemplateCommand extends Command
         {--layout-strategy=overwrite : 레이아웃 전략 (overwrite|keep)}
         {--force : 버전 비교 없이 강제 업데이트}
         {--source=auto : 업데이트 소스 (auto|bundled|github) — bundled 는 _bundled 만 사용(GitHub 우회)}
-        {--zip= : 외부 ZIP 파일 경로 (지정 시 GitHub/번들 우회 + 버전은 template.json 기준)}';
+        {--zip= : 외부 ZIP 파일 경로 (지정 시 GitHub/번들 우회 + 버전은 template.json 기준)}
+        {--layout-source=auto : 레이아웃 설치 소스 (auto|json) — json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
 
     /**
      * The console command description.
@@ -44,6 +47,11 @@ class UpdateTemplateCommand extends Command
      */
     public function handle(): int
     {
+        // `--layout-source` 검증 + 런타임 반영 (알 수 없는 값이면 즉시 실패).
+        if (! $this->applyLayoutInstallSource()) {
+            return self::FAILURE;
+        }
+
         $identifier = $this->argument('identifier');
         $layoutStrategy = $this->option('layout-strategy');
         $force = $this->option('force');

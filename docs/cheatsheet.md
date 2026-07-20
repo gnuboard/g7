@@ -253,6 +253,34 @@ php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치)
 php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
 ```
 
+### 레이아웃 저작 포맷 Artisan 커맨드
+
+```bash
+# compile = JSON → HTML (저작 소스 산출 · 이관용). 상세: docs/frontend/layout-markup.md
+php artisan layout:compile <path>                  # 단일 .json → 짝 .g7.html 생성
+php artisan layout:compile --all                   # 번들 확장·템플릿 전량 생성
+php artisan layout:compile --all --roundtrip       # 생성 없이 왕복 동등성만 검사 (불일치·escape 집계)
+php artisan layout:compile --all --template=sirsoft-admin_basic  # 대상 템플릿 한정
+php artisan layout:compile <path> --out=<file>     # 산출 경로 지정
+
+# decompile = HTML → JSON (설치·검증). 산출 JSON 은 디스크에 병존시키지 않는다
+php artisan layout:decompile <path>                # 단일 .g7.html 강검증 (기본이 검증 전용)
+php artisan layout:decompile --all                 # 이관된 .g7.html 전량 강검증
+php artisan layout:decompile <path> --out=<file>   # 진단용 단일 JSON 덤프 (--out 지정 시에만 기록)
+```
+
+설치 소스는 기본 `auto`(`.g7.html` 우선 → 설치 시점 인메모리 컴파일)이며, 컴파일러 회귀가 의심될 때
+`--layout-source=json` 으로 원본 `.json` 기준 설치로 되돌릴 수 있다 (install/update/refresh-layout 9개 커맨드 공통).
+
+```bash
+php artisan module:update <id> --force --layout-source=json     # 짝 .json 이 있으면 원본 JSON 으로 등록
+php artisan template:refresh-layout <id> --layout-source=json   # 레이아웃만 원본 JSON 기준 재동기화
+```
+
+`{type}:update` 의 기존 `--source=auto|bundled|github` 는 **업데이트 패키지 출처**로 의미가 달라 별개 옵션이다.
+짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 `json` 강제에서도 컴파일되며, 로그에 미이행이 남는다
+(조용히 누락시키면 등록이 사라져 빈 화면이 된다). 환경 기본값은 `.env` 의 `LAYOUT_INSTALL_SOURCE`.
+
 ### API 문서 Artisan 커맨드
 
 ```bash
