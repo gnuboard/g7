@@ -159,45 +159,31 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
     ];
 
     /**
-     * 아직 1급 문법이 없어 원시 JSON 으로 남는 자리 (U-RAWJSON — D41 → **D42 전면 재집계**).
+     * 1급 문법이 없어 원시 JSON 으로 남는 자리 (U-RAWJSON — D41 → D42 전면 재집계 → **D42 종료로 비었다**).
      *
      * D41 은 태그 본문(`<params>`/`<fallback>`/`<prop>`/`<props>`)을 "설계된 정본" 으로 보아 계량에서
-     * 뺐으나, PO 지적(3회차)으로 **그 제외를 폐기**했다. 이제 태그 예외 없이 세므로 대장이 17→35 로
-     * 늘었다. 늘어난 것은 새 결함이 아니라 **원래 있었으나 안 세던 것**이다.
+     * 뺐으나, PO 지적(3회차)으로 **그 제외를 폐기**했다. 태그 예외 없이 다시 세자 대장은 35 로 늘었고
+     * (늘어난 것은 새 결함이 아니라 원래 있었으나 안 세던 것), D42 문법 신설이 그것을 전부 해소했다:
      *
-     * 형태별로 필요한 문법이 다르다:
-     *  - 속성값 17 — 임의 이름 객체 파라미터. field-map 이 `<body>`/`<query>` 두 이름에만 배선돼
-     *    있어(`SUB_STRUCTURAL_TAGS`) `params.form` 같은 임의 키를 되돌릴 수단이 없다.
-     *  - `<params>` 3 — **전부 평면 스칼라 맵**. `compileFieldMap` 을 데이터소스 자식에 확장하면 해소.
-     *  - `<fallback>` 6 — 평면 2(`{"data":null}`) + 중첩 4. 중첩은 `<field>` 트리가 필요하다.
-     *  - `<prop>` 4 — 평면맵 2 + 객체 리스트 2(`rowActions`·`tabs`). 항목 태그가 필요하다.
-     *  - `<props>` 5 — 병합 지시자 2(`{"tabs":{"_append":[…]}}`) + **DataGrid 컬럼 트리 3**.
-     *    컬럼 트리는 `<column>`/`<cell>` 문법이 이미 있으나 소유자 게이트(DataGrid 한정)에 걸려
-     *    확장 주입 `<props>` 문맥에서 blob 으로 떨어진다 — 태그로 저작하라고 만든 포맷 안에
-     *    컴포넌트 트리가 통째 JSON 인 가장 나쁜 형태다.
+     *  - 빈 컬렉션 — `[]`·`{}` 는 구조가 없는 값 리터럴이라 계량 대상이 아니다(D42 선행 판정).
+     *    착수 시 7건이었고 이행 후 **16건**이다(`:value` 3→12) — 늘어난 9는 속성 JSON 안에 묻혀
+     *    있던 빈 배열이 `<field :value="[]"/>` 리프로 드러난 것이라, 저작 파일의 JSON 은 오히려 줄었다.
+     *  - G1 데이터소스 속성 field-map / G2 중첩 `<field>` 트리 → `<params>` 3 · `<fallback>` 6 소멸
+     *  - G3 `<prop>` `<field>` / G4 `<prop>` `<item>` / G5 `<props>` `<append>` → `<prop>` 4 · `<props>` 2 소멸
+     *  - G6 액션 구조값 파라미터 `<field name>` (중첩 객체·문자열 리스트 포함) → 속성값 전량 소멸
+     *  - G7 확장 주입 `<props>` 의 DataGrid 컬럼 트리 → `<props>` 3 소멸
+     *  - G8 `switch` 분기 대상 배치 분리(`on`=params.value / `value`=top-level) → G7 이 드러낸
+     *    액션 트리 `<json>` 탈출 3건 소멸 (S16 F2 결함을 **고치지 않고 표기만** 갈랐다 — D38 바이트 동등)
      *
-     * 전부 S8 동결 문법의 확장이라 **문법 신설은 PO 승인 사항**이다(D36 선례). 이 목록은 그 판단이
-     * 날 때까지의 **명시 대장**이며, 등재되지 않은 신규 발생은 그대로 실패한다.
-     *
-     * 묵인이 아니라 **열거**다 — 목록에 없는 새 원시 JSON 은 그대로 실패한다. 문법이 생기면 해당
-     * 행을 지우고 재생성하면 된다.
+     * **대장이 비어 있는 것이 정상 상태다.** 묵인이 아니라 열거이므로, 새 원시 JSON 이 생기면 그대로
+     * 실패한다. 실패를 등재로 덮으려면 그 자리에 **문법이 없다는 근거**를 주석으로 함께 적어야 한다.
      *
      * 값은 라벨→**정확 건수** 맵이다. 게이트가 다중집합을 정확 대조하므로 등재 라벨이라도 건수가
-     * 늘면(예: `:value` 3→5) 실패한다 — "묵인이 아니라 열거" 를 라벨뿐 아니라 건수까지 봉인한다.
+     * 늘면(예: `:value` 3→5) 실패한다 — 라벨뿐 아니라 건수까지 봉인한다.
      *
      * @var array<string, array<string, int>> 파일(상대경로) → (허용 방출 라벨 → 정확 건수)
      */
-    private const RAW_JSON_PENDING_GRAMMAR = [
-        // 중첩 객체 파라미터 — `<field>` 트리는 평면 리프만 받아 아직 되돌릴 수 없다(G6 잔여).
-        'modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_form.g7.html' => [':errors' => 1, ':form' => 1],
-        'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_consent_log.g7.html' => [':filter' => 1],
-        'plugins/_bundled/sirsoft-marketing/resources/layouts/admin/plugin_settings.g7.html' => [':editingChannel' => 1],
-        // DataGrid 컬럼 트리 — `<column>`/`<cell>` 문법은 있으나 확장 주입 `<props>` 문맥에서
-        // 임베딩 소유자를 해석하지 못해 blob 으로 떨어진다 (G7 미이행).
-        'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/admin_order_list_test_badge.g7.html' => ['<props>' => 1],
-        'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/admin_order_list_test_badge.g7.html' => ['<props>' => 1],
-        'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/admin_order_list_test_badge.g7.html' => ['<props>' => 1],
-    ];
+    private const RAW_JSON_PENDING_GRAMMAR = [];
 
     /**
      * 이관된 `.g7.html` 이 원본과 100% 동등하고 escape-0 임을 봉인합니다 (S10 W1 DoD).

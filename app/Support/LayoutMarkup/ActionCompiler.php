@@ -76,9 +76,13 @@ final class ActionCompiler
 
     private readonly ActionHandlerManifest $manifest;
 
+    /** 구조값 컴파일러 — `<field name>` 파라미터 안의 `<field>`/`<item>` 트리 (D42 G6) */
+    private readonly StructuredValueCompiler $values;
+
     public function __construct()
     {
         $this->manifest = new ActionHandlerManifest;
+        $this->values = new StructuredValueCompiler(LayoutMarkupErrorCode::UnexpectedActionChild);
     }
 
     /**
@@ -658,7 +662,8 @@ final class ActionCompiler
     /**
      * `<field name>` 액션 파라미터 본문을 구조값으로 컴파일합니다 (D42 G6).
      *
-     * 자식이 `<item>` 이면 평면 객체의 리스트, `<field>` 면 평면 키-값 맵이다.
+     * 규칙은 `StructuredValueCompiler` 가 단일 SSoT 다 — `<prop>`·데이터소스 자식과 같은 문법을
+     * 쓴다(중첩 `<field>` 객체 / `<item>` 리스트 / 문자열 `<item>` 본문).
      *
      * @param  MarkupElement  $element  `<field>` 요소
      * @param  string|null  $path  소스 파일 경로
@@ -668,55 +673,7 @@ final class ActionCompiler
      */
     private function compileParamValue(MarkupElement $element, ?string $path): array
     {
-        if ($element->children === []) {
-            return [];
-        }
-
-        if ($element->children[0]->name === 'item') {
-            $list = [];
-
-            foreach ($element->children as $child) {
-                $this->assertParamChildTag($child, 'item', $element, $path);
-                $list[] = $this->compileFieldMap($child, $path);
-            }
-
-            return $list;
-        }
-
-        $map = [];
-
-        foreach ($element->children as $child) {
-            $this->assertParamChildTag($child, 'field', $element, $path);
-
-            $name = (string) $this->requiredAttribute($child, 'name', $path);
-            $typed = $child->attribute(':value');
-
-            $map[$name] = $typed !== null
-                ? MarkupValue::decodeTypeLiteral($typed, 'value', $path)
-                : ($child->attribute('value')?->value ?? null);
-        }
-
-        return $map;
-    }
-
-    /**
-     * `<field>` 파라미터의 자식 태그가 기대한 것인지 확인합니다.
-     *
-     * @param  MarkupElement  $child  자식 요소
-     * @param  string  $expected  기대 태그명
-     * @param  MarkupElement  $parent  부모 요소
-     * @param  string|null  $path  소스 파일 경로
-     *
-     * @throws CompileError 태그가 다른 경우
-     */
-    private function assertParamChildTag(MarkupElement $child, string $expected, MarkupElement $parent, ?string $path): void
-    {
-        if ($child->name !== $expected) {
-            throw $this->error($child, LayoutMarkupErrorCode::UnexpectedActionChild, $path, [
-                'tag' => $child->name,
-                'parent' => $parent->name,
-            ]);
-        }
+        return $this->values->compileChildren($element, $path);
     }
 
     /**
@@ -843,7 +800,12 @@ final class ActionCompiler
             ? MarkupValue::decodeTypeLiteral($attribute, $key, $path)
             : ($attribute->isBoolean() ? true : $attribute->value);
 
-        if ($this->manifest->keyIsTopLevel($handler, $key)) {
+        // params 별칭(`<switch on>` → `params.value`) — 같은 이름의 top-level 키와 가르는 표기다 (D42 G8).
+        $alias = $this->manifest->paramAliasFor($handler, $key);
+
+        if ($alias !== null) {
+            $key = $alias;
+        } elseif ($this->manifest->keyIsTopLevel($handler, $key)) {
             $this->applyTopLevelKey($attribute, $key, $value, $typed, $entry, $action, $path);
 
             return;

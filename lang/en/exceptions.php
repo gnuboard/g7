@@ -186,6 +186,7 @@ return [
         'nesting_violation' => ':parent is not declared to accept :child as a child.',
         'responsive_breakpoint_mix' => 'The portable preset is mixed with the mobile/tablet presets — overlapping ranges make behavior hard to predict.',
         'standalone_missing_global_host' => 'A standalone layout fires toast/modal actions but does not mount a Toast/Modal host — nothing appears on screen.',
+        'switch_value_not_consumed' => '<switch value="…"> is not read by the engine — write the branch subject as <switch on="…"> so it reaches params.value.',
     ],
 
     // Settings related exceptions

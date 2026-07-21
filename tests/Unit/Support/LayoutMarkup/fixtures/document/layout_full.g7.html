@@ -7,7 +7,7 @@
     <div data-ref="user_list_card" class="admin-card">
       <data-grid data-ref="user_grid" :serverSidePagination="true" data="{{users?.data?.data ?? []}}">
         <on event="onRowAction">
-          <switch value="{{$args[0]}}">
+          <switch on="{{$args[0]}}">
             <case when="edit"><navigate path="/admin/users/{{$args[1].uuid}}/edit"/></case>
             <case when="delete">
               <set-state target="global" modal_data="{{$args[1]}}"/>

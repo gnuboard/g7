@@ -204,6 +204,37 @@ final class EmbeddingCompiler
     }
 
     /**
+     * `<column>` 자식들을 columns 배열로 컴파일합니다 (D42 G7 — 확장 주입 `<props>` 전용 진입점).
+     *
+     * 노드 자리의 `<column>` 은 부모가 DataGrid 임을 소유자 게이트로 확인하지만(applyChild), 확장
+     * 주입 fragment 에는 부모 컴포넌트가 없다 — 대상 노드가 **다른 레이아웃에** 있기 때문이다.
+     * 그 자리에서는 `<prop name="columns">` 컨테이너가 소유자를 대신하고, 게이트는 그 컨테이너
+     * 안으로만 열린다(`NodeCompiler::compilePropValue` 의 `$allowColumnTree`). 컬럼 원소를 만드는
+     * 규칙 자체는 노드 자리와 **완전히 같은 코드**를 쓴다 — 갈라지면 같은 컬럼이 자리에 따라 다른
+     * JSON 이 된다.
+     *
+     * @param  MarkupElement  $element  `<prop name="columns">` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<int, array<string, mixed>> columns 배열
+     *
+     * @throws CompileError `<column>` 외 자식이 있거나 컬럼 표기가 규칙을 벗어난 경우
+     */
+    public function compileColumnList(MarkupElement $element, ?string $path): array
+    {
+        $columns = [];
+
+        foreach ($element->children as $child) {
+            if ($child->name !== 'column') {
+                throw $this->unexpectedChild($child, $element->name, $path);
+            }
+
+            $columns[] = $this->compileColumn($child, $path);
+        }
+
+        return $columns;
+    }
+
+    /**
      * `<column>` 을 columns 배열 원소(스칼라 필드 + cellChildren)로 컴파일합니다.
      *
      * @param  MarkupElement  $element  `<column>` 요소

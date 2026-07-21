@@ -53,7 +53,19 @@
               <p class="text-body font-medium">$t:sirsoft-marketing.settings.fields.channels.label</p>
               <button type="button" class="flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm">
                 <on type="click">
-                  <set-state target="global" :editingChannel='{"key":"","label":{"ko":"","en":""},"page_slug":"","enabled":true,"is_system":false,"_editing":false}'/>
+                  <set-state target="global">
+                    <field name="editingChannel">
+                      <field name="key" value=""/>
+                      <field name="label">
+                        <field name="ko" value=""/>
+                        <field name="en" value=""/>
+                      </field>
+                      <field name="page_slug" value=""/>
+                      <field name="enabled" :value="true"/>
+                      <field name="is_system" :value="false"/>
+                      <field name="_editing" :value="false"/>
+                    </field>
+                  </set-state>
                   <open-modal target="channel_edit_modal"/>
                 </on>
                 <icon name="plus" size="sm"/>

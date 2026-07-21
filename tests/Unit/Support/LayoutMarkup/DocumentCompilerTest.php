@@ -291,6 +291,74 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * D42 G7 — 확장 주입 `<props>` 의 `<prop name="columns">` 가 `<column>`/`<cell>` 컬럼 트리를 받는다.
+     *
+     * 주입 fragment 에는 부모 컴포넌트가 없어(대상 노드가 다른 레이아웃에 있다) 소유자 게이트로
+     * DataGrid 를 확인할 수단이 없다 — `<prop name="columns">` 컨테이너가 그 자리를 대신한다.
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects injection_props_accept_datagrid_column_tree
+     */
+    public function test_injection_props_accept_column_tree(): void
+    {
+        $doc = $this->compile(
+            '<extension target-layout="admin_ecommerce_order_list"><inject target-id="grid" position="inject_props"><props>'
+            .'<prop name="columns">'
+            .'<column field="no" header="NO" width="60px" :sortable="false"><cell><span>{{row.no}}</span></cell></column>'
+            .'<column field="name" header="이름"/>'
+            .'</prop>'
+            .'</props></inject></extension>',
+        );
+
+        $columns = $doc['injections'][0]['props']['columns'];
+
+        $this->assertCount(2, $columns);
+        $this->assertSame('no', $columns[0]['field']);
+        $this->assertFalse($columns[0]['sortable']);
+        $this->assertSame('Span', $columns[0]['cellChildren'][0]['name']);
+        $this->assertArrayNotHasKey('cellChildren', $columns[1]);
+    }
+
+    /**
+     * D42 G7 대조군 — 게이트가 열리는 자리는 **주입 `<props>` 의 `<prop name="columns">` 하나뿐**이다
+     * (불변조건 4 — DataGrid 밖으로 새지 않는다).
+     *
+     * 세 대조군을 함께 고정한다. 컴파일 수용 범위가 방출기(`columns` 키에만 `<column>` 을 낸다)보다
+     * 넓어지면 그 차이만큼은 **저작할 수는 있는데 되돌아오지 않는** 표기가 된다.
+     *
+     * @scenario compile_unit=document,source_health=invalid
+     *
+     * @effects column_tree_is_rejected_outside_injection_props
+     */
+    #[DataProvider('columnTreeRejectionProvider')]
+    public function test_column_tree_outside_the_columns_container_is_rejected(string $source): void
+    {
+        $this->assertSame(
+            LayoutMarkupErrorCode::UnexpectedStructuralChild,
+            $this->compileError($source)->getErrorCode(),
+        );
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public static function columnTreeRejectionProvider(): array
+    {
+        return [
+            '노드 자리의 <prop name="columns">' => [
+                '<layout name="x"><slot name="content"><div><prop name="columns"><column field="no"/></prop></div></slot></layout>',
+            ],
+            '주입 <props> 이지만 다른 이름 (오타 포함)' => [
+                '<extension target-layout="a"><inject target-id="t" position="inject_props"><props><prop name="colums"><column field="no"/></prop></props></inject></extension>',
+            ],
+            '주입 <props> 의 <append> 안 (항목 리스트 자리)' => [
+                '<extension target-layout="a"><inject target-id="t" position="inject_props"><props><prop name="columns"><append><column field="no"/></append></prop></props></inject></extension>',
+            ],
+        ];
+    }
+
+    /**
      * S8 A1 — 확장 주입 fragment 가 `<init>`(주입 시 실행할 초기 액션)을 받는다.
      * 예: 통화 선택기 주입 시 현재 통화 로드(header-currency-selector-admin).
      *

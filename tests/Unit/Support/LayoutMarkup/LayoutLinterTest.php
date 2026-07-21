@@ -234,6 +234,62 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     // ---------------------------------------------------------------------
+    // ⑥ switch 분기 대상 배치 (D42 G8)
+    // ---------------------------------------------------------------------
+
+    /**
+     * 엔진은 `params.value` 만 읽는다 — top-level `value`(=`<switch value>`)는 경고한다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects switch_top_level_value_is_warned_as_not_consumed
+     */
+    public function test_switch_top_level_value_warns(): void
+    {
+        $json = [
+            'layout_name' => 'x',
+            'components' => [[
+                'type' => 'basic',
+                'name' => 'Div',
+                'actions' => [[
+                    'event' => 'onItemClick',
+                    'handler' => 'switch',
+                    'value' => '{{$args[0]}}',
+                    'cases' => ['a' => ['handler' => 'toast']],
+                ]],
+            ]],
+        ];
+
+        $this->assertHasLint(LayoutMarkupLintCode::SwitchValueNotConsumed, $json);
+    }
+
+    /**
+     * `params.value`(=`<switch on>`)는 정본이라 경고하지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects switch_params_value_is_the_canonical_placement
+     */
+    public function test_switch_params_value_does_not_warn(): void
+    {
+        $json = [
+            'layout_name' => 'x',
+            'components' => [[
+                'type' => 'basic',
+                'name' => 'Div',
+                'actions' => [[
+                    'event' => 'onItemClick',
+                    'handler' => 'switch',
+                    'params' => ['value' => '{{$args[0]}}'],
+                    'cases' => ['a' => ['handler' => 'toast']],
+                ]],
+            ]],
+        ];
+
+        $this->assertNoLint(LayoutMarkupLintCode::SwitchValueNotConsumed, $json);
+    }
+
+    // ---------------------------------------------------------------------
     // 헬퍼
     // ---------------------------------------------------------------------
 

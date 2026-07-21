@@ -758,6 +758,34 @@ final class NodeMarkupDecompiler
     }
 
     /**
+     * `columns` 를 `<column>` 요소 목록으로 되돌립니다 (D42 G7 — 확장 주입 `<props>` 진입점).
+     *
+     * 되돌릴 수 없는 형태(리스트가 아님·원소가 객체가 아님·`field` 없음)면 **null** 을 돌려주고
+     * 호출자가 종전 JSON 표기로 떨어뜨린다 — `EmbeddingCompiler::compileColumn` 이 `field` 를
+     * 필수로 요구하므로, 없는 채로 찍으면 되컴파일이 죽어 주입 props 전체가 `<json>` 으로 탈출한다.
+     *
+     * @param  array<array-key, mixed>  $columns  컬럼 목록 후보
+     * @return array<int, MarkupElement>|null `<column>` 요소 목록, 표현 불가면 null
+     */
+    public function columnElements(array $columns): ?array
+    {
+        if ($columns === [] || ! array_is_list($columns)) {
+            return null;
+        }
+
+        foreach ($columns as $column) {
+            if (! is_array($column) || array_is_list($column) || ! array_key_exists('field', $column)) {
+                return null;
+            }
+        }
+
+        $children = [];
+        $this->appendColumns($columns, $children);
+
+        return $children;
+    }
+
+    /**
      * `columns` 를 `<column>`(+`<cell>`) 자식으로 찍습니다.
      *
      * @param  array<int, array<string, mixed>>  $columns  컬럼 목록

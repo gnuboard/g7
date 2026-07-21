@@ -62,6 +62,8 @@ final class DocumentCompiler
 
     private readonly StateTreeCompiler $state;
 
+    private readonly StructuredValueCompiler $values;
+
     /**
      * @param  ComponentRegistry  $registry  대상 템플릿의 컴포넌트 레지스트리
      */
@@ -70,6 +72,7 @@ final class DocumentCompiler
         $this->nodes = new NodeCompiler($registry);
         $this->actions = new ActionCompiler;
         $this->state = new StateTreeCompiler;
+        $this->values = new StructuredValueCompiler(LayoutMarkupErrorCode::UnexpectedStructuralChild);
     }
 
     /**
@@ -1160,7 +1163,7 @@ final class DocumentCompiler
      * 구조값을 세 표기 중 하나로 컴파일합니다 (D42 G1·G2).
      *
      * 우선순위대로:
-     *  1. **`<field>` 자식** — 중첩 구조. `<fallback><field name="data"><field name="items" :value="[]"/></field></fallback>`
+     *  1. **`<field>`/`<item>` 자식** — 중첩 구조. `<fallback><field name="data"><field name="items" :value="[]"/></field></fallback>`
      *  2. **속성 field-map** — 평면 스칼라 맵. `<params page="{{query.page}}" :per_page="20"/>`
      *  3. **JSON 본문** — 종전 표기. 하위호환으로 계속 받는다(기존 저작이 깨지지 않는다).
      *
@@ -1214,72 +1217,40 @@ final class DocumentCompiler
                 ]);
             }
 
-            $props[$this->requiredAttribute($child, 'name', $path)] = $this->nodes->compilePropElementValue($child, $path);
+            // 주입 props 는 `<column>` 컬럼 트리를 받는다 (D42 G7) — 대상 노드가 다른 레이아웃에 있어
+            // 소유자(DataGrid)로 게이트할 수단이 없고, `<prop name="columns">` 컨테이너가 그 자리를
+            // 대신한다. 그래서 게이트는 **이름이 `columns` 일 때만** 열린다(방출기와 같은 조건).
+            $name = $this->requiredAttribute($child, 'name', $path);
+
+            $props[$name] = $this->nodes->compilePropElementValue($child, $path, $name === 'columns');
         }
 
         return $props;
     }
 
     /**
-     * `<field>` 자식들을 중첩 맵으로 컴파일합니다 (D42 G2).
+     * `<field>`/`<item>` 자식들을 중첩 구조값으로 컴파일합니다 (D42 G2).
      *
-     * 각 `<field name>` 은 자식이 있으면 하위 트리, 없으면 `value`(문자열) 또는 `:value`(타입 리터럴)다.
+     * 규칙은 `StructuredValueCompiler` 가 단일 SSoT 다 — `<prop>`·액션 구조값 파라미터와 같은 문법을
+     * 쓴다("구조를 가진 값은 어디에 있든 `<field>` 트리").
      *
      * @param  MarkupElement  $element  부모 요소
      * @param  string|null  $path  소스 파일 경로
-     * @return array<string, mixed> 중첩 맵
+     * @return array<array-key, mixed> 중첩 구조값
      *
-     * @throws CompileError `<field>` 가 아닌 자식이 있거나 name 이 없는 경우
+     * @throws CompileError 자식 표기가 규칙을 벗어난 경우
      */
     private function compileFieldTree(MarkupElement $element, ?string $path): array
     {
-        $map = [];
-
-        foreach ($element->children as $child) {
-            if ($child->name !== 'field') {
-                throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
-                    'tag' => $child->name,
-                    'parent' => $element->name,
-                ]);
-            }
-
-            $name = $this->requiredAttribute($child, 'name', $path);
-
-            if (array_key_exists($name, $map)) {
-                throw $this->error($child, LayoutMarkupErrorCode::DuplicateAttribute, $path, [
-                    'tag' => $child->name,
-                    'attr' => $name,
-                ]);
-            }
-
-            $map[$name] = $child->children !== []
-                ? $this->compileFieldTree($child, $path)
-                : $this->fieldLeafValue($child, $path);
-        }
-
-        return $map;
-    }
-
-    /**
-     * `<field>` 리프의 값을 읽습니다 — `:value`(타입 리터럴) 우선, 없으면 `value`(문자열).
-     *
-     * @param  MarkupElement  $field  `<field>` 요소
-     * @param  string|null  $path  소스 파일 경로
-     * @return mixed 리프 값
-     */
-    private function fieldLeafValue(MarkupElement $field, ?string $path): mixed
-    {
-        $typed = $field->attribute(':value');
-
-        if ($typed !== null) {
-            return MarkupValue::decodeTypeLiteral($typed, 'value', $path);
-        }
-
-        return $field->attribute('value')?->value ?? null;
+        return $this->values->compileChildren($element, $path);
     }
 
     /**
      * 속성을 평면 키-값 맵으로 컴파일합니다 (D42 G1 — `name` 은 컨테이너 식별자라 제외하지 않는다).
+     *
+     * 읽는 규칙(`:attr`=타입 리터럴 / 불리언 속성=true / 그 밖=문자열)은 `<item>` 의 평면 객체와
+     * **완전히 같으므로** `StructuredValueCompiler` 에 위임한다 — 복제해 두면 한쪽만 고쳤을 때 같은
+     * 평면 맵이 자리(데이터소스 속성 field-map ↔ `<item>`)에 따라 다르게 해석된다.
      *
      * @param  MarkupElement  $element  요소
      * @param  string|null  $path  소스 파일 경로
@@ -1289,26 +1260,7 @@ final class DocumentCompiler
      */
     private function compileValueFieldMap(MarkupElement $element, ?string $path): array
     {
-        $map = [];
-
-        foreach ($element->attributes as $attribute) {
-            $key = $attribute->name;
-            $value = str_starts_with($key, ':')
-                ? MarkupValue::decodeTypeLiteral($attribute, substr($key, 1), $path)
-                : ($attribute->isBoolean() ? true : $attribute->value);
-            $key = ltrim($key, ':');
-
-            if (array_key_exists($key, $map)) {
-                throw $this->error($element, LayoutMarkupErrorCode::DuplicateAttribute, $path, [
-                    'tag' => $element->name,
-                    'attr' => $key,
-                ]);
-            }
-
-            $map[$key] = $value;
-        }
-
-        return $map;
+        return $this->values->attributeMap($element, $path);
     }
 
     private function decodeJsonBody(MarkupElement $element, ?string $path): mixed

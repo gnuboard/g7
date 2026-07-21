@@ -108,6 +108,30 @@ final class ActionHandlerManifest
     ];
 
     /**
+     * 핸들러별 top-level 키 — 같은 이름이 핸들러에 따라 배치가 갈리는 자리 (D42 G8).
+     *
+     * `switch` 의 `value` 는 **두 배치가 실물로 공존**한다: 엔진이 읽는 정본은 `params.value`
+     * (ActionDispatcher::handleSwitch:4970)인데, 코퍼스 26건은 top-level 에 둔다(엔진 미소비 —
+     * S16 결함 F2, 값이 `{{$args[0]}}` 라 폴백과 우연 일치해 무증상). 기계 이관은 배치를 바꿀 수
+     * 없으므로(D38 바이트 동등) **둘 다 표기 수단이 있어야** 한다:
+     *
+     *  - `<switch on="…">`  → `params.value` — 엔진이 읽는 정본. 신규 저작은 이쪽.
+     *  - `<switch value="…">` → top-level `value` — 결함 보존형. lint 이 경고한다.
+     *
+     * 표기를 안 가르면 26건이 통째로 `<json>` 탈출해 저작 파일에 액션 트리가 JSON 으로 남는다
+     * (D42 가 없애려는 바로 그 형태). `on` 은 `<switch-value prop on>` 에서 이미 "무엇을 기준으로
+     * 분기하는가" 를 뜻하는 개념어라 새 어휘가 아니다(명명 3순위 규칙 ①).
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const HANDLER_TOP_LEVEL_KEYS = ['switch' => ['value']];
+
+    /**
+     * `<switch>` 에서 `params.value` 를 지목하는 속성명 (top-level `value` 와 가르는 별칭).
+     */
+    public const SWITCH_SUBJECT_ATTRIBUTE = 'on';
+
+    /**
      * init_actions 루트 액션이 지니는 키 화이트리스트 (TemplateApp::executeInitActions 실측).
      *
      * executeInitActions 는 자식 actionDef 에 이 키만 전달하고 그 밖(cases·actions·confirm·debounce·
@@ -198,7 +222,23 @@ final class ActionHandlerManifest
             return $this->targetIsTopLevel($handler);
         }
 
+        if (in_array($key, self::HANDLER_TOP_LEVEL_KEYS[$handler] ?? [], true)) {
+            return true;
+        }
+
         return in_array($key, self::UNIVERSAL_TOP_LEVEL_KEYS, true);
+    }
+
+    /**
+     * 해당 핸들러에서 이 속성이 **params 별칭**인지 판정하고 실제 params 키를 돌려줍니다 (D42 G8).
+     *
+     * @param  string  $handler  camel 핸들러명
+     * @param  string  $key  속성명
+     * @return string|null params 키, 별칭이 아니면 null
+     */
+    public function paramAliasFor(string $handler, string $key): ?string
+    {
+        return $handler === 'switch' && $key === self::SWITCH_SUBJECT_ATTRIBUTE ? 'value' : null;
     }
 
     /**

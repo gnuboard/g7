@@ -340,14 +340,21 @@ final class ActionMarkupDecompiler
         }
 
         // 임의 이름의 **구조값 파라미터**는 `<field name>` 자식으로 되돌린다 (D42 G6).
-        // `<body>`/`<query>` 는 위에서 이미 처리했으므로 제외한다.
+        // 제어 자식(actions/cases/conditions)과 위에서 `<body>`/`<query>` 로 나간 평면 맵만 제외한다 —
+        // 중첩 body/query 는 `<field name="body">` 로 나가고 컴파일러가 같은 `params.body` 를 만든다.
         foreach ($action['params'] ?? [] as $key => $value) {
-            if (in_array($key, ['actions', 'cases', 'conditions', 'body', 'query'], true)) {
+            if (in_array($key, ['actions', 'cases', 'conditions'], true)) {
                 continue;
             }
 
-            if ($this->isStructuredParam($value)) {
-                $children[] = $this->el('field', [$this->attr('name', (string) $key)], $this->paramValueChildren($value));
+            if (in_array($key, ['body', 'query'], true) && $this->isFieldMap($value)) {
+                continue;
+            }
+
+            $structured = $this->structuredChildren($value);
+
+            if ($structured !== null) {
+                $children[] = $this->el('field', [$this->attr('name', (string) $key)], $structured);
             }
         }
 
@@ -355,42 +362,27 @@ final class ActionMarkupDecompiler
     }
 
     /**
-     * 값이 `<field name>` 으로 되돌릴 구조값인지 판정합니다 (D42 G6).
+     * params 항목이 **자식 태그로** 나가는지 판정합니다 (속성 중복·누락 방지).
      *
-     * 빈 컬렉션은 `:attr="[]"` 로 충분하고(구조 없는 값 리터럴), 스칼라는 원래 속성이다.
-     * `<field>` 트리 또는 `<item>` 리스트로 표현 가능한 형태만 받는다 — 표현 못하면 종전대로
-     * 속성 JSON 으로 남아 대장에 계량된다.
+     * `subStructural`(자식 방출)과 `attributes`(속성 방출)가 서로 다른 판정을 쓰면 같은 값이 두 번
+     * 나가거나(중복) 아예 안 나간다(소실). 두 곳이 이 하나를 공유한다.
      *
-     * @param  mixed  $value  파라미터 값
-     * @return bool `<field>` 로 표현 가능하면 true
+     * @param  string  $key  params 키
+     * @param  mixed  $value  값
+     * @return bool 자식으로 나가면 true
      */
-    private function isStructuredParam(mixed $value): bool
+    private function paramEmittedAsChild(string $key, mixed $value): bool
     {
-        if (! is_array($value) || $value === []) {
-            return false;
+        // 제어 자식(cases/conditions/actions)이 params 안에 온 레거시 shape 는 자식으로 방출된다.
+        if (in_array($key, ['actions', 'cases', 'conditions'], true)) {
+            return true;
         }
 
-        return array_is_list($value)
-            ? $this->isFlatObjectList($value)
-            : $this->isFlatScalarMapValue($value);
-    }
-
-    /**
-     * `<field>` 파라미터 본문을 만듭니다 — 맵이면 `<field>`, 리스트면 `<item>`.
-     *
-     * @param  array<array-key, mixed>  $value  구조값
-     * @return array<int, MarkupElement> 자식 요소
-     */
-    private function paramValueChildren(array $value): array
-    {
-        if (array_is_list($value)) {
-            return array_map(
-                fn (array $item): MarkupElement => $this->el('item', $this->mapAttributes($item), []),
-                $value,
-            );
+        if (in_array($key, ['body', 'query'], true) && $this->isFieldMap($value)) {
+            return true;
         }
 
-        return $this->fieldChildren($value);
+        return $this->isStructuredValue($value);
     }
 
     /**
@@ -463,26 +455,33 @@ final class ActionMarkupDecompiler
                 : $this->valueAttr($key, $value);
         }
 
+        $handler = (string) ($action['handler'] ?? '');
+
         foreach ($action['params'] ?? [] as $key => $value) {
-            // 제어 자식이 params 안에 온 레거시 shape 는 자식으로 방출하므로 속성으로 중복하지 않는다.
-            if (in_array($key, ['actions', 'cases', 'conditions'], true)) {
+            // 자식 태그로 나가는 항목은 속성으로 중복하지 않는다 (제어 자식·`<body>`/`<query>`·구조값 파라미터).
+            if ($this->paramEmittedAsChild((string) $key, $value)) {
                 continue;
             }
 
-            // body/query 가 평면 맵이면 `<body>`/`<query>` 자식으로 나가므로 속성으로 중복하지 않는다(D41).
-            if (in_array($key, ['body', 'query'], true) && $this->isFieldMap($value)) {
-                continue;
-            }
-
-            // 구조값 파라미터는 `<field name>` 자식으로 나간다 — 속성으로 중복하지 않는다(D42 G6).
-            if ($this->isStructuredParam($value)) {
-                continue;
-            }
-
-            $attributes[] = $this->valueAttr($key, $value);
+            // params 별칭 — `switch` 의 `params.value` 는 `on` 으로 찍어 top-level `value` 와 가른다 (D42 G8).
+            $attributes[] = $this->valueAttr($this->paramAttributeName($handler, (string) $key), $value);
         }
 
         return $attributes;
+    }
+
+    /**
+     * params 키를 속성명으로 바꿉니다 — 같은 이름의 top-level 키와 배치가 갈리는 자리만 별칭을 쓴다.
+     *
+     * @param  string  $handler  camel 핸들러명
+     * @param  string  $key  params 키
+     * @return string 속성명
+     */
+    private function paramAttributeName(string $handler, string $key): string
+    {
+        return $handler === 'switch' && $key === 'value'
+            ? ActionHandlerManifest::SWITCH_SUBJECT_ATTRIBUTE
+            : $key;
     }
 
     /**

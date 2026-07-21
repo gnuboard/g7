@@ -95,12 +95,12 @@ trait EmitsMarkup
     }
 
     /**
-     * `<prop name="key">` 구조 자식을 만듭니다 (객체/배열 props) — D42 G3·G4.
+     * `<prop name="key">` 구조 자식을 만듭니다 (객체/배열 props) — D42 G3·G4·G5.
      *
      * 값 형태에 따라 1급 표기를 고른다:
-     *  - **평면 스칼라 맵** → `<field>` 자식 (`<prop name="uploadParams"><field name="temp_key" value="…"/></prop>`)
-     *  - **평면 객체의 리스트** → `<item>` 자식 (`<prop name="rowActions"><item id="view" label="…"/></prop>`)
-     *  - 그 밖(중첩·혼재) → JSON 본문 (표현 수단이 아직 없는 자리. 대장에 등재된다)
+     *  - **병합 지시자**(`{"_append":[…]}`) → `<append>` 자식 (G5)
+     *  - **표현 가능한 구조값** → `<field>`/`<item>` 트리 (G3·G4, 중첩 포함)
+     *  - 그 밖 → JSON 본문 (표현 수단이 아직 없는 자리. 대장에 등재된다)
      *
      * 저작 파일에서 통짜 JSON 을 없애는 것이 목적이므로(D42), 표현 가능한 형태는 전부 태그로 낸다.
      *
@@ -112,28 +112,20 @@ trait EmitsMarkup
     {
         $nameAttr = [$this->attr('name', $key)];
 
-        if (is_array($value) && $value !== []) {
-            // 병합 지시자 — `{"_append":[…]}` → `<append><item …/></append>` (D42 G5).
-            if (! array_is_list($value) && $this->isMergeDirectiveMap($value)) {
-                $directives = [];
+        if (is_array($value) && $value !== [] && ! array_is_list($value) && $this->isMergeDirectiveMap($value)) {
+            $directives = [];
 
-                foreach ($value as $directive => $inner) {
-                    $directives[] = $this->propDirectiveElement(substr((string) $directive, 1), $inner);
-                }
-
-                return $this->el('prop', $nameAttr, $directives);
+            foreach ($value as $directive => $inner) {
+                $directives[] = $this->propDirectiveElement(substr((string) $directive, 1), $inner);
             }
 
-            if (! array_is_list($value) && $this->isFlatScalarMapValue($value)) {
-                return $this->el('prop', $nameAttr, $this->fieldChildren($value));
-            }
+            return $this->el('prop', $nameAttr, $directives);
+        }
 
-            if (array_is_list($value) && $this->isFlatObjectList($value)) {
-                return $this->el('prop', $nameAttr, array_map(
-                    fn (array $item): MarkupElement => $this->el('item', $this->mapAttributes($item), []),
-                    $value,
-                ));
-            }
+        $children = $this->structuredChildren($value);
+
+        if ($children !== null) {
+            return $this->el('prop', $nameAttr, $children);
         }
 
         return $this->el('prop', $nameAttr, [], $this->encode($value));
@@ -150,15 +142,7 @@ trait EmitsMarkup
     protected function isMergeDirectiveMap(array $map): bool
     {
         foreach ($map as $key => $value) {
-            if ($key !== '_append') {
-                return false;
-            }
-
-            $representable = is_array($value) && $value !== []
-                && ((array_is_list($value) && $this->isFlatObjectList($value))
-                    || (! array_is_list($value) && $this->isFlatScalarMapValue($value)));
-
-            if (! $representable) {
+            if ($key !== '_append' || ! $this->isStructuredValue($value)) {
                 return false;
             }
         }
@@ -175,14 +159,134 @@ trait EmitsMarkup
      */
     protected function propDirectiveElement(string $tag, mixed $value): MarkupElement
     {
-        if (is_array($value) && array_is_list($value)) {
-            return $this->el($tag, [], array_map(
-                fn (array $item): MarkupElement => $this->el('item', $this->mapAttributes($item), []),
-                $value,
-            ));
+        return $this->el($tag, [], $this->structuredChildren($value) ?? []);
+    }
+
+    /**
+     * 구조값을 `<field>`/`<item>` 자식 트리로 되돌립니다 (D42 공통 원리 — 컴파일 짝은 `StructuredValueCompiler`).
+     *
+     * 표현할 수 없는 형태면 **null** 을 돌려준다. 호출자는 그때만 종전 JSON 표기로 떨어뜨리고, 그
+     * 자리는 원시 JSON 대장에 계량된다(묵인이 아니라 열거 — D42).
+     *
+     * @param  mixed  $value  값
+     * @return array<int, MarkupElement>|null 자식 요소, 표현 불가면 null
+     */
+    protected function structuredChildren(mixed $value): ?array
+    {
+        if (! $this->isStructuredValue($value)) {
+            return null;
         }
 
-        return $this->el($tag, [], $this->fieldChildren(is_array($value) ? $value : []));
+        return $this->structuredChildElements($value);
+    }
+
+    /**
+     * 값이 `<field>`/`<item>` 트리로 되돌릴 수 있는 구조값인지 판정합니다.
+     *
+     * 표현 불가 두 가지를 여기서 못박는다:
+     *  - **빈 컬렉션**(`[]`·`{}`) — 구조가 없는 값 리터럴이라 `:value="[]"` 리프가 정본이다(D42 선행 판정).
+     *  - **문자열 아닌 스칼라 원소**(`[1, true]`) — `<item :value="1"/>` 은 객체 `{"value":1}` 과
+     *    구별되지 않아 왕복이 깨진다. 표기를 주지 않고 JSON 으로 남긴다.
+     *
+     * @param  mixed  $value  값
+     * @return bool 표현 가능하면 true
+     */
+    protected function isStructuredValue(mixed $value): bool
+    {
+        if (! is_array($value) || $value === []) {
+            return false;
+        }
+
+        if (array_is_list($value)) {
+            foreach ($value as $item) {
+                if (is_string($item)) {
+                    if ($item === '' || trim($item) !== $item) {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (! $this->isStructuredValue($item)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        foreach ($value as $inner) {
+            // 리프(스칼라·null·빈 컬렉션)는 그대로 두고, 구조를 가진 값만 재귀 판정한다.
+            if (is_array($inner) && $inner !== [] && ! $this->isStructuredValue($inner)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 표현 가능함이 확인된 구조값을 자식 요소로 찍습니다 (맵→`<field>`, 리스트→`<item>`).
+     *
+     * @param  array<array-key, mixed>  $value  구조값
+     * @return array<int, MarkupElement> 자식 요소
+     */
+    private function structuredChildElements(array $value): array
+    {
+        if (array_is_list($value)) {
+            return array_map(fn (mixed $item): MarkupElement => $this->itemElement($item), $value);
+        }
+
+        $children = [];
+
+        foreach ($value as $key => $inner) {
+            $children[] = is_array($inner) && $inner !== []
+                ? $this->el('field', [$this->attr('name', (string) $key)], $this->structuredChildElements($inner))
+                : $this->el('field', [$this->attr('name', (string) $key), $this->valueAttr('value', $inner)], []);
+        }
+
+        return $children;
+    }
+
+    /**
+     * 리스트 원소 하나를 `<item>` 으로 찍습니다 — 문자열은 본문, 평면 객체는 속성, 그 밖은 중첩 자식.
+     *
+     * 평면 객체라도 키가 속성명으로 쓸 수 없는 문자(공백·`=`·`/`·따옴표 등)를 담고 있으면 속성 대신
+     * 중첩 `<field>` 자식으로 간다 — 속성으로 찍으면 토크나이저가 되읽지 못한다.
+     *
+     * @param  mixed  $item  원소
+     * @return MarkupElement `<item>` 요소
+     */
+    private function itemElement(mixed $item): MarkupElement
+    {
+        if (is_string($item)) {
+            return $this->el('item', [], [], $item);
+        }
+
+        if (! array_is_list($item) && $this->isFlatScalarMapValue($item) && $this->hasAttributeSafeKeys($item)) {
+            return $this->el('item', $this->mapAttributes($item), []);
+        }
+
+        return $this->el('item', [], $this->structuredChildElements($item));
+    }
+
+    /**
+     * 맵의 키가 전부 속성명으로 쓸 수 있는지 판정합니다 (토크나이저가 속성명을 끊는 문자 제외).
+     *
+     * @param  array<array-key, mixed>  $map  맵
+     * @return bool 전부 안전하면 true
+     */
+    protected function hasAttributeSafeKeys(array $map): bool
+    {
+        foreach (array_keys($map) as $key) {
+            $key = (string) $key;
+
+            if ($key === '' || preg_match('/[\s"\'>\/=<]/', $key) === 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -195,23 +299,6 @@ trait EmitsMarkup
     {
         foreach ($map as $value) {
             if (is_array($value)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * 리스트의 모든 원소가 **평면 객체**인지 판정합니다 (`<item>` 표기 가능 여부).
-     *
-     * @param  array<int, mixed>  $list  리스트
-     * @return bool 전부 평면 객체면 true
-     */
-    protected function isFlatObjectList(array $list): bool
-    {
-        foreach ($list as $item) {
-            if (! is_array($item) || $item === [] || array_is_list($item) || ! $this->isFlatScalarMapValue($item)) {
                 return false;
             }
         }
@@ -234,26 +321,6 @@ trait EmitsMarkup
         }
 
         return $attributes;
-    }
-
-    /**
-     * 평면 맵을 `<field name value>` 자식으로 되돌립니다 (D42 G3).
-     *
-     * @param  array<string, mixed>  $map  평면 맵
-     * @return array<int, MarkupElement> `<field>` 요소 목록
-     */
-    protected function fieldChildren(array $map): array
-    {
-        $children = [];
-
-        foreach ($map as $key => $value) {
-            $children[] = $this->el('field', [
-                $this->attr('name', (string) $key),
-                $this->valueAttr('value', $value),
-            ], []);
-        }
-
-        return $children;
     }
 
     /**

@@ -57,8 +57,64 @@ final class LayoutLinter
         $this->lintNesting($json, $context, $path, $warnings);
         $this->lintResponsiveMix($json, $path, $warnings);
         $this->lintStandaloneGlobalHost($json, $rootKind, $path, $warnings);
+        $this->lintSwitchValuePlacement($json, $path, $warnings);
 
         return $warnings;
+    }
+
+    /**
+     * ⑥ `switch` 액션이 분기 대상을 top-level `value` 에 둔 자리를 경고합니다 (D42 G8).
+     *
+     * 엔진은 `params.value` 만 읽는다(`ActionDispatcher::handleSwitch`) — top-level `value` 는
+     * 소비되지 않고 `$args[0]` 폴백으로 넘어가므로, 값이 `$args[0]` 과 다르면 조용히 오분기한다.
+     * 저작 표기는 `<switch on="…">` 이 정본이고 `<switch value="…">` 는 이관 보존용이다.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     */
+    private function lintSwitchValuePlacement(array $json, ?string $path, array &$warnings): void
+    {
+        foreach ($this->collectActions($json) as $action) {
+            if (($action['handler'] ?? null) === 'switch' && array_key_exists('value', $action)) {
+                $warnings[] = new LintWarning(LayoutMarkupLintCode::SwitchValueNotConsumed, 0, 0, [], $path);
+            }
+        }
+    }
+
+    /**
+     * 임의 구조를 심층 순회하며 `handler` 키를 가진 액션 객체 자체를 모읍니다.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @return array<int, array<string, mixed>> 액션 객체 목록
+     */
+    private function collectActions(array $json): array
+    {
+        $actions = [];
+        $this->walkForActions($json, $actions);
+
+        return $actions;
+    }
+
+    /**
+     * 임의 구조를 심층 순회하며 액션 객체를 수집합니다 (자식 키를 열거하지 않는다 — collectHandlers 와 동일 규율).
+     *
+     * @param  mixed  $value  순회 대상
+     * @param  array<int, array<string, mixed>>  $actions  액션 목록 (참조)
+     */
+    private function walkForActions(mixed $value, array &$actions): void
+    {
+        if (! is_array($value)) {
+            return;
+        }
+
+        if (isset($value['handler']) && is_string($value['handler'])) {
+            $actions[] = $value;
+        }
+
+        foreach ($value as $child) {
+            $this->walkForActions($child, $actions);
+        }
     }
 
     /**

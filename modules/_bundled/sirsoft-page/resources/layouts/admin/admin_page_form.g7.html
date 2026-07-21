@@ -19,7 +19,17 @@
     <!-- 생성 모드: 직전 페이지(수정)에서 같은 레이아웃을 재사용하므로 _local.form 잔존을 먼저 제거 (form=null → deep merge 가 객체 대신 null 로 덮어써 이전 id/title/attachments 완전 삭제) -->
     <set-state if="{{!route?.id}}" target="local" :form="null"/>
     <!-- 생성 모드에서 폼 기본값 초기화 (published는 Select fallback과 동기화). 수정→등록 전환 시 이전 슬러그 검증 상태(slugChecked/slugAvailable 등)도 함께 리셋 -->
-    <set-state if="{{!route?.id}}" target="local" :form="{&quot;slug&quot;:&quot;{{query.slug ?? ''}}&quot;,&quot;title&quot;:[],&quot;content&quot;:null,&quot;published&quot;:false,&quot;content_mode&quot;:&quot;html&quot;,&quot;seo_meta&quot;:null,&quot;attachments&quot;:[]}" :slugChecked="false" :slugAvailable="false" :slugChecking="false" :slugError="null" :errors="null" :hasChanges="false"/>
+    <set-state if="{{!route?.id}}" target="local" :slugChecked="false" :slugAvailable="false" :slugChecking="false" :slugError="null" :errors="null" :hasChanges="false">
+      <field name="form">
+        <field name="slug" value="{{query.slug ?? ''}}"/>
+        <field name="title" :value="[]"/>
+        <field name="content" :value="null"/>
+        <field name="published" :value="false"/>
+        <field name="content_mode" value="html"/>
+        <field name="seo_meta" :value="null"/>
+        <field name="attachments" :value="[]"/>
+      </field>
+    </set-state>
     <!-- 수정 모드에서 폼 로드 시 현재 슬러그는 유효하므로 slugChecked 초기화 -->
     <set-state if="{{!!route?.id}}" target="local" :slugChecked="true" :slugAvailable="true"/>
     <!-- tempKey 생성 (신규/수정 모두 - 취소 시 임시파일 정리 목적) -->
@@ -216,7 +226,13 @@
             <conditions>
               <!-- 슬러그 중복확인 필수 체크 (생성·수정 공통) -->
               <when if="{{!_local.slugChecked}}">
-                <set-state target="local" :errors='{"slug":["$t:sirsoft-page.admin.page.form.fields.slug_check_required"]}'/>
+                <set-state target="local">
+                  <field name="errors">
+                    <field name="slug">
+                      <item>$t:sirsoft-page.admin.page.form.fields.slug_check_required</item>
+                    </field>
+                  </field>
+                </set-state>
                 <toast type="error" message="$t:sirsoft-page.admin.page.form.fields.slug_check_required"/>
               </when>
               <!-- 수정 모드이거나 중복확인 완료된 경우 저장 진행 -->

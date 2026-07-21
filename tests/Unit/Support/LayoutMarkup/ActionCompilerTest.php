@@ -405,6 +405,60 @@ class ActionCompilerTest extends LayoutMarkupTestCase
         $this->assertCount(2, $many['onSuccess']);
     }
 
+    /**
+     * `<switch on>` 은 엔진이 읽는 `params.value` 로, `<switch value>` 는 top-level `value` 로 간다 (D42 G8).
+     *
+     * 두 배치가 코퍼스에 실물로 공존하고 뜻이 다르므로(엔진은 params 만 소비) 표기가 갈려야 한다 —
+     * 하나로 합치면 이관이 배치를 바꾸거나(D38 위반) 액션 트리가 통째로 `<json>` 탈출한다(D42 위반).
+     *
+     * @scenario compile_unit=action,source_health=valid
+     *
+     * @effects switch_subject_placement_is_expressible_in_both_forms
+     */
+    public function test_switch_subject_attribute_splits_two_placements(): void
+    {
+        $params = $this->compile('<div data-ref="d"><on event="a"><switch on="{{$args[0]}}"><case when="x"><toast message="1"/></case></switch></on></div>')['actions'][0];
+
+        $this->assertSame(['value' => '{{$args[0]}}'], $params['params']);
+        $this->assertArrayNotHasKey('value', $params);
+
+        $topLevel = $this->compile('<div data-ref="d"><on event="a"><switch value="{{$args[0]}}"><case when="x"><toast message="1"/></case></switch></on></div>')['actions'][0];
+
+        $this->assertSame('{{$args[0]}}', $topLevel['value']);
+        $this->assertArrayNotHasKey('params', $topLevel);
+    }
+
+    /**
+     * 액션 구조값 파라미터가 중첩 객체·문자열 리스트까지 받는다 (D42 G6 — `StructuredValueCompiler`).
+     *
+     * @scenario compile_unit=action,source_health=valid
+     *
+     * @effects structured_param_accepts_nested_field_tree_and_string_items
+     */
+    public function test_structured_param_accepts_nested_tree_and_string_items(): void
+    {
+        $action = $this->compile(
+            '<div data-ref="d"><on type="click"><set-state target="local">'
+            .'<field name="editingChannel">'
+            .'<field name="key" value=""/>'
+            .'<field name="label"><field name="ko" value="한글"/><field name="en" value="English"/></field>'
+            .'<field name="enabled" :value="true"/>'
+            .'<field name="tags" :value="[]"/>'
+            .'</field>'
+            .'<field name="errors"><field name="slug"><item>$t:required</item><item>$t:duplicated</item></field></field>'
+            .'</set-state></on></div>'
+        )['actions'][0];
+
+        $this->assertSame([
+            'key' => '',
+            'label' => ['ko' => '한글', 'en' => 'English'],
+            'enabled' => true,
+            'tags' => [],
+        ], $action['params']['editingChannel']);
+
+        $this->assertSame(['slug' => ['$t:required', '$t:duplicated']], $action['params']['errors']);
+    }
+
     // ---------------------------------------------------------------------
     // 헬퍼
     // ---------------------------------------------------------------------

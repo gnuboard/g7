@@ -294,13 +294,16 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 값이 다시 객체면 `<body>` 로 못 내린다 — 속성 표기로 되돌릴 수 없으므로 blob 을 유지한다 (대조군).
+     * 값이 다시 객체면 `<body>` 속성 field-map 으로는 못 내리지만, `<field>` 트리로 내린다 (D42 G6).
+     *
+     * 종전에는 이 자리가 `:body='{"meta":{"a":1}}'` 속성 JSON 으로 남았다 — 저작 파일에 통짜 JSON 이
+     * 드러나는 형태다. 중첩 구조값 문법을 세운 뒤로는 태그로 내려가고, 속성 JSON 은 나오지 않는다.
      *
      * @scenario compile_unit=decompile,source_health=valid
      *
-     * @effects nested_object_field_map_stays_attribute
+     * @effects nested_object_field_map_becomes_field_tree
      */
-    public function test_nested_object_body_stays_as_attribute(): void
+    public function test_nested_object_body_becomes_field_tree(): void
     {
         $json = [
             'layout_name' => 'nested_body',
@@ -320,7 +323,104 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
 
         $markup = $this->decompiler->decompile($json);
 
-        $this->assertStringContainsString(':body=', $markup);
+        $this->assertStringNotContainsString(':body=', $markup);
+        $this->assertStringContainsString('<field name="body">', $markup);
+        $this->assertStringContainsString('<field name="meta">', $markup);
+        $this->assertStringContainsString('<field name="a" :value="1"/>', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * `switch` 의 두 배치가 각각 제 표기로 나간다 — `params.value`→`on`, top-level `value`→`value` (D42 G8).
+     *
+     * 컴파일러만 갈라 놓고 방출기를 안 가르면 왕복이 깨진다(F8 함정: 정규화·방출은 짝으로).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects switch_subject_placement_is_expressible_in_both_forms
+     */
+    public function test_switch_subject_placements_emit_distinct_attributes(): void
+    {
+        $build = static fn (array $action): array => [
+            'layout_name' => 'switch_subject',
+            'slots' => ['content' => [[
+                'type' => 'basic',
+                'name' => 'Div',
+                'actions' => [$action + ['event' => 'onItemClick', 'handler' => 'switch', 'cases' => ['a' => ['handler' => 'refresh']]]],
+            ]]],
+        ];
+
+        $canonical = $build(['params' => ['value' => '{{$args[0]}}']]);
+        $markup = $this->decompiler->decompile($canonical);
+
+        $this->assertStringContainsString('<switch on="{{$args[0]}}">', $markup);
+        $this->assertRoundTrips($canonical);
+
+        $legacy = $build(['value' => '{{$args[0]}}']);
+        $markup = $this->decompiler->decompile($legacy);
+
+        $this->assertStringContainsString('<switch value="{{$args[0]}}">', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($legacy);
+    }
+
+    /**
+     * 확장 주입 `<props>` 의 `columns` 는 `<column>`/`<cell>` 로 나간다 (D42 G7).
+     *
+     * 종전에는 임베딩 소유자를 못 찾아 `<props>` 본문에 컬럼 트리가 통째 JSON 으로 남았다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects injection_props_accept_datagrid_column_tree
+     */
+    public function test_injection_column_tree_emits_column_tags(): void
+    {
+        $json = [
+            'target_layout' => 'admin_ecommerce_order_list',
+            'injections' => [[
+                'target_id' => 'grid',
+                'position' => 'inject_props',
+                'props' => ['columns' => [[
+                    'field' => 'no',
+                    'header' => 'NO',
+                    'sortable' => false,
+                    'cellChildren' => [['type' => 'basic', 'name' => 'Span', 'text' => '{{row.no}}']],
+                ]]],
+            ]],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString('<prop name="columns">', $markup);
+        $this->assertStringContainsString('<column field="no" header="NO" :sortable="false">', $markup);
+        $this->assertStringContainsString('<cell>', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 컬럼으로 되돌릴 수 없는 `columns`(원소에 `field` 없음)는 종전 표기를 유지한다 (대조군).
+     *
+     * 되컴파일이 `field` 를 필수로 요구하므로, 그대로 찍으면 주입 props 전체가 탈출한다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects unrepresentable_column_list_falls_back_without_breaking_round_trip
+     */
+    public function test_column_list_without_field_falls_back(): void
+    {
+        $json = [
+            'target_layout' => 'admin_ecommerce_order_list',
+            'injections' => [[
+                'target_id' => 'grid',
+                'position' => 'inject_props',
+                'props' => ['columns' => [['header' => 'NO']]],
+            ]],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringNotContainsString('<column', $markup);
         $this->assertRoundTrips($json);
     }
 

@@ -263,6 +263,9 @@ final class NodeCompiler
     /** 임베딩 컴파일러 — `<column>`·`<responsive>` 등 자식 서브트리를 props/노드 키로 hoist (S5) */
     private readonly EmbeddingCompiler $embedding;
 
+    /** 구조값 컴파일러 — `<prop>` 안의 `<field>`/`<item>` 트리 (D42) */
+    private readonly StructuredValueCompiler $values;
+
     /**
      * @param  ComponentRegistry  $registry  대상 템플릿의 컴포넌트 레지스트리
      */
@@ -270,6 +273,7 @@ final class NodeCompiler
     {
         $this->actions = new ActionCompiler;
         $this->embedding = new EmbeddingCompiler($this);
+        $this->values = new StructuredValueCompiler(LayoutMarkupErrorCode::UnexpectedStructuralChild);
     }
 
     /**
@@ -1274,32 +1278,32 @@ final class NodeCompiler
     }
 
     /**
-     * `<prop>` 본문을 JSON 값으로 디코드합니다.
+     * `<prop>` 값을 네 표기 중 하나로 컴파일합니다 (D42 G3·G4·G7).
+     *
+     *  1. **`<field name>` 자식** — 객체(중첩 가능). `<prop name="uploadParams"><field name="temp_key" value="{{…}}"/></prop>`
+     *  2. **`<item>` 자식** — 리스트. `<prop name="rowActions"><item id="view" label="$t:…"/></prop>`
+     *  3. **`<column>` 자식** — DataGrid 컬럼 트리. **확장 주입 `<props>` 의 `<prop name="columns">` 안에서만** 허용한다 (G7).
+     *  4. **JSON 본문** — 종전 표기. 하위호환으로 계속 받는다.
+     *
+     * 넷은 같은 값을 만들며, 역변환기(`EmitsMarkup::propElement`)가 값 형태를 보고 하나를 고른다.
+     *
+     * 3 은 소유자 게이트의 **좁은 확장**이다 — 노드 자리에서 `<column>` 은 여전히 DataGrid 부모
+     * 아래에서만 뜻이 있고(EmbeddingCompiler), 여기서는 `<prop name="columns">` 컨테이너가 소유자를
+     * 대신한다. 주입 fragment 에는 부모 컴포넌트가 없어(대상 노드는 다른 레이아웃에 있다) 소유자로
+     * 판정할 수단이 아예 없기 때문이다. **게이트는 prop 이름까지 본다** — 방출기가 `columns` 키에만
+     * `<column>` 을 내므로(`LayoutMarkupDecompiler::injectionPropsElement`), 컴파일이 이름을 안 보면
+     * 수용 범위가 방출보다 넓어져 오타 이름(`colums`)이 조용히 컬럼 트리로 통과한다.
      *
      * @param  MarkupElement  $element  `<prop>` 요소
      * @param  string|null  $path  소스 파일 경로
-     * @return mixed 디코드된 값
-     *
-     * @throws CompileError 본문이 JSON 이 아닌 경우
-     */
-    /**
-     * `<prop>` 값을 세 표기 중 하나로 컴파일합니다 (D42 G3·G4).
-     *
-     *  1. **`<field name value>` 자식** — 평면 스칼라 맵. `<prop name="uploadParams"><field name="temp_key" value="{{…}}"/></prop>`
-     *  2. **`<item>` 자식** — 평면 객체의 리스트. `<prop name="rowActions"><item id="view" label="$t:…"/></prop>`
-     *  3. **JSON 본문** — 종전 표기. 하위호환으로 계속 받는다.
-     *
-     * 셋은 같은 값을 만들며, 역변환기(`EmitsMarkup::propElement`)가 값 형태를 보고 1 또는 2 를 고른다.
-     *
-     * @param  MarkupElement  $element  `<prop>` 요소
-     * @param  string|null  $path  소스 파일 경로
+     * @param  bool  $isColumnsContainer  이 요소가 **주입 `<props>` 의 `<prop name="columns">`** 인지
      * @return mixed props 값
      *
      * @throws CompileError 자식 표기가 규칙을 벗어난 경우
      */
-    public function compilePropElementValue(MarkupElement $element, ?string $path): mixed
+    public function compilePropElementValue(MarkupElement $element, ?string $path, bool $isColumnsContainer = false): mixed
     {
-        return $this->compilePropValue($element, $path);
+        return $this->compilePropValue($element, $path, $isColumnsContainer);
     }
 
     /**
@@ -1307,11 +1311,12 @@ final class NodeCompiler
      *
      * @param  MarkupElement  $element  `<prop>` 요소
      * @param  string|null  $path  소스 파일 경로
+     * @param  bool  $isColumnsContainer  이 요소가 **주입 `<props>` 의 `<prop name="columns">`** 인지
      * @return mixed props 값
      *
      * @throws CompileError 자식 표기가 규칙을 벗어난 경우
      */
-    private function compilePropValue(MarkupElement $element, ?string $path): mixed
+    private function compilePropValue(MarkupElement $element, ?string $path, bool $isColumnsContainer = false): mixed
     {
         if ($element->children === []) {
             return $this->decodeJsonBody($element, $path);
@@ -1320,6 +1325,8 @@ final class NodeCompiler
         $first = $element->children[0]->name;
 
         // 병합 지시자 — 확장 주입 props 가 대상 props 에 덧붙는 형태 (D42 G5).
+        // `<append>` 안은 **항목 리스트**이지 컬럼 컨테이너가 아니다 — 방출기도 그 안에 `<column>` 을
+        // 내지 않으므로, 컬럼 게이트를 물려주면 컴파일이 방출보다 넓어져 비대칭이 된다.
         if (in_array($first, self::MERGE_DIRECTIVE_TAGS, true)) {
             $merge = [];
 
@@ -1337,67 +1344,22 @@ final class NodeCompiler
             return $merge;
         }
 
-        if ($first === 'item') {
-            $list = [];
-
-            foreach ($element->children as $child) {
-                if ($child->name !== 'item') {
-                    throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
-                        'tag' => $child->name,
-                        'parent' => $element->name,
-                    ]);
-                }
-
-                $list[] = $this->attributeMap($child, $path);
-            }
-
-            return $list;
+        if ($isColumnsContainer && $first === 'column') {
+            return $this->embedding->compileColumnList($element, $path);
         }
 
-        $map = [];
-
-        foreach ($element->children as $child) {
-            if ($child->name !== 'field') {
-                throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
-                    'tag' => $child->name,
-                    'parent' => $element->name,
-                ]);
-            }
-
-            $name = $this->requiredAttribute($child, 'name', $path);
-            $typed = $child->attribute(':value');
-
-            $map[$name] = $typed !== null
-                ? MarkupValue::decodeTypeLiteral($typed, 'value', $path)
-                : ($child->attribute('value')?->value ?? null);
-        }
-
-        return $map;
+        return $this->values->compileChildren($element, $path);
     }
 
     /**
-     * 요소의 속성을 평면 키-값 맵으로 읽습니다 (`<item>` 한 항목 — kebab 속성은 그대로 키가 된다).
+     * `<prop>` 본문을 JSON 값으로 디코드합니다 (종전 표기 — 하위호환).
      *
-     * @param  MarkupElement  $element  요소
+     * @param  MarkupElement  $element  `<prop>` 요소
      * @param  string|null  $path  소스 파일 경로
-     * @return array<string, mixed> 평면 맵
+     * @return mixed 디코드된 값
+     *
+     * @throws CompileError 본문이 JSON 이 아닌 경우
      */
-    private function attributeMap(MarkupElement $element, ?string $path): array
-    {
-        $map = [];
-
-        foreach ($element->attributes as $attribute) {
-            $key = $attribute->name;
-            $value = str_starts_with($key, ':')
-                ? MarkupValue::decodeTypeLiteral($attribute, substr($key, 1), $path)
-                : ($attribute->isBoolean() ? true : $attribute->value);
-
-            $map[ltrim($key, ':')] = $value;
-        }
-
-        return $map;
-    }
-
     private function decodeJsonBody(MarkupElement $element, ?string $path): mixed
     {
         $body = trim((string) ($element->text ?? ''));

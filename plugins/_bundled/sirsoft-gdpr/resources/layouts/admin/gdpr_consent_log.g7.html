@@ -45,7 +45,15 @@
   </action>
   <action name="clearFilters">
     <sequence>
-      <set-state target="local" :filter='{"searchType":"email","search":"","consentKeys":[],"actions":[],"sources":[]}'/>
+      <set-state target="local">
+        <field name="filter">
+          <field name="searchType" value="email"/>
+          <field name="search" value=""/>
+          <field name="consentKeys" :value="[]"/>
+          <field name="actions" :value="[]"/>
+          <field name="sources" :value="[]"/>
+        </field>
+      </set-state>
       <navigate path="/admin/plugins/sirsoft-gdpr/consent-log" :replace="true">
         <query/>
       </navigate>

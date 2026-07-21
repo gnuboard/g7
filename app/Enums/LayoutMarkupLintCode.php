@@ -44,6 +44,15 @@ enum LayoutMarkupLintCode: string
     case StandaloneMissingGlobalHost = 'standalone_missing_global_host';
 
     /**
+     * `<switch value>` 로 분기 대상을 적음 — 엔진은 `params.value` 만 읽으므로(ActionDispatcher::handleSwitch)
+     * top-level `value` 는 소비되지 않고 `$args[0]` 폴백으로 넘어간다. 정본 표기는 `<switch on>` 이다.
+     *
+     * 이 표기가 문법에 남아 있는 이유는 이관 때문이다 — 기존 코퍼스 26건이 top-level 배치이고,
+     * 기계 이관은 배치를 바꿀 수 없다(D38). 신규 저작이 그 죽은 배치를 따라 쓰지 않게 여기서 경고한다.
+     */
+    case SwitchValueNotConsumed = 'switch_value_not_consumed';
+
+    /**
      * 다국어 경고 본문을 반환합니다.
      *
      * @param  array<string, string|int>  $params  메시지 치환 파라미터

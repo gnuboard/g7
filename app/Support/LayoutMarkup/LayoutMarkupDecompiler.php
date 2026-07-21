@@ -568,10 +568,13 @@ final class LayoutMarkupDecompiler
      * @return MarkupElement `<data-source>` 요소
      */
     /**
-     * 확장 주입 `<props>` 를 1급 표기로 되돌립니다 (D42 G5).
+     * 확장 주입 `<props>` 를 1급 표기로 되돌립니다 (D42 G5·G7).
      *
      * 각 키를 `<prop name>` 으로 내고, 값은 `EmitsMarkup::propElement` 가 형태에 맞는 표기를 고른다.
      * 병합 지시자(`_append`)는 `<append>` 자식으로 돌아간다.
+     *
+     * `columns` 는 DataGrid 컬럼 트리라 `<column>`/`<cell>` 이 정본이다 (G7) — 노드 자리와 **같은
+     * 방출기**(`NodeMarkupDecompiler::columnElements`)를 쓰므로 컬럼 표기가 자리에 따라 갈리지 않는다.
      *
      * @param  mixed  $props  주입 props
      * @return MarkupElement `<props>` 요소
@@ -585,7 +588,11 @@ final class LayoutMarkupDecompiler
         $children = [];
 
         foreach ($props as $key => $value) {
-            $children[] = $this->propElement((string) $key, $value);
+            $columns = $key === 'columns' && is_array($value) ? $this->nodes->columnElements($value) : null;
+
+            $children[] = $columns !== null
+                ? $this->el('prop', [$this->attr('name', (string) $key)], $columns)
+                : $this->propElement((string) $key, $value);
         }
 
         return $this->el('props', [], $children);
@@ -608,71 +615,16 @@ final class LayoutMarkupDecompiler
             return $this->el($tag, [], [], $this->encode($value));
         }
 
-        if ($this->isFlatScalarMap($value)) {
-            return $this->el($tag, $this->valueAttributes($value), []);
+        // 평면 스칼라 맵은 속성 field-map 이 가장 짧다 — 단, 키가 속성명으로 쓸 수 없으면 `<field>` 트리로.
+        if ($this->isFlatScalarMapValue($value) && $this->hasAttributeSafeKeys($value)) {
+            return $this->el($tag, $this->mapAttributes($value), []);
         }
 
-        return $this->el($tag, [], $this->fieldTreeChildren($value));
-    }
+        $children = $this->structuredChildren($value);
 
-    /**
-     * 연관 배열의 모든 값이 스칼라인지 판정합니다 (속성 field-map 가능 여부).
-     *
-     * @param  array<string, mixed>  $map  맵
-     * @return bool 평면이면 true
-     */
-    private function isFlatScalarMap(array $map): bool
-    {
-        foreach ($map as $value) {
-            if (is_array($value)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * 평면 맵을 속성 목록으로 되돌립니다 (스칼라는 `attr`, 비문자열은 `:attr` 타입 리터럴).
-     *
-     * @param  array<string, mixed>  $map  평면 맵
-     * @return array<int, MarkupAttribute> 속성 목록
-     */
-    private function valueAttributes(array $map): array
-    {
-        $attributes = [];
-
-        foreach ($map as $key => $value) {
-            $attributes[] = $this->valueAttr((string) $key, $value);
-        }
-
-        return $attributes;
-    }
-
-    /**
-     * 중첩 맵을 `<field>` 트리로 되돌립니다 (D42 G2).
-     *
-     * @param  array<string, mixed>  $map  중첩 맵
-     * @return array<int, MarkupElement> `<field>` 요소 목록
-     */
-    private function fieldTreeChildren(array $map): array
-    {
-        $children = [];
-
-        foreach ($map as $key => $value) {
-            if (is_array($value) && $value !== [] && ! array_is_list($value)) {
-                $children[] = $this->el('field', [$this->attr('name', (string) $key)], $this->fieldTreeChildren($value));
-
-                continue;
-            }
-
-            $children[] = $this->el('field', [
-                $this->attr('name', (string) $key),
-                $this->valueAttr('value', $value),
-            ], []);
-        }
-
-        return $children;
+        return $children !== null
+            ? $this->el($tag, [], $children)
+            : $this->el($tag, [], [], $this->encode($value));
     }
 
     private function dataSource(array $source): MarkupElement

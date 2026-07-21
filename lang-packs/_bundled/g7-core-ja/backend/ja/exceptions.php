@@ -175,5 +175,6 @@ return [
         'nesting_violation' => ':parent は子として :child を受け取るように宣言されていません。',
         'responsive_breakpoint_mix' => 'portable プリセットと mobile/tablet プリセットを一緒に使用しました — 範囲が重なっており予測が困難です。',
         'standalone_missing_global_host' => '独立したレイアウトが toast·モーダルを発火していますが Toast·Modal ホストをマウントしていません — 画面に表示されません。',
+        'switch_value_not_consumed' => '<switch value="…"> はエンジンが読み込みません — 分岐対象は <switch on="…"> で記述する必要があり、params.value に渡されます。',
     ],
 ];

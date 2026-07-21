@@ -396,7 +396,7 @@ effects:
   - migrated_fragment_markup_compiles_to_its_json
   # --- D41(㉔) 원시 JSON 방출기: 문법 보유분을 1급 태그로
   - action_field_map_params_emit_first_class_tags
-  - nested_object_field_map_stays_attribute
+  - nested_object_field_map_becomes_field_tree
   - switch_value_prop_emits_first_class_tag
   # --- ㉕·㉗ 계량기 자체의 회귀 봉인: 눈이 멀면 게이트는 통과시키면서 아무것도 못 본다.
   #     ㉗(D42) 에서 태그 본문 제외를 폐기 — 컴파일러가 받아 준다는 사실과 저작 파일에 JSON 이
@@ -406,10 +406,27 @@ effects:
   - raw_json_metric_ignores_scalar_type_literals
   - raw_json_metric_ignores_non_json_bodies
   - raw_json_metric_labels_switch_by_its_own_name
-  # --- D42(㉗) 문법 신설 G1~G6: 저작 파일의 통짜 JSON 을 1급 태그로 대체
+  # --- D42(㉗·㉙) 문법 신설 G1~G8: 저작 파일의 통짜 JSON 을 1급 태그로 대체 (대장 0 · escape 0)
   #     G1 데이터소스 속성 field-map / G2 중첩 <fallback> <field> 트리 / G3 <prop> 평면맵
   #     G4 <prop> <item> 리스트 / G5 <props> 병합 지시자 <append> / G6 액션 구조값 <field name>
+  #     G7 확장 주입 <props> DataGrid 컬럼 트리 / G8 switch 분기 대상 배치 분리(on ↔ value)
   - first_class_grammar_replaces_raw_json_in_migrated_markup
+  - data_source_child_attributes_compile_to_a_flat_map
+  - legacy_json_body_notation_still_compiles
+  - empty_structured_container_requires_an_explicit_empty_body
+  - field_tree_compiles_nested_maps_lists_and_leaves
+  - item_element_has_three_mutually_exclusive_forms
+  - prop_accepts_field_map_and_item_list
+  - item_attribute_names_are_used_verbatim_as_keys
+  - injection_props_merge_directive_compiles_to_underscore_append
+  - structured_value_rejects_malformed_child_notation
+  - structured_param_accepts_nested_field_tree_and_string_items
+  - injection_props_accept_datagrid_column_tree
+  - column_tree_is_rejected_outside_injection_props
+  - unrepresentable_column_list_falls_back_without_breaking_round_trip
+  - switch_subject_placement_is_expressible_in_both_forms
+  - switch_top_level_value_is_warned_as_not_consumed
+  - switch_params_value_is_the_canonical_placement
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -419,6 +436,7 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/NodeCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/ActionCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/DocumentCompilerTest.php
+  - tests/Unit/Support/LayoutMarkup/StructuredValueGrammarTest.php
   - tests/Unit/Support/LayoutMarkup/EmbeddingCompilerTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutValidatorTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutLinterTest.php

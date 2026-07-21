@@ -116,7 +116,23 @@
 
 ---
 
-> **구조값은 통짜 JSON 으로 적지 않는다 (D42).** `<params>`·`<headers>`·`<data>`·`<fallback>` 과 `<prop>`·`<props>` 는 값 형태에 맞는 1급 표기를 쓴다 — 평면 스칼라 맵은 **속성**(`<params page="{{query.page}}" :per_page="20"/>`), 중첩 맵은 **`<field>` 트리**(`<fallback><field name="data"><field name="items" :value="[]"/></field></fallback>`), 평면 객체의 리스트는 **`<item>`**(`<prop name="rowActions"><item id="view" label="$t:…" iconName="eye"/></prop>`), 확장 주입의 병합 지시자는 **`<append>`**(`<props><prop name="tabs"><append><item id="ext_x" …/></append></prop></props>`). JSON 본문 표기도 계속 컴파일되지만(하위호환) 역변환은 위 표기로만 되돌린다. 빈 컬렉션(`[]`·`{}`)은 구조가 없는 값 리터럴이라 `:attr="[]"` 그대로 쓴다.
+> **구조값은 통짜 JSON 으로 적지 않는다 (D42).** `<params>`·`<headers>`·`<data>`·`<fallback>` 과 `<prop>`·`<props>`, 액션의 구조값 파라미터는 값 형태에 맞는 1급 표기를 쓴다 — 평면 스칼라 맵은 **속성**(`<params page="{{query.page}}" :per_page="20"/>`), 중첩 맵은 **`<field>` 트리**(`<fallback><field name="data"><field name="items" :value="[]"/></field></fallback>`), 평면 객체의 리스트는 **`<item>`**(`<prop name="rowActions"><item id="view" label="$t:…" iconName="eye"/></prop>`), 문자열의 리스트는 **`<item>` 본문**(`<field name="slug"><item>$t:…required</item></field>`), 확장 주입의 병합 지시자는 **`<append>`**(`<props><prop name="tabs"><append><item id="ext_x" …/></append></prop></props>`). JSON 본문 표기도 계속 컴파일되지만(하위호환) 역변환은 위 표기로만 되돌린다. 빈 컬렉션(`[]`·`{}`)은 구조가 없는 값 리터럴이라 `:attr="[]"` 그대로 쓴다.
+>
+> `<field>`/`<item>` 은 **어느 깊이에서도 같은 규칙**이다(`StructuredValueCompiler` 단일 SSoT). `<item>` 의 세 형태는 서로 배타적이라 모호하지 않다 — 자식이 있으면 중첩 구조, 속성이 있으면 평면 객체, 본문 텍스트만 있으면 문자열이다. 문자열 아닌 스칼라 원소(`[1, true]`)에는 표기를 주지 않는다: `<item :value="1"/>` 은 객체 `{"value": 1}` 과 구별되지 않아 왕복이 깨진다.
+
+> **확장 주입 `<props>` 의 DataGrid 컬럼 트리 (D42 G7).** 주입 fragment 에는 부모 컴포넌트가 없어(대상 노드가 다른 레이아웃에 있다) `<column>` 의 소유자를 DataGrid 로 확인할 수단이 없다. 그 자리에서는 **`<prop name="columns">` 컨테이너가 소유자를 대신**하고, 안에서 노드 자리와 똑같은 `<column>`/`<cell>` 문법을 쓴다.
+>
+> ```html
+> <inject target-id="order_datagrid" position="inject_props">
+>   <props>
+>     <prop name="columns">
+>       <column field="no" header="NO" width="60px" :sortable="false"><cell><span>{{row.no}}</span></cell></column>
+>     </prop>
+>   </props>
+> </inject>
+> ```
+>
+> 게이트는 이 컨테이너 안으로만 열린다 — 노드 자리의 `<prop name="columns">` 에 `<column>` 을 두면 종전대로 거부된다(`unexpected_structural_child`).
 
 ## 5. 노드 + 지시 속성
 
@@ -207,10 +223,10 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`dat
 | 개념 | `.g7.html` |
 |---|---|
 | 이벤트 바인딩 | `<on event="click">…</on>` · 키 한정 `<on event="keydown" key="Enter">…</on>` |
-| 구조값 파라미터 | `<field name="filter"><field name="searchType" value="email"/></field>` (맵) · `<field name="rows"><item id="a" label="…"/></field>` (리스트) |
+| 구조값 파라미터 | `<field name="filter"><field name="searchType" value="email"/></field>` (맵·중첩 가능) · `<field name="rows"><item id="a" label="…"/></field>` (객체 리스트) · `<field name="slug"><item>$t:…</item></field>` (문자열 리스트) |
 | named_actions 참조 | `<action-ref name="saveDraft"/>` |
 | apiCall 요청 본문/쿼리 | `<body name="{{…}}"/>` / `<query page="1"/>` |
-| switch | `<switch value="{{$args[0]}}"><case when="edit">…</case><default>…</default></switch>` |
+| switch | `<switch on="{{$args[0]}}"><case when="edit">…</case><default>…</default></switch>` — 분기 대상은 **`on`**(=`params.value`, 엔진이 읽는 자리). `value` 속성은 top-level `value` 로 가는데 엔진이 읽지 않아 `switch_value_not_consumed` lint 경고 대상이다(이관 보존용 표기) |
 | conditions | `<conditions><when if="{{…}}">…</when><else>…</else></conditions>` |
 | sequence/parallel | `<sequence>…</sequence>` / `<parallel>…</parallel>` |
 | 성공/실패 | `<success>…</success>` / `<fail>…</fail>` |

@@ -185,6 +185,7 @@ return [
         'nesting_violation' => ':parent 는 자식으로 :child 를 받도록 선언되지 않았습니다.',
         'responsive_breakpoint_mix' => 'portable 프리셋과 mobile/tablet 프리셋을 함께 썼습니다 — 범위가 겹쳐 예측이 어렵습니다.',
         'standalone_missing_global_host' => '독립 레이아웃이 toast·모달을 발화하지만 Toast·Modal 호스트를 마운트하지 않았습니다 — 화면에 나타나지 않습니다.',
+        'switch_value_not_consumed' => '<switch value="…"> 는 엔진이 읽지 않습니다 — 분기 대상은 <switch on="…"> 으로 적어야 params.value 로 전달됩니다.',
     ],
 
     // 설정 관련 예외
