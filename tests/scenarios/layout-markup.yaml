@@ -406,6 +406,10 @@ effects:
   - raw_json_metric_ignores_scalar_type_literals
   - raw_json_metric_ignores_non_json_bodies
   - raw_json_metric_labels_switch_by_its_own_name
+  # --- D42(㉗) 문법 신설 G1~G6: 저작 파일의 통짜 JSON 을 1급 태그로 대체
+  #     G1 데이터소스 속성 field-map / G2 중첩 <fallback> <field> 트리 / G3 <prop> 평면맵
+  #     G4 <prop> <item> 리스트 / G5 <props> 병합 지시자 <append> / G6 액션 구조값 <field name>
+  - first_class_grammar_replaces_raw_json_in_migrated_markup
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php

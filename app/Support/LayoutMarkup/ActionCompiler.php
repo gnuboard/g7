@@ -60,7 +60,7 @@ final class ActionCompiler
      *
      * @var array<int, string>
      */
-    private const SUB_STRUCTURAL_TAGS = ['success', 'fail', 'error-handling', 'body', 'query'];
+    private const SUB_STRUCTURAL_TAGS = ['success', 'fail', 'error-handling', 'body', 'query', 'field'];
 
     /**
      * 액션 객체 키의 결정적 직렬화 순서 (diff·골든 테스트 성립 조건).
@@ -644,6 +644,78 @@ final class ActionCompiler
                 $this->assertParamUnset($child, $params, 'query', $path);
                 $params['query'] = $this->compileFieldMap($child, $path);
                 break;
+
+            case 'field':
+                // 임의 이름의 구조값 파라미터 (D42 G6) — 본문은 중첩 `<field>` 또는 `<item>` 리스트.
+                // `<param>` 은 HTML 표준 void 요소라 자식을 가질 수 없어 개념어 `<field>` 를 재사용한다.
+                $name = (string) $this->requiredAttribute($child, 'name', $path);
+                $this->assertParamUnset($child, $params, $name, $path);
+                $params[$name] = $this->compileParamValue($child, $path);
+                break;
+        }
+    }
+
+    /**
+     * `<field name>` 액션 파라미터 본문을 구조값으로 컴파일합니다 (D42 G6).
+     *
+     * 자식이 `<item>` 이면 평면 객체의 리스트, `<field>` 면 평면 키-값 맵이다.
+     *
+     * @param  MarkupElement  $element  `<field>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<array-key, mixed> 구조값
+     *
+     * @throws CompileError 자식 표기가 규칙을 벗어난 경우
+     */
+    private function compileParamValue(MarkupElement $element, ?string $path): array
+    {
+        if ($element->children === []) {
+            return [];
+        }
+
+        if ($element->children[0]->name === 'item') {
+            $list = [];
+
+            foreach ($element->children as $child) {
+                $this->assertParamChildTag($child, 'item', $element, $path);
+                $list[] = $this->compileFieldMap($child, $path);
+            }
+
+            return $list;
+        }
+
+        $map = [];
+
+        foreach ($element->children as $child) {
+            $this->assertParamChildTag($child, 'field', $element, $path);
+
+            $name = (string) $this->requiredAttribute($child, 'name', $path);
+            $typed = $child->attribute(':value');
+
+            $map[$name] = $typed !== null
+                ? MarkupValue::decodeTypeLiteral($typed, 'value', $path)
+                : ($child->attribute('value')?->value ?? null);
+        }
+
+        return $map;
+    }
+
+    /**
+     * `<field>` 파라미터의 자식 태그가 기대한 것인지 확인합니다.
+     *
+     * @param  MarkupElement  $child  자식 요소
+     * @param  string  $expected  기대 태그명
+     * @param  MarkupElement  $parent  부모 요소
+     * @param  string|null  $path  소스 파일 경로
+     *
+     * @throws CompileError 태그가 다른 경우
+     */
+    private function assertParamChildTag(MarkupElement $child, string $expected, MarkupElement $parent, ?string $path): void
+    {
+        if ($child->name !== $expected) {
+            throw $this->error($child, LayoutMarkupErrorCode::UnexpectedActionChild, $path, [
+                'tag' => $child->name,
+                'parent' => $parent->name,
+            ]);
         }
     }
 

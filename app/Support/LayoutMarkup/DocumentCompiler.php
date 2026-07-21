@@ -995,7 +995,7 @@ final class DocumentCompiler
                     throw $this->error($child, LayoutMarkupErrorCode::DuplicateSection, $path, ['tag' => 'props']);
                 }
 
-                $props = $this->decodeJsonBody($child, $path);
+                $props = $this->compileInjectionProps($child, $path);
 
                 continue;
             }
@@ -1184,6 +1184,40 @@ final class DocumentCompiler
         }
 
         return $this->decodeJsonBody($element, $path);
+    }
+
+    /**
+     * 확장 주입 `<props>` 를 컴파일합니다 (D42 G5) — `<prop>` 자식 또는 JSON 본문.
+     *
+     * 주입 props 는 대상 레이아웃의 props 에 **병합**되므로 `_append` 같은 지시자를 갖는다.
+     * `<prop name="tabs"><append><item id="…"/></append></prop>` 가 `{"tabs":{"_append":[{…}]}}` 이다.
+     *
+     * @param  MarkupElement  $element  `<props>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return mixed props 값
+     *
+     * @throws CompileError 자식 표기가 규칙을 벗어난 경우
+     */
+    private function compileInjectionProps(MarkupElement $element, ?string $path): mixed
+    {
+        if ($element->children === []) {
+            return $this->decodeJsonBody($element, $path);
+        }
+
+        $props = [];
+
+        foreach ($element->children as $child) {
+            if ($child->name !== 'prop') {
+                throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                    'tag' => $child->name,
+                    'parent' => $element->name,
+                ]);
+            }
+
+            $props[$this->requiredAttribute($child, 'name', $path)] = $this->nodes->compilePropElementValue($child, $path);
+        }
+
+        return $props;
     }
 
     /**

@@ -50,7 +50,12 @@
           <on type="click">
             <set-state target="local" :_kcpReceiptLoading="true"/>
             <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/receipt" method="GET"/>
-            <call-external constructor="KcpReceiptPopup" :args='{"url":"{{$prev.receipt_url}}","cash_url":"{{$prev.cash_receipt_url}}"}'/>
+            <call-external constructor="KcpReceiptPopup">
+              <field name="args">
+                <field name="url" value="{{$prev.receipt_url}}"/>
+                <field name="cash_url" value="{{$prev.cash_receipt_url}}"/>
+              </field>
+            </call-external>
             <set-state target="local" :_kcpReceiptLoading="false"/>
           </on>
           <icon data-if="{{_local._kcpReceiptLoading === true}}" name="spinner" class="w-3.5 h-3.5 animate-spin"/>

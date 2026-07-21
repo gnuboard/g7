@@ -116,6 +116,8 @@
 
 ---
 
+> **구조값은 통짜 JSON 으로 적지 않는다 (D42).** `<params>`·`<headers>`·`<data>`·`<fallback>` 과 `<prop>`·`<props>` 는 값 형태에 맞는 1급 표기를 쓴다 — 평면 스칼라 맵은 **속성**(`<params page="{{query.page}}" :per_page="20"/>`), 중첩 맵은 **`<field>` 트리**(`<fallback><field name="data"><field name="items" :value="[]"/></field></fallback>`), 평면 객체의 리스트는 **`<item>`**(`<prop name="rowActions"><item id="view" label="$t:…" iconName="eye"/></prop>`), 확장 주입의 병합 지시자는 **`<append>`**(`<props><prop name="tabs"><append><item id="ext_x" …/></append></prop></props>`). JSON 본문 표기도 계속 컴파일되지만(하위호환) 역변환은 위 표기로만 되돌린다. 빈 컬렉션(`[]`·`{}`)은 구조가 없는 값 리터럴이라 `:attr="[]"` 그대로 쓴다.
+
 ## 5. 노드 + 지시 속성
 
 태그명이 컴포넌트를 정한다(레지스트리 kebab→PascalCase 해석). 미등록 태그는 `unknown_tag_with_suggestion`(근접 제안).
@@ -205,6 +207,7 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`dat
 | 개념 | `.g7.html` |
 |---|---|
 | 이벤트 바인딩 | `<on event="click">…</on>` · 키 한정 `<on event="keydown" key="Enter">…</on>` |
+| 구조값 파라미터 | `<field name="filter"><field name="searchType" value="email"/></field>` (맵) · `<field name="rows"><item id="a" label="…"/></field>` (리스트) |
 | named_actions 참조 | `<action-ref name="saveDraft"/>` |
 | apiCall 요청 본문/쿼리 | `<body name="{{…}}"/>` / `<query page="1"/>` |
 | switch | `<switch value="{{$args[0]}}"><case when="edit">…</case><default>…</default></switch>` |

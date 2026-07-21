@@ -61,7 +61,11 @@
           </div>
           <!-- 상단 탭 스크롤 — 클릭 시 해당 카드로 자동 스크롤 + 스크롤 시 활성 탭 자동 갱신 -->
           <tab-navigation-scroll data-ref="settings_tab_navigation" class="flex gap-1" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
-            <prop name="tabs">[{"id":"card_operator","label":"$t:sirsoft-gdpr.settings.nav.operator"},{"id":"card_cookie_banner","label":"$t:sirsoft-gdpr.settings.nav.cookie_banner"},{"id":"card_auto_blocking_policy","label":"$t:sirsoft-gdpr.settings.nav.auto_blocking_policy"}]</prop>
+            <prop name="tabs">
+              <item id="card_operator" label="$t:sirsoft-gdpr.settings.nav.operator"/>
+              <item id="card_cookie_banner" label="$t:sirsoft-gdpr.settings.nav.cookie_banner"/>
+              <item id="card_auto_blocking_policy" label="$t:sirsoft-gdpr.settings.nav.auto_blocking_policy"/>
+            </prop>
           </tab-navigation-scroll>
         </div>
       </div>

@@ -95,7 +95,14 @@ trait EmitsMarkup
     }
 
     /**
-     * `<prop name="key">JSON</prop>` 구조 자식을 만듭니다 (객체/배열 props).
+     * `<prop name="key">` 구조 자식을 만듭니다 (객체/배열 props) — D42 G3·G4.
+     *
+     * 값 형태에 따라 1급 표기를 고른다:
+     *  - **평면 스칼라 맵** → `<field>` 자식 (`<prop name="uploadParams"><field name="temp_key" value="…"/></prop>`)
+     *  - **평면 객체의 리스트** → `<item>` 자식 (`<prop name="rowActions"><item id="view" label="…"/></prop>`)
+     *  - 그 밖(중첩·혼재) → JSON 본문 (표현 수단이 아직 없는 자리. 대장에 등재된다)
+     *
+     * 저작 파일에서 통짜 JSON 을 없애는 것이 목적이므로(D42), 표현 가능한 형태는 전부 태그로 낸다.
      *
      * @param  string  $key  props 키
      * @param  mixed  $value  값
@@ -103,7 +110,150 @@ trait EmitsMarkup
      */
     protected function propElement(string $key, mixed $value): MarkupElement
     {
-        return $this->el('prop', [$this->attr('name', $key)], [], $this->encode($value));
+        $nameAttr = [$this->attr('name', $key)];
+
+        if (is_array($value) && $value !== []) {
+            // 병합 지시자 — `{"_append":[…]}` → `<append><item …/></append>` (D42 G5).
+            if (! array_is_list($value) && $this->isMergeDirectiveMap($value)) {
+                $directives = [];
+
+                foreach ($value as $directive => $inner) {
+                    $directives[] = $this->propDirectiveElement(substr((string) $directive, 1), $inner);
+                }
+
+                return $this->el('prop', $nameAttr, $directives);
+            }
+
+            if (! array_is_list($value) && $this->isFlatScalarMapValue($value)) {
+                return $this->el('prop', $nameAttr, $this->fieldChildren($value));
+            }
+
+            if (array_is_list($value) && $this->isFlatObjectList($value)) {
+                return $this->el('prop', $nameAttr, array_map(
+                    fn (array $item): MarkupElement => $this->el('item', $this->mapAttributes($item), []),
+                    $value,
+                ));
+            }
+        }
+
+        return $this->el('prop', $nameAttr, [], $this->encode($value));
+    }
+
+    /**
+     * 맵이 **병합 지시자로만** 이루어져 있는지 판정합니다 (D42 G5 — `NodeCompiler::MERGE_DIRECTIVE_TAGS` 와 짝).
+     *
+     * 지시자 값이 `<item>`/`<field>` 로 표현 가능해야 되돌릴 수 있으므로 그 조건까지 확인한다.
+     *
+     * @param  array<string, mixed>  $map  맵
+     * @return bool 병합 지시자 맵이면 true
+     */
+    protected function isMergeDirectiveMap(array $map): bool
+    {
+        foreach ($map as $key => $value) {
+            if ($key !== '_append') {
+                return false;
+            }
+
+            $representable = is_array($value) && $value !== []
+                && ((array_is_list($value) && $this->isFlatObjectList($value))
+                    || (! array_is_list($value) && $this->isFlatScalarMapValue($value)));
+
+            if (! $representable) {
+                return false;
+            }
+        }
+
+        return $map !== [];
+    }
+
+    /**
+     * 병합 지시자 하나를 요소로 되돌립니다 (`<append>` 안에 `<item>` 또는 `<field>`).
+     *
+     * @param  string  $tag  지시자 태그명 (`append`)
+     * @param  mixed  $value  지시자 값
+     * @return MarkupElement 지시자 요소
+     */
+    protected function propDirectiveElement(string $tag, mixed $value): MarkupElement
+    {
+        if (is_array($value) && array_is_list($value)) {
+            return $this->el($tag, [], array_map(
+                fn (array $item): MarkupElement => $this->el('item', $this->mapAttributes($item), []),
+                $value,
+            ));
+        }
+
+        return $this->el($tag, [], $this->fieldChildren(is_array($value) ? $value : []));
+    }
+
+    /**
+     * 연관 배열의 모든 값이 스칼라인지 판정합니다 (속성/`<field>` 표기 가능 여부).
+     *
+     * @param  array<string, mixed>  $map  맵
+     * @return bool 평면이면 true
+     */
+    protected function isFlatScalarMapValue(array $map): bool
+    {
+        foreach ($map as $value) {
+            if (is_array($value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 리스트의 모든 원소가 **평면 객체**인지 판정합니다 (`<item>` 표기 가능 여부).
+     *
+     * @param  array<int, mixed>  $list  리스트
+     * @return bool 전부 평면 객체면 true
+     */
+    protected function isFlatObjectList(array $list): bool
+    {
+        foreach ($list as $item) {
+            if (! is_array($item) || $item === [] || array_is_list($item) || ! $this->isFlatScalarMapValue($item)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 평면 맵을 속성 목록으로 되돌립니다 (문자열은 `attr`, 그 밖은 `:attr` 타입 리터럴).
+     *
+     * @param  array<string, mixed>  $map  평면 맵
+     * @return array<int, MarkupAttribute> 속성 목록
+     */
+    protected function mapAttributes(array $map): array
+    {
+        $attributes = [];
+
+        foreach ($map as $key => $value) {
+            $attributes[] = $this->valueAttr((string) $key, $value);
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * 평면 맵을 `<field name value>` 자식으로 되돌립니다 (D42 G3).
+     *
+     * @param  array<string, mixed>  $map  평면 맵
+     * @return array<int, MarkupElement> `<field>` 요소 목록
+     */
+    protected function fieldChildren(array $map): array
+    {
+        $children = [];
+
+        foreach ($map as $key => $value) {
+            $children[] = $this->el('field', [
+                $this->attr('name', (string) $key),
+                $this->valueAttr('value', $value),
+            ], []);
+        }
+
+        return $children;
     }
 
     /**

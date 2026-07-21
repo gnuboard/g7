@@ -188,20 +188,15 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * @var array<string, array<string, int>> 파일(상대경로) → (허용 방출 라벨 → 정확 건수)
      */
     private const RAW_JSON_PENDING_GRAMMAR = [
-        'modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_form.g7.html' => [':errors' => 1, ':form' => 1, '<prop>' => 2],
-        'modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_list.g7.html' => [':_local' => 1, '<prop>' => 1],
-        'plugins/_bundled/sirsoft-daum_postcode/resources/extensions/ecommerce-address-search.g7.html' => [':theme' => 1],
-        'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_consent_log.g7.html' => [':filter' => 2],
-        'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/plugin_settings.g7.html' => ['<prop>' => 1],
-        'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-detail.g7.html' => ['<props>' => 1],
-        'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-form.g7.html' => ['<props>' => 1],
+        // 중첩 객체 파라미터 — `<field>` 트리는 평면 리프만 받아 아직 되돌릴 수 없다(G6 잔여).
+        'modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_form.g7.html' => [':errors' => 1, ':form' => 1],
+        'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_consent_log.g7.html' => [':filter' => 1],
         'plugins/_bundled/sirsoft-marketing/resources/layouts/admin/plugin_settings.g7.html' => [':editingChannel' => 1],
+        // DataGrid 컬럼 트리 — `<column>`/`<cell>` 문법은 있으나 확장 주입 `<props>` 문맥에서
+        // 임베딩 소유자를 해석하지 못해 blob 으로 떨어진다 (G7 미이행).
         'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/admin_order_list_test_badge.g7.html' => ['<props>' => 1],
         'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/admin_order_list_test_badge.g7.html' => ['<props>' => 1],
-        'plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/user_order_show.g7.html' => [':args' => 1],
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/admin_order_list_test_badge.g7.html' => ['<props>' => 1],
-        'plugins/_bundled/sirsoft-verification_kginicis/resources/layouts/admin/plugin_settings.g7.html' => [':form' => 2],
-        
     ];
 
     /**
@@ -214,7 +209,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      *
      * @scenario compile_unit=install,source_health=valid
      *
-     * @effects every_migrated_markup_file_matches_its_json_and_is_escape_free
+     * @effects every_migrated_markup_file_matches_its_json_and_is_escape_free, first_class_grammar_replaces_raw_json_in_migrated_markup
      */
     public function test_every_migrated_markup_file_matches_its_json_and_is_escape_free(): void
     {

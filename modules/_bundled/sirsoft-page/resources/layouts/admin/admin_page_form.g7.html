@@ -140,8 +140,14 @@
           <h3 class="section-heading">$t:sirsoft-page.admin.page.form.attachments</h3>
         </div>
         <file-uploader data-ref="file_uploader" collection="page_attachments" :maxFiles="5" :maxSize="10" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip" initialFiles="{{_local.form?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:page_attachments" disabled="{{_computed.isReadOnly}}" :compact="true" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message">
-          <prop name="uploadParams">{"temp_key":"{{_local.tempKey}}"}</prop>
-          <prop name="apiEndpoints">{"upload":"/api/modules/sirsoft-page/admin/attachments","delete":"/api/modules/sirsoft-page/admin/attachments/:id","reorder":"{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"}</prop>
+          <prop name="uploadParams">
+            <field name="temp_key" value="{{_local.tempKey}}"/>
+          </prop>
+          <prop name="apiEndpoints">
+            <field name="upload" value="/api/modules/sirsoft-page/admin/attachments"/>
+            <field name="delete" value="/api/modules/sirsoft-page/admin/attachments/:id"/>
+            <field name="reorder" value="{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"/>
+          </prop>
           <on event="onUploadComplete">
             <!-- 업로드 완료 시 form.attachments 에 누적 (수정 모드만 - 생성 모드는 저장 시 temp_key 로 연결) -->
             <set-state target="local" form.attachments="{{route?.id ? [...(_local.form?.attachments ?? []), ...($args[0] ?? [])] : (_local.form?.attachments ?? [])}}"/>

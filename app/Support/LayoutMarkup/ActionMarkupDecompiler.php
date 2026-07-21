@@ -339,7 +339,58 @@ final class ActionMarkupDecompiler
             }
         }
 
+        // 임의 이름의 **구조값 파라미터**는 `<field name>` 자식으로 되돌린다 (D42 G6).
+        // `<body>`/`<query>` 는 위에서 이미 처리했으므로 제외한다.
+        foreach ($action['params'] ?? [] as $key => $value) {
+            if (in_array($key, ['actions', 'cases', 'conditions', 'body', 'query'], true)) {
+                continue;
+            }
+
+            if ($this->isStructuredParam($value)) {
+                $children[] = $this->el('field', [$this->attr('name', (string) $key)], $this->paramValueChildren($value));
+            }
+        }
+
         return $children;
+    }
+
+    /**
+     * 값이 `<field name>` 으로 되돌릴 구조값인지 판정합니다 (D42 G6).
+     *
+     * 빈 컬렉션은 `:attr="[]"` 로 충분하고(구조 없는 값 리터럴), 스칼라는 원래 속성이다.
+     * `<field>` 트리 또는 `<item>` 리스트로 표현 가능한 형태만 받는다 — 표현 못하면 종전대로
+     * 속성 JSON 으로 남아 대장에 계량된다.
+     *
+     * @param  mixed  $value  파라미터 값
+     * @return bool `<field>` 로 표현 가능하면 true
+     */
+    private function isStructuredParam(mixed $value): bool
+    {
+        if (! is_array($value) || $value === []) {
+            return false;
+        }
+
+        return array_is_list($value)
+            ? $this->isFlatObjectList($value)
+            : $this->isFlatScalarMapValue($value);
+    }
+
+    /**
+     * `<field>` 파라미터 본문을 만듭니다 — 맵이면 `<field>`, 리스트면 `<item>`.
+     *
+     * @param  array<array-key, mixed>  $value  구조값
+     * @return array<int, MarkupElement> 자식 요소
+     */
+    private function paramValueChildren(array $value): array
+    {
+        if (array_is_list($value)) {
+            return array_map(
+                fn (array $item): MarkupElement => $this->el('item', $this->mapAttributes($item), []),
+                $value,
+            );
+        }
+
+        return $this->fieldChildren($value);
     }
 
     /**
@@ -420,6 +471,11 @@ final class ActionMarkupDecompiler
 
             // body/query 가 평면 맵이면 `<body>`/`<query>` 자식으로 나가므로 속성으로 중복하지 않는다(D41).
             if (in_array($key, ['body', 'query'], true) && $this->isFieldMap($value)) {
+                continue;
+            }
+
+            // 구조값 파라미터는 `<field name>` 자식으로 나간다 — 속성으로 중복하지 않는다(D42 G6).
+            if ($this->isStructuredParam($value)) {
                 continue;
             }
 

@@ -30,7 +30,12 @@
     <wait-for>pages</wait-for>
   </transition-overlay>
   <init>
-    <set-state target="global" :selectedIds_admin_pages="[]" :isBulkPublishing="false" :_local="{&quot;searchField&quot;:&quot;{{query['filters[0][field]'] || 'all'}}&quot;,&quot;searchQuery&quot;:&quot;{{query['filters[0][value]'] || ''}}&quot;}"/>
+    <set-state target="global" :selectedIds_admin_pages="[]" :isBulkPublishing="false">
+      <field name="_local">
+        <field name="searchField" value="{{query['filters[0][field]'] || 'all'}}"/>
+        <field name="searchQuery" value="{{query['filters[0][value]'] || ''}}"/>
+      </field>
+    </set-state>
   </init>
   <slot name="content">
     <div data-ref="page_list_content" class="admin-page-content-fluid">
@@ -193,7 +198,11 @@
         </column>
         <column field="created_at" header="$t:sirsoft-page.admin.page.columns.created_at" :sortable="true"/>
         <column field="published_at" header="$t:sirsoft-page.admin.page.columns.published_at" :sortable="true"/>
-        <prop name="rowActions">[{"id":"view","label":"$t:sirsoft-page.admin.page.actions.view","iconName":"eye"},{"id":"edit","label":"$t:sirsoft-page.admin.page.actions.edit","iconName":"pencil","disabledField":"abilities.can_update"},{"id":"delete","label":"$t:sirsoft-page.admin.page.actions.delete","iconName":"trash","variant":"danger","disabledField":"abilities.can_delete"}]</prop>
+        <prop name="rowActions">
+          <item id="view" label="$t:sirsoft-page.admin.page.actions.view" iconName="eye"/>
+          <item id="edit" label="$t:sirsoft-page.admin.page.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
+          <item id="delete" label="$t:sirsoft-page.admin.page.actions.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
+        </prop>
         <on type="change" event="onSelectionChange">
           <set-state target="global" selectedIds_admin_pages="{{$args[0]}}"/>
         </on>

@@ -416,7 +416,7 @@ final class LayoutMarkupDecompiler
         $children = [];
 
         if (array_key_exists('props', $injection)) {
-            $children[] = $this->el('props', [], [], $this->encode($injection['props']));
+            $children[] = $this->injectionPropsElement($injection['props']);
         } else {
             foreach ($injection['components'] ?? [] as $component) {
                 $children[] = $this->nodes->node($component);
@@ -567,6 +567,30 @@ final class LayoutMarkupDecompiler
      * @param  array<string, mixed>  $source  data_sources 항목
      * @return MarkupElement `<data-source>` 요소
      */
+    /**
+     * 확장 주입 `<props>` 를 1급 표기로 되돌립니다 (D42 G5).
+     *
+     * 각 키를 `<prop name>` 으로 내고, 값은 `EmitsMarkup::propElement` 가 형태에 맞는 표기를 고른다.
+     * 병합 지시자(`_append`)는 `<append>` 자식으로 돌아간다.
+     *
+     * @param  mixed  $props  주입 props
+     * @return MarkupElement `<props>` 요소
+     */
+    private function injectionPropsElement(mixed $props): MarkupElement
+    {
+        if (! is_array($props) || $props === [] || array_is_list($props)) {
+            return $this->el('props', [], [], $this->encode($props));
+        }
+
+        $children = [];
+
+        foreach ($props as $key => $value) {
+            $children[] = $this->propElement((string) $key, $value);
+        }
+
+        return $this->el('props', [], $children);
+    }
+
     /**
      * 구조값을 1급 표기로 되돌립니다 (D42 G1·G2) — 평면이면 속성, 중첩이면 `<field>` 트리.
      *

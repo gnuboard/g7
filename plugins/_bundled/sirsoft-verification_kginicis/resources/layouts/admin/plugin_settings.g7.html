@@ -90,14 +90,22 @@
               <div class="flex-center justify-end gap-6">
                 <label class="inline-clickable text-body">
                   <on type="click">
-                    <set-state target="local" :form='{"duplicate_field":"di"}' :hasChanges="true"/>
+                    <set-state target="local" :hasChanges="true">
+                      <field name="form">
+                        <field name="duplicate_field" value="di"/>
+                      </field>
+                    </set-state>
                   </on>
                   <input type="radio" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="radio pointer-events-none"/>
                   <span>$t:sirsoft-verification_kginicis.settings.duplicate_field.di</span>
                 </label>
                 <label class="inline-clickable text-body">
                   <on type="click">
-                    <set-state target="local" :form='{"duplicate_field":"ci"}' :hasChanges="true"/>
+                    <set-state target="local" :hasChanges="true">
+                      <field name="form">
+                        <field name="duplicate_field" value="ci"/>
+                      </field>
+                    </set-state>
                   </on>
                   <input type="radio" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="radio pointer-events-none"/>
                   <span>$t:sirsoft-verification_kginicis.settings.duplicate_field.ci</span>

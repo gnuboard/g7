@@ -1,6 +1,12 @@
 <extension target-layout="admin_user_form" priority="200">
   <inject target-id="user_form_tabs" position="inject_props">
-    <props>{"tabs":{"_append":[{"id":"ext_marketing","label":"$t:admin.users.form.sections.marketing_consent","iconName":"puzzle-piece"}]}}</props>
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_marketing" label="$t:admin.users.form.sections.marketing_consent" iconName="puzzle-piece"/>
+        </append>
+      </prop>
+    </props>
   </inject>
   <inject target-id="extension_form_content" position="append_child">
     <div data-ref="ext_marketing_form_content" id="ext_marketing" class="scroll-mt-32">

@@ -213,6 +213,16 @@ final class NodeCompiler
     private const STRUCTURAL_TAGS = ['class-map', 'isolated-state', 'blur-until-loaded', 'prop', 'all-of', 'any-of', 'sortable', 'permissions', 'meta'];
 
     /**
+     * `<prop>` 안에서 병합 지시자로 해석되는 태그 (D42 G5) — `<append>` → `_append`.
+     *
+     * 확장 주입 props 는 대상 레이아웃 props 에 병합되므로, "덧붙인다" 는 의도를 키 이름(`_append`)이
+     * 아니라 태그로 적는다. 지시자 안의 값은 다시 `<item>`/`<field>` 문법을 그대로 쓴다.
+     *
+     * @var array<int, string>
+     */
+    private const MERGE_DIRECTIVE_TAGS = ['append'];
+
+    /**
      * `<sortable>` 속성명(kebab) → sortable 구조체 키(camel).
      *
      * sortable 은 노드 키 객체(`{source, itemKey, strategy, handle, itemVar, indexVar}`)이며 짝인
@@ -504,7 +514,7 @@ final class NodeCompiler
                     $this->assignProp(
                         $props,
                         self::ATTRIBUTE_ALIASES[$name] ?? $name,
-                        $this->decodeJsonBody($child, $path),
+                        $this->compilePropValue($child, $path),
                         $child->name,
                         $child->line,
                         $child->column,
@@ -962,7 +972,7 @@ final class NodeCompiler
                 $this->assignProp(
                     $props,
                     self::ATTRIBUTE_ALIASES[$name] ?? $name,
-                    $this->decodeJsonBody($child, $path),
+                    $this->compilePropValue($child, $path),
                     $child->name,
                     $child->line,
                     $child->column,
@@ -1272,6 +1282,122 @@ final class NodeCompiler
      *
      * @throws CompileError 본문이 JSON 이 아닌 경우
      */
+    /**
+     * `<prop>` 값을 세 표기 중 하나로 컴파일합니다 (D42 G3·G4).
+     *
+     *  1. **`<field name value>` 자식** — 평면 스칼라 맵. `<prop name="uploadParams"><field name="temp_key" value="{{…}}"/></prop>`
+     *  2. **`<item>` 자식** — 평면 객체의 리스트. `<prop name="rowActions"><item id="view" label="$t:…"/></prop>`
+     *  3. **JSON 본문** — 종전 표기. 하위호환으로 계속 받는다.
+     *
+     * 셋은 같은 값을 만들며, 역변환기(`EmitsMarkup::propElement`)가 값 형태를 보고 1 또는 2 를 고른다.
+     *
+     * @param  MarkupElement  $element  `<prop>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return mixed props 값
+     *
+     * @throws CompileError 자식 표기가 규칙을 벗어난 경우
+     */
+    public function compilePropElementValue(MarkupElement $element, ?string $path): mixed
+    {
+        return $this->compilePropValue($element, $path);
+    }
+
+    /**
+     * `<prop>` 값을 컴파일합니다 (내부 구현 — 위 공개 메서드가 DocumentCompiler 에 위임한다).
+     *
+     * @param  MarkupElement  $element  `<prop>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return mixed props 값
+     *
+     * @throws CompileError 자식 표기가 규칙을 벗어난 경우
+     */
+    private function compilePropValue(MarkupElement $element, ?string $path): mixed
+    {
+        if ($element->children === []) {
+            return $this->decodeJsonBody($element, $path);
+        }
+
+        $first = $element->children[0]->name;
+
+        // 병합 지시자 — 확장 주입 props 가 대상 props 에 덧붙는 형태 (D42 G5).
+        if (in_array($first, self::MERGE_DIRECTIVE_TAGS, true)) {
+            $merge = [];
+
+            foreach ($element->children as $child) {
+                if (! in_array($child->name, self::MERGE_DIRECTIVE_TAGS, true)) {
+                    throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                        'tag' => $child->name,
+                        'parent' => $element->name,
+                    ]);
+                }
+
+                $merge['_'.$child->name] = $this->compilePropValue($child, $path);
+            }
+
+            return $merge;
+        }
+
+        if ($first === 'item') {
+            $list = [];
+
+            foreach ($element->children as $child) {
+                if ($child->name !== 'item') {
+                    throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                        'tag' => $child->name,
+                        'parent' => $element->name,
+                    ]);
+                }
+
+                $list[] = $this->attributeMap($child, $path);
+            }
+
+            return $list;
+        }
+
+        $map = [];
+
+        foreach ($element->children as $child) {
+            if ($child->name !== 'field') {
+                throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                    'tag' => $child->name,
+                    'parent' => $element->name,
+                ]);
+            }
+
+            $name = $this->requiredAttribute($child, 'name', $path);
+            $typed = $child->attribute(':value');
+
+            $map[$name] = $typed !== null
+                ? MarkupValue::decodeTypeLiteral($typed, 'value', $path)
+                : ($child->attribute('value')?->value ?? null);
+        }
+
+        return $map;
+    }
+
+    /**
+     * 요소의 속성을 평면 키-값 맵으로 읽습니다 (`<item>` 한 항목 — kebab 속성은 그대로 키가 된다).
+     *
+     * @param  MarkupElement  $element  요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 평면 맵
+     */
+    private function attributeMap(MarkupElement $element, ?string $path): array
+    {
+        $map = [];
+
+        foreach ($element->attributes as $attribute) {
+            $key = $attribute->name;
+            $value = str_starts_with($key, ':')
+                ? MarkupValue::decodeTypeLiteral($attribute, substr($key, 1), $path)
+                : ($attribute->isBoolean() ? true : $attribute->value);
+
+            $map[ltrim($key, ':')] = $value;
+        }
+
+        return $map;
+    }
+
     private function decodeJsonBody(MarkupElement $element, ?string $path): mixed
     {
         $body = trim((string) ($element->text ?? ''));

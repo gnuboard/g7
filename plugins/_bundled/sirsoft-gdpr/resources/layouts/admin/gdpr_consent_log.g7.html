@@ -52,7 +52,15 @@
     </sequence>
   </action>
   <init>
-    <set-state target="local" :filter="{&quot;searchType&quot;:&quot;{{query.session_id ? 'session_id' : 'email'}}&quot;,&quot;search&quot;:&quot;{{query.email || query.session_id || ''}}&quot;,&quot;consentKeys&quot;:&quot;{{Array.isArray(query['consent_keys[]']) ? query['consent_keys[]'] : (query['consent_keys[]'] ? [query['consent_keys[]']] : [])}}&quot;,&quot;actions&quot;:&quot;{{Array.isArray(query['actions[]']) ? query['actions[]'] : (query['actions[]'] ? [query['actions[]']] : [])}}&quot;,&quot;sources&quot;:&quot;{{Array.isArray(query['sources[]']) ? query['sources[]'] : (query['sources[]'] ? [query['sources[]']] : [])}}&quot;}"/>
+    <set-state target="local">
+      <field name="filter">
+        <field name="searchType" value="{{query.session_id ? 'session_id' : 'email'}}"/>
+        <field name="search" value="{{query.email || query.session_id || ''}}"/>
+        <field name="consentKeys" value="{{Array.isArray(query['consent_keys[]']) ? query['consent_keys[]'] : (query['consent_keys[]'] ? [query['consent_keys[]']] : [])}}"/>
+        <field name="actions" value="{{Array.isArray(query['actions[]']) ? query['actions[]'] : (query['actions[]'] ? [query['actions[]']] : [])}}"/>
+        <field name="sources" value="{{Array.isArray(query['sources[]']) ? query['sources[]'] : (query['sources[]'] ? [query['sources[]']] : [])}}"/>
+      </field>
+    </set-state>
   </init>
   <slot name="content">
     <div data-ref="gdpr_consent_log_content" class="admin-page-content">
