@@ -1,0 +1,107 @@
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-daum_postcode.settings.title" description="$t:sirsoft-daum_postcode.settings.description"/>
+  <data-source id="settings" label_key="$t:sirsoft-daum_postcode.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:sirsoft-daum_postcode.settings.title" description="$t:sirsoft-daum_postcode.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="notice_banner" class="alert-info">
+        <div class="flex gap-3">
+          <icon name="circle-info" class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+          <p class="text-info-soft">$t:sirsoft-daum_postcode.settings.notice</p>
+        </div>
+      </div>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="grid-3col-responsive">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="settings_form" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="settings_fields" class="p-6 space-y-6">
+          <div data-ref="field_display_mode" class="text-error-soft">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.display_mode.label</label>
+              <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.display_mode.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <select name="display_mode" class="focus:border-transparent">
+                <option value="popup">popup</option>
+                <option value="layer">layer</option>
+              </select>
+            </div>
+          </div>
+          <div data-ref="field_popup_width" class="text-error-soft">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.popup_width.label</label>
+              <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.popup_width.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" name="popup_width" class="focus:border-transparent"/>
+            </div>
+          </div>
+          <div data-ref="field_popup_height" class="text-error-soft">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.popup_height.label</label>
+              <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.popup_height.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" name="popup_height" class="focus:border-transparent"/>
+            </div>
+          </div>
+          <div data-ref="field_theme_color" class="text-error-soft">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.theme_color.label</label>
+              <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.theme_color.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="text" name="theme_color" placeholder="#1D4ED8" class="focus:border-transparent"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="guide_section" class="mt-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 class="section-heading mb-4">$t:sirsoft-daum_postcode.settings.guide.title</h3>
+        <ol class="list-decimal list-inside space-y-3">
+          <li class="text-label">$t:sirsoft-daum_postcode.settings.guide.step1</li>
+          <li class="text-label">$t:sirsoft-daum_postcode.settings.guide.step2</li>
+          <li class="text-label">$t:sirsoft-daum_postcode.settings.guide.step3</li>
+        </ol>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+              <success>
+                <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                <refetch-data-source dataSourceId="settings"/>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false" errors="{{$error.errors}}"/>
+                <toast type="error" message="$t:admin.plugins.settings.save_error"/>
+              </fail>
+            </api-call>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

@@ -393,7 +393,7 @@ final class DocumentCompiler
             case 'fallback':
                 $key = $child->name;
                 $this->assertDataSourceKeyUnset($child, $source, $key, $path);
-                $source[$key] = $this->decodeJsonBody($child, $path);
+                $source[$key] = $this->compileStructuredValue($child, $path);
 
                 return;
 
@@ -1156,6 +1156,127 @@ final class DocumentCompiler
      *
      * @throws CompileError 본문이 JSON 이 아닌 경우
      */
+    /**
+     * 구조값을 세 표기 중 하나로 컴파일합니다 (D42 G1·G2).
+     *
+     * 우선순위대로:
+     *  1. **`<field>` 자식** — 중첩 구조. `<fallback><field name="data"><field name="items" :value="[]"/></field></fallback>`
+     *  2. **속성 field-map** — 평면 스칼라 맵. `<params page="{{query.page}}" :per_page="20"/>`
+     *  3. **JSON 본문** — 종전 표기. 하위호환으로 계속 받는다(기존 저작이 깨지지 않는다).
+     *
+     * 1·2 를 신설한 이유는 저작 파일에서 통짜 JSON 을 없애기 위해서다(D42). 셋 다 같은 값을 만들며,
+     * 역변환기는 값 형태를 보고 1 또는 2 를 고른다 — 3 은 되돌릴 때 쓰지 않는다.
+     *
+     * @param  MarkupElement  $element  `<params>`/`<headers>`/`<data>`/`<fallback>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return mixed 구조값
+     *
+     * @throws CompileError 표기가 규칙을 벗어난 경우
+     */
+    private function compileStructuredValue(MarkupElement $element, ?string $path): mixed
+    {
+        if ($element->children !== []) {
+            return $this->compileFieldTree($element, $path);
+        }
+
+        if ($element->attributes !== []) {
+            return $this->compileValueFieldMap($element, $path);
+        }
+
+        return $this->decodeJsonBody($element, $path);
+    }
+
+    /**
+     * `<field>` 자식들을 중첩 맵으로 컴파일합니다 (D42 G2).
+     *
+     * 각 `<field name>` 은 자식이 있으면 하위 트리, 없으면 `value`(문자열) 또는 `:value`(타입 리터럴)다.
+     *
+     * @param  MarkupElement  $element  부모 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 중첩 맵
+     *
+     * @throws CompileError `<field>` 가 아닌 자식이 있거나 name 이 없는 경우
+     */
+    private function compileFieldTree(MarkupElement $element, ?string $path): array
+    {
+        $map = [];
+
+        foreach ($element->children as $child) {
+            if ($child->name !== 'field') {
+                throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                    'tag' => $child->name,
+                    'parent' => $element->name,
+                ]);
+            }
+
+            $name = $this->requiredAttribute($child, 'name', $path);
+
+            if (array_key_exists($name, $map)) {
+                throw $this->error($child, LayoutMarkupErrorCode::DuplicateAttribute, $path, [
+                    'tag' => $child->name,
+                    'attr' => $name,
+                ]);
+            }
+
+            $map[$name] = $child->children !== []
+                ? $this->compileFieldTree($child, $path)
+                : $this->fieldLeafValue($child, $path);
+        }
+
+        return $map;
+    }
+
+    /**
+     * `<field>` 리프의 값을 읽습니다 — `:value`(타입 리터럴) 우선, 없으면 `value`(문자열).
+     *
+     * @param  MarkupElement  $field  `<field>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return mixed 리프 값
+     */
+    private function fieldLeafValue(MarkupElement $field, ?string $path): mixed
+    {
+        $typed = $field->attribute(':value');
+
+        if ($typed !== null) {
+            return MarkupValue::decodeTypeLiteral($typed, 'value', $path);
+        }
+
+        return $field->attribute('value')?->value ?? null;
+    }
+
+    /**
+     * 속성을 평면 키-값 맵으로 컴파일합니다 (D42 G1 — `name` 은 컨테이너 식별자라 제외하지 않는다).
+     *
+     * @param  MarkupElement  $element  요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed> 평면 맵
+     *
+     * @throws CompileError 중복 키가 있는 경우
+     */
+    private function compileValueFieldMap(MarkupElement $element, ?string $path): array
+    {
+        $map = [];
+
+        foreach ($element->attributes as $attribute) {
+            $key = $attribute->name;
+            $value = str_starts_with($key, ':')
+                ? MarkupValue::decodeTypeLiteral($attribute, substr($key, 1), $path)
+                : ($attribute->isBoolean() ? true : $attribute->value);
+            $key = ltrim($key, ':');
+
+            if (array_key_exists($key, $map)) {
+                throw $this->error($element, LayoutMarkupErrorCode::DuplicateAttribute, $path, [
+                    'tag' => $element->name,
+                    'attr' => $key,
+                ]);
+            }
+
+            $map[$key] = $value;
+        }
+
+        return $map;
+    }
+
     private function decodeJsonBody(MarkupElement $element, ?string $path): mixed
     {
         $body = trim((string) ($element->text ?? ''));

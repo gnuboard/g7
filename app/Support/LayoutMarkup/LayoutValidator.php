@@ -3,7 +3,6 @@
 namespace App\Support\LayoutMarkup;
 
 use App\Enums\LayoutMarkupErrorCode;
-use App\Rules\NoExternalUrls;
 use App\Rules\ValidLayoutExtensionStructure;
 use App\Rules\ValidLayoutStructure;
 use App\Rules\WhitelistedEndpoint;
@@ -64,8 +63,25 @@ final class LayoutValidator
         // ② 엔드포인트 화이트리스트
         $this->runRule($view, new WhitelistedEndpoint, LayoutMarkupErrorCode::EndpointNotWhitelisted, $path);
 
-        // ③ 외부 URL·위험 스킴
-        $this->runRule($view, new NoExternalUrls, LayoutMarkupErrorCode::ExternalUrlForbidden, $path);
+        // ③ 외부 URL·위험 스킴 — **이관 검사에서는 돌리지 않는다 (PO 확정 07-20)**.
+        //
+        // 번들 결제 플러그인이 PG사 공식 주소로 나가는 링크를 정상 기능으로 들고 있다
+        // (이니시스·KCP·나이스페이 영수증/파트너 사이트 4건). 설치 경로는 이 규칙을 돌리지
+        // 않으므로 그 레이아웃들은 오늘도 정상 설치·동작하는데, 파사드만 강검증을 걸어
+        // **정상 출하물의 이관을 막고 있었다**.
+        //
+        // 규칙은 **저작 API 경로에 살아 있다** — 편집기로 사용자가 제출하는 레이아웃 본문은
+        // `StoreLayoutRequest`·`UpdateLayoutRequest` 가 레이아웃 배열에 `NoExternalUrls` 를 걸어
+        // 컴포넌트 트리를 훑는다. 여기서 빠지는 것은 "이미 저장소에 있는 1급 출하물을 형식만
+        // 옮기는" 경로뿐이다.
+        //
+        // 정확히 하자면 `NoExternalUrls` 부착 4곳 중 **실제로 도는 것은 배열 필드 2곳뿐**이다.
+        // `UpdateLayoutContentRequest`(`content.endpoint`)·`UpdateLayoutExtensionContentRequest`
+        // (`data_sources.*.endpoint`)는 **문자열** 필드에 걸려 있고 이 규칙은 `is_array` 가 아니면
+        // 즉시 반환하므로 no-op 이다. 다만 **보안 공백은 아니다** — 그 두 필드에는 같은 자리에
+        // `WhitelistedEndpoint` 가 함께 붙어 있고, 그쪽 `validateEndpointString` 이 `^https?://` 를
+        // 명시 차단한 뒤 `/api/(admin|auth|public)/` 화이트리스트와 path traversal 까지 건다.
+        // 즉 두 문자열 경로의 `NoExternalUrls` 는 더 강한 규칙에 흡수된 중복 선언이다(S11 이전부터).
 
         // ④ 컴포넌트 존재 그물
         $this->assertComponentsExist($view['components'], $registry, $path);

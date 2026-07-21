@@ -943,7 +943,6 @@ return [
         'extension_point_invalid' => 'extension_pointフィールドは空でない文字列である必要があります。',
         'target_layout_invalid' => 'target_layoutフィールドは空でない文字列である必要があります。',
         'components_must_be_array' => 'componentsフィールドは配列である必要があります。',
-        'injections_required' => 'overlay拡張にはinjectionsフィールドが必要です。',
         'injections_must_be_array' => 'injectionsフィールドは配列である必要があります。',
         'injection_must_be_array' => 'injections[:index]は配列である必要があります。',
         'injection_target_id_required' => 'injections[:index]にtarget_idフィールドが必要です。',
@@ -980,6 +979,7 @@ return [
             'integer' => 'expected_lock_version は整数である必要があります。',
             'min' => 'expected_lock_version は0以上である必要があります。',
         ],
+        'contribution_required' => 'overlay 拡張には、injections·modals·data_sources·scripts·init_actions のいずれか 1 つ以上が必要です。',
     ],
     'custom_translation' => [
         'layout_name' => [

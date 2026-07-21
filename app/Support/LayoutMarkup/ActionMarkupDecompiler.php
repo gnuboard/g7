@@ -177,13 +177,22 @@ final class ActionMarkupDecompiler
     /**
      * 블록 본문 규칙 — 암묵 sequence(트리거만 있는 sequence)는 자식을 직접 펼치고, 그 밖은 단일 액션.
      *
+     * **자식이 둘 이상일 때만 펼친다.** 컴파일러는 블록 자식이 하나면 그 액션에 트리거만 얹고
+     * sequence 로 감싸지 않으므로([ActionCompiler::compileBlockBody](app/Support/LayoutMarkup/ActionCompiler.php#L280)),
+     * 단일 자식 sequence 를 펼치면 되컴파일 때 래퍼가 복원되지 않아 왕복이 깨진다. 그 경우는
+     * 펼치지 않고 `<sequence>` 를 명시해 래퍼를 보존한다(자식 0인 퇴화 형태도 같은 경로).
+     *
      * @param  array<string, mixed>  $action  본문 액션 (트리거 제거 후)
      * @return array<int, MarkupElement> 자식 요소
      */
     private function blockBody(array $action): array
     {
         if (($action['handler'] ?? null) === 'sequence' && $this->onlyKeys($action, ['handler', 'actions'])) {
-            return array_map(fn (array $child): MarkupElement => $this->action($child), $action['actions'] ?? []);
+            $children = $action['actions'] ?? [];
+
+            if (count($children) >= 2) {
+                return array_map(fn (array $child): MarkupElement => $this->action($child), $children);
+            }
         }
 
         return [$this->action($action)];
@@ -319,7 +328,68 @@ final class ActionMarkupDecompiler
             $children[] = $this->el('error-handling', [], $this->errorHandlingChildren($action['errorHandling']));
         }
 
+        // `params.body` / `params.query` 는 1급 문법이 있다 — `<body>`/`<query>` 로 되돌린다(D41).
+        // 속성에 JSON 을 박으면 D2("속성 JSON 추방")를 어기고, 계량은 `<json>` 태그만 세므로
+        // escape-0 판정을 받고도 원시 JSON 이 그대로 남는다.
+        foreach (['body', 'query'] as $key) {
+            $map = $action['params'][$key] ?? null;
+
+            if ($this->isFieldMap($map)) {
+                $children[] = $this->el($key, $this->fieldMapAttributes($map));
+            }
+        }
+
         return $children;
+    }
+
+    /**
+     * `<body>`/`<query>` 로 되돌릴 수 있는 평면 키-값 객체인지 판정합니다.
+     *
+     * `ActionCompiler::compileFieldMap` 은 **속성만** 받고 자식을 거부한다 — 값이 다시 객체·배열이면
+     * 속성으로 되돌릴 때 또 JSON 이 되므로, 그 경우는 문법으로 표현 불가라 판정에서 뺀다.
+     *
+     * @param  mixed  $map  후보 값
+     * @return bool 평면 키-값 객체면 true
+     */
+    private function isFieldMap(mixed $map): bool
+    {
+        if (! is_array($map)) {
+            return false;
+        }
+
+        // 빈 맵도 표현 가능하다 — 속성 없는 `<query/>` 가 `compileFieldMap` 에서 `[]` 로 되돌아온다.
+        if ($map === []) {
+            return true;
+        }
+
+        if (array_is_list($map)) {
+            return false;
+        }
+
+        foreach ($map as $value) {
+            if (is_array($value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 평면 키-값 객체를 `<body>`/`<query>` 속성 목록으로 찍습니다.
+     *
+     * @param  array<string, mixed>  $map  키-값 객체
+     * @return array<int, MarkupAttribute> 속성 목록
+     */
+    private function fieldMapAttributes(array $map): array
+    {
+        $attributes = [];
+
+        foreach ($map as $key => $value) {
+            $attributes[] = $this->valueAttr((string) $key, $value);
+        }
+
+        return $attributes;
     }
 
     /**
@@ -345,6 +415,11 @@ final class ActionMarkupDecompiler
         foreach ($action['params'] ?? [] as $key => $value) {
             // 제어 자식이 params 안에 온 레거시 shape 는 자식으로 방출하므로 속성으로 중복하지 않는다.
             if (in_array($key, ['actions', 'cases', 'conditions'], true)) {
+                continue;
+            }
+
+            // body/query 가 평면 맵이면 `<body>`/`<query>` 자식으로 나가므로 속성으로 중복하지 않는다(D41).
+            if (in_array($key, ['body', 'query'], true) && $this->isFieldMap($value)) {
                 continue;
             }
 

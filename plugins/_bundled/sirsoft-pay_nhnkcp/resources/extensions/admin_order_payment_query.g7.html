@@ -1,0 +1,123 @@
+<extension target-layout="admin_ecommerce_order_detail">
+  <inject target-id="sticky_header_container" position="append_child">
+    <div data-if="{{kcp_status.data?._is_test_mode === true}}" class="mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex-center gap-2">
+      <icon name="flask-conical" class="w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0"/>
+      <span class="text-sm font-semibold text-orange-800 dark:text-orange-300">$t:sirsoft-pay_nhnkcp.admin.test_mode_badge</span>
+      <span class="text-sm text-orange-700 dark:text-orange-400">$t:sirsoft-pay_nhnkcp.admin.test_mode_order_notice</span>
+    </div>
+  </inject>
+  <inject target-id="tab_content_area" position="append_child">
+    <div data-ref="kcp_info_panel" data-if="{{!!kcp_status.data?.tno}}" class="admin-card">
+      <div class="flex-center gap-2 mb-4">
+        <div class="w-1.5 h-4 bg-blue-500 rounded-full flex-shrink-0"/>
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nhnkcp.admin.order_info_title</h3>
+        <span class="text-hint hidden sm:inline">$t:sirsoft-pay_nhnkcp.admin.order_info_description</span>
+        <span data-if="{{kcp_status.data?.refund_status === 'completed' &amp;&amp; (kcp_status.data?.payment_status === 'cancelled' || kcp_status.data?.payment_status === 'partial_cancelled')}}" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">$t:sirsoft-pay_nhnkcp.admin.pay_status_cancel_completed</span>
+        <span data-if="{{kcp_status.data?.payment_status === 'partial_cancelled' &amp;&amp; kcp_status.data?.refund_status !== 'completed'}}" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-pay_nhnkcp.admin.pay_status_partial_cancelled</span>
+        <span data-if="{{kcp_status.data?.payment_status === 'cancelled' &amp;&amp; kcp_status.data?.refund_status !== 'completed'}}" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">$t:sirsoft-pay_nhnkcp.admin.pay_status_cancelled</span>
+        <span data-if="{{kcp_status.data?.payment_status === 'paid' &amp;&amp; kcp_status.data?.res_cd === '0000'}}" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">$t:sirsoft-pay_nhnkcp.admin.pay_status_approved</span>
+        <span data-if="{{!(kcp_status.data?.refund_status === 'completed' &amp;&amp; (kcp_status.data?.payment_status === 'cancelled' || kcp_status.data?.payment_status === 'partial_cancelled')) &amp;&amp; kcp_status.data?.payment_status !== 'cancelled' &amp;&amp; kcp_status.data?.payment_status !== 'partial_cancelled' &amp;&amp; !(kcp_status.data?.payment_status === 'paid' &amp;&amp; kcp_status.data?.res_cd === '0000')}}" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-pay_nhnkcp.admin.pay_status_unknown</span>
+        <span data-if="{{kcp_escrow_delivery.data?.has_escrow_payment === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">$t:sirsoft-pay_nhnkcp.admin.escrow_badge</span>
+      </div>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_payment_status</span>
+        <span class="text-gray-900 dark:text-gray-100">{{kcp_status.data?.payment_status_label ?? '-'}}</span>
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_tno</span>
+        <span class="font-mono text-gray-900 dark:text-gray-100 break-all">{{kcp_status.data?.tno ?? '-'}}</span>
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_app_no</span>
+        <span class="font-mono text-gray-900 dark:text-gray-100">{{kcp_status.data?.app_no ?? '-'}}</span>
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_app_time</span>
+        <span class="font-mono text-gray-900 dark:text-gray-100">{{kcp_status.data?.app_time ?? '-'}}</span>
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_pay_method</span>
+        <span class="text-gray-900 dark:text-gray-100">{{kcp_status.data?.card_name ?? kcp_status.data?.bank_name ?? kcp_status.data?.use_pay_method ?? '-'}}</span>
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_res_cd</span>
+        <span class="font-mono text-gray-900 dark:text-gray-100">{{kcp_status.data?.res_cd ?? '-'}}</span>
+        <span data-if="{{(kcp_status.data?.cancelled_amount ?? 0) > 0}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_cancelled_amount</span>
+        <span data-if="{{(kcp_status.data?.cancelled_amount ?? 0) > 0}}" class="font-mono text-gray-900 dark:text-gray-100">{{kcp_status.data?.cancelled_amount_formatted ?? '-'}}</span>
+        <span data-if="{{!!kcp_status.data?.cancelled_at}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_cancelled_at</span>
+        <span data-if="{{!!kcp_status.data?.cancelled_at}}" class="font-mono text-gray-900 dark:text-gray-100">{{kcp_status.data?.cancelled_at ?? '-'}}</span>
+        <span data-if="{{!!kcp_status.data?.refund_status}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_refund_status</span>
+        <span data-if="{{!!kcp_status.data?.refund_status}}" class="text-gray-900 dark:text-gray-100">{{kcp_status.data?.refund_status_label ?? kcp_status.data?.refund_status ?? '-'}}</span>
+        <span data-if="{{!!kcp_status.data?.refund_number}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.result_refund_number</span>
+        <span data-if="{{!!kcp_status.data?.refund_number}}" class="font-mono text-gray-900 dark:text-gray-100 break-all">{{kcp_status.data?.refund_number ?? '-'}}</span>
+      </div>
+    </div>
+    <div data-ref="kcp_escrow_delivery_panel" data-if="{{kcp_escrow_delivery.data?.has_escrow_payment === true}}" class="admin-card mt-4">
+      <div class="flex-center gap-2 mb-4">
+        <div class="w-1.5 h-4 bg-purple-500 rounded-full flex-shrink-0"/>
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_title</h3>
+        <span class="text-hint hidden sm:inline">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_description</span>
+      </div>
+      <div data-if="{{kcp_escrow_delivery.data?.registered_delivery}}" class="mb-4 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-700/50">
+        <div class="flex-center gap-2 mb-2">
+          <icon name="truck" class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0"/>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_already_registered</span>
+        </div>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_registered_at</span>
+          <span class="text-gray-900 dark:text-gray-100 font-mono">{{kcp_escrow_delivery.data.registered_delivery.registered_at ?? '-'}}</span>
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_info</span>
+          <span class="text-gray-900 dark:text-gray-100 font-mono">{{kcp_escrow_delivery.data.registered_delivery.deli_numb ?? '-'}}</span>
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_info</span>
+          <span class="text-gray-900 dark:text-gray-100">{{kcp_escrow_delivery.data.registered_delivery.courier_name ?? '-'}}</span>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <div class="flex-center gap-2">
+          <label class="text-tertiary w-20 flex-shrink-0">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_label</label>
+          <input type="text" placeholder="$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_placeholder" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono">
+            <on type="change">
+              <set-state target="local" _ked_deli_numb="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <div class="flex-center gap-2">
+          <label class="text-tertiary w-20 flex-shrink-0">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_label</label>
+          <select class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            <on type="change">
+              <set-state target="local" _ked_deli_corp="{{$event.target.value}}"/>
+            </on>
+            <option value="">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_placeholder</option>
+            <option value="04">CJ대한통운</option>
+            <option value="05">한진택배</option>
+            <option value="06">로젠택배</option>
+            <option value="08">롯데택배</option>
+            <option value="09">우체국택배</option>
+            <option value="11">경동택배</option>
+            <option value="13">일양로지스</option>
+            <option value="14">합동택배</option>
+            <option value="20">드림택배</option>
+            <option value="23">천일택배</option>
+            <option value="26">건영택배</option>
+            <option value="40">기타</option>
+          </select>
+        </div>
+        <div class="flex justify-end">
+          <button disabled="{{_local._ked_registering}}" class="flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <set-state target="local" :_ked_registering="true" :_ked_error="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/escrow-delivery" method="POST">
+                <success>
+                  <set-state target="local" :_ked_registering="false"/>
+                  <toast type="success" message="$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_success"/>
+                  <refetch-data-source dataSourceId="kcp_escrow_delivery"/>
+                </success>
+                <fail>
+                  <set-state target="local" :_ked_registering="false" _ked_error="{{response?.errors?.deli_numb?.[0] ?? response?.errors?.deli_corp?.[0] ?? response?.errors?.message?.[0] ?? '$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_error'}}"/>
+                </fail>
+                <body deli_numb="{{_local._ked_deli_numb ?? ''}}" deli_corp="{{_local._ked_deli_corp ?? ''}}"/>
+              </api-call>
+            </on>
+            <icon data-if="{{_local._ked_registering}}" name="spinner" class="w-3 h-3 animate-spin"/>
+            <span data-if="{{_local._ked_registering}}">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_registering</span>
+            <span data-if="{{!_local._ked_registering &amp;&amp; !kcp_escrow_delivery.data?.registered_delivery}}">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_register_button</span>
+            <span data-if="{{!_local._ked_registering &amp;&amp; kcp_escrow_delivery.data?.registered_delivery}}">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_change_button</span>
+          </button>
+        </div>
+        <div data-if="{{_local._ked_error}}" class="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._ked_error}}</div>
+      </div>
+    </div>
+  </inject>
+  <data-source id="kcp_status" label_key="$t:sirsoft-pay_nhnkcp.editor.data_source.kcp_status" type="api" endpoint="/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/transaction-status" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <data-source id="kcp_escrow_delivery" label_key="$t:sirsoft-pay_nhnkcp.editor.data_source.kcp_escrow_delivery" type="api" endpoint="/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/escrow-delivery" method="GET" :auto_fetch="true" :auth_required="true"/>
+</extension>

@@ -451,7 +451,7 @@ return [
         'extension_point_invalid' => 'The extension_point field must be a non-empty string.',
         'target_layout_invalid' => 'The target_layout field must be a non-empty string.',
         'components_must_be_array' => 'The components field must be an array.',
-        'injections_required' => 'An overlay extension requires the injections field.',
+        'contribution_required' => 'An overlay extension requires at least one of injections, modals, data_sources, scripts, or init_actions.',
         'injections_must_be_array' => 'The injections field must be an array.',
         'injection_must_be_array' => 'injections[:index] must be an array.',
         'injection_target_id_required' => 'injections[:index] requires the target_id field.',

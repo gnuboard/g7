@@ -3,6 +3,7 @@
 namespace Tests\Unit\Support\LayoutMarkup;
 
 use App\Enums\LayoutMarkupErrorCode;
+use App\Rules\NoExternalUrls;
 use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\ComponentRegistry;
@@ -71,16 +72,47 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @scenario compile_unit=validator,source_health=invalid
+     * 외부 URL·위험 스킴은 **이관 검사에서 통과한다** (PO 확정 07-20 — `NoExternalUrls` 제외).
      *
-     * @effects external_url_or_dangerous_scheme_is_rejected
+     * 번들 결제 플러그인의 PG사 링크가 정상 출하물인데 파사드만 막고 있어 이관이 불가했다.
+     * 설치 경로(`ValidatesLayoutFiles`)는 원래 이 규칙을 돌리지 않으므로 `.json` 설치와 패리티다.
+     *
+     * **저작 API 경로에는 규칙이 그대로 살아 있다** — 그 계약은 아래 대조군이 지킨다.
+     *
+     * @scenario compile_unit=validator,source_health=valid
+     *
+     * @effects external_url_and_dangerous_scheme_pass_migration_validation
      */
-    public function test_dangerous_scheme_in_props_is_rejected(): void
+    public function test_external_url_and_dangerous_scheme_pass_migration_validation(): void
     {
         $json = $this->layout();
-        $json['components'] = [['type' => 'basic', 'name' => 'A', 'props' => ['href' => 'javascript:alert(1)']]];
+        $json['components'] = [
+            ['type' => 'basic', 'name' => 'A', 'props' => ['href' => 'https://npg.nicepay.co.kr/issue/IssueLoader.do']],
+            ['type' => 'basic', 'name' => 'A', 'props' => ['href' => 'javascript:alert(1)']],
+        ];
 
-        $this->assertSame(LayoutMarkupErrorCode::ExternalUrlForbidden, $this->error($json));
+        $this->assertNull($this->errorOrNull($json));
+    }
+
+    /**
+     * 저작 API 경로는 종전대로 위험 스킴을 막는다 (대조군 — 규칙이 통째로 죽지 않았음).
+     *
+     * @scenario compile_unit=validator,source_health=invalid
+     *
+     * @effects authoring_api_still_rejects_dangerous_scheme
+     */
+    public function test_authoring_api_still_rejects_external_url_and_dangerous_scheme(): void
+    {
+        $messages = [];
+        $fail = function (string $message) use (&$messages): void {
+            $messages[] = $message;
+        };
+
+        (new NoExternalUrls)->validate('content', [
+            'components' => [['type' => 'basic', 'name' => 'A', 'props' => ['href' => 'javascript:alert(1)']]],
+        ], $fail);
+
+        $this->assertNotSame([], $messages);
     }
 
     /**
@@ -257,5 +289,23 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
         }
 
         $this->fail('CompileError 를 기대했으나 통과했습니다.');
+    }
+
+    /**
+     * 검증을 돌려 오류 코드를 반환하되, 통과하면 null 을 반환합니다 (통과를 단언할 때 사용).
+     *
+     * @param  array<string, mixed>  $json  레이아웃 JSON
+     * @param  string  $rootKind  루트 종류
+     * @return LayoutMarkupErrorCode|null 오류 코드, 통과 시 null
+     */
+    private function errorOrNull(array $json, string $rootKind = 'layout'): ?LayoutMarkupErrorCode
+    {
+        try {
+            $this->validate($json, $rootKind);
+        } catch (CompileError $error) {
+            return $error->getErrorCode();
+        }
+
+        return null;
     }
 }

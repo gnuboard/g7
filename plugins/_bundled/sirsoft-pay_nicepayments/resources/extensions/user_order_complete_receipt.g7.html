@@ -1,0 +1,43 @@
+<extension target-layout="shop/order_complete">
+  <inject target-id="order_complete_payment_summary" position="append_child">
+    <div data-if="{{orderData?.data?.payment?.pg_provider === 'nicepayments' &amp;&amp; orderData?.data?.payment?.transaction_id &amp;&amp; orderData?.data?.payment?.paid_at}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
+      <!-- 간편결제 서비스명 표시 -->
+      <div data-if="{{(['NAVERPAY','KAKAOPAY','SAMSUNGPAY','APPLEPAY','PAYCO','SKPAY','SSGPAY','LPAY']).includes(orderData?.data?.payment?.payment_meta?.PayMethod)}}" class="flex-between mb-2">
+        <span class="text-secondary text-sm">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
+        <span class="text-heading">{{({'NAVERPAY':'네이버페이','KAKAOPAY':'카카오페이','SAMSUNGPAY':'삼성페이','APPLEPAY':'애플페이','PAYCO':'PAYCO','SKPAY':'11pay','SSGPAY':'SSG페이','LPAY':'L.pay'})[orderData?.data?.payment?.payment_meta?.PayMethod] ?? orderData?.data?.payment?.payment_meta?.PayMethod}}</span>
+      </div>
+      <!-- 영수증 링크 행 -->
+      <div class="flex-between">
+        <span class="text-secondary text-sm">$t:sirsoft-pay_nicepayments.user.receipt_label</span>
+        <div class="flex-center gap-3">
+          <!-- 결제 영수증 -->
+          <a href="https://npg.nicepay.co.kr/issue/IssueLoader.do?type=2&amp;TID={{orderData?.data?.payment?.transaction_id}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <icon name="file-text" class="w-3.5 h-3.5"/>
+            <span>$t:sirsoft-pay_nicepayments.user.view_receipt</span>
+          </a>
+          <!-- 현금영수증 조회 버튼 -->
+          <button data-if="{{orderData?.data?.payment?.cash_receipt_type &amp;&amp; !_local._npOcReceiptLoaded}}" type="button" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline disabled:opacity-50">
+            <on type="click">
+              <set-state target="local" :_npOcReceiptLoading="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.id}}/receipt" method="GET">
+                <success>
+                  <set-state target="local" :_npOcReceiptLoading="false" :_npOcReceiptLoaded="true" _npOcCashReceiptUrl="{{$response.cash_receipt_url}}"/>
+                </success>
+                <fail>
+                  <set-state target="local" :_npOcReceiptLoading="false"/>
+                </fail>
+              </api-call>
+            </on>
+            <icon name="receipt" class="w-3.5 h-3.5"/>
+            <span>$t:sirsoft-pay_nicepayments.user.view_cash_receipt</span>
+          </button>
+          <!-- 현금영수증 링크 (조회 후) -->
+          <a data-if="{{_local._npOcReceiptLoaded &amp;&amp; _local._npOcCashReceiptUrl}}" href="{{_local._npOcCashReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline">
+            <icon name="receipt" class="w-3.5 h-3.5"/>
+            <span>$t:sirsoft-pay_nicepayments.user.view_cash_receipt</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

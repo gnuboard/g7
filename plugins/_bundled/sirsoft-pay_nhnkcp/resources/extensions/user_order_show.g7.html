@@ -1,0 +1,63 @@
+<extension target-layout="mypage/orders/show">
+  <inject target-id="order_payment_info_panel" position="append_child">
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.is_escrow}}" class="pt-2 mt-1">
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+        <icon name="shield-check" class="w-3 h-3"/>
+        <span>$t:sirsoft-pay_nhnkcp.user.escrow_badge</span>
+      </span>
+    </div>
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.vbank_name}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
+      <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nhnkcp.user.vbank_title</p>
+      <div class="space-y-1.5">
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_bank_name</span>
+          <span class="text-primary font-medium">{{order.data.payment?.vbank_name}}</span>
+        </div>
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_account</span>
+          <span class="text-primary font-medium font-mono tracking-wide">{{order.data.payment?.vbank_number}}</span>
+        </div>
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_holder</span>
+          <span class="text-primary font-medium">{{order.data.payment?.vbank_holder}}</span>
+        </div>
+        <div class="flex-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_due</span>
+          <span class="text-primary font-medium">{{order.data.payment?.due_date_formatted}}</span>
+        </div>
+      </div>
+      <p class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
+    </div>
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
+      <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">$t:sirsoft-pay_nhnkcp.user.tax_breakdown_title</p>
+      <div class="flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.supply_amount</span>
+        <span class="text-primary font-medium">{{order.data.total_taxable_supply_amount_formatted}}</span>
+      </div>
+      <div class="flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vat_amount</span>
+        <span class="text-primary font-medium">{{order.data.total_vat_amount_formatted}}</span>
+      </div>
+      <div data-if="{{order.data.total_tax_free_amount > 0}}" class="flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.tax_free_amount</span>
+        <span class="text-primary font-medium">{{order.data.total_tax_free_amount_formatted}}</span>
+      </div>
+    </div>
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.transaction_id &amp;&amp; order.data.payment?.paid_at}}" id="kcp-mp-receipt-row" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex-between">
+        <span class="text-label-subtle">$t:sirsoft-pay_nhnkcp.user.receipt_label</span>
+        <button type="button" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50" disabled="{{_local._kcpReceiptLoading === true}}">
+          <on type="click">
+            <set-state target="local" :_kcpReceiptLoading="true"/>
+            <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/receipt" method="GET"/>
+            <call-external constructor="KcpReceiptPopup" :args='{"url":"{{$prev.receipt_url}}","cash_url":"{{$prev.cash_receipt_url}}"}'/>
+            <set-state target="local" :_kcpReceiptLoading="false"/>
+          </on>
+          <icon data-if="{{_local._kcpReceiptLoading === true}}" name="spinner" class="w-3.5 h-3.5 animate-spin"/>
+          <icon data-if="{{!_local._kcpReceiptLoading}}" name="file-text" class="w-3.5 h-3.5"/>
+          <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
+        </button>
+      </div>
+    </div>
+  </inject>
+</extension>

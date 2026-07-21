@@ -550,7 +550,7 @@ final class LayoutMarkupDecompiler
 
         foreach ($seo as $key => $value) {
             if (isset($bodyKeys[$key])) {
-                $children[] = $this->el($bodyKeys[$key], [], [], $this->encode($value));
+                $children[] = $this->structuredValueElement($bodyKeys[$key], $value);
 
                 continue;
             }
@@ -567,6 +567,90 @@ final class LayoutMarkupDecompiler
      * @param  array<string, mixed>  $source  data_sources 항목
      * @return MarkupElement `<data-source>` 요소
      */
+    /**
+     * 구조값을 1급 표기로 되돌립니다 (D42 G1·G2) — 평면이면 속성, 중첩이면 `<field>` 트리.
+     *
+     * JSON 본문은 **되돌릴 때 쓰지 않는다.** 저작 파일에 통짜 JSON 이 남지 않게 하는 것이 이 문법의
+     * 목적이므로(D42), 표현 가능한 형태는 전부 태그·속성으로 방출한다. 리스트(`[1,2]`)처럼 키가 없는
+     * 값만 본문으로 남으며, 그 경우도 빈 배열은 계량 대상이 아니다.
+     *
+     * @param  string  $tag  태그명 (`params`/`headers`/`data`/`fallback`)
+     * @param  mixed  $value  구조값
+     * @return MarkupElement 요소
+     */
+    private function structuredValueElement(string $tag, mixed $value): MarkupElement
+    {
+        if (! is_array($value) || $value === [] || array_is_list($value)) {
+            return $this->el($tag, [], [], $this->encode($value));
+        }
+
+        if ($this->isFlatScalarMap($value)) {
+            return $this->el($tag, $this->valueAttributes($value), []);
+        }
+
+        return $this->el($tag, [], $this->fieldTreeChildren($value));
+    }
+
+    /**
+     * 연관 배열의 모든 값이 스칼라인지 판정합니다 (속성 field-map 가능 여부).
+     *
+     * @param  array<string, mixed>  $map  맵
+     * @return bool 평면이면 true
+     */
+    private function isFlatScalarMap(array $map): bool
+    {
+        foreach ($map as $value) {
+            if (is_array($value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 평면 맵을 속성 목록으로 되돌립니다 (스칼라는 `attr`, 비문자열은 `:attr` 타입 리터럴).
+     *
+     * @param  array<string, mixed>  $map  평면 맵
+     * @return array<int, MarkupAttribute> 속성 목록
+     */
+    private function valueAttributes(array $map): array
+    {
+        $attributes = [];
+
+        foreach ($map as $key => $value) {
+            $attributes[] = $this->valueAttr((string) $key, $value);
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * 중첩 맵을 `<field>` 트리로 되돌립니다 (D42 G2).
+     *
+     * @param  array<string, mixed>  $map  중첩 맵
+     * @return array<int, MarkupElement> `<field>` 요소 목록
+     */
+    private function fieldTreeChildren(array $map): array
+    {
+        $children = [];
+
+        foreach ($map as $key => $value) {
+            if (is_array($value) && $value !== [] && ! array_is_list($value)) {
+                $children[] = $this->el('field', [$this->attr('name', (string) $key)], $this->fieldTreeChildren($value));
+
+                continue;
+            }
+
+            $children[] = $this->el('field', [
+                $this->attr('name', (string) $key),
+                $this->valueAttr('value', $value),
+            ], []);
+        }
+
+        return $children;
+    }
+
     private function dataSource(array $source): MarkupElement
     {
         $comment = $source['comment'] ?? null;
@@ -579,7 +663,7 @@ final class LayoutMarkupDecompiler
 
         foreach ($source as $key => $value) {
             if (isset($bodyKeys[$key])) {
-                $children[] = $this->el($bodyKeys[$key], [], [], $this->encode($value));
+                $children[] = $this->structuredValueElement($bodyKeys[$key], $value);
 
                 continue;
             }

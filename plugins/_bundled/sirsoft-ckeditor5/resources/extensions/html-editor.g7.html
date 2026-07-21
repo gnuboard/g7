@@ -1,0 +1,11 @@
+<extension extension-point="html_editor" mode="replace" priority="100">
+  <div data-ref="ckeditor5_container" id="ckeditor5-{{extensionPointProps.name ?? 'content'}}" class="ckeditor5-wrapper">
+    <on event="mount">
+      <action handler="sirsoft-ckeditor5.initEditor" name="{{extensionPointProps.name ?? 'content'}}" content="{{extensionPointProps.content ?? extensionPointProps.value ?? ''}}" multilingual="{{extensionPointProps.multilingual ?? false}}" placeholder="{{extensionPointProps.placeholder ?? ''}}" readOnly="{{_computed.isReadOnly ?? extensionPointProps.disabled ?? extensionPointProps.readOnly ?? false}}" imageUpload="{{_global.plugins['sirsoft-ckeditor5']?.imageUpload ?? false}}" uploadPermission="{{extensionPointProps.uploadPermission ?? ''}}" height="{{_global.plugins['sirsoft-ckeditor5']?.editorHeight ?? 400}}" toolbar="{{_global.plugins['sirsoft-ckeditor5']?.toolbar ?? 'standard'}}"/>
+    </on>
+    <on event="unmount">
+      <action handler="sirsoft-ckeditor5.destroyEditor" name="{{extensionPointProps.name ?? 'content'}}"/>
+    </on>
+  </div>
+  <script src="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js" id="ckeditor5_script"/>
+</extension>

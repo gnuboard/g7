@@ -276,6 +276,100 @@ final class LayoutMarkupRoundTrip
     }
 
     /**
+     * 마크업에서 **원시 JSON 방출** 지점을 찾습니다 (D41 — `<json>` 태그 계량의 사각).
+     *
+     * `escapedKeys()` 는 `<json>` 태그만 센다. 그래서 속성값(`:query='{…}'`)이나 구조 태그 본문에
+     * 통짜로 직렬화된 JSON 은 escape-0 판정을 받고도 그대로 남는다 — 저작 포맷의 존재 이유(D2
+     * "속성 JSON 추방")를 정면으로 무너뜨리는 자리다. 이 함수가 그 사각을 덮는다.
+     *
+     * **태그 예외를 두지 않는다 (D42 — PO 지적 3회차).** D41 은 `<params>`/`<fallback>`/`<props>`/
+     * `<define>`/`<prop>` 을 "`decodeJsonBody` 로 객체를 받는 **설계된 정본 표기**" 로 규정해 계량에서
+     * 뺐다(ⓓ 18건). 그 구분은 **성립하지 않는다** — 컴파일러가 받아 준다는 사실과 저작 파일에 JSON 이
+     * 통짜로 드러난다는 사실은 별개이고, 이 포맷의 존재 이유(D2 "속성 JSON 추방")를 무너뜨리는 것은
+     * 후자다. 실제로 그 제외 구간에 DataGrid 컬럼 정의 + cellChildren 컴포넌트 트리가 통째로 들어간
+     * 파일이 있었다 — 태그로 저작하라고 만든 포맷 안에서 컴포넌트 트리가 JSON 인 상태.
+     *
+     * 그러므로 **어느 태그의 본문이든 JSON 으로 파싱되면 센다.** 계량이 좁으면 게이트는 통과시키면서
+     * 아무것도 못 본다(같은 사고가 `<json>` 태그 한정 → 엔티티 이스케이프 → 태그 본문 제외 순으로
+     * 세 번 반복됐다). 문법이 아직 없는 자리는 계량에서 빼는 게 아니라 **명시 대장에 등재**한다.
+     *
+     * @param  string  $markup  마크업 소스
+     * @return array<int, string> 방출 지점 라벨 (`:query` 속성명 / `$switch` / `<params>` 태그명)
+     */
+    public static function rawJsonEmissions(string $markup): array
+    {
+        $hits = [];
+
+        // 객체/배열이 값으로 박힌 타입 리터럴 속성 — 스칼라(:async="true" 등)는 정상 문법이라 제외.
+        preg_match_all('/:([A-Za-z_][\w:-]*)=(?:\'([^\']*)\'|"([^"]*)")/', $markup, $attrs, PREG_SET_ORDER);
+
+        foreach ($attrs as $attr) {
+            $raw = self::decodeMarkupText(($attr[2] ?? '') !== '' ? $attr[2] : ($attr[3] ?? ''));
+
+            if (! self::isStructuredJson($raw)) {
+                continue;
+            }
+
+            $hits[] = str_contains($raw, '"$switch"') ? '$switch' : ':'.$attr[1];
+        }
+
+        // 태그 본문 JSON — **태그 이름을 가리지 않는다**(D42). 본문이 JSON 객체/배열로 파싱되면
+        // 그 자체가 저작 파일에 드러난 통짜 JSON 이다. 라벨은 태그명으로 남겨 어디를 고쳐야 하는지
+        // 게이트 메시지만 보고 알 수 있게 한다.
+        preg_match_all('/<([a-z][a-z0-9-]*)\b[^>]*>([^<]*)<\/\1>/i', $markup, $bodies, PREG_SET_ORDER);
+
+        foreach ($bodies as $body) {
+            $raw = self::decodeMarkupText($body[2]);
+
+            if (! self::isStructuredJson($raw)) {
+                continue;
+            }
+
+            // `$switch` 는 `<switch-value>` 가 정본이라 태그명 대신 문법 이름으로 지목한다.
+            $hits[] = str_contains($raw, '"$switch"') ? '$switch' : '<'.strtolower($body[1]).'>';
+        }
+
+        return $hits;
+    }
+
+    /**
+     * 마크업 텍스트의 HTML 엔티티를 풀어 원값으로 되돌립니다 (계량 전처리).
+     *
+     * 직렬화기는 값 안에 `'` 가 섞여 작은따옴표로 감쌀 수 없으면 큰따옴표로 감싸고 내부 `"` 를
+     * `&quot;` 로 이스케이프한다. 그 형태를 그대로 `json_decode` 에 넣으면 실패하므로, **원시 JSON
+     * 인데도 계량에서 빠진다** — 같은 파일 안에서 인용 형태만 다른 두 blob 중 하나만 세지는
+     * 비대칭이 실제로 있었다. 디코드 후 판정해야 두 형태가 같게 취급된다.
+     *
+     * @param  string  $value  마크업 원문 조각
+     * @return string 엔티티를 푼 값 (앞뒤 공백 제거)
+     */
+    private static function decodeMarkupText(string $value): string
+    {
+        return trim(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    }
+
+    /**
+     * 원시 JSON 으로 셀 값인지 판정합니다 — 구조를 가진 객체/배열만 해당 (D42).
+     *
+     * 빈 컬렉션(`[]`·`{}`)은 **구조가 없는 값 리터럴**이다(`null`·`true`·`0` 과 동급). 직렬화된 구조가
+     * 저작 파일에 드러난 것이 아니므로 세지 않는다 — `:modalStack="[]"` 는 문법으로 없앨 대상이
+     * 아니라 그 자체가 정상 표기다. 그 밖의 축소는 하지 않는다(태그 이름·컨테이너 종류로 빼지 않음).
+     *
+     * @param  string  $raw  엔티티를 푼 값
+     * @return bool 구조를 가진 JSON 이면 true
+     */
+    private static function isStructuredJson(string $raw): bool
+    {
+        if ($raw === '' || (! str_starts_with($raw, '{') && ! str_starts_with($raw, '['))) {
+            return false;
+        }
+
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) && $decoded !== [];
+    }
+
+    /**
      * 값을 정규화합니다 — 연관 배열은 키 정렬(순서 무관), 리스트는 순서 유지.
      *
      * @param  mixed  $value  값

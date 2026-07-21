@@ -1,0 +1,142 @@
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description"/>
+  <data-source id="settings" label_key="$t:sirsoft-ckeditor5.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="notice_banner" class="alert-info">
+        <div class="flex-center gap-3">
+          <icon name="circle-info" size="lg" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+          <p class="text-info-soft">$t:sirsoft-ckeditor5.settings.notice</p>
+        </div>
+      </div>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+        <div class="flex-center gap-3">
+          <icon name="triangle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
+          <div>
+            <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="grid-3col-responsive">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_toolbar_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_toolbar_header" class="panel-header-row">
+          <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_toolbar</h3>
+        </div>
+        <div data-ref="section_toolbar_fields" class="p-6 space-y-6">
+          <div data-ref="field_toolbar" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.toolbar.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.toolbar.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <select name="toolbar" class="focus:border-transparent">
+                <option value="minimal">$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal</option>
+                <option value="standard">$t:sirsoft-ckeditor5.settings.fields.toolbar.standard</option>
+                <option value="full">$t:sirsoft-ckeditor5.settings.fields.toolbar.full</option>
+              </select>
+            </div>
+          </div>
+          <div data-ref="field_editor_height" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.editor_height.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.editor_height.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" name="editorHeight" class="focus:border-transparent"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_image_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_image_header" class="panel-header-row">
+          <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_image</h3>
+        </div>
+        <div data-ref="section_image_fields" class="p-6 space-y-6">
+          <div data-ref="field_image_upload" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.image_upload.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.image_upload.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <toggle name="imageUpload"/>
+            </div>
+          </div>
+          <div data-ref="field_image_max_size" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.image_max_size.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.image_max_size.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" name="imageMaxSizeMb" class="focus:border-transparent"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="guide_section" class="mt-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 class="section-heading mb-4">$t:sirsoft-ckeditor5.settings.guide.title</h3>
+        <ol class="list-decimal list-inside space-y-3">
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step1</li>
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step2</li>
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step3</li>
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step4</li>
+          <li class="text-label">$t:sirsoft-ckeditor5.settings.guide.step5</li>
+        </ol>
+      </div>
+      <div data-ref="section_preview_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_preview_header" class="px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+          <on type="click">
+            <set-state target="local" showPreview="{{!_local.showPreview}}"/>
+          </on>
+          <div>
+            <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_preview</h3>
+            <p class="form-hint">$t:sirsoft-ckeditor5.settings.section_preview_hint</p>
+          </div>
+          <icon name="{{_local.showPreview ? 'chevron-up' : 'chevron-down'}}" class="text-gray-400 dark:text-gray-500"/>
+        </div>
+        <div data-ref="section_preview_body" data-if="{{_local.showPreview}}" class="p-6 border-t border-gray-200 dark:border-gray-700">
+          <extension-point name="html_editor" data-ref="preview_editor" content="" placeholder="$t:sirsoft-ckeditor5.settings.preview_placeholder" :multilingual="true">
+            <prop name="name">"preview_content"</prop>
+            <default>
+              <html-editor name="preview_content" content="{{extensionPointProps.content ?? ''}}" multilingual="{{extensionPointProps.multilingual ?? false}}" placeholder="{{extensionPointProps.placeholder ?? ''}}" :isHtml="true" :rows="15" :showHtmlModeToggle="false"/>
+            </default>
+          </extension-point>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+              <success>
+                <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                <set-state target="global" plugins="{{Object.assign({}, _global.plugins ?? {}, { 'sirsoft-ckeditor5': _local.form })}}"/>
+                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                <refetch-data-source dataSourceId="settings"/>
+                <remount componentId="preview_editor"/>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                <toast type="error" message="$t:admin.plugins.settings.save_error"/>
+              </fail>
+            </api-call>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" size="sm" class="animate-spin"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

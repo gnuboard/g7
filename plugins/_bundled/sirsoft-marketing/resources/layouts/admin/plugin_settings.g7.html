@@ -1,0 +1,275 @@
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-marketing.settings.title" description="$t:sirsoft-marketing.settings.description"/>
+  <data-source id="settings" label_key="$t:sirsoft-marketing.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <success>
+      <sequence>
+        <set-state target="local" form.channels="{{typeof response.data.data.channels === 'string' ? (JSON.parse(response.data.data.channels) ?? []) : (response.data.data.channels ?? [])}}"/>
+        <set-state target="global" channels="{{typeof response.data.data.channels === 'string' ? (JSON.parse(response.data.data.channels) ?? []) : (response.data.data.channels ?? [])}}"/>
+      </sequence>
+    </success>
+  </data-source>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:sirsoft-marketing.settings.title" description="$t:sirsoft-marketing.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="section-heading-md">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_channels_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_channels_header" class="panel-header-row">
+          <h3 class="text-error-strong">$t:sirsoft-marketing.settings.section.channels</h3>
+        </div>
+        <div data-ref="section_channels_fields" class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div data-ref="field_marketing_consent_enabled" class="grid-2col lg:grid-cols-3 items-center px-6 py-4">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.hint</p>
+            </div>
+            <div class="lg:col-span-1 flex justify-end">
+              <toggle name="marketing_consent_enabled"/>
+            </div>
+          </div>
+          <div data-ref="field_marketing_consent_terms_slug" class="grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.hint</p>
+            </div>
+            <div class="lg:col-span-1">
+              <input type="text" name="marketing_consent_terms_slug" placeholder="$t:sirsoft-marketing.settings.fields.terms_slug_placeholder" class="dark:focus:ring-blue-400 focus:border-transparent"/>
+            </div>
+          </div>
+          <div data-ref="channels_table_section" class="px-6 py-4">
+            <div class="flex-between mb-3">
+              <p class="text-body font-medium">$t:sirsoft-marketing.settings.fields.channels.label</p>
+              <button type="button" class="flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm">
+                <on type="click">
+                  <set-state target="global" :editingChannel='{"key":"","label":{"ko":"","en":""},"page_slug":"","enabled":true,"is_system":false,"_editing":false}'/>
+                  <open-modal target="channel_edit_modal"/>
+                </on>
+                <icon name="plus" size="sm"/>
+                <span>$t:sirsoft-marketing.settings.channels.add</span>
+              </button>
+            </div>
+            <p class="text-tertiary mb-3">$t:sirsoft-marketing.settings.channels.description</p>
+            <div data-ref="channels_table" class="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+              <div class="text-tertiary grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 font-medium uppercase">
+                <div class="col-span-6 sm:col-span-4">$t:sirsoft-marketing.settings.channels.col_label</div>
+                <div class="hidden sm:block sm:col-span-4">$t:sirsoft-marketing.settings.channels.col_slug</div>
+                <div class="col-span-4 sm:col-span-2 text-center">$t:sirsoft-marketing.settings.channels.col_enabled</div>
+                <div class="col-span-2 hidden sm:block"/>
+              </div>
+              <div data-ref="channels_table_rows" data-each="channel, channelIdx in _global.channels ?? (typeof _local.form.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form.channels ?? []))" class="divide-y divide-gray-100 dark:divide-gray-700">
+                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
+                  <div class="col-span-6 sm:col-span-4">
+                    <div class="flex-center gap-2 flex-wrap">
+                      <span class="text-heading">{{channel.label.ko ?? channel.key}}</span>
+                      <span data-if="{{channel.is_system}}" class="text-info-soft inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
+                    </div>
+                    <span class="text-hint font-mono mt-0.5">{{channel.key}}</span>
+                    <span data-if="{{!!channel.page_slug}}" class="block sm:hidden text-xs text-blue-400 dark:text-blue-500 font-mono mt-0.5">{{channel.page_slug}}</span>
+                  </div>
+                  <div class="hidden sm:block sm:col-span-4">
+                    <span class="text-label-subtle font-mono">{{channel.page_slug || '-'}}</span>
+                  </div>
+                  <div class="col-span-4 sm:col-span-2 flex justify-center">
+                    <toggle checked="{{channel.enabled}}" size="sm" :autoBinding="false">
+                      <on type="change">
+                        <set-state target="global" channels="{{(_global.channels ?? []).map((ch) => ch.key === channel.key ? { ...ch, enabled: $event.target.checked } : ch)}}"/>
+                        <set-state target="local" :hasChanges="true"/>
+                      </on>
+                    </toggle>
+                  </div>
+                  <div class="col-span-2 flex justify-end gap-1 sm:gap-2">
+                    <button type="button" class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 rounded transition-colors">
+                      <on type="click">
+                        <set-state target="global" editingChannel="{{{ ...channel, _editing: true }}}"/>
+                        <open-modal target="channel_edit_modal"/>
+                      </on>
+                      <icon name="pen" size="sm"/>
+                    </button>
+                    <button data-if="{{!channel.is_system}}" type="button" class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400 rounded transition-colors">
+                      <on type="click">
+                        <set-state target="global" channels="{{(_global.channels ?? []).filter((ch) => ch.key !== channel.key)}}"/>
+                        <set-state target="local" :hasChanges="true"/>
+                      </on>
+                      <icon name="trash" size="sm"/>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_legal_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_legal_header" class="panel-header-row">
+          <h3 class="text-error-strong">$t:sirsoft-marketing.settings.section.legal</h3>
+        </div>
+        <div data-ref="section_legal_fields" class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div data-ref="field_third_party_consent_enabled" class="grid-2col lg:grid-cols-3 items-center px-6 py-4">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.hint</p>
+            </div>
+            <div class="lg:col-span-1 flex justify-end">
+              <toggle name="third_party_consent_enabled"/>
+            </div>
+          </div>
+          <div data-ref="field_third_party_consent_terms_slug" class="grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.hint</p>
+            </div>
+            <div class="lg:col-span-1">
+              <input type="text" name="third_party_consent_terms_slug" placeholder="$t:sirsoft-marketing.settings.fields.terms_slug_placeholder" class="dark:focus:ring-blue-400 focus:border-transparent"/>
+            </div>
+          </div>
+          <div data-ref="field_info_disclosure_enabled" class="grid-2col lg:grid-cols-3 items-center px-6 py-4">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.hint</p>
+            </div>
+            <div class="lg:col-span-1 flex justify-end">
+              <toggle name="info_disclosure_enabled"/>
+            </div>
+          </div>
+          <div data-ref="field_info_disclosure_terms_slug" class="grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.hint</p>
+            </div>
+            <div class="lg:col-span-1">
+              <input type="text" name="info_disclosure_terms_slug" placeholder="$t:sirsoft-marketing.settings.fields.terms_slug_placeholder" class="dark:focus:ring-blue-400 focus:border-transparent"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <api-call :auth_required="true" target="/api/plugins/sirsoft-marketing/admin/channels" method="PUT" body="{{{ channels: _global.channels ?? [] }}}">
+              <success>
+                <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{{ marketing_consent_enabled: _local.form.marketing_consent_enabled, marketing_consent_terms_slug: _local.form.marketing_consent_terms_slug, third_party_consent_enabled: _local.form.third_party_consent_enabled, third_party_consent_terms_slug: _local.form.third_party_consent_terms_slug, info_disclosure_enabled: _local.form.info_disclosure_enabled, info_disclosure_terms_slug: _local.form.info_disclosure_terms_slug, channels: _global.channels ?? [] }}}">
+                  <success>
+                    <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                    <refetch-data-source dataSourceId="settings"/>
+                    <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                    <toast type="error" message="$t:admin.plugins.settings.save_error"/>
+                  </fail>
+                </api-call>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false"/>
+                <set-state target="global" deletingChannelKey="{{error.errors?.channels?.[0] ?? ''}}"/>
+                <open-modal target="channel_deactivate_modal"/>
+              </fail>
+            </api-call>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <modal data-ref="channel_edit_modal" title="$t:sirsoft-marketing.settings.channel_modal.title" width="min(500px, 95vw)" :closeOnBackdropClick="false">
+      <meta :is_partial="true"/>
+      <div class="row-stack">
+        <div class="flex-between">
+          <label class="text-body font-medium">$t:sirsoft-marketing.settings.channel_modal.enabled</label>
+          <toggle checked="{{_global.editingChannel.enabled}}" onChange="">
+            <on type="change">
+              <set-state target="global" editingChannel.enabled="{{$event.target.checked}}"/>
+            </on>
+          </toggle>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.key</label>
+          <input type="text" value="{{_global.editingChannel.key ?? ''}}" readOnly="{{_global.editingChannel.is_system || _global.editingChannel._editing}}" placeholder="$t:sirsoft-marketing.settings.channel_modal.key_placeholder" class="{{_global.editingChannel.is_system || _global.editingChannel._editing ? 'input-readonly w-full' : 'w-full'}}">
+            <on type="change">
+              <set-state target="global" editingChannel.key="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <p class="form-hint">$t:sirsoft-marketing.settings.channel_modal.key_hint</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.label_ko</label>
+          <multilingual-input value="{{_global.editingChannel.label ?? {ko: '', en: ''}}}" layout="tabs" name="channel_label" placeholder="$t:sirsoft-marketing.settings.channel_modal.label_placeholder">
+            <on event="onChange">
+              <set-state target="global" editingChannel.label="{{$args[0]?.target?.value ?? _global.editingChannel.label}}"/>
+            </on>
+          </multilingual-input>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.page_slug</label>
+          <input type="text" value="{{_global.editingChannel.page_slug ?? ''}}" placeholder="$t:sirsoft-marketing.settings.channel_modal.page_slug_placeholder" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent">
+            <on type="change">
+              <set-state target="global" editingChannel.page_slug="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <p class="form-hint">$t:sirsoft-marketing.settings.channel_modal.page_slug_hint</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" class="btn btn-primary">
+          <on type="click">
+            <set-state target="global" channels="{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"/>
+            <set-state target="$parent._local" :hasChanges="true"/>
+            <close-modal/>
+          </on>
+          <span>$t:common.save</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <modal data-ref="channel_deactivate_modal" title="$t:sirsoft-marketing.settings.channel_deactivate_modal.title" width="min(400px, 95vw)" :closeOnBackdropClick="false">
+      <meta :is_partial="true"/>
+      <div class="row-stack">
+        <p class="text-body">$t:sirsoft-marketing.settings.channel_deactivate_modal.message</p>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" class="btn btn-secondary">
+            <on type="click">
+              <close-modal/>
+            </on>
+            <span>$t:common.cancel</span>
+          </button>
+          <button type="button" class="btn btn-primary">
+            <on type="click">
+              <set-state target="global" channels="{{[...(_global.channels ?? []), ...((typeof _local.form?.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form?.channels ?? [])).filter((ch) => ch.key === _global.deletingChannelKey).map((ch) => ({ ...ch, enabled: false })))]}}"/>
+              <close-modal/>
+            </on>
+            <span>$t:sirsoft-marketing.settings.channel_deactivate_modal.confirm</span>
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+</layout>

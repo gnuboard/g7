@@ -1,0 +1,338 @@
+<layout name="admin_page_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-page.admin.page.page_title" description="$t:sirsoft-page.admin.page.page_description"/>
+  <data-source id="pages" label_key="$t:sirsoft-page.editor.data_source.pages" type="api" endpoint="/api/modules/sirsoft-page/admin/pages" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <params page="{{query.page}}" per_page="{{query.per_page}}" published="{{query.published}}" filters[0][field]="{{query['filters[0][field]'] || 'all'}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}" sort_by="{{query.sort_by}}" sort_order="{{query.sort_order}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="meta">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="searchField" value="all"/>
+    <field name="searchQuery" value=""/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-page.pages.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>pages</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="global" :selectedIds_admin_pages="[]" :isBulkPublishing="false" :_local="{&quot;searchField&quot;:&quot;{{query['filters[0][field]'] || 'all'}}&quot;,&quot;searchQuery&quot;:&quot;{{query['filters[0][value]'] || ''}}&quot;}"/>
+  </init>
+  <slot name="content">
+    <div data-ref="page_list_content" class="admin-page-content-fluid">
+      <responsive on="portable" class="admin-page-content-fluid-compact"/>
+      <page-header data-ref="page_header" title="$t:sirsoft-page.admin.page.title" description="$t:sirsoft-page.admin.page.description">
+        <button data-ref="refresh_button" class="btn-icon">
+          <on type="click">
+            <navigate path="/admin/pages" :mergeQuery="false"/>
+          </on>
+          <icon name="refresh" size="sm"/>
+        </button>
+        <button data-ref="add_page_button" class="btn btn-primary" disabled="{{pages?.data?.abilities?.can_create !== true}}">
+          <on type="click">
+            <navigate path="/admin/pages/create"/>
+          </on>
+          <icon name="plus" size="sm"/>
+          <span>$t:sirsoft-page.admin.page.add_page</span>
+        </button>
+      </page-header>
+      <div data-ref="search_filter_area" class="admin-card">
+        <div data-ref="search_row" class="flex-center flex-row gap-3">
+          <responsive on="portable" class="row-stack">
+            <div class="row-stack">
+              <div data-ref="mobile_search_row" class="flex flex-row gap-2 items-center">
+                <select data-ref="mobile_search_field_select" value="{{_local.searchField || 'all'}}" class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+                  <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
+                  <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
+                  <option value="slug">$t:sirsoft-page.admin.page.search_fields.slug</option>
+                  <on type="change">
+                    <set-state searchField="{{$event.target.value}}"/>
+                  </on>
+                </select>
+                <input data-ref="mobile_search_input" type="text" placeholder="$t:sirsoft-page.admin.page.search_placeholder" value="{{_local.searchQuery || ''}}" class="flex-1 min-w-0">
+                  <on type="change">
+                    <set-state searchQuery="{{$event.target.value}}"/>
+                  </on>
+                  <on type="keypress" key="Enter">
+                    <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+                      <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like" :page="1"/>
+                    </navigate>
+                  </on>
+                </input>
+              </div>
+              <button data-ref="mobile_search_button" class="btn btn-primary w-full">
+                <on type="click">
+                  <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+                    <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" :page="1"/>
+                  </navigate>
+                </on>
+                <span>$t:sirsoft-page.admin.page.search</span>
+              </button>
+            </div>
+          </responsive>
+          <select data-ref="search_field_select" value="{{_local.searchField || 'all'}}" class="select-composite w-28">
+            <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
+            <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
+            <option value="slug">$t:sirsoft-page.admin.page.search_fields.slug</option>
+            <on type="change">
+              <set-state searchField="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-page.admin.page.search_placeholder" value="{{_local.searchQuery || ''}}" class="flex-1 min-w-0">
+            <on type="change">
+              <set-state searchQuery="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+                <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like" :page="1"/>
+              </navigate>
+            </on>
+          </input>
+          <button data-ref="search_button" class="btn btn-primary">
+            <on type="click">
+              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+                <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" :page="1"/>
+              </navigate>
+            </on>
+            <span>$t:sirsoft-page.admin.page.search</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="list_toolbar" class="flex-between mb-4">
+        <span data-ref="total_count" class="text-secondary text-sm">$t:sirsoft-page.admin.page.total_count|count={{pages?.data?.meta?.total ?? 0}}</span>
+        <div data-ref="list_options" class="flex-center gap-3">
+          <select data-ref="published_filter_select" value="{{query.published ?? ''}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+            <option value="">$t:sirsoft-page.admin.page.published_filter.all</option>
+            <option value="1">$t:sirsoft-page.admin.page.published_filter.published</option>
+            <option value="0">$t:sirsoft-page.admin.page.published_filter.unpublished</option>
+            <on type="change">
+              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+                <query published="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+          <select data-ref="sort_select" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+            <option value="created_at_desc">$t:sirsoft-page.admin.page.sort.created_at_desc</option>
+            <option value="created_at_asc">$t:sirsoft-page.admin.page.sort.created_at_asc</option>
+            <option value="published_at_desc">$t:sirsoft-page.admin.page.sort.published_at_desc</option>
+            <option value="published_at_asc">$t:sirsoft-page.admin.page.sort.published_at_asc</option>
+            <on type="change">
+              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+                <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+          <select data-ref="per_page_select" value="{{query.per_page || '20'}}" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+            <option value="10">$t:sirsoft-page.admin.page.per_page|count=10</option>
+            <option value="20">$t:sirsoft-page.admin.page.per_page|count=20</option>
+            <option value="50">$t:sirsoft-page.admin.page.per_page|count=50</option>
+            <option value="100">$t:sirsoft-page.admin.page.per_page|count=100</option>
+            <on type="change">
+              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+                <query per_page="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="bulk_actions_area" class="bulk-actions-bar">
+        <span data-ref="selected_count" class="text-body font-medium">$t:sirsoft-page.admin.page.selected_count|count={{(_global.selectedIds_admin_pages || []).length}}</span>
+        <span data-ref="bulk_status_label" class="text-label-subtle">$t:sirsoft-page.admin.page.bulk_status_change</span>
+        <div data-ref="bulk_buttons" class="flex gap-2">
+          <button data-ref="bulk_publish" type="button" class="btn btn-sm btn-success" disabled="{{!_global.selectedIds_admin_pages || _global.selectedIds_admin_pages.length === 0 || pages?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <open-modal target="bulk_publish_modal"/>
+            </on>
+            <span>$t:sirsoft-page.admin.page.bulk_publish</span>
+          </button>
+          <button data-ref="bulk_unpublish" type="button" class="btn btn-sm btn-neutral" disabled="{{!_global.selectedIds_admin_pages || _global.selectedIds_admin_pages.length === 0 || pages?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <open-modal target="bulk_unpublish_modal"/>
+            </on>
+            <span>$t:sirsoft-page.admin.page.bulk_unpublish</span>
+          </button>
+        </div>
+      </div>
+      <data-grid data-ref="pages_data_grid" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? 1}}" :selectable="true" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+        <column field="title" header="$t:sirsoft-page.admin.page.columns.title" :sortable="false" :required="true">
+          <cell>
+            <div class="stack-flush gap-0.5">
+              <span class="font-medium text-gray-900 dark:text-white">{{row.title ?? ''}}</span>
+              <a href="/page/{{row.slug ?? ''}}" target="_blank" class="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:underline">/page/{{row.slug ?? ''}}</a>
+            </div>
+          </cell>
+        </column>
+        <column field="slug" header="$t:sirsoft-page.admin.page.columns.slug" :sortable="false">
+          <cell>
+            <a href="/page/{{row.slug ?? ''}}" target="_blank" class="text-sm text-gray-600 dark:text-gray-400 font-mono hover:text-blue-600 dark:hover:text-blue-400 hover:underline">{{row.slug ?? ''}}</a>
+          </cell>
+        </column>
+        <column field="published" header="$t:sirsoft-page.admin.page.columns.published" :sortable="false">
+          <cell>
+            <span class="{{row.published ? 'badge badge-green' : 'badge badge-gray'}}">{{row.published ? '$t:sirsoft-page.admin.page.published_status.published' : '$t:sirsoft-page.admin.page.published_status.unpublished'}}</span>
+          </cell>
+        </column>
+        <column field="current_version" header="$t:sirsoft-page.admin.page.columns.current_version" :sortable="false">
+          <cell>
+            <span class="text-sm text-gray-600 dark:text-gray-400">v{{row.current_version}}</span>
+          </cell>
+        </column>
+        <column field="created_at" header="$t:sirsoft-page.admin.page.columns.created_at" :sortable="true"/>
+        <column field="published_at" header="$t:sirsoft-page.admin.page.columns.published_at" :sortable="true"/>
+        <prop name="rowActions">[{"id":"view","label":"$t:sirsoft-page.admin.page.actions.view","iconName":"eye"},{"id":"edit","label":"$t:sirsoft-page.admin.page.actions.edit","iconName":"pencil","disabledField":"abilities.can_update"},{"id":"delete","label":"$t:sirsoft-page.admin.page.actions.delete","iconName":"trash","variant":"danger","disabledField":"abilities.can_delete"}]</prop>
+        <on type="change" event="onSelectionChange">
+          <set-state target="global" selectedIds_admin_pages="{{$args[0]}}"/>
+        </on>
+        <on type="change" event="onSortChange">
+          <navigate path="/admin/pages" :mergeQuery="true">
+            <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}"/>
+          </navigate>
+        </on>
+        <on type="change" event="onPageChange">
+          <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+        <on type="action" event="onRowAction">
+          <switch>
+            <case when="view">
+              <navigate path="/admin/pages/{{$args[1].id}}"/>
+            </case>
+            <case when="edit">
+              <navigate path="/admin/pages/{{$args[1].id}}/edit"/>
+            </case>
+            <case when="delete">
+              <set-state target="global" deletePageId="{{$args[1].id}}"/>
+              <open-modal target="delete_confirm_modal"/>
+            </case>
+          </switch>
+        </on>
+      </data-grid>
+    </div>
+  </slot>
+  <modal>
+    <modal data-ref="bulk_publish_modal" title="$t:sirsoft-page.admin.page.modals.bulk_publish_title" size="sm">
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.bulk_publish_confirm|count={{(_global.selectedIds_admin_pages || []).length}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkPublishing}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" class="btn btn-primary" disabled="{{_global.isBulkPublishing}}">
+          <on type="click">
+            <set-state target="global" :isBulkPublishing="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/bulk-publish" method="PATCH">
+              <success>
+                <set-state target="global" :isBulkPublishing="false"/>
+                <set-state target="global" :selectedIds_admin_pages="[]"/>
+                <navigate path="/admin/pages" :mergeQuery="true">
+                  <query/>
+                </navigate>
+                <toast type="success" message="$t:sirsoft-page.admin.page.modals.bulk_publish_success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isBulkPublishing="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body ids="{{_global.selectedIds_admin_pages}}" :published="true"/>
+            </api-call>
+          </on>
+          <icon data-if="{{_global.isBulkPublishing}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <modal data-ref="bulk_unpublish_modal" title="$t:sirsoft-page.admin.page.modals.bulk_unpublish_title" size="sm">
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.bulk_unpublish_confirm|count={{(_global.selectedIds_admin_pages || []).length}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkPublishing}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" class="btn btn-primary" disabled="{{_global.isBulkPublishing}}">
+          <on type="click">
+            <set-state target="global" :isBulkPublishing="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/bulk-publish" method="PATCH">
+              <success>
+                <set-state target="global" :isBulkPublishing="false"/>
+                <set-state target="global" :selectedIds_admin_pages="[]"/>
+                <navigate path="/admin/pages" :mergeQuery="true">
+                  <query/>
+                </navigate>
+                <toast type="success" message="$t:sirsoft-page.admin.page.modals.bulk_unpublish_success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isBulkPublishing="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body ids="{{_global.selectedIds_admin_pages}}" :published="false"/>
+            </api-call>
+          </on>
+          <icon data-if="{{_global.isBulkPublishing}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <modal data-ref="delete_confirm_modal" title="$t:sirsoft-page.admin.page.modals.delete_title" size="sm">
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.delete_confirm</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="btn btn-secondary" disabled="{{_global.isDeletingPage}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="btn btn-danger" disabled="{{_global.isDeletingPage}}">
+          <on type="click">
+            <set-state target="global" :isDeletingPage="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{_global.deletePageId}}" method="DELETE">
+              <success>
+                <set-state target="global" :isDeletingPage="false"/>
+                <set-state target="global" :deletePageId="null"/>
+                <refetch-data-source dataSourceId="pages"/>
+                <toast type="success" message="$t:sirsoft-page.admin.page.modals.delete_success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isDeletingPage="false"/>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-page.admin.page.errors.delete_failed'}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <icon data-if="{{_global.isDeletingPage}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

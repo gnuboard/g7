@@ -183,6 +183,183 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 자식이 하나인 명시 `sequence` 는 래퍼를 잃지 않는다.
+     *
+     * 컴파일러는 블록 자식이 하나면 그 액션에 트리거만 얹고 sequence 로 감싸지 않는다
+     * ([ActionCompiler::compileBlockBody](app/Support/LayoutMarkup/ActionCompiler.php#L280)).
+     * 그래서 역변환기가 단일 자식 sequence 를 펼치면 되컴파일 때 래퍼가 복원되지 않아 왕복이 깨진다 —
+     * 자식이 둘 이상일 때만 암묵 sequence 로 펼치고, 하나면 `<sequence>` 를 명시한다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects single_child_sequence_keeps_wrapper_through_round_trip
+     */
+    public function test_single_child_sequence_keeps_its_wrapper(): void
+    {
+        $json = [
+            'layout_name' => 'single_seq',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Input',
+                    'actions' => [[
+                        'type' => 'change',
+                        'handler' => 'sequence',
+                        'actions' => [[
+                            'handler' => 'setState',
+                            'params' => ['target' => 'local', 'form' => '{{$event.target.checked}}'],
+                        ]],
+                    ]],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringContainsString('<sequence>', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 자식이 둘 이상인 sequence 는 종전대로 암묵 sequence 로 펼친다 (대조군).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects multi_child_sequence_stays_implicit
+     */
+    public function test_multi_child_sequence_stays_implicit(): void
+    {
+        $json = [
+            'layout_name' => 'multi_seq',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Input',
+                    'actions' => [[
+                        'type' => 'change',
+                        'handler' => 'sequence',
+                        'actions' => [
+                            ['handler' => 'setState', 'params' => ['target' => 'local', 'a' => '1']],
+                            ['handler' => 'setState', 'params' => ['target' => 'local', 'b' => '2']],
+                        ],
+                    ]],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringNotContainsString('<sequence>', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 액션의 `params.body`/`params.query` 는 `<body>`/`<query>` 로 나간다 (D41).
+     *
+     * 속성에 JSON 을 박으면 D2("속성 JSON 추방")를 어기는데, escape 계량은 `<json>` 태그만 세므로
+     * escape-0 판정을 받고도 원시 JSON 이 그대로 남는다 — PO 가 생성물에서 직접 발견한 부류다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects action_field_map_params_emit_first_class_tags
+     */
+    public function test_action_body_and_query_emit_field_map_tags(): void
+    {
+        $json = [
+            'layout_name' => 'field_map',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Button',
+                    'actions' => [[
+                        'type' => 'click',
+                        'handler' => 'apiCall',
+                        'target' => '/api/admin/pages',
+                        'params' => [
+                            'body' => ['title' => '{{_local.title}}', 'published' => true],
+                            'query' => ['page' => 1],
+                        ],
+                    ]],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString('<body title="{{_local.title}}" :published="true"/>', $markup);
+        $this->assertStringContainsString('<query :page="1"/>', $markup);
+        $this->assertStringNotContainsString(':body=', $markup);
+        $this->assertStringNotContainsString(':query=', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 값이 다시 객체면 `<body>` 로 못 내린다 — 속성 표기로 되돌릴 수 없으므로 blob 을 유지한다 (대조군).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects nested_object_field_map_stays_attribute
+     */
+    public function test_nested_object_body_stays_as_attribute(): void
+    {
+        $json = [
+            'layout_name' => 'nested_body',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Button',
+                    'actions' => [[
+                        'type' => 'click',
+                        'handler' => 'apiCall',
+                        'target' => '/api/admin/pages',
+                        'params' => ['body' => ['meta' => ['a' => 1]]],
+                    ]],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString(':body=', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 조건부 값(`$switch`)은 `<switch-value>` 로 나간다 (D41 — PO 지적 건).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects switch_value_prop_emits_first_class_tag
+     */
+    public function test_switch_value_prop_emits_switch_value_tag(): void
+    {
+        $json = [
+            'layout_name' => 'switch_prop',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'props' => [
+                        'title' => [
+                            '$switch' => '{{_global.modalType}}',
+                            '$cases' => ['a' => '$t:x.a', 'b' => '$t:x.b'],
+                            '$default' => "{{_global.modalType ?? ''}}",
+                        ],
+                    ],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString('<switch-value prop="title" on="{{_global.modalType}}">', $markup);
+        $this->assertStringContainsString('<case when="a">$t:x.a</case>', $markup);
+        $this->assertStringContainsString('<default>', $markup);
+        $this->assertStringNotContainsString('$switch', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
      * 노드 레벨 권한 첫 급부 왕복 (D36) — 노드 안 `<permissions>` 로 조건 렌더 권한을 적는다.
      *
      * @scenario compile_unit=decompile,source_health=valid

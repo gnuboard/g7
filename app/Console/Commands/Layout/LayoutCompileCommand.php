@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Layout;
 
 use App\Support\LayoutMarkup\ComponentRegistry;
+use App\Support\LayoutMarkup\LayoutCorpus;
 use App\Support\LayoutMarkup\LayoutMarkupDecompiler;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
@@ -279,38 +280,15 @@ class LayoutCompileCommand extends Command
     }
 
     /**
-     * 번들 확장·템플릿에서 모든 레이아웃 `.json` 을 스캔합니다.
+     * 번들 확장·템플릿에서 모든 레이아웃·fragment `.json` 을 스캔합니다.
+     *
+     * 모집단 정의는 {@see LayoutCorpus} 가 SSoT — 하네스·게이트가 같은 코퍼스를 보게 한다.
      *
      * @return array<int, string> `.json` 절대 경로 목록
      */
     private function scanLayoutFiles(): array
     {
-        $globs = [
-            base_path('templates/_bundled/*/layouts'),
-            base_path('modules/_bundled/*/resources/layouts'),
-            base_path('plugins/_bundled/*/resources/layouts'),
-        ];
-
-        $files = [];
-
-        foreach ($globs as $glob) {
-            foreach (glob($glob, GLOB_ONLYDIR) ?: [] as $root) {
-                $iterator = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($root, \RecursiveDirectoryIterator::SKIP_DOTS),
-                    \RecursiveIteratorIterator::LEAVES_ONLY,
-                );
-
-                foreach ($iterator as $entry) {
-                    if ($entry->isFile() && str_ends_with(strtolower($entry->getFilename()), '.json')) {
-                        $files[] = $entry->getPathname();
-                    }
-                }
-            }
-        }
-
-        sort($files);
-
-        return $files;
+        return LayoutCorpus::scan('.json');
     }
 
     /**

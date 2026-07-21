@@ -625,6 +625,66 @@ final class NodeMarkupDecompiler
     }
 
     /**
+     * 값이 `<switch-value>` 로 되돌릴 수 있는 조건부 값 객체인지 판정합니다.
+     *
+     * 계약은 `EmbeddingCompiler::applySwitchValue` 와 짝이다 — `$switch`(선택식)와 `$cases`(맵)가
+     * 필수, `$default` 는 선택. `$cases` 값과 `$default` 는 문자열이라야 `<case>`/`<default>` 본문
+     * 텍스트로 실린다(컴파일러가 `(string) $child->text` 로 읽으므로 중첩 객체는 표현 불가).
+     *
+     * @param  mixed  $value  props 값
+     * @return bool `<switch-value>` 로 표현 가능하면 true
+     */
+    private function isSwitchValue(mixed $value): bool
+    {
+        if (! is_array($value) || ! isset($value['$switch'], $value['$cases']) || ! is_string($value['$switch'])) {
+            return false;
+        }
+
+        if (! is_array($value['$cases']) || $value['$cases'] === [] || array_is_list($value['$cases'])) {
+            return false;
+        }
+
+        foreach ($value['$cases'] as $case) {
+            if (! is_string($case)) {
+                return false;
+            }
+        }
+
+        if (array_key_exists('$default', $value) && ! is_string($value['$default'])) {
+            return false;
+        }
+
+        // 컴파일러가 되돌려 놓는 키는 이 셋뿐이다 — 다른 키가 섞이면 왕복이 깨지므로 blob 유지.
+        return array_diff(array_keys($value), ['$switch', '$cases', '$default']) === [];
+    }
+
+    /**
+     * 조건부 값 객체를 `<switch-value prop on>` + `<case when>`/`<default>` 로 찍습니다.
+     *
+     * @param  string  $key  props 키
+     * @param  array<string, mixed>  $value  `{$switch, $cases, $default}`
+     * @return MarkupElement `<switch-value>` 요소
+     */
+    private function switchValueElement(string $key, array $value): MarkupElement
+    {
+        $children = [];
+
+        foreach ($value['$cases'] as $when => $text) {
+            $children[] = $this->el('case', [$this->attr('when', (string) $when)], [], (string) $text);
+        }
+
+        if (array_key_exists('$default', $value)) {
+            $children[] = $this->el('default', [], [], (string) $value['$default']);
+        }
+
+        return $this->el(
+            'switch-value',
+            [$this->attr('prop', $key), $this->attr('on', (string) $value['$switch'])],
+            $children,
+        );
+    }
+
+    /**
      * props 임베딩 hoist 키면 전용 태그로 찍고 true 를 반환합니다.
      *
      * @param  string  $key  props 키
@@ -638,6 +698,15 @@ final class NodeMarkupDecompiler
     {
         if (! is_array($value)) {
             return false;
+        }
+
+        // 조건부 값(`{$switch, $cases, $default}`)은 1급 문법이 있다 — `<switch-value>` 로 되돌린다(D41).
+        // 안 되돌리면 `<prop>` 본문에 통짜 JSON 으로 나가는데, `<json>` 태그가 아니라서 escape 계량에
+        // 잡히지도 않는다(PO 가 생성물에서 직접 발견한 자리).
+        if ($this->isSwitchValue($value)) {
+            $children[] = $this->switchValueElement($key, $value);
+
+            return true;
         }
 
         if (isset(self::NODE_ARRAY_HOISTS[$key])) {

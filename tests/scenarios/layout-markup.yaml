@@ -289,7 +289,10 @@ effects:
   - valid_layout_passes_all_strong_checks
   - layout_missing_required_top_level_field_is_rejected
   - endpoint_outside_whitelist_is_rejected
-  - external_url_or_dangerous_scheme_is_rejected
+  # 외부 URL/위험 스킴은 이관(설치) 검증에서는 통과시키고(원본 .json 이 이미 담고 있던 값을
+  # 재봉인하지 않음), 저작 API(Store/Update FormRequest)에서만 거부한다 — S11 NoExternalUrls 분리.
+  - external_url_and_dangerous_scheme_pass_migration_validation
+  - authoring_api_still_rejects_dangerous_scheme
   - component_name_not_in_registry_is_rejected
   - fragment_structure_violation_is_rejected
   - wait_for_pointing_at_never_resolving_source_is_rejected
@@ -326,9 +329,11 @@ effects:
   - hello_extension_markup_layout_installs_from_in_memory_compile
   - fragment_markup_wins_over_json_sibling
   - fragment_json_used_when_no_markup
-  # 설치 레이어 3자 등가성 — 컴파일 레이어(코퍼스 게이트) 위에 얹히는 소스 선택·partial 해석·
-  # data_source 검증·layout_name 결정까지 두 소스가 같은 등록 content 를 내는지 봉인
-  - html_install_equals_json_install_equals_original_json
+  # 설치 레이어 소스 등가성 — 컴파일 레이어(코퍼스 게이트) 위에 얹히는 소스 선택·partial 해석·
+  # data_source 검증·layout_name 결정까지 HTML/JSON 두 소스가 같은 등록 content 를 내는지 봉인.
+  # 원본 .json 과의 대조는 partial 인라인으로 정당하게 달라지므로 컴파일 레이어
+  # (every_migrated_markup_file_matches_its_json_and_is_escape_free)가 전담한다.
+  - html_install_equals_json_install
   # 설치 소스 강제(`--layout-source=json`, §195) — 컴파일러 회귀 의심 시 원본 .json 기준으로 되돌려
   # 설치하는 진단·복구 탈출구. 짝 .json 이 없는 마크업 전용 레이아웃은 누락시키지 않는다(빈 화면 방지).
   - json_forced_source_overrides_markup_priority
@@ -356,6 +361,51 @@ effects:
   - throw_isolation_escapes_only_the_defect_key_not_standard_keys
   # --- S9 전량 회귀: 번들 전 레이아웃 왕복 불일치 0
   - every_bundled_layout_round_trips_through_decompile_and_compile
+  # --- S8 permissions 문법(A2): 평면 배열 ↔ 조건형 {or|and}
+  - permissions_flat_emits_string_array
+  - permissions_conditional_emits_or_and_object
+  - permissions_mixed_form_is_rejected
+  # --- S8 확장 init(A1): <extension> 이 <init> 을 받아 init_actions 로
+  - fragment_init_actions_emit_for_injection
+  # --- S11 U-ESCAPE(㉒) 역변환기 완전성: 별칭 승격 · 신설 태그 · 빈 컨테이너 생략
+  #     별칭은 "정본이 없을 때만" 접는다 — 병존 시 접으면 동작이 바뀐다(맨 문자열 condition 포함).
+  - state_alias_promoted_to_init_local
+  - state_alias_not_promoted_when_init_local_present
+  - condition_alias_promoted_to_if
+  - bare_condition_is_not_promoted
+  - action_ref_compiles_without_handler
+  - action_ref_requires_name
+  - trigger_key_qualifier_is_distinct_from_handler_params
+  - condition_branch_comment_round_trips
+  - empty_section_containers_are_omitted
+  - partial_layout_name_round_trips
+  - responsive_override_carries_structural_keys
+  - sortable_wrapper_element_round_trips
+  - columns_embedding_is_gated_by_owner_component
+  - dead_keys_are_dropped_not_escaped
+  - modals_object_map_normalized_to_list
+  # --- S11 W2(㉓): 단일-자식 sequence 왕복 비대칭 + overlay 기여 판정
+  - single_child_sequence_keeps_wrapper_through_round_trip
+  - multi_child_sequence_stays_implicit
+  - overlay_fragment_valid_with_modals_only
+  - overlay_fragment_rejected_when_contributes_nothing
+  - overlay_fragment_rejected_when_injections_not_array
+  # --- S11 W2 설치 등가성(㉓·㉕): 이관 실물 확장 데이터셋 9종 + fragment 실물 전량
+  #     fragment 는 이관 물량의 과반인데 종전엔 합성 픽스처로 소스 선택만 봤다.
+  - wave_two_html_install_equals_json_install
+  - migrated_fragment_markup_compiles_to_its_json
+  # --- D41(㉔) 원시 JSON 방출기: 문법 보유분을 1급 태그로
+  - action_field_map_params_emit_first_class_tags
+  - nested_object_field_map_stays_attribute
+  - switch_value_prop_emits_first_class_tag
+  # --- ㉕·㉗ 계량기 자체의 회귀 봉인: 눈이 멀면 게이트는 통과시키면서 아무것도 못 본다.
+  #     ㉗(D42) 에서 태그 본문 제외를 폐기 — 컴파일러가 받아 준다는 사실과 저작 파일에 JSON 이
+  #     통짜로 드러난다는 사실은 별개다. 오검출 방지 대조군을 함께 고정한다.
+  - raw_json_metric_counts_entity_escaped_blobs
+  - raw_json_metric_counts_every_tag_body
+  - raw_json_metric_ignores_scalar_type_literals
+  - raw_json_metric_ignores_non_json_bodies
+  - raw_json_metric_labels_switch_by_its_own_name
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -381,3 +431,7 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/LayoutMarkupDecompilerTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutMarkupSerializerTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutMarkupRoundTripCorpusTest.php
+  # ㉕ 계량기(rawJsonEmissions) 직접 봉인 — 종전엔 코퍼스 게이트를 통해서만 간접 실행됐다
+  - tests/Unit/Support/LayoutMarkup/LayoutMarkupRawJsonEmissionsTest.php
+  # S11 W2(㉓) overlay 기여 판정 — 설치는 안 돌리는 규칙을 파사드만 걸어 정상 출하물을 막던 자리
+  - tests/Unit/Rules/ValidLayoutExtensionStructureTest.php

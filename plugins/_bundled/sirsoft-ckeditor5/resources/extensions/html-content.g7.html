@@ -1,0 +1,8 @@
+<extension extension-point="html_content" mode="replace" priority="100">
+  <html-content content="{{extensionPointProps.content ?? ''}}" isHtml="{{extensionPointProps.isHtml ?? true}}" class="{{(extensionPointProps.className ?? '') + ' ck-content'}}" purifyConfig="{{extensionPointProps.purifyConfig ?? undefined}}"/>
+  <div data-ref="ckeditor5_content_css_injector" class="hidden">
+    <on event="mount">
+      <action handler="sirsoft-ckeditor5.injectContentCss"/>
+    </on>
+  </div>
+</extension>

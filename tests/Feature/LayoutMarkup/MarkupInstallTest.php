@@ -172,7 +172,7 @@ class MarkupInstallTest extends TestCase
     }
 
     /**
-     * 설치 경로의 **3자 등가성**을 봉인합니다 (계획서 §199): HTML 설치 == JSON 설치 == 원본 `.json`.
+     * 설치 경로의 **소스 등가성**을 봉인합니다 (계획서 §199): HTML 설치 == JSON 설치.
      *
      * 코퍼스 게이트는 컴파일 레이어(`compile(.g7.html)` vs `.json`)만 본다. 설치 경로는 그 위에
      * 소스 선택·partial 해석·data_source 검증·layout_name 결정을 얹으므로, 그 변환들이 두 소스에서
@@ -182,11 +182,17 @@ class MarkupInstallTest extends TestCase
      *  - HTML 설치 = 실 디렉토리(마크업 우선) 그대로
      *  - JSON 설치 = 같은 디렉토리를 복사한 뒤 `.g7.html` 만 지운 임시 디렉토리
      *
+     * 원본 `.json` 과의 직접 대조는 여기서 하지 않는다 — 설치가 `resolveAllPartials` 로 partial 을
+     * 인라인하므로 include 를 가진 레이아웃은 원본과 다른 것이 정상이다(hello 에 partial 레이아웃이
+     * 추가되면 거짓 실패로 터진다). "컴파일 산출 == 원본" 은 `LayoutMarkupRoundTripCorpusTest` 가
+     * 이관 파일 전량에 이미 걸고 있어 축이 중복된다. W2 확장 데이터셋을 도는
+     * {@see self::test_wave_two_html_install_equals_json_install()} 와 같은 계약이다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
-     * @effects html_install_equals_json_install_equals_original_json
+     * @effects html_install_equals_json_install
      */
-    public function test_html_install_equals_json_install_equals_original_json(): void
+    public function test_html_install_equals_json_install(): void
     {
         $layoutsPath = base_path('templates/_bundled/gnuboard7-hello_admin_template/layouts');
 
@@ -211,15 +217,77 @@ class MarkupInstallTest extends TestCase
         );
 
         foreach ($htmlInstall as $layoutName => $htmlContent) {
-            $originalJson = json_decode(File::get($jsonInstall[$layoutName]['file']), true);
-
-            $html = $this->canonical($htmlContent['data']);
-            $json = $this->canonical($jsonInstall[$layoutName]['data']);
-            $origin = $this->canonical($originalJson);
-
-            $this->assertSame($json, $html, "[{$layoutName}] HTML 설치 content 가 JSON 설치 content 와 달라졌다");
-            $this->assertSame($origin, $html, "[{$layoutName}] HTML 설치 content 가 원본 .json 과 달라졌다");
+            $this->assertSame(
+                $this->canonical($jsonInstall[$layoutName]['data']),
+                $this->canonical($htmlContent['data']),
+                "[{$layoutName}] HTML 설치 content 가 JSON 설치 content 와 달라졌다",
+            );
         }
+    }
+
+    /**
+     * W2 이관 실물의 설치 3자 등가성 — HTML 설치 == JSON 설치 == 원본 `.json`.
+     *
+     * 코퍼스 게이트는 **컴파일 레이어**의 deep-equal 만 본다. 설치 경로에는 그 뒤로 소스 선택·
+     * partial 해석·data_source 검증·layout_name 결정이라는 고유 변환이 남아 있어, 이관 실물로
+     * 한 번 더 봉인해야 ② 가 닫힌다(㉑ 가 hello 로 세운 게이트를 W2 확장으로 넓힌다).
+     *
+     * @dataProvider migratedWaveTwoRoots
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects wave_two_html_install_equals_json_install
+     */
+    public function test_wave_two_html_install_equals_json_install(string $relativeRoot, string $identifier, string $sourceType): void
+    {
+        $layoutsPath = base_path($relativeRoot);
+
+        $jsonOnly = "{$this->tmp}/json_only_".md5($relativeRoot);
+        File::copyDirectory($layoutsPath, $jsonOnly);
+
+        foreach (File::allFiles($jsonOnly) as $file) {
+            if (str_ends_with(strtolower($file->getFilename()), '.g7.html')) {
+                File::delete($file->getPathname());
+            }
+        }
+
+        $htmlInstall = $this->indexByLayoutName($this->harness->run($layoutsPath, $identifier, $sourceType));
+        $jsonInstall = $this->indexByLayoutName($this->harness->run($jsonOnly, $identifier, $sourceType));
+
+        $this->assertNotEmpty($htmlInstall, "[{$identifier}] 이관된 레이아웃이 등록되어야 한다");
+        $this->assertSame(array_keys($htmlInstall), array_keys($jsonInstall), "[{$identifier}] 등록 집합이 달라졌다");
+
+        // 이 테스트가 봉인하는 것은 **설치 경로 고유 변환의 등가성**(HTML 설치 == JSON 설치)이다.
+        // 원본 `.json` 과의 직접 대조는 여기서 하지 않는다 — 설치가 `resolveAllPartials` 로 partial 을
+        // 인라인하므로 include 를 가진 레이아웃은 원본과 다른 것이 정상이다. "컴파일 산출 == 원본"
+        // 은 `LayoutMarkupRoundTripCorpusTest` 가 이관 파일 전량에 이미 걸고 있다.
+        foreach ($htmlInstall as $layoutName => $htmlContent) {
+            $this->assertSame(
+                $this->canonical($jsonInstall[$layoutName]['data']),
+                $this->canonical($htmlContent['data']),
+                "[{$identifier}/{$layoutName}] HTML 설치 content 가 JSON 설치와 다르다",
+            );
+        }
+    }
+
+    /**
+     * W2 이관 확장의 레이아웃 루트 (본 레이아웃 보유 확장 — fragment 전용은 별도 경로).
+     *
+     * @return array<string, array{0: string, 1: string, 2: string}> 데이터셋
+     */
+    public static function migratedWaveTwoRoots(): array
+    {
+        return [
+            'sirsoft-page (module)' => ['modules/_bundled/sirsoft-page/resources/layouts', 'sirsoft-page', 'module'],
+            'sirsoft-gdpr (plugin)' => ['plugins/_bundled/sirsoft-gdpr/resources/layouts', 'sirsoft-gdpr', 'plugin'],
+            'sirsoft-ckeditor5 (plugin)' => ['plugins/_bundled/sirsoft-ckeditor5/resources/layouts', 'sirsoft-ckeditor5', 'plugin'],
+            'sirsoft-daum_postcode (plugin)' => ['plugins/_bundled/sirsoft-daum_postcode/resources/layouts', 'sirsoft-daum_postcode', 'plugin'],
+            'sirsoft-marketing (plugin)' => ['plugins/_bundled/sirsoft-marketing/resources/layouts', 'sirsoft-marketing', 'plugin'],
+            'sirsoft-pay_kginicis (plugin)' => ['plugins/_bundled/sirsoft-pay_kginicis/resources/layouts', 'sirsoft-pay_kginicis', 'plugin'],
+            'sirsoft-pay_nhnkcp (plugin)' => ['plugins/_bundled/sirsoft-pay_nhnkcp/resources/layouts', 'sirsoft-pay_nhnkcp', 'plugin'],
+            'sirsoft-pay_nicepayments (plugin)' => ['plugins/_bundled/sirsoft-pay_nicepayments/resources/layouts', 'sirsoft-pay_nicepayments', 'plugin'],
+            'sirsoft-verification_kginicis (plugin)' => ['plugins/_bundled/sirsoft-verification_kginicis/resources/layouts', 'sirsoft-verification_kginicis', 'plugin'],
+        ];
     }
 
     /**
@@ -249,8 +317,12 @@ class MarkupInstallTest extends TestCase
      */
     private function canonical(array $layout): string
     {
+        // 왕복 오라클과 같은 기준 — `normalizeDocument` 를 빼면 문서층 별칭(`state`→`initLocal`)과
+        // "옮기지 않고 버리는" 사어 키가 차이로 잡혀 정상 설치가 불일치로 보고된다.
         return LayoutMarkupRoundTrip::encode(
-            LayoutMarkupRoundTrip::canonicalize(LayoutMarkupRoundTrip::normalize($layout)),
+            LayoutMarkupRoundTrip::canonicalize(
+                LayoutMarkupRoundTrip::normalize(LayoutMarkupRoundTrip::normalizeDocument($layout)),
+            ),
         );
     }
 

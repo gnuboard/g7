@@ -1,0 +1,372 @@
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-gdpr.settings.title" description="$t:sirsoft-gdpr.settings.description"/>
+  <data-source id="gdprSettings" label_key="$t:sirsoft-gdpr.editor.data_source.gdprSettings" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+    <init-local>
+      <field name="_merge" value="deep"/>
+      <field name="form" value="settings"/>
+    </init-local>
+  </data-source>
+  <data-source id="gdprPolicyVersionCurrent" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionCurrent" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/policy-versions/current" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
+  <data-source id="gdprPolicyVersionHistory" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionHistory" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/policy-versions" method="GET" :auto_fetch="false" :auth_required="true"/>
+  <!-- 정책 버전 단건 snapshot — _global.viewingPolicyVersion 정수를 endpoint path 에 보간. v배지/이력 행 클릭 시 setState global.viewingPolicyVersion → openModal policy_version_snapshot_modal 시퀀스에서 자동 fetch. -->
+  <data-source id="gdprPolicyVersionSnapshot" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionSnapshot" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/policy-versions/{{_global.viewingPolicyVersion}}" method="GET" :auto_fetch="false" :auth_required="true" :refetchOnMount="true"/>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <transition-overlay target="settings_main_content" fallback-target="plugin_settings_content">
+    <wait-for>gdprSettings</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null" :policyHistoryOpen="false"/>
+  </init>
+  <slot name="content">
+    <!-- GDPR 플러그인 환경설정 (v1.3.0: 5 카드 + 상단 탭 스크롤 + DPO 통합 + 쿠키 통합 + 미리보기 + 인라인 토글 + 제3자 모달) -->
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <!-- 헤더 + 탭을 sticky 컨테이너로 묶음 (게시판 설정과 동일한 구조) -->
+      <div data-ref="sticky_header" class="sticky-section-header">
+        <div data-ref="header_content" class="px-4 sm:px-6 lg:px-8 pt-4 pb-0">
+          <div data-ref="header_top_row" class="panel-header-row">
+            <page-header data-ref="page_header" title="$t:sirsoft-gdpr.settings.title" description="$t:sirsoft-gdpr.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+            <div data-ref="header_save_buttons" class="flex-center gap-3 flex-shrink-0 pt-1">
+              <div data-if="{{_local.hasChanges}}" class="flex-center gap-1.5 text-sm text-amber-600 dark:text-amber-400">
+                <icon name="circle-dot" size="xs"/>
+                <span>$t:sirsoft-gdpr.settings.unsaved_changes</span>
+              </div>
+              <button data-ref="header_cancel_button" type="button" class="btn btn-secondary text-sm">
+                <on type="click">
+                  <navigate path="/admin/plugins"/>
+                </on>
+                <span>$t:common.cancel</span>
+              </button>
+              <button data-ref="header_save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">
+                <on type="click">
+                  <set-state target="local" :isSaving="true" :errors="null"/>
+                  <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/admin/settings" method="PUT" body="{{_local.form}}">
+                    <success>
+                      <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                      <refetch-data-source dataSourceId="gdprSettings"/>
+                      <toast type="success" message="$t:sirsoft-gdpr.settings.save_success"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                      <toast type="error" message="{{Object.values(error.errors ?? {})[0]?.[0] ?? '$t:sirsoft-gdpr.settings.save_error'}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <icon data-if="{{_local.isSaving}}" name="spinner" size="sm" :spin="true"/>
+                <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+                <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+              </button>
+            </div>
+          </div>
+          <!-- 상단 탭 스크롤 — 클릭 시 해당 카드로 자동 스크롤 + 스크롤 시 활성 탭 자동 갱신 -->
+          <tab-navigation-scroll data-ref="settings_tab_navigation" class="flex gap-1" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+            <prop name="tabs">[{"id":"card_operator","label":"$t:sirsoft-gdpr.settings.nav.operator"},{"id":"card_cookie_banner","label":"$t:sirsoft-gdpr.settings.nav.cookie_banner"},{"id":"card_auto_blocking_policy","label":"$t:sirsoft-gdpr.settings.nav.auto_blocking_policy"}]</prop>
+          </tab-navigation-scroll>
+        </div>
+      </div>
+      <!-- 5 카드 컨테이너 (transition_overlay 타겟) -->
+      <div data-ref="settings_main_content" class="p-4 sm:p-6 lg:p-8">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+          <!-- 아이콘 + 제목을 한 줄로 묶고, 그 아래에 에러 목록을 배치 (검토  — 아이콘 위치 정렬). -->
+          <div>
+            <div class="flex-center gap-2">
+              <icon name="triangle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
+              <h3 class="text-error-soft">$t:sirsoft-gdpr.settings.validation_error</h3>
+            </div>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="grid-3col-responsive">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+        <!-- 1️⃣ 운영 주체 + 개인정보처리방침 (정책 페이지 슬러그 통합) -->
+        <div data-ref="card_operator" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 scroll-mt-32">
+          <div data-ref="card_operator_header" class="flex-start justify-between gap-4 mb-3">
+            <h3 class="text-error-strong">$t:sirsoft-gdpr.settings.section.operator</h3>
+            <p class="form-hint">$t:sirsoft-gdpr.settings.section.operator_desc</p>
+          </div>
+          <div data-ref="card_operator_fields" class="p-6 space-y-6">
+            <div data-ref="field_legal_entity_name" class="section-heading-md">
+              <div class="lg:col-span-1">
+                <label class="form-label">$t:sirsoft-gdpr.settings.fields.legal_entity_name.label</label>
+                <p class="form-hint">$t:sirsoft-gdpr.settings.fields.legal_entity_name.hint</p>
+              </div>
+              <div class="lg:col-span-2">
+                <input type="text" name="legal_entity_name" placeholder="$t:sirsoft-gdpr.settings.fields.legal_entity_name.placeholder" class="{{_local.errors?.['legal_entity_name'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
+                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). --><span data-if="{{_local.errors?.['legal_entity_name']}}" class="form-error">{{_local.errors?.['legal_entity_name']?.[0] ?? ''}}</span>
+              </div>
+            </div>
+            <div data-ref="field_data_storage_location" class="section-heading-md">
+              <div class="lg:col-span-1">
+                <label class="form-label">$t:sirsoft-gdpr.settings.fields.data_storage_location.label</label>
+                <p class="form-hint">$t:sirsoft-gdpr.settings.fields.data_storage_location.hint</p>
+              </div>
+              <div class="lg:col-span-2">
+                <input type="text" name="data_storage_location" placeholder="$t:sirsoft-gdpr.settings.fields.data_storage_location.placeholder" class="{{_local.errors?.['data_storage_location'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
+                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). --><span data-if="{{_local.errors?.['data_storage_location']}}" class="form-error">{{_local.errors?.['data_storage_location']?.[0] ?? ''}}</span>
+              </div>
+            </div>
+            <div data-ref="field_privacy_policy_slug" class="grid-3col-responsive pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div class="lg:col-span-1">
+                <label class="form-label">$t:sirsoft-gdpr.settings.fields.privacy_policy_slug.label</label>
+                <p class="form-hint">$t:sirsoft-gdpr.settings.fields.privacy_policy_slug.hint</p>
+              </div>
+              <div class="lg:col-span-2">
+                <input type="text" name="privacy_policy_slug" placeholder="$t:sirsoft-gdpr.settings.fields.privacy_policy_slug.placeholder" class="{{_local.errors?.['privacy_policy_slug'] ? 'input-error dark:focus:ring-red-400 dark:focus:border-red-400' : 'dark:focus:ring-blue-400 dark:focus:border-blue-400'}}"/>
+                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). --><span data-if="{{_local.errors?.['privacy_policy_slug']}}" class="form-error">{{_local.errors?.['privacy_policy_slug']?.[0] ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 3️⃣ 쿠키 동의 배너 통합 (배너 + 카테고리 + 정책 버전 + 미리보기) -->
+        <div data-ref="card_cookie_banner" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 scroll-mt-32">
+          <div data-ref="card_cookie_banner_header" class="panel-header-row flex-between">
+            <div>
+              <h3 class="text-error-strong">$t:sirsoft-gdpr.settings.section.cookie_banner</h3>
+              <p class="form-hint">$t:sirsoft-gdpr.settings.section.cookie_banner_desc</p>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-success-soft' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}">{{_local.form?.banner_enabled ? '$t:sirsoft-gdpr.settings.status.enabled' : '$t:sirsoft-gdpr.settings.status.disabled'}}</span>
+          </div>
+          <div data-ref="card_cookie_banner_fields" class="p-6 space-y-6">
+            <h4 data-ref="subsection_banner_settings" class="text-body font-semibold">$t:sirsoft-gdpr.settings.section.cookie_banner_settings</h4>
+            <!-- v1.4.0: banner_display_mode Select → banner_enabled Toggle -->
+            <div data-ref="field_banner_enabled" class="section-heading-md">
+              <div class="lg:col-span-2">
+                <label class="form-label">$t:sirsoft-gdpr.settings.fields.banner_enabled.label</label>
+                <p class="form-hint">$t:sirsoft-gdpr.settings.fields.banner_enabled.hint</p>
+              </div>
+              <div class="lg:col-span-1 flex justify-end">
+                <toggle name="banner_enabled"/>
+              </div>
+            </div>
+            <div data-ref="field_banner_position" class="section-heading-md">
+              <div class="lg:col-span-1">
+                <label class="form-label">$t:sirsoft-gdpr.settings.fields.banner_position.label</label>
+                <p class="form-hint">$t:sirsoft-gdpr.settings.fields.banner_position.hint</p>
+              </div>
+              <div class="lg:col-span-2">
+                <select name="banner_position" class="w-full">
+                  <option value="bottom_bar">$t:sirsoft-gdpr.settings.fields.banner_position.option_bottom_bar</option>
+                  <option value="bottom_left_popup">$t:sirsoft-gdpr.settings.fields.banner_position.option_bottom_left_popup</option>
+                  <option value="bottom_right_popup">$t:sirsoft-gdpr.settings.fields.banner_position.option_bottom_right_popup</option>
+                  <option value="centered_modal">$t:sirsoft-gdpr.settings.fields.banner_position.option_centered_modal</option>
+                </select>
+              </div>
+            </div>
+            <!-- 정책 버전 카드 — 안 A (header + body separation, full-width). 라벨/설명을 풀폭 한 줄로 배치 후 그 아래에 카드 본문(현재 버전 + 액션 + collapsible 이력)을 풀폭으로 배치. gdpr_policy_versions 테이블이 SSoT. -->
+            <div data-ref="field_cookie_policy_version" class="row-stack">
+              <!-- 라벨 + hint 2줄 (발행 가이드 통합) — 토글/박스 제거하고 카드 hint 영역에 두 줄로 통합. 1줄: 발행 시점 안내 (cookie_policy_version.hint), 2줄: 발행 대상 구분 (policy_version.guide_body). -->
+              <div data-ref="policy_version_guide_box">
+                <label class="form-label">$t:sirsoft-gdpr.settings.fields.cookie_policy_version.label</label>
+                <p class="form-hint leading-relaxed">$t:sirsoft-gdpr.settings.fields.cookie_policy_version.hint</p>
+                <p class="form-hint leading-relaxed">$t:sirsoft-gdpr.settings.policy_version.guide_body</p>
+              </div>
+              <!-- 카드 본문 — col-span-3 (full-width) 박스. 상단: 버전 배지 + 메타 + 액션 버튼. 하단: collapsible 이력 표. -->
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
+                <!-- 헤더 영역 — 좌측: v배지 + 발행 메타 / 우측: 새 버전 발행 + 이력 토글 -->
+                <div class="flex-start px-4 py-3 justify-between gap-3 flex-wrap">
+                  <!-- 메타 4개를 한 줄로 — 현재 버전 v배지 + 발행일시 + 발행자 + 변경사유. 좁은 화면에서는 flex-wrap 으로 자연 줄바꿈. -->
+                  <div class="flex-center flex-1 min-w-0 flex-wrap gap-x-6 gap-y-1 text-xs">
+                    <!-- 현재 버전 v배지 + 본문 보기 버튼. v배지는 평문 Span (인디케이션 의도 명확화). 본문 보기는 별도 Button 으로 명시 액션 — (v배지 클릭만으로는 직관성 부족). -->
+                    <div class="flex items-baseline gap-2">
+                      <span class="uppercase tracking-wide text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.policy_version.current_label</span>
+                      <span class="text-lg font-semibold text-gray-900 dark:text-gray-100">v{{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}</span>
+                      <button data-if="{{gdprPolicyVersionCurrent?.data?.data?.version}}" type="button" class="text-info-soft px-2 py-0.5 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}">
+                        <on type="click">
+                          <set-state target="global" viewingPolicyVersion="{{gdprPolicyVersionCurrent?.data?.data?.version}}"/>
+                          <refetch-data-source dataSourceId="gdprPolicyVersionSnapshot"/>
+                          <open-modal target="policy_version_snapshot_modal"/>
+                        </on>
+                        <span>$t:sirsoft-gdpr.settings.policy_version.snapshot_view_short</span>
+                      </button>
+                    </div>
+                    <div data-if="{{gdprPolicyVersionCurrent?.data?.data}}" class="flex items-baseline gap-2 text-gray-600 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.policy_version.published_at_label</span>
+                      <span>{{gdprPolicyVersionCurrent?.data?.data?.created_at ?? '-'}}</span>
+                    </div>
+                    <div data-if="{{gdprPolicyVersionCurrent?.data?.data}}" class="flex items-baseline gap-2 text-gray-600 dark:text-gray-300">
+                      <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.policy_version.publisher_label</span>
+                      <span>{{gdprPolicyVersionCurrent?.data?.data?.publisher?.name ? (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ? gdprPolicyVersionCurrent.data.data.publisher.name + ' (' + gdprPolicyVersionCurrent.data.data.publisher.email + ')' : gdprPolicyVersionCurrent.data.data.publisher.name) : (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}</span>
+                    </div>
+                    <div data-if="{{gdprPolicyVersionCurrent?.data?.data}}" class="flex items-baseline gap-2 text-gray-600 dark:text-gray-300 min-w-0">
+                      <span class="text-gray-500 dark:text-gray-400 flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.memo_label</span>
+                      <span class="truncate">{{gdprPolicyVersionCurrent?.data?.data?.memo ?? '-'}}</span>
+                    </div>
+                  </div>
+                  <!-- 액션 영역 — 새 버전 발행 (publish modal 진입) + 이력 토글 -->
+                  <div class="flex-center gap-2 flex-shrink-0">
+                    <!-- 새 버전 발행 버튼 — publish modal 열기 -->
+                    <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 border border-gray-900 dark:border-white rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+                      <on type="click">
+                        <open-modal target="policy_version_publish_modal"/>
+                      </on>
+                      <icon name="plus" size="xs"/>
+                      <span>$t:sirsoft-gdpr.settings.policy_version.publish_button</span>
+                    </button>
+                    <!-- 이력 collapsible 토글 — _local.policyHistoryOpen 으로 inline 표 노출/숨김 (열릴 때 데이터소스 refetch) -->
+                    <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                      <on type="click">
+                        <sequence>
+                          <set-state target="local" policyHistoryOpen="{{!_local.policyHistoryOpen}}"/>
+                          <refetch-data-source dataSourceId="gdprPolicyVersionHistory"/>
+                        </sequence>
+                      </on>
+                      <icon name="{{_local.policyHistoryOpen ? 'chevron-up' : 'chevron-down'}}" size="xs"/>
+                      <span>{{_local.policyHistoryOpen ? '$t:sirsoft-gdpr.settings.policy_version.history_toggle_hide' : '$t:sirsoft-gdpr.settings.policy_version.history_toggle_show'}}</span>
+                    </button>
+                  </div>
+                </div>
+                <!-- 이력 표 — collapsible. _local.policyHistoryOpen 일 때만 노출. gdprPolicyVersionHistory 데이터소스 페이지네이션 표시. -->
+                <div data-if="{{_local.policyHistoryOpen}}" class="border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+                  <div data-if="{{(gdprPolicyVersionHistory?.data?.data?.length ?? 0) === 0}}" class="text-center text-label-subtle py-6">$t:sirsoft-gdpr.settings.policy_version.history_empty</div>
+                  <div data-if="{{(gdprPolicyVersionHistory?.data?.data?.length ?? 0) > 0}}" class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                      <thead>
+                        <tr class="text-tertiary uppercase tracking-wide border-b border-gray-200 dark:border-gray-700">
+                          <th class="text-left px-3 py-2 font-medium">$t:sirsoft-gdpr.settings.policy_version.history.col.version</th>
+                          <th class="text-left px-3 py-2 font-medium">$t:sirsoft-gdpr.settings.policy_version.history.col.created_at</th>
+                          <th class="text-left px-3 py-2 font-medium">$t:sirsoft-gdpr.settings.policy_version.history.col.publisher</th>
+                          <th class="text-left px-3 py-2 font-medium">$t:sirsoft-gdpr.settings.policy_version.history.col.change_type</th>
+                          <th class="text-left px-3 py-2 font-medium">$t:sirsoft-gdpr.settings.policy_version.history.col.memo</th>
+                          <th class="text-left px-3 py-2 font-medium w-20">$t:sirsoft-gdpr.settings.policy_version.history.col.snapshot_action</th>
+                        </tr>
+                      </thead>
+                      <tbody data-each="row in gdprPolicyVersionHistory?.data?.data ?? []">
+                        <tr class="border-b border-gray-100 dark:border-gray-700/60 text-gray-700 dark:text-gray-200">
+                          <td class="px-3 py-2 font-mono text-gray-900 dark:text-gray-100">v{{row?.version ?? '?'}}</td>
+                          <td class="px-3 py-2 text-xs">{{row?.created_at ?? '-'}}</td>
+                          <td class="px-3 py-2 text-xs">{{row?.publisher?.name ? (row?.publisher?.email ? row.publisher.name + ' (' + row.publisher.email + ')' : row.publisher.name) : (row?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}</td>
+                          <td class="px-3 py-2 text-xs">{{row?.change_type === 'material' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.material' : (row?.change_type === 'initial' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.initial' : '$t:sirsoft-gdpr.settings.policy_version.change_type.non_material')}}</td>
+                          <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-300 break-all">{{row?.memo ?? '-'}}</td>
+                          <!-- 본문 액션 셀 — 클릭 시 setState global.viewingPolicyVersion → refetch → openModal 시퀀스로 snapshot 모달 노출 -->
+                          <td class="px-3 py-2 text-xs">
+                            <button type="button" class="text-info-soft px-2 py-1 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row?.version ?? '?'}}">
+                              <on type="click">
+                                <set-state target="global" viewingPolicyVersion="{{row?.version}}"/>
+                                <refetch-data-source dataSourceId="gdprPolicyVersionSnapshot"/>
+                                <open-modal target="policy_version_snapshot_modal"/>
+                              </on>
+                              <span>$t:sirsoft-gdpr.settings.policy_version.snapshot_view_short</span>
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div data-ref="subsection_cookie_categories" class="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <h4 class="text-body font-semibold">$t:sirsoft-gdpr.settings.section.cookie_categories</h4>
+              <p class="form-hint">$t:sirsoft-gdpr.settings.fields.cookie_categories.description</p>
+            </div>
+            <!-- 카드 구조: 헤더(아이콘+이름+key+필수/선택 배지) + 운영 정보 펼침. 카드는 정보 패널이며, 카테고리·필수 여부는 CookieCategory enum 이 SSoT. -->
+            <div data-ref="cookie_categories_rows" data-each="category, categoryIdx in _local.form?.cookie_categories ?? []" class="row-stack">
+              <!-- 카테고리 카드 — 헤더 + (선택) 펼침 영역 -->
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
+                <!-- 헤더 행 — 좌측: 아이콘+한글명+(key) / 우측: 필수/선택 배지 + 펼침 버튼. -->
+                <div class="flex-between gap-3 px-4 py-3">
+                  <div class="flex-center gap-3 min-w-0">
+                    <icon data-if="{{category?.key === 'necessary'}}" name="shield-halved" size="sm" class="text-secondary flex-shrink-0"/>
+                    <icon data-if="{{category?.key === 'functional'}}" name="sliders" size="sm" class="text-emerald-600 dark:text-emerald-400 flex-shrink-0"/>
+                    <icon data-if="{{category?.key === 'analytics'}}" name="chart-line" size="sm" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+                    <icon data-if="{{category?.key === 'marketing'}}" name="bullhorn" size="sm" class="text-purple-600 dark:text-purple-400 flex-shrink-0"/>
+                    <div class="min-w-0">
+                      <div class="flex-center gap-2">
+                        <span class="text-primary text-sm font-semibold">{{$localized(category?.label) || category?.key || ''}}</span>
+                        <span class="text-tertiary font-mono">({{category?.key ?? ''}})</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex-center gap-2 flex-shrink-0">
+                    <span data-if="{{category?.required === true}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-800text-danger-soft">$t:sirsoft-gdpr.settings.fields.cookie_categories.category_required_badge</span>
+                    <span data-if="{{category?.required !== true}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">$t:sirsoft-gdpr.settings.fields.cookie_categories.category_optional_badge</span>
+                    <!-- 펼침 토글 버튼 -->
+                    <button type="button" class="ml-1 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                      <on type="click">
+                        <set-state target="local" expandedCategoryIdx="{{_local.expandedCategoryIdx === categoryIdx ? null : categoryIdx}}"/>
+                      </on>
+                      <icon name="{{_local.expandedCategoryIdx === categoryIdx ? 'chevron-up' : 'chevron-down'}}" size="xs"/>
+                      <span>{{_local.expandedCategoryIdx === categoryIdx ? '$t:sirsoft-gdpr.settings.fields.cookie_categories.info.collapse' : '$t:sirsoft-gdpr.settings.fields.cookie_categories.info.expand'}}</span>
+                    </button>
+                  </div>
+                </div>
+                <!-- 펼침 영역 — description + scope + tools + legal_basis -->
+                <div data-if="{{_local.expandedCategoryIdx === categoryIdx}}" class="px-4 pb-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <!-- Definition List 스타일 — 좌측 라벨(col-span-3) + 우측 값(col-span-9) — 표준 grid-cols-12 사용 (safelist 호환) -->
+                  <div class="grid grid-cols-12 gap-x-3 gap-y-2">
+                    <span data-if="{{!!$localized(category?.description)}}" class="text-tertiary col-span-2 font-medium uppercase tracking-wide">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.description_label</span>
+                    <span data-if="{{!!$localized(category?.description)}}" class="col-span-10 text-xs leading-relaxed text-gray-700 dark:text-gray-300">{{$localized(category?.description)}}</span>
+                    <span class="text-tertiary col-span-2 font-medium uppercase tracking-wide">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.scope_label</span>
+                    <span data-if="{{category?.key === 'necessary'}}" class="col-span-10 text-xs leading-relaxed text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.necessary.scope</span>
+                    <span data-if="{{category?.key === 'functional'}}" class="col-span-10 text-xs leading-relaxed text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.functional.scope</span>
+                    <span data-if="{{category?.key === 'analytics'}}" class="col-span-10 text-xs leading-relaxed text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.analytics.scope</span>
+                    <span data-if="{{category?.key === 'marketing'}}" class="col-span-10 text-xs leading-relaxed text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.marketing.scope</span>
+                    <span class="text-tertiary col-span-2 font-medium uppercase tracking-wide">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.tools_label</span>
+                    <span data-if="{{category?.key === 'necessary'}}" class="col-span-10 text-xs leading-relaxed text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.necessary.tools</span>
+                    <span data-if="{{category?.key === 'functional'}}" class="col-span-10 text-xs leading-relaxed text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.functional.tools</span>
+                    <span data-if="{{category?.key === 'analytics'}}" class="col-span-10 text-xs leading-relaxed text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.analytics.tools</span>
+                    <span data-if="{{category?.key === 'marketing'}}" class="col-span-10 text-xs leading-relaxed text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.settings.fields.cookie_categories.info.marketing.tools</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- F-02 자동 차단 정책 — 별도 카드/탭으로 분리. banner_enabled (쿠키 배너 노출) 가 ON 일 때만 본문 노출. OFF 시 안내 박스로 쿠키 배너 노출 활성화 유도 -->
+        <div data-ref="card_auto_blocking_policy" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 scroll-mt-32">
+          <div data-ref="card_auto_blocking_policy_header" class="panel-header-row flex-between">
+            <div>
+              <h3 class="text-error-strong">$t:sirsoft-gdpr.settings.section.auto_blocking</h3>
+              <p class="form-hint">$t:sirsoft-gdpr.settings.section.auto_blocking_desc</p>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-success-soft' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}">{{_local.form?.banner_enabled ? '$t:sirsoft-gdpr.settings.status.enabled' : '$t:sirsoft-gdpr.settings.status.disabled'}}</span>
+          </div>
+          <div data-ref="card_auto_blocking_policy_fields" class="p-6 space-y-6">
+            <!-- 쿠키 배너 노출 (banner_enabled) OFF 시 안내 박스. ON 으로 전환하면 배너 + 자동 차단 + 마이페이지 카드가 일괄 활성됨 -->
+            <div data-ref="blocked_domains_off_hint" data-if="{{!_local.form?.banner_enabled}}" class="bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-lg p-4 flex-center gap-2">
+              <icon name="circle-info" size="sm" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+              <span class="text-xs text-gray-800 dark:text-gray-100">$t:sirsoft-gdpr.settings.fields.blocked_domains.auto_blocking_off_hint</span>
+            </div>
+            <!-- F-02 도메인 기반 추적 리소스 차단 — banner_enabled ON 일 때만 본문 노출. OFF 시 위쪽 인라인 안내가 대신 표시됨 -->
+            <div data-ref="subsection_blocked_domains" data-if="{{_local.form?.banner_enabled === true}}" class="row-stack">
+              <!-- 안내 — 3항목 (외부 폰트 분류 주의 / 차단 도메인 변경 후 정책 버전 bump / 도메인 형식 FQDN). FQDN 안내를 박스 안으로 흡수하여 운영자 안내 영역을 단일 박스로 통합. -->
+              <div data-ref="blocked_domains_warnings_box" class="bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-lg p-4">
+                <div class="flex-center gap-2 mb-3">
+                  <icon name="circle-info" size="sm" class="text-blue-600 dark:text-blue-400"/>
+                  <h4 class="text-error-strong">$t:sirsoft-gdpr.settings.fields.blocked_domains.warnings_title</h4>
+                </div>
+                <ul class="list-disc list-inside space-y-1.5 text-xs text-gray-800 dark:text-gray-100 leading-relaxed">
+                  <li>$t:sirsoft-gdpr.settings.fields.blocked_domains.warning_visual_break</li>
+                  <li>$t:sirsoft-gdpr.settings.fields.blocked_domains.warning_policy_bump</li>
+                  <li>$t:sirsoft-gdpr.settings.fields.blocked_domains.warning_domain_format</li>
+                </ul>
+              </div>
+              <!-- 카테고리별 TagInput iteration — necessary 제외. options 에 카탈로그 도메인을 추천 노출 (creatable=true 로 자유 입력 가능) -->
+              <div data-ref="blocked_domains_taginputs" data-each="category, categoryIdx in (_local.form?.cookie_categories ?? []).filter(c => c?.key !== 'necessary')" class="row-stack">
+                <!-- 카테고리 차단 도메인 카드. 해당 카테고리에 422 검증 에러가 있으면 외곽 테두리를 빨간색으로 강조. 도메인 인덱스가 0이 아닐 수도 있으므로 'blocked_domains.{category}.' prefix 로 시작하는 키 *어느 것이든* 존재 여부 검사 (some). -->
+                <div class="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-2 bg-red-50/30 dark:bg-red-900/10' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2'}}">
+                  <div class="flex-center gap-2">
+                    <icon data-if="{{category?.key === 'functional'}}" name="sliders" size="sm" class="text-emerald-600 dark:text-emerald-400"/>
+                    <icon data-if="{{category?.key === 'analytics'}}" name="chart-line" size="sm" class="text-blue-600 dark:text-blue-400"/>
+                    <icon data-if="{{category?.key === 'marketing'}}" name="bullhorn" size="sm" class="text-purple-600 dark:text-purple-400"/>
+                    <label class="form-label">{{$localized(category?.label) || category?.key || ''}} ({{category?.key ?? ''}})</label>
+                  </div>
+                  <!-- 도메인 칩 입력. TagInput onChange 는 createFakeEvent 로 { target: { value: string[] } } 형태의 가짜 이벤트를 보내므로 $event.target.value 로 실제 배열 추출. options: 카탈로그 추천 (자동완성) -->
+                  <tag-input value="{{_local.form?.blocked_domains?.[category.key] ?? []}}" options="{{((gdprSettings?.data?.default_blocked_domains_preview?.[category.key]) ?? []).map(d => ({ value: d, label: d }))}}" :creatable="true" placeholder="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_input_placeholder" noOptionsMessage="$t:sirsoft-gdpr.settings.fields.blocked_domains.tag_no_options">
+                    <on type="change">
+                      <set-state target="local" form.blocked_domains="{{({...(_local.form?.blocked_domains ?? {}), [category.key]: ($event?.target?.value ?? [])})}}" :hasChanges="true"/>
+                    </on>
+                  </tag-input>
+                  <!-- 카테고리 내 첫 잘못된 도메인의 에러 메시지 (인덱스 무관). 운영자가 첫 에러를 정정하면 다음 에러가 자연스럽게 노출됨. --><span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.'))}}" class="form-error">{{(Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('blocked_domains.' + category.key + '.'))?.[1]?.[0]) ?? ''}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/plugin_settings/_policy_version_publish_modal.json"/>
+  <modal src="partials/_shared/_policy_version_snapshot_modal.json"/>
+</layout>
