@@ -1,0 +1,40 @@
+<partial description="상품 그리드 + 페이지네이션 (products 데이터소스 사용, route.path 기반 navigate)">
+  <div>
+    <!-- 상품 그리드 -->
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 mb-8">
+      <div data-each="product in {{products?.data?.data ?? []}}">
+        <product-card product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
+      </div>
+    </div>
+    <!-- 빈 상태 -->
+    <div data-if="{{(products?.data?.data ?? []).length === 0}}" class="flex flex-col items-center justify-center py-20 px-4 my-16">
+      <div class="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-5">
+        <icon name="search" size="2x" class="text-gray-400 dark:text-gray-500"/>
+      </div>
+      <p class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.no_products</p>
+      <p class="text-sm text-gray-400 dark:text-gray-500">$t:shop.no_search_results</p>
+    </div>
+    <!-- 페이지네이션 -->
+    <div data-if="{{(products?.data?.pagination?.last_page ?? 1) > 1}}" class="flex justify-center items-center gap-2 mb-12">
+      <!-- 이전 페이지 버튼 -->
+      <button class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.current_page ?? 1) <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}}" disabled="{{(products?.data?.pagination?.current_page ?? 1) <= 1}}">
+        <on type="click">
+          <navigate path="{{route.path}}" :mergeQuery="true">
+            <query page="{{(products?.data?.pagination?.current_page ?? 1) - 1}}"/>
+          </navigate>
+        </on>
+        <icon name="chevron-left" class="w-4 h-4"/>
+      </button>
+      <!-- 페이지 번호 표시 --><span class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">{{products?.data?.pagination?.current_page ?? 1}} / {{products?.data?.pagination?.last_page ?? 1}}</span>
+      <!-- 다음 페이지 버튼 -->
+      <button class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.current_page ?? 1) >= (products?.data?.pagination?.last_page ?? 1) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}}" disabled="{{(products?.data?.pagination?.current_page ?? 1) >= (products?.data?.pagination?.last_page ?? 1)}}">
+        <on type="click">
+          <navigate path="{{route.path}}" :mergeQuery="true">
+            <query page="{{(products?.data?.pagination?.current_page ?? 1) + 1}}"/>
+          </navigate>
+        </on>
+        <icon name="chevron-right" class="w-4 h-4"/>
+      </button>
+    </div>
+  </div>
+</partial>

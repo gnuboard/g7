@@ -1,0 +1,38 @@
+<partial description="페이지 섹션 (전체 탭: 5개 미리보기, 페이지 탭: 전체 목록)">
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <!-- 섹션 헤더 (전체 탭에서만 표시) -->
+    <div data-if="{{(_global.searchActiveTab ?? 'all') === 'all'}}" class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+      <div class="flex items-center gap-2">
+        <icon name="file-alt" size="sm" class="text-gray-500 dark:text-gray-400"/>
+        <span class="font-medium text-gray-900 dark:text-white">$t:search.tabs.pages</span>
+        <span class="text-sm text-blue-600 dark:text-blue-400">{{(searchResults?.data?.pages_count ?? 0) | number}}</span>
+      </div>
+      <!-- 전체보기 버튼 -->
+      <button data-if="{{(searchResults?.data?.pages_count ?? 0) > 0}}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+        <on type="click">
+          <set-state target="global" searchActiveTab="pages" :searchPage="1"/>
+          <refetch-data-source dataSourceId="searchResults"/>
+        </on>
+        <span>$t:search.view_all</span>
+        <icon name="chevron-right" size="sm"/>
+      </button>
+    </div>
+    <!-- 페이지 리스트 -->
+    <div data-if="{{searchResults?.data?.pages?.items?.length > 0}}" data-each="page, pageIdx in {{searchResults?.data?.pages?.items ?? []}}">
+      <!-- 구분선 (첫 번째 아이템 제외) -->
+      <div data-if="{{pageIdx > 0}}" class="border-t border-gray-200 dark:border-gray-700"/>
+      <button class="block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+        <on type="click">
+          <navigate path="{{page.url}}"/>
+        </on>
+        <html-content content="{{page.title_highlighted ?? page.title}}" class="font-medium text-gray-900 dark:text-white mb-1 [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
+        <html-content content="{{page.content_preview_highlighted ?? page.content_preview}}" class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
+        <p class="text-xs text-gray-500 dark:text-gray-400">$t:search.page_published_at|date={{page.published_at ?? ''}}</p>
+      </button>
+    </div>
+    <!-- 결과 없음 안내 -->
+    <div data-if="{{!searchResults?.data?.pages?.items || searchResults?.data?.pages?.items?.length === 0}}" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      <span>$t:search.empty.pages_in_all</span>
+    </div>
+  </div>
+</partial>

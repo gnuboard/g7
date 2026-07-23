@@ -154,6 +154,36 @@
 > </defines>
 > ```
 
+> **`<seo>` 의 구조값 자식도 같은 표기다 (D51 G14).** `og`·`vars`·`extensions`·`structured_data`·`data_sources` 는 `<seo>` 속성으로 펼 수 없어 자식 태그로 나가는데, 그 본문 표기는 다른 구조값 자리와 같다 — 평면 스칼라 맵은 속성 field-map, 그 밖은 `<field>`/`<item>` 트리다. JSON 본문 표기도 계속 받는다(표기를 주지 않은 형태의 탈출구).
+>
+> ```html
+> <meta title="{{page.data.title}}">
+>   <seo :enabled="true" page_type="board" :priority="0.6">
+>     <og type="website" title="{{_seo.board.title ?? ''}}"/>
+>     <vars site_name="$core_settings:general.site_name" board_name="{{posts.data.board.name ?? ''}}"/>
+>     <extensions><item type="module" id="sirsoft-board"/></extensions>
+>     <data-sources><item>posts</item></data-sources>
+>     <structured-data><field name="@type" value="ItemList"/></structured-data>
+>   </seo>
+> </meta>
+> ```
+
+> **액션의 top-level 구조값 키도 `<field name>` 이다 (D51 G15).** `resultTo`·`identity_target` 은 값이 객체인데 배치가 top-level 이라 종전에는 `:resultTo='{…}'` 속성 JSON 으로 나갔다. 표기는 params 구조값과 같은 `<field name>` 하나이고, **배치는 핸들러 매니페스트가 정한다** — 매니페스트가 top-level 로 아는 이름이면 top-level, 아니면 params 다(속성 배치 규칙과 같은 한 곳만 본다).
+>
+> ```html
+> <load-from-local-storage key="recentProductIds" :defaultValue="[]">
+>   <field name="resultTo"><field name="target" value="_global"/><field name="key" value="recentProductIds"/></field>
+> </load-from-local-storage>
+> ```
+
+> **`<blur-until-loaded>` 의 데이터소스 목록은 `<item>` 이다 (D51 G16).** 하나면 `sources="a"`, 여럿이면 `<item>` 리스트로 쓴다. `:sources` 는 표기를 주지 않은 형태(빈 리스트·표현식 배열)의 탈출구로만 남는다.
+>
+> ```html
+> <blur-until-loaded><item>myPosts</item><item>myComments</item></blur-until-loaded>
+> ```
+
+> **구조값 리스트는 어느 자리에서든 `<item>` 으로 나간다 (D51 G17).** 종전 방출기는 맵만 `<field>` 트리로 풀고 리스트는 무조건 JSON 본문으로 냈다 — 표기가 있는데도 `<data-sources>["posts"]</data-sources>` 처럼 통짜 JSON 이 남던 비대칭이다. 표기 불가한 리스트(빈 리스트·문자열 아닌 스칼라 원소)만 JSON 본문으로 간다.
+
 ## 5. 노드 + 지시 속성
 
 태그명이 컴포넌트를 정한다(레지스트리 kebab→PascalCase 해석). 미등록 태그는 `unknown_tag_with_suggestion`(근접 제안).

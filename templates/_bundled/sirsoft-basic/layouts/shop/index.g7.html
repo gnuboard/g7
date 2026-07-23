@@ -1,0 +1,96 @@
+<layout name="shop/index" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" page_type="shop_index" toggle_setting="$module_settings:sirsoft-ecommerce:seo.seo_shop_index" :priority="0.7" changefreq="daily">
+      <extensions>
+        <item type="module" id="sirsoft-ecommerce"/>
+      </extensions>
+      <data-sources>
+        <item>products</item>
+        <item>categories</item>
+      </data-sources>
+      <vars site_name="$core_settings:general.site_name" shopBase="$module_settings:sirsoft-ecommerce:basic_info.route_path"/>
+      <og type="website" title="{{_seo.shop_index.title ?? ''}}"/>
+      <structured-data @type="ItemList" name="{{_seo.shop_index.title ?? ''}}" description="{{_seo.shop_index.description ?? ''}}"/>
+    </seo>
+  </meta>
+  <data-source id="categories" label_key="$t:editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/categories" method="GET" :auto_fetch="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="products" label_key="$t:editor.data_source.products" type="api" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET" auth_mode="optional" :auto_fetch="true" loading_strategy="progressive">
+    <params page="{{query.page ?? 1}}" :per_page="12" category_id="{{query.category ?? ''}}" sort="{{query.sort ?? 'latest'}}" search="{{query.keyword ?? ''}}"/>
+    <fallback>
+      <field name="data" :value="[]"/>
+      <field name="meta">
+        <field name="current_page" :value="1"/>
+        <field name="last_page" :value="1"/>
+        <field name="per_page" :value="12"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="recentProducts" label_key="$t:editor.data_source.recentProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/recent" method="GET" auth_mode="optional" :auto_fetch="true" loading_strategy="progressive">
+    <params ids="{{(_global.recentProductIds ?? []).join(',')}}"/>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="popularProducts" label_key="$t:editor.data_source.popularProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/popular?limit=8" method="GET" auth_mode="optional" :auto_fetch="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="newProducts" label_key="$t:editor.data_source.newProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/new?limit=8" method="GET" auth_mode="optional" :auto_fetch="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <permissions/>
+  <error-handling>
+    <on-code code="401">
+      <!-- 비회원 상품 조회 권한 없음 — 토스트 대신 상태 플래그로 안내 배너 표시 -->
+      <set-state target="local" :productAccessDenied="true"/>
+    </on-code>
+    <on-code code="403">
+      <!-- 인증된 사용자 상품 조회 권한 없음 -->
+      <set-state target="local" :productAccessDenied="true"/>
+    </on-code>
+  </error-handling>
+  <init>
+    <load-from-local-storage key="recentProductIds" :defaultValue="[]">
+      <field name="resultTo">
+        <field name="target" value="_global"/>
+        <field name="key" value="recentProductIds"/>
+      </field>
+    </load-from-local-storage>
+  </init>
+  <slot name="content">
+    <container class="py-8">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <icon name="shopping-cart" class="w-6 h-6"/>
+          <span>$t:shop.title</span>
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-1">$t:shop.description</p>
+      </div>
+      <!-- 상품 조회 권한 없음 안내 배너 -->
+      <div data-if="{{_local.productAccessDenied === true}}" class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg flex items-center gap-3">
+        <icon name="triangle-exclamation" class="text-yellow-600 dark:text-yellow-400"/>
+        <span class="text-yellow-800 dark:text-yellow-200 text-sm">$t:sirsoft-ecommerce.shop.product_access_denied</span>
+      </div>
+      <!-- 최상위 카테고리 버튼 (전체 + 1단계 카테고리) -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button class="{{!query.category ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"><on type="click"><navigate path="{{_global.shopBase}}/products"><query/></navigate></on>$t:shop.category.all</button>
+        <div data-each="cat in {{categories?.data ?? []}}">
+          <button class="{{query.category == cat?.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"><on type="click"><navigate path="{{_global.shopBase}}/products"><query category="{{cat?.id}}" page="1"/></navigate></on>{{cat?.name_localized}}</button>
+        </div>
+      </div>
+      <include src="partials/shop/list/_search_filter_bar.json"/>
+      <include src="partials/shop/list/_product_grid.json"/>
+      <include src="partials/shop/list/_recent_products.json"/>
+      <include src="partials/shop/list/_popular_products.json"/>
+      <include src="partials/shop/list/_new_products.json"/>
+    </container>
+  </slot>
+</layout>

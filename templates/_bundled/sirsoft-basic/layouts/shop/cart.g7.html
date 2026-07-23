@@ -1,0 +1,65 @@
+<layout name="shop/cart" version="1.0.0" extends="_user_base">
+  <data-source id="cartItems" label_key="$t:editor.data_source.cartItems" type="api" endpoint="/api/modules/sirsoft-ecommerce/cart/query" method="POST" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <headers X-Cart-Key="{{_global.cartKey}}"/>
+    <params selected_ids="{{_local.selectedItems?.length > 0 ? _local.selectedItems : undefined}}"/>
+    <init-local>
+      <field name="selectedItems" value="item_ids"/>
+    </init-local>
+    <fallback>
+      <field name="data">
+        <field name="items" :value="[]"/>
+        <field name="item_ids" :value="[]"/>
+        <field name="item_count" :value="0"/>
+        <field name="calculation" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="selectedItems" :value="[]"/>
+    <field name="allSelected" :value="true"/>
+    <field name="isCalculating" :value="false"/>
+    <field name="showTaxDetails" :value="false"/>
+    <field name="optionModal">
+      <field name="visible" :value="false"/>
+      <field name="targetItem" :value="null"/>
+    </field>
+    <field name="deleteModal">
+      <field name="visible" :value="false"/>
+      <field name="targetIds" :value="[]"/>
+    </field>
+    <field name="unavailableModal">
+      <field name="visible" :value="false"/>
+      <field name="items" :value="[]"/>
+      <field name="hasStockIssue" :value="false"/>
+    </field>
+    <field name="optionProduct" :value="null"/>
+    <field name="matchedOption" :value="null"/>
+    <field name="isOrdering" :value="false"/>
+  </init-local>
+  <permissions/>
+  <init>
+    <!-- cartKey 초기화 (data_sources headers에서 사용) -->
+    <action handler="initCartKey"/>
+  </init>
+  <slot name="content">
+    <container class="py-8">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <icon name="shopping-cart" class="w-6 h-6"/>
+        <span>$t:shop.cart.title</span>
+      </h1>
+      <grid :cols="3" :gap="6">
+        <responsive on="portable" :cols="1"/>
+        <div class="col-span-2 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}">
+          <responsive on="portable" class="col-span-1"/>
+          <include src="partials/shop/_cart_list.json"/>
+        </div>
+        <div class="col-span-1">
+          <include src="partials/shop/_cart_summary.json"/>
+        </div>
+      </grid>
+    </container>
+  </slot>
+  <modal src="partials/shop/_modal_cart_delete_confirm.json"/>
+  <modal src="partials/shop/_modal_cart_option_change.json"/>
+  <modal src="partials/shop/_modal_cart_unavailable.json"/>
+</layout>

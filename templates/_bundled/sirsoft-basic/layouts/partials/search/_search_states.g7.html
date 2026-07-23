@@ -1,0 +1,46 @@
+<partial description="검색 상태별 UI (요약, 초기, 빈 결과)">
+  <div>
+    <!-- 검색 결과 요약 -->
+    <div data-if="{{query?.q &amp;&amp; searchResults?.data}}" class="mb-4">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        <span class="text-blue-600 dark:text-blue-400 font-medium">"{{query?.q}}"</span>
+        <span> $t:search.results</span>
+        <span class="font-medium"> {{(searchResults.data.total ?? 0) | number}}</span>
+        <span>$t:search.result_count_suffix</span>
+      </p>
+    </div>
+    <!-- 검색어 없는 초기 상태 -->
+    <div data-if="{{!query?.q}}" class="py-16 text-center">
+      <div class="mb-5 text-gray-300 dark:text-gray-600">
+        <icon name="search" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.initial.title</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">$t:search.initial.description</p>
+      <!-- 검색 팁 섹션 -->
+      <div class="max-w-md mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-left">
+        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+          <icon name="lightbulb" size="sm"/>
+          <span>$t:search.initial.hint_title</span>
+        </h4>
+        <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+          <li class="flex items-center gap-2">
+            <icon name="check" size="sm" class="text-green-500 flex-shrink-0"/>
+            <span>$t:search.initial.hint_1</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <icon name="check" size="sm" class="text-green-500 flex-shrink-0"/>
+            <span>$t:search.initial.hint_2</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- 검색 결과 없음 (전체 탭) -->
+    <div data-if="{{query?.q &amp;&amp; searchResults?.data &amp;&amp; (searchResults?.data?.total ?? 0) === 0 &amp;&amp; (_global.searchActiveTab ?? 'all') === 'all'}}" class="py-16 text-center">
+      <div class="mb-5 text-gray-300 dark:text-gray-600">
+        <icon name="search" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.empty.all</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.empty.suggestion</p>
+    </div>
+  </div>
+</partial>

@@ -1,0 +1,41 @@
+<layout name="mypage/inquiries" version="1.0.0" extends="_user_base">
+  <data-source id="myInquiries" label_key="$t:editor.data_source.myInquiries" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/inquiries" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :blur_until_loaded="true">
+    <params page="{{_local.inquiriesPage ?? query.page ?? 1}}" :per_page="10" search="{{_local.inquiriesSearch ?? ''}}" is_answered="{{_local.inquiriesFilter ?? ''}}"/>
+    <success>
+      <conditions>
+        <when if="{{response.data.data.meta.inquiry_available === false}}">
+          <show-error-page :errorCode="404" target="content"/>
+        </when>
+      </conditions>
+    </success>
+  </data-source>
+  <computed name="currentTab">inquiries</computed>
+  <permissions/>
+  <transition-overlay enabled style="skeleton" target="mypage_tab_content" fallback-target="main_content_area">
+    <skeleton component="PageSkeleton" animation="pulse" :iteration_count="5"/>
+  </transition-overlay>
+  <init>
+    <set-state target="local" inquiriesPage="{{query.page ?? 1}}" inquiriesSearch="" inquiriesFilter=""/>
+  </init>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.json"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <!-- 문의내역 -->
+          <include src="partials/mypage/inquiries/_list.json"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+  <modal src="partials/shop/detail/_modal_qna_write.json"/>
+  <modal src="partials/shop/detail/_modal_inquiry_delete.json"/>
+</layout>

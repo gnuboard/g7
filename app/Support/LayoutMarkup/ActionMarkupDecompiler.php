@@ -394,7 +394,35 @@ final class ActionMarkupDecompiler
             }
         }
 
+        // top-level 키의 구조값도 같은 `<field name>` 으로 되돌린다 (D51 G15).
+        // `resultTo`·`identity_target` 은 값이 객체인데 top-level 배치라 params 루프가 못 본다 —
+        // 그대로 두면 `:resultTo='{"target":…}'` 속성 JSON 으로 나가 D2("속성 JSON 추방")를 어긴다.
+        // 컴파일러가 같은 매니페스트 배치 규칙으로 top-level 에 되돌려 놓으므로 왕복이 성립한다.
+        foreach ($action as $key => $value) {
+            if (! $this->topLevelEmittedAsChild((string) $key, $value)) {
+                continue;
+            }
+
+            $children[] = $this->el('field', [$this->attr('name', (string) $key)], $this->structuredChildElements($value));
+        }
+
         return $children;
+    }
+
+    /**
+     * top-level 액션 키가 **자식 태그로** 나가는지 판정합니다 (속성 중복·누락 방지 — `paramEmittedAsChild` 의 짝).
+     *
+     * @param  string  $key  top-level 키
+     * @param  mixed  $value  값
+     * @return bool `<field name>` 자식으로 나가면 true
+     */
+    private function topLevelEmittedAsChild(string $key, mixed $value): bool
+    {
+        if (in_array($key, self::STRUCTURAL_KEYS, true) || in_array($key, self::CONDITION_KEYS, true)) {
+            return false;
+        }
+
+        return $this->isStructuredValue($value);
     }
 
     /**
@@ -483,6 +511,11 @@ final class ActionMarkupDecompiler
 
         foreach ($action as $key => $value) {
             if (in_array($key, self::STRUCTURAL_KEYS, true)) {
+                continue;
+            }
+
+            // 구조값은 `<field name>` 자식으로 나간다 — 속성으로 중복하면 컴파일이 중복 키로 거부한다.
+            if ($this->topLevelEmittedAsChild((string) $key, $value)) {
                 continue;
             }
 

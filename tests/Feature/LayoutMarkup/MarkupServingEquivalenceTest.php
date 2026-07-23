@@ -76,6 +76,11 @@ class MarkupServingEquivalenceTest extends TestCase
                 'sirsoft-admin_basic',
                 'template',
             ],
+            'sirsoft-basic (template)' => [
+                'templates/_bundled/sirsoft-basic/layouts',
+                'sirsoft-basic',
+                'template',
+            ],
             'gnuboard7-hello_admin_template (template)' => [
                 'templates/_bundled/gnuboard7-hello_admin_template/layouts',
                 'gnuboard7-hello_admin_template',

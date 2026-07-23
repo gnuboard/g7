@@ -1120,8 +1120,10 @@ final class NodeCompiler
      * `<blur-until-loaded>` 을 객체형 blur_until_loaded 로 컴파일합니다.
      *
      * 불리언·표현식 축약은 `data-blur-until-loaded` 속성이 맡고, 이 태그는 `{enabled, data_sources}`
-     * 객체형 전용이다. 데이터소스가 하나면 `sources="a"`, 여럿이면 `:sources='["a","b"]'` 로
-     * 쓴다 — 실사용은 문자열 18건·배열 6건이라 두 shape 를 모두 보존해야 한다.
+     * 객체형 전용이다. 데이터소스가 하나면 `sources="a"`, 여럿이면 `<item>` 리스트로 쓴다
+     * (D51 G16 — `:sources='["a","b"]'` 는 속성에 박힌 통짜 JSON 이라 D2 를 어긴다). 실사용은
+     * 문자열 18건·배열 6건이라 두 shape 를 모두 보존해야 한다. `:sources` 는 표기를 주지 않은
+     * 형태(빈 리스트·표현식 배열)의 탈출구로 남는다.
      *
      * @param  MarkupElement  $element  `<blur-until-loaded>` 요소
      * @param  string|null  $path  소스 파일 경로
@@ -1134,17 +1136,18 @@ final class NodeCompiler
         $enabled = $element->attribute(':enabled');
         $plain = $element->attribute('sources');
         $typed = $element->attribute(':sources');
+        $items = $element->children !== [];
 
-        // 둘 다 쓰면 어느 쪽이 데이터소스인지 알 수 없다. 하나를 골라 나머지를 버리면
+        // 셋 중 둘 이상을 쓰면 어느 쪽이 데이터소스인지 알 수 없다. 하나를 골라 나머지를 버리면
         // 저작자가 쓴 값이 조용히 사라진다.
-        if ($plain !== null && $typed !== null) {
+        if (count(array_filter([$plain !== null, $typed !== null, $items])) > 1) {
             throw $this->error($element, LayoutMarkupErrorCode::DuplicateAttribute, $path, [
                 'tag' => $element->name,
                 'attr' => 'sources',
             ]);
         }
 
-        if ($plain === null && $typed === null) {
+        if ($plain === null && $typed === null && ! $items) {
             throw $this->error($element, LayoutMarkupErrorCode::MissingRequiredAttribute, $path, [
                 'tag' => $element->name,
                 'attr' => 'sources',
@@ -1153,9 +1156,11 @@ final class NodeCompiler
 
         return [
             'enabled' => $enabled === null ? true : $this->decodeTypeLiteral($enabled, $path),
-            'data_sources' => $plain !== null
-                ? (string) $plain->value
-                : $this->decodeTypeLiteral($typed, $path),
+            'data_sources' => match (true) {
+                $items => $this->values->compileChildren($element, $path),
+                $plain !== null => (string) $plain->value,
+                default => $this->decodeTypeLiteral($typed, $path),
+            },
         ];
     }
 

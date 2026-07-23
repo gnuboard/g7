@@ -1,0 +1,21 @@
+<partial description="게시판 목록 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음)">
+  <div>
+    <!-- 해당 페이지에 게시글 없음 (page 파라미터 존재 + 데이터 0건) -->
+    <div data-if="{{posts?.data?.board?.slug &amp;&amp; query.page &amp;&amp; Number(query.page) > 1 &amp;&amp; posts?.data?.data?.length === 0}}" class="flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl">
+      <div class="text-6xl mb-4">📄</div>
+      <p class="text-gray-600 dark:text-gray-400 mb-2">$t:board.no_posts_on_page</p>
+      <button class="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer mt-4"><on type="click"><navigate path="/board/{{route.slug}}"/></on>$t:board.go_to_first_page</button>
+    </div>
+    <!-- 게시글 없음 (검색 아닐 때 + 공지 제외 일반 게시글 0개) -->
+    <div data-if="{{posts?.data?.board?.slug &amp;&amp; !query.search &amp;&amp; !query.category &amp;&amp; (!query.page || Number(query.page) <= 1) &amp;&amp; posts?.data?.pagination?.total === 0}}" class="flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl">
+      <div class="text-6xl mb-4">📝</div>
+      <p class="text-gray-600 dark:text-gray-400">$t:board.no_posts</p>
+    </div>
+    <!-- 검색 결과 없음 (검색 시 + 공지 제외 일반 게시글 0개) -->
+    <div data-if="{{posts?.data?.board?.slug &amp;&amp; (query.search || query.category) &amp;&amp; posts?.data?.pagination?.total === 0}}" class="flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl">
+      <div class="text-6xl mb-4">🔍</div>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">$t:board.no_search_results</p>
+      <!-- 검색 초기화 버튼 --><button class="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer"><on type="click"><navigate path="/board/{{route.slug}}"/></on>$t:board.clear_search</button>
+    </div>
+  </div>
+</partial>

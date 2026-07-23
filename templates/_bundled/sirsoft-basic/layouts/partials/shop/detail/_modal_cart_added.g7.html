@@ -1,0 +1,26 @@
+<partial description="장바구니 담기 완료 모달" editor_label="$t:user.modal_label.shop_detail.cart_added_modal">
+  <modal data-ref="cart_added_modal" title="$t:shop.product.cart_added_modal_title" size="sm" :closeOnBackdropClick="false">
+    <!-- 모달 내용 -->
+    <div class="pb-6 text-center">
+      <div class="flex justify-center mb-4">
+        <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+          <icon name="check" class="text-green-600 dark:text-green-400" size="lg"/>
+        </div>
+      </div>
+      <p class="text-gray-700 dark:text-gray-300">$t:shop.product.cart_added_modal_message</p>
+    </div>
+    <!-- 모달 푸터 - 쇼핑 계속 / 장바구니 이동 -->
+    <div class="flex gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+      <button class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}"><on type="click"><set-state target="$parent._local" :selectedOptionItems="[]" :currentSelection="[]" :noOptionQuantity="1" :additionalOptions="[]"/><close-modal/></on>$t:shop.product.continue_shopping</button>
+      <button class="flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}">
+        <on type="click">
+          <set-state target="global" :isNavigatingToCart="true"/>
+          <close-modal/>
+          <navigate path="{{_global.shopBase}}/cart"/>
+        </on>
+        <icon data-if="{{_global.isNavigatingToCart}}" name="spinner" size="sm" class="animate-spin"/>
+        <span>$t:shop.product.go_to_cart</span>
+      </button>
+    </div>
+  </modal>
+</partial>

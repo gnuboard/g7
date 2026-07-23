@@ -299,8 +299,10 @@ class MarkupInstallTest extends TestCase
             'sirsoft-pay_nhnkcp (plugin)' => ['plugins/_bundled/sirsoft-pay_nhnkcp/resources/layouts', 'sirsoft-pay_nhnkcp', 'plugin'],
             'sirsoft-pay_nicepayments (plugin)' => ['plugins/_bundled/sirsoft-pay_nicepayments/resources/layouts', 'sirsoft-pay_nicepayments', 'plugin'],
             'sirsoft-verification_kginicis (plugin)' => ['plugins/_bundled/sirsoft-verification_kginicis/resources/layouts', 'sirsoft-verification_kginicis', 'plugin'],
-            // W3 — 템플릿 설치 경로(TemplateManager) + 129파일 실물
+            // W3 — 템플릿 설치 경로(TemplateManager) + 143파일 실물
             'sirsoft-admin_basic (template)' => ['templates/_bundled/sirsoft-admin_basic/layouts', 'sirsoft-admin_basic', 'template'],
+            // W4 — user 템플릿(sirsoft-basic) + 152파일 실물
+            'sirsoft-basic (template)' => ['templates/_bundled/sirsoft-basic/layouts', 'sirsoft-basic', 'template'],
         ];
     }
 

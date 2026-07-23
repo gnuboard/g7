@@ -1,0 +1,56 @@
+<partial description="공용 삭제 모달 - 게시글/댓글" editor_label="$t:user.modal_label.board_show.board_delete_modal">
+  <!-- 공용 삭제 모달 - 게시글/댓글 모두 사용 가능 -->
+  <modal data-ref="board_delete_modal" id="board_delete_modal" title="{{_global.deleteModal.type === 'comment' ? '$t:board.modals.delete_comment_title' : '$t:board.modals.delete_post_title'}}" icon="trash" iconClassName="text-red-500" size="sm">
+    <div class="space-y-4">
+      <!-- 삭제 확인 메시지 (비회원인 경우 비밀번호 안내, 회원인 경우 삭제 확인) --><p class="text-gray-600 dark:text-gray-400">{{_global.deleteModal.isGuest ? (_global.deleteModal.type === 'comment' ? '$t:board.guest_password_comment_delete_message' : '$t:board.guest_password_post_delete_message') : (_global.deleteModal.type === 'comment' ? '$t:board.modals.delete_comment_confirm' : '$t:board.modals.delete_post_confirm')}}</p>
+      <!-- 비회원 비밀번호 입력 (비회원만 표시) -->
+      <div data-if="{{_global.deleteModal.isGuest}}">
+        <div class="flex items-center gap-1.5 mb-1">
+          <icon name="lock" size="xs" class="text-gray-500 dark:text-gray-400"/>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:board.guest_password</span>
+        </div>
+        <input type="password" placeholder="$t:board.guest_password_placeholder" value="{{_global.deleteModal.password ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+          <on type="change">
+            <set-state target="global">
+              <field name="deleteModal">
+                <field name="type" value="{{_global.deleteModal.type}}"/>
+                <field name="isGuest" value="{{_global.deleteModal.isGuest}}"/>
+                <field name="apiEndpoint" value="{{_global.deleteModal.apiEndpoint}}"/>
+                <field name="password" value="{{$event.target.value}}"/>
+              </field>
+            </set-state>
+          </on>
+        </input>
+      </div>
+      <!-- 에러 메시지 --><div data-if="{{_local.deleteError}}" class="text-sm text-red-500">{{_local.deleteError}}</div>
+      <!-- 버튼 영역 -->
+      <div class="flex justify-end gap-3">
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"><on type="click"><!-- 로컬 상태 초기화 --><set-state target="local" deleteError=""/><!-- 모달 상태 초기화 --><set-state target="global" :deleteModal="null"/><close-modal/></on>$t:common.cancel</button>
+        <button disabled="{{_local.deleteSubmitting || (_global.deleteModal.isGuest &amp;&amp; !_global.deleteModal.password)}}" class="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <set-state target="local" :deleteSubmitting="true" deleteError=""/>
+            <api-call target="{{_global.deleteModal.apiEndpoint}}" :auth_required="true" method="DELETE" body="{{_global.deleteModal.isGuest ? {password: _global.deleteModal.password} : {}}}">
+              <success>
+                <!-- 로컬 상태 초기화 -->
+                <set-state target="local" :deleteSubmitting="false" deleteError=""/>
+                <!-- 모달 상태 초기화 -->
+                <set-state target="global" :deleteModal="null"/>
+                <toast type="success" message="{{_global.deleteModal.type === 'comment' ? '$t:board.comment_deleted' : '$t:board.post_deleted'}}"/>
+                <!-- 댓글 삭제 시 데이터소스 갱신, 게시글 삭제 시 목록으로 이동 -->
+                <refetch-data-source if="{{_global.deleteModal.type === 'comment'}}" dataSourceId="post"/>
+                <navigate if="{{_global.deleteModal.type !== 'comment'}}" path="/board/{{route.slug}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="local" :deleteSubmitting="false" deleteError="{{error.message}}"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <icon data-if="{{_local.deleteSubmitting}}" name="spinner" size="sm" class="animate-spin mr-2"/>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

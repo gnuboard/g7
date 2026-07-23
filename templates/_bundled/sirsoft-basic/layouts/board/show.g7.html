@@ -1,0 +1,42 @@
+<layout name="board/show" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" page_type="post" toggle_setting="$module_settings:sirsoft-board:seo.seo_post_detail" :priority="0.5" changefreq="monthly">
+      <extensions>
+        <item type="module" id="sirsoft-board"/>
+      </extensions>
+      <data-sources>
+        <item>post</item>
+      </data-sources>
+      <vars site_name="$core_settings:general.site_name" board_name="{{post.data.board.name ?? ''}}" post_title="{{post.data.title ?? ''}}"/>
+      <og type="article" title="{{_seo.post.title ?? post.data.title ?? ''}}" description="{{_seo.post.description ?? post.data.content ?? ''}}"/>
+    </seo>
+  </meta>
+  <data-source id="post" label_key="$t:editor.data_source.post" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
+    <params del_cmt="{{query.del_cmt ?? ''}}"/>
+    <error-handling>
+      <on-code code="401">
+        <toast type="info" message="$t:board.login_required"/>
+        <action handler="redirectToLoginWithReturn"/>
+      </on-code>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <data-source id="navigation" label_key="$t:editor.data_source.navigation" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/navigation" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
+    <params del="{{query.del ?? ''}}"/>
+  </data-source>
+  <computed name="commentRootMap">{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}</computed>
+  <permissions/>
+  <slot name="content">
+    <container class="py-8 max-w-4xl mx-auto">
+      <include src="partials/board/show/_type_renderer.json"/>
+    </container>
+  </slot>
+  <modal src="partials/board/show/modals/_modal_delete.json"/>
+  <modal src="partials/board/show/modals/_modal_report.json"/>
+  <modal src="partials/board/show/modals/_password_verify_modal.json"/>
+</layout>

@@ -1,0 +1,51 @@
+<partial description="장바구니 상품 목록">
+  <div class="space-y-4">
+    <!-- 전체 선택 카드 -->
+    <div data-if="{{cartItems.data.items &amp;&amp; cartItems.data.items.length > 0}}" class="bg-gray-100 dark:bg-gray-700 rounded-lg shadow p-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <checkbox id="selectAll" name="selectAll" checked="{{_local.allSelected}}" class="w-5 h-5 rounded border-gray-300 accent-gray-900 focus:ring-gray-500">
+            <on type="change">
+              <action handler="selectAllCartItems" allItemIds="{{cartItems.data.items?.map(item => item.id) ?? []}}" isSelected="{{!_local.allSelected}}"/>
+            </on>
+          </checkbox>
+          <label for="selectAll" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">$t:shop.cart.select_all</label>
+          <span class="text-sm text-gray-500 dark:text-gray-400">({{_local.selectedCount}}/{{cartItems.data.items.length}})</span>
+        </div>
+        <button class="flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0}}">
+          <on type="click">
+            <set-state target="local">
+              <field name="deleteModal">
+                <field name="visible" :value="true"/>
+                <field name="targetIds" value="{{_local.selectedItems}}"/>
+              </field>
+            </set-state>
+            <open-modal target="cart_delete_confirm_modal"/>
+          </on>
+          <icon name="trash-can" class="w-4 h-4"/>
+          <span>$t:shop.cart.delete_selected</span>
+        </button>
+      </div>
+    </div>
+    <!-- 장바구니 목록 카드 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      <div data-if="{{cartItems.data.items &amp;&amp; cartItems.data.items.length > 0}}" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <div data-each="item, index in {{cartItems.data.items ?? []}}">
+          <include src="_cart_item.json"/>
+        </div>
+      </div>
+      <!-- 장바구니 비어있음 -->
+      <div data-if="{{!cartItems.data.items || cartItems.data.items.length === 0}}" class="text-center py-16">
+        <icon name="shopping-cart" class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600"/>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">$t:shop.cart.empty</p>
+        <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer">
+          <on type="click">
+            <navigate path="{{_global.shopBase}}/products"/>
+          </on>
+          <icon name="arrow-left" class="w-4 h-4"/>
+          <span>$t:shop.cart.continue_shopping</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

@@ -405,18 +405,26 @@ final class NodeMarkupDecompiler
     {
         if (is_array($blur)) {
             $attrs = [];
+            $items = [];
 
             if (($blur['enabled'] ?? null) !== true) {
                 $attrs[] = $this->typedAttr('enabled', $blur['enabled'] ?? false);
             }
 
             if (array_key_exists('data_sources', $blur)) {
-                $attrs[] = is_string($blur['data_sources'])
-                    ? $this->attr('sources', $blur['data_sources'])
-                    : $this->typedAttr('sources', $blur['data_sources']);
+                $sources = $blur['data_sources'];
+                // 문자열 리스트는 `<item>` 자식으로 (D51 G16) — `:sources='["a","b"]'` 는 속성에 박힌
+                // 통짜 JSON 이라 D2 를 어기고, `<json>` 태그 계량에도 안 잡혀 escape-0 인 채 남는다.
+                $structured = is_string($sources) ? null : $this->structuredChildren($sources);
+
+                match (true) {
+                    is_string($sources) => $attrs[] = $this->attr('sources', $sources),
+                    $structured !== null => $items = $structured,
+                    default => $attrs[] = $this->typedAttr('sources', $sources),
+                };
             }
 
-            $children[] = $this->el('blur-until-loaded', $attrs);
+            $children[] = $this->el('blur-until-loaded', $attrs, $items);
 
             return;
         }

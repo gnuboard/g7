@@ -1,0 +1,31 @@
+<layout name="mypage/addresses" version="1.0.0" extends="_user_base">
+  <data-source id="addresses" label_key="$t:editor.data_source.addresses" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/addresses" method="GET" :auto_fetch="true" auth_mode="required" loading_strategy="progressive"/>
+  <init-local/>
+  <computed name="currentTab">addresses</computed>
+  <permissions/>
+  <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.json"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <!-- 배송지 관리 -->
+          <include src="partials/mypage/addresses/_list.json"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+  <modal src="partials/mypage/addresses/_modal_address.json"/>
+  <modal src="partials/mypage/addresses/_modal_confirm_overwrite.json"/>
+  <modal src="partials/mypage/addresses/_modal_confirm_delete.json"/>
+</layout>

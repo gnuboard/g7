@@ -285,7 +285,17 @@ final class DocumentCompiler
     }
 
     /**
-     * `<seo>` 를 meta.seo 객체로 컴파일합니다 (10필드 — 임의 깊이 객체는 JSON 본문 블록).
+     * `<seo>` 를 meta.seo 객체로 컴파일합니다 (10필드 — 구조값 자식은 `<field>`/`<item>` 트리).
+     *
+     * og·vars·structured_data 는 임의 깊이 객체라 `<seo>` 속성으로는 못 편다. extensions 는
+     * `{type,id}` 배열, data_sources 는 string[] 이라 마찬가지다. 이 다섯 자리의 값 표기는
+     * **다른 구조값 자리와 같은 문법**을 쓴다 (D51 G14 — `StructuredValueCompiler` 단일 SSoT):
+     * 평면 스칼라 맵은 속성 field-map(`<og type="website"/>`), 그 밖은 `<field>`/`<item>` 트리다.
+     *
+     * S4(D31)는 이 다섯을 **JSON 본문 전용**으로 두었는데, D42 가 구조값 표기를 도입하면서
+     * 역변환기는 구조값 표기를 내고 컴파일러는 JSON 본문만 받는 **비대칭**이 남았다 — `seo` 를 쓰는
+     * 레이아웃이 admin 웨이브(W3)에 없어 W4 착수 실측에서야 드러났다(escape 13건). JSON 본문 표기는
+     * 하위 호환으로 계속 받는다(표기를 주지 않은 형태의 정본 탈출구 — `<define>` 과 같은 규율).
      *
      * @param  MarkupElement  $element  `<seo>` 요소
      * @param  string|null  $path  소스 파일 경로
@@ -297,8 +307,6 @@ final class DocumentCompiler
     {
         $seo = $this->attributesToObject($element, $path);
 
-        // og·vars·structured_data 는 임의 깊이 객체라 속성으로 못 편다 — JSON 본문 블록으로 보존.
-        // extensions 는 `{type,id}` 배열이라 역시 JSON 본문. data_sources 는 string[] 이라 JSON 본문.
         foreach ($element->children as $child) {
             $key = match ($child->name) {
                 'og' => 'og',
@@ -316,7 +324,7 @@ final class DocumentCompiler
                 throw $this->error($child, LayoutMarkupErrorCode::DuplicateSection, $path, ['tag' => $child->name]);
             }
 
-            $seo[$key] = $this->decodeJsonBody($child, $path);
+            $seo[$key] = $this->compileStructuredValue($child, $path);
         }
 
         return $seo;

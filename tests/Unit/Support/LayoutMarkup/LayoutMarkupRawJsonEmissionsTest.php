@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Support\LayoutMarkup;
 
+use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 
 /**
@@ -152,5 +153,119 @@ class LayoutMarkupRawJsonEmissionsTest extends LayoutMarkupTestCase
         $markup = '<div :label="{&quot;$switch&quot;:&quot;{{t}}&quot;,&quot;$cases&quot;:{&quot;a&quot;:&quot;A&quot;}}"/>';
 
         $this->assertSame(['$switch'], LayoutMarkupRoundTrip::rawJsonEmissions($markup));
+    }
+
+    /**
+     * 속성값에 `>` 가 있어도 그 태그의 JSON 본문을 센다 (D42 4차 — 종전 정규식의 최대 사각).
+     *
+     * 직렬화기는 인용값 안의 `>` 를 이스케이프하지 않는다(`escapeAttr` 는 `&` 와 구분 따옴표만
+     * 건드린다). 그래서 종전 본문 패턴 `<tag[^>]*>([^<]*)</tag>` 은 여는 태그를 **속성값 안의 `>`**
+     * 에서 끊어 읽고, 본문 매칭이 통째로 어긋나 blob 이 계량에서 사라졌다. `{{a > b}}` 같은 비교식은
+     * 레이아웃에 흔하므로(코퍼스 실측 1,337곳) 이 사각은 언제든 발현할 수 있는 상태였다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects raw_json_metric_survives_gt_in_attribute_values
+     */
+    public function test_json_body_is_counted_when_an_attribute_value_contains_a_greater_than(): void
+    {
+        $markup = <<<'HTML'
+        <prop name="cols" data-if="{{count > 0}}">{"columns":[{"key":"id"}]}</prop>
+        HTML;
+
+        $this->assertSame(['<prop>'], LayoutMarkupRoundTrip::rawJsonEmissions($markup));
+    }
+
+    /**
+     * 형제 요소와 섞인 JSON 텍스트도 센다 (종전 `[^<]*` 본문 패턴이 못 보던 자리).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects raw_json_metric_survives_gt_in_attribute_values
+     */
+    public function test_json_text_beside_sibling_elements_is_counted(): void
+    {
+        $markup = <<<'HTML'
+        <prop name="mixed">{"a":1}<item>x</item></prop>
+        HTML;
+
+        $this->assertSame(['<prop>'], LayoutMarkupRoundTrip::rawJsonEmissions($markup));
+    }
+
+    /**
+     * 대조군 — 어휘 해석이 안 되는 문자열은 계량 대상이 아니다(계량기가 예외를 던지지 않는다).
+     *
+     * 컴파일 가능 여부는 컴파일 게이트가 판정한다. 계량기가 여기서 터지면 게이트 메시지가
+     * "원시 JSON 몇 건" 이 아니라 파서 오류로 바뀌어 지목 대상이 흐려진다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects raw_json_metric_survives_gt_in_attribute_values
+     */
+    public function test_unparseable_markup_is_not_counted(): void
+    {
+        $this->assertSame([], LayoutMarkupRoundTrip::rawJsonEmissions('<div :a="{"'));
+    }
+
+    /**
+     * 컴포넌트 노드의 텍스트는 세지 않는다 — 화면에 그려질 콘텐츠다 (D53, PO 승인).
+     *
+     * 입금 처리 이력 화면은 결제사 요청·응답 페이로드를 관리자에게 **그대로 보여준다**. 그 글자가
+     * JSON 모양이라는 이유로 계량하면, 어떤 문법으로도 없앨 수 없는 항목이 대장에 영구히 남아
+     * 진짜 잔여와 구분되지 않는다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects raw_json_metric_ignores_component_display_text
+     */
+    public function test_component_node_display_text_is_not_counted(): void
+    {
+        $registry = $this->registry();
+        $markup = '<pre class="whitespace-pre-wrap">{"transactionId":"PG2024012700004"}</pre>';
+
+        $this->assertSame([], LayoutMarkupRoundTrip::rawJsonEmissions($markup, $registry));
+    }
+
+    /**
+     * 대조군 — 구조 태그 본문은 레지스트리를 줘도 그대로 센다 (D41 재발 방지).
+     *
+     * D41 의 실수는 태그 **이름 목록**으로 뺀 것이었고, 그 목록 안에 DataGrid 컬럼 트리가 통째로
+     * 숨었다. 여기서 쓰는 판별자는 레지스트리이므로 `<prop>`·`<params>` 같은 구조 태그는 컴포넌트가
+     * 아니라 애초에 제외 분기에 들어오지 못한다. 그 성질을 고정한다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects raw_json_metric_ignores_component_display_text
+     */
+    public function test_structural_tag_body_is_still_counted_with_registry(): void
+    {
+        $registry = $this->registry();
+        $markup = '<prop name="cols">{"columns":[{"key":"id"}]}</prop>';
+
+        $this->assertSame(['<prop>'], LayoutMarkupRoundTrip::rawJsonEmissions($markup, $registry));
+    }
+
+    /**
+     * 대조군 — 레지스트리를 주지 않으면 종전대로 전부 센다 (판별할 수 없으면 빼지 않는다).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects raw_json_metric_ignores_component_display_text
+     */
+    public function test_display_text_is_counted_without_a_registry(): void
+    {
+        $markup = '<pre class="whitespace-pre-wrap">{"transactionId":"PG2024012700004"}</pre>';
+
+        $this->assertSame(['<pre>'], LayoutMarkupRoundTrip::rawJsonEmissions($markup));
+    }
+
+    /**
+     * 대조에 쓸 컴포넌트 레지스트리 (admin_basic — `pre` 등 기본 컴포넌트 보유).
+     *
+     * @return ComponentRegistry 레지스트리
+     */
+    private function registry(): ComponentRegistry
+    {
+        return ComponentRegistry::fromFile(base_path('templates/_bundled/sirsoft-admin_basic/components.json'));
     }
 }

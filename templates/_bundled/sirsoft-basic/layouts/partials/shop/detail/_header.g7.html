@@ -1,0 +1,51 @@
+<partial description="상품명, 카테고리, 찜하기">
+  <div>
+    <div class="flex items-start justify-between">
+      <div>
+        <span class="text-sm text-gray-500 dark:text-gray-400">{{product.data?.category_name}}</span>
+        <div class="flex items-center gap-2 mt-1">
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{product.data?.name_localized}}</h1>
+          <!-- 라벨 뱃지 -->
+          <div data-if="{{product.data?.labels?.length > 0}}" class="flex items-center gap-1 flex-wrap">
+            <span data-each="labelItem in {{product.data?.labels ?? []}}" class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium text-white" style="background-color: {{labelItem.color ?? '#6B7280'}}">{{labelItem.name}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 우측 액션 그룹 (관리자 수정 링크 + 찜하기) -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <!-- 관리자 상품 수정 링크 (권한 게이트, 새 탭) -->
+        <include src="./_admin_edit_link.json"/>
+        <button class="p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.wishlistLoading}}">
+          <on type="click">
+            <conditions>
+              <!-- 비회원: 로그인 필요 안내 -->
+              <when if="{{!_global.currentUser?.uuid}}">
+                <toast type="warning" message="$t:shop.wishlist_login_required"/>
+              </when>
+              <!-- 회원: 찜하기 토글 -->
+              <else>
+                <sequence>
+                  <!-- 낙관적 UI: 즉시 아이콘 토글 + 로딩 상태 -->
+                  <set-state target="local" :wishlistLoading="true" isWishlisted="{{!(_local.isWishlisted ?? product.data?.is_wishlisted)}}"/>
+                  <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/wishlist/toggle" method="POST">
+                    <success>
+                      <set-state target="local" :wishlistLoading="false" isWishlisted="{{response.data.added}}"/>
+                      <refetch-data-source dataSourceId="product"/>
+                      <toast type="success" message="{{response.data.added ? '$t:shop.wishlist_added' : '$t:shop.wishlist_removed'}}"/>
+                    </success>
+                    <fail>
+                      <!-- 실패 시 원래 상태로 복원 -->
+                      <set-state target="local" :wishlistLoading="false" isWishlisted="{{product.data?.is_wishlisted}}"/>
+                    </fail>
+                    <body product_id="{{product.data?.id}}"/>
+                  </api-call>
+                </sequence>
+              </else>
+            </conditions>
+          </on>
+          <icon name="heart" iconStyle="{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? 'solid' : 'regular'}}" size="xl" class="{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? 'text-red-500' : ''}} transition-colors"/>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

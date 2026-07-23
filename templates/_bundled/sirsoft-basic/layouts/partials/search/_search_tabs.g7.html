@@ -1,0 +1,40 @@
+<partial description="검색 타입 탭">
+  <div data-if="{{query?.q}}" class="flex flex-wrap gap-2 mb-4">
+    <button class="{{(_global.searchActiveTab ?? 'all') === 'all' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}">
+      <on type="click">
+        <set-state target="global" searchActiveTab="all" searchBoardFilter="" :searchPage="1"/>
+        <refetch-data-source dataSourceId="searchResults"/>
+      </on>
+      <icon name="grid" size="sm" class="mr-1.5 inline"/>
+      <span>$t:search.tabs.all</span>
+      <span class="ml-1.5 {{(_global.searchActiveTab ?? 'all') === 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}">{{(searchResults.data.all_count ?? searchResults.data.total ?? 0) | number}}</span>
+    </button>
+    <button class="{{_global.searchActiveTab === 'posts' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}">
+      <on type="click">
+        <set-state target="global" searchActiveTab="posts" searchBoardFilter="" :searchPage="1"/>
+        <refetch-data-source dataSourceId="searchResults"/>
+      </on>
+      <icon name="file-text" size="sm" class="mr-1.5 inline"/>
+      <span>$t:search.tabs.posts</span>
+      <span class="ml-1.5 {{_global.searchActiveTab === 'posts' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}">{{(searchResults.data.posts_count ?? 0) | number}}</span>
+    </button>
+    <button class="{{_global.searchActiveTab === 'products' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}">
+      <on type="click">
+        <set-state target="global" searchActiveTab="products" :searchPage="1"/>
+        <refetch-data-source dataSourceId="searchResults"/>
+      </on>
+      <icon name="shopping-bag" size="sm" class="mr-1.5 inline"/>
+      <span>$t:search.tabs.products</span>
+      <span class="ml-1.5 {{_global.searchActiveTab === 'products' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}">{{(searchResults.data.products_count ?? 0) | number}}</span>
+    </button>
+    <button class="{{_global.searchActiveTab === 'pages' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}">
+      <on type="click">
+        <set-state target="global" searchActiveTab="pages" :searchPage="1"/>
+        <refetch-data-source dataSourceId="searchResults"/>
+      </on>
+      <icon name="file-alt" size="sm" class="mr-1.5 inline"/>
+      <span>$t:search.tabs.pages</span>
+      <span class="ml-1.5 {{_global.searchActiveTab === 'pages' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}">{{(searchResults.data.pages_count ?? 0) | number}}</span>
+    </button>
+  </div>
+</partial>

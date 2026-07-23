@@ -1,0 +1,86 @@
+<layout name="home" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" :priority="1" changefreq="daily">
+      <data-sources>
+        <item>stats</item>
+        <item>recent_posts</item>
+        <item>popular_boards</item>
+        <item>home_boards</item>
+      </data-sources>
+      <og type="website"/>
+      <structured-data @type="WebSite" name="{{_global.site_name ?? ''}}" url="{{_global.site_url ?? ''}}"/>
+    </seo>
+  </meta>
+  <data-source id="stats" label_key="$t:editor.data_source.stats" type="api" endpoint="/api/modules/sirsoft-board/boards/stats" method="GET" :auto_fetch="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="users" :value="0"/>
+        <field name="posts" :value="0"/>
+        <field name="comments" :value="0"/>
+        <field name="boards" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="recent_posts" label_key="$t:editor.data_source.recent_posts" type="api" endpoint="/api/modules/sirsoft-board/boards/posts/recent?limit=5" method="GET" :auto_fetch="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="popular_boards" label_key="$t:editor.data_source.popular_boards" type="api" endpoint="/api/modules/sirsoft-board/boards/popular-boards?limit=4" method="GET" :auto_fetch="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="home_boards" label_key="$t:editor.data_source.home_boards" type="api" endpoint="/api/modules/sirsoft-board/boards?limit=3" method="GET" :auto_fetch="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <permissions/>
+  <slot name="content">
+    <container class="py-6 px-4">
+      <responsive on="tablet" class="py-6 px-6"/>
+      <responsive on="desktop" class="py-6 px-8"/>
+      <!-- === 1행: Welcome + 통계 카드 4개 (PC: 3컬럼, 모바일: 1컬럼) === -->
+      <div class="grid grid-cols-3 grid-rows-2 gap-4 mb-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-4 mb-4"/>
+        <!-- === 좌측: 웰컴 카드 (row-span-2) === -->
+        <div class="row-span-2">
+          <include src="partials/home/_welcome_card.json"/>
+        </div>
+        <!-- === 통계 카드 4개 (PC: 개별 배치, 모바일: 2x2 그리드) === -->
+        <div class="contents">
+          <responsive on="portable" class="col-span-1 grid grid-cols-2 gap-4"/>
+          <!-- === 회원 통계 === -->
+          <include src="partials/home/_stat_card_users.json"/>
+          <!-- === 게시글 통계 === -->
+          <include src="partials/home/_stat_card_posts.json"/>
+          <!-- === 댓글 통계 === -->
+          <include src="partials/home/_stat_card_comments.json"/>
+          <!-- === 게시판 통계 === -->
+          <include src="partials/home/_stat_card_boards.json"/>
+        </div>
+      </div>
+      <!-- === 2행: 최근 게시글 + 인기 게시판 + 쇼핑몰/가이드 (PC: 3컬럼) === -->
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-4 mb-4"/>
+        <!-- === 좌측: 최근 게시글 === -->
+        <include src="partials/home/_recent_posts.json"/>
+        <!-- === 중앙: 인기 게시판 === -->
+        <include src="partials/home/_popular_boards.json"/>
+        <!-- === 우측: 쇼핑몰 + 커뮤니티 가이드 === -->
+        <div class="flex flex-col gap-4">
+          <include src="partials/home/_shop_promo.json"/>
+          <include src="partials/home/_community_guide.json"/>
+        </div>
+      </div>
+      <!-- === 하단: 게시판 요약 카드 (PC: 3컬럼, 모바일: 2컬럼) === -->
+      <div class="grid grid-cols-3 gap-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-4"/>
+        <div data-each="item in {{home_boards.data ?? []}}">
+          <include src="partials/home/_board_summary.json"/>
+        </div>
+      </div>
+    </container>
+  </slot>
+</layout>

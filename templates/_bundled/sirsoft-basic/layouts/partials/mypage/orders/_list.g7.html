@@ -1,0 +1,288 @@
+<partial description="마이페이지 주문내역 탭">
+  <div class="mt-6">
+    <blur-until-loaded sources="orders"/>
+    <responsive on="portable" class="mt-4"/>
+    <!-- 주문상태별 통계 섹션 -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 shadow-sm">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm"/>
+      <!-- PC: 가로 배치 / Mobile: 3열 그리드 -->
+      <div class="flex items-center justify-between">
+        <responsive on="portable" class="grid grid-cols-3 gap-4"/>
+        <!-- 입금대기 -->
+        <div class="flex flex-col items-center cursor-pointer group">
+          <on type="click">
+            <set-state target="local" ordersStatus="pending_payment" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :replace="true">
+              <query status="pending_payment" page="1"/>
+            </navigate>
+          </on>
+          <div>
+            <class-map base="w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <variant when="pending_payment">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+            </class-map>
+            <responsive on="portable">
+              <class-map base="w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                <variant when="pending_payment">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+              </class-map>
+            </responsive>
+            <span><class-map base="text-xl font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="pending_payment">text-primary-600 dark:text-primary-400</variant></class-map><responsive on="portable"><class-map base="text-lg font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="pending_payment">text-primary-600 dark:text-primary-400</variant></class-map></responsive>{{orders.data.statistics.pending_payment ?? 0}}</span>
+          </div>
+          <span><class-map base="text-xs mt-2 text-center" key="{{_local.ordersStatus ?? ''}}" default="text-gray-500 dark:text-gray-400"><variant when="pending_payment">text-primary-600 dark:text-primary-400 font-semibold</variant></class-map>$t:sirsoft-ecommerce.enums.order_status.pending_payment</span>
+        </div>
+        <!-- 화살표 1 -->
+        <div class="flex items-center">
+          <responsive on="portable" class="hidden"/>
+          <icon name="chevron-right" size="sm" class="text-gray-300 dark:text-gray-600"/>
+        </div>
+        <!-- 결제완료 -->
+        <div class="flex flex-col items-center cursor-pointer group">
+          <on type="click">
+            <set-state target="local" ordersStatus="payment_complete" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :replace="true">
+              <query status="payment_complete" page="1"/>
+            </navigate>
+          </on>
+          <div>
+            <class-map base="w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <variant when="payment_complete">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+            </class-map>
+            <responsive on="portable">
+              <class-map base="w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                <variant when="payment_complete">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+              </class-map>
+            </responsive>
+            <span><class-map base="text-xl font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="payment_complete">text-primary-600 dark:text-primary-400</variant></class-map><responsive on="portable"><class-map base="text-lg font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="payment_complete">text-primary-600 dark:text-primary-400</variant></class-map></responsive>{{orders.data.statistics.payment_complete ?? 0}}</span>
+          </div>
+          <span><class-map base="text-xs mt-2 text-center" key="{{_local.ordersStatus ?? ''}}" default="text-gray-500 dark:text-gray-400"><variant when="payment_complete">text-primary-600 dark:text-primary-400 font-semibold</variant></class-map>$t:sirsoft-ecommerce.enums.order_status.payment_complete</span>
+        </div>
+        <!-- 화살표 2 -->
+        <div class="flex items-center">
+          <responsive on="portable" class="hidden"/>
+          <icon name="chevron-right" size="sm" class="text-gray-300 dark:text-gray-600"/>
+        </div>
+        <!-- 배송준비중 -->
+        <div class="flex flex-col items-center cursor-pointer group">
+          <on type="click">
+            <set-state target="local" ordersStatus="preparing" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :replace="true">
+              <query status="preparing" page="1"/>
+            </navigate>
+          </on>
+          <div>
+            <class-map base="w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <variant when="preparing">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+            </class-map>
+            <responsive on="portable">
+              <class-map base="w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                <variant when="preparing">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+              </class-map>
+            </responsive>
+            <span><class-map base="text-xl font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="preparing">text-primary-600 dark:text-primary-400</variant></class-map><responsive on="portable"><class-map base="text-lg font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="preparing">text-primary-600 dark:text-primary-400</variant></class-map></responsive>{{orders.data.statistics.preparing ?? 0}}</span>
+          </div>
+          <span><class-map base="text-xs mt-2 text-center" key="{{_local.ordersStatus ?? ''}}" default="text-gray-500 dark:text-gray-400"><variant when="preparing">text-primary-600 dark:text-primary-400 font-semibold</variant></class-map>$t:sirsoft-ecommerce.enums.order_status.preparing</span>
+        </div>
+        <!-- 화살표 3 -->
+        <div class="flex items-center">
+          <responsive on="portable" class="hidden"/>
+          <icon name="chevron-right" size="sm" class="text-gray-300 dark:text-gray-600"/>
+        </div>
+        <!-- 배송중 -->
+        <div class="flex flex-col items-center cursor-pointer group">
+          <on type="click">
+            <set-state target="local" ordersStatus="shipping" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :replace="true">
+              <query status="shipping" page="1"/>
+            </navigate>
+          </on>
+          <div>
+            <class-map base="w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <variant when="shipping">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+            </class-map>
+            <responsive on="portable">
+              <class-map base="w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                <variant when="shipping">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+              </class-map>
+            </responsive>
+            <span><class-map base="text-xl font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="shipping">text-primary-600 dark:text-primary-400</variant></class-map><responsive on="portable"><class-map base="text-lg font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="shipping">text-primary-600 dark:text-primary-400</variant></class-map></responsive>{{orders.data.statistics.shipping ?? 0}}</span>
+          </div>
+          <span><class-map base="text-xs mt-2 text-center" key="{{_local.ordersStatus ?? ''}}" default="text-gray-500 dark:text-gray-400"><variant when="shipping">text-primary-600 dark:text-primary-400 font-semibold</variant></class-map>$t:sirsoft-ecommerce.enums.order_status.shipping</span>
+        </div>
+        <!-- 화살표 4 -->
+        <div class="flex items-center">
+          <responsive on="portable" class="hidden"/>
+          <icon name="chevron-right" size="sm" class="text-gray-300 dark:text-gray-600"/>
+        </div>
+        <!-- 배송완료 -->
+        <div class="flex flex-col items-center cursor-pointer group">
+          <on type="click">
+            <set-state target="local" ordersStatus="delivered" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :replace="true">
+              <query status="delivered" page="1"/>
+            </navigate>
+          </on>
+          <div>
+            <class-map base="w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <variant when="delivered">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+            </class-map>
+            <responsive on="portable">
+              <class-map base="w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                <variant when="delivered">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+              </class-map>
+            </responsive>
+            <span><class-map base="text-xl font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="delivered">text-primary-600 dark:text-primary-400</variant></class-map><responsive on="portable"><class-map base="text-lg font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="delivered">text-primary-600 dark:text-primary-400</variant></class-map></responsive>{{orders.data.statistics.delivered ?? 0}}</span>
+          </div>
+          <span><class-map base="text-xs mt-2 text-center" key="{{_local.ordersStatus ?? ''}}" default="text-gray-500 dark:text-gray-400"><variant when="delivered">text-primary-600 dark:text-primary-400 font-semibold</variant></class-map>$t:sirsoft-ecommerce.enums.order_status.delivered</span>
+        </div>
+        <!-- 화살표 5 -->
+        <div class="flex items-center">
+          <responsive on="portable" class="hidden"/>
+          <icon name="chevron-right" size="sm" class="text-gray-300 dark:text-gray-600"/>
+        </div>
+        <!-- 구매확정 -->
+        <div class="flex flex-col items-center cursor-pointer group">
+          <on type="click">
+            <set-state target="local" ordersStatus="confirmed" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :replace="true">
+              <query status="confirmed" page="1"/>
+            </navigate>
+          </on>
+          <div>
+            <class-map base="w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <variant when="confirmed">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+            </class-map>
+            <responsive on="portable">
+              <class-map base="w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors" key="{{_local.ordersStatus ?? ''}}" default="border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                <variant when="confirmed">border-primary-500 bg-primary-50 dark:bg-primary-900/30</variant>
+              </class-map>
+            </responsive>
+            <span><class-map base="text-xl font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="confirmed">text-primary-600 dark:text-primary-400</variant></class-map><responsive on="portable"><class-map base="text-lg font-bold" key="{{_local.ordersStatus ?? ''}}" default="text-gray-600 dark:text-gray-300"><variant when="confirmed">text-primary-600 dark:text-primary-400</variant></class-map></responsive>{{orders.data.statistics.confirmed ?? 0}}</span>
+          </div>
+          <span><class-map base="text-xs mt-2 text-center" key="{{_local.ordersStatus ?? ''}}" default="text-gray-500 dark:text-gray-400"><variant when="confirmed">text-primary-600 dark:text-primary-400 font-semibold</variant></class-map>$t:sirsoft-ecommerce.enums.order_status.confirmed</span>
+        </div>
+      </div>
+    </div>
+    <!-- 상태 필터 (셀렉트박스) -->
+    <div class="flex justify-end mb-4">
+      <responsive on="portable" class="flex justify-end mb-3"/>
+      <select value="{{_local.ordersStatus || ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <responsive on="portable" value="{{_local.ordersStatus || ''}}" class="min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"/>
+        <on type="change">
+          <set-state target="local" ordersStatus="{{$event.target.value}}" :ordersPage="1"/>
+          <navigate path="/mypage/orders" :replace="true">
+            <query status="{{$event.target.value}}" page="1"/>
+          </navigate>
+        </on>
+        <option value="">$t:mypage.orders.filter.all</option>
+        <option value="pending_payment">$t:mypage.orders.filter.pending</option>
+        <option value="payment_complete">$t:mypage.orders.filter.paid</option>
+        <option value="preparing">$t:mypage.orders.filter.preparing</option>
+        <option value="shipping">$t:mypage.orders.filter.shipped</option>
+        <option value="delivered">$t:mypage.orders.filter.delivered</option>
+        <option value="confirmed">$t:mypage.orders.filter.confirmed</option>
+        <option value="cancelled">$t:mypage.orders.filter.cancelled</option>
+      </select>
+    </div>
+    <!-- 주문 목록 컨테이너 -->
+    <div class="space-y-4">
+      <responsive on="portable" class="space-y-3"/>
+      <!-- 주문 카드 반복 -->
+      <div data-if="{{orders.data.data &amp;&amp; orders.data.data.length > 0}}" data-each="order in {{orders.data.data ?? []}}">
+        <!-- 주문 카드 -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"/>
+          <!-- 주문 헤더 (날짜/번호 + 상태) -->
+          <div class="flex items-start justify-between mb-3">
+            <responsive on="portable" class="flex items-start justify-between mb-2"/>
+            <div>
+              <p class="text-sm text-gray-500 dark:text-gray-400"><responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>{{order.ordered_at_formatted ?? ''}}</p>
+              <p class="text-sm font-medium text-gray-900 dark:text-white"><responsive on="portable" class="text-xs font-medium text-gray-900 dark:text-white"/>{{order.order_number}}</p>
+            </div>
+            <!-- 주문상태 배지 묶음 — 상태 배지 아래에 부분취소 보조 배지를 세로로 배치 -->
+            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+              <!-- 주문상태 배지 --><span><class-map base="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{order.status}}" default="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"><variant when="pending_payment">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant><variant when="payment_complete">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant><variant when="preparing">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant><variant when="shipping_ready">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant><variant when="shipping">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant><variant when="delivered">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant><variant when="confirmed">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant><variant when="cancelled">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant></class-map>{{order.status_label}}</span>
+              <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그 is_partially_cancelled) --><span data-if="{{order.is_partially_cancelled}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">$t:mypage.orders.partial_cancelled_badge</span>
+              <!-- 배송국가 칩 (D9 — 항상 표시, KR 포함) -->
+              <span data-if="{{order.recipient_country_code}}" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                <span class="{{'fi fi-' + (order.recipient_country_code ?? 'kr').toLowerCase()}}"/>
+                <span>{{order.recipient_country_name?.[_global.locale] ?? order.recipient_country_name?.ko ?? order.recipient_country_code}}</span>
+              </span>
+            </div>
+          </div>
+          <!-- 주문 상품 목록 -->
+          <div data-each="item in {{order.items ?? []}}" class="space-y-3">
+            <responsive on="portable" class="space-y-2"/>
+            <div class="flex gap-3">
+              <!-- 상품 이미지 -->
+              <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                <responsive on="portable" class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0"/>
+                <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name}}" class="w-full h-full object-cover"/>
+                <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+                  <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+                </div>
+              </div>
+              <!-- 상품 정보 -->
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate"><responsive on="portable" class="text-xs font-medium text-gray-900 dark:text-white truncate"/>{{item.product_name}}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{item.product_option_name}}</p>
+                <!-- 추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2) --><p data-if="{{item.additional_options_summary}}" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{item.additional_options_summary?.label}}{{(item.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + item.additional_options_summary.extra_count + '건' : ''}}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"/>{{item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit</p>
+                <!-- 옵션 소계 --><p class="text-sm font-medium text-gray-900 dark:text-white mt-0.5"><responsive on="portable" class="text-xs font-medium text-gray-900 dark:text-white mt-0.5"/>{{item.subtotal_price_formatted}}</p>
+                <!-- 보조 통화들 (선택된 통화 제외) -->
+                <div data-each="currency in {{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 mt-0.5">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 배송비 + 결제금액 + 상세보기 -->
+          <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <responsive on="portable" class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700"/>
+            <div>
+              <!-- 배송비 -->
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.orders.shipping_fee</span>
+                <span data-if="{{order.total_shipping_amount > 0}}" class="text-xs text-gray-600 dark:text-gray-300">+{{order.total_shipping_amount_formatted}}</span>
+                <span data-if="{{!order.total_shipping_amount || order.total_shipping_amount == 0}}" class="text-xs text-green-600 dark:text-green-400">$t:mypage.orders.free_shipping</span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.orders.total_amount</p>
+              <p class="text-lg font-bold text-gray-900 dark:text-white"><responsive on="portable" class="text-base font-bold text-gray-900 dark:text-white"/>{{order.total_amount_formatted}}</p>
+              <!-- 보조 통화들 (선택된 통화 제외) -->
+              <div data-each="currency in {{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2">
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+              </div>
+              <!-- 마일리지 사용 (있을 때만) — base_currency 단일 정산 --><p data-if="{{(order.total_points_used_amount ?? 0) > 0}}" class="text-xs text-red-500 dark:text-red-400 mt-0.5">$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}</p>
+              <!-- 적립 예정 마일리지 (있을 때만) --><p data-if="{{(order.total_earned_points_amount ?? 0) > 0 &amp;&amp; order.status !== 'cancelled' &amp;&amp; !order.is_partially_cancelled}}" class="text-xs text-blue-600 dark:text-blue-400">$t:mypage.orders.points_earning +{{order.total_earned_points_amount_formatted}}</p>
+            </div>
+            <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer">
+              <responsive on="portable" type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"/>
+              <on type="click">
+                <navigate path="/mypage/orders/{{order.order_number}}"/>
+              </on>
+              <icon name="eye" size="sm"/>
+              <span>$t:mypage.orders.view_detail</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- 주문 없음 -->
+      <div data-if="{{!orders.data.data || orders.data.data.length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
+        <icon name="package" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3">
+          <responsive on="portable" name="package" size="2x" class="mx-auto text-gray-300 dark:text-gray-600 mb-2"/>
+        </icon>
+        <p class="text-gray-500 dark:text-gray-400"><responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400"/>$t:mypage.orders.empty</p>
+        <button type="button" class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer"><responsive on="portable" type="button" class="inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"/><on type="click"><navigate path="{{_global.shopBase}}/products"/></on>$t:mypage.orders.go_shopping</button>
+      </div>
+      <!-- 페이지네이션 -->
+      <pagination data-if="{{orders.data.pagination.last_page > 1}}" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page}}" class="mt-4">
+        <responsive on="portable" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page}}" class="mt-3"/>
+        <on event="onPageChange">
+          <set-state target="local" ordersPage="{{$args[0]}}"/>
+          <navigate path="/mypage/orders" :replace="true" :mergeQuery="true">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+      </pagination>
+    </div>
+  </div>
+</partial>

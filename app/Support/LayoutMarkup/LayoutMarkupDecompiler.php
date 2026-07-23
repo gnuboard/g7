@@ -611,8 +611,20 @@ final class LayoutMarkupDecompiler
      */
     private function structuredValueElement(string $tag, mixed $value): MarkupElement
     {
-        if (! is_array($value) || $value === [] || array_is_list($value)) {
+        if (! is_array($value) || $value === []) {
             return $this->el($tag, [], [], $this->encode($value));
+        }
+
+        // 리스트는 `<item>` 자식으로 (D51 G17). 종전에는 리스트를 무조건 JSON 본문으로 냈는데,
+        // 그러면 `<data-sources>["boards"]</data-sources>` 처럼 표기가 **있는데도** 통짜 JSON 이
+        // 남는다 — 맵만 `<field>` 로 풀고 리스트를 빼 둔 비대칭이었다(G14 가 `<seo>` 를 열면서
+        // 드러났다). 표기 불가한 리스트(빈 리스트·비-문자열 스칼라 원소)는 아래 JSON 본문으로 간다.
+        if (array_is_list($value)) {
+            $items = $this->structuredChildren($value);
+
+            return $items !== null
+                ? $this->el($tag, [], $items)
+                : $this->el($tag, [], [], $this->encode($value));
         }
 
         // 평면 스칼라 맵은 속성 field-map 이 가장 짧다 — 단, 키가 속성명으로 쓸 수 없으면 `<field>` 트리로.

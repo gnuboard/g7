@@ -1,0 +1,43 @@
+<layout name="board/form" version="1.0.0" extends="_user_base">
+  <meta title="{{route.id ? '$t:board.edit_post' : '$t:board.new_post'}} - {{form_meta?.data?.board?.name || ''}}" description="{{route.id ? '$t:board.edit_post_description' : '$t:board.new_post_description'}}"/>
+  <data-source id="form_data" label_key="$t:editor.data_source.form_data" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/form-data" method="GET" :auto_fetch="true" auth_mode="optional" :cache="false" :refetchOnMount="true" initLocal="form" loading_strategy="blocking">
+    <params post_id="{{route?.id ?? ''}}" parent_id="{{query?.parent_id ?? ''}}" verification_token="{{_local.verificationToken ?? ''}}"/>
+    <success>
+      <!-- refetch 후 _local.form을 응답값으로 직접 덮어씌우기 (비밀글 content 반영) -->
+      <set-state target="local" form="{{response.data.data}}"/>
+    </success>
+    <error-handling>
+      <on-code code="403">
+        <!-- 권한 없음 - 에러 페이지 표시 (errorHandling에서 route 컨텍스트 미지원) -->
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <data-source id="form_meta" label_key="$t:editor.data_source.form_meta" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/form-meta" method="GET" :auto_fetch="true" auth_mode="optional" :cache="false" :refetchOnMount="true">
+    <params post_id="{{route?.id ?? ''}}" parent_id="{{query?.parent_id ?? ''}}" verification_token="{{_local.verificationToken ?? ''}}"/>
+    <error-handling>
+      <on-code code="403">
+        <!-- 권한 없음 - 에러 페이지 표시 (errorHandling에서 route 컨텍스트 미지원) -->
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <permissions/>
+  <init>
+    <!-- tempKey 생성 -->
+    <set-state target="local" tempKey="{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"/>
+  </init>
+  <slot name="content">
+    <!-- 비회원 수정 시 비밀번호 확인 모달 -->
+    <include src="partials/board/form/_password_verify_modal.json"/>
+    <container data-key="form" data-track-changes :data-blur-until-loaded="true" class="py-8 max-w-4xl mx-auto">
+      <include src="partials/board/form/_type_renderer.json"/>
+    </container>
+  </slot>
+</layout>

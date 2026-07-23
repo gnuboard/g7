@@ -189,6 +189,66 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     // ---------------------------------------------------------------------
+    // `<seo>` 구조값 자식 (D51 G14)
+    // ---------------------------------------------------------------------
+
+    /**
+     * 평면 스칼라 맵은 속성 field-map 으로 적는다 (`<og type="website"/>`).
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects seo_structured_children_use_structured_value_grammar
+     */
+    public function test_seo_child_reads_attribute_field_map(): void
+    {
+        $document = $this->compile(
+            '<layout name="a"><meta><seo :enabled="true"><og type="website" site_name="G7"/></seo></meta></layout>',
+        );
+
+        $this->assertSame(['type' => 'website', 'site_name' => 'G7'], $document['meta']['seo']['og']);
+    }
+
+    /**
+     * 임의 깊이·비-속성 키는 `<field>` 트리로 적는다 (`@type` 은 속성명이 될 수 없다).
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects seo_structured_children_use_structured_value_grammar
+     */
+    public function test_seo_child_reads_field_tree(): void
+    {
+        $document = $this->compile(
+            '<layout name="a"><meta><seo><structured-data><field name="@type" value="ItemList"/>'
+            .'<field name="publisher"><field name="name" value="G7"/></field></structured-data></seo></meta></layout>',
+        );
+
+        $this->assertSame(
+            ['@type' => 'ItemList', 'publisher' => ['name' => 'G7']],
+            $document['meta']['seo']['structured_data'],
+        );
+    }
+
+    /**
+     * 문자열 리스트는 `<item>` 으로 적는다 — JSON 본문 표기도 하위 호환으로 계속 받는다.
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects seo_structured_children_use_structured_value_grammar
+     */
+    public function test_seo_child_reads_item_list_and_json_body(): void
+    {
+        $items = $this->compile(
+            '<layout name="a"><meta><seo><data-sources><item>posts</item><item>boards</item></data-sources></seo></meta></layout>',
+        );
+        $body = $this->compile(
+            '<layout name="a"><meta><seo><data-sources>["posts", "boards"]</data-sources></seo></meta></layout>',
+        );
+
+        $this->assertSame(['posts', 'boards'], $items['meta']['seo']['data_sources']);
+        $this->assertSame(['posts', 'boards'], $body['meta']['seo']['data_sources']);
+    }
+
+    // ---------------------------------------------------------------------
     // 상태 초기화 표기
     // ---------------------------------------------------------------------
 

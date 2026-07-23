@@ -6,7 +6,7 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7~S9 → S10 설치 재아키텍처).
-  현재 커버 범위는 **S1~S12** 이며(S11 W2 · S12 W3 effects 등재 완료), 이후 단계가 axes/effects/test_files 를 확장한다.
+  현재 커버 범위는 **S1~S13** 이며(S11 W2 · S12 W3 · S13 W4 effects 등재 완료), 이후 단계가 axes/effects/test_files 를 확장한다.
 
   용어(PO 정의, D38): **compile = JSON → HTML**(저작 소스 산출), **decompile = HTML → JSON**(설치·검증).
 
@@ -429,6 +429,8 @@ effects:
   - raw_json_metric_ignores_scalar_type_literals
   - raw_json_metric_ignores_non_json_bodies
   - raw_json_metric_labels_switch_by_its_own_name
+  - raw_json_metric_survives_gt_in_attribute_values
+  - raw_json_metric_ignores_component_display_text
   # --- D42(㉗·㉙) 문법 신설 G1~G8: 저작 파일의 통짜 JSON 을 1급 태그로 대체 (대장 0 · escape 0)
   #     G1 데이터소스 속성 field-map / G2 중첩 <fallback> <field> 트리 / G3 <prop> 평면맵
   #     G4 <prop> <item> 리스트 / G5 <props> 병합 지시자 <append> / G6 액션 구조값 <field name>
@@ -450,6 +452,11 @@ effects:
   - switch_subject_placement_is_expressible_in_both_forms
   - switch_top_level_value_is_warned_as_not_consumed
   - switch_params_value_is_the_canonical_placement
+  # W4 착수 실측이 드러낸 문법 갭 (D51 G14~G17)
+  - seo_structured_children_use_structured_value_grammar
+  - structured_field_placement_follows_handler_manifest
+  - blur_sources_accept_item_list
+  - structured_value_list_emits_item_tags
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php

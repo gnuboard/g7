@@ -1,0 +1,17 @@
+<partial description="마이페이지 공통 탭 네비게이션">
+  <tab-navigation data-ref="mypageTabNavigation" variant="underline" class="mb-6" hiddenTabIds="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['inquiries']}}" activeTabId="{{_computed?.currentTab}}">
+    <prop name="tabs">
+      <item id="profile" label="$t:mypage.tabs.profile" iconName="user"/>
+      <item id="board" label="$t:mypage.tabs.board" iconName="message-square"/>
+      <item id="orders" label="$t:mypage.tabs.orders" iconName="package"/>
+      <item id="mileage" label="$t:mypage.tabs.mileage" iconName="coins"/>
+      <item id="wishlist" label="$t:mypage.tabs.wishlist" iconName="heart"/>
+      <item id="addresses" label="$t:mypage.tabs.addresses" iconName="map-pin"/>
+      <item id="notifications" label="$t:mypage.tabs.notifications" iconName="bell"/>
+      <item id="inquiries" label="$t:mypage.tabs.inquiries" iconName="comment"/>
+    </prop>
+    <on type="change" event="onTabChange">
+      <navigate path="{{`/mypage/${$args[0]}`}}"/>
+    </on>
+  </tab-navigation>
+</partial>

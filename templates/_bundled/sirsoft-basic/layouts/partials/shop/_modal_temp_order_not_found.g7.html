@@ -1,0 +1,11 @@
+<partial description="임시 주문 정보 없음 알림 모달" editor_label="$t:user.modal_label.shop.tempOrderNotFoundModal">
+  <modal data-ref="tempOrderNotFoundModal" title="$t:shop.checkout.temp_order_not_found_title" size="sm" :showCloseButton="false" :closeOnOverlayClick="false" :closeOnEscape="false">
+    <div class="text-center py-4">
+      <icon name="exclamation-circle" class="text-yellow-500 text-4xl mb-4"/>
+      <p class="text-gray-700 dark:text-gray-300">$t:shop.checkout.temp_order_not_found_message</p>
+    </div>
+    <div class="flex justify-center mt-6">
+      <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"><on type="click"><close-modal/><navigate path="{{_global.shopBase}}/cart"/></on>$t:common.confirm</button>
+    </div>
+  </modal>
+</partial>

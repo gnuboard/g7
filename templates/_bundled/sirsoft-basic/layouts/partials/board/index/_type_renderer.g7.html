@@ -1,0 +1,16 @@
+<partial description="유형별 index 렌더러. 새 유형 추가: 1) types/새유형/index.json 생성, 2) 아래 유형 블록 추가, 3) basic 블록 !includes 배열에 새 유형 추가">
+  <div>
+    <!-- basic + fallback. 새 유형 추가 시 이 블록 아래에 해당 유형 블록 추가 후 !includes 배열에도 추가 -->
+    <div data-if="{{posts?.data?.board?.type === 'basic' || !['gallery','card'].includes(posts?.data?.board?.type ?? 'basic')}}">
+      <include src="../types/basic/index.json"/>
+    </div>
+    <!-- gallery 유형 -->
+    <div data-if="{{posts?.data?.board?.type === 'gallery'}}">
+      <include src="../types/gallery/index.json"/>
+    </div>
+    <!-- card 유형 -->
+    <div data-if="{{posts?.data?.board?.type === 'card'}}">
+      <include src="../types/card/index.json"/>
+    </div>
+  </div>
+</partial>

@@ -312,6 +312,160 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/template_partial_test/_info_card.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/template_partial_test.g7.html',
+        // W4 — sirsoft-basic (153) — escape 유발 결함 14파일은 S16 이월로 이관 제외
+        'templates/_bundled/sirsoft-basic/extensions/sirsoft-daum_postcode/user-address-search.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/auth/forgot_password.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/auth/identity_challenge.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/auth/login.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/auth/register.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/auth/reset_password.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/board/boards.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/board/form.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/board/index.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/board/popular.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/board/show.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/errors/401.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/errors/403.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/errors/404.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/errors/500.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/errors/503.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/errors/maintenance.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/home.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/addresses.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/board.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/change-password.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/inquiries.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/mileage.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/notifications.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/orders.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/orders/show.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/profile-edit.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/profile.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/wishlist.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/page/show.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/_identity_challenge_modal.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/_modal_notification_delete_all_confirm.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/auth/_modal_privacy.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/auth/_modal_terms.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/auth/_redirect_if_logged_in.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/auth/_register_form.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/boards/_board_card.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/form/_parent_post.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/form/_password_verify_modal.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/form/_post_form.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/form/_type_renderer.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/index/_admin_links.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/index/_empty_states.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/index/_loading_error.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/index/_type_renderer.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/index/_write_button.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/popular/_popular_item.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/popular/_popular_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/_comment_input.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/_comment_item.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/_comment_section.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/_navigation.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/_post_attachments.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/_reply_section.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/_type_renderer.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/modals/_modal_delete.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/modals/_modal_report.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/show/modals/_password_verify_modal.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/types/basic/form.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/types/basic/index.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/types/card/index.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/types/gallery/index.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/common/_currency_selector.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_board_summary.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_community_guide.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_popular_boards.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_recent_posts.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_shop_promo.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_stat_card_boards.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_stat_card_comments.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_stat_card_posts.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_stat_card_users.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/home/_welcome_card.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/_tab_navigation.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/addresses/_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/addresses/_modal_address.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/addresses/_modal_confirm_delete.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/addresses/_modal_confirm_overwrite.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_comments.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/board/_my_posts.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/inquiries/_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/mileage/_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/notifications/_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_history.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_modal_cancel.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_modal_change_address.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_modal_confirm_purchase.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_modal_write_review.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_orderer.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_payment.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_status_header.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/profile/_edit.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/profile/_modal_withdraw.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/profile/_password_verify_section.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/profile/_view.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/wishlist/_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/_search_filters.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/_search_input.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/_search_results.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/_search_states.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/_search_tabs.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/pages/_section.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/posts/_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/posts/_section.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/products/_item_card.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/products/_section.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_cart_list.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_discount.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_items.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_mileage.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_orderer.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_payment.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_summary.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_address_manage.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_cart_delete_confirm.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_cart_option_change.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_cart_unavailable.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_coupon_download.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_exclusive_coupon_confirm.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_temp_order_not_found.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_admin_edit_link.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_header.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_info_summary.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_cart_added.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_coupon_download_confirm.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_inquiry_delete.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_login_required.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_qna_reply.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_qna_write.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_review_image.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_price_mobile.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_purchase_card.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_review_avatar.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_detail.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_qna.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_reviews.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_breadcrumb.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_new_products.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_popular_products.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_product_grid.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_recent_products.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_search_filter_bar.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/search/index.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/shop/cart.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/shop/category.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/shop/index.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/shop/show.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/users/posts.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/users/show.g7.html',
     ];
 
     /**
@@ -339,7 +493,13 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      *
      * @var array<string, array<string, int>> 파일(상대경로) → (허용 방출 라벨 → 정확 건수)
      */
-    private const RAW_JSON_PENDING_GRAMMAR = [];
+    private const RAW_JSON_PENDING_GRAMMAR = [
+        // W4 — **정수 리스트 리터럴**. `[5, 4, 3, 2, 1]`(별점 눈금)은 문자열 아닌 스칼라 원소라
+        // D42 가 **표기를 주지 않기로 확정한** 형태다: `<item :value="5"/>` 는 객체 `{"value": 5}` 와
+        // 구별되지 않아 왕복이 깨진다({@see EmitsMarkup::isStructuredValue} 독블록). 문법이 없다는
+        // 근거가 설계 결정 자체이므로 등재한다 — 새 문법이 생기면 이 행을 지우고 재생성한다.
+        'templates/_bundled/sirsoft-basic/layouts/shop/show.g7.html' => [':starList' => 1, ':starNums' => 1],
+    ];
 
     /**
      * 이관된 `.g7.html` 이 원본과 100% 동등하고 escape-0 임을 봉인합니다 (S10 W1 DoD).
@@ -389,12 +549,24 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
                 continue;
             }
 
+            $registry = $resolver->registryFor($markupFile);
+
+            if ($registry === null) {
+                $failures[] = "{$relative} — 대상 템플릿 레지스트리를 해석하지 못했습니다";
+
+                continue;
+            }
+
             // D41 — `<json>` 태그만 세면 속성값·`<prop>` 본문의 통짜 JSON 을 놓친다.
             // 1급 문법이 있는데 blob 으로 떨어진 자리를 여기서 잡는다.
             // 아직 문법이 없는 자리(U-RAWJSON ⓒ)는 아래 대장에 **명시 등재**된 것만 통과한다 —
             // 라벨뿐 아니라 **건수까지** 정확 다중집합으로 대조하므로, 등재 라벨이라도 건수가
             // 늘거나(예: `:value` 3→5) 미등재 라벨이 새로 뜨면 그대로 실패한다.
-            $emitted = array_count_values(LayoutMarkupRoundTrip::rawJsonEmissions($source));
+            //
+            // 레지스트리를 함께 넘긴다(D53) — 컴포넌트 노드의 텍스트는 화면에 그려질 콘텐츠라
+            // 문법으로 없앨 수 없다. 넘기지 않으면 그런 표시용 JSON 이 영원히 닫히지 않는 대장
+            // 항목으로 남아 진짜 잔여와 구분되지 않는다.
+            $emitted = array_count_values(LayoutMarkupRoundTrip::rawJsonEmissions($source, $registry));
             ksort($emitted);
 
             $allowed = self::RAW_JSON_PENDING_GRAMMAR[$relative] ?? [];
@@ -427,14 +599,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
                 continue;
             }
 
-            $registry = $resolver->registryFor($markupFile);
-
-            if ($registry === null) {
-                $failures[] = "{$relative} — 대상 템플릿 레지스트리를 해석하지 못했습니다";
-
-                continue;
-            }
-
+            // 레지스트리는 원시 JSON 계량(:552)에서 이미 해석했다 — 그대로 재사용한다.
             $original = json_decode(File::get($jsonFile), true);
 
             try {

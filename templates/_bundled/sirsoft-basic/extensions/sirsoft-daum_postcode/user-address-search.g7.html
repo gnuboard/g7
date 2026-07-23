@@ -1,0 +1,22 @@
+<extension extension-point="address_search_slot" priority="50">
+  <div data-ref="daum_postcode_user_container" class="inline-flex">
+    <on event="mount">
+      <!-- 주소 검색 플러그인 마운트 시 지정된 필드를 readOnly로 설정 -->
+      <action handler="sirsoft-daum_postcode.setFieldReadOnly" fields="{{extensionPointProps.readOnlyFields ?? ['zipcode', 'address']}}" :readOnly="true"/>
+    </on>
+    <button data-ref="btn_user_search_address" type="button" class="flex-shrink-0 px-4 py-2.5 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+      <responsive on="portable" class="flex-shrink-0 px-3 py-2 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"/>
+      <on type="click">
+        <action handler="sirsoft-daum_postcode.openPostcode" displayMode="{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}" width="{{_global.plugins['sirsoft-daum_postcode']?.popup_width ?? 500}}" height="{{_global.plugins['sirsoft-daum_postcode']?.popup_height ?? 600}}" callbackAction="{{extensionPointCallbacks.onAddressSelect}}" targetFields="{{extensionPointProps.targetFields}}">
+          <field name="theme">
+            <field name="searchBgColor" value="{{_global.plugins['sirsoft-daum_postcode']?.theme_color ?? '#1D4ED8'}}"/>
+            <field name="queryTextColor" value="#FFFFFF"/>
+          </field>
+        </action>
+      </on>
+      <icon name="search" class="w-4 h-4 mr-1.5"/>
+      <span>$t:sirsoft-daum_postcode.search_address</span>
+    </button>
+  </div>
+  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script"/>
+</extension>

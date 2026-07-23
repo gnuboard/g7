@@ -525,6 +525,78 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 구조값 **리스트**도 어느 자리에서든 `<item>` 으로 나간다 (D51 G17).
+     *
+     * 종전 `structuredValueElement` 는 맵만 `<field>` 트리로 풀고 **리스트는 무조건 JSON 본문**으로
+     * 냈다 — 표기가 있는데도 `<data-sources>["posts"]</data-sources>` 처럼 통짜 JSON 이 남던
+     * 비대칭이다. G14 가 `<seo>` 를 열면서 드러났고, 같은 헬퍼를 쓰는 데이터소스 `<data>`·`<fallback>`
+     * 자리도 같은 결함을 공유하고 있었다. 두 호출처(문서 `<seo>` / 데이터소스 본문)를 함께 세운다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects structured_value_list_emits_item_tags
+     */
+    public function test_structured_value_list_emits_item_tags(): void
+    {
+        $json = [
+            'layout_name' => 'structured_list',
+            'meta' => [
+                'seo' => [
+                    'enabled' => true,
+                    'data_sources' => ['posts', 'boards'],
+                    'extensions' => [['type' => 'module', 'id' => 'sirsoft-board']],
+                ],
+            ],
+            'data_sources' => [
+                ['id' => 'roles', 'type' => 'static', 'data' => [['code' => 'admin'], ['code' => 'user']]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        // 직렬화기의 인덴트를 걷어내고 구조만 본다 — 들여쓰기 폭이 바뀌어도 이 단언은 살아야 한다.
+        $flat = preg_replace('/\s+</', '<', $markup);
+
+        // 문자열 리스트 → 본문 `<item>` / 평면 객체 리스트 → 속성 `<item>`
+        $this->assertStringContainsString('<data-sources><item>posts</item><item>boards</item></data-sources>', $flat);
+        $this->assertStringContainsString('<extensions><item type="module" id="sirsoft-board"/></extensions>', $flat);
+        $this->assertStringContainsString('<data><item code="admin"/><item code="user"/></data>', $flat);
+
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertSame([], LayoutMarkupRoundTrip::rawJsonEmissions($markup));
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 표기 불가한 리스트는 종전대로 JSON 본문으로 남는다 (G17 대조군).
+     *
+     * 문자열 아닌 스칼라 원소(`[5, 4, 3]`)는 `<item :value="5"/>` 가 객체 `{"value":5}` 와 구별되지
+     * 않아 **D42 가 표기를 주지 않기로 확정한** 형태다({@see EmitsMarkup::isStructuredValue}).
+     * 이 분기를 세우지 않으면 G17 이 "모든 리스트를 `<item>` 으로" 로 과확장돼도 아무도 못 잡는다 —
+     * 그 상태에서 왕복은 깨지고 코퍼스에는 표본(`shop/show` 별점 눈금)이 대장으로만 등재돼 있다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects structured_value_list_emits_item_tags
+     */
+    public function test_unrepresentable_structured_list_stays_json_body(): void
+    {
+        $json = [
+            'layout_name' => 'structured_list_scalar',
+            'data_sources' => [
+                ['id' => 'stars', 'type' => 'static', 'data' => [5, 4, 3, 2, 1]],
+                ['id' => 'empty', 'type' => 'static', 'data' => []],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString('<data>[5,4,3,2,1]</data>', $markup);
+        $this->assertStringContainsString('<data>[]</data>', $markup);
+        $this->assertStringNotContainsString('<item', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
      * 액션의 `params.body`/`params.query` 는 `<body>`/`<query>` 로 나간다 (D41).
      *
      * 속성에 JSON 을 박으면 D2("속성 JSON 추방")를 어기는데, escape 계량은 `<json>` 태그만 세므로

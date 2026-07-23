@@ -1,0 +1,214 @@
+<partial description="옵션 선택, 선택상품 목록, 구매 버튼 카드">
+  <div data-if="{{product.data?.sales_status === 'on_sale'}}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+    <!-- === 배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가) === -->
+    <div data-if="{{product.data?.is_shippable_to_selected_country === false}}" class="flex items-start gap-2 px-3 py-2.5 mb-4 rounded-lg border bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800">
+      <icon name="triangle-exclamation" size="sm" class="text-red-500 dark:text-red-400 mt-0.5 shrink-0"/>
+      <span class="text-sm font-medium text-red-700 dark:text-red-300">$t:shop.shippability.not_shippable</span>
+    </div>
+    <!-- === 옵션 선택 안내 텍스트 (2개 이상 옵션 있고, 아직 선택 안 했을 때만, 판매중일 때만) === --><div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; product.data?.option_groups?.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}" class="border-b border-gray-200 dark:border-gray-700 pb-4 text-green-600 dark:text-green-400 text-sm font-medium mb-4">$t:shop.product.select_options_guide</div>
+    <!-- === 옵션 선택 섹션 (옵션 그룹이 있고 선택할 옵션이 2개 이상일 때만, 판매중일 때만) === -->
+    <div data-ref="option-select" data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; product.data?.option_groups?.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="mb-4 space-y-3">
+      <!-- 옵션 그룹별 Select -->
+      <div data-each="group, groupIndex in {{product.data?.option_groups ?? []}}">
+        <div class="mb-3">
+          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{group.name_localized}}</label>
+          <select name="option_{{groupIndex}}" class="w-full" value="{{_local.currentSelection?.[group.name_localized] ?? ''}}" placeholder="{{groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}" disabled="{{groupIndex > 0 &amp;&amp; !_local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{[{ value: '', label: groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + $t('shop.product.select_option_suffix') : $t('shop.product.select_upper_option_first') }, ...($computed.optionChoices?.[groupIndex] ?? (group.values_localized ?? []).map(v => ({ value: v, label: v })))] ?? []}}">
+            <on type="change">
+              <!-- 현재 선택 상태 업데이트 -->
+              <set-state target="local" currentSelection="{{Object.assign({}, _local.currentSelection ?? {}, { [group.name_localized]: $event.target.value })}}"/>
+              <!-- 마지막 옵션 선택 시 자동으로 selectedOptionItems에 추가 (newGroupName/newValue로 sequence 상태 동기화 우회) -->
+              <action handler="sirsoft-basic.addSelectedItemIfComplete" productId="{{product.data?.id}}" optionGroups="{{product.data?.option_groups}}" options="{{product.data?.options}}" currentSelection="{{_local.currentSelection ?? {}}}" selectedOptionItems="{{_local.selectedOptionItems ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" newGroupName="{{group.name_localized}}" newValue="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+    </div>
+    <!-- === 수량 선택만 표시 (옵션 없거나, 기본 옵션 1개뿐인 상품, 판매중일 때만) === -->
+    <div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; (!product.data?.has_options || !product.data?.option_groups || product.data?.option_groups.length === 0 || (product.data?.options?.length ?? 0) <= 1)}}" class="mb-4">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700 dark:text-gray-300">$t:shop.product.quantity</span>
+        <quantity-selector value="{{_local.noOptionQuantity ?? 1}}" min="{{product.data?.min_purchase_qty ?? 1}}" max="{{product.data?.max_purchase_qty > 0 ? Math.min(product.data.max_purchase_qty, product.data?.stock_quantity ?? 999) : (product.data?.stock_quantity ?? 999)}}" size="sm">
+          <on event="onChange">
+            <action handler="sirsoft-basic.updateNoOptionQuantity" newQuantity="{{$args[0]}}" multiCurrencyUnitPrice="{{product.data?.multi_currency_selling_price}}"/>
+          </on>
+        </quantity-selector>
+      </div>
+    </div>
+    <!-- === 수량 제한 안내 (판매중일 때만) === -->
+    <div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; (product.data?.min_purchase_qty > 1 || product.data?.max_purchase_qty > 0)}}" class="px-1 mb-2 space-y-0.5">
+      <span data-if="{{product.data?.min_purchase_qty > 1}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:shop.min_purchase_qty_notice|qty={{product.data?.min_purchase_qty}}</span>
+      <span data-if="{{product.data?.max_purchase_qty > 0}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:shop.max_purchase_qty_notice|qty={{product.data?.max_purchase_qty}}</span>
+    </div>
+    <!-- === 선택한 상품 섹션 (옵션 있는 상품, 총 금액 위에 표시, 판매중일 때만) === -->
+    <div data-if="{{product.data?.sales_status === 'on_sale' &amp;&amp; product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; _local.selectedOptionItems &amp;&amp; _local.selectedOptionItems.length > 0}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
+      <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">$t:shop.selected_products</h4>
+      <!-- 선택된 상품 목록 (space-y-4 는 부모, iteration 은 자식 — 분리해야 형제 간 간격 적용됨) -->
+      <div class="space-y-4">
+        <div data-each="item, itemIndex in {{_local.selectedOptionItems ?? []}}" class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+          <!-- 상품 옵션명 + 삭제 버튼 -->
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-900 dark:text-white">{{item.options ? Object.values(item.options).join(' / ') : ''}}</span>
+            <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+              <on type="click">
+                <action handler="sirsoft-basic.removeSelectedItem" itemIndex="{{itemIndex}}" selectedOptionItems="{{_local.selectedOptionItems}}"/>
+              </on>
+              <icon name="x" size="sm"/>
+            </button>
+          </div>
+          <!-- === 블럭별 추가옵션 그룹 선택 (D2/D10: 옵션 블럭 내부) === -->
+          <div data-if="{{product.data?.additional_options?.length > 0}}" data-each="addGroup, addGroupIndex in {{product.data?.additional_options ?? []}}" class="mb-3 space-y-2">
+            <div>
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                <span>{{addGroup.name}}</span>
+                <span data-if="{{addGroup.is_required}}" class="text-red-500 dark:text-red-400 ml-0.5">*</span>
+              </label>
+              <select name="add_option_{{itemIndex}}_{{addGroup.id}}" class="w-full" value="{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
+                <on type="change">
+                  <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{$event.target.value}}" selectedOptionItems="{{_local.selectedOptionItems}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}"/>
+                </on>
+              </select>
+              <!-- 직접입력 칸 — 선택된 선택지가 allow_custom_text 일 때만 노출(입력 필수). 입력란임이 명확하도록 라벨 + 테두리/배경 스타일 적용 -->
+              <div data-if="{{(addGroup.values ?? []).find(v => v.id === item.additionalOptionSelections?.[addGroup.id])?.allow_custom_text === true}}" class="mt-2">
+                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:shop.additional_option_custom_text_label</label>
+                <input type="text" name="add_option_text_{{itemIndex}}_{{addGroup.id}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{item.additionalOptionCustomTexts?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" :maxLength="255">
+                  <on type="input">
+                    <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{item.additionalOptionSelections?.[addGroup.id]}}" customText="{{$event.target.value}}" selectedOptionItems="{{_local.selectedOptionItems}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}"/>
+                  </on>
+                </input>
+              </div>
+            </div>
+          </div>
+          <!-- 추가옵션 추가금 합계 표기 (선택된 추가금이 있을 때) -->
+          <div data-if="{{(item.additionalOptionsTotal ?? 0) > 0}}" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+            <span>$t:shop.additional_options_amount</span>
+            <span>{{(() => { const c = (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = c?.decimal_places ?? 0; const n = (item.additionalOptionsTotal ?? 0).toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = c?.symbol ?? '₩'; return '+' + ((c?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}</span>
+          </div>
+          <!-- 수량 조절 + 가격 -->
+          <div class="flex items-center justify-between">
+            <quantity-selector value="{{item.quantity}}" :min="1" max="{{item.stock}}" size="sm">
+              <on event="onChange">
+                <action handler="sirsoft-basic.updateSelectedItemQuantity" itemIndex="{{itemIndex}}" newQuantity="{{$args[0]}}" selectedOptionItems="{{_local.selectedOptionItems}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}"/>
+              </on>
+            </quantity-selector>
+            <span class="text-sm font-bold text-gray-900 dark:text-white">{{item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.totalPriceFormatted}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- === 총 금액 + 구매 버튼 섹션 (판매중일 때만) === -->
+    <div data-if="{{product.data?.sales_status === 'on_sale'}}" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+      <!-- 총 금액 (옵션 선택형 상품 - 2개 이상) -->
+      <div data-if="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="flex justify-between items-center mb-4">
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.total_amount ({{(_local.selectedOptionItems ?? []).reduce((sum, item) => sum + item.quantity, 0)}}$t:shop.count_unit)</span>
+        <span class="text-xl font-bold text-gray-900 dark:text-white">{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}</span>
+      </div>
+      <!-- 총 금액 (옵션 없거나 기본 옵션 1개뿐인 상품) -->
+      <div data-if="{{!product.data?.has_options || (product.data?.options?.length ?? 0) <= 1}}" class="flex justify-between items-center mb-4">
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.product.total_amount ({{_local.noOptionQuantity ?? 1}}$t:shop.product.count_unit)</span>
+        <span class="text-xl font-bold text-gray-900 dark:text-white">{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted ?? ''}}</span>
+      </div>
+      <!-- === 바로구매 + 장바구니 버튼 (PC 2단, 모바일 1단) === -->
+      <div class="grid md:grid-cols-2 gap-2">
+        <!-- 바로구매 버튼 -->
+        <button class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isOrdering || product.data?.is_shippable_to_selected_country === false}}">
+          <on type="click">
+            <conditions>
+              <!-- 배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증) -->
+              <when if="{{product.data?.is_shippable_to_selected_country === false}}">
+                <toast type="warning" message="$t:shop.shippability.not_shippable"/>
+              </when>
+              <when if="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}">
+                <toast type="warning" message="$t:shop.product.please_select_options"/>
+              </when>
+              <!-- 필수 추가옵션 미선택 차단 (D9/D12 클라 가드 — 서버도 422 재검증) -->
+              <when if="{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id]))}}">
+                <toast type="warning" message="$t:shop.additional_option_required"/>
+              </when>
+              <!-- 직접입력 허용 선택지 선택 시 텍스트 미입력 차단 (Q-E1 클라 가드 — 서버도 422 재검증) -->
+              <when if="{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required &amp;&amp; v?.allow_custom_text === true &amp;&amp; (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; }))}}">
+                <toast type="warning" message="$t:shop.additional_option_custom_text_required"/>
+              </when>
+              <else>
+                <sequence>
+                  <set-state target="local" :isOrdering="true"/>
+                  <!-- 바로 구매: 장바구니 미경유 — direct_items 로 바로 체크아웃(장바구니 오염 없음) -->
+                  <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/checkout" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, option_values: item.optionValues, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1 }] }}}">
+                    <success>
+                      <!-- 로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨 -->
+                      <conditions>
+                        <when if="{{_global.currentUser?.uuid}}">
+                          <navigate path="{{_global.shopBase}}/checkout"/>
+                        </when>
+                        <else>
+                          <navigate path="/login">
+                            <query redirect="{{_global.shopBase}}/checkout"/>
+                          </navigate>
+                        </else>
+                      </conditions>
+                    </success>
+                    <fail>
+                      <set-state target="local" :isOrdering="false"/>
+                      <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
+                    </fail>
+                    <field name="headers">
+                      <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
+                    </field>
+                  </api-call>
+                </sequence>
+              </else>
+            </conditions>
+          </on>
+          <div class="flex items-center justify-center gap-2">
+            <icon data-if="{{_local.isOrdering}}" name="spinner" :spin="true" size="md"/>
+            <span data-if="{{!_local.isOrdering}}">$t:shop.product.buy_now</span>
+            <span data-if="{{_local.isOrdering}}">$t:shop.product.ordering</span>
+          </div>
+        </button>
+        <!-- 장바구니 버튼 -->
+        <button class="w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isAddingToCart || _local.isOrdering || product.data?.is_shippable_to_selected_country === false}}">
+          <on type="click">
+            <conditions>
+              <!-- 배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증) -->
+              <when if="{{product.data?.is_shippable_to_selected_country === false}}">
+                <toast type="warning" message="$t:shop.shippability.not_shippable"/>
+              </when>
+              <when if="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}">
+                <toast type="warning" message="$t:shop.product.please_select_options"/>
+              </when>
+              <!-- 필수 추가옵션 미선택 차단 (D9/D12 클라 가드 — 서버도 422 재검증) -->
+              <when if="{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id]))}}">
+                <toast type="warning" message="$t:shop.additional_option_required"/>
+              </when>
+              <!-- 직접입력 허용 선택지 선택 시 텍스트 미입력 차단 (Q-E1 클라 가드 — 서버도 422 재검증) -->
+              <when if="{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required &amp;&amp; v?.allow_custom_text === true &amp;&amp; (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; }))}}">
+                <toast type="warning" message="$t:shop.additional_option_custom_text_required"/>
+              </when>
+              <else>
+                <sequence>
+                  <set-state target="local" :isAddingToCart="true"/>
+                  <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ option_values: item.optionValues, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1 }] }}}">
+                    <success>
+                      <set-state target="local" :isAddingToCart="false" :selectedOptionItems="[]" :currentSelection="[]" :noOptionQuantity="1" :additionalOptions="[]"/>
+                      <set-state target="global" cartCount="{{response.data.cart_count}}"/>
+                      <open-modal target="cart_added_modal"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :isAddingToCart="false"/>
+                      <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
+                    </fail>
+                    <field name="headers">
+                      <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
+                    </field>
+                  </api-call>
+                </sequence>
+              </else>
+            </conditions>
+          </on>
+          <icon data-if="{{!_local.isAddingToCart}}" name="shopping-cart" size="lg"/>
+          <icon data-if="{{_local.isAddingToCart}}" name="spinner" size="lg" class="animate-spin"/>
+          <span>$t:shop.product.add_to_cart</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

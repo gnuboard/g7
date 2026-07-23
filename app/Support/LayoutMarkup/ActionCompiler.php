@@ -453,7 +453,7 @@ final class ActionCompiler
                 ]);
             }
 
-            $this->applySubStructural($child, $action, $params, $path);
+            $this->applySubStructural($child, $handler, $action, $params, $path);
         }
 
         if ($params !== []) {
@@ -620,13 +620,14 @@ final class ActionCompiler
      * 부속 구조 태그(success/fail/error-handling/body/query)를 액션에 흡수합니다.
      *
      * @param  MarkupElement  $child  부속 구조 태그
+     * @param  string  $handler  camel 핸들러명 (`<field>` 배치 판정용)
      * @param  array<string, mixed>  $action  액션 (참조)
      * @param  array<string, mixed>  $params  params (참조)
      * @param  string|null  $path  소스 파일 경로
      *
      * @throws CompileError 표기 규칙을 벗어난 경우
      */
-    private function applySubStructural(MarkupElement $child, array &$action, array &$params, ?string $path): void
+    private function applySubStructural(MarkupElement $child, string $handler, array &$action, array &$params, ?string $path): void
     {
         switch ($child->name) {
             case 'success':
@@ -662,9 +663,23 @@ final class ActionCompiler
                 break;
 
             case 'field':
-                // 임의 이름의 구조값 파라미터 (D42 G6) — 본문은 중첩 `<field>` 또는 `<item>` 리스트.
+                // 임의 이름의 구조값 (D42 G6) — 본문은 중첩 `<field>` 또는 `<item>` 리스트.
                 // `<param>` 은 HTML 표준 void 요소라 자식을 가질 수 없어 개념어 `<field>` 를 재사용한다.
+                //
+                // 배치는 **속성과 같은 규칙**(D30 ④ 핸들러별 매니페스트)을 탄다 — `resultTo`·
+                // `identity_target` 처럼 값이 객체인 top-level 키가 실재하기 때문이다(D51 G15).
+                // params 전용으로 두면 그 키들은 저작 표기가 없어 `:resultTo='{…}'` 통짜 JSON 으로
+                // 남는다(D42 가 없애려는 형태). 자리마다 배치 규칙이 갈리지 않도록 매니페스트 한 곳만
+                // 본다 — 여기 목록을 따로 두면 속성 배치와 조용히 어긋난다.
                 $name = (string) $this->requiredAttribute($child, 'name', $path);
+
+                if ($this->manifest->keyIsTopLevel($handler, $name)) {
+                    $this->assertActionKeyUnset($child, $action, $name, $path);
+                    $action[$name] = $this->compileParamValue($child, $path);
+
+                    break;
+                }
+
                 $this->assertParamUnset($child, $params, $name, $path);
                 $params[$name] = $this->compileParamValue($child, $path);
                 break;

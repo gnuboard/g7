@@ -653,6 +653,33 @@ class NodeCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 데이터소스 목록은 `<item>` 리스트로 적는다 (D51 G16 — `:sources='["a","b"]'` 속성 JSON 대체).
+     *
+     * @effects blur_sources_accept_item_list
+     */
+    public function test_blur_sources_accept_item_list(): void
+    {
+        $node = $this->compile('<div><blur-until-loaded><item>myPosts</item><item>myComments</item></blur-until-loaded></div>');
+
+        $this->assertSame(
+            ['enabled' => true, 'data_sources' => ['myPosts', 'myComments']],
+            $node['blur_until_loaded'],
+        );
+    }
+
+    /**
+     * `<item>` 리스트와 속성 표기를 함께 쓰면 어느 쪽이 정본인지 알 수 없다.
+     *
+     * @effects blur_sources_accept_item_list
+     */
+    public function test_blur_sources_reject_item_list_with_attribute(): void
+    {
+        $error = $this->compileError('<div><blur-until-loaded sources="a"><item>b</item></blur-until-loaded></div>');
+
+        $this->assertSame(LayoutMarkupErrorCode::DuplicateAttribute, $error->getErrorCode());
+    }
+
+    /**
      * @effects state_tree_leaf_type_follows_type_literal_rule
      */
     public function test_state_field_requires_an_explicit_value(): void

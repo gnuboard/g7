@@ -1,0 +1,9 @@
+<partial editor_label="$t:user.modal_label.shop.exclusiveCouponConfirm" description="중복 불가 쿠폰 적용 확인 모달">
+  <modal data-ref="exclusiveCouponConfirm" title="$t:shop.checkout.exclusive_coupon_title" size="medium">
+    <p class="text-base text-gray-700 dark:text-gray-300">$t:shop.checkout.exclusive_coupon_message</p>
+    <div class="flex justify-end gap-3 mt-6">
+      <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><close-modal/></on>$t:common.cancel</button>
+      <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"><on type="click"><set-state target="local" checkout="{{Object.assign({}, _local.checkout, { order_coupon_issue_id: _global.pendingExclusiveCoupon?.id })}}"/><set-state target="global" :pendingExclusiveCoupon="null"/><close-modal/><api-call target="/api/modules/sirsoft-ecommerce/checkout" method="PUT" body="{{_local.checkout}}"><success><update-data-source dataSourceId="checkoutData" data="{{response}}"/></success></api-call></on>$t:common.confirm</button>
+    </div>
+  </modal>
+</partial>

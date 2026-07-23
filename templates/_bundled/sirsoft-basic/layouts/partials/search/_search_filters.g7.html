@@ -1,0 +1,36 @@
+<partial description="검색 필터 (게시글/상품 탭)">
+  <div data-if="{{(_global?.searchActiveTab === 'posts' || _global?.searchActiveTab === 'products') &amp;&amp; query?.q}}" class="flex flex-wrap gap-2 mb-4">
+    <select data-if="{{_global?.searchActiveTab === 'posts'}}" name="boardFilter" class="w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer" value="{{_global?.searchBoardFilter ?? ''}}">
+      <on type="change">
+        <set-state target="global" searchBoardFilter="{{$event.target.value}}" :searchPage="1"/>
+        <refetch-data-source dataSourceId="searchResults"/>
+      </on>
+      <option value="">$t:search.filter.all_boards</option>
+      <option data-each="board in {{searchResults?.data?.posts?.available_boards ?? []}}" value="{{board?.slug}}">{{board?.name}}</option>
+    </select>
+    <select data-if="{{_global?.searchActiveTab === 'posts'}}" name="sortBy" class="w-32" value="{{_global?.searchSortBy ?? 'relevance'}}">
+      <options>
+        <option value="relevance">$t:search.sort.relevance</option>
+        <option value="latest">$t:search.sort.latest</option>
+        <option value="popular">$t:search.sort.popular</option>
+      </options>
+      <on type="change">
+        <set-state target="global" searchSortBy="{{$event.target.value}}" :searchPage="1"/>
+        <refetch-data-source dataSourceId="searchResults"/>
+      </on>
+    </select>
+    <select data-if="{{_global?.searchActiveTab === 'products'}}" name="sortBy" class="w-32" value="{{_global?.searchSortBy ?? 'relevance'}}">
+      <options>
+        <option value="relevance">$t:search.sort.relevance</option>
+        <option value="latest">$t:search.sort.latest</option>
+        <option value="price_asc">$t:search.sort.price_asc</option>
+        <option value="price_desc">$t:search.sort.price_desc</option>
+        <option value="popular">$t:search.sort.popular</option>
+      </options>
+      <on type="change">
+        <set-state target="global" searchSortBy="{{$event.target.value}}" :searchPage="1"/>
+        <refetch-data-source dataSourceId="searchResults"/>
+      </on>
+    </select>
+  </div>
+</partial>

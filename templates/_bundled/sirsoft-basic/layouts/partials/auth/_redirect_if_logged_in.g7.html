@@ -1,0 +1,11 @@
+<partial>
+  <!-- 로그인 상태일 때 홈으로 리다이렉트 -->
+  <div data-if="{{_global?.currentUser?.uuid &amp;&amp; !_local.isLoginAction}}">
+    <div>
+      <on event="mount">
+        <toast message="$t:auth.already_logged_in" type="info"/>
+        <navigate path="/"/>
+      </on>
+    </div>
+  </div>
+</partial>

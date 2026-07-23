@@ -2,6 +2,8 @@
 
 namespace App\Support\LayoutMarkup;
 
+use App\Enums\MarkupTokenType;
+
 /**
  * 왕복 하네스 — `compile(decompile(json)) ≡ json` 을 검증하는 S9 의 기계 오라클.
  *
@@ -255,43 +257,106 @@ final class LayoutMarkupRoundTrip
      * 아무것도 못 본다(같은 사고가 `<json>` 태그 한정 → 엔티티 이스케이프 → 태그 본문 제외 순으로
      * 세 번 반복됐다). 문법이 아직 없는 자리는 계량에서 빼는 게 아니라 **명시 대장에 등재**한다.
      *
+     * **정규식이 아니라 컴파일러와 같은 토크나이저로 훑는다 (D42 — 4차 전수조사).** 종전 구현은
+     * 속성·본문을 정규식 2개로 긁었는데, 그 둘에 사각이 넷 있었다. 특히 본문 패턴
+     * `<tag[^>]*>([^<]*)</tag>` 은 **속성값에 `>` 가 하나라도 있으면** 여는 태그를 그 자리에서 끊어
+     * 읽어 본문 매칭이 통째로 어긋난다 — 직렬화기는 인용값 안의 `>` 를 이스케이프하지 않으므로
+     * (`escapeAttr` 는 `&` 와 구분 따옴표만 건드린다) `if="{{a > b}}"` 같은 흔한 비교식 하나로
+     * 그 태그의 JSON 본문이 계량에서 사라진다. 실측상 `>` 를 담은 속성은 코퍼스에 1,337곳,
+     * JSON 본문은 74곳이고 교집합이 우연히 0이었을 뿐이라 **구조적으로 안전한 상태가 아니었다**.
+     *
+     * 나머지 셋도 같은 성격이다 — 형제 요소와 섞인 JSON 텍스트(`[^<]*` 가 못 봄), 태그명에 `_` 가
+     * 섞인 경우(`[a-z0-9-]*` 밖), 본문 JSON 앞에 텍스트가 붙은 경우. 어휘 해석을 손으로 다시
+     * 구현하는 한 이런 사각은 계속 생기므로, 컴파일러가 쓰는 토크나이저를 그대로 빌려 없앤다.
+     *
+     * 라벨과 순서는 종전과 동일하다(속성 전량 → 본문 전량). 전환 시점 코퍼스 637파일 실측에서
+     * 종전 정규식과 **건수·라벨이 동일**함을 확인했다.
+     *
+     * **컴포넌트 노드의 텍스트는 세지 않는다 (D53 — PO 승인).** 컴포넌트 태그의 본문은 화면에 그려질
+     * 글자다. 그 글자가 JSON 모양일 수 있고(관리자에게 결제사 요청·응답 페이로드를 그대로 보여주는
+     * 자리가 실재한다), 그건 **구조를 직렬화한 것이 아니라 콘텐츠**라 어떤 문법으로도 없앨 수 없다.
+     * 세면 목표 0 에 영원히 도달하지 못하는 항목이 대장에 남아, 진짜 잔여와 구분되지 않는다.
+     *
+     * **D41 의 실수와는 판별자가 다르다.** 그때는 `<params>`/`<prop>` 같은 **태그 이름 목록**으로
+     * 뺐고("설계된 정본 표기" 라는 규정), 그 목록 안에 DataGrid 컬럼 트리가 통째로 숨었다. 여기서
+     * 쓰는 판별자는 목록이 아니라 **레지스트리**다 — 컴파일러가 노드를 해석할 때 쓰는 바로 그
+     * SSoT 이고, 구조 태그(`<prop>`·`<params>`·`<define>`·`<field>`…)는 컴포넌트가 아니라서
+     * 애초에 이 분기에 들어올 수 없다. 즉 "사람이 화면에 띄우려 쓴 글자냐, 기계가 구조를 눌러 담은
+     * 결과냐" 를 가른다.
+     *
+     * 레지스트리를 주지 않으면 종전대로 **전부 센다**(보수적 기본값 — 판별할 수 없으면 빼지 않는다).
+     *
      * @param  string  $markup  마크업 소스
+     * @param  ComponentRegistry|null  $registry  대상 레지스트리 (주면 컴포넌트 노드 텍스트를 제외)
      * @return array<int, string> 방출 지점 라벨 (`:query` 속성명 / `$switch` / `<params>` 태그명)
      */
-    public static function rawJsonEmissions(string $markup): array
+    public static function rawJsonEmissions(string $markup, ?ComponentRegistry $registry = null): array
     {
-        $hits = [];
+        try {
+            $tokens = (new MarkupTokenizer)->tokenize($markup, null);
+        } catch (\Throwable) {
+            // 어휘 해석이 안 되는 문자열은 `.g7.html` 이 아니다. 계량할 대상이 없다고 보고 비운다
+            // (컴파일 가능 여부는 이 계량기가 아니라 컴파일 게이트가 판정한다).
+            return [];
+        }
 
-        // 객체/배열이 값으로 박힌 타입 리터럴 속성 — 스칼라(:async="true" 등)는 정상 문법이라 제외.
-        preg_match_all('/:([A-Za-z_][\w:-]*)=(?:\'([^\']*)\'|"([^"]*)")/', $markup, $attrs, PREG_SET_ORDER);
+        $attributeHits = [];
+        $bodyHits = [];
+        $open = [];
 
-        foreach ($attrs as $attr) {
-            $raw = self::decodeMarkupText(($attr[2] ?? '') !== '' ? $attr[2] : ($attr[3] ?? ''));
+        foreach ($tokens as $token) {
+            if ($token->type === MarkupTokenType::StartTag) {
+                // 객체/배열이 값으로 박힌 속성 — 스칼라(:async="true" 등)는 정상 문법이라 제외.
+                foreach ($token->attributes as $attribute) {
+                    if ($attribute->value === null || ! str_starts_with($attribute->name, ':')) {
+                        continue;
+                    }
 
-            if (! self::isStructuredJson($raw)) {
+                    $raw = self::decodeMarkupText($attribute->value);
+
+                    if (! self::isStructuredJson($raw)) {
+                        continue;
+                    }
+
+                    $attributeHits[] = str_contains($raw, '"$switch"') ? '$switch' : $attribute->name;
+                }
+
+                if (! $token->selfClosing) {
+                    $open[] = $token->name;
+                }
+
                 continue;
             }
 
-            $hits[] = str_contains($raw, '"$switch"') ? '$switch' : ':'.$attr[1];
-        }
+            if ($token->type === MarkupTokenType::EndTag) {
+                array_pop($open);
 
-        // 태그 본문 JSON — **태그 이름을 가리지 않는다**(D42). 본문이 JSON 객체/배열로 파싱되면
-        // 그 자체가 저작 파일에 드러난 통짜 JSON 이다. 라벨은 태그명으로 남겨 어디를 고쳐야 하는지
-        // 게이트 메시지만 보고 알 수 있게 한다.
-        preg_match_all('/<([a-z][a-z0-9-]*)\b[^>]*>([^<]*)<\/\1>/i', $markup, $bodies, PREG_SET_ORDER);
+                continue;
+            }
 
-        foreach ($bodies as $body) {
-            $raw = self::decodeMarkupText($body[2]);
+            // 태그 본문 JSON — **태그 이름을 가리지 않는다**(D42). 본문이 JSON 객체/배열로 파싱되면
+            // 그 자체가 저작 파일에 드러난 통짜 JSON 이다. 라벨은 태그명으로 남겨 어디를 고쳐야 하는지
+            // 게이트 메시지만 보고 알 수 있게 한다.
+            if ($token->type !== MarkupTokenType::Text || $open === []) {
+                continue;
+            }
+
+            // 컴포넌트 노드의 텍스트 = 화면에 그려질 콘텐츠. 문법으로 없앨 대상이 아니다(D53).
+            if ($registry?->resolveTag((string) end($open)) !== null) {
+                continue;
+            }
+
+            $raw = self::decodeMarkupText((string) $token->text);
 
             if (! self::isStructuredJson($raw)) {
                 continue;
             }
 
             // `$switch` 는 `<switch-value>` 가 정본이라 태그명 대신 문법 이름으로 지목한다.
-            $hits[] = str_contains($raw, '"$switch"') ? '$switch' : '<'.strtolower($body[1]).'>';
+            $bodyHits[] = str_contains($raw, '"$switch"') ? '$switch' : '<'.strtolower((string) end($open)).'>';
         }
 
-        return $hits;
+        return [...$attributeHits, ...$bodyHits];
     }
 
     /**

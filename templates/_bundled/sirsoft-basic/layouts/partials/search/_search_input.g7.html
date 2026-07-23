@@ -1,0 +1,18 @@
+<partial description="검색 입력 영역">
+  <div class="flex gap-2 mb-6">
+    <div class="flex-1 relative">
+      <icon name="search" size="sm" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+      <input type="text" name="q" value="{{query?.q ?? ''}}" placeholder="$t:search.placeholder" class="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <on type="change">
+          <set-state target="local" q="{{$event.target.value}}"/>
+        </on>
+        <on type="keydown" key="Enter">
+          <navigate path="/search">
+            <query q="{{$event.target.value}}"/>
+          </navigate>
+        </on>
+      </input>
+    </div>
+    <button class="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 active:bg-gray-700 dark:active:bg-gray-200 transition-all cursor-pointer"><on type="click"><set-state target="global" :searchPage="1"/><navigate path="/search"><query q="{{_local.q ?? ''}}"/></navigate></on>$t:search.button</button>
+  </div>
+</partial>

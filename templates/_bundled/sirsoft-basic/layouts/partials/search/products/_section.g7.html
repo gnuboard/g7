@@ -1,0 +1,31 @@
+<partial description="전체 탭 - 상품 섹션 (최대 5개 + 전체보기)">
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <!-- 섹션 헤더 -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+      <div class="flex items-center gap-2">
+        <icon name="shopping-bag" size="sm" class="text-gray-500 dark:text-gray-400"/>
+        <span class="font-medium text-gray-900 dark:text-white">$t:search.tabs.products</span>
+        <span class="text-sm text-blue-600 dark:text-blue-400">{{(searchResults?.data?.products_count ?? 0) | number}}</span>
+      </div>
+      <!-- 전체보기 버튼 -->
+      <button data-if="{{(searchResults?.data?.products_count ?? 0) > 0}}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+        <on type="click">
+          <set-state target="global" searchActiveTab="products" :searchPage="1"/>
+          <refetch-data-source dataSourceId="searchResults"/>
+        </on>
+        <span>$t:search.view_all</span>
+        <icon name="chevron-right" size="sm"/>
+      </button>
+    </div>
+    <!-- 상품 그리드 (전체 탭: 최대 5개) -->
+    <div data-if="{{searchResults?.data?.products?.length > 0}}" class="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div data-each="product in {{searchResults?.data?.products ?? []}}">
+        <include src="partials/search/products/_item_card.json"/>
+      </div>
+    </div>
+    <!-- 결과 없음 안내 -->
+    <div data-if="{{!searchResults?.data?.products || searchResults?.data?.products?.length === 0}}" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      <span>$t:search.empty.products_in_all</span>
+    </div>
+  </div>
+</partial>

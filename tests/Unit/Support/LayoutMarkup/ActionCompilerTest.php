@@ -459,6 +459,45 @@ class ActionCompilerTest extends LayoutMarkupTestCase
         $this->assertSame(['slug' => ['$t:required', '$t:duplicated']], $action['params']['errors']);
     }
 
+    /**
+     * top-level 구조값 키(`resultTo`·`identity_target`)도 `<field name>` 으로 적고, 배치는 매니페스트가
+     * 정한다 (D51 G15 — params 별 자리를 새로 만들지 않고 D30 ④ 배치 규칙을 그대로 탄다).
+     *
+     * @scenario compile_unit=action,source_health=valid
+     *
+     * @effects structured_field_placement_follows_handler_manifest
+     */
+    public function test_structured_field_lands_top_level_when_manifest_says_so(): void
+    {
+        $action = $this->compile(
+            '<div data-ref="d"><on type="click"><load-from-local-storage key="recentProductIds" :defaultValue="[]">'
+            .'<field name="resultTo"><field name="target" value="_global"/><field name="key" value="recentProductIds"/></field>'
+            .'</load-from-local-storage></on></div>'
+        )['actions'][0];
+
+        $this->assertSame(['target' => '_global', 'key' => 'recentProductIds'], $action['resultTo']);
+        $this->assertArrayNotHasKey('resultTo', $action['params']);
+    }
+
+    /**
+     * 매니페스트가 top-level 로 모르는 이름은 종전대로 params 로 간다 (배치 규칙의 대조군).
+     *
+     * @scenario compile_unit=action,source_health=valid
+     *
+     * @effects structured_field_placement_follows_handler_manifest
+     */
+    public function test_structured_field_stays_in_params_when_not_top_level(): void
+    {
+        $action = $this->compile(
+            '<div data-ref="d"><on type="click"><set-state target="local">'
+            .'<field name="resultToLike"><field name="a" value="b"/></field>'
+            .'</set-state></on></div>'
+        )['actions'][0];
+
+        $this->assertSame(['a' => 'b'], $action['params']['resultToLike']);
+        $this->assertArrayNotHasKey('resultToLike', $action);
+    }
+
     // ---------------------------------------------------------------------
     // 헬퍼
     // ---------------------------------------------------------------------
