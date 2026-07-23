@@ -1,0 +1,51 @@
+<partial description="템플릿 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_activate_modal">
+  <modal data-ref="template_activate_modal" title="$t:admin.templates.modals.activate_title" size="sm">
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.activate_confirm|name={{_global.selectedTemplate.name}}</p>
+      <p class="mt-2 text-label-subtle">$t:admin.templates.modals.activate_description</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isTemplateActivating}}">
+        <on type="click">
+          <close-modal/>
+          <remount componentId="template_card_grid"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateActivating}}">
+        <on type="click">
+          <set-state target="global" :isTemplateActivating="true"/>
+          <api-call :auth_required="true" target="/api/admin/templates/activate" method="POST">
+            <success>
+              <set-state target="global" :isTemplateActivating="false"/>
+              <close-modal/>
+              <toast type="success" message="$t:admin.templates.activate_success"/>
+              <refetch-data-source dataSourceId="templates"/>
+              <reload-extensions/>
+              <conditions>
+                <when if="{{_global.selectedTemplate.type === 'admin'}}">
+                  <refresh :delayMs="800"/>
+                </when>
+              </conditions>
+              <set-state target="global" :selectedTemplate="null"/>
+            </success>
+            <fail>
+              <set-state target="global" :isTemplateActivating="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <error-handling>
+              <on-code code="409">
+                <set-state target="global" :isTemplateActivating="false" activateWarningData="{{error.errors}}"/>
+                <close-modal/>
+                <open-modal target="template_force_activate_modal"/>
+              </on-code>
+            </error-handling>
+            <body template_name="{{_global.selectedTemplate.identifier}}"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isTemplateActivating}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isTemplateActivating ? '$t:admin.templates.activating' : '$t:admin.templates.actions.activate'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

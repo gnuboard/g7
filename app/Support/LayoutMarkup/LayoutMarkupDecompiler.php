@@ -670,6 +670,17 @@ final class LayoutMarkupDecompiler
                 continue;
             }
 
+            // 임의 이름의 구조값 키(`depends_on` 리스트·`errorCondition` 객체 등)는 `<field name>`
+            // 자식으로 (D42 G11) — 속성으로 내면 통짜 JSON 이 되어 D2 를 어긴다. 표현 불가한 값만
+            // 종전대로 속성 타입 리터럴로 남고 원시 JSON 대장에 계량된다.
+            $structured = $this->structuredChildren($value);
+
+            if ($structured !== null) {
+                $children[] = $this->el('field', [$this->attr('name', (string) $key)], $structured);
+
+                continue;
+            }
+
             $attributes[] = $this->valueAttr((string) $key, $value);
         }
 
@@ -708,7 +719,12 @@ final class LayoutMarkupDecompiler
         $children = [];
 
         foreach ($defines as $name => $value) {
-            $children[] = $this->el('define', [$this->attr('name', (string) $name)], [], $this->encode($value));
+            // 표현 가능한 구조값은 `<field>`/`<item>` 트리로 (D42 G12) — 태그 본문 JSON 도 계량 대상이다.
+            $structured = $this->structuredChildren($value);
+
+            $children[] = $structured !== null
+                ? $this->el('define', [$this->attr('name', (string) $name)], $structured)
+                : $this->el('define', [$this->attr('name', (string) $name)], [], $this->encode($value));
         }
 
         return $this->el('defines', [], $children);

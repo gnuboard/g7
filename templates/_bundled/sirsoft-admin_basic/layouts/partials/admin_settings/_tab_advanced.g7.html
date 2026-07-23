@@ -1,0 +1,195 @@
+<partial description="환경설정 고급 탭 콘텐츠">
+  <div data-ref="tab_content_advanced" data-if="{{(_global.activeSettingsTab || query.tab) === 'advanced'}}" class="card-stack">
+    <div data-ref="card_cache_settings" class="card-stack-item">
+      <h3 class="card-title">$t:admin.settings.advanced.cache</h3>
+      <div class="card-description">$t:admin.settings.advanced.cache_desc</div>
+      <div class="row-stack">
+        <div data-ref="toggle_cache_enabled" class="flex-between">
+          <div>
+            <div class="flex-center">
+              <span class="text-heading">$t:admin.settings.advanced.cache_enabled</span>
+              <span class="text-red-500 ml-1">*</span>
+            </div>
+            <p class="text-label-subtle">$t:admin.settings.advanced.cache_enabled_desc</p>
+            <span data-if="{{_local.errors?.['advanced.cache_enabled']}}" class="form-error">{{_local.errors?.['advanced.cache_enabled']?.[0] ?? ''}}</span>
+          </div>
+          <toggle name="advanced.cache_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div class="">
+          <p class="text-body font-medium mb-1">$t:admin.settings.advanced.cache_detail_settings</p>
+          <p class="text-hint mb-3">$t:admin.settings.advanced.cache_ttl_zero_hint</p>
+          <div class="row-stack">
+            <div data-ref="cache_layout" class="flex-between gap-4">
+              <responsive on="portable" class="row-stack py-2"/>
+              <div class="flex-center gap-3">
+                <toggle name="advanced.layout_cache_enabled" size="sm" disabled="{{_computed.isReadOnly}}"/>
+                <div>
+                  <div class="flex-center">
+                    <span class="text-heading">$t:admin.settings.advanced.layout_cache</span>
+                    <span class="text-red-500 ml-1">*</span>
+                  </div>
+                  <p class="text-tertiary">$t:admin.settings.advanced.layout_cache_desc</p>
+                  <span data-if="{{_local.errors?.['advanced.layout_cache_enabled']}}" class="form-error">{{_local.errors?.['advanced.layout_cache_enabled']?.[0] ?? ''}}</span>
+                </div>
+              </div>
+              <div>
+                <div class="flex-center gap-2">
+                  <div class="flex-center">
+                    <span class="text-label whitespace-nowrap">$t:admin.settings.advanced.cache_ttl</span>
+                    <span class="text-red-500 ml-1">*</span>
+                  </div>
+                  <input type="number" name="advanced.layout_cache_ttl" placeholder="3600" min="0" max="14400" disabled="{{_computed.isReadOnly}}" class="input input-w-xs {{_local.errors?.['advanced.layout_cache_ttl'] ? 'input-error' : ''}}"/>
+                </div>
+                <span data-if="{{_local.errors?.['advanced.layout_cache_ttl']}}" class="form-error">{{_local.errors?.['advanced.layout_cache_ttl']?.[0] ?? ''}}</span>
+              </div>
+            </div>
+            <div data-ref="cache_stats" class="flex-between gap-4">
+              <responsive on="portable" class="row-stack py-2"/>
+              <div class="flex-center gap-3">
+                <toggle name="advanced.stats_cache_enabled" size="sm" disabled="{{_computed.isReadOnly}}"/>
+                <div>
+                  <div class="flex-center">
+                    <span class="text-heading">$t:admin.settings.advanced.stats_cache</span>
+                    <span class="text-red-500 ml-1">*</span>
+                  </div>
+                  <p class="text-tertiary">$t:admin.settings.advanced.stats_cache_desc</p>
+                  <span data-if="{{_local.errors?.['advanced.stats_cache_enabled']}}" class="form-error">{{_local.errors?.['advanced.stats_cache_enabled']?.[0] ?? ''}}</span>
+                </div>
+              </div>
+              <div>
+                <div class="flex-center gap-2">
+                  <div class="flex-center">
+                    <span class="text-label whitespace-nowrap">$t:admin.settings.advanced.cache_ttl</span>
+                    <span class="text-red-500 ml-1">*</span>
+                  </div>
+                  <input type="number" name="advanced.stats_cache_ttl" placeholder="1800" min="0" max="14400" disabled="{{_computed.isReadOnly}}" class="input input-w-xs {{_local.errors?.['advanced.stats_cache_ttl'] ? 'input-error' : ''}}"/>
+                </div>
+                <span data-if="{{_local.errors?.['advanced.stats_cache_ttl']}}" class="form-error">{{_local.errors?.['advanced.stats_cache_ttl']?.[0] ?? ''}}</span>
+              </div>
+            </div>
+            <div data-ref="cache_seo" class="flex-between gap-4">
+              <responsive on="portable" class="row-stack py-2"/>
+              <div class="flex-center gap-3">
+                <toggle name="advanced.seo_cache_enabled" size="sm" disabled="{{_computed.isReadOnly}}"/>
+                <div>
+                  <div class="flex-center">
+                    <span class="text-heading">$t:admin.settings.advanced.seo_cache</span>
+                    <span class="text-red-500 ml-1">*</span>
+                  </div>
+                  <p class="text-tertiary">$t:admin.settings.advanced.seo_cache_desc</p>
+                  <span data-if="{{_local.errors?.['advanced.seo_cache_enabled']}}" class="form-error">{{_local.errors?.['advanced.seo_cache_enabled']?.[0] ?? ''}}</span>
+                </div>
+              </div>
+              <div>
+                <div class="flex-center gap-2">
+                  <div class="flex-center">
+                    <span class="text-label whitespace-nowrap">$t:admin.settings.advanced.cache_ttl</span>
+                    <span class="text-red-500 ml-1">*</span>
+                  </div>
+                  <input type="number" name="advanced.seo_cache_ttl" placeholder="7200" min="0" max="14400" disabled="{{_computed.isReadOnly}}" class="input input-w-xs {{_local.errors?.['advanced.seo_cache_ttl'] ? 'input-error' : ''}}"/>
+                </div>
+                <span data-if="{{_local.errors?.['advanced.seo_cache_ttl']}}" class="form-error">{{_local.errors?.['advanced.seo_cache_ttl']?.[0] ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button disabled="{{_computed.isReadOnly}}" class="px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <open-modal target="settings_cache_delete_modal"/>
+          </on>
+          <span>$t:admin.settings.advanced.clear_all_cache</span>
+        </button>
+      </div>
+    </div>
+    <div data-ref="card_debug_settings" class="card-stack-item">
+      <h3 class="card-title">$t:admin.settings.advanced.debug</h3>
+      <div class="card-description">$t:admin.settings.advanced.debug_desc</div>
+      <div class="row-stack">
+        <div data-ref="toggle_debug_mode" class="flex-between">
+          <div>
+            <div class="flex-center">
+              <span class="text-heading">$t:admin.settings.advanced.debug_mode</span>
+              <span class="text-red-500 ml-1">*</span>
+            </div>
+            <p class="text-label-subtle">$t:admin.settings.advanced.debug_mode_desc</p>
+            <span data-if="{{_local.errors?.['advanced.debug_mode']}}" class="form-error">{{_local.errors?.['advanced.debug_mode']?.[0] ?? ''}}</span>
+          </div>
+          <div class="flex-center gap-3">
+            <a data-ref="btn_dev_dashboard" data-if="{{_local.form?.advanced?.debug_mode}}" href="/dev" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-700 transition-colors whitespace-nowrap no-underline">$t:admin.settings.advanced.dev_dashboard</a>
+            <toggle name="advanced.debug_mode" size="md" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="toggle_sql_query_log" class="flex-between">
+          <div>
+            <div class="flex-center">
+              <span class="text-heading">$t:admin.settings.advanced.sql_query_log</span>
+              <span class="text-red-500 ml-1">*</span>
+            </div>
+            <p class="text-label-subtle">$t:admin.settings.advanced.sql_query_log_desc</p>
+            <span data-if="{{_local.errors?.['advanced.sql_query_log']}}" class="form-error">{{_local.errors?.['advanced.sql_query_log']?.[0] ?? ''}}</span>
+          </div>
+          <toggle name="advanced.sql_query_log" size="md" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_core_update_settings" class="card-stack-item">
+      <h3 class="card-title">$t:admin.settings.advanced.core_update</h3>
+      <div class="card-description">$t:admin.settings.advanced.core_update_desc</div>
+      <div class="row-stack">
+        <div data-ref="input_core_update_github_url">
+          <div class="flex-center">
+            <span class="text-heading">$t:admin.settings.advanced.core_update_github_url</span>
+          </div>
+          <p class="text-label-subtle">$t:admin.settings.advanced.core_update_github_url_desc</p>
+          <input type="url" name="advanced.core_update_github_url" placeholder="https://github.com/owner/repo" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['advanced.core_update_github_url'] ? 'input-error' : ''}}"/>
+          <span data-if="{{_local.errors?.['advanced.core_update_github_url']}}" class="form-error">{{_local.errors?.['advanced.core_update_github_url']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="input_core_update_github_token">
+          <div class="flex-center">
+            <span class="text-heading">$t:admin.settings.advanced.core_update_github_token</span>
+          </div>
+          <p class="text-label-subtle">$t:admin.settings.advanced.core_update_github_token_desc</p>
+          <input type="password" name="advanced.core_update_github_token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autoComplete="off" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['advanced.core_update_github_token'] ? 'input-error' : ''}}"/>
+          <span data-if="{{_local.errors?.['advanced.core_update_github_token']}}" class="form-error">{{_local.errors?.['advanced.core_update_github_token']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_geoip_settings" class="card-stack-item">
+      <h3 class="card-title">$t:admin.settings.advanced.geoip_section</h3>
+      <div class="card-description">$t:admin.settings.advanced.geoip_section_desc</div>
+      <div class="row-stack">
+        <div data-ref="toggle_geoip_enabled" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.advanced.geoip_enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.advanced.geoip_enabled_desc</p>
+          </div>
+          <toggle name="advanced.geoip_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="geoip_settings_detail" data-if="{{_local.form?.advanced?.geoip_enabled}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+          <div data-ref="input_geoip_license_key" class="row-stack">
+            <div class="flex-center">
+              <span class="text-heading">$t:admin.settings.advanced.geoip_license_key</span>
+            </div>
+            <p class="text-label-subtle">$t:admin.settings.advanced.geoip_license_key_desc</p>
+            <input type="password" name="advanced.geoip_license_key" placeholder="xxxxxxxxxxxxxxxx" autoComplete="off" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['advanced.geoip_license_key'] ? 'input-error' : ''}}"/>
+            <span data-if="{{_local.errors?.['advanced.geoip_license_key']}}" class="form-error">{{_local.errors?.['advanced.geoip_license_key']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="toggle_geoip_auto_update" class="flex-between py-2">
+            <div>
+              <span class="text-heading">$t:admin.settings.advanced.geoip_auto_update_enabled</span>
+              <p class="text-label-subtle">$t:admin.settings.advanced.geoip_auto_update_enabled_desc</p>
+            </div>
+            <toggle name="advanced.geoip_auto_update_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+          <div data-ref="geoip_last_updated_block" class="row-stack">
+            <span class="text-heading block">$t:admin.settings.advanced.geoip_last_updated_at</span>
+            <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-2 md:space-y-0">
+              <input type="text" :disabled="true" value="{{_local.form?.advanced?.geoip_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+              <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"><on type="click"><set-state target="local" :geoipUpdating="true" :errors="[]"><success><api-call :auth_required="true" target="/api/admin/settings/geoip/update" method="POST"><success><set-state target="local" :geoipUpdating="false"><field name="form"><field name="advanced"><field name="geoip_last_updated_at" value="{{response.data?.last_updated_at ?? ''}}"/></field></field></set-state></success><fail><set-state target="local" :geoipUpdating="false"><field name="errors"><field name="advanced.geoip_license_key"><item>{{error.message ?? $t('admin.settings.advanced.geoip_update_failed')}}</item></field></field></set-state></fail></api-call></success></set-state></on>{{_local.geoipUpdating === true ? $t('admin.settings.advanced.geoip_updating') : $t('admin.settings.advanced.geoip_manual_update')}}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

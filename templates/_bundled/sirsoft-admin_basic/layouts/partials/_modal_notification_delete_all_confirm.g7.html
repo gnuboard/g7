@@ -1,0 +1,28 @@
+<partial description="알림 전체 삭제 확인 모달" editor_label="$t:admin.modal_label.notification_delete_all_confirm_modal">
+  <modal data-ref="notification_delete_all_confirm_modal" title="$t:admin.notifications_delete_all_title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.notifications_delete_all_confirm</p>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isDeletingAllNotifications}}" type="button"><on type="click"><close-modal target="notification_delete_all_confirm_modal"/></on>$t:common.cancel</button>
+      <button class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingAllNotifications}}" type="button">
+        <on type="click">
+          <set-state target="global" :isDeletingAllNotifications="true"/>
+          <api-call :auth_required="true" target="/api/admin/notifications/all" method="DELETE">
+            <success>
+              <set-state target="global" :isDeletingAllNotifications="false" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+              <toast type="success" message="$t:admin.notifications_delete_all_success"/>
+              <refetch-data-source dataSourceId="notifications"/>
+              <refetch-data-source dataSourceId="notification_unread_count"/>
+              <close-modal target="notification_delete_all_confirm_modal"/>
+            </success>
+            <fail>
+              <set-state target="global" :isDeletingAllNotifications="false"/>
+              <toast type="error" message="{{error.message ?? $t:admin.notifications_delete_all_failed}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isDeletingAllNotifications}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isDeletingAllNotifications ? $t:common.deleting : $t:common.delete}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

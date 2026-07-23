@@ -1,5 +1,6 @@
 {
   "meta": {
+    "is_partial": true,
     "editor_label": "$t:admin.modal_label.admin_template_layout_edit.version_history_modal"
   },
   "layout_name": "modal_version_history",
@@ -166,7 +167,7 @@
                       "if": "{{!_global.isRestoring}}",
                       "props": {
                         "name": "refresh",
-                        "className": "w-4 h-4"
+                        "className": "text-base"
                       }
                     },
                     {
@@ -251,7 +252,7 @@
               "name": "Icon",
               "props": {
                 "name": "info-circle",
-                "className": "w-4 h-4 text-blue-600 dark:text-blue-400"
+                "className": "text-base text-blue-600 dark:text-blue-400"
               }
             },
             {

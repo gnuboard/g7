@@ -1,0 +1,36 @@
+<partial description="IDV 메시지 정의 삭제 확인 모달 — 운영자 추가 정의(scope_type=policy)만 표시" editor_label="$t:admin.modal_label.admin_settings.modal_identity_message_definition_delete">
+  <modal data-ref="modal_identity_message_definition_delete" title="$t:admin.settings.identity.messages.delete_modal.title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.identity.messages.delete_modal.confirm_message</p>
+    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <span class="form-sub-label">$t:admin.settings.identity.messages.delete_modal.target_label</span>
+      <span class="text-primary font-medium">{{_global.deleteIdentityMessageTargetName ?? ''}}</span>
+    </div>
+    <div class="alert-danger">
+      <p class="text-error-soft">$t:admin.settings.identity.messages.delete_modal.warning_message</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isDeletingIdentityMessage}}"><on type="click"><close-modal target="modal_identity_message_definition_delete"/></on>$t:common.cancel</button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingIdentityMessage}}">
+        <on type="click">
+          <sequence>
+            <set-state target="global" :isDeletingIdentityMessage="true"/>
+            <api-call :auth_required="true" target="/api/admin/identity/messages/definitions/{{_global.deleteIdentityMessageTargetId}}" method="DELETE">
+              <success>
+                <set-state target="global" :isDeletingIdentityMessage="false" :deleteIdentityMessageTargetId="null" deleteIdentityMessageTargetName=""/>
+                <refetch-data-source dataSourceId="identityMessages"/>
+                <toast type="success" message="$t:admin.settings.identity.messages.delete_modal.delete_success"/>
+                <close-modal target="modal_identity_message_definition_delete"/>
+              </success>
+              <fail>
+                <set-state target="global" :isDeletingIdentityMessage="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.settings.identity.messages.delete_modal.delete_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isDeletingIdentityMessage}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isDeletingIdentityMessage ? '$t:admin.settings.identity.messages.delete_modal.btn_confirming' : '$t:admin.settings.identity.messages.delete_modal.btn_confirm'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

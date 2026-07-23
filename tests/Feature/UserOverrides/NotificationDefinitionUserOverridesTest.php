@@ -39,7 +39,10 @@ class NotificationDefinitionUserOverridesTest extends TestCase
         $definition->name = ['ko' => '커스텀 회원가입 환영', 'en' => 'Custom Welcome'];
         $definition->save();
 
-        $this->assertEquals(['name'], $definition->fresh()->user_overrides);
+        // `name` 은 다국어 JSON 컬럼이라 **sub-key dot-path 단위**로 기록된다
+        // (`NotificationDefinition::$translatableTrackableFields`). #263 이 이 인프라를 넣으면서
+        // 기록 단위가 `name` → `name.{locale}` 로 바뀌었는데, 이 단언은 #256 시점 그대로였다.
+        $this->assertEqualsCanonicalizing(['name.ko', 'name.en'], $definition->fresh()->user_overrides);
     }
 
     public function test_seeder_re_run_preserves_user_modified_name(): void
@@ -54,7 +57,7 @@ class NotificationDefinitionUserOverridesTest extends TestCase
 
         $fresh = $definition->fresh();
         $this->assertEquals(['ko' => '커스텀 회원가입 환영', 'en' => 'Custom Welcome'], $fresh->name);
-        $this->assertEquals(['name'], $fresh->user_overrides);
+        $this->assertEqualsCanonicalizing(['name.ko', 'name.en'], $fresh->user_overrides);
     }
 
     public function test_seeder_re_run_updates_non_trackable_fields(): void

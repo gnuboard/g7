@@ -19,12 +19,18 @@ use Illuminate\Support\Facades\File;
 class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
 {
     /**
-     * 왕복 코퍼스 모집단의 **하한** — 본 레이아웃 + fragment 전량 (㉓ 실측 639).
+     * 왕복 코퍼스 모집단의 **하한** — 본 레이아웃 + fragment 전량.
      *
      * 스캔 글롭이 좁아지면 게이트가 조용히 작아진 모집단 위에서 green 을 내므로(㉓ 이 겪은
      * "fragment 42건이 계량 밖" 사고) 하한으로 못박는다. 레이아웃 추가는 정상이라 상한은 없다.
+     *
+     * 639(㉓ 실측) → **637** — S16 W3 에서 **도달 경로가 0인 사문 레이아웃 2건을 삭제**했다
+     * (`overrides/sirsoft-sample/index.json` 대상 모듈 부재 · `admin_language_packs_install_modal.json`
+     * 라우트·참조 0 + `extends` 없는 slots 라 렌더 결과 자체가 없음). 둘 다 PO 승인 삭제다 —
+     * 하한을 내릴 때는 **왜 줄었는지**를 여기 남겨야 한다. 그러지 않으면 다음 사람이 이 숫자를
+     * 스캔이 좁아진 신호와 구별할 수 없다.
      */
-    private const CORPUS_MINIMUM = 639;
+    private const CORPUS_MINIMUM = 637;
 
     /**
      * @scenario compile_unit=decompile,source_health=valid
@@ -87,6 +93,12 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * 디렉토리 스캔만으로 게이트를 걸면 이관 파일이 사라져도 green 이 된다 — 회귀 감지력이 없다.
      * 그래서 W1 산출 16건(15 clean + S7 데모)을 목록으로 못박고, 스캔 결과가 이 목록과 정확히
      * 일치하는지까지 단언한다. 이후 웨이브는 이 목록을 확장한다.
+     *
+     * **W3(sirsoft-admin_basic) 은 전량 이관됐다 (143/143)** — 착수 시 제외했던 16파일은 S16 결함
+     * (F7·F8·F12·F13·F14·F15)을 수정한 뒤 합류시켰고, 사문 2건은 PO 승인대로 삭제했다
+     * (145 → 143 — 대상 모듈이 없는 `overrides/sirsoft-sample` 과 참조처 없는
+     * `admin_language_packs_install_modal`). 각 결함의 회귀는
+     * `templates/_bundled/sirsoft-admin_basic/__tests__/layouts/s16-defect-fixes.test.tsx` 가 봉인한다.
      *
      * @var array<int, string>
      */
@@ -156,6 +168,150 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-verification_kginicis/resources/extensions/identity_provider_inicis.g7.html',
         'plugins/_bundled/sirsoft-verification_kginicis/resources/extensions/mypage_identity_card.g7.html',
         'plugins/_bundled/sirsoft-verification_kginicis/resources/layouts/admin/plugin_settings.g7.html',
+        // W3 — sirsoft-admin_basic (143) — 전량 이관 (S16 결함 16건 수정 후 잔여 15 합류)
+        'templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_activity_log_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_dashboard.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_forgot_password.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_identity_logs.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_language_pack_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_language_packs.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_login.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_menu_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_module_language_packs.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_module_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_notification_log_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_plugin_language_packs.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_plugin_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_reset_password.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_role_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_role_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_schedule_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_settings.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_template_language_packs.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_template_layout_edit.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_template_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_user_detail.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_user_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/admin_user_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/auth/identity_challenge.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/errors/401.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/errors/403.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/errors/404.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/errors/500.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/errors/503.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/errors/maintenance.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/_identity_challenge_modal.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_changelog.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_license.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_notification_delete_all_confirm.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_datagrid.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_filter.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_extension_language_packs/_content.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_identity_logs/_modal_log_detail.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_identity_logs/_modal_purge_confirm.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_identity_logs/_partial_datagrid.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_identity_logs/_partial_filter.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_content.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_drawer_manifest_preview.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_modal_detail.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_modal_install.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_modal_install_bundled.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_modal_refresh_cache.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_modal_slot_conflict.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_modal_uninstall.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_modal_update.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_modal_delete.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_detail.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_menu_list.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_view.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_drawer_manifest_preview.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_deactivate_warning.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_detail.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_extension_license.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_force_activate.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_force_deactivate.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_install.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_manual_install.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_reactivate_language_packs.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_refresh_layouts.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_uninstall.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_update.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_notification_log_list/_modal_log_detail.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_notification_log_list/_partial_datagrid.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_notification_log_list/_partial_filter.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_drawer_manifest_preview.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_detail.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_extension_license.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_force_activate.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_force_deactivate.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_install.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_manual_install.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_reactivate_language_packs.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_refresh_layouts.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_uninstall.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_update.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_role_list/_modal_delete.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_delete.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_duplicate.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_history.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_run.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_tab_schedules.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_cache_delete.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_core_changelog.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_core_update_guide.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_core_update_result.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_definition_add.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_definition_delete.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_definition_reset.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_template_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_template_preview.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_policy_delete.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_policy_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_mail_template_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_notification_definition_reset.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_notification_template_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_notification_template_preview.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_password_confirm.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_advanced.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_drivers.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_general.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_basic.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_messages.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_policies.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_providers.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_info.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_language_packs.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_mail.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_mail_templates.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_notification_definitions.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_seo.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_upload.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_layout_edit/_modal_extension_preview_layout.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_layout_edit/_modal_extension_version_history.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_layout_edit/_modal_version_history.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_drawer_manifest_preview.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_activate.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_deactivate.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_detail.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_extension_license.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_force_activate.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_install.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_manual_install.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_reactivate_language_packs.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_refresh_layouts.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_uninstall.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_modal_update.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_tab_admin.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_template_list/_tab_user.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/template_partial_test/_content_section.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/template_partial_test/_info_card.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/template_partial_test.g7.html',
     ];
 
     /**

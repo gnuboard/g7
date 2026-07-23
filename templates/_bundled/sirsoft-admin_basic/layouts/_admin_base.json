@@ -392,9 +392,6 @@
                                     "if": "{{(admin_menu.data ?? []).length > 0}}",
                                     "props": {
                                         "menu": "{{admin_menu.data}}"
-                                    },
-                                    "data_binding": {
-                                        "menu": "admin_menu.data"
                                     }
                                 },
                                 {
@@ -889,9 +886,6 @@
                                                         "dropdownOnly": true,
                                                         "showChevron": false,
                                                         "dropdownDirection": "down"
-                                                    },
-                                                    "data_binding": {
-                                                        "user": "current_user.data"
                                                     }
                                                 }
                                             ]

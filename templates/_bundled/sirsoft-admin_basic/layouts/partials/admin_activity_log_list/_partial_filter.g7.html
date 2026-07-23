@@ -1,0 +1,125 @@
+<partial description="Activity Log List Filter Section">
+  <div data-ref="filter_section" class="admin-card">
+    <div data-ref="search_row" class="mb-4">
+      <div class="flex-center gap-2">
+        <select name="searchType" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500" value="{{_local.filter.searchType || 'all'}}">
+          <options>
+            <option value="all">$t:admin.activity_log.filter.search_type_all</option>
+            <option value="action">$t:admin.activity_log.filter.search_type_action</option>
+            <option value="description">$t:admin.activity_log.filter.search_type_description</option>
+            <option value="ip_address">$t:admin.activity_log.filter.search_type_ip_address</option>
+          </options>
+          <on type="change">
+            <set-state target="local" filter.searchType="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <input name="search" type="text" placeholder="$t:admin.activity_log.filter.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+            <on type="change">
+              <set-state target="local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keydown" key="Enter">
+              <action-ref name="searchActivityLogs"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_grid" class="filter-grid">
+      <div data-ref="log_type_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.activity_log.filter.log_type_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.logTypes || _local.filter.logTypes.length === 0}}">
+              <on type="change">
+                <set-state target="local" filter.logTypes="{{[]}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.log_type_all</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.logTypes || []).includes('admin')}}">
+              <on type="change">
+                <set-state target="local" filter.logTypes="{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'admin'), 'admin'] : (_local.filter.logTypes || []).filter(t => t !== 'admin')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.log_type_admin</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.logTypes || []).includes('user')}}">
+              <on type="change">
+                <set-state target="local" filter.logTypes="{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'user'), 'user'] : (_local.filter.logTypes || []).filter(t => t !== 'user')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.log_type_user</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.logTypes || []).includes('system')}}">
+              <on type="change">
+                <set-state target="local" filter.logTypes="{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'system'), 'system'] : (_local.filter.logTypes || []).filter(t => t !== 'system')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.log_type_system</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="actor_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.activity_log.filter.actor_label</span>
+        <div class="flex-center gap-2">
+          <searchable-dropdown options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
+            <on event="onSearch">
+              <api-call :debounce="300" :auth_required="true" target="/api/admin/users/search" method="GET">
+                <success>
+                  <set-state target="local" actorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                </success>
+                <fail>
+                  <set-state target="local" :actorSearchResults="[]"/>
+                </fail>
+                <query keyword="{{$args[0]}}"/>
+              </api-call>
+            </on>
+            <on type="change" event="onChange">
+              <set-state target="local" filter.createdBy="{{$args[0]}}"/>
+            </on>
+          </searchable-dropdown>
+          <button data-if="{{!!_local.filter.createdBy}}" type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <on type="click">
+              <set-state target="local" filter.createdBy="" :actorSearchResults="[]"/>
+            </on>
+            <icon name="xmark" class="w-4 h-4"/>
+          </button>
+        </div>
+      </div>
+      <div data-ref="date_range_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.activity_log.filter.date_range_label</span>
+        <div class="flex-center gap-2 flex-wrap">
+          <input name="dateFrom" type="datetime-local" step="1" class="input w-56" value="{{_local.filter.dateFrom || ''}}">
+            <on type="change">
+              <set-state target="local" filter.dateFrom="{{$event.target.value}}" filter.dateQuick=""/>
+            </on>
+          </input>
+          <span class="text-gray-400">~</span>
+          <input name="dateTo" type="datetime-local" step="1" class="input w-56" value="{{_local.filter.dateTo || ''}}">
+            <on type="change">
+              <set-state target="local" filter.dateTo="{{$event.target.value}}" filter.dateQuick=""/>
+            </on>
+          </input>
+          <div class="flex-center gap-1">
+            <button type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><sequence><action handler="setDateRange" preset="today"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/></sequence></on>$t:admin.activity_log.filter.date_quick.today</button>
+            <button type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><sequence><action handler="setDateRange" preset="week"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/></sequence></on>$t:admin.activity_log.filter.date_quick.week</button>
+            <button type="button" class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><sequence><action handler="setDateRange" preset="month"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/></sequence></on>$t:admin.activity_log.filter.date_quick.month</button>
+            <button type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><sequence><action handler="setDateRange" preset="3months"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/></sequence></on>$t:admin.activity_log.filter.date_quick.three_months</button>
+            <button type="button" class="{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><sequence><action handler="setDateRange" preset="6months"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/></sequence></on>$t:admin.activity_log.filter.date_quick.six_months</button>
+            <button type="button" class="{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><sequence><action handler="setDateRange" preset="1year"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.dateFrom="{{$prev.startDate}}" filter.dateTo="{{$prev.endDate}}"/></sequence></on>$t:admin.activity_log.filter.date_quick.one_year</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
+      <responsive on="portable" class="flex gap-3 mt-6"/>
+      <button type="button" class="btn btn-primary px-6"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchActivityLogs"/></on>$t:admin.activity_log.filter.search_button</button>
+      <button type="button" class="btn btn-secondary px-6"><responsive on="portable" class="btn btn-secondary flex-1"/><on type="click"><set-state target="local" :actorSearchResults="[]"><field name="filter"><field name="searchType" value="all"/><field name="search" value=""/><field name="logTypes" :value="[]"/><field name="createdBy" value=""/><field name="dateQuick" value=""/><field name="dateFrom" value=""/><field name="dateTo" value=""/></field></set-state><navigate path="/admin/activity-logs"/></on>$t:admin.activity_log.filter.reset_button</button>
+    </div>
+  </div>
+</partial>

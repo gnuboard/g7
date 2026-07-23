@@ -1,5 +1,8 @@
 {
   "layout_name": "panel_menu_list",
+  "meta": {
+    "is_partial": true
+  },
   "id": "menu_list_panel",
   "type": "basic",
   "name": "Div",
@@ -43,7 +46,6 @@
       "lifecycle": {
         "onMount": [
           {
-            "type": "click",
             "handler": "initMenuFromUrl"
           }
         ]

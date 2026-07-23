@@ -1,0 +1,148 @@
+<partial description="모듈 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_update_modal">
+  <modal data-ref="module_update_modal" title="$t:admin.modules.modals.update_title" size="medium">
+    <div data-if="{{_global.selectedModule?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
+      <div class="flex-start gap-2">
+        <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-warning-soft">$t:extensions.update_modal.compat_warning_title</p>
+          <p class="text-warning-soft mt-1">$t:defer:extensions.update_modal.compat_warning_message|type=$t:extensions.types.module|required={{_global.selectedModule?.required_core_version ?? _global.selectedModule?.incompatible_required_version ?? ''}}|installed={{_global.selectedModule?.current_core_version ?? ''}}</p>
+          <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer mt-2">
+            <on type="click">
+              <open-modal target="core_update_guide_modal"/>
+            </on>
+            <icon name="external-link" size="xs"/>
+            <span>$t:extensions.update_modal.compat_guide_link</span>
+          </button>
+          <label class="flex-center gap-2 mt-3 text-warning-soft cursor-pointer select-none">
+            <input type="checkbox" checked="{{_global.moduleForceUpdate === true}}" class="w-4 h-4 rounded border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400">
+              <on type="change">
+                <set-state target="global" moduleForceUpdate="{{!_global.moduleForceUpdate}}"/>
+              </on>
+            </input>
+            <span>$t:extensions.update_modal.force_label</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div data-if="{{_global.moduleUpdateError}}" class="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+      <div class="flex-start gap-2">
+        <icon name="exclamation-circle" class="text-red-500 dark:text-red-400 mt-0.5 shrink-0"/>
+        <div class="text-error-soft break-all">{{_global.moduleUpdateError}}</div>
+      </div>
+    </div>
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.modules.modals.update_confirm|name={{_global.selectedModule.name ?? ''}}</p>
+      <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2">
+        <div class="flex-center gap-2 text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:admin.modules.modals.field_version</span>
+          <span class="text-primary font-medium">$t:admin.modules.modals.update_version_info|from={{_global.selectedModule.version ?? ''}}|to={{_global.selectedModule.latest_version ?? ''}}</span>
+        </div>
+        <div class="flex-center gap-2 text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:admin.modules.modals.field_vendor</span>
+          <span class="text-gray-700 dark:text-gray-300">{{_global.selectedModule.vendor ?? ''}}</span>
+        </div>
+        <div class="flex-center gap-2 text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:admin.modules.modals.field_update_source</span>
+          <span class="text-gray-700 dark:text-gray-300">{{_global.selectedModule.update_source === 'github' ? '$t:admin.modules.modals.update_source_github' : (_global.selectedModule.update_source === 'pending' ? '$t:admin.modules.modals.update_source_pending' : '$t:admin.modules.modals.update_source_bundled')}}</span>
+        </div>
+      </div>
+      <div data-if="{{_global.updateChangelog &amp;&amp; _global.updateChangelog.length > 0}}" class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+        <div class="text-sm font-medium text-info-soft mb-2">$t:admin.modules.modals.update_changelog_title</div>
+        <div class="max-h-48 overflow-y-auto">
+          <div data-each="entry, entryIdx in _global.updateChangelog" class="pb-3 mb-3 border-b border-blue-200 dark:border-blue-700 last:border-b-0 last:mb-0 last:pb-0">
+            <div class="flex-center gap-2 mb-1.5">
+              <span class="text-info-soft inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-blue-100 dark:bg-blue-800">v{{entry.version}}</span>
+              <span data-if="{{entry.date}}" class="text-hint">{{entry.date}}</span>
+            </div>
+            <div data-each="category, catIdx in entry.categories" class="row-stack">
+              <div>
+                <span class="text-secondary text-xs font-medium">{{category.name}}</span>
+                <div data-each="changeItem, itemIdx in category.items" class="ml-3 space-y-0.5">
+                  <div class="text-secondary text-xs">• {{changeItem}}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{_global.selectedModule.github_changelog_url}}" class="mt-3">
+        <a href="{{_global.selectedModule.github_changelog_url}}" target="_blank" class="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <icon name="external-link" size="sm"/>
+          <span>$t:admin.modules.modals.view_changelog</span>
+        </a>
+      </div>
+      <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:admin.modules.modals.layout_strategy_title</div>
+        <div data-if="{{_global.hasModifiedModuleLayouts}}" class="mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400">$t:admin.modules.modals.modified_layouts_warning|count={{_global.modifiedModuleLayoutsCount ?? 0}}</div>
+        <div data-if="{{!_global.hasModifiedModuleLayouts}}" class="mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400">$t:admin.modules.modals.no_modified_layouts</div>
+        <div class="row-stack">
+          <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <input type="radio" name="module_layout_strategy" value="overwrite" checked="{{(_global.moduleLayoutStrategy ?? 'overwrite') === 'overwrite'}}" class="radio mt-0.5">
+              <on type="change">
+                <set-state target="global" moduleLayoutStrategy="overwrite"/>
+              </on>
+            </input>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.modules.modals.layout_strategy_overwrite</span>
+              <p class="text-tertiary">$t:admin.modules.modals.layout_strategy_overwrite_desc</p>
+            </div>
+          </label>
+          <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <input type="radio" name="module_layout_strategy" value="keep" checked="{{(_global.moduleLayoutStrategy ?? 'overwrite') === 'keep'}}" class="radio mt-0.5">
+              <on type="change">
+                <set-state target="global" moduleLayoutStrategy="keep"/>
+              </on>
+            </input>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.modules.modals.layout_strategy_keep</span>
+              <p class="text-tertiary">$t:admin.modules.modals.layout_strategy_keep_desc</p>
+            </div>
+          </label>
+          <div data-if="{{(_global.moduleLayoutStrategy ?? 'overwrite') === 'keep' &amp;&amp; _global.modifiedModuleLayouts &amp;&amp; _global.modifiedModuleLayouts.length > 0}}" class="ml-6 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+            <div class="text-xs font-medium text-warning-soft mb-2">$t:admin.modules.modals.modified_layouts_list_title|count={{_global.modifiedModuleLayouts?.length ?? 0}}</div>
+            <div class="space-y-1 max-h-40 overflow-y-auto">
+              <div data-each="modLayout in _global.modifiedModuleLayouts" class="flex-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded">
+                <icon name="file-alt" class="text-amber-500 dark:text-amber-400 shrink-0"/>
+                <span class="font-mono flex-1 text-gray-700 dark:text-gray-300">{{modLayout.name}}</span>
+                <span class="text-gray-400 dark:text-gray-500 shrink-0">{{modLayout.updated_at}}</span>
+              </div>
+            </div>
+            <div class="flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1">
+              <icon name="info-circle" size="xs"/>
+              <span>$t:admin.modules.modals.modified_layouts_keep_notice</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isModuleUpdating}}" type="button">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleUpdating || (_global.selectedModule?.is_compatible === false &amp;&amp; _global.moduleForceUpdate !== true)}}" type="button">
+        <on type="click">
+          <set-state target="global" :isModuleUpdating="true" :moduleUpdateError="null"/>
+          <api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/update" method="POST">
+            <success>
+              <set-state target="global" :isModuleUpdating="false"/>
+              <set-state target="global" :selectedModule="null" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]"/>
+              <toast type="success" message="$t:admin.modules.update_success"/>
+              <refetch-data-source dataSourceId="modules"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isModuleUpdating="false" moduleUpdateError="{{error.message}}"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body layout_strategy="{{_global.moduleLayoutStrategy ?? 'overwrite'}}" force="{{_global.moduleForceUpdate === true}}"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isModuleUpdating}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isModuleUpdating ? '$t:admin.modules.updating' : '$t:admin.modules.actions.update'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

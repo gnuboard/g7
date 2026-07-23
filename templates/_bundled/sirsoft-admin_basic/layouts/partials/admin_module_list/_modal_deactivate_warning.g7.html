@@ -1,0 +1,48 @@
+<partial description="모듈 비활성화 경고 모달" editor_label="$t:admin.modal_label.admin_module_list.module_deactivate_warning_modal">
+  <modal data-ref="module_deactivate_warning_modal" title="$t:admin.modules.modals.deactivate_warning_title" size="sm">
+    <div>
+      <div class="flex-start gap-3">
+        <div class="flex-center flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full justify-center">
+          <icon name="exclamation-triangle" class="w-5 h-5 text-amber-600 dark:text-amber-400"/>
+        </div>
+        <div class="flex-1">
+          <p class="text-gray-700 dark:text-gray-300">$t:admin.modules.modals.deactivate_warning_message</p>
+        </div>
+      </div>
+      <div data-if="{{_global.affectedTemplates &amp;&amp; _global.affectedTemplates.length > 0}}" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+        <p class="text-body font-medium mb-2">$t:admin.modules.modals.affected_templates</p>
+        <div>
+          <div data-each="template in _global.affectedTemplates" class="flex-center gap-2 text-label">
+            <icon name="palette" class="w-4 h-4"/>
+            <span>{{template.name}}</span>
+            <span data-if="{{template.type}}" class="text-xs text-gray-500 dark:text-gray-500">({{template.type === 'admin' ? '$t:admin.templates.tabs.admin' : '$t:admin.templates.tabs.user'}})</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">
+        <on type="click">
+          <close-modal/>
+          <api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/deactivate" method="POST">
+            <success>
+              <toast type="success" message="$t:admin.modules.deactivate_success"/>
+              <refetch-data-source dataSourceId="modules"/>
+            </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body :force="true"/>
+          </api-call>
+        </on>
+        <span>$t:admin.modules.modals.confirm_deactivate</span>
+      </button>
+    </div>
+  </modal>
+</partial>

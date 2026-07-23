@@ -1,0 +1,92 @@
+<layout name="admin_menu_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.menus.page_title" description="$t:admin.menus.page_description"/>
+  <data-source id="menus" label_key="$t:editor.data_source.menus" type="api" endpoint="/api/admin/menus" method="GET" :auto_fetch="true" auth_mode="required">
+    <params :with_children="true" :hierarchical="true"/>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="modules" label_key="$t:editor.data_source.modules" type="api" endpoint="/api/admin/modules" method="GET" :auto_fetch="true" auth_mode="required">
+    <params>
+      <field name="status" value="active"/>
+      <field name="with">
+        <item>custom_menus</item>
+      </field>
+    </params>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="roles" label_key="$t:editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" :auto_fetch="true" auth_mode="required">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="selectedMenuId" :value="null"/>
+    <field name="selectedMenu" :value="null"/>
+    <field name="panelMode" value="view"/>
+    <field name="formData">
+      <field name="name">
+        <field name="ko" value=""/>
+        <field name="en" value=""/>
+      </field>
+      <field name="slug" value=""/>
+      <field name="url" value=""/>
+      <field name="icon" value="fas fa-home"/>
+      <field name="parent_id" :value="null"/>
+      <field name="extension_type" :value="null"/>
+      <field name="extension_identifier" :value="null"/>
+      <field name="custom_menu_key" :value="null"/>
+      <field name="is_active" :value="true"/>
+      <field name="roles" :value="[]"/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>core.menus.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>menus</wait-for>
+    <wait-for>modules</wait-for>
+    <wait-for>roles</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="menu_list_content" class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:admin.menus.title" description="$t:admin.menus.description">
+        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+          <on type="click">
+            <refetch-data-source dataSourceId="menus"/>
+          </on>
+        </icon-button>
+        <button data-ref="add_menu_button" disabled="{{menus?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <set-state target="global" :selectedMenuId="null" :selectedMenu="null" panelMode="create">
+              <field name="formData">
+                <field name="name">
+                  <field name="ko" value=""/>
+                  <field name="en" value=""/>
+                </field>
+                <field name="slug" value=""/>
+                <field name="url" value=""/>
+                <field name="icon" value="fas fa-home"/>
+                <field name="parent_id" :value="null"/>
+                <field name="extension_type" :value="null"/>
+                <field name="extension_identifier" :value="null"/>
+                <field name="custom_menu_key" :value="null"/>
+                <field name="is_active" :value="true"/>
+                <field name="roles" :value="[]"/>
+              </field>
+            </set-state>
+          </on>
+          <icon name="plus" size="md"/>
+          <span>$t:admin.menus.add_menu</span>
+        </button>
+      </page-header>
+      <div data-ref="main_grid" :data-blur-until-loaded="true" class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <include src="partials/admin_menu_list/_panel_menu_list.json"/>
+        <include src="partials/admin_menu_list/_panel_detail.json"/>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_menu_list/_modal_delete.json"/>
+</layout>

@@ -1,0 +1,41 @@
+<partial description="모듈 레이아웃 갱신 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_refresh_layouts_modal">
+  <modal data-ref="module_refresh_layouts_modal" title="$t:admin.modules.modals.refresh_layouts_title" size="sm">
+    <div class="py-2">
+      <div class="alert-warning">
+        <icon name="exclamation-triangle" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <p class="text-warning-soft">$t:admin.modules.modals.refresh_layouts_warning</p>
+      </div>
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.modules.modals.refresh_layouts_confirm|name={{_global.selectedModule.name}}</p>
+      <p class="mt-2 text-label-subtle">$t:admin.modules.modals.refresh_layouts_description</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isModuleRefreshingLayouts}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleRefreshingLayouts}}">
+        <on type="click">
+          <set-state target="global" :isModuleRefreshingLayouts="true"/>
+          <api-call :auth_required="true" target="/api/admin/modules/refresh-layouts" method="POST">
+            <success>
+              <set-state target="global" :isModuleRefreshingLayouts="false"/>
+              <set-state target="global" :selectedModule="null"/>
+              <toast type="success" message="$t:admin.modules.refresh_layouts_success"/>
+              <refetch-data-source dataSourceId="modules"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isModuleRefreshingLayouts="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body module_name="{{_global.selectedModule.identifier}}"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isModuleRefreshingLayouts}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isModuleRefreshingLayouts ? '$t:admin.modules.refreshing_layouts' : '$t:admin.modules.actions.refresh_layouts'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

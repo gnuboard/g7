@@ -1,0 +1,34 @@
+<partial name="modal_extension_preview_layout" editor_label="$t:admin.modal_label.admin_template_layout_edit.extension_preview_layout_modal">
+  <modal data-ref="extension_preview_layout_modal" size="small" title="$t:admin.templates.layout_edit.preview_layout_select_title">
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:admin.templates.layout_edit.preview_layout_select_description</p>
+    <select value="{{_global.previewLayoutSelection ?? ''}}" options="{{(layout_files?.data ?? []).map(f => ({ value: f.name, label: f.name }))}}" placeholder="$t:admin.templates.layout_edit.preview_layout_select_placeholder">
+      <on type="change">
+        <set-state target="global" previewLayoutSelection="{{$event.target.value}}"/>
+      </on>
+    </select>
+    <div class="mt-6 flex items-center justify-end gap-2">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50" disabled="{{!_global.previewLayoutSelection}}">
+        <on type="click">
+          <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview" method="POST">
+            <success>
+              <close-modal/>
+              <open-window path="/preview/{{response.data.token}}"/>
+            </success>
+            <fail>
+              <toast type="error" message="$t:admin.templates.layout_edit.preview_error"/>
+            </fail>
+            <body content="{{_global.editorContent}}" preview_layout="{{_global.previewLayoutSelection}}"/>
+          </api-call>
+        </on>
+        <icon name="fa-regular fa-eye" size="sm"/>
+        <span>$t:admin.templates.layout_edit.preview_layout_confirm</span>
+      </button>
+    </div>
+  </modal>
+</partial>

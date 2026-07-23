@@ -1,5 +1,8 @@
 {
   "layout_name": "panel_view",
+  "meta": {
+    "is_partial": true
+  },
   "id": "view_panel",
   "type": "basic",
   "name": "Div",
@@ -152,7 +155,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "{{_global.selectedMenu?.icon || 'file'}}",
-                            "className": "text-secondary w-4 h-4"
+                            "className": "text-base text-secondary"
                           }
                         },
                         {
@@ -228,8 +231,7 @@
                   ]
                 }
               ],
-              "props": {
-              }
+              "props": []
             }
           ]
         },
@@ -323,8 +325,7 @@
                   ]
                 }
               ],
-              "props": {
-              }
+              "props": []
             }
           ]
         },
@@ -418,8 +419,7 @@
                   ]
                 }
               ],
-              "props": {
-              }
+              "props": []
             }
           ]
         },
@@ -569,7 +569,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "calendar",
-                            "className": "w-4 h-4 text-gray-400"
+                            "className": "text-base text-gray-400"
                           }
                         },
                         {
@@ -608,7 +608,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "clock",
-                            "className": "w-4 h-4 text-gray-400"
+                            "className": "text-base text-gray-400"
                           }
                         },
                         {
@@ -621,8 +621,7 @@
                   ]
                 }
               ],
-              "props": {
-              }
+              "props": []
             }
           ]
         }

@@ -1,0 +1,191 @@
+<partial name="tab_admin">
+  <div data-ref="tab_admin" data-if="{{route.type === 'admin'}}">
+    <div data-ref="section_header" class="flex-start justify-between gap-4 mb-6">
+      <responsive on="portable" class="row-stack mb-6"/>
+      <div>
+        <h2 class="section-heading">$t:admin.templates.admin_section.title</h2>
+        <p class="mt-1 text-label-subtle">$t:admin.templates.admin_section.description</p>
+      </div>
+      <search-bar data-ref="search_bar" placeholder="$t:admin.templates.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-64">
+        <responsive on="portable" class="w-full"/>
+        <on type="change">
+          <set-state searchQuery="{{$event.target.value}}"/>
+        </on>
+        <on type="submit">
+          <navigate path="/admin/templates/admin">
+            <query search="{{_local.searchQuery || undefined}}" :page="1"/>
+          </navigate>
+        </on>
+      </search-bar>
+    </div>
+    <div data-ref="content_area" class="admin-card">
+      <card-grid data-ref="template_card_grid" :data-blur-until-loaded="true" data="{{templates?.data?.data ?? []}}" :gridColumns="1" :gap="4" idField="identifier" :pagination="true" :alwaysShowPagination="true" :serverSidePagination="true" serverCurrentPage="{{templates?.data?.current_page ?? 1}}" serverTotalPages="{{templates?.data?.last_page ?? 1}}" cardClassName="border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative">
+        <card id="template_content">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+              <icon name="cog" class="text-2xl text-gray-600 dark:text-gray-400"/>
+            </div>
+            <div class="flex-1 min-w-0 flex items-start justify-between gap-4">
+              <responsive on="portable" class="flex-1 min-w-0 row-stack"/>
+              <div class="flex-1 min-w-0">
+                <div class="flex-center gap-2 flex-wrap">
+                  <span class="font-semibold text-gray-900 dark:text-white">{{row.name}}</span>
+                  <span data-if="{{row.status === 'active'}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:admin.templates.status.active</span>
+                  <span data-if="{{row.status === 'inactive'}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">$t:admin.templates.status.inactive</span>
+                  <span data-if="{{row.status === 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded">$t:admin.templates.status.not_installed</span>
+                  <span class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">v{{row.version}}</span>
+                  <span data-if="{{row.update_available &amp;&amp; row.status !== 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.status.update_available</span>
+                  <span data-if="{{row.update_available &amp;&amp; row.latest_version &amp;&amp; row.status !== 'uninstalled'}}" class="text-tertiary">$t:defer:admin.templates.version_available|version={{row.latest_version ?? ''}}</span>
+                  <span data-if="{{row.is_compatible === false}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded inline-flex items-center gap-1" title="$t:defer:extensions.badges.incompatible_tooltip|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}" aria-describedby="compat_sr_{{row.identifier}}">
+                    <icon name="exclamation-triangle" size="xs"/>
+                    <span>$t:extensions.badges.incompatible</span>
+                  </span>
+                  <span data-if="{{row.is_compatible === false}}" id="compat_sr_{{row.identifier}}" class="sr-only">$t:defer:extensions.badges.incompatible_sr|name={{row.name ?? row.identifier ?? ''}}|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}</span>
+                  <div data-if="{{row.dependencies_met === false}}" class="flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 rounded">
+                    <icon name="exclamation-triangle" class="text-xs"/>
+                    <span>$t:admin.templates.dependencies_warning</span>
+                  </div>
+                </div>
+                <p class="mt-1 text-label">{{row.description}}</p>
+                <div class="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
+                  <responsive on="portable" class="mt-2 flex flex-col items-start gap-1 text-xs text-gray-500 dark:text-gray-500"/>
+                  <span>$t:defer:admin.templates.vendor|vendor={{row.vendor}}</span>
+                  <div data-if="{{(row.dependencies?.modules &amp;&amp; row.dependencies.modules.length > 0) || (row.dependencies?.plugins &amp;&amp; row.dependencies.plugins.length > 0)}}" class="flex items-center gap-1 flex-wrap">
+                    <span>$t:admin.templates.dependencies_label</span>
+                    <span data-each="dep, depIndex in {{[...(row.dependencies?.modules || []), ...(row.dependencies?.plugins || [])]}}">
+                      <span class="inline-flex items-center gap-0.5 align-middle">
+                        <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-sm text-gray-500 dark:text-gray-400"/>
+                        <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-sm text-gray-500 dark:text-gray-400"/>
+                        <span>{{dep.name}}</span>
+                      </span>
+                      <span data-if="{{depIndex < [...(row.dependencies?.modules || []), ...(row.dependencies?.plugins || [])].length - 1}}" class="ml-0 mr-1">,</span>
+                    </span>
+                  </div>
+                  <span data-if="{{(!row.dependencies?.modules || row.dependencies.modules.length === 0) &amp;&amp; (!row.dependencies?.plugins || row.dependencies.plugins.length === 0)}}">$t:admin.templates.no_dependencies</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 shrink-0">
+                <button data-ref="edit_layouts_button" data-if="{{row.status === 'active'}}" class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_edit_layouts === false}}">
+                  <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"/>
+                  <on type="click">
+                    <navigate path="/admin/templates/{{row.identifier}}/edit"/>
+                  </on>
+                  <icon name="code" class="text-base"/>
+                  <span>$t:admin.templates.actions.edit_code</span>
+                </button>
+                <button data-ref="layout_editor_button" data-if="{{row.status === 'active'}}" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_edit_layouts === false}}">
+                  <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"/>
+                  <on type="click">
+                    <open-window path="/admin/layout-editor/{{row.identifier}}" target="_blank"/>
+                  </on>
+                  <icon name="edit" class="text-base"/>
+                  <span>$t:admin.templates.actions.edit_layout_visual</span>
+                </button>
+                <button data-if="{{row.status === 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_install !== true}}">
+                  <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"/>
+                  <on type="click">
+                    <set-state target="global" selectedTemplate="{{row}}"/>
+                    <open-modal target="template_install_modal"/>
+                  </on>
+                  <icon name="download" class="text-base"/>
+                  <span>$t:admin.templates.actions.install</span>
+                </button>
+                <button data-if="{{row.update_available &amp;&amp; row.status !== 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{row.abilities?.can_install !== true || row.is_compatible === false}}" title="{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}" aria-describedby="{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}">
+                  <on type="click">
+                    <set-state target="global" selectedTemplate="{{row}}" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]"/>
+                    <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/check-modified-layouts" method="GET">
+                      <success>
+                        <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}"/>
+                      </success>
+                    </api-call>
+                    <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&amp;from_version={{row.version}}&amp;to_version={{row.latest_version}}" method="GET">
+                      <success>
+                        <set-state target="global" updateChangelog="{{response.data.changelog ?? []}}"/>
+                        <set-state target="global" :templateUpdateError="null"/>
+                        <open-modal target="template_update_modal"/>
+                      </success>
+                      <fail>
+                        <set-state target="global" :updateChangelog="[]" :templateUpdateError="null"/>
+                        <open-modal target="template_update_modal"/>
+                      </fail>
+                    </api-call>
+                  </on>
+                  <icon name="refresh" class="text-base"/>
+                  <span>$t:admin.templates.actions.update</span>
+                </button>
+                <toggle data-if="{{row.status !== 'uninstalled'}}" checked="{{row.status === 'active'}}" disabled="{{row.status === 'active' || row.abilities?.can_activate !== true}}" size="sm" class="">
+                  <responsive on="portable" class="absolute right-4 top-1/2 -translate-y-1/2"/>
+                  <on type="change">
+                    <set-state target="global" selectedTemplate="{{row}}"/>
+                    <open-modal target="{{row.status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"/>
+                  </on>
+                </toggle>
+                <div class="">
+                  <responsive on="portable" class="absolute right-0 top-0"/>
+                  <action-menu triggerLabel="">
+                    <prop name="items">
+                      <item id="view_detail" label="$t:admin.templates.actions.view_detail" iconName="info-circle"/>
+                      <item id="refresh_layouts" label="$t:admin.templates.actions.refresh_layouts" iconName="refresh" disabled="{{row.status !== 'active' || row.abilities?.can_activate !== true}}"/>
+                      <item id="manage_language_packs" label="$t:admin.language_packs.actions.manage" iconName="language" disabled="{{row.status !== 'active'}}"/>
+                      <item id="uninstall" label="$t:admin.templates.actions.uninstall" iconName="trash" variant="danger" disabled="{{row.status === 'active' || row.status === 'uninstalled' || row.abilities?.can_uninstall !== true}}"/>
+                    </prop>
+                    <on type="action" event="onItemClick">
+                      <switch>
+                        <case when="view_detail">
+                          <set-state target="global" selectedTemplate="{{row}}"/>
+                          <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/changelog" method="GET">
+                            <success>
+                              <set-state target="global" templateChangelog="{{response.data.changelog ?? []}}"/>
+                              <open-modal target="template_detail_modal"/>
+                            </success>
+                            <fail>
+                              <set-state target="global" :templateChangelog="[]"/>
+                              <open-modal target="template_detail_modal"/>
+                            </fail>
+                          </api-call>
+                        </case>
+                        <case when="refresh_layouts">
+                          <set-state target="global" selectedTemplate="{{row}}"/>
+                          <open-modal target="template_refresh_layouts_modal"/>
+                        </case>
+                        <case when="manage_language_packs">
+                          <navigate path="/admin/templates/{{row.identifier}}/language-packs"/>
+                        </case>
+                        <case when="uninstall">
+                          <set-state target="global" selectedTemplate="{{row}}" :templateUninstallInfo="null"/>
+                          <open-modal target="template_uninstall_modal"/>
+                          <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/uninstall-info" method="GET">
+                            <success>
+                              <set-state target="global" templateUninstallInfo="{{response.data}}"/>
+                            </success>
+                          </api-call>
+                        </case>
+                      </switch>
+                    </on>
+                  </action-menu>
+                </div>
+              </div>
+            </div>
+          </div>
+        </card>
+        <on type="change" event="onPageChange">
+          <navigate path="/admin/templates/admin" :mergeQuery="true">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+      </card-grid>
+      <div data-ref="pagination_info" class="mt-4 text-label text-center">
+        <span>$t:admin.templates.pagination_info|total={{templates?.data?.total ?? 0}}|from={{((templates?.data?.current_page ?? 1) - 1) * (templates?.data?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.current_page ?? 1) * (templates?.data?.per_page ?? 12), templates?.data?.total ?? 0)}}</span>
+      </div>
+    </div>
+    <div data-ref="info_message" class="alert-info">
+      <div class="flex-start gap-3">
+        <icon name="info-circle" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+        <div>
+          <p class="font-medium text-blue-900 dark:text-blue-100">$t:admin.templates.info.title</p>
+          <p class="mt-1 text-info-soft">$t:admin.templates.info.description</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

@@ -1,0 +1,51 @@
+<partial name="modal_extension_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.extension_version_history_modal">
+  <modal data-ref="extension_version_history_modal" size="medium" title="$t:admin.templates.modals.extension_version_history.title">
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:admin.templates.modals.extension_version_history.description|target_name={{current_extension?.data?.target_name ?? ''}}|source_label={{current_extension?.data?.source_label ?? ''}}</p>
+    <div class="space-y-3 max-h-96 overflow-y-auto">
+      <div data-each="version, idx in {{extension_versions?.data ?? []}}" data-blur-until-loaded="{{_global.isRestoringExtension}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <responsive on="portable" class="flex flex-col gap-2"/>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-gray-900 dark:text-white">{{version.created_at}}</span>
+            <span data-if="{{idx === 0}}" class="px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded">$t:admin.templates.modals.extension_version_history.latest</span>
+          </div>
+          <button data-if="{{idx !== 0}}" type="button" class="flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoringExtension}}">
+            <on type="click">
+              <sequence>
+                <set-state target="global" :isRestoringExtension="true"/>
+                <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/versions/{{version.id}}/restore" method="POST">
+                  <success>
+                    <set-state target="global" :isRestoringExtension="false"/>
+                    <toast type="success" message="$t:admin.templates.modals.extension_version_history.restore_success"/>
+                    <refetch-data-source dataSourceId="current_extension"/>
+                    <refetch-data-source dataSourceId="extension_versions"/>
+                    <refetch-data-source dataSourceId="layout_extensions"/>
+                    <close-modal/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :isRestoringExtension="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{!_global.isRestoringExtension}}" name="fa-solid fa-clock-rotate-left" size="sm"/>
+            <icon data-if="{{_global.isRestoringExtension}}" name="fa-solid fa-spinner" size="sm" class="animate-spin"/>
+            <span>{{_global.isRestoringExtension ? '$t:admin.templates.modals.extension_version_history.restoring' : '$t:admin.templates.modals.extension_version_history.restore'}}</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-4 mt-2 text-sm">
+          <span class="text-green-600 dark:text-green-400">+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.extension_version_history.lines</span>
+          <span class="text-red-600 dark:text-red-400">- {{version.changes_summary?.removed_count ?? 0}} $t:admin.templates.modals.extension_version_history.lines</span>
+          <span class="text-gray-500 dark:text-gray-400">({{version.changes_summary?.char_diff >= 0 ? '+' : ''}}{{version.changes_summary?.char_diff ?? 0}} $t:admin.templates.modals.extension_version_history.chars)</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <div class="flex items-center gap-2">
+        <icon name="fa-solid fa-circle-info" size="sm" class="text-blue-600 dark:text-blue-400"/>
+        <span class="text-sm text-blue-700 dark:text-blue-300">$t:admin.templates.modals.extension_version_history.restore_note</span>
+      </div>
+    </div>
+  </modal>
+</partial>

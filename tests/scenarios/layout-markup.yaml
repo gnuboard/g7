@@ -6,7 +6,7 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7~S9 → S10 설치 재아키텍처).
-  현재 커버 범위는 **S1~S10** 이며, 이후 단계가 axes/effects/test_files 를 확장한다.
+  현재 커버 범위는 **S1~S12** 이며(S11 W2 · S12 W3 effects 등재 완료), 이후 단계가 axes/effects/test_files 를 확장한다.
 
   용어(PO 정의, D38): **compile = JSON → HTML**(저작 소스 산출), **decompile = HTML → JSON**(설치·검증).
 
@@ -277,9 +277,21 @@ effects:
   # --- S4 fragment 봉투 (target-layout XOR extension-point)
   - fragment_target_conflict_or_missing_is_rejected
   - fragment_inject_props_and_components_are_exclusive
-  # --- S5 임베딩 (서브트리 hoist · 노드 키 hoist · 정적 옵션 리프트)
+  # --- S5 임베딩 (서브트리 hoist · 노드 키 hoist · 옵션 데이터 래퍼)
   - subtree_is_hoisted_to_its_props_or_node_key
-  - static_options_are_lifted_conditionally
+  # Select 옵션은 `<options>` 래퍼가 데이터/노드를 결정적으로 가른다 (D42 G13). 종전 휴리스틱
+  # (`static_options_are_lifted_conditionally`)은 양방향 모두 오판했다 — 형제 `<on>` 에 리프트가
+  # 불발했고(44건) 진짜 Option 노드를 접었다(2건).
+  - options_wrapper_always_compiles_to_options_prop
+  - options_wrapper_lifts_alongside_sibling_actions
+  - bare_option_children_stay_component_nodes
+  - options_wrapper_conflicts_with_options_attribute
+  # 노드 `type` 은 레지스트리 파생이며, 그 파생은 무해한 수렴이 아니라 **결함 정정**이다 (D47).
+  # 출하 JSON 345/25,551 이 어긋나 있었고 어긋난 쪽이 편집 표식 소실(Toggle·Badge) 또는
+  # dynamicState DOM 누출(Input 이 방어코드로 막고 있던 것)을 낳고 있었다.
+  - registry_type_matches_component_directory
+  - node_type_is_derived_from_registry_not_source
+  - decompile_ignores_stale_source_type
   - card_is_a_hoist_only_under_a_grid_parent
   - embedding_tag_outside_its_parent_is_rejected
   - embedding_tag_requires_its_named_attribute
@@ -394,6 +406,17 @@ effects:
   #     fragment 는 이관 물량의 과반인데 종전엔 합성 픽스처로 소스 선택만 봤다.
   - wave_two_html_install_equals_json_install
   - migrated_fragment_markup_compiles_to_its_json
+  # --- S12 W3(㉚): 템플릿 설치 경로(TemplateManager) 실물 143파일
+  - wave_three_template_html_install_equals_json_install
+  # --- S12 W3(㉚) 문법 신설 G9~G12 + 파사드 강검증 비대칭 2건
+  - single_action_condition_branch_round_trips_as_object
+  - multi_action_condition_branch_keeps_then_array
+  - single_element_then_array_converges_to_object
+  - interval_tick_actions_round_trip_as_action_block
+  - control_handler_params_actions_still_converge_to_top_level
+  - data_source_structured_keys_emit_field_tags
+  - define_structured_value_emits_item_tags
+  - unrepresentable_define_value_stays_json_body
   # --- D41(㉔) 원시 JSON 방출기: 문법 보유분을 1급 태그로
   - action_field_map_params_emit_first_class_tags
   - nested_object_field_map_becomes_field_tree
@@ -457,3 +480,7 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/LayoutMarkupRawJsonEmissionsTest.php
   # S11 W2(㉓) overlay 기여 판정 — 설치는 안 돌리는 규칙을 파사드만 걸어 정상 출하물을 막던 자리
   - tests/Unit/Rules/ValidLayoutExtensionStructureTest.php
+  # S12 후속(㉝) 서빙 동등성 ③ — ② 의 content 동일에서 논리 파생하던 것을 실제 서빙 파이프라인으로 대조
+  - tests/Feature/LayoutMarkup/MarkupServingEquivalenceTest.php
+  # S12 후속(㉝) D47 — 노드 `type` 레지스트리 파생이 "무해한 수렴" 이 아니라 결함 정정임을 못박음
+  - tests/Unit/Support/LayoutMarkup/NodeTypeDerivationTest.php

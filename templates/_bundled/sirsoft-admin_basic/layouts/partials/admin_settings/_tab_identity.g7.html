@@ -1,0 +1,10 @@
+<partial description="환경설정 본인인증(IDV) 탭 컨테이너 — sub-tab 은 admin_settings.json 의 sticky_header 안에 위치 (게시판 환경설정 패턴), 본 partial 은 4 서브섹션 partial 만 포함">
+  <div data-ref="tab_content_identity" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}">
+    <include src="partials/admin_settings/_tab_identity_basic.json"/>
+    <include src="partials/admin_settings/_tab_identity_providers.json"/>
+    <div data-ref="identity_section_policies" class="scroll-mt-44">
+      <include src="partials/admin_settings/_tab_identity_policies.json"/>
+    </div>
+    <include src="partials/admin_settings/_tab_identity_messages.json"/>
+  </div>
+</partial>

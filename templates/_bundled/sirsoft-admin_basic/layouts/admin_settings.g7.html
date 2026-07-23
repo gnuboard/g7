@@ -1,0 +1,280 @@
+<layout name="admin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.settings.page_title" description="$t:admin.settings.page_description"/>
+  <data-source id="language_packs" label_key="$t:editor.data_source.language_packs" type="api" endpoint="/api/admin/language-packs" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page}}" per_page="{{query.per_page ?? 10}}" scope="{{_local.filterScope || query.scope}}" target_identifier="{{_local.filterTarget || query.target_identifier}}" locale="{{query.locale}}" status="{{query.status}}" search="{{query.search}}" exclude_protected="{{query.exclude_protected ?? '1'}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="meta">
+          <field name="total" :value="0"/>
+          <field name="active" :value="0"/>
+          <field name="installed" :value="0"/>
+          <field name="inactive" :value="0"/>
+          <field name="error" :value="0"/>
+        </field>
+        <field name="abilities" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="language_pack_detail" label_key="$t:editor.data_source.language_pack_detail" type="api" endpoint="/api/admin/language-packs/{{_local.detailId}}" method="GET" :auto_fetch="false" :auth_required="true">
+    <field name="depends_on">
+      <item>_local.detailId</item>
+    </field>
+  </data-source>
+  <data-source id="language_pack_changelog" label_key="$t:editor.data_source.language_pack_changelog" type="api" endpoint="/api/admin/language-packs/{{_local.detailId}}/changelog" method="GET" :auto_fetch="false" :auth_required="true">
+    <field name="depends_on">
+      <item>_local.detailId</item>
+    </field>
+  </data-source>
+  <data-source id="settings" label_key="$t:editor.data_source.settings" type="api" endpoint="/api/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+    <init-local>
+      <field name="form" value="{{data}}"/>
+      <field name="originalDrivers" value="drivers"/>
+    </init-local>
+    <init-global>
+      <field name="settingsAbilities" value="abilities"/>
+    </init-global>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="systemInfo" label_key="$t:editor.data_source.systemInfo" type="api" endpoint="/api/admin/settings/system-info" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'info'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="php_version" value="-"/>
+        <field name="laravel_version" value="-"/>
+        <field name="database_type" value="-"/>
+        <field name="server_software" value="-"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="appKey" label_key="$t:editor.data_source.appKey" type="api" endpoint="/api/admin/settings/app-key" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="key" value="-"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="notificationDefinitions" label_key="$t:editor.data_source.notificationDefinitions" type="api" endpoint="/api/admin/notification-definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" extension_identifier="core"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="availableChannels" label_key="$t:editor.data_source.availableChannels" type="api" endpoint="/api/admin/notification-channels" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="identityProviders" label_key="$t:editor.data_source.identityProviders" type="api" endpoint="/api/admin/identity/providers" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="identityPurposes" label_key="$t:editor.data_source.identityPurposes" type="api" endpoint="/api/identity/purposes" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="identityMessages" label_key="$t:editor.data_source.identityMessages" type="api" endpoint="/api/admin/identity/messages/definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.messages_page || 1}}" per_page="{{query.messages_per_page || 20}}" sort_by="id" sort_order="asc"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="adminIdentityPolicies" label_key="$t:editor.data_source.adminIdentityPolicies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <params source_type="admin" :per_page="100"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="policies" label_key="$t:editor.data_source.policies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <params scope="{{query.scope}}" purpose="{{query.purpose}}" source_type="{{query.source_type}}" enabled="{{query.enabled}}" search="{{query.search}}" page="{{query.page || 1}}" per_page="{{query.per_page || 10}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="meta" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="driverTestResults" :value="[]"/>
+    <field name="activeNotificationChannel" :value="null"/>
+    <field name="editingDefinition" :value="null"/>
+    <field name="editingTemplate" :value="null"/>
+    <field name="editLang" value="ko"/>
+    <field name="previewData" :value="null"/>
+    <field name="isSaving" :value="false"/>
+    <field name="templateErrors" :value="null"/>
+    <field name="checkingCoreUpdate" :value="false"/>
+    <field name="coreUpdateInfo" :value="null"/>
+    <field name="coreChangelog" :value="null"/>
+    <field name="loadingChangelog" :value="false"/>
+    <field name="policyForm" :value="null"/>
+    <field name="policyErrors" :value="null"/>
+    <field name="policyIsNew" :value="true"/>
+    <field name="policyIsSaving" :value="false"/>
+  </init-local>
+  <computed name="isReadOnly">{{!!_global.settingsAbilities &amp;&amp; !(_global.settingsAbilities?.can_update ?? false)}}</computed>
+  <permissions>
+    <permission>core.settings.read</permission>
+  </permissions>
+  <transition-overlay target="settings_tab_content" fallback-target="right_content_area">
+    <wait-for>settings</wait-for>
+    <wait-for>systemInfo</wait-for>
+    <wait-for>appKey</wait-for>
+    <wait-for>notificationDefinitions</wait-for>
+    <wait-for>availableChannels</wait-for>
+    <wait-for>identityProviders</wait-for>
+    <wait-for>identityPurposes</wait-for>
+    <wait-for>identityMessages</wait-for>
+    <wait-for>adminIdentityPolicies</wait-for>
+    <wait-for>policies</wait-for>
+    <wait-for>language_packs</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local" filterScope="{{query.scope || ''}}" filterStatus="{{query.status || ''}}" filterLocale="{{query.locale || ''}}" filterSearch="{{query.search || ''}}" filterTarget="" :scopeLocked="false">
+      <field name="notificationDefinitionFilter">
+        <field name="search" value="{{query.search || ''}}"/>
+        <field name="searchType" value="{{query.search_type || 'all'}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:admin.settings.page_title">
+        <button data-ref="refresh_button" type="button" class="btn-icon">
+          <on type="click">
+            <refetch-data-source dataSourceId="settings"/>
+          </on>
+          <icon name="refresh" class="w-5 h-5"/>
+        </button>
+      </page-header>
+      <div data-ref="readonly_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
+        <div class="flex-center gap-3">
+          <icon name="lock" class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <p class="text-warning-soft">$t:admin.settings.readonly_notice</p>
+        </div>
+      </div>
+      <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
+        <tab-navigation data-ref="tab_navigation" class="sticky-tab-nav-responsive" activeTabId="{{_global.activeSettingsTab || query.tab || 'general'}}" variant="default">
+          <prop name="tabs">
+            <item id="general" label="$t:admin.settings.tabs.general"/>
+            <item id="mail" label="$t:admin.settings.tabs.mail"/>
+            <item id="upload" label="$t:admin.settings.tabs.upload"/>
+            <item id="seo" label="$t:admin.settings.tabs.seo"/>
+            <item id="security" label="$t:admin.settings.tabs.security"/>
+            <item id="drivers" label="$t:admin.settings.tabs.drivers"/>
+            <item id="advanced" label="$t:admin.settings.tabs.advanced"/>
+            <item id="notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
+            <item id="language_packs" label="$t:admin.settings.tabs.language_packs"/>
+            <item id="identity" label="$t:admin.settings.tabs.identity"/>
+            <item id="info" label="$t:admin.settings.tabs.info"/>
+          </prop>
+          <on type="change" event="onTabChange">
+            <sequence>
+              <set-state target="local" :errors="null"/>
+              <set-state target="global" activeSettingsTab="{{$args[0]}}"/>
+              <navigate path="/admin/settings" :replace="true">
+                <query tab="{{$args[0]}}"/>
+              </navigate>
+            </sequence>
+          </on>
+        </tab-navigation>
+        <tab-navigation-scroll data-ref="identity_sub_tab_navigation" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}" class="sub-tab-nav" sectionIdPrefix="identity_section_" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+          <prop name="tabs">
+            <item id="basic" label="$t:admin.settings.identity.sub_tabs.basic"/>
+            <item id="providers" label="$t:admin.settings.identity.sub_tabs.providers"/>
+            <item id="policies" label="$t:admin.settings.identity.sub_tabs.policies"/>
+            <item id="messages" label="$t:admin.settings.identity.sub_tabs.messages"/>
+          </prop>
+        </tab-navigation-scroll>
+      </div>
+      <div data-ref="settings_tab_content" class="tab-content">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+          <div class="flex gap-3">
+            <icon name="triangle-exclamation" class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+            <div>
+              <h3 class="text-error-strong">$t:admin.settings.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{message}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <include src="partials/admin_settings/_tab_general.json"/>
+        <include src="partials/admin_settings/_tab_mail.json"/>
+        <include src="partials/admin_settings/_tab_upload.json"/>
+        <include src="partials/admin_settings/_tab_seo.json"/>
+        <include src="partials/admin_settings/_tab_security.json"/>
+        <include src="partials/admin_settings/_tab_drivers.json"/>
+        <include src="partials/admin_settings/_tab_advanced.json"/>
+        <include src="partials/admin_settings/_tab_notification_definitions.json"/>
+        <include src="partials/admin_settings/_tab_language_packs.json"/>
+        <include src="partials/admin_settings/_tab_identity.json"/>
+        <include src="partials/admin_settings/_tab_info.json"/>
+      </div>
+      <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'info' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" class="btn btn-secondary">
+          <on type="click">
+            <refetch-data-source dataSourceId="settings"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' &amp;&amp; ((_local.form?.drivers?.storage_driver === 's3' &amp;&amp; !_local.driverTestResults?.s3?.success &amp;&amp; ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || ''))) || (_local.form?.drivers?.cache_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' &amp;&amp; !_local.driverTestResults?.memcached?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled &amp;&amp; !_local.driverTestResults?.websocket?.success &amp;&amp; (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <sequence>
+              <emit-event event="upload:site_logo"/>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/settings" method="POST" body="{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: tab, [tab]: form[tab] || {} }; })()}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <set-state target="global" settings="{{result.data.settings}}" uploadSettings="{{result.data.settings.upload}}"/>
+                  <toast type="success" message="$t:admin.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="$t:admin.settings.save_error"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_language_pack_list/_modal_install.json"/>
+  <modal src="partials/admin_language_pack_list/_modal_install_bundled.json"/>
+  <modal src="partials/admin_language_pack_list/_modal_detail.json"/>
+  <modal src="partials/admin_language_pack_list/_modal_update.json"/>
+  <modal src="partials/admin_language_pack_list/_modal_uninstall.json"/>
+  <modal src="partials/admin_language_pack_list/_modal_refresh_cache.json"/>
+  <modal src="partials/admin_language_pack_list/_drawer_manifest_preview.json"/>
+  <modal src="partials/admin_settings/_modal_password_confirm.json"/>
+  <modal src="partials/admin_settings/_modal_cache_delete.json"/>
+  <modal src="partials/admin_settings/_modal_notification_template_form.json"/>
+  <modal src="partials/admin_settings/_modal_notification_template_preview.json"/>
+  <modal src="partials/admin_settings/_modal_notification_definition_reset.json"/>
+  <modal src="partials/admin_settings/_modal_core_update_result.json"/>
+  <modal src="partials/admin_settings/_modal_core_changelog.json"/>
+  <modal src="partials/admin_settings/_modal_core_update_guide.json"/>
+  <modal src="partials/admin_settings/_modal_identity_policy_form.json"/>
+  <modal src="partials/admin_settings/_modal_identity_policy_delete.json"/>
+  <modal src="partials/admin_settings/_modal_identity_message_template_form.json"/>
+  <modal src="partials/admin_settings/_modal_identity_message_template_preview.json"/>
+  <modal src="partials/admin_settings/_modal_identity_message_definition_add.json"/>
+  <modal src="partials/admin_settings/_modal_identity_message_definition_delete.json"/>
+  <modal src="partials/admin_settings/_modal_identity_message_definition_reset.json"/>
+</layout>

@@ -1,0 +1,17 @@
+<partial description="메일 템플릿 미리보기 모달" editor_label="$t:admin.modal_label.admin_settings.modal_notification_template_preview">
+  <modal data-ref="modal_notification_template_preview" title="$t:admin.settings.notification_definitions.preview_modal.title" size="lg">
+    <div data-ref="preview_content">
+      <div>
+        <span class="text-table-header">$t:admin.settings.notification_definitions.preview_modal.subject_label</span>
+        <p class="text-primary text-base font-medium bg-gray-50 dark:bg-gray-900 rounded-md px-3 py-2">{{_global.notification_template_form_modal?.preview?.subject ?? ''}}</p>
+      </div>
+      <div>
+        <span class="text-table-header">$t:admin.settings.notification_definitions.preview_modal.body_label</span>
+        <html-content content="{{_global.notification_template_form_modal?.preview?.body ?? ''}}" :isHtml="true" class="prose dark:prose-invert prose-sm max-w-none border border-gray-200 dark:border-gray-700 rounded-md p-4 max-h-[400px] overflow-y-auto bg-white dark:bg-gray-900"/>
+      </div>
+      <div class="flex justify-end pt-3 border-t border-gray-200 dark:border-gray-700">
+        <button data-ref="btn_close_preview" type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><close-modal target="modal_notification_template_preview"/></on>$t:common.close</button>
+      </div>
+    </div>
+  </modal>
+</partial>

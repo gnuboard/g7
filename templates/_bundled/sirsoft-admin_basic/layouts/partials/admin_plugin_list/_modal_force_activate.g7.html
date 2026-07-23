@@ -1,0 +1,69 @@
+<partial description="플러그인 강제 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_force_activate_modal">
+  <modal data-ref="plugin_force_activate_modal" title="$t:admin.plugins.modals.activate_warning_title" size="sm">
+    <div class="py-2">
+      <div class="alert-warning">
+        <icon name="warning" class="w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
+        <div>
+          <p class="text-warning-soft">$t:admin.plugins.modals.activate_warning_message</p>
+        </div>
+      </div>
+      <div data-if="{{_global.activateWarningData?.missing_modules?.length > 0}}" class="">
+        <p class="text-body font-medium mb-2">$t:admin.plugins.modals.missing_modules</p>
+        <div>
+          <div data-each="module in _global.activateWarningData?.missing_modules ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+            <icon name="cube" class="w-4 h-4 text-gray-500 dark:text-gray-400"/>
+            <span class="text-body">{{module.name || module.identifier}}</span>
+            <span data-if="{{module.status === 'inactive'}}" class="text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.modules.status.inactive</span>
+            <span data-if="{{module.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded">$t:admin.modules.status.not_installed</span>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{_global.activateWarningData?.missing_plugins?.length > 0}}" class="">
+        <p class="text-body font-medium mb-2">$t:admin.plugins.modals.missing_plugins</p>
+        <div>
+          <div data-each="plugin in _global.activateWarningData?.missing_plugins ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+            <icon name="plug" class="w-4 h-4 text-gray-500 dark:text-gray-400"/>
+            <span class="text-body">{{plugin.name || plugin.identifier}}</span>
+            <span data-if="{{plugin.status === 'inactive'}}" class="text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.plugins.status.inactive</span>
+            <span data-if="{{plugin.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded">$t:admin.plugins.status.not_installed</span>
+          </div>
+        </div>
+      </div>
+      <p class="mt-4 text-label">$t:admin.plugins.modals.force_activate_description</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isForceActivating}}">
+        <on type="click">
+          <set-state target="global" :activateWarningData="null"/>
+          <refetch-data-source dataSourceId="plugins"/>
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
+        <on type="click">
+          <set-state target="global" :isForceActivating="true"/>
+          <api-call :auth_required="true" target="/api/admin/plugins/activate" method="POST">
+            <success>
+              <set-state target="global" :isForceActivating="false" :activateWarningData="null"/>
+              <parallel>
+                <refetch-data-source dataSourceId="plugins"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <reload-extensions pluginInfo="{{result}}" action="add"/>
+              </parallel>
+              <toast type="success" message="$t:admin.plugins.activate_success"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isForceActivating="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body plugin_name="{{_global.selectedPlugin.identifier}}" :force="true"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isForceActivating}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isForceActivating ? '$t:admin.plugins.activating' : '$t:admin.plugins.modals.confirm_activate'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

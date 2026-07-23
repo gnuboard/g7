@@ -134,6 +134,26 @@
 >
 > 게이트는 이 컨테이너 안으로만 열린다 — 노드 자리의 `<prop name="columns">` 에 `<column>` 을 두면 종전대로 거부된다(`unexpected_structural_child`).
 
+> **데이터소스의 구조값 키도 `<field name>` 으로 적는다 (D42 G11).** `<data-source>` 는 `data`·`params`·`headers`·`fallback` 넷만 전용 태그를 갖고 나머지 키는 속성으로 나간다. 값이 객체·배열이면 그 속성이 통짜 JSON 이 되므로, 액션의 구조값 파라미터와 **같은 표기**로 자식에 적는다.
+>
+> ```html
+> <data-source id="roles" endpoint="/api/admin/roles" method="GET">
+>   <field name="depends_on"><item>users</item><item>menus</item></field>
+>   <field name="errorCondition"><field name="if" value="{{response.data.length === 0}}"/><field name="errorCode" :value="404"/></field>
+> </data-source>
+> ```
+
+> **`<define>` 본문도 구조값이면 태그 트리로 (D42 G12).** `<define>` 은 JSON 본문 블록이었으나, 표현 가능한 값은 다른 자리와 같은 `<field>`/`<item>` 으로 적는다. 표기를 주지 않은 형태(혼합 스칼라 리스트 등)만 JSON 본문으로 남는다.
+>
+> ```html
+> <defines>
+>   <define name="countryList">
+>     <item code="KR" name="$t:countries.KR"/>
+>     <item code="US" name="$t:countries.US"/>
+>   </define>
+> </defines>
+> ```
+
 ## 5. 노드 + 지시 속성
 
 태그명이 컴포넌트를 정한다(레지스트리 kebab→PascalCase 해석). 미등록 태그는 `unknown_tag_with_suggestion`(근접 제안).
@@ -247,6 +267,27 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`dat
 >
 > **`<action-ref name>` 은 핸들러 없이 성립하는 유일한 액션이다.** `named_actions` 에 정의해 둔 액션을 이름으로 불러 쓰는 형태(`actionRef`)로, `<action>` 은 `handler` 가 필수라 이 형태를 지을 수 없다. 같은 액션을 여러 진입점에서 재사용하거나, `init_actions` 루트처럼 키 화이트리스트가 좁은 자리에서 복잡한 액션을 우회 실행할 때 쓴다.
 >
+> **조건 분기의 실행 블록도 같은 블록 규칙이다 (G9).** `<conditions>` 의 `<when if>`/`<else>` 본문은 `<case>`/`<default>` 와 같다 — 액션이 하나면 `then` 이 단일 객체, 둘 이상이면 배열이 된다. 엔진은 두 형태를 모두 받으므로(배열은 sequence 처럼 순차 실행) 저작에서는 자식 수만 신경 쓰면 된다.
+>
+> ```html
+> <on event="change">
+>   <conditions>
+>     <when if="{{$event.target.checked}}"><set-state target="global" flag/></when>
+>     <else><set-state target="global" :flag="false"/></else>
+>   </conditions>
+> </on>
+> ```
+>
+> **주기 실행 액션 블록 `<actions>` (G10).** `startInterval` 처럼 `params.actions` 를 실행 목록으로 읽는 핸들러는 그 목록을 `<actions>` 자식 블록으로 적는다. 제어 태그(`<sequence>`·`<parallel>`)는 top-level `actions` 가 정본이라 이 블록을 쓰지 않는다.
+>
+> ```html
+> <start-interval id="ticker" :intervalMs="1000">
+>   <actions>
+>     <set-state target="local" remainingSeconds="{{_local.remainingSeconds - 1}}"/>
+>   </actions>
+> </start-interval>
+> ```
+>
 > **블록 본문의 암묵 sequence 는 자식이 둘 이상일 때만 펼친다.** `<on>`·`<success>`·`<fail>` 같은 블록 본문에 액션을 여러 개 나열하면 컴파일 시 `sequence` 로 묶이고, 되돌릴 때 `<sequence>` 태그 없이 형제 태그로 펼쳐진다. 그러나 자식이 **하나뿐인** sequence 는 `<sequence>…</sequence>` 래퍼를 명시해야 한다 — 컴파일러는 블록 자식이 하나면 sequence 로 감싸지 않고 그 액션에 트리거만 얹으므로, 단일 자식을 펼치면 되컴파일 때 sequence 의미가 사라져 왕복이 깨진다. 즉 "액션 2개 이상 = 래퍼 생략, 액션 1개인데 sequence 를 의도 = `<sequence>` 명시".
 
 ```html
@@ -319,12 +360,54 @@ W3C 표준 요소명이 G7 개념과 일치하면 표준명 우선(`<option>`·`
 
 | 정규화 대상 | 컴파일 정본 | 근거 |
 | --- | --- | --- |
-| 노드 `type`(basic/composite/layout) | 레지스트리(name)에서 파생 | name 비교는 엄격 유지 — 태그 오방출은 name 으로 잡힘 |
+| 노드 `type`(basic/composite/layout) | 레지스트리(name)에서 파생 — **수렴이 아니라 정정**(아래) | name 비교는 엄격 유지 — 태그 오방출은 name 으로 잡힘 |
 | `meta.is_partial` | `<partial>` 이 항상 주입 | 소스 부재해도 산출엔 존재 |
 | 빈 `props`/`children`(`[]`) | 항상 생략 | `props:[]` 는 방출되지 않음 |
 | 콜백 단일 원소 배열(`onSuccess:[{x}]`) | 객체(`{x}`) | 런타임 동치, compileCallbackActions 1개=객체 |
 | 제어 `params.{actions,cases,conditions}` | top-level | 런타임 동치(ActionDispatcher params.actions fallback) |
-| Select 리프트 가능 `<option>` 자식 | `props.options` | shouldLiftOptions |
+
+정규화 목록에 **런타임 동치가 아닌 것을 넣으면 안 된다** — 넣는 순간 이관이 실제로 shape 를 바꿔놓아도 왕복 게이트가 green 이 된다. Select 옵션이 그 사례였다(아래 G13).
+
+#### 노드 `type` 은 수렴이 아니라 정정이다
+
+`type`(basic/composite/layout)은 레지스트리에서 파생하지만, 이것을 "무해한 수렴" 으로 읽으면 안 된다. `DynamicRenderer` 는 이 값을 **레지스트리가 아니라 레이아웃 노드에서** 읽어 세 갈래를 가른다:
+
+1. `dynamicState`(loadingActions·apiError)를 props 로 주입 — composite 만
+2. `__componentContext` 자동 전달 — composite 는 무조건
+3. `editorAttrs`·`__` 접두 키의 DOM 차단 — basic·layout 만 제거
+
+출하 JSON 실측 결과 **25,551 노드 중 345개**가 레지스트리와 어긋나 있었고, **어긋난 쪽이 결함이다**:
+
+- `Toggle`·`Badge` 가 `basic` 으로 적혀 있었다. 두 컴포넌트는 `editorAttrs` 를 명시 수신하고 `{...props}` 를 펼치지 않으므로, basic 분기에서 `editorAttrs` 가 제거되면 **편집 표식이 DOM 에 도달하지 못한다** — 레이아웃 편집기에서 누락된다.
+- 반대로 `Input` 등이 `composite` 로 적혀 있어 `dynamicState` 가 DOM 으로 샜고, `Input.tsx` 가 `const { loadingactions, formdata, ...validProps }` 로 **손수 걷어내는 방어코드**를 달고 있다.
+
+따라서 이관이 `type` 을 레지스트리 값으로 되돌리는 것은 결함 수정이다. 저작 시 `type` 을 적지 않는다 — 태그가 곧 `name` 이고 `type` 은 거기서 나온다.
+
+### `<options>` — Select 옵션 데이터 래퍼 (D42 G13)
+
+Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다** — 있으면 커스텀 드롭다운(버튼 + 포털), 없으면 네이티브 `<select>` + children. 둘은 런타임 동치가 아니므로 어느 쪽인지를 표기가 결정적으로 말해야 한다:
+
+```html
+<!-- 데이터 → props.options (커스텀 드롭다운) -->
+<select data-ref="search_field" value="{{_local.field}}">
+  <options>
+    <option value="all">$t:admin.users.search_fields.all</option>
+    <option value="name" disabled>$t:admin.users.search_fields.name</option>
+  </options>
+  <on type="change"><set-state field="{{$event.target.value}}"/></on>
+</select>
+
+<!-- 컴포넌트 노드 → children:[Option] (네이티브 select) -->
+<select name="toolbar">
+  <option value="minimal">$t:x.minimal</option>
+</select>
+```
+
+- `<options>` 안은 `<option>` 만 온다(다른 태그는 자리 오류). `value=`(문자열)·`:value=`(타입 리터럴)·`disabled`·본문 텍스트(label)만 읽는다.
+- `<options>` 와 `:options` 는 같은 자리를 다투므로 함께 쓰면 충돌로 잡힌다.
+- 래퍼 밖 `<option>` 은 **절대 접지 않는다**. `multiple`/`size` 여부와 무관하다.
+
+종전에는 래퍼 없이 "`<select>` 직속 자식이 전부 정적 `<option>` 이면 접는다" 는 휴리스틱으로 갈랐다. 그 판정은 양방향 모두 틀렸다 — 형제 `<on>` 하나에 리프트가 통째로 불발했고(원본 `props.options` → `children`, 실측 44건), 반대로 진짜 Option 노드를 접었다(원본 `children` → `props.options`, 실측 2건). 정규화가 그 차이를 덮고 있어 왕복·설치 게이트는 46건 내내 green 이었다.
 
 ### 노드 레벨 `<permissions>`·`<meta>` (D36)
 

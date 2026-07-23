@@ -1,6 +1,9 @@
 {
   "layout_name": "modal_extension_preview_layout",
-  "meta": { "editor_label": "$t:admin.modal_label.admin_template_layout_edit.extension_preview_layout_modal" },
+  "meta": {
+    "is_partial": true,
+    "editor_label": "$t:admin.modal_label.admin_template_layout_edit.extension_preview_layout_modal"
+  },
   "id": "extension_preview_layout_modal",
   "type": "composite",
   "name": "Modal",

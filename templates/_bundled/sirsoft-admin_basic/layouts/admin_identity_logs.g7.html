@@ -1,0 +1,165 @@
+<layout name="admin_identity_logs" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.identity.logs.page_title"/>
+  <data-source id="identityProviders" label_key="$t:editor.data_source.identityProviders" type="api" endpoint="/api/admin/identity/providers" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="identityPurposes" label_key="$t:editor.data_source.identityPurposes" type="api" endpoint="/api/identity/purposes" method="GET" :auto_fetch="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="identityLogs" label_key="$t:editor.data_source.identityLogs" type="api" endpoint="/api/admin/identity/logs" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" provider_id="{{query.provider_id}}" purposes="{{query['purposes[]']}}" statuses="{{query['statuses[]']}}" channels="{{query['channels[]']}}" origin_types="{{query['origin_types[]']}}" source_type="{{query.source_type}}" source_identifier="{{query.source_identifier}}" date_from="{{query.date_from}}" date_to="{{query.date_to}}" search="{{query.search}}" search_type="{{query.search_type}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+          <field name="has_more_pages" :value="false"/>
+        </field>
+        <field name="abilities">
+          <field name="can_purge" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="filter">
+      <field name="searchType" value="auto"/>
+      <field name="search" value=""/>
+      <field name="statuses" :value="[]"/>
+      <field name="purposes" :value="[]"/>
+      <field name="channels" :value="[]"/>
+      <field name="originTypes" :value="[]"/>
+      <field name="dateFrom" value=""/>
+      <field name="dateTo" value=""/>
+      <field name="sourceType" value=""/>
+      <field name="sourceIdentifier" value=""/>
+      <field name="advancedOpen" :value="false"/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>core.admin.identity.logs.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>identityProviders</wait-for>
+    <wait-for>identityPurposes</wait-for>
+    <wait-for>identityLogs</wait-for>
+  </transition-overlay>
+  <action name="searchIdentityLogs">
+    <navigate path="/admin/identity/logs" :replace="true" :mergeQuery="true" transition_overlay_target="identity_log_datagrid__body">
+      <query :page="1" search="{{_local.filter.search || undefined}}" search_type="{{_local.filter.searchType !== 'auto' ? _local.filter.searchType : undefined}}" statuses="{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}" purposes="{{_local.filter.purposes?.length > 0 ? _local.filter.purposes : undefined}}" channels="{{_local.filter.channels?.length > 0 ? _local.filter.channels : undefined}}" origin_types="{{_local.filter.originTypes?.length > 0 ? _local.filter.originTypes : undefined}}" date_from="{{_local.filter.dateFrom || undefined}}" date_to="{{_local.filter.dateTo || undefined}}" source_type="{{_local.filter.sourceType || undefined}}" source_identifier="{{_local.filter.sourceIdentifier || undefined}}" :status="null" :purpose="null"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="local">
+      <field name="filter">
+        <field name="searchType" value="{{query.search_type || 'auto'}}"/>
+        <field name="search" value="{{query.search || ''}}"/>
+        <field name="statuses" value="{{Array.isArray(query['statuses[]']) ? query['statuses[]'] : (query['statuses[]'] ? [query['statuses[]']] : (query.status ? [query.status] : []))}}"/>
+        <field name="purposes" value="{{Array.isArray(query['purposes[]']) ? query['purposes[]'] : (query['purposes[]'] ? [query['purposes[]']] : (query.purpose ? [query.purpose] : []))}}"/>
+        <field name="channels" value="{{Array.isArray(query['channels[]']) ? query['channels[]'] : (query['channels[]'] ? [query['channels[]']] : [])}}"/>
+        <field name="originTypes" value="{{Array.isArray(query['origin_types[]']) ? query['origin_types[]'] : (query['origin_types[]'] ? [query['origin_types[]']] : [])}}"/>
+        <field name="dateFrom" value="{{query.date_from || ''}}"/>
+        <field name="dateTo" value="{{query.date_to || ''}}"/>
+        <field name="sourceType" value="{{query.source_type || ''}}"/>
+        <field name="sourceIdentifier" value="{{query.source_identifier || ''}}"/>
+        <field name="advancedOpen" value="{{!!(query.source_type || query.source_identifier || query['origin_types[]'])}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="identity_log_list_content" class="admin-page-content">
+      <div data-ref="page_header" class="flex-between mb-6">
+        <div>
+          <h1 class="page-title">$t:admin.identity.logs.page_title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.identity.logs.page_description</p>
+        </div>
+        <div class="flex-center gap-2">
+          <button data-ref="refresh_button" type="button" class="btn-icon" title="$t:admin.identity.logs.refresh">
+            <on type="click">
+              <refetch-data-source dataSourceId="identityLogs"/>
+            </on>
+            <icon name="fa-solid fa-arrows-rotate" size="lg"/>
+          </button>
+          <button data-ref="purge_button" data-if="{{identityLogs?.data?.abilities?.can_purge === true}}" type="button" class="btn btn-danger whitespace-nowrap">
+            <on type="click">
+              <open-modal target="identity_log_purge_confirm_modal"/>
+            </on>
+            <span>$t:admin.identity.logs.purge_button</span>
+          </button>
+        </div>
+      </div>
+      <tab-navigation data-ref="provider_tabs" tabs="{{[{id: '', label: '$t:admin.identity.logs.tab_all'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon})))}}" activeTabId="{{query.provider_id ?? ''}}" variant="default" class="sticky-tab-nav mb-6">
+        <on type="change" event="onTabChange">
+          <sequence>
+            <set-state target="local">
+              <field name="filter">
+                <field name="searchType" value="auto"/>
+                <field name="search" value=""/>
+                <field name="statuses" :value="[]"/>
+                <field name="purposes" :value="[]"/>
+                <field name="channels" :value="[]"/>
+                <field name="originTypes" :value="[]"/>
+                <field name="dateFrom" value=""/>
+                <field name="dateTo" value=""/>
+                <field name="sourceType" value=""/>
+                <field name="sourceIdentifier" value=""/>
+                <field name="advancedOpen" :value="false"/>
+              </field>
+            </set-state>
+            <navigate path="/admin/identity/logs" :replace="true" query="{{$args[0] ? {provider_id: $args[0], page: 1} : []}}" transition_overlay_target="identity_log_datagrid__body"/>
+          </sequence>
+        </on>
+      </tab-navigation>
+      <include src="partials/admin_identity_logs/_partial_filter.json"/>
+      <div data-ref="data_table_section" class="mt-6">
+        <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+          <div class="flex-center gap-3">
+            <span class="text-label">$t:admin.identity.logs.total_count|count={{identityLogs?.data?.pagination?.total || 0}}</span>
+          </div>
+          <div class="flex-center gap-3">
+            <select name="sortBy" class="w-36 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+              <options>
+                <option value="created_at_desc">$t:admin.identity.logs.sort.created_at_desc</option>
+                <option value="created_at_asc">$t:admin.identity.logs.sort.created_at_asc</option>
+                <option value="attempts_desc">$t:admin.identity.logs.sort.attempts_desc</option>
+              </options>
+              <on type="change">
+                <navigate path="/admin/identity/logs" :replace="true" :mergeQuery="true" transition_overlay_target="identity_log_datagrid__body">
+                  <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+            <select name="perPage" class="w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
+              <options>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </options>
+              <on type="change">
+                <navigate path="/admin/identity/logs" :replace="true" :mergeQuery="true" transition_overlay_target="identity_log_datagrid__body">
+                  <query per_page="{{$event.target.value}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+          </div>
+        </div>
+        <include src="partials/admin_identity_logs/_partial_datagrid.json"/>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_identity_logs/_modal_log_detail.json"/>
+  <modal src="partials/admin_identity_logs/_modal_purge_confirm.json"/>
+</layout>

@@ -61,9 +61,11 @@
             <div class="row-stack">
               <div data-ref="mobile_search_row" class="flex flex-row gap-2 items-center">
                 <select data-ref="mobile_search_field_select" value="{{_local.searchField || 'all'}}" class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
-                  <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
-                  <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
-                  <option value="slug">$t:sirsoft-page.admin.page.search_fields.slug</option>
+                  <options>
+                    <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
+                    <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
+                    <option value="slug">$t:sirsoft-page.admin.page.search_fields.slug</option>
+                  </options>
                   <on type="change">
                     <set-state searchField="{{$event.target.value}}"/>
                   </on>
@@ -90,9 +92,11 @@
             </div>
           </responsive>
           <select data-ref="search_field_select" value="{{_local.searchField || 'all'}}" class="select-composite w-28">
-            <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
-            <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
-            <option value="slug">$t:sirsoft-page.admin.page.search_fields.slug</option>
+            <options>
+              <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
+              <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
+              <option value="slug">$t:sirsoft-page.admin.page.search_fields.slug</option>
+            </options>
             <on type="change">
               <set-state searchField="{{$event.target.value}}"/>
             </on>
@@ -121,9 +125,11 @@
         <span data-ref="total_count" class="text-secondary text-sm">$t:sirsoft-page.admin.page.total_count|count={{pages?.data?.meta?.total ?? 0}}</span>
         <div data-ref="list_options" class="flex-center gap-3">
           <select data-ref="published_filter_select" value="{{query.published ?? ''}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
-            <option value="">$t:sirsoft-page.admin.page.published_filter.all</option>
-            <option value="1">$t:sirsoft-page.admin.page.published_filter.published</option>
-            <option value="0">$t:sirsoft-page.admin.page.published_filter.unpublished</option>
+            <options>
+              <option value="">$t:sirsoft-page.admin.page.published_filter.all</option>
+              <option value="1">$t:sirsoft-page.admin.page.published_filter.published</option>
+              <option value="0">$t:sirsoft-page.admin.page.published_filter.unpublished</option>
+            </options>
             <on type="change">
               <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
                 <query published="{{$event.target.value}}" :page="1"/>
@@ -131,10 +137,12 @@
             </on>
           </select>
           <select data-ref="sort_select" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
-            <option value="created_at_desc">$t:sirsoft-page.admin.page.sort.created_at_desc</option>
-            <option value="created_at_asc">$t:sirsoft-page.admin.page.sort.created_at_asc</option>
-            <option value="published_at_desc">$t:sirsoft-page.admin.page.sort.published_at_desc</option>
-            <option value="published_at_asc">$t:sirsoft-page.admin.page.sort.published_at_asc</option>
+            <options>
+              <option value="created_at_desc">$t:sirsoft-page.admin.page.sort.created_at_desc</option>
+              <option value="created_at_asc">$t:sirsoft-page.admin.page.sort.created_at_asc</option>
+              <option value="published_at_desc">$t:sirsoft-page.admin.page.sort.published_at_desc</option>
+              <option value="published_at_asc">$t:sirsoft-page.admin.page.sort.published_at_asc</option>
+            </options>
             <on type="change">
               <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
                 <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
@@ -142,10 +150,12 @@
             </on>
           </select>
           <select data-ref="per_page_select" value="{{query.per_page || '20'}}" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
-            <option value="10">$t:sirsoft-page.admin.page.per_page|count=10</option>
-            <option value="20">$t:sirsoft-page.admin.page.per_page|count=20</option>
-            <option value="50">$t:sirsoft-page.admin.page.per_page|count=50</option>
-            <option value="100">$t:sirsoft-page.admin.page.per_page|count=100</option>
+            <options>
+              <option value="10">$t:sirsoft-page.admin.page.per_page|count=10</option>
+              <option value="20">$t:sirsoft-page.admin.page.per_page|count=20</option>
+              <option value="50">$t:sirsoft-page.admin.page.per_page|count=50</option>
+              <option value="100">$t:sirsoft-page.admin.page.per_page|count=100</option>
+            </options>
             <on type="change">
               <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
                 <query per_page="{{$event.target.value}}" :page="1"/>

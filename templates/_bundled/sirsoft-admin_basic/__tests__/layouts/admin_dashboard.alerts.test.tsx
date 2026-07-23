@@ -236,9 +236,11 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
 
   it('dismiss 버튼 액션이 POST /api/admin/extensions/{type}/{id}/dismiss 로 정의되어 있다', () => {
     // JSON 구조 검증 — alert_dismiss_button 의 actions[0].target
+    //
+    // 반복(iteration) 안의 노드라 #421 이후 id 에 `_{{$idx}}` 가 붙는다 — 접두 일치도 본다.
     function findById(node: any, id: string): any | null {
       if (!node || typeof node !== 'object') return null;
-      if (node.id === id) return node;
+      if (node.id === id || node.id === `${id}_{{$idx}}`) return node;
       const keys = ['children'];
       for (const k of keys) {
         const arr = node[k];

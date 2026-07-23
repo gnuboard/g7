@@ -1,5 +1,8 @@
 {
   "layout_name": "panel_detail",
+  "meta": {
+    "is_partial": true
+  },
   "id": "detail_panel",
   "type": "basic",
   "name": "Div",
@@ -18,7 +21,11 @@
         "className": "py-16"
       }
     },
-    { "partial": "_panel_view.json" },
-    { "partial": "_panel_form.json" }
+    {
+      "partial": "_panel_view.json"
+    },
+    {
+      "partial": "_panel_form.json"
+    }
   ]
 }

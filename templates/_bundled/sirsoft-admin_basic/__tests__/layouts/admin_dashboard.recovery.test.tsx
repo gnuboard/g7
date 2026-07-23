@@ -160,9 +160,15 @@ function setupDefaultMocks(testUtils: ReturnType<typeof createLayoutTest>) {
 }
 
 // 레이아웃 트리에서 id 로 노드 찾기
+/**
+ * id 로 노드를 찾는다 — 반복(iteration) 안의 노드는 id 에 `_{{$idx}}` 가 붙으므로 접두 일치도 본다.
+ *
+ * #421 이 반복 렌더링 노드의 id 를 인덱스 보간형(`alert_recover_button_{{$idx}}`)으로 바꿨는데,
+ * #302 때 쓰인 이 단언들은 리터럴 id 를 그대로 찾고 있어 stale 상태였다(레이아웃이 정본, 단언이 낡음).
+ */
 function findById(node: any, id: string): any | null {
   if (!node || typeof node !== 'object') return null;
-  if (node.id === id) return node;
+  if (node.id === id || node.id === `${id}_{{$idx}}`) return node;
   if (Array.isArray(node.children)) {
     for (const c of node.children) {
       const r = findById(c, id);

@@ -295,7 +295,13 @@ final class ActionMarkupDecompiler
         $children = [];
 
         foreach ($branches as $branch) {
-            $then = array_map(fn (array $a): MarkupElement => $this->action($a), $branch['then'] ?? []);
+            // `then` 은 액션 배열이거나 **단일 액션 객체**다 — 엔진이 둘 다 받고(handleConditions),
+            // 전 코퍼스에서는 객체가 다수형이다. 배열로만 보고 순회하면 객체가 올 때 TypeError 로
+            // 죽어 그 노드가 통째로 `<json>` 으로 탈출한다. 컴파일러는 자식 하나를 객체로 되돌린다.
+            $then = array_map(
+                fn (array $a): MarkupElement => $this->action($a),
+                $this->thenActions($branch['then'] ?? []),
+            );
             $comment = $branch['comment'] ?? null;
 
             $children[] = array_key_exists('if', $branch)
@@ -304,6 +310,22 @@ final class ActionMarkupDecompiler
         }
 
         return $children;
+    }
+
+    /**
+     * 분기의 `then` 값을 액션 목록으로 정규화합니다 (단일 객체 → 1원소 목록).
+     *
+     * @param  mixed  $then  `then` 값 (액션 객체 또는 액션 배열)
+     * @return array<int, array<string, mixed>> 액션 목록
+     */
+    private function thenActions(mixed $then): array
+    {
+        if (! is_array($then) || $then === []) {
+            return [];
+        }
+
+        // 리스트(0부터 연속 정수 키)면 액션 배열, 그 밖은 액션 객체 하나.
+        return array_is_list($then) ? $then : [$then];
     }
 
     /**
@@ -337,6 +359,20 @@ final class ActionMarkupDecompiler
             if ($this->isFieldMap($map)) {
                 $children[] = $this->el($key, $this->fieldMapAttributes($map));
             }
+        }
+
+        // 비-제어 핸들러의 `params.actions` 는 실행 목록이다 (startInterval — D42 G10).
+        // `actions` 라는 이름은 제어 핸들러의 레거시 params 배치와 겹치는데, 그쪽은 control() 이
+        // top-level 로 찍는다. 여기서 걸러내지 않으면 비-제어 핸들러의 목록을 **아무도 찍지 않아**
+        // 키가 통째로 소실되고 그 섹션이 `<json>` 으로 탈출한다.
+        $tickActions = $action['params']['actions'] ?? null;
+
+        if (! in_array($action['handler'] ?? '', self::CONTROL_HANDLERS, true)
+            && is_array($tickActions) && $tickActions !== [] && array_is_list($tickActions)) {
+            $children[] = $this->el('actions', [], array_map(
+                fn (array $a): MarkupElement => $this->action($a),
+                $tickActions,
+            ));
         }
 
         // 임의 이름의 **구조값 파라미터**는 `<field name>` 자식으로 되돌린다 (D42 G6).

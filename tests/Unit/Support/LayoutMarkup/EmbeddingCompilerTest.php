@@ -16,8 +16,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * 검증 축은 넷이다:
  *
  *  1. **fixture 쌍** — 서브트리 hoist(cellChildren/expandChildren/…)·노드 키 hoist(responsive/
- *     component_layout/itemTemplate)·extension_point·정적 옵션 리프트가 실측 JSON shape 와 키
- *     순서까지 같은가.
+ *     component_layout/itemTemplate)·extension_point·`<options>` 데이터 래퍼가 실측 JSON shape 와
+ *     키 순서까지 같은가.
  *  2. **부모 문맥** — `<column>` 은 DataGrid 안에서만, `<title-prefix>` 는 Modal 안에서만 뜻이
  *     있다. 엉뚱한 부모 아래 오면 자리 오류로 안내하는가(조용히 props 로 흘리지 않는가).
  *  3. **서브트리 hoist vs 표현식-리프 경계** — `<expand>` 는 노드 트리를 hoist 하지만
@@ -49,7 +49,7 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=embedding,source_health=valid
      *
      * @effects subtree_is_hoisted_to_its_props_or_node_key,
-     *          static_options_are_lifted_conditionally,
+     *          options_wrapper_always_compiles_to_options_prop,
      *          expressions_and_translation_keys_are_never_pre_evaluated
      */
     #[DataProvider('fixtureProvider')]
@@ -246,27 +246,87 @@ class EmbeddingCompilerTest extends LayoutMarkupTestCase
     }
 
     // ---------------------------------------------------------------------
-    // 정적 옵션 리프트 (조건부)
+    // 옵션 표기 — `<options>` 데이터 래퍼 vs 직속 `<option>` 노드 (G13)
     // ---------------------------------------------------------------------
 
     /**
+     * `<options>` 안의 `<option>` 은 데이터다 — 언제나 `props.options` 로 접힌다.
+     *
+     * Select 는 `options` 유무로 **렌더 컴포넌트 자체가 갈린다**(있으면 커스텀 드롭다운, 없으면
+     * 네이티브 `<select>`+children). 두 shape 는 런타임 동치가 아니므로 표기가 결정적이어야 한다.
+     *
      * @scenario compile_unit=embedding,source_health=valid
      *
-     * @effects static_options_are_lifted_conditionally
+     * @effects options_wrapper_always_compiles_to_options_prop
      */
-    public function test_static_options_lift_only_without_multiple_or_size(): void
+    public function test_options_wrapper_compiles_to_options_prop(): void
     {
-        // 전 자식이 정적 <option> 이고 multiple/size 가 없을 때만 options 배열로 끌어올린다.
-        $lifted = $this->compile('<select><option value="a">$t:x.a</option><option value="b" disabled>$t:x.b</option></select>');
+        $node = $this->compile('<select><options><option value="a">$t:x.a</option><option value="b" disabled>$t:x.b</option></options></select>');
+
         $this->assertSame(
             [['value' => 'a', 'label' => '$t:x.a'], ['value' => 'b', 'label' => '$t:x.b', 'disabled' => true]],
-            $lifted['props']['options'],
+            $node['props']['options'],
         );
+        $this->assertArrayNotHasKey('children', $node);
+    }
 
-        // multiple 이 있으면 리프트하지 않고 Option 을 일반 children 노드로 방출한다(기능 축소 방지).
-        $kept = $this->compile('<select multiple><option value="a">$t:x.a</option></select>');
-        $this->assertArrayNotHasKey('options', $kept['props']);
-        $this->assertSame('Option', $kept['children'][0]['name']);
+    /**
+     * 형제 `<on>`·구조 태그가 있어도 래퍼는 그대로 접히고, 그 형제도 유실되지 않는다.
+     *
+     * 종전 휴리스틱은 "전 자식이 `<option>` 일 때만" 접었기 때문에 이벤트 핸들러가 달린
+     * `<select>`(=실사용 대부분)에서 리프트가 통째로 불발했다 — 원본 `props.options` 가
+     * `children:[Option]` 으로 뒤바뀌어 네이티브 select 로 렌더되는 회귀였다(실측 44건).
+     *
+     * @scenario compile_unit=embedding,source_health=valid
+     *
+     * @effects options_wrapper_lifts_alongside_sibling_actions
+     */
+    public function test_options_wrapper_lifts_even_with_sibling_action(): void
+    {
+        $node = $this->compile(<<<'HTML'
+            <select value="{{_local.f}}">
+              <options><option value="all">$t:x.all</option></options>
+              <on type="change"><set-state f="{{$event.target.value}}"/></on>
+            </select>
+            HTML);
+
+        $this->assertSame([['value' => 'all', 'label' => '$t:x.all']], $node['props']['options']);
+        $this->assertArrayNotHasKey('children', $node);
+        $this->assertNotEmpty($node['actions'] ?? []);
+    }
+
+    /**
+     * 래퍼 없는 직속 `<option>` 은 Option 컴포넌트 노드다 — 절대 접지 않는다.
+     *
+     * 종전 휴리스틱은 이쪽도 접어버려서, 네이티브 select 로 저작된 레이아웃이 커스텀
+     * 드롭다운으로 바뀌었다(실측 2건 — 반대 방향 회귀).
+     *
+     * @scenario compile_unit=embedding,source_health=valid
+     *
+     * @effects bare_option_children_stay_component_nodes
+     */
+    public function test_bare_option_children_are_never_lifted(): void
+    {
+        $node = $this->compile('<select name="toolbar"><option value="a">$t:x.a</option><option value="b">$t:x.b</option></select>');
+
+        $this->assertArrayNotHasKey('options', $node['props'] ?? []);
+        $this->assertCount(2, $node['children']);
+        $this->assertSame('Option', $node['children'][0]['name']);
+    }
+
+    /**
+     * `<options>` 와 `:options` 는 같은 자리를 다툰다 — 침묵 덮어쓰기 대신 충돌로 잡는다.
+     *
+     * @scenario compile_unit=embedding,source_health=invalid
+     *
+     * @effects options_wrapper_conflicts_with_options_attribute
+     */
+    public function test_options_wrapper_conflicts_with_options_attribute(): void
+    {
+        $this->assertSame(
+            LayoutMarkupErrorCode::DuplicateAttribute,
+            $this->compileError('<select :options="[]"><options><option value="a">a</option></options></select>')->getErrorCode(),
+        );
     }
 
     // ---------------------------------------------------------------------

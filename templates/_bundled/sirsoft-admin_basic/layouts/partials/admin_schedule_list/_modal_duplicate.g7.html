@@ -1,0 +1,39 @@
+<partial description="스케줄 복제 확인 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_duplicate_modal">
+  <modal data-ref="schedule_duplicate_modal" title="$t:admin.schedules.modals.duplicate_title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.schedules.modals.duplicate_confirm</p>
+    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2">
+      <div class="flex-center gap-2">
+        <span class="text-label-subtle">$t:admin.schedules.form.name:</span>
+        <span class="text-primary font-medium">{{_global.selectedSchedule?.name}}</span>
+      </div>
+      <div class="flex-center gap-2">
+        <span class="text-label-subtle">$t:admin.schedules.form.type:</span>
+        <span class="text-primary">{{_global.selectedSchedule?.type_label}}</span>
+      </div>
+    </div>
+    <p class="mt-4 text-label-subtle">$t:admin.schedules.modals.duplicate_note</p>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isDuplicating}}"><on type="click"><close-modal target="schedule_duplicate_modal"/></on>$t:common.cancel</button>
+      <button class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDuplicating}}">
+        <on type="click">
+          <set-state target="global" :isDuplicating="true"/>
+          <api-call :auth_required="true" target="/api/admin/schedules/{{_global.selectedSchedule?.id}}/duplicate" method="POST">
+            <success>
+              <set-state target="global" :isDuplicating="false"/>
+              <toast type="success" message="$t:admin.schedules.messages.duplicate_success"/>
+              <refetch-data-source dataSourceId="schedules"/>
+              <close-modal target="schedule_duplicate_modal"/>
+            </success>
+            <fail>
+              <set-state target="global" :isDuplicating="false"/>
+              <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.duplicate_failed'}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isDuplicating}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{!_global.isDuplicating}}" name="copy" class="w-4 h-4"/>
+        <span>{{_global.isDuplicating ? '$t:admin.schedules.modals.duplicating' : '$t:admin.schedules.actions.duplicate'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -1,0 +1,22 @@
+<partial description="동일 슬롯에 이미 활성 언어팩이 있을 때 교체 확인 모달 (모듈 force_activate 패턴)" editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_slot_conflict_modal">
+  <modal data-ref="language_pack_slot_conflict_modal" title="$t:admin.language_packs.slot_conflict_modal.title" size="sm">
+    <div class="row-stack">
+      <p class="text-body">$t:admin.language_packs.slot_conflict_modal.description</p>
+      <div class="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3 space-y-2">
+        <div class="flex-between gap-2 text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:admin.language_packs.slot_conflict_modal.current_label</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{_global.slotConflictCurrent?.identifier ?? '-'}}</span>
+        </div>
+        <div class="flex-between gap-2 text-sm">
+          <span class="text-gray-500 dark:text-gray-400">$t:admin.language_packs.slot_conflict_modal.target_label</span>
+          <span class="font-medium text-indigo-700 dark:text-indigo-300 truncate">{{_global.slotConflictTarget?.identifier ?? '-'}}</span>
+        </div>
+      </div>
+      <p class="text-warning-soft">$t:admin.language_packs.slot_conflict_modal.warning</p>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"><on event="onClick"><set-state target="global" :slotConflictCurrent="null" :slotConflictTarget="null" :slotConflictTargetId="null"/><close-modal target="language_pack_slot_conflict_modal"/><refetch-data-source dataSourceId="language_packs"/></on>$t:admin.language_packs.slot_conflict_modal.cancel</button>
+      <button type="button" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"><on event="onClick"><api-call :auth_required="true" target="/api/admin/language-packs/{{_global.slotConflictTargetId}}/activate" method="POST"><success><set-state target="global" :slotConflictCurrent="null" :slotConflictTarget="null" :slotConflictTargetId="null"/><close-modal target="language_pack_slot_conflict_modal"/><toast type="success" message="$t:admin.language_packs.messages.activate_success"/><refetch-data-source dataSourceId="language_packs"/><reload-extensions/></success><fail><toast type="error" message="{{$error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"/></fail><body :force="true"/></api-call></on>$t:admin.language_packs.slot_conflict_modal.confirm</button>
+    </div>
+  </modal>
+</partial>

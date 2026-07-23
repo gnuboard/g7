@@ -1,0 +1,335 @@
+<layout name="admin_module_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.modules.page_title" description="$t:admin.modules.page_description"/>
+  <data-source id="modules" label_key="$t:editor.data_source.modules" type="api" endpoint="/api/admin/modules" method="GET" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page}}" per_page="{{query.per_page || 12}}" search="{{query.search}}" status="{{query.status}}" include_hidden="{{_local.showHidden ? 1 : 0}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="current_page" :value="1"/>
+        <field name="last_page" :value="1"/>
+        <field name="per_page" :value="12"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="auto_deactivated_banner" label_key="$t:editor.data_source.auto_deactivated_banner" type="api" endpoint="/api/admin/extensions/auto-deactivated" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="items">
+          <field name="plugins" :value="[]"/>
+          <field name="modules" :value="[]"/>
+          <field name="templates" :value="[]"/>
+        </field>
+        <field name="current_core_version" value=""/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="searchQuery" value=""/>
+    <field name="showHidden" :value="false"/>
+  </init-local>
+  <permissions>
+    <permission>core.modules.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>modules</wait-for>
+    <wait-for>auto_deactivated_banner</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="searchQuery" value="{{query.search || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="module_list_content" class="admin-page-content-responsive-fluid">
+      <page-header data-ref="page_header" title="$t:admin.modules.title" description="$t:admin.modules.description">
+        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+          <on type="click">
+            <refetch-data-source dataSourceId="modules"/>
+          </on>
+        </icon-button>
+        <button data-ref="check_updates_button" class="flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCheckingUpdates || modules?.data?.abilities?.can_install !== true}}" type="button">
+          <responsive on="portable" class="hidden"/>
+          <on type="click">
+            <set-state target="global" :isCheckingUpdates="true"/>
+            <api-call :auth_required="true" target="/api/admin/modules/check-updates" method="POST">
+              <success>
+                <set-state target="global" :isCheckingUpdates="false"/>
+                <refetch-data-source dataSourceId="modules"/>
+                <toast type="success" message="{{response.data?.update_count > 0 ? '$t:admin.modules.check_updates_success|count=' + response.data.update_count : '$t:admin.modules.check_updates_no_updates'}}"/>
+              </success>
+              <fail>
+                <set-state target="global" :isCheckingUpdates="false"/>
+                <toast type="error" message="{{$error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <icon data-if="{{!_global.isCheckingUpdates}}" name="refresh" size="sm"/>
+          <icon data-if="{{_global.isCheckingUpdates}}" name="spinner" size="sm" class="animate-spin"/>
+          <span>$t:admin.modules.actions.check_updates</span>
+        </button>
+        <button data-ref="manual_install_button" class="flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{modules?.data?.abilities?.can_install !== true}}">
+          <responsive on="portable" class="hidden"/>
+          <on type="click">
+            <open-modal target="module_manual_install_modal"/>
+          </on>
+          <icon name="upload" class="w-5 h-5"/>
+          <span>$t:admin.modules.manual_install</span>
+        </button>
+        <button data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <responsive on="portable" class="hidden"/>
+          <icon name="globe" class="w-5 h-5"/>
+          <span>$t:admin.modules.marketplace</span>
+        </button>
+      </page-header>
+      <div data-ref="mobile_action_buttons" class="hidden">
+        <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4"/>
+        <button data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{modules?.data?.abilities?.can_install !== true}}">
+          <on type="click">
+            <open-modal target="module_manual_install_modal"/>
+          </on>
+          <icon name="upload" class="w-5 h-5"/>
+          <span>$t:admin.modules.manual_install</span>
+        </button>
+        <button data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <icon name="globe" class="w-5 h-5"/>
+          <span>$t:admin.modules.marketplace</span>
+        </button>
+      </div>
+      <div data-ref="auto_deactivated_banner_wrapper" data-if="{{(auto_deactivated_banner?.data?.items?.modules?.length ?? 0) > 0}}" class="alert-warning" role="alert">
+        <div class="flex-start gap-3">
+          <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-warning-soft mb-2">$t:extensions.banner.title</p>
+            <div class="row-stack">
+              <div data-each="banner_item in {{auto_deactivated_banner?.data?.items?.modules ?? []}}" class="flex-between gap-2 text-warning-soft">
+                <span class="font-mono">{{banner_item.identifier}} — $t:defer:extensions.banner.item_required|required={{banner_item.incompatible_required_version ?? ''}}</span>
+                <button type="button" class="text-warning-soft hover:underline" aria-label="$t:extensions.banner.dismiss">
+                  <on type="click">
+                    <api-call :auth_required="true" target="/api/admin/extensions/module/{{banner_item.identifier}}/dismiss" method="POST">
+                      <success>
+                        <refetch-data-source dataSourceId="auto_deactivated_banner"/>
+                      </success>
+                    </api-call>
+                  </on>
+                  <icon name="times" size="xs"/>
+                </button>
+              </div>
+            </div>
+            <div class="mt-2">
+              <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer">
+                <on type="click">
+                  <open-modal target="core_update_guide_modal"/>
+                </on>
+                <icon name="arrow-up-circle" size="xs"/>
+                <span>$t:extensions.banner.guide_link</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="search_bar_wrapper" class="flex-center justify-end gap-4 mb-6">
+        <responsive on="portable" class="mb-6 row-stack"/>
+        <label data-ref="include_hidden_toggle" data-if="{{currentUser?.is_super === true}}" class="flex-center gap-2 text-body cursor-pointer select-none">
+          <input type="checkbox" checked="{{_local.showHidden === true}}" class="w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400">
+            <on type="change">
+              <set-state showHidden="{{!_local.showHidden}}"/>
+            </on>
+            <on type="change">
+              <refetch-data-source dataSourceId="modules"/>
+            </on>
+          </input>
+          <span>$t:admin.modules.include_hidden</span>
+        </label>
+        <search-bar data-ref="search_bar" placeholder="$t:admin.modules.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-64">
+          <responsive on="portable" class="w-full"/>
+          <on type="change">
+            <set-state searchQuery="{{$event.target.value}}"/>
+          </on>
+          <on type="submit">
+            <navigate path="/admin/modules">
+              <query search="{{_local.searchQuery || undefined}}" :page="1"/>
+            </navigate>
+          </on>
+        </search-bar>
+      </div>
+      <div data-ref="content_area" class="admin-card">
+        <card-grid data-ref="module_card_grid" :data-blur-until-loaded="true" data="{{modules?.data?.data ?? []}}" :gridColumns="1" :gap="4" idField="identifier" :pagination="true" :alwaysShowPagination="true" :serverSidePagination="true" serverCurrentPage="{{modules?.data?.current_page ?? 1}}" serverTotalPages="{{modules?.data?.last_page ?? 1}}" cardClassName="border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative">
+          <card id="module_content">
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <icon name="cube" class="text-2xl text-gray-600 dark:text-gray-400"/>
+              </div>
+              <div class="flex-1 min-w-0 flex items-start justify-between gap-4">
+                <responsive on="portable" class="flex-1 min-w-0 row-stack"/>
+                <div class="flex-1 min-w-0">
+                  <div class="flex-center gap-2 flex-wrap">
+                    <span class="font-semibold text-gray-900 dark:text-white">{{row.name}}</span>
+                    <span class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">v{{row.version}}</span>
+                    <span data-if="{{row.status === 'active'}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:admin.modules.status.active</span>
+                    <span data-if="{{row.status == 'inactive'}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">$t:admin.modules.status.inactive</span>
+                    <span data-if="{{row.status == 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded">$t:admin.modules.status.not_installed</span>
+                    <span data-if="{{row.status == 'installing'}}" class="px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded">$t:admin.modules.status.installing</span>
+                    <span data-if="{{row.status == 'uninstalling'}}" class="px-2 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded">$t:admin.modules.status.uninstalling</span>
+                    <span data-if="{{row.status == 'updating'}}" class="px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded">$t:admin.modules.status.updating</span>
+                    <span data-if="{{row.update_available &amp;&amp; row.status != 'updating' &amp;&amp; row.status != 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.modules.update_available</span>
+                    <span data-if="{{row.update_available &amp;&amp; row.latest_version &amp;&amp; row.status != 'updating' &amp;&amp; row.status != 'uninstalled'}}" class="text-tertiary">$t:defer:admin.modules.version_available|version={{row.latest_version ?? ''}}</span>
+                    <span data-if="{{row.is_compatible === false}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded inline-flex items-center gap-1" title="$t:defer:extensions.badges.incompatible_tooltip|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}" aria-describedby="compat_sr_{{row.identifier}}">
+                      <icon name="exclamation-triangle" size="xs"/>
+                      <span>$t:extensions.badges.incompatible</span>
+                    </span>
+                    <span data-if="{{row.is_compatible === false}}" id="compat_sr_{{row.identifier}}" class="sr-only">$t:defer:extensions.badges.incompatible_sr|name={{row.name ?? row.identifier ?? ''}}|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}</span>
+                  </div>
+                  <p class="mt-1 text-label">{{row.description}}</p>
+                  <div class="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
+                    <responsive on="portable" class="mt-2 flex flex-col items-start gap-1 text-xs text-gray-500 dark:text-gray-500"/>
+                    <span>$t:defer:admin.modules.vendor|vendor={{row.vendor}}</span>
+                    <div data-if="{{row.dependencies &amp;&amp; row.dependencies.length > 0}}" class="flex items-center gap-1 flex-wrap">
+                      <span>$t:admin.modules.dependencies_label</span>
+                      <span data-each="dep, depIndex in {{row.dependencies}}">
+                        <span class="inline-flex items-center gap-0.5 align-middle">
+                          <icon data-if="{{dep.type === 'module'}}" name="cube" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"/>
+                          <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"/>
+                          <span>{{dep.name}}</span>
+                        </span>
+                        <span data-if="{{depIndex < row.dependencies.length - 1}}" class="ml-0 mr-1">,</span>
+                      </span>
+                    </div>
+                    <span data-if="{{!row.dependencies || row.dependencies.length === 0}}">$t:admin.modules.no_dependencies</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                  <button data-if="{{row.status == 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_install !== true}}">
+                    <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"/>
+                    <on type="click">
+                      <set-state target="global" selectedModule="{{row}}"/>
+                      <open-modal target="module_install_modal"/>
+                    </on>
+                    <icon name="download" class="w-4 h-4"/>
+                    <span>$t:admin.modules.actions.install</span>
+                  </button>
+                  <button data-ref="update_button" data-if="{{row.update_available &amp;&amp; row.status != 'updating' &amp;&amp; row.status != 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{row.abilities?.can_install !== true || row.is_compatible === false}}" title="{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}" aria-describedby="{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}">
+                    <on type="click">
+                      <set-state target="global" selectedModule="{{row}}" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]"/>
+                      <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/check-modified-layouts" method="GET">
+                        <success>
+                          <set-state target="global" hasModifiedModuleLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedModuleLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedModuleLayouts="{{response.data?.modified_layouts ?? []}}"/>
+                        </success>
+                      </api-call>
+                      <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&amp;from_version={{row.version}}&amp;to_version={{row.latest_version}}" method="GET">
+                        <success>
+                          <set-state target="global" updateChangelog="{{response.data.changelog ?? []}}"/>
+                          <set-state target="global" :moduleUpdateError="null"/>
+                          <open-modal target="module_update_modal"/>
+                        </success>
+                        <fail>
+                          <set-state target="global" :updateChangelog="[]" :moduleUpdateError="null"/>
+                          <open-modal target="module_update_modal"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                    <icon name="refresh" class="w-4 h-4"/>
+                    <span>$t:admin.modules.actions.update</span>
+                  </button>
+                  <toggle data-if="{{row.status != 'uninstalled'}}" checked="{{row.status == 'active'}}" disabled="{{row.abilities?.can_activate !== true}}" size="sm" class="">
+                    <responsive on="portable" class="absolute right-4 top-1/2 -translate-y-1/2"/>
+                    <on type="change">
+                      <api-call :auth_required="true" target="{{$event.target.checked ? '/api/admin/modules/activate' : '/api/admin/modules/deactivate'}}" method="POST">
+                        <success>
+                          <parallel>
+                            <toast type="success" message="{{$event.target.checked ? '$t:admin.modules.activate_success' : '$t:admin.modules.deactivate_success'}}"/>
+                            <refetch-data-source dataSourceId="modules"/>
+                            <refetch-data-source dataSourceId="admin_menu"/>
+                            <reload-extensions moduleInfo="{{result}}" action="{{$event.target.checked ? 'add' : 'remove'}}"/>
+                          </parallel>
+                        </success>
+                        <fail>
+                          <sequence>
+                            <toast type="error" message="{{error.message}}"/>
+                            <refetch-data-source dataSourceId="modules"/>
+                          </sequence>
+                        </fail>
+                        <error-handling>
+                          <on-code code="409">
+                            <set-state target="global" selectedModule="{{row}}" deactivateWarningData="{{error.errors?.dependent_templates ? error.errors : null}}" activateWarningData="{{error.errors?.missing_modules || error.errors?.missing_plugins ? error.errors : null}}"/>
+                            <open-modal target="{{error.errors?.dependent_templates || error.errors?.dependent_modules || error.errors?.dependent_plugins ? 'module_force_deactivate_modal' : 'module_force_activate_modal'}}"/>
+                          </on-code>
+                        </error-handling>
+                        <body module_name="{{row.identifier}}"/>
+                      </api-call>
+                    </on>
+                  </toggle>
+                  <div class="">
+                    <responsive on="portable" class="absolute right-0 top-0"/>
+                    <action-menu triggerLabel="">
+                      <prop name="items">
+                        <item id="view_detail" label="$t:admin.modules.actions.view_detail" iconName="info-circle"/>
+                        <item id="refresh_layouts" label="$t:admin.modules.actions.refresh_layouts" iconName="refresh" disabled="{{row.status != 'active' || row.abilities?.can_activate !== true}}"/>
+                        <item id="manage_language_packs" label="$t:admin.language_packs.actions.manage" iconName="language" disabled="{{row.status != 'active'}}"/>
+                        <item id="uninstall" label="$t:admin.modules.actions.uninstall" iconName="trash" variant="danger" disabled="{{row.status == 'uninstalled' || row.status == 'uninstalling' || row.status == 'installing' || row.abilities?.can_uninstall !== true}}"/>
+                      </prop>
+                      <on type="action" event="onItemClick">
+                        <switch>
+                          <case when="view_detail">
+                            <set-state target="global" selectedModule="{{row}}"/>
+                            <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/changelog" method="GET">
+                              <success>
+                                <set-state target="global" moduleChangelog="{{response.data.changelog ?? []}}"/>
+                                <open-modal target="module_detail_modal"/>
+                              </success>
+                              <fail>
+                                <set-state target="global" :moduleChangelog="[]"/>
+                                <open-modal target="module_detail_modal"/>
+                              </fail>
+                            </api-call>
+                          </case>
+                          <case when="refresh_layouts">
+                            <set-state target="global" selectedModule="{{row}}"/>
+                            <open-modal target="module_refresh_layouts_modal"/>
+                          </case>
+                          <case when="manage_language_packs">
+                            <navigate path="/admin/modules/{{row.identifier}}/language-packs"/>
+                          </case>
+                          <case when="uninstall">
+                            <set-state target="global" selectedModule="{{row}}" :deleteModuleData="false" :moduleUninstallInfo="null"/>
+                            <open-modal target="module_uninstall_modal"/>
+                            <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/uninstall-info" method="GET">
+                              <success>
+                                <set-state target="global" moduleUninstallInfo="{{response.data}}"/>
+                              </success>
+                            </api-call>
+                          </case>
+                        </switch>
+                      </on>
+                    </action-menu>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </card>
+          <on type="change" event="onPageChange">
+            <navigate path="/admin/modules" :mergeQuery="true">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </on>
+        </card-grid>
+        <div data-ref="pagination_info" class="mt-4 text-label text-center">
+          <span>$t:admin.modules.pagination_info|total={{modules?.data?.total ?? 0}}|from={{((modules?.data?.current_page ?? 1) - 1) * (modules?.data?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.current_page ?? 1) * (modules?.data?.per_page ?? 12), modules?.data?.total ?? 0)}}</span>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_module_list/_modal_detail.json"/>
+  <modal src="partials/admin_module_list/_modal_install.json"/>
+  <modal src="partials/admin_module_list/_drawer_manifest_preview.json"/>
+  <modal src="partials/admin_module_list/_modal_uninstall.json"/>
+  <modal src="partials/admin_module_list/_modal_manual_install.json"/>
+  <modal src="partials/admin_module_list/_modal_refresh_layouts.json"/>
+  <modal src="partials/admin_module_list/_modal_force_deactivate.json"/>
+  <modal src="partials/admin_module_list/_modal_force_activate.json"/>
+  <modal src="partials/admin_module_list/_modal_update.json"/>
+  <modal src="partials/admin_module_list/_modal_extension_license.json"/>
+  <modal src="partials/admin_settings/_modal_core_update_guide.json"/>
+</layout>

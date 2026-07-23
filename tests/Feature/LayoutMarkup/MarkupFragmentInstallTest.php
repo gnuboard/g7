@@ -3,6 +3,7 @@
 namespace Tests\Feature\LayoutMarkup;
 
 use App\Extension\Traits\RefreshesLayoutExtensions;
+use App\Support\LayoutMarkup\LayoutCorpus;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -101,17 +102,10 @@ class MarkupFragmentInstallTest extends TestCase
      */
     public function test_every_migrated_fragment_compiles_to_its_json(): void
     {
-        $markupFiles = [];
-
-        foreach (['modules/_bundled/*/resources/extensions', 'plugins/_bundled/*/resources/extensions'] as $pattern) {
-            foreach (File::glob(base_path($pattern)) ?: [] as $dir) {
-                foreach (File::glob(rtrim($dir, '/\\').DIRECTORY_SEPARATOR.'*.g7.html') ?: [] as $file) {
-                    $markupFiles[] = $file;
-                }
-            }
-        }
-
-        sort($markupFiles);
+        // 모집단은 {@see LayoutCorpus} 가 SSoT — 종전에는 이 테스트가 글롭을 따로 들고 있었고
+        // `modules`·`plugins` 둘뿐이라 **템플릿 fragment 가 통째로 게이트 밖**이었다(㉘ 등재 사각).
+        // 게다가 최상위 파일만 훑어 하위 디렉토리의 fragment 도 못 봤다.
+        $markupFiles = LayoutCorpus::scanFragments('.g7.html');
 
         $this->assertNotEmpty($markupFiles, '이관된 fragment 저작 파일을 하나도 찾지 못했습니다.');
 

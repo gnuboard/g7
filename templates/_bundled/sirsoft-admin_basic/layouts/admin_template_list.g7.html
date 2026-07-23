@@ -1,0 +1,177 @@
+<layout name="admin_template_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.templates.page_title" description="$t:admin.templates.page_description"/>
+  <data-source id="templates" label_key="$t:editor.data_source.templates" type="api" endpoint="/api/admin/templates" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+    <params type="{{route.type}}" page="{{query.page}}" per_page="{{query.per_page || 12}}" search="{{query.search}}" include_hidden="{{_local.showHidden ? 1 : 0}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="current_page" :value="1"/>
+        <field name="last_page" :value="1"/>
+        <field name="per_page" :value="12"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="auto_deactivated_banner" label_key="$t:editor.data_source.auto_deactivated_banner" type="api" endpoint="/api/admin/extensions/auto-deactivated" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="items">
+          <field name="plugins" :value="[]"/>
+          <field name="modules" :value="[]"/>
+          <field name="templates" :value="[]"/>
+        </field>
+        <field name="current_core_version" value=""/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="searchQuery" value=""/>
+    <field name="showHidden" :value="false"/>
+  </init-local>
+  <permissions>
+    <permission>core.templates.read</permission>
+  </permissions>
+  <transition-overlay target="templates_tab_content" fallback-target="right_content_area">
+    <wait-for>templates</wait-for>
+    <wait-for>auto_deactivated_banner</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="searchQuery" value="{{query.search || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="template_list_content" class="admin-page-content-responsive-fluid">
+      <page-header data-ref="page_header" title="$t:admin.templates.title" description="$t:admin.templates.description">
+        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+          <on type="click">
+            <refetch-data-source dataSourceId="templates"/>
+          </on>
+        </icon-button>
+        <button data-ref="check_updates_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCheckingTemplateUpdates || templates?.data?.abilities?.can_install !== true}}" type="button">
+          <responsive on="portable" class="hidden"/>
+          <on type="click">
+            <set-state target="global" :isCheckingTemplateUpdates="true"/>
+            <api-call :auth_required="true" target="/api/admin/templates/check-updates" method="POST">
+              <success>
+                <set-state target="global" :isCheckingTemplateUpdates="false"/>
+                <refetch-data-source dataSourceId="templates"/>
+                <toast type="success" message="{{response.data?.update_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.update_count : '$t:admin.templates.check_updates_no_updates'}}"/>
+              </success>
+              <fail>
+                <set-state target="global" :isCheckingTemplateUpdates="false"/>
+                <toast type="error" message="{{$error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <icon data-if="{{!_global.isCheckingTemplateUpdates}}" name="refresh" size="sm"/>
+          <icon data-if="{{_global.isCheckingTemplateUpdates}}" name="spinner" size="sm" class="animate-spin"/>
+          <span>$t:admin.templates.actions.check_updates</span>
+        </button>
+        <button data-ref="manual_install_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+          <responsive on="portable" class="hidden"/>
+          <on type="click">
+            <open-modal target="template_manual_install_modal"/>
+          </on>
+          <icon name="upload" class="w-5 h-5"/>
+          <span>$t:admin.templates.manual_install</span>
+        </button>
+        <button data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <responsive on="portable" class="hidden"/>
+          <icon name="globe" class="w-5 h-5"/>
+          <span>$t:admin.templates.marketplace</span>
+        </button>
+      </page-header>
+      <div data-ref="mobile_action_buttons" class="hidden">
+        <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4"/>
+        <button data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+          <on type="click">
+            <open-modal target="template_manual_install_modal"/>
+          </on>
+          <icon name="upload" class="w-5 h-5"/>
+          <span>$t:admin.templates.manual_install</span>
+        </button>
+        <button data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <icon name="globe" class="w-5 h-5"/>
+          <span>$t:admin.templates.marketplace</span>
+        </button>
+      </div>
+      <div data-ref="auto_deactivated_banner_wrapper" data-if="{{(auto_deactivated_banner?.data?.items?.templates?.length ?? 0) > 0}}" class="alert-warning" role="alert">
+        <div class="flex-start gap-3">
+          <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-warning-soft mb-2">$t:extensions.banner.title</p>
+            <div>
+              <div data-each="banner_item in {{auto_deactivated_banner?.data?.items?.templates ?? []}}" class="flex-between gap-2 text-warning-soft">
+                <span class="font-mono">{{banner_item.identifier}} — $t:defer:extensions.banner.item_required|required={{banner_item.incompatible_required_version ?? ''}}</span>
+                <button type="button" class="text-warning-soft hover:underline" aria-label="$t:extensions.banner.dismiss">
+                  <on type="click">
+                    <api-call :auth_required="true" target="/api/admin/extensions/template/{{banner_item.identifier}}/dismiss" method="POST">
+                      <success>
+                        <refetch-data-source dataSourceId="auto_deactivated_banner"/>
+                      </success>
+                    </api-call>
+                  </on>
+                  <icon name="times" size="xs"/>
+                </button>
+              </div>
+            </div>
+            <div class="mt-2">
+              <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer">
+                <on type="click">
+                  <open-modal target="core_update_guide_modal"/>
+                </on>
+                <icon name="arrow-up-circle" size="xs"/>
+                <span>$t:extensions.banner.guide_link</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="include_hidden_toggle_wrapper" data-if="{{currentUser?.is_super === true}}" class="flex justify-end mb-3">
+        <label data-ref="include_hidden_toggle" class="flex-center gap-2 text-body cursor-pointer select-none">
+          <input type="checkbox" checked="{{_local.showHidden === true}}" class="w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400">
+            <on type="change">
+              <set-state showHidden="{{!_local.showHidden}}"/>
+            </on>
+            <on type="change">
+              <refetch-data-source dataSourceId="templates"/>
+            </on>
+          </input>
+          <span>$t:admin.templates.include_hidden</span>
+        </label>
+      </div>
+      <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav">
+        <tab-navigation data-ref="tab_navigation" activeTabId="{{_global.activeTemplateTab || route.type || 'user'}}" variant="default">
+          <prop name="tabs">
+            <item id="user" label="$t:admin.templates.tabs.user"/>
+            <item id="admin" label="$t:admin.templates.tabs.admin"/>
+          </prop>
+          <on type="change" event="onTabChange">
+            <set-state target="global" activeTemplateTab="{{$args[0]}}"/>
+            <navigate path="/admin/templates/{{$args[0]}}"/>
+            <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
+          </on>
+        </tab-navigation>
+      </div>
+      <div data-ref="templates_tab_content" class="tab-content">
+        <include src="partials/admin_template_list/_tab_admin.json"/>
+        <include src="partials/admin_template_list/_tab_user.json"/>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_template_list/_modal_detail.json"/>
+  <modal src="partials/admin_template_list/_modal_install.json"/>
+  <modal src="partials/admin_template_list/_drawer_manifest_preview.json"/>
+  <modal src="partials/admin_template_list/_modal_uninstall.json"/>
+  <modal src="partials/admin_template_list/_modal_activate.json"/>
+  <modal src="partials/admin_template_list/_modal_deactivate.json"/>
+  <modal src="partials/admin_template_list/_modal_manual_install.json"/>
+  <modal src="partials/admin_template_list/_modal_refresh_layouts.json"/>
+  <modal src="partials/admin_template_list/_modal_force_activate.json"/>
+  <modal src="partials/admin_template_list/_modal_update.json"/>
+  <modal src="partials/admin_template_list/_modal_extension_license.json"/>
+  <modal src="partials/admin_settings/_modal_core_update_guide.json"/>
+</layout>

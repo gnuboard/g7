@@ -65,7 +65,15 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // 워커는 **항상 1**이다. 이 스위트는 단위 테스트와 달리 워커마다 격리된 환경을 갖지 못하고
+  // **한 대의 실서버와 한 개 DB 를 공유**한다 — 정책·주문·설정을 바꾸는 스펙들이 병렬로 돌면
+  // 서로의 상태를 덮어써 결과가 실행마다 달라진다. 종전 로컬 기본값(undefined = CPU 절반)에서
+  // 같은 코드·같은 DB 로 연속 2회를 돌렸을 때 실패가 14 ↔ 19 로 갈렸고, 그중 "상시 실패" 로
+  // 분류했던 스펙을 단독 실행하면 통과했다(레이아웃·서빙 content 는 정상). CI(`workers: 1`)에서
+  // 이 문제가 드러나지 않아 로컬만 신호를 잃고 있었다.
+  //
+  // 병렬화가 필요해지면 워커 단위 데이터 격리(스펙별 전용 계정·주문·정책 네임스페이스)가 먼저다.
+  workers: 1,
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['list'],

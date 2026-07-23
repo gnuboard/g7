@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use App\Extension\HookListenerRegistrar;
+use App\Extension\HookManager;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -70,6 +72,20 @@ abstract class TestCase extends BaseTestCase
         // 이전 테스트에서 등록된 모듈 hook 콜백을 물려받아 의도치 않게 발화되는
         // 누수를 차단한다 (프로덕션은 단일 부팅이라 무관 — 테스트 격리 전용).
         EnforceIdentityPolicyListener::resetDynamicSubscriptions();
+
+        // 훅 등록 정적 상태를 초기화한다. 두 가지를 동시에 해결한다.
+        //
+        // ① **격리** — 테스트가 `HookManager::addAction()` 으로 붙인 스파이·스텁이 프로세스 내
+        //    다음 테스트까지 살아남아 엉뚱한 곳에서 발화한다.
+        // ② **메모리** — 그 클로저들이 `$this`(TestCase 인스턴스)를 캡처하므로, 정리하지 않으면
+        //    **테스트마다 앱 컨테이너가 통째로 GC 되지 못하고 쌓인다**. 훅을 등록하는 테스트 파일이
+        //    75개라 전량 스위트가 `memory_limit`(1G)을 소진하고 중간에 죽었다 — 그 뒤 결과 전부를
+        //    신호로 쓸 수 없게 만드는 사고였다.
+        //
+        // 둘은 **짝으로** 비워야 한다. 등록 이력만 남으면 다음 앱 부팅에서 리스너가 "이미 등록됨"
+        // 으로 건너뛰어져 훅이 통째로 사라진다.
+        HookManager::resetAll();
+        HookListenerRegistrar::clear();
 
         parent::tearDown();
     }

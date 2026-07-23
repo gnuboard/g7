@@ -197,7 +197,8 @@ class MarkupInstallTest extends TestCase
         $layoutsPath = base_path('templates/_bundled/gnuboard7-hello_admin_template/layouts');
 
         // JSON 전용 사본 — 같은 트리에서 `.g7.html` 만 제거해 "JSON 선택 설치" 를 재현한다.
-        $jsonOnly = "{$this->tmp}/json_only";
+        // 사본도 `.../layouts` 로 끝내야 `partials/…` 루트 폴백이 원본과 같은 기준으로 동작한다.
+        $jsonOnly = "{$this->tmp}/json_only/layouts";
         File::copyDirectory($layoutsPath, $jsonOnly);
 
         foreach (File::allFiles($jsonOnly) as $file) {
@@ -232,17 +233,23 @@ class MarkupInstallTest extends TestCase
      * partial 해석·data_source 검증·layout_name 결정이라는 고유 변환이 남아 있어, 이관 실물로
      * 한 번 더 봉인해야 ② 가 닫힌다(㉑ 가 hello 로 세운 게이트를 W2 확장으로 넓힌다).
      *
+     * W3(sirsoft-admin_basic — 129파일)도 같은 데이터셋에 합류한다. 템플릿은 확장과 설치 경로가
+     * 다르고(TemplateManager) 물량이 한 자릿수가 아니라 세 자릿수라, 여기서 도는 것이 ② 의 실효다.
+     *
      * @dataProvider migratedWaveTwoRoots
      *
      * @scenario compile_unit=install,source_health=valid
      *
-     * @effects wave_two_html_install_equals_json_install
+     * @effects wave_two_html_install_equals_json_install, wave_three_template_html_install_equals_json_install
      */
     public function test_wave_two_html_install_equals_json_install(string $relativeRoot, string $identifier, string $sourceType): void
     {
         $layoutsPath = base_path($relativeRoot);
 
-        $jsonOnly = "{$this->tmp}/json_only_".md5($relativeRoot);
+        // 복사본도 `.../layouts` 로 끝나야 한다 — `partials/…` 는 layouts 루트 기준으로 폴백되는데,
+        // 그 루트 탐지가 경로의 `layouts` 세그먼트를 본다. 이름을 잃은 임시 디렉토리에 풀면 원본과
+        // 폴백 동작이 갈려, 이관과 무관한 차이가 등가성 실패로 잡힌다.
+        $jsonOnly = "{$this->tmp}/json_only_".md5($relativeRoot).'/layouts';
         File::copyDirectory($layoutsPath, $jsonOnly);
 
         foreach (File::allFiles($jsonOnly) as $file) {
@@ -257,14 +264,19 @@ class MarkupInstallTest extends TestCase
         $this->assertNotEmpty($htmlInstall, "[{$identifier}] 이관된 레이아웃이 등록되어야 한다");
         $this->assertSame(array_keys($htmlInstall), array_keys($jsonInstall), "[{$identifier}] 등록 집합이 달라졌다");
 
+        // JSON-only 사본은 임시 디렉토리에 있으므로, 설치 산출에 **절대 경로가 실려 오는 자리**
+        // (깨진 include 의 에러 컴포넌트 문구)는 구조상 두 설치가 다를 수밖에 없다. 두 루트를 같은
+        // 자리표시자로 접어 경로 차이만 지우고, 그 밖의 내용 차이는 그대로 실패로 잡는다.
+        $roots = [$layoutsPath, $jsonOnly];
+
         // 이 테스트가 봉인하는 것은 **설치 경로 고유 변환의 등가성**(HTML 설치 == JSON 설치)이다.
         // 원본 `.json` 과의 직접 대조는 여기서 하지 않는다 — 설치가 `resolveAllPartials` 로 partial 을
         // 인라인하므로 include 를 가진 레이아웃은 원본과 다른 것이 정상이다. "컴파일 산출 == 원본"
         // 은 `LayoutMarkupRoundTripCorpusTest` 가 이관 파일 전량에 이미 걸고 있다.
         foreach ($htmlInstall as $layoutName => $htmlContent) {
             $this->assertSame(
-                $this->canonical($jsonInstall[$layoutName]['data']),
-                $this->canonical($htmlContent['data']),
+                $this->canonical($jsonInstall[$layoutName]['data'], $roots),
+                $this->canonical($htmlContent['data'], $roots),
                 "[{$identifier}/{$layoutName}] HTML 설치 content 가 JSON 설치와 다르다",
             );
         }
@@ -287,6 +299,8 @@ class MarkupInstallTest extends TestCase
             'sirsoft-pay_nhnkcp (plugin)' => ['plugins/_bundled/sirsoft-pay_nhnkcp/resources/layouts', 'sirsoft-pay_nhnkcp', 'plugin'],
             'sirsoft-pay_nicepayments (plugin)' => ['plugins/_bundled/sirsoft-pay_nicepayments/resources/layouts', 'sirsoft-pay_nicepayments', 'plugin'],
             'sirsoft-verification_kginicis (plugin)' => ['plugins/_bundled/sirsoft-verification_kginicis/resources/layouts', 'sirsoft-verification_kginicis', 'plugin'],
+            // W3 — 템플릿 설치 경로(TemplateManager) + 129파일 실물
+            'sirsoft-admin_basic (template)' => ['templates/_bundled/sirsoft-admin_basic/layouts', 'sirsoft-admin_basic', 'template'],
         ];
     }
 
@@ -313,17 +327,28 @@ class MarkupInstallTest extends TestCase
      * 레이아웃 JSON 을 정규화된 결정적 문자열로 만듭니다 (키 순서·컴파일러 파생값 무관 비교).
      *
      * @param  array<string, mixed>  $layout  레이아웃 JSON
+     * @param  array<int, string>  $roots  자리표시자로 접을 설치 루트 경로 (두 설치의 소스 디렉토리)
      * @return string 비교용 정규화 문자열
      */
-    private function canonical(array $layout): string
+    private function canonical(array $layout, array $roots = []): string
     {
         // 왕복 오라클과 같은 기준 — `normalizeDocument` 를 빼면 문서층 별칭(`state`→`initLocal`)과
         // "옮기지 않고 버리는" 사어 키가 차이로 잡혀 정상 설치가 불일치로 보고된다.
-        return LayoutMarkupRoundTrip::encode(
+        $encoded = LayoutMarkupRoundTrip::encode(
             LayoutMarkupRoundTrip::canonicalize(
                 LayoutMarkupRoundTrip::normalize(LayoutMarkupRoundTrip::normalizeDocument($layout)),
             ),
         );
+
+        foreach ($roots as $root) {
+            foreach ([$root, str_replace('/', DIRECTORY_SEPARATOR, $root), str_replace('\\', '/', $root)] as $variant) {
+                // 인코드된 JSON 안에서는 백슬래시가 이스케이프돼 있으므로 그 형태도 함께 접는다.
+                $escaped = trim((string) json_encode($variant), '"');
+                $encoded = str_replace([$escaped, $variant], '{INSTALL_ROOT}', $encoded);
+            }
+        }
+
+        return $encoded;
     }
 
     /**

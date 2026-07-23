@@ -1,0 +1,37 @@
+<partial description="Identity Logs Purge Confirm Modal" editor_label="$t:admin.modal_label.admin_identity_logs.identity_log_purge_confirm_modal">
+  <modal data-ref="identity_log_purge_confirm_modal" title="$t:admin.identity.logs.purge_button" size="sm">
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.identity.logs.purge_confirm</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isPurgingIdentityLogs}}">
+        <on type="click">
+          <close-modal target="identity_log_purge_confirm_modal"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPurgingIdentityLogs}}">
+        <on type="click">
+          <sequence>
+            <set-state target="global" :isPurgingIdentityLogs="true"/>
+            <api-call :auth_required="true" target="/api/admin/identity/logs/purge" method="POST">
+              <success>
+                <set-state target="global" :isPurgingIdentityLogs="false"/>
+                <refetch-data-source dataSourceId="identityLogs"/>
+                <toast message="$t:admin.identity.logs.purge_success" type="success"/>
+                <close-modal target="identity_log_purge_confirm_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isPurgingIdentityLogs="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body :older_than_days="180"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isPurgingIdentityLogs}}" name="fa-solid fa-spinner" class="spinner-sm"/>
+        <span>$t:admin.identity.logs.purge_button</span>
+      </button>
+    </div>
+  </modal>
+</partial>

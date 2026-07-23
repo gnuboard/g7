@@ -90,8 +90,10 @@
         <div data-ref="search_row" class="mb-4">
           <div class="flex-center gap-2">
             <select name="searchType" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" value="{{_local.filter.searchType || 'email'}}">
-              <option value="email">$t:sirsoft-gdpr.admin.consent_log.search_type.email</option>
-              <option value="session_id">$t:sirsoft-gdpr.admin.consent_log.search_type.session_id</option>
+              <options>
+                <option value="email">$t:sirsoft-gdpr.admin.consent_log.search_type.email</option>
+                <option value="session_id">$t:sirsoft-gdpr.admin.consent_log.search_type.session_id</option>
+              </options>
               <on type="change">
                 <set-state target="local" filter.searchType="{{$event.target.value}}"/>
               </on>

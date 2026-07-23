@@ -1,0 +1,335 @@
+<layout name="admin_template_layout_edit" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.templates.layout_edit.title" description="$t:admin.templates.layout_edit.description"/>
+  <data-source id="template_info" label_key="$t:editor.data_source.template_info" type="api" endpoint="/api/admin/templates/{{route.identifier}}" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback :data="null"/>
+  </data-source>
+  <data-source id="layout_files" label_key="$t:editor.data_source.layout_files" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <init-global>
+      <field name="0" value="layoutFilesList"/>
+      <field name="1">
+        <field name="key" value="selectedLayoutName"/>
+        <field name="path" value="[0].name"/>
+      </field>
+    </init-global>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="current_layout" label_key="$t:editor.data_source.current_layout" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <init-global>
+      <field name="key" value="editorContent"/>
+      <field name="path" value="content"/>
+    </init-global>
+    <fallback>
+      <field name="data">
+        <field name="content" value="{}"/>
+        <field name="name" value=""/>
+        <field name="description" value=""/>
+        <field name="updated_at" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="layout_versions" label_key="$t:editor.data_source.layout_versions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions" method="GET" :auto_fetch="false" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="layout_extensions" label_key="$t:editor.data_source.layout_extensions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layout-extensions" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="current_extension" label_key="$t:editor.data_source.current_extension" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}" method="GET" :auto_fetch="false" :auth_required="true">
+    <init-global>
+      <field name="key" value="editorContent"/>
+      <field name="path" value="content"/>
+    </init-global>
+    <fallback :data="null"/>
+  </data-source>
+  <data-source id="extension_versions" label_key="$t:editor.data_source.extension_versions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/versions" method="GET" :auto_fetch="false" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <permissions>
+    <permission>core.templates.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>template_info</wait-for>
+    <wait-for>current_layout</wait-for>
+    <wait-for>layout_versions</wait-for>
+    <wait-for>layout_extensions</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state if="{{!!query.route &amp;&amp; !!(layout_files?.data ?? []).find(f => f.route_path === query.route)?.name}}" target="global" selectedNodeKind="layout" selectedLayoutName="{{(layout_files?.data ?? []).find(f => f.route_path === query.route)?.name}}"/>
+  </init>
+  <slot name="content">
+    <div data-ref="page_container" class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:admin.templates.layout_edit.page_title ({{template_info?.data?.name ?? route.identifier}})" description="$t:admin.templates.layout_edit.page_description">
+        <button data-ref="header_cancel_button" class="btn btn-secondary">
+          <on type="click">
+            <navigate-back/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-if="{{_global.selectedNodeKind !== 'extension'}}" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <sequence>
+              <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}/preview" method="POST">
+                <success>
+                  <open-window path="/preview/{{response.data.token}}"/>
+                </success>
+                <fail>
+                  <toast type="error" message="$t:admin.templates.layout_edit.preview_error"/>
+                </fail>
+                <body content="{{_global.editorContent}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon name="fa-regular fa-eye" class="w-4 h-4"/>
+          <span class="hidden sm:inline">$t:admin.templates.layout_edit.preview</span>
+        </button>
+        <button data-if="{{_global.selectedNodeKind === 'extension'}}" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <sequence>
+              <conditions>
+                <when if="{{current_extension?.data?.extension_type === 'overlay'}}">
+                  <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview" method="POST">
+                    <success>
+                      <open-window path="/preview/{{response.data.token}}"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="$t:admin.templates.layout_edit.preview_error"/>
+                    </fail>
+                    <body content="{{_global.editorContent}}"/>
+                  </api-call>
+                </when>
+                <else>
+                  <open-modal target="extension_preview_layout_modal"/>
+                </else>
+              </conditions>
+            </sequence>
+          </on>
+          <icon name="fa-regular fa-eye" class="w-4 h-4"/>
+          <span class="hidden sm:inline">$t:admin.templates.layout_edit.preview</span>
+        </button>
+        <button data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.abilities?.can_update !== false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}">
+          <on type="click">
+            <set-state target="global" :isSaving="true"/>
+            <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}" method="PUT">
+              <success>
+                <set-state target="global" :isSaving="false"/>
+                <toast type="success" message="$t:admin.templates.layout_edit.save_success"/>
+                <refetch-data-source dataSourceId="current_layout"/>
+              </success>
+              <fail>
+                <set-state target="global" :isSaving="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body content="{{_global.editorContent}}" expected_lock_version="{{current_layout?.data?.lock_version ?? 0}}"/>
+            </api-call>
+          </on>
+          <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="w-4 h-4"/>
+          <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
+          <span>{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}</span>
+        </button>
+        <button data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.abilities?.can_update !== false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}">
+          <on type="click">
+            <set-state target="global" :isSaving="true"/>
+            <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}" method="PUT">
+              <success>
+                <set-state target="global" :isSaving="false"/>
+                <toast type="success" message="$t:admin.templates.layout_edit.extension_save_success"/>
+                <refetch-data-source dataSourceId="current_extension"/>
+                <refetch-data-source dataSourceId="layout_extensions"/>
+              </success>
+              <fail>
+                <set-state target="global" :isSaving="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body content="{{_global.editorContent}}" expected_lock_version="{{current_extension?.data?.lock_version ?? 0}}"/>
+            </api-call>
+          </on>
+          <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="w-4 h-4"/>
+          <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
+          <span>{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}</span>
+        </button>
+      </page-header>
+      <div data-ref="mobile_file_selector" class="hidden">
+        <responsive on="portable" class="block mt-6"/>
+        <div class="admin-card">
+          <div class="flex-center gap-2 mb-2">
+            <icon name="fa-regular fa-folder-open" class="text-secondary w-5 h-5"/>
+            <span class="text-primary font-medium">$t:admin.templates.layout_edit.layout_files</span>
+          </div>
+          <rich-select value="{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}" options="{{[...(layout_files?.data ?? []).map(f => ({ value: 'layout:' + f.name, label: f.name, name: f.name, kind: 'layout', size: f.size_formatted, updated_at: f.updated_at, has_update: f.has_update, is_override: false })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ value: 'ext:' + e.id, label: e.target_name, name: e.target_name, kind: 'extension', size: e.source_label, updated_at: e.extension_type, has_update: false, is_override: e.is_override })))]}}" placeholder="$t:admin.templates.layout_edit.select_file">
+            <template slot="item">
+              <div class="flex flex-col w-full">
+                <div class="flex-between">
+                  <span class="text-primary font-medium">{{item.name}}</span>
+                  <span data-if="{{item.has_update}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">$t:admin.templates.layout_edit.update_available</span>
+                  <span data-if="{{item.is_override}}" class="px-2 py-0.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded">$t:admin.templates.layout_edit.extension_override_badge</span>
+                </div>
+                <div class="flex-center gap-2 form-hint">
+                  <span>{{item.size}}</span>
+                  <span>•</span>
+                  <span>{{item.updated_at}}</span>
+                </div>
+              </div>
+            </template>
+            <template slot="selected">
+              <span class="truncate">{{item.name}}</span>
+            </template>
+            <on type="change">
+              <conditions>
+                <when if="{{$event.target.value.slice(0, 4) === 'ext:'}}">
+                  <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{Number($event.target.value.slice(4))}}"/>
+                  <replace-url>
+                    <query route=""/>
+                  </replace-url>
+                  <refetch-data-source dataSourceId="current_extension"/>
+                  <refetch-data-source dataSourceId="extension_versions"/>
+                </when>
+                <else>
+                  <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{$event.target.value.slice(7)}}"/>
+                  <replace-url>
+                    <query route="{{(layout_files?.data ?? []).find(f => f.name === $event.target.value.slice(7))?.route_path ?? ''}}"/>
+                  </replace-url>
+                  <refetch-data-source dataSourceId="current_layout"/>
+                </else>
+              </conditions>
+            </on>
+          </rich-select>
+        </div>
+      </div>
+      <div data-ref="main_grid" class="mt-6 flex flex-row gap-6">
+        <responsive on="portable" class="mt-6 row-stack"/>
+        <div data-ref="file_list_card" class="admin-card">
+          <responsive on="portable" class="hidden"/>
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex-center gap-2">
+              <icon name="fa-regular fa-folder-open" class="text-secondary w-5 h-5"/>
+              <span class="text-primary font-medium">$t:admin.templates.layout_edit.layout_files</span>
+            </div>
+            <p class="mt-1 text-label-subtle">$t:admin.templates.layout_edit.select_file_prompt</p>
+          </div>
+          <div class="max-h-[calc(100vh-320px)] overflow-y-auto">
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">$t:admin.templates.layout_edit.section_layouts</span>
+            </div>
+            <div class="divider-list">
+              <div data-each="file, fileIdx in {{layout_files?.data ?? []}}" class="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind !== 'extension' &amp;&amp; (_global.selectedLayoutName || layout_files?.data?.[0]?.name) === file.name ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}}">
+                <on type="click">
+                  <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{file.name}}"/>
+                  <replace-url>
+                    <query route="{{file.route_path ?? ''}}"/>
+                  </replace-url>
+                  <refetch-data-source dataSourceId="current_layout"/>
+                </on>
+                <div class="flex-center gap-2">
+                  <icon name="fa-regular fa-file-code" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+                  <span class="text-primary font-medium text-sm">{{file.name}}.json</span>
+                  <span data-if="{{file.has_update}}" class="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.layout_edit.updated_badge</span>
+                </div>
+                <p class="form-hint">{{raw:file.description || file.name}}</p>
+                <div class="text-hint mt-1 flex-center gap-2">
+                  <span>{{file.size_formatted || '0 KB'}}</span>
+                  <span>•</span>
+                  <span>{{file.updated_at}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-y border-gray-200 dark:border-gray-700">
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">$t:admin.templates.layout_edit.section_extensions</span>
+            </div>
+            <div data-if="{{(layout_extensions?.data?.length ?? 0) === 0}}" class="p-3 text-xs text-gray-400 dark:text-gray-500">$t:admin.templates.layout_edit.no_extensions</div>
+            <div data-each="extGroup, extGroupIdx in {{layout_extensions?.data ?? []}}">
+              <div class="px-3 py-1.5 flex-center gap-1.5 bg-gray-100/60 dark:bg-gray-700/30">
+                <icon name="{{extGroup.source_type === 'plugin' ? 'fa-solid fa-plug' : 'fa-solid fa-puzzle-piece'}}" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"/>
+                <span class="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{{extGroup.source_label}}</span>
+              </div>
+              <div class="divider-list">
+                <div data-each="ext, extIdx in {{extGroup.extensions ?? []}}" class="p-3 pl-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind === 'extension' &amp;&amp; _global.selectedExtensionId === ext.id ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}} {{ext.is_active === false ? 'opacity-50' : ''}}">
+                  <on type="click">
+                    <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{ext.id}}"/>
+                    <replace-url>
+                      <query route=""/>
+                    </replace-url>
+                    <refetch-data-source dataSourceId="current_extension"/>
+                    <refetch-data-source dataSourceId="extension_versions"/>
+                  </on>
+                  <div class="flex-center gap-2 flex-wrap">
+                    <icon name="fa-solid fa-circle-plus" class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500"/>
+                    <span class="text-primary font-medium text-sm truncate">{{ext.target_name}}</span>
+                    <span class="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{ext.extension_type === 'overlay' ? '$t:admin.templates.layout_edit.extension_type_overlay' : '$t:admin.templates.layout_edit.extension_type_point'}}</span>
+                    <span data-if="{{ext.is_override}}" class="px-1.5 py-0.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded">$t:admin.templates.layout_edit.extension_override_badge</span>
+                    <span data-if="{{ext.is_modified}}" class="px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">$t:admin.templates.layout_edit.extension_modified_badge</span>
+                    <span data-if="{{ext.is_active === false}}" class="px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded">$t:admin.templates.layout_edit.extension_inactive_badge</span>
+                  </div>
+                  <div class="text-hint mt-1 flex-center gap-2">
+                    <span>$t:admin.templates.layout_edit.extension_priority|priority={{ext.priority ?? 100}}</span>
+                    <span>•</span>
+                    <span>{{ext.size_formatted ?? '0 B'}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="editor_card" class="admin-card">
+          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex-start justify-between gap-4">
+              <responsive on="portable" class="row-stack"/>
+              <div>
+                <div class="flex-center gap-2 flex-wrap">
+                  <icon name="fa-regular fa-file-code" class="text-secondary w-5 h-5"/>
+                  <span data-if="{{_global.selectedNodeKind !== 'extension'}}" class="text-primary font-medium">{{_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'main'}}.json</span>
+                  <span data-if="{{_global.selectedNodeKind === 'extension'}}" class="text-primary font-medium">{{current_extension?.data?.target_name ?? ''}}</span>
+                  <span data-if="{{_global.selectedNodeKind === 'extension'}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{current_extension?.data?.source_label ?? ''}}</span>
+                  <span data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.has_update}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.layout_edit.layout_updated_badge</span>
+                  <span data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.is_modified}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">$t:admin.templates.layout_edit.extension_modified_badge</span>
+                </div>
+                <p data-if="{{_global.selectedNodeKind !== 'extension'}}" class="mt-1 text-label-subtle">{{raw:current_layout?.data?.description || ''}}</p>
+              </div>
+              <div class="flex-center gap-3">
+                <span class="text-label-subtle">$t:admin.templates.layout_edit.modified_at|date={{current_layout?.data?.updated_at ?? ''}}</span>
+                <button class="flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <on type="click">
+                    <conditions>
+                      <when if="{{_global.selectedNodeKind === 'extension'}}">
+                        <refetch-data-source dataSourceId="extension_versions"/>
+                        <open-modal target="extension_version_history_modal"/>
+                      </when>
+                      <else>
+                        <refetch-data-source dataSourceId="layout_versions"/>
+                        <open-modal target="version_history_modal"/>
+                      </else>
+                    </conditions>
+                  </on>
+                  <icon name="fa-solid fa-clock-rotate-left" class="w-4 h-4"/>
+                  <span>$t:admin.templates.layout_edit.version_history_button</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="flex-1">
+            <code-editor value="{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}" language="json" theme="vs-dark" height="calc(100vh - 340px)">
+              <on type="change" event="onChange">
+                <set-state :debounce="300" target="global" editorContent="{{$event.target.value}}"/>
+              </on>
+            </code-editor>
+          </div>
+          <div class="p-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+            <div class="flex-center gap-2 text-label-subtle">
+              <icon name="fa-solid fa-circle-info" class="w-4 h-4"/>
+              <span>$t:admin.templates.layout_edit.save_creates_view</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_template_layout_edit/_modal_version_history.json"/>
+  <modal src="partials/admin_template_layout_edit/_modal_extension_version_history.json"/>
+  <modal src="partials/admin_template_layout_edit/_modal_extension_preview_layout.json"/>
+</layout>

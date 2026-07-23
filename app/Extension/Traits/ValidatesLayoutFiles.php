@@ -741,25 +741,28 @@ trait ValidatesLayoutFiles
      */
     protected function getLayoutsBaseDirectory(string $basePath): string
     {
-        // layouts 디렉토리 또는 그 하위 디렉토리까지만 허용
-        if (str_contains($basePath, 'modules')) {
-            // modules/{name}/resources/layouts
-            if (preg_match('#(.*modules[\\\\/][^\\\\/]+[\\\\/]resources[\\\\/]layouts)#', $basePath, $matches)) {
-                return $matches[1];
-            }
-        } elseif (str_contains($basePath, 'plugins')) {
-            // plugins/{name}/resources/layouts
-            if (preg_match('#(.*plugins[\\\\/][^\\\\/]+[\\\\/]resources[\\\\/]layouts)#', $basePath, $matches)) {
-                return $matches[1];
-            }
-        } elseif (str_contains($basePath, 'templates')) {
-            // templates/{name}/layouts
-            if (preg_match('#(.*templates[\\\\/][^\\\\/]+[\\\\/]layouts)#', $basePath, $matches)) {
-                return $matches[1];
-            }
+        // 경로에서 **가장 바깥쪽 `layouts` 경계**까지를 루트로 본다.
+        //
+        // 종전에는 `templates/{name}/layouts` 처럼 세그먼트 수를 고정한 정규식이었는데, 실제 저작
+        // 경로는 `_bundled` 가 한 단계 더 끼어 있어(`templates/_bundled/{name}/layouts`) 매칭에
+        // 실패했다. 그러면 이 함수가 입력을 그대로 돌려주고, 그 위에서 도는 "`partials/…` 는 layouts
+        // 루트 기준" 폴백이 **조용히 무효화**된다 — include 는 깨진 채 `app.debug=false` 에서
+        // 빈 배열로 사라져 화면 일부가 흔적 없이 비었다. 활성 디렉토리는 경로 모양이 맞아떨어져
+        // 프로덕션만 무사했고, `_bundled` 를 직접 읽는 도구·테스트에서만 어긋났다.
+        //
+        // 확장 유형·디렉토리 깊이를 가정하지 않으므로 `_bundled` 든 활성이든, 앞으로 계층이 하나 더
+        // 생기든 같은 규칙으로 동작한다.
+        $normalized = str_replace('\\', '/', $basePath);
+        $segments = explode('/', $normalized);
+        $index = array_search('layouts', $segments, true);
+
+        if ($index === false) {
+            return $basePath;
         }
 
-        return $basePath;
+        $rootSegments = array_slice($segments, 0, $index + 1);
+
+        return str_replace('/', DIRECTORY_SEPARATOR, implode('/', $rootSegments));
     }
 
     /**

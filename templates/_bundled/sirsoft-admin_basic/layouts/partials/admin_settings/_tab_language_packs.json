@@ -11,10 +11,6 @@
     "className": "mt-6"
   },
   "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "partial": "partials/admin_language_pack_list/_content.json"
-    }
+    { "partial": "partials/admin_language_pack_list/_content.json" }
   ]
 }

@@ -28,8 +28,31 @@
             <directory>app</directory>
         </include>
     </source>
+    <!--
+        메모리 진단 확장 — `PROFILE_MEMORY=1` 일 때만 켜진다(평상시 실행 무영향).
+        전량 스위트가 memory_limit 을 소진해 중간에 죽으면 그 뒤 결과 전부가 신호로 못 쓰이므로,
+        클래스별 잔존 증가분을 계측해 누수원을 추측이 아니라 실측으로 특정하기 위한 것.
+    -->
+    <extensions>
+        <bootstrap class="Tests\Support\MemoryProfilerExtension"/>
+    </extensions>
     <php>
-        <ini name="memory_limit" value="1G"/>
+        <!--
+            전량 스위트 실측 peak = 1,852MB (13,383 테스트 / 1,2xx 클래스, 2026-07-22).
+
+            종전 1G 는 스위트가 그 규모가 되기 전에 정해진 값이라 완주 자체가 불가능했고,
+            OOM 이후 결과가 전부 무의미해져 **실패 목록조차 만들지 못했다**. 사망 지점을 뒤로
+            미는 개별 수정(대용량 슬러프 제거·훅 정적 상태 정리)을 반복했으나 지점만 밀렸다.
+
+            원인은 특정 클래스의 누수가 아니다. `MemoryProfilerExtension` 으로 클래스별 live
+            잔존을 계측한 결과 **테스트 1건당 약 0.1MB 가 일정하게 남고**(DB 를 쓰지 않는 순수
+            Unit 도 동일: 건당 0.093~0.106MB) 5MB 초과 클래스는 24개뿐이다. 즉 프레임워크가
+            테스트마다 남기는 공통 비용이며, 12,000+ 테스트 × 0.1MB ≈ 1.2GB 가 관측 곡선과 맞는다.
+
+            그래서 스위트 규모에 맞춰 한도를 올린다(peak 대비 여유 ~10%).
+            재계측: PROFILE_MEMORY=1 php artisan test → storage/logs/memory-profile.csv
+        -->
+        <ini name="memory_limit" value="2G"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

@@ -60,7 +60,7 @@ final class ActionCompiler
      *
      * @var array<int, string>
      */
-    private const SUB_STRUCTURAL_TAGS = ['success', 'fail', 'error-handling', 'body', 'query', 'field'];
+    private const SUB_STRUCTURAL_TAGS = ['success', 'fail', 'error-handling', 'body', 'query', 'field', 'actions'];
 
     /**
      * 액션 객체 키의 결정적 직렬화 순서 (diff·골든 테스트 성립 조건).
@@ -580,7 +580,12 @@ final class ActionCompiler
                 ]);
             }
 
-            $branch['then'] = $this->compileNestedActions($child, $path);
+            // `then` 은 엔진이 객체·배열 둘 다 받는다 (ActionDispatcher::handleConditions — 배열이면
+            // sequence 처럼 순차 실행, 객체면 단일 실행). 표기 규칙은 `<case>`/`<default>` 의 블록 본문
+            // 관용과 같게 둔다 — **자식 하나면 객체, 둘 이상이면 배열**. 전 코퍼스 실측도 객체가 다수형
+            // (객체 46 · 배열 16)이라 이 수렴 방향이 저작 파일의 형태 변화를 최소화한다.
+            $actions = $this->compileNestedActions($child, $path);
+            $branch['then'] = count($actions) === 1 ? $actions[0] : $actions;
             $branches[] = $branch;
         }
 
@@ -647,6 +652,13 @@ final class ActionCompiler
             case 'query':
                 $this->assertParamUnset($child, $params, 'query', $path);
                 $params['query'] = $this->compileFieldMap($child, $path);
+                break;
+
+            case 'actions':
+                // `params.actions` 를 실행 목록으로 읽는 비-제어 핸들러 (startInterval — D42 G10).
+                // 제어 태그(`<sequence>` 등)는 top-level `actions` 가 정본이라 이 자리에 오지 않는다.
+                $this->assertParamUnset($child, $params, 'actions', $path);
+                $params['actions'] = $this->compileNestedActions($child, $path);
                 break;
 
             case 'field':

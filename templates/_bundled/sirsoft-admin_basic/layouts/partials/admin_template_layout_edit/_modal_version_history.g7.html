@@ -1,0 +1,51 @@
+<partial name="modal_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.version_history_modal">
+  <modal data-ref="version_history_modal" size="medium" title="$t:admin.templates.modals.version_history.title">
+    <p class="text-label mb-4">$t:admin.templates.modals.version_history.description|layout_name={{_global.selectedLayoutName}}</p>
+    <div class="space-y-3 max-h-96 overflow-y-auto">
+      <div data-each="version, idx in {{layout_versions?.data ?? []}}" data-blur-until-loaded="{{_global.isRestoring}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <div class="flex-between">
+          <div class="flex-center gap-2">
+            <span class="text-primary font-medium">{{version.created_at}}</span>
+            <span data-if="{{idx === 0}}" class="px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded">$t:admin.templates.modals.version_history.latest</span>
+          </div>
+          <button data-if="{{idx !== 0}}" class="flex-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoring}}">
+            <on type="click">
+              <sequence>
+                <set-state target="global" :isRestoring="true"/>
+                <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions/{{version.id}}/restore" method="POST">
+                  <success>
+                    <set-state target="global" :isRestoring="false"/>
+                    <toast type="success" message="$t:admin.templates.modals.version_history.restore_success"/>
+                    <refetch-data-source dataSourceId="current_layout"/>
+                    <set-state target="global" editorContent="{{current_layout?.data?.content}}"/>
+                    <refetch-data-source dataSourceId="layout_versions"/>
+                    <close-modal/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :isRestoring="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{!_global.isRestoring}}" name="refresh" class="text-base"/>
+            <icon data-if="{{_global.isRestoring}}" name="fa-solid fa-spinner" class="spinner-sm"/>
+            <span>{{_global.isRestoring ? '$t:admin.templates.modals.version_history.restoring' : '$t:admin.templates.modals.version_history.restore'}}</span>
+          </button>
+        </div>
+        <div class="flex-center gap-4 mt-2 text-sm">
+          <span class="text-green-600 dark:text-green-400">+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.version_history.lines</span>
+          <span class="text-red-600 dark:text-red-400">- {{version.changes_summary?.removed_count ?? 0}} $t:admin.templates.modals.version_history.lines</span>
+          <span class="text-gray-500 dark:text-gray-400">({{version.changes_summary?.char_diff >= 0 ? '+' : ''}}{{version.changes_summary?.char_diff ?? 0}} $t:admin.templates.modals.version_history.chars)</span>
+        </div>
+        <div class="mt-2 text-label-subtle">$t:admin.templates.modals.version_history.saved_by|name={{version.created_by_name ?? 'admin'}}</div>
+      </div>
+    </div>
+    <div class="alert-info">
+      <div class="flex-center gap-2">
+        <icon name="info-circle" class="text-base text-blue-600 dark:text-blue-400"/>
+        <span class="text-info-soft">$t:admin.templates.modals.version_history.restore_note</span>
+      </div>
+    </div>
+  </modal>
+</partial>

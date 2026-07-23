@@ -30,10 +30,35 @@ final class LayoutCorpus
      */
     public static function roots(): array
     {
+        return [...self::layoutRoots(), ...self::fragmentRoots()];
+    }
+
+    /**
+     * 본 레이아웃(`layouts/`) 루트 글롭.
+     *
+     * @return array<int, string> 글롭 패턴 목록
+     */
+    public static function layoutRoots(): array
+    {
         return [
             base_path('templates/_bundled/*/layouts'),
             base_path('modules/_bundled/*/resources/layouts'),
             base_path('plugins/_bundled/*/resources/layouts'),
+        ];
+    }
+
+    /**
+     * 레이아웃 확장 fragment(`extensions/`) 루트 글롭.
+     *
+     * **세 유형 전부**다 — 템플릿도 fragment 를 낸다
+     * ([TemplateManager](app/Extension/TemplateManager.php#L2162)). 모듈·플러그인 둘만 훑으면
+     * 템플릿 fragment 가 통째로 게이트 밖에 남는다(㉘ 이 등재한 사각).
+     *
+     * @return array<int, string> 글롭 패턴 목록
+     */
+    public static function fragmentRoots(): array
+    {
+        return [
             base_path('templates/_bundled/*/extensions'),
             base_path('modules/_bundled/*/resources/extensions'),
             base_path('plugins/_bundled/*/resources/extensions'),
@@ -48,10 +73,33 @@ final class LayoutCorpus
      */
     public static function scan(string $suffix): array
     {
+        return self::scanRoots(self::roots(), $suffix);
+    }
+
+    /**
+     * fragment 루트만 스캔합니다 (설치 경로가 본 레이아웃과 다른 축이라 따로 게이트한다).
+     *
+     * @param  string  $suffix  파일 접미사 (예: `.json`, `.g7.html`)
+     * @return array<int, string> 정렬된 절대 경로 목록
+     */
+    public static function scanFragments(string $suffix): array
+    {
+        return self::scanRoots(self::fragmentRoots(), $suffix);
+    }
+
+    /**
+     * 주어진 루트 글롭 집합을 재귀 스캔합니다.
+     *
+     * @param  array<int, string>  $roots  글롭 패턴 목록
+     * @param  string  $suffix  파일 접미사
+     * @return array<int, string> 정렬된 절대 경로 목록
+     */
+    private static function scanRoots(array $roots, string $suffix): array
+    {
         $needle = strtolower($suffix);
         $files = [];
 
-        foreach (self::roots() as $glob) {
+        foreach ($roots as $glob) {
             foreach (glob($glob, GLOB_ONLYDIR) ?: [] as $root) {
                 $iterator = new \RecursiveIteratorIterator(
                     new \RecursiveDirectoryIterator($root, \RecursiveDirectoryIterator::SKIP_DOTS),

@@ -46,26 +46,22 @@
                     "conditions": [
                         {
                             "if": "{{_local.tab === 'all'}}",
-                            "then": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "_local",
-                                        "filtered": "false"
-                                    }
+                            "then": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "filtered": "false"
                                 }
-                            ]
+                            }
                         },
                         {
-                            "then": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "_local",
-                                        "filtered": "true"
-                                    }
+                            "then": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "filtered": "true"
                                 }
-                            ]
+                            }
                         }
                     ]
                 }

@@ -1,5 +1,8 @@
 {
   "layout_name": "tab_admin",
+  "meta": {
+    "is_partial": true
+  },
   "id": "tab_admin",
   "type": "basic",
   "name": "Div",
@@ -270,7 +273,7 @@
                                         "name": "Icon",
                                         "props": {
                                           "name": "exclamation-triangle",
-                                          "className": "w-3 h-3"
+                                          "className": "text-xs"
                                         }
                                       },
                                       {
@@ -344,7 +347,7 @@
                                                 "if": "{{dep.type === 'module'}}",
                                                 "props": {
                                                   "name": "cube",
-                                                  "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                                                  "className": "text-sm text-gray-500 dark:text-gray-400"
                                                 }
                                               },
                                               {
@@ -353,7 +356,7 @@
                                                 "if": "{{dep.type === 'plugin'}}",
                                                 "props": {
                                                   "name": "puzzle-piece",
-                                                  "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                                                  "className": "text-sm text-gray-500 dark:text-gray-400"
                                                 }
                                               },
                                               {
@@ -424,7 +427,7 @@
                                     "name": "Icon",
                                     "props": {
                                       "name": "code",
-                                      "className": "w-4 h-4"
+                                      "className": "text-base"
                                     }
                                   },
                                   {
@@ -466,7 +469,7 @@
                                     "name": "Icon",
                                     "props": {
                                       "name": "edit",
-                                      "className": "w-4 h-4"
+                                      "className": "text-base"
                                     }
                                   },
                                   {
@@ -516,7 +519,7 @@
                                     "name": "Icon",
                                     "props": {
                                       "name": "download",
-                                      "className": "w-4 h-4"
+                                      "className": "text-base"
                                     }
                                   },
                                   {
@@ -623,7 +626,7 @@
                                     "name": "Icon",
                                     "props": {
                                       "name": "refresh",
-                                      "className": "w-4 h-4"
+                                      "className": "text-base"
                                     }
                                   },
                                   {
@@ -892,7 +895,7 @@
               "name": "Icon",
               "props": {
                 "name": "info-circle",
-                "className": "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
               }
             },
             {

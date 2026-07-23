@@ -1,0 +1,156 @@
+<partial description="Identity Logs Filter Section">
+  <div data-ref="filter_section" class="admin-card filter-grid">
+    <div data-ref="search_row" class="mb-4">
+      <div class="flex-center gap-2">
+        <select name="searchType" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500" value="{{_local.filter.searchType || 'auto'}}">
+          <options>
+            <option value="auto">$t:admin.identity.logs.search_type.auto</option>
+            <option value="user_id">$t:admin.identity.logs.search_type.user_id</option>
+            <option value="target_hash">$t:admin.identity.logs.search_type.target_hash</option>
+            <option value="ip_address">$t:admin.identity.logs.search_type.ip_address</option>
+            <option value="policy_key">$t:admin.identity.logs.search_type.policy_key</option>
+          </options>
+          <on type="change">
+            <set-state target="local" filter.searchType="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <input name="search" type="text" placeholder="$t:admin.identity.logs.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+            <on type="change">
+              <set-state target="local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keydown" key="Enter">
+              <action-ref name="searchIdentityLogs"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_grid" class="filter-grid">
+      <div data-ref="status_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.status_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.statuses || _local.filter.statuses.length === 0}}">
+              <on type="change">
+                <set-state target="local" filter.statuses="{{[]}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.identity.logs.filter.status_all</span>
+          </label>
+          <label data-each="st in {{['requested','sent','verified','failed','expired','cancelled','policy_violation_logged']}}" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.statuses || []).includes(st)}}">
+              <on type="change">
+                <set-state target="local" filter.statuses="{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== st), st] : (_local.filter.statuses || []).filter(s => s !== st)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{$t('admin.identity.logs.status.' + st)}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="purpose_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.purpose_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.purposes || _local.filter.purposes.length === 0}}">
+              <on type="change">
+                <set-state target="local" filter.purposes="{{[]}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.identity.logs.filter.purpose_all</span>
+          </label>
+          <label data-each="pp in {{identityPurposes?.data ?? []}}" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.purposes || []).includes(pp.id)}}">
+              <on type="change">
+                <set-state target="local" filter.purposes="{{$event.target.checked ? [...(_local.filter.purposes || []).filter(p => p !== pp.id), pp.id] : (_local.filter.purposes || []).filter(p => p !== pp.id)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{pp.label ?? pp.id}}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div data-ref="date_range_filter" class="filter-row">
+      <span class="filter-label w-32">$t:admin.identity.logs.filter.date_range_label</span>
+      <div class="flex-center flex-wrap gap-2">
+        <input type="date" name="dateFrom" class="input w-40" value="{{_local.filter.dateFrom || ''}}">
+          <on type="change">
+            <set-state target="local" filter.dateFrom="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span class="text-gray-400">~</span>
+        <input type="date" name="dateTo" class="input w-40" value="{{_local.filter.dateTo || ''}}">
+          <on type="change">
+            <set-state target="local" filter.dateTo="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+    </div>
+    <div data-ref="channel_filter" data-if="{{(identityProviders?.data ?? []).some(p => Array.isArray(p.channels) &amp;&amp; p.channels.length > 0)}}" class="filter-row">
+      <span class="filter-label w-32">$t:admin.identity.logs.filter.channel_label</span>
+      <div class="flex-center flex-wrap gap-2">
+        <label data-each="ch in {{Array.from(new Set((identityProviders?.data ?? []).flatMap(p => Array.isArray(p.channels) ? p.channels : [])))}}" class="inline-clickable">
+          <input type="checkbox" class="checkbox" checked="{{(_local.filter.channels || []).includes(ch)}}">
+            <on type="change">
+              <set-state target="local" filter.channels="{{$event.target.checked ? [...(_local.filter.channels || []).filter(c => c !== ch), ch] : (_local.filter.channels || []).filter(c => c !== ch)}}"/>
+            </on>
+          </input>
+          <span class="text-label">{{((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[ch] ?? ch}}</span>
+        </label>
+      </div>
+    </div>
+    <div data-ref="advanced_toggle_row" class="flex justify-end mt-2">
+      <button data-ref="advanced_filters_toggle" type="button" class="text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1">
+        <on type="click">
+          <set-state target="local" filter.advancedOpen="{{!_local.filter.advancedOpen}}"/>
+        </on>
+        <icon name="{{_local.filter.advancedOpen ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-xs"/>
+        <span>$t:admin.identity.logs.filter.advanced_search_toggle</span>
+      </button>
+    </div>
+    <div data-ref="advanced_filters" data-if="{{_local.filter.advancedOpen === true}}" class="filter-grid mt-3 pt-3">
+      <div data-ref="origin_type_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.origin_type_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label data-each="ot in {{['route','hook','policy','middleware','api','custom','system']}}" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.originTypes || []).includes(ot)}}">
+              <on type="change">
+                <set-state target="local" filter.originTypes="{{$event.target.checked ? [...(_local.filter.originTypes || []).filter(o => o !== ot), ot] : (_local.filter.originTypes || []).filter(o => o !== ot)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{$t('admin.identity.logs.origin_type.' + ot)}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="source_type_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.source_type_label</span>
+        <select name="sourceType" class="input w-48" value="{{_local.filter.sourceType || ''}}">
+          <options>
+            <option value="">$t:admin.identity.logs.filter.source_type_any</option>
+            <option value="core">$t:identity.policy.source_type.core</option>
+            <option value="module">$t:identity.policy.source_type.module</option>
+            <option value="plugin">$t:identity.policy.source_type.plugin</option>
+            <option value="admin">$t:identity.policy.source_type.admin</option>
+          </options>
+          <on type="change">
+            <set-state target="local" filter.sourceType="{{$event.target.value}}"/>
+          </on>
+        </select>
+      </div>
+      <div data-ref="source_identifier_filter" class="filter-row">
+        <span class="filter-label w-32">$t:admin.identity.logs.filter.source_identifier_label</span>
+        <input type="text" name="sourceIdentifier" placeholder="$t:admin.identity.logs.filter.source_identifier_placeholder" class="input w-64" value="{{_local.filter.sourceIdentifier || ''}}">
+          <on type="change">
+            <set-state target="local" filter.sourceIdentifier="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+    </div>
+    <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
+      <responsive on="portable" class="flex gap-3 mt-6"/>
+      <button type="button" class="btn btn-primary px-6"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchIdentityLogs"/></on>$t:admin.identity.logs.filter.search_button</button>
+      <button type="button" class="btn btn-secondary px-6"><responsive on="portable" class="btn btn-secondary flex-1"/><on type="click"><sequence><set-state target="local"><field name="filter"><field name="searchType" value="auto"/><field name="search" value=""/><field name="statuses" :value="[]"/><field name="purposes" :value="[]"/><field name="channels" :value="[]"/><field name="originTypes" :value="[]"/><field name="dateFrom" value=""/><field name="dateTo" value=""/><field name="sourceType" value=""/><field name="sourceIdentifier" value=""/><field name="advancedOpen" :value="false"/></field></set-state><navigate path="/admin/identity/logs"/></sequence></on>$t:admin.identity.logs.filter.reset_button</button>
+    </div>
+  </div>
+</partial>

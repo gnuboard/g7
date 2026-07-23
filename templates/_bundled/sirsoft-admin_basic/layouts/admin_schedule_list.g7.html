@@ -1,0 +1,78 @@
+<layout name="admin_schedule_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.schedules.page_title" description="$t:admin.schedules.page_description"/>
+  <data-source id="schedules" label_key="$t:editor.data_source.schedules" type="api" endpoint="/api/admin/schedules" method="GET" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page ?? 1}}" per_page="{{query.per_page ?? 20}}" search="{{query.search}}" type="{{query.type}}" frequency="{{query.frequency}}" status="{{query.status}}" last_result="{{query.last_result}}" without_overlapping="{{query.without_overlapping}}" run_in_maintenance="{{query.run_in_maintenance}}" created_from="{{query.created_from}}" created_to="{{query.created_to}}" sort_by="{{query.sort_by ?? 'created_at'}}" sort_order="{{query.sort_order ?? 'desc'}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="current_page" :value="1"/>
+        <field name="last_page" :value="1"/>
+        <field name="per_page" :value="20"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="searchQuery" value=""/>
+    <field name="searchType" value=""/>
+  </init-local>
+  <permissions>
+    <permission>core.schedules.read</permission>
+  </permissions>
+  <transition-overlay target="schedules_tab_content" fallback-target="right_content_area">
+    <wait-for>schedules</wait-for>
+  </transition-overlay>
+  <action name="searchSchedules">
+    <navigate path="/admin/schedules" :mergeQuery="true" transition_overlay_target="schedules_data_grid__body">
+      <query search="{{_local.searchQuery || undefined}}" search_type="{{_local.searchType || undefined}}" :page="1"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="searchQuery" value="{{query.search || ''}}"/>
+        <field name="searchType" value="{{query.search_type || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="schedule_list_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <page-header data-ref="page_header" title="$t:admin.schedules.title" description="$t:admin.schedules.description">
+        <icon-button data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+          <on type="click">
+            <navigate path="{{route.path}}" :mergeQuery="false"/>
+          </on>
+        </icon-button>
+        <button data-ref="add_schedule_button" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors">
+          <on type="click">
+            <set-state target="global" :selectedSchedule="null" :isEditMode="false"/>
+            <open-modal target="schedule_form_modal"/>
+          </on>
+          <icon name="plus" size="md"/>
+          <span>$t:admin.schedules.register_schedule</span>
+        </button>
+      </page-header>
+      <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav">
+        <tab-navigation data-ref="tab_navigation" activeTabId="{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}" variant="default">
+          <prop name="tabs">
+            <item id="schedules" label="$t:admin.schedules.tabs.schedules" iconName="clock"/>
+            <item id="queue" label="$t:admin.schedules.tabs.queue" iconName="bar-chart-2" :disabled="true"/>
+          </prop>
+          <on type="change" event="onTabChange">
+            <navigate path="/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}"/>
+            <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
+          </on>
+        </tab-navigation>
+      </div>
+      <div data-ref="schedules_tab_content" class="tab-content">
+        <include src="partials/admin_schedule_list/_tab_schedules.json"/>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_schedule_list/_modal_form.json"/>
+  <modal src="partials/admin_schedule_list/_modal_delete.json"/>
+  <modal src="partials/admin_schedule_list/_modal_run.json"/>
+  <modal src="partials/admin_schedule_list/_modal_history.json"/>
+  <modal src="partials/admin_schedule_list/_modal_duplicate.json"/>
+</layout>

@@ -254,6 +254,277 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `conditions` 분기의 `then` 이 **단일 객체**여도 왕복한다 (G9).
+     *
+     * 엔진은 `then` 을 객체·배열 두 형태로 받는다(ActionDispatcher::handleConditions — 배열이면
+     * sequence 처럼 순차 실행, 객체면 단일 실행). 전 코퍼스 실측도 객체 46 · 배열 16 으로 **객체가
+     * 다수형**인데, 역변환기가 `then` 을 배열로만 보고 `array_map(fn (array $a))` 를 걸어 객체가 오면
+     * TypeError 로 죽었고 그 노드가 통째로 `<json>` 으로 탈출했다(W3 3파일 · W4 · W6 동일 계열).
+     *
+     * 표기 규칙은 `<case>`/`<default>` 의 블록 본문 관용과 같다 — 자식 하나면 객체, 둘 이상이면 배열.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects single_action_condition_branch_round_trips_as_object
+     */
+    public function test_single_action_condition_branch_round_trips_as_object(): void
+    {
+        $json = [
+            'layout_name' => 'cond_then_object',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Input',
+                    'actions' => [[
+                        'type' => 'change',
+                        'handler' => 'conditions',
+                        'conditions' => [
+                            [
+                                'if' => '{{$event.target.checked}}',
+                                'then' => ['handler' => 'setState', 'params' => ['target' => 'global', 'flag' => true]],
+                            ],
+                            [
+                                'then' => ['handler' => 'setState', 'params' => ['target' => 'global', 'flag' => false]],
+                            ],
+                        ],
+                    ]],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringContainsString('<when', $markup);
+        $this->assertStringContainsString('<else>', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 액션이 둘 이상인 분기는 `then` 배열을 유지한다 (G9 대조군).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects multi_action_condition_branch_keeps_then_array
+     */
+    public function test_multi_action_condition_branch_keeps_then_array(): void
+    {
+        $json = [
+            'layout_name' => 'cond_then_array',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Input',
+                    'actions' => [[
+                        'type' => 'change',
+                        'handler' => 'conditions',
+                        'conditions' => [[
+                            'if' => '{{$event.target.checked}}',
+                            'then' => [
+                                ['handler' => 'setState', 'params' => ['target' => 'global', 'a' => '1']],
+                                ['handler' => 'closeModal'],
+                            ],
+                        ]],
+                    ]],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 단일 원소 `then` 배열은 객체로 수렴한다 ("입력만 받고 정규화" — 콜백 단일배열 선례와 동일).
+     *
+     * `then:[{x}]` 는 액션 하나짜리 sequence 라 `then:{x}` 와 런타임 동치이고, 컴파일 정본은 객체다.
+     * 그래서 이관은 객체로 수렴하며 왕복 오라클이 양쪽을 같게 본다
+     * ([LayoutMarkupRoundTrip::normalize](app/Support/LayoutMarkup/LayoutMarkupRoundTrip.php)).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects single_element_then_array_converges_to_object
+     */
+    public function test_single_element_then_array_converges_to_object(): void
+    {
+        $json = [
+            'layout_name' => 'cond_then_single_array',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Input',
+                    'actions' => [[
+                        'type' => 'change',
+                        'handler' => 'conditions',
+                        'conditions' => [[
+                            'if' => '{{$event.target.checked}}',
+                            'then' => [['handler' => 'closeModal']],
+                        ]],
+                    ]],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * `params.actions` 를 갖는 비-제어 핸들러는 `<actions>` 블록으로 왕복한다 (G10).
+     *
+     * `startInterval` 은 `params.actions` 를 **매 tick 실행 목록**으로 읽는다
+     * (ActionDispatcher::handleStartInterval). 그런데 `actions` 는 제어 핸들러의 레거시 params 배치
+     * 이름이기도 해서, 역변환기가 그 이름을 보고 "제어 자식이니 control() 이 찍는다" 고 건너뛰었다 —
+     * 제어 핸들러가 아닌 `startInterval` 에서는 아무도 찍지 않아 **키가 통째로 소실**되고,
+     * 그 섹션이 `<json>` 으로 탈출했다(W3 identity_challenge).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects interval_tick_actions_round_trip_as_action_block
+     */
+    public function test_interval_tick_actions_round_trip_as_action_block(): void
+    {
+        $json = [
+            'layout_name' => 'interval_tick',
+            'init_actions' => [[
+                'handler' => 'startInterval',
+                'params' => [
+                    'id' => 'ticker',
+                    'intervalMs' => 1000,
+                    'actions' => [
+                        ['handler' => 'setState', 'params' => ['target' => 'local', 'n' => '{{_local.n + 1}}']],
+                        ['handler' => 'refetchDataSource', 'params' => ['dataSourceId' => 'items']],
+                    ],
+                ],
+            ]],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringContainsString('<actions>', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 제어 핸들러의 `params.actions` 는 종전대로 top-level 로 수렴한다 (G10 대조군).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects control_handler_params_actions_still_converge_to_top_level
+     */
+    public function test_control_handler_params_actions_still_converge_to_top_level(): void
+    {
+        $json = [
+            'layout_name' => 'legacy_params_sequence',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Button',
+                    'actions' => [[
+                        'type' => 'click',
+                        'handler' => 'sequence',
+                        'params' => [
+                            'actions' => [
+                                ['handler' => 'setState', 'params' => ['target' => 'local', 'a' => '1']],
+                                ['handler' => 'setState', 'params' => ['target' => 'local', 'b' => '2']],
+                            ],
+                        ],
+                    ]],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringNotContainsString('<actions>', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 데이터소스의 **임의 이름 구조값 키**는 `<field name>` 자식으로 왕복한다 (D42 G11).
+     *
+     * `<data-source>` 는 `data`/`params`/`headers`/`fallback` 넷만 구조 태그를 갖고 나머지 키는 전부
+     * 속성으로 나갔다. 값이 객체·배열이면 그 속성이 통짜 JSON(`:errorCondition='{…}'`)이 되어
+     * D2("속성 JSON 추방")를 어긴다 — 액션의 `<field name>`(G6)과 **같은 SSoT** 로 자식에 적는다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects data_source_structured_keys_emit_field_tags
+     */
+    public function test_data_source_structured_keys_emit_field_tags(): void
+    {
+        $json = [
+            'layout_name' => 'ds_structured',
+            'data_sources' => [[
+                'id' => 'roles',
+                'endpoint' => '/api/admin/roles',
+                'method' => 'GET',
+                'depends_on' => ['users', 'menus'],
+                'errorCondition' => ['if' => '{{response.data.length === 0}}', 'errorCode' => 404],
+            ]],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringContainsString('<field name="depends_on">', $markup);
+        $this->assertStringContainsString('<field name="errorCondition"', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertSame([], LayoutMarkupRoundTrip::rawJsonEmissions($markup));
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * `defines` 값도 구조값이면 `<field>`/`<item>` 트리로 나간다 (D42 G12).
+     *
+     * `<define>` 은 JSON 본문 블록이라 D41 계량에서 "설계된 정본" 으로 빠졌으나, D42 가 태그 예외를
+     * 폐기하면서 계량 대상이 됐다. 표현 가능한 값(문자열 리스트·평면 객체 리스트·중첩 객체)은
+     * 다른 자리와 같은 표기로 적고, 표현 불가한 값만 JSON 본문으로 남는다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects define_structured_value_emits_item_tags
+     */
+    public function test_define_structured_value_emits_item_tags(): void
+    {
+        $json = [
+            'layout_name' => 'define_structured',
+            'defines' => [
+                'countryList' => [
+                    ['code' => 'KR', 'name' => '$t:countries.KR'],
+                    ['code' => 'US', 'name' => '$t:countries.US'],
+                ],
+                'sizes' => ['s', 'm', 'l'],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringContainsString('<define name="countryList">', $markup);
+        $this->assertStringContainsString('<item code="KR"', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertSame([], LayoutMarkupRoundTrip::rawJsonEmissions($markup));
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 표현 불가한 `defines` 값(혼합 스칼라 리스트)은 종전대로 JSON 본문으로 남는다 (G12 대조군).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects unrepresentable_define_value_stays_json_body
+     */
+    public function test_unrepresentable_define_value_stays_json_body(): void
+    {
+        $json = [
+            'layout_name' => 'define_scalar_list',
+            'defines' => ['steps' => [1, 2, 3]],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringContainsString('[1,2,3]', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
      * 액션의 `params.body`/`params.query` 는 `<body>`/`<query>` 로 나간다 (D41).
      *
      * 속성에 JSON 을 박으면 D2("속성 JSON 추방")를 어기는데, escape 계량은 `<json>` 태그만 세므로

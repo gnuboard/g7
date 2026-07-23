@@ -1,0 +1,7 @@
+<partial name="panel_detail">
+  <div data-ref="detail_panel" class="admin-card">
+    <empty-state data-ref="empty_state_panel" data-if="{{!_global.selectedMenuId &amp;&amp; _global.panelMode !== 'create'}}" icon="bars" title="$t:admin.menus.select_menu_hint" class="py-16"/>
+    <include src="_panel_view.json"/>
+    <include src="_panel_form.json"/>
+  </div>
+</partial>

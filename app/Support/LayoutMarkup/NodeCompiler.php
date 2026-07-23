@@ -210,7 +210,7 @@ final class NodeCompiler
     private const ROOT_TAGS = ['layout', 'partial', 'extension', 'override'];
 
     /** 노드 키를 나르는 구조 태그 — 컴포넌트 자식이 아니라 부모 노드의 키가 된다 */
-    private const STRUCTURAL_TAGS = ['class-map', 'isolated-state', 'blur-until-loaded', 'prop', 'all-of', 'any-of', 'sortable', 'permissions', 'meta'];
+    private const STRUCTURAL_TAGS = ['class-map', 'isolated-state', 'blur-until-loaded', 'prop', 'all-of', 'any-of', 'sortable', 'permissions', 'meta', 'options'];
 
     /**
      * `<prop>` 안에서 병합 지시자로 해석되는 태그 (D42 G5) — `<append>` → `_append`.
@@ -319,19 +319,6 @@ final class NodeCompiler
 
         foreach ($element->attributes as $attribute) {
             $this->applyAttribute($attribute, $element, $node, $props, $path);
-        }
-
-        // 정적 옵션 리프트 — 전 자식이 정적 `<option>` 이고 multiple/size 가 없을 때만 options 배열로
-        // 끌어올린다. 그 밖(multiple/size/혼합)이면 Option 을 일반 children 노드로 그대로 방출한다.
-        if ($this->shouldLiftOptions($definition, $element, $props)) {
-            $props['options'] = $this->liftOptions($element, $path);
-            $node['props'] = $props;
-
-            if ($element->comment !== null) {
-                $node['comment'] = $element->comment;
-            }
-
-            return $this->order($node);
         }
 
         $children = [];
@@ -631,61 +618,38 @@ final class NodeCompiler
     }
 
     /**
-     * `<select>` 의 정적 `<option>` 자식을 options props 로 리프트할 수 있는지 판정합니다.
-     *
-     * 리프트 조건: 부모가 Select · 자식이 하나 이상 전부 `<option>`(반복·중첩 없음) · props 에
-     * multiple/size/options 미지정. 하나라도 어긋나면 Option 을 일반 children 노드로 방출한다
-     * (multiple/size 나 Optgroup 은 노드형 저작이 정당하므로 기능을 축소하지 않는다).
-     *
-     * @param  ComponentDefinition  $definition  부모 컴포넌트 정의
-     * @param  MarkupElement  $element  부모 요소
-     * @param  array<string, mixed>  $props  현재까지 모은 props
-     * @return bool 리프트 가능하면 true
-     */
-    private function shouldLiftOptions(ComponentDefinition $definition, MarkupElement $element, array $props): bool
-    {
-        if ($definition->name !== 'Select' || $element->children === []) {
-            return false;
-        }
-
-        if (isset($props['multiple']) || isset($props['size']) || array_key_exists('options', $props)) {
-            return false;
-        }
-
-        // 리프트가 읽는 것은 value/:value/label(본문)/disabled 뿐이다. 그 밖 속성(data-if·data-each·
-        // 임의 props)이 있으면 조용히 버려지므로, 그런 옵션은 리프트하지 않고 Option 노드로 방출한다.
-        foreach ($element->children as $child) {
-            if ($child->name !== 'option' || $child->children !== []) {
-                return false;
-            }
-
-            foreach ($child->attributes as $attribute) {
-                if (! in_array($attribute->name, ['value', ':value', 'disabled'], true)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * `<option>` 자식들을 `{value, label, disabled?}` options 배열로 리프트합니다.
+     * `<options>` 안의 `<option>` 들을 `{value, label, disabled?}` options 배열로 컴파일합니다 (G13).
      *
      * `value` 는 문자열(`value=`) 또는 타입 리터럴(`:value=`), `label` 은 본문 텍스트, `disabled` 는
      * 불리언 속성이다. 표현식·`$t:` 는 원문 그대로 싣는다(선평가 금지).
      *
-     * @param  MarkupElement  $element  `<select>` 요소
+     * **래퍼가 판별자다.** Select 는 `props.options` 유무로 렌더 컴포넌트 자체가 갈리므로
+     * (있으면 커스텀 드롭다운, 없으면 네이티브 `<select>`+children — 런타임 동치가 아님)
+     * 어느 쪽인지를 표기가 결정적으로 말해야 한다. 종전에는 `<select>` 직속 `<option>` 을 두고
+     * "전 자식이 정적 option 이면 접는다" 는 휴리스틱으로 갈랐는데, 그 판정은 양방향 모두
+     * 틀렸다 — 형제 `<on>` 하나에 리프트가 통째로 불발했고(원본 options → children), 반대로
+     * 진짜 Option 노드를 접어버렸다(원본 children → options). 이제 래퍼 안이면 언제나 데이터,
+     * 밖이면 언제나 컴포넌트 노드다.
+     *
+     * @param  MarkupElement  $element  `<options>` 요소
      * @param  string|null  $path  소스 파일 경로
      * @return array<int, array<string, mixed>> options 배열
      *
-     * @throws CompileError value 가 없는 경우
+     * @throws CompileError `<option>` 이외 자식이 있거나 value 가 없는 경우
      */
-    private function liftOptions(MarkupElement $element, ?string $path): array
+    private function compileOptions(MarkupElement $element, ?string $path): array
     {
         $options = [];
 
         foreach ($element->children as $child) {
+            // 데이터 자리이므로 `<option>` 만 온다. 그 밖 태그는 조용히 버리지 않고 자리 오류로 잡는다.
+            if ($child->name !== 'option' || $child->children !== []) {
+                throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
+                    'tag' => $child->name,
+                    'parent' => 'options',
+                ]);
+            }
+
             $typed = $child->attribute(':value');
             $plain = $child->attribute('value');
 
@@ -1005,6 +969,19 @@ final class NodeCompiler
                 // 노드 레벨 편집기 메타 (D36) — editor_label 등 평면 스칼라. 문서 `<meta>`(+`<seo>`)와 위치 분기.
                 $this->assertNotDuplicated($child, $node, 'meta', $path);
                 $node['meta'] = $this->compileNodeMeta($child, $path);
+                break;
+
+            case 'options':
+                // Select 옵션 **데이터** (D42 G13) — `props.options` 배열이 된다.
+                $this->assignProp(
+                    $props,
+                    'options',
+                    $this->compileOptions($child, $path),
+                    $child->name,
+                    $child->line,
+                    $child->column,
+                    $path,
+                );
                 break;
         }
     }

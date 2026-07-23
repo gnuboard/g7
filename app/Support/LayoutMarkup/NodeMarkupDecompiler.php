@@ -844,18 +844,24 @@ final class NodeMarkupDecompiler
     }
 
     /**
-     * `options` 를 리프트 가능하면 `<option>` 자식으로 찍습니다 (multiple/size 있으면 리프트 금지).
+     * `options` 를 정적 데이터로 찍을 수 있으면 `<options>` 래퍼 자식으로 방출합니다 (G13).
+     *
+     * 래퍼가 "이건 데이터다" 를 말한다 — 래퍼 없는 직속 `<option>` 은 Option 컴포넌트 노드이며
+     * 컴파일러가 절대 접지 않는다. Select 는 `props.options` 유무로 렌더 컴포넌트가 갈리므로
+     * (커스텀 드롭다운 vs 네이티브 select) 이 구분은 표기 층에서 결정적이어야 한다.
      *
      * @param  array<int, mixed>  $options  옵션 목록
      * @param  array<string, mixed>  $props  전체 props
      * @param  array<int, MarkupElement>  $children  자식 (참조)
-     * @return bool 리프트했으면 true, 아니면 false (→ `<prop>` 폴백)
+     * @return bool 방출했으면 true, 아니면 false (→ `<prop>` 폴백)
      */
     private function appendOptions(array $options, array $props, array &$children): bool
     {
-        if (array_key_exists('multiple', $props) || array_key_exists('size', $props) || ! $this->liftableOptions($options)) {
+        if (! $this->liftableOptions($options)) {
             return false;
         }
+
+        $items = [];
 
         foreach ($options as $option) {
             $attributes = [is_string($option['value'])
@@ -866,8 +872,10 @@ final class NodeMarkupDecompiler
                 $attributes[] = $this->attr('disabled');
             }
 
-            $children[] = $this->el('option', $attributes, [], (string) ($option['label'] ?? ''));
+            $items[] = $this->el('option', $attributes, [], (string) ($option['label'] ?? ''));
         }
+
+        $children[] = $this->el('options', [], $items);
 
         return true;
     }

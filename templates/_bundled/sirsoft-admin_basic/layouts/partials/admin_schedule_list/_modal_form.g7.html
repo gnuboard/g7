@@ -1,0 +1,122 @@
+<partial description="스케줄 생성/수정 폼 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_form_modal">
+  <modal data-ref="schedule_form_modal" title="{{_global.isEditMode ? '$t:admin.schedules.modals.edit_title' : '$t:admin.schedules.modals.create_title'}}" size="large">
+    <form class="row-stack">
+      <on type="submit">
+        <set-state target="global" :isSubmitting="true"/>
+        <api-call :auth_required="true" target="{{_global.isEditMode ? '/api/admin/schedules/' + _global.selectedSchedule.id : '/api/admin/schedules'}}" method="{{_global.isEditMode ? 'PUT' : 'POST'}}">
+          <success>
+            <set-state target="global" :isSubmitting="false"/>
+            <toast type="success" message="{{_global.isEditMode ? '$t:admin.schedules.messages.update_success' : '$t:admin.schedules.messages.create_success'}}"/>
+            <refetch-data-source dataSourceId="schedules"/>
+            <close-modal target="schedule_form_modal"/>
+          </success>
+          <fail>
+            <set-state target="global" :isSubmitting="false"/>
+            <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.save_failed'}}"/>
+          </fail>
+          <body name="{{form.name}}" description="{{form.description}}" type="{{form.type}}" command="{{form.command}}" frequency="{{form.frequency}}" expression="{{form.expression}}" timeout="{{form.timeout}}" without_overlapping="{{form.without_overlapping}}" run_in_maintenance="{{form.run_in_maintenance}}" is_active="{{form.is_active}}"/>
+        </api-call>
+      </on>
+      <div class="grid-2col-responsive">
+        <div>
+          <label class="form-label">
+            <span>$t:admin.schedules.form.name</span>
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+          <input type="text" name="name" defaultValue="{{_global.selectedSchedule?.name ?? ''}}" placeholder="$t:admin.schedules.form.name_placeholder" class="input"/>
+        </div>
+        <div>
+          <label class="form-label">
+            <span>$t:admin.schedules.form.type</span>
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+          <select name="type" class="w-full" defaultValue="{{_global.selectedSchedule?.type ?? 'artisan'}}">
+            <options>
+              <option value="artisan">$t:admin.schedules.type.artisan</option>
+              <option value="shell">$t:admin.schedules.type.shell</option>
+              <option value="url">$t:admin.schedules.type.url</option>
+            </options>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">$t:admin.schedules.form.description</label>
+        <textarea name="description" :rows="2" defaultValue="{{_global.selectedSchedule?.description ?? ''}}" placeholder="$t:admin.schedules.form.description_placeholder" class="input textarea-sm resize-none"/>
+      </div>
+      <div>
+        <label class="form-label">
+          <span>$t:admin.schedules.form.command</span>
+          <span class="text-red-500 ml-1">*</span>
+        </label>
+        <input type="text" name="command" defaultValue="{{_global.selectedSchedule?.command ?? ''}}" placeholder="$t:admin.schedules.form.command_placeholder" class="input font-mono"/>
+        <p class="form-hint">$t:admin.schedules.form.command_help</p>
+      </div>
+      <div class="grid-2col-responsive">
+        <div>
+          <label class="form-label">
+            <span>$t:admin.schedules.form.frequency</span>
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+          <select name="frequency" class="w-full" defaultValue="{{_global.selectedSchedule?.frequency ?? 'daily'}}">
+            <options>
+              <option value="everyMinute">$t:admin.schedules.frequency.everyMinute</option>
+              <option value="hourly">$t:admin.schedules.frequency.hourly</option>
+              <option value="daily">$t:admin.schedules.frequency.daily</option>
+              <option value="weekly">$t:admin.schedules.frequency.weekly</option>
+              <option value="monthly">$t:admin.schedules.frequency.monthly</option>
+              <option value="custom">$t:admin.schedules.frequency.custom</option>
+            </options>
+            <on type="change">
+              <set-state target="global" scheduleFrequency="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+        <div data-if="{{(_global.scheduleFrequency ?? _global.selectedSchedule?.frequency) === 'custom'}}">
+          <label class="form-label">
+            <span>$t:admin.schedules.form.expression</span>
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+          <input type="text" name="expression" defaultValue="{{_global.selectedSchedule?.expression ?? '* * * * *'}}" placeholder="* * * * *" class="input font-mono"/>
+          <p class="form-hint">$t:admin.schedules.form.expression_help</p>
+        </div>
+      </div>
+      <div class="grid-2col-responsive">
+        <div>
+          <label class="form-label">$t:admin.schedules.form.timeout</label>
+          <input type="number" name="timeout" defaultValue="{{_global.selectedSchedule?.timeout ?? 60}}" :min="1" :max="86400" class="input"/>
+          <p class="form-hint">$t:admin.schedules.form.timeout_help</p>
+        </div>
+      </div>
+      <div class="row-stack border-t border-gray-200 dark:border-gray-700">
+        <div class="flex-between">
+          <div>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.schedules.form.without_overlapping</span>
+            <p class="text-tertiary">$t:admin.schedules.form.without_overlapping_help</p>
+          </div>
+          <toggle name="without_overlapping" checked="{{_global.selectedSchedule?.without_overlapping ?? true}}" size="sm"/>
+        </div>
+        <div class="flex-between">
+          <div>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.schedules.form.run_in_maintenance</span>
+            <p class="text-tertiary">$t:admin.schedules.form.run_in_maintenance_help</p>
+          </div>
+          <toggle name="run_in_maintenance" checked="{{_global.selectedSchedule?.run_in_maintenance ?? false}}" size="sm"/>
+        </div>
+        <div class="flex-between">
+          <div>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.schedules.form.is_active</span>
+            <p class="text-tertiary">$t:admin.schedules.form.is_active_help</p>
+          </div>
+          <toggle name="is_active" checked="{{_global.selectedSchedule?.is_active ?? true}}" size="sm"/>
+        </div>
+      </div>
+    </form>
+    <div class="modal-footer-buttons pt-4 border-t border-gray-200 dark:border-gray-700">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isSubmitting}}"><on type="click"><close-modal target="schedule_form_modal"/></on>$t:common.cancel</button>
+      <button type="submit" form="schedule_form_modal" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSubmitting}}">
+        <icon data-if="{{_global.isSubmitting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isSubmitting ? '$t:common.saving' : '$t:common.save'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

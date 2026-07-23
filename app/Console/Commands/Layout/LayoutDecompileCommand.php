@@ -5,6 +5,7 @@ namespace App\Console\Commands\Layout;
 use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\ComponentRegistry;
+use App\Support\LayoutMarkup\LayoutCorpus;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 use Illuminate\Console\Command;
@@ -177,34 +178,9 @@ class LayoutDecompileCommand extends Command
      */
     private function scanMarkupFiles(): array
     {
-        $roots = [
-            base_path('templates/_bundled'),
-            base_path('modules/_bundled'),
-            base_path('plugins/_bundled'),
-        ];
-
-        $files = [];
-
-        foreach ($roots as $root) {
-            if (! File::isDirectory($root)) {
-                continue;
-            }
-
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($root, \RecursiveDirectoryIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::LEAVES_ONLY,
-            );
-
-            foreach ($iterator as $entry) {
-                if ($entry->isFile() && str_ends_with(strtolower($entry->getFilename()), '.g7.html')) {
-                    $files[] = $entry->getPathname();
-                }
-            }
-        }
-
-        sort($files);
-
-        return $files;
+        // 모집단은 {@see LayoutCorpus} 가 SSoT — 커맨드가 글롭을 따로 들면 한쪽만 넓힐 때
+        // 나머지가 조용히 다른 모집단을 보게 된다(㉓ 이 겪은 "반쪽 코퍼스 위의 escape-0").
+        return LayoutCorpus::scan('.g7.html');
     }
 
     /**

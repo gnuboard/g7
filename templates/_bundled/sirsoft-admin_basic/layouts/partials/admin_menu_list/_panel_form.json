@@ -1,5 +1,8 @@
 {
   "layout_name": "panel_form",
+  "meta": {
+    "is_partial": true
+  },
   "id": "form_panel",
   "type": "basic",
   "name": "Div",
@@ -176,8 +179,7 @@
                   ]
                 }
               ],
-              "props": {
-              }
+              "props": {}
             }
           ]
         }
@@ -505,8 +507,7 @@
               ]
             }
           ],
-          "props": {
-          }
+          "props": {}
         },
         {
           "id": "form_hierarchy_section",
@@ -590,8 +591,7 @@
                   ]
                 }
               ],
-              "props": {
-              }
+              "props": {}
             }
           ]
         },
@@ -744,8 +744,7 @@
                   "text": "$t:admin.menus.form.module_readonly_hint"
                 }
               ],
-              "props": {
-              }
+              "props": {}
             }
           ]
         },
@@ -810,8 +809,7 @@
                   ]
                 }
               ],
-              "props": {
-              }
+              "props": {}
             }
           ]
         },
@@ -843,8 +841,7 @@
                   }
                 }
               ],
-              "props": {
-              }
+              "props": {}
             }
           ]
         },
@@ -997,8 +994,7 @@
                   ]
                 }
               ],
-              "props": {
-              }
+              "props": {}
             }
           ]
         }

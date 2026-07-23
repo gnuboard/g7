@@ -1,0 +1,92 @@
+<partial description="환경설정 일반 탭 콘텐츠">
+  <div data-ref="tab_content_general" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'general'}}">
+    <div data-ref="card_site_info" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.general.site_info</h3>
+      <div class="card-description">$t:admin.settings.general.site_info_desc</div>
+      <div class="row-stack">
+        <div class="grid-2col-responsive">
+          <div data-ref="field_site_name">
+            <label class="form-label">
+              <span>$t:admin.settings.general.site_name</span>
+              <span class="text-red-500 ml-1">*</span>
+            </label>
+            <input type="text" name="general.site_name" placeholder="그누보드7" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['general.site_name'] ? 'input-error' : ''}}"/>
+            <span data-if="{{_local.errors?.['general.site_name']}}" class="form-error">{{_local.errors?.['general.site_name']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_site_url">
+            <label class="form-label">
+              <span>$t:admin.settings.general.site_url</span>
+              <span class="text-red-500 ml-1">*</span>
+            </label>
+            <input type="url" name="general.site_url" placeholder="https://example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['general.site_url'] ? 'input-error' : ''}}"/>
+            <span data-if="{{_local.errors?.['general.site_url']}}" class="form-error">{{_local.errors?.['general.site_url']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-ref="field_site_description">
+          <label class="form-label">$t:admin.settings.general.site_description</label>
+          <textarea name="general.site_description" :rows="2" placeholder="$t:admin.settings.general.site_description_placeholder" disabled="{{_computed.isReadOnly}}" class="input textarea-sm resize-none"/>
+        </div>
+        <div data-ref="field_admin_email">
+          <label class="form-label">
+            <span>$t:admin.settings.general.admin_email</span>
+            <span class="text-red-500 ml-1">*</span>
+          </label>
+          <input type="email" name="general.admin_email" placeholder="admin@example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['general.admin_email'] ? 'input-error' : ''}}"/>
+          <span data-if="{{_local.errors?.['general.admin_email']}}" class="form-error">{{_local.errors?.['general.admin_email']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="field_site_logo">
+          <label class="form-label">$t:admin.settings.general.site_logo</label>
+          <p class="text-tertiary mb-2">$t:admin.settings.general.site_logo_desc</p>
+          <file-uploader data-ref="site_logo_uploader" collection="site_logo" disabled="{{_computed.isReadOnly}}" :maxFiles="5" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.general?.site_logo ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:site_logo" :confirmBeforeRemove="true">
+            <prop name="imageCompression">
+              <field name="maxSizeMB" :value="1"/>
+              <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"/>
+            </prop>
+            <on type="change" event="onFilesChange">
+              <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
+            </on>
+            <on type="change" event="onUploadComplete">
+              <set-state target="local" :hasChanges="true" form.general.site_logo="{{[...(_local.form?.general?.site_logo ?? []), ...$args[0]]}}"/>
+            </on>
+            <on type="custom" event="onUploadComplete">
+              <toast type="success" message="$t:attachment.upload_success"/>
+            </on>
+            <on type="custom" event="onUploadError">
+              <toast type="error" message="{{$args[0]}}"/>
+            </on>
+            <on type="change" event="onRemove">
+              <set-state target="local" :hasChanges="true" form.general.site_logo="{{(_local.form?.general?.site_logo ?? []).filter(item => item.id !== $args[0])}}"/>
+            </on>
+            <on type="custom" event="onRemove">
+              <toast type="info" message="$t:attachment.deleted"/>
+            </on>
+          </file-uploader>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_localization" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.general.localization</h3>
+      <div class="card-description">$t:admin.settings.general.localization_desc</div>
+      <div>
+        <div class="grid-2col-responsive">
+          <div data-ref="field_language">
+            <label class="form-label">
+              <span>$t:admin.settings.general.default_language</span>
+              <span class="text-red-500 ml-1">*</span>
+            </label>
+            <select name="general.language" class="w-full" disabled="{{_computed.isReadOnly}}" placeholder="$t:admin.settings.general.select_language" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" error="{{_local.errors?.['general.language']?.[0] ?? ''}}"/>
+            <span data-if="{{_local.errors?.['general.language']}}" class="form-error">{{_local.errors?.['general.language']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_timezone">
+            <label class="form-label">
+              <span>$t:admin.settings.general.timezone</span>
+              <span class="text-red-500 ml-1">*</span>
+            </label>
+            <select name="general.timezone" class="w-full" disabled="{{_computed.isReadOnly}}" placeholder="$t:admin.settings.general.select_timezone" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}" error="{{_local.errors?.['general.timezone']?.[0] ?? ''}}"/>
+            <span data-if="{{_local.errors?.['general.timezone']}}" class="form-error">{{_local.errors?.['general.timezone']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

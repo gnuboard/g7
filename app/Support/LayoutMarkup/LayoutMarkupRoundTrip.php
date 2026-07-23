@@ -192,9 +192,18 @@ final class LayoutMarkupRoundTrip
             }
         }
 
-        // Select 의 리프트 가능한 `<option>` 자식 → props.options (컴파일러 shouldLiftOptions 미러).
-        // 소스가 Option 자식으로, 산출이 options 배열로 갈리는 이형을 정본(options)으로 수렴시킨다.
-        $value = self::liftSelectOptions($value);
+        // conditions 분기의 단일 원소 `then` 배열 → 객체 (컴파일러 compileConditionBranches 미러).
+        // then:[{x}] 는 액션 하나짜리 sequence 라 then:{x} 와 런타임 동치이고(handleConditions),
+        // 컴파일 정본은 객체다 — 콜백 단일배열과 같은 계열로 이관은 객체로 수렴한다.
+        if (isset($value['then']) && is_array($value['then'])
+            && array_is_list($value['then']) && count($value['then']) === 1) {
+            $value['then'] = $value['then'][0];
+        }
+
+        // Select 옵션은 **정규화하지 않는다** (G13). `props.options` 와 `children:[Option]` 은 서로
+        // 다른 렌더 컴포넌트로 가는 별개 shape 이지 표기 이형이 아니다 — 여기서 한쪽으로 접으면
+        // 이관이 실제로 shape 를 바꿔놓아도 왕복 게이트가 green 이 된다. 실제로 그 마스킹 아래에서
+        // 46건이 뒤바뀐 채 통과했다. 이제 `<options>` 래퍼가 표기 층에서 둘을 결정적으로 가른다.
 
         // 컴파일러가 항상 생략하는 빈 컨테이너를 제거 — `props:[]` 는 방출되지 않는다.
         //
@@ -208,53 +217,6 @@ final class LayoutMarkupRoundTrip
         }
 
         return array_map([self::class, 'normalize'], $value);
-    }
-
-    /**
-     * Select 노드의 리프트 가능한 Option 자식을 props.options 로 접습니다 (컴파일러 liftOptions 미러).
-     *
-     * @param  array<string, mixed>  $node  노드
-     * @return array<string, mixed> 정규화된 노드
-     */
-    private static function liftSelectOptions(array $node): array
-    {
-        if (($node['name'] ?? null) !== 'Select' || empty($node['children']) || ! is_array($node['children'])) {
-            return $node;
-        }
-
-        $props = $node['props'] ?? [];
-
-        if (isset($props['options']) || isset($props['multiple']) || isset($props['size'])) {
-            return $node;
-        }
-
-        $options = [];
-
-        foreach ($node['children'] as $child) {
-            if (! is_array($child) || ($child['name'] ?? null) !== 'Option' || ! empty($child['children'])) {
-                return $node;
-            }
-
-            $childProps = $child['props'] ?? [];
-
-            if (! array_key_exists('value', $childProps) || array_diff(array_keys($childProps), ['value', 'disabled']) !== []) {
-                return $node;
-            }
-
-            $option = ['value' => $childProps['value'], 'label' => (string) ($child['text'] ?? '')];
-
-            if (! empty($childProps['disabled'])) {
-                $option['disabled'] = true;
-            }
-
-            $options[] = $option;
-        }
-
-        $props['options'] = $options;
-        $node['props'] = $props;
-        unset($node['children']);
-
-        return $node;
     }
 
     /**

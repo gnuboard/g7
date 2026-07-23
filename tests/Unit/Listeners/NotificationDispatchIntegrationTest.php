@@ -9,9 +9,12 @@ use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\GenericNotification;
+use App\Notifications\GuestNotifiable;
 use App\Services\NotificationDefinitionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Tests\Helpers\MocksChannelReadiness;
 use Tests\TestCase;
 
 /**
@@ -23,6 +26,7 @@ use Tests\TestCase;
  */
 class NotificationDispatchIntegrationTest extends TestCase
 {
+    use MocksChannelReadiness;
     use RefreshDatabase;
 
     private NotificationHookListener $listener;
@@ -31,6 +35,10 @@ class NotificationDispatchIntegrationTest extends TestCase
     {
         parent::setUp();
         Notification::fake();
+
+        // 수신자 해석·발송 경로가 관심사다 — mail 채널은 SMTP 설정이 비면 not-ready 라
+        // 그 축을 고정하지 않으면 mail 정의를 쓰는 케이스만 환경에 따라 갈린다.
+        $this->mockAllChannelsReady();
         $this->listener = app(NotificationHookListener::class);
     }
 
@@ -106,7 +114,7 @@ class NotificationDispatchIntegrationTest extends TestCase
 
         $this->registerAndFire('core.test.after_trigger', $user);
 
-        Notification::assertSentTo($user, \App\Notifications\GenericNotification::class);
+        Notification::assertSentTo($user, GenericNotification::class);
     }
 
     // ──────────────────────────────────────────────
@@ -137,8 +145,8 @@ class NotificationDispatchIntegrationTest extends TestCase
 
         $this->registerAndFire('core.test.after_role', null);
 
-        Notification::assertSentTo($admin1, \App\Notifications\GenericNotification::class);
-        Notification::assertSentTo($admin2, \App\Notifications\GenericNotification::class);
+        Notification::assertSentTo($admin1, GenericNotification::class);
+        Notification::assertSentTo($admin2, GenericNotification::class);
     }
 
     // ──────────────────────────────────────────────
@@ -163,9 +171,9 @@ class NotificationDispatchIntegrationTest extends TestCase
 
         $this->registerAndFire('core.test.after_specific', null);
 
-        Notification::assertSentTo($user1, \App\Notifications\GenericNotification::class);
-        Notification::assertSentTo($user2, \App\Notifications\GenericNotification::class);
-        Notification::assertNotSentTo($other, \App\Notifications\GenericNotification::class);
+        Notification::assertSentTo($user1, GenericNotification::class);
+        Notification::assertSentTo($user2, GenericNotification::class);
+        Notification::assertNotSentTo($other, GenericNotification::class);
     }
 
     // ──────────────────────────────────────────────
@@ -200,8 +208,8 @@ class NotificationDispatchIntegrationTest extends TestCase
 
         $this->registerAndFire('core.test.after_excl', $triggerUser);
 
-        Notification::assertSentTo($otherAdmin, \App\Notifications\GenericNotification::class);
-        Notification::assertNotSentTo($triggerUser, \App\Notifications\GenericNotification::class);
+        Notification::assertSentTo($otherAdmin, GenericNotification::class);
+        Notification::assertNotSentTo($triggerUser, GenericNotification::class);
     }
 
     // ──────────────────────────────────────────────
@@ -240,7 +248,7 @@ class NotificationDispatchIntegrationTest extends TestCase
         $this->registerAndFire('core.test.after_multi', $user);
 
         // 동일 사용자이므로 1건만 발송
-        Notification::assertSentTo($user, \App\Notifications\GenericNotification::class, function ($notification) {
+        Notification::assertSentTo($user, GenericNotification::class, function ($notification) {
             return true;
         });
         Notification::assertCount(1);
@@ -267,7 +275,7 @@ class NotificationDispatchIntegrationTest extends TestCase
         $this->registerAndFire('core.test.after_no_filter', null);
 
         // 수신자는 결정되지만 data가 빈 상태로 발송
-        Notification::assertSentTo($admin, \App\Notifications\GenericNotification::class);
+        Notification::assertSentTo($admin, GenericNotification::class);
     }
 
     // ──────────────────────────────────────────────
@@ -333,7 +341,7 @@ class NotificationDispatchIntegrationTest extends TestCase
 
         $this->registerAndFire('core.test.after_legacy', $user);
 
-        Notification::assertSentTo($user, \App\Notifications\GenericNotification::class);
+        Notification::assertSentTo($user, GenericNotification::class);
     }
 
     // ──────────────────────────────────────────────
@@ -343,7 +351,7 @@ class NotificationDispatchIntegrationTest extends TestCase
     public function test_core_welcome_extract_data(): void
     {
         $user = User::factory()->create();
-        $listener = new CoreNotificationDataListener();
+        $listener = new CoreNotificationDataListener;
 
         $result = $listener->extractData(
             ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []],
@@ -364,7 +372,7 @@ class NotificationDispatchIntegrationTest extends TestCase
     public function test_core_reset_password_extract_data(): void
     {
         $user = User::factory()->create();
-        $listener = new CoreNotificationDataListener();
+        $listener = new CoreNotificationDataListener;
 
         $result = $listener->extractData(
             ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []],
@@ -383,7 +391,7 @@ class NotificationDispatchIntegrationTest extends TestCase
     public function test_core_password_changed_extract_data(): void
     {
         $user = User::factory()->create();
-        $listener = new CoreNotificationDataListener();
+        $listener = new CoreNotificationDataListener;
 
         $result = $listener->extractData(
             ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []],
@@ -402,7 +410,7 @@ class NotificationDispatchIntegrationTest extends TestCase
 
     public function test_core_unknown_type_returns_default(): void
     {
-        $listener = new CoreNotificationDataListener();
+        $listener = new CoreNotificationDataListener;
         $default = ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []];
 
         $result = $listener->extractData($default, 'unknown_type', []);
@@ -431,7 +439,7 @@ class NotificationDispatchIntegrationTest extends TestCase
 
         $this->registerAndFire('core.test.after_fallback', null);
 
-        Notification::assertSentTo($superAdmin, \App\Notifications\GenericNotification::class);
+        Notification::assertSentTo($superAdmin, GenericNotification::class);
     }
 
     // ──────────────────────────────────────────────
@@ -497,8 +505,8 @@ class NotificationDispatchIntegrationTest extends TestCase
         // 비회원은 GuestNotifiable 수신자로 발송된다 (회원과 동일한 notify 경로).
         // fake 는 같은 클래스 + getKey() 로 매칭하므로 동일 이메일 게스트로 단언한다.
         Notification::assertSentTo(
-            new \App\Notifications\GuestNotifiable('guest@example.com'),
-            \App\Notifications\GenericNotification::class
+            new GuestNotifiable('guest@example.com'),
+            GenericNotification::class
         );
     }
 

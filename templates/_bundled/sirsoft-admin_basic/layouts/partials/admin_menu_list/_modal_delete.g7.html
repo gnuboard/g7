@@ -1,0 +1,11 @@
+<partial description="메뉴 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_menu_list.delete_confirm_modal">
+  <modal data-ref="delete_confirm_modal" title="$t:admin.menus.modals.delete_title" size="sm">
+    <div>
+      <p class="text-label">$t:admin.menus.modals.delete_confirm</p>
+      <div class="flex-center gap-3 justify-end">
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><close-modal target="delete_confirm_modal"/></on>$t:common.cancel</button>
+        <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"><on type="click"><close-modal target="delete_confirm_modal"/><api-call :auth_required="true" target="/api/admin/menus/{{_global.selectedMenuId}}" method="DELETE"><success><parallel><toast type="success" message="$t:admin.menus.messages.deleted"/><refetch-data-source dataSourceId="menus"/><refetch-data-source dataSourceId="admin_menu"/><set-state target="global" :selectedMenuId="null" :selectedMenu="null" panelMode="view"/></parallel></success></api-call></on>$t:common.delete</button>
+      </div>
+    </div>
+  </modal>
+</partial>

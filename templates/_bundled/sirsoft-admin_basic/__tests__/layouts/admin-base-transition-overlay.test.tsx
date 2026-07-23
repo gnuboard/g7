@@ -71,12 +71,23 @@ describe('어드민 베이스 transition_overlay (이슈 #245)', () => {
 });
 
 describe('어드민 베이스 사이드바 프로필 영역 (이슈 #384)', () => {
-    it('좌측 사이드바 하단 프로필/링크 영역을 렌더링하지 않는다', () => {
-        const sidebarFooter = findById((adminBase as any).components, 'sidebar_footer');
+    it('좌측 사이드바 하단에 프로필 영역을 렌더링하지 않는다', () => {
         const sidebarProfile = findById((adminBase as any).components, 'user_profile');
 
-        expect(sidebarFooter).toBeUndefined();
         expect(sidebarProfile).toBeUndefined();
+    });
+
+    /**
+     * #384/#399 가 지운 것은 **프로필 영역**이지 사이드바 푸터 자체가 아니다.
+     *
+     * #450 이 같은 자리에 "사이트 보기" 크로스 이동 링크를 다시 넣었고, 종전 단언은 `sidebar_footer`
+     * 노드의 부재까지 요구하고 있어 그 시점부터 stale 이었다(레이아웃이 정본, 단언이 과잉).
+     */
+    it('사이드바 푸터에는 사이트 보기 링크만 둔다', () => {
+        const sidebarFooter = findById((adminBase as any).components, 'sidebar_footer');
+
+        expect(sidebarFooter).toBeDefined();
+        expect(findById([sidebarFooter], 'sidebar_view_site_link')).toBeDefined();
     });
 
     it('계정 기능은 상단 헤더 드롭다운으로 유지한다', () => {

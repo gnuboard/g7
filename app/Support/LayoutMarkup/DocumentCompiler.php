@@ -437,6 +437,16 @@ final class DocumentCompiler
                 $source['onReceive'] = $this->compileCallback($child, $path);
 
                 return;
+
+            case 'field':
+                // 임의 이름의 구조값 키 (D42 G11) — `depends_on` 리스트·`errorCondition` 객체 등.
+                // 나머지 키는 속성으로 가는데, 값이 객체·배열이면 속성이 통짜 JSON 이 된다.
+                // 표기 규칙은 액션 `<field name>`(G6)·`<prop>`(G3) 과 같은 `StructuredValueCompiler`.
+                $name = (string) $this->requiredAttribute($child, 'name', $path);
+                $this->assertDataSourceKeyUnset($child, $source, $name, $path);
+                $source[$name] = $this->values->compileChildren($child, $path);
+
+                return;
         }
 
         throw $this->error($child, LayoutMarkupErrorCode::UnexpectedStructuralChild, $path, [
@@ -549,7 +559,9 @@ final class DocumentCompiler
     /**
      * `<defines>` 의 `<define name="x">JSON</define>` 자식들을 defines 객체로 컴파일합니다.
      *
-     * defines 값은 임의 JSON(국가 목록 등)이라 속성으로 못 편다 — `<prop>` 과 같은 JSON 본문 블록.
+     * defines 값은 임의 구조(국가 목록 등)라 속성으로 못 편다. 표현 가능한 값은 `<field>`/`<item>`
+     * 트리로 적고(D42 G12 — `<prop>`·데이터소스와 같은 `StructuredValueCompiler`), 표기를 주지 않은
+     * 형태(혼합 스칼라 리스트 등)만 JSON 본문으로 남는다.
      *
      * @param  MarkupElement  $element  `<defines>` 요소
      * @param  string|null  $path  소스 파일 경로
@@ -575,7 +587,9 @@ final class DocumentCompiler
                 throw $this->error($child, LayoutMarkupErrorCode::DuplicateSection, $path, ['tag' => 'define:'.$name]);
             }
 
-            $defines[$name] = $this->decodeJsonBody($child, $path);
+            $defines[$name] = $child->children !== []
+                ? $this->values->compileChildren($child, $path)
+                : $this->decodeJsonBody($child, $path);
         }
 
         return $defines;

@@ -1,0 +1,146 @@
+<partial description="모듈 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_uninstall_modal">
+  <modal data-ref="module_uninstall_modal" title="$t:admin.modules.modals.uninstall_title" size="medium">
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.modules.modals.uninstall_confirm|name={{_global.selectedModule.name}}</p>
+      <p class="mt-2 text-label-subtle">$t:admin.modules.modals.uninstall_warning</p>
+    </div>
+    <div data-ref="delete_data_option" class="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div class="flex-start gap-2">
+        <checkbox id="delete_module_data_checkbox" checked="{{_global.deleteModuleData || false}}" class="mt-0.5">
+          <on type="change">
+            <conditions>
+              <when if="{{$event.target.checked}}">
+                <set-state target="global" :deleteModuleData="true" :moduleUninstallInfo="null"/>
+                <api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/uninstall-info" method="GET">
+                  <success>
+                    <set-state target="global" moduleUninstallInfo="{{response.data}}"/>
+                  </success>
+                </api-call>
+              </when>
+              <else>
+                <set-state target="global" :deleteModuleData="false"/>
+              </else>
+            </conditions>
+          </on>
+        </checkbox>
+        <div>
+          <label for="delete_module_data_checkbox" class="text-body cursor-pointer">$t:admin.modules.modals.delete_data_option</label>
+          <p class="form-hint">$t:admin.modules.modals.delete_data_warning</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="extension_directory_section" class="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
+      <span class="text-primary text-sm font-semibold">$t:admin.modules.modals.extension_directory_title</span>
+      <div data-if="{{!_global.moduleUninstallInfo}}" class="flex-center justify-center py-4">
+        <icon name="spinner" class="w-5 h-5 animate-spin text-gray-400"/>
+      </div>
+      <div data-if="{{_global.moduleUninstallInfo &amp;&amp; _global.moduleUninstallInfo.extension_directory}}" class="mt-3">
+        <div class="flex-center gap-2 mb-2">
+          <icon name="folder-open" class="w-4 h-4 text-gray-500"/>
+          <span class="text-body font-medium">$t:admin.modules.modals.extension_directory_section</span>
+          <span class="text-tertiary">($t:admin.modules.modals.tables_total|size={{_global.moduleUninstallInfo.extension_directory.size_formatted}})</span>
+        </div>
+        <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+          <div class="flex-between px-3 py-1.5">
+            <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{_global.moduleUninstallInfo.extension_directory.path}}</span>
+            <span class="text-tertiary">{{_global.moduleUninstallInfo.extension_directory.size_formatted}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="uninstall_info_section" data-if="{{_global.deleteModuleData}}" class="mt-4">
+      <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
+        <span class="text-primary text-sm font-semibold">$t:admin.modules.modals.delete_data_info_title</span>
+      </div>
+      <div data-if="{{!_global.moduleUninstallInfo}}" class="flex-center justify-center py-4">
+        <icon name="spinner" class="w-5 h-5 animate-spin text-gray-400"/>
+      </div>
+      <div data-if="{{_global.moduleUninstallInfo}}" class="mt-3 space-y-4">
+        <div>
+          <div class="flex-center gap-2 mb-2">
+            <icon name="database" class="w-4 h-4 text-gray-500"/>
+            <span class="text-body font-medium">$t:admin.modules.modals.tables_section</span>
+            <span data-if="{{_global.moduleUninstallInfo.tables &amp;&amp; _global.moduleUninstallInfo.tables.length > 0}}" class="text-tertiary">($t:admin.modules.modals.tables_total|size={{_global.moduleUninstallInfo.total_table_size_formatted}})</span>
+          </div>
+          <p data-if="{{!_global.moduleUninstallInfo.tables || _global.moduleUninstallInfo.tables.length === 0}}" class="text-tertiary ml-6">$t:admin.modules.modals.no_tables</p>
+          <div data-if="{{_global.moduleUninstallInfo.tables &amp;&amp; _global.moduleUninstallInfo.tables.length > 0}}" class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div data-each="table in _global.moduleUninstallInfo.tables" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{table.name}}</span>
+              <span class="text-tertiary">{{table.size_formatted ?? '$t:admin.modules.modals.size_unknown'}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-if="{{_global.moduleUninstallInfo.shared_records &amp;&amp; _global.moduleUninstallInfo.shared_records.length > 0}}">
+          <div class="flex-center gap-2 mb-2">
+            <icon name="share-nodes" class="w-4 h-4 text-gray-500"/>
+            <span class="text-body font-medium">$t:admin.modules.modals.shared_records_section</span>
+          </div>
+          <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div data-each="rec in _global.moduleUninstallInfo.shared_records" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300">$t:admin.modules.modals.shared.{{rec.label_key}}</span>
+              <span class="text-tertiary">$t:admin.modules.modals.shared_records_count|count={{rec.count}}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="flex-center gap-2 mb-2">
+            <icon name="folder" class="w-4 h-4 text-gray-500"/>
+            <span class="text-body font-medium">$t:admin.modules.modals.storage_section</span>
+            <span data-if="{{_global.moduleUninstallInfo.storage_directories &amp;&amp; _global.moduleUninstallInfo.storage_directories.length > 0}}" class="text-tertiary">($t:admin.modules.modals.storage_total|size={{_global.moduleUninstallInfo.total_storage_size_formatted}})</span>
+          </div>
+          <p data-if="{{!_global.moduleUninstallInfo.storage_directories || _global.moduleUninstallInfo.storage_directories.length === 0}}" class="text-tertiary ml-6">$t:admin.modules.modals.no_storage</p>
+          <div data-if="{{_global.moduleUninstallInfo.storage_directories &amp;&amp; _global.moduleUninstallInfo.storage_directories.length > 0}}" class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div data-each="dir in _global.moduleUninstallInfo.storage_directories" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{dir.name}}</span>
+              <span class="text-tertiary">{{dir.size_formatted}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-if="{{_global.moduleUninstallInfo.vendor_directory}}">
+          <div class="flex-center gap-2 mb-2">
+            <icon name="cube" class="w-4 h-4 text-gray-500"/>
+            <span class="text-body font-medium">$t:admin.modules.modals.vendor_section</span>
+            <span class="text-tertiary">({{_global.moduleUninstallInfo.vendor_directory.total_size_formatted}})</span>
+          </div>
+          <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div data-each="vendorItem in _global.moduleUninstallInfo.vendor_directory.items" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{vendorItem.name}}</span>
+              <span class="text-tertiary">{{vendorItem.size_formatted}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons sticky bottom-0 items-center px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <button class="btn btn-secondary" disabled="{{_global.isModuleUninstalling}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleUninstalling}}">
+        <on type="click">
+          <set-state target="global" :isModuleUninstalling="true"/>
+          <api-call :auth_required="true" target="/api/admin/modules/uninstall" method="DELETE">
+            <success>
+              <set-state target="global" :isModuleUninstalling="false"/>
+              <set-state target="global" :selectedModule="null" :deleteModuleData="false" :moduleUninstallInfo="null"/>
+              <toast type="success" message="$t:admin.modules.uninstall_success"/>
+              <refetch-data-source dataSourceId="modules"/>
+              <refetch-data-source dataSourceId="admin_menu"/>
+              <reload-extensions moduleInfo="{{result}}" action="remove"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isModuleUninstalling="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body module_name="{{_global.selectedModule.identifier}}" delete_data="{{_global.deleteModuleData || false}}"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isModuleUninstalling}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isModuleUninstalling ? '$t:admin.modules.uninstalling' : '$t:admin.modules.actions.uninstall'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -3,12 +3,14 @@
 namespace Tests\Unit\Notifications;
 
 use App\Models\NotificationDefinition;
+use App\Models\NotificationLog;
 use App\Models\NotificationTemplate;
 use App\Models\User;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationChannelService;
 use App\Services\NotificationTemplateService;
 use Mockery;
+use Tests\Helpers\MocksChannelReadiness;
 use Tests\TestCase;
 
 /**
@@ -19,6 +21,8 @@ use Tests\TestCase;
  */
 class GenericNotificationViaTest extends TestCase
 {
+    use MocksChannelReadiness;
+
     private User $user;
 
     private NotificationDefinition $definition;
@@ -26,6 +30,10 @@ class GenericNotificationViaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // readiness 는 이 테스트의 관심사가 아니다 — mail 은 SMTP 설정이 비면 not-ready 라
+        // 환경에 따라 채널 선정 결과가 갈린다(`ChannelReadinessService` 가 별도 책임).
+        $this->mockAllChannelsReady();
 
         // 이전 테스트의 캐시된 템플릿 결과가 간섭하지 않도록 무효화
         $templateService = app(NotificationTemplateService::class);
@@ -64,6 +72,10 @@ class GenericNotificationViaTest extends TestCase
         $templateService->invalidateCache('test_via_check', 'database');
         $templateService->invalidateCache('nonexistent_type_xyz', 'mail');
 
+        // 이 테스트는 RefreshDatabase 를 쓰지 않으므로 남긴 행이 **커밋된 채로** 다음 테스트에
+        // 보인다. `via()` 는 채널을 거를 때 skip 로그를 남기므로 notification_logs 도 함께 지운다 —
+        // 안 지우면 절대 건수를 단언하는 다른 테스트(NotificationLogSeederTest)가 그 잔여를 세게 된다.
+        NotificationLog::whereIn('notification_type', ['test_via_check', 'nonexistent_type_xyz'])->delete();
         NotificationTemplate::where('definition_id', $this->definition->id)->delete();
         $this->definition->delete();
 
@@ -157,7 +169,7 @@ class GenericNotificationViaTest extends TestCase
     /**
      * NotificationChannelService::isChannelEnabledForExtension()의 응답을 mocking.
      *
-     * @param array<string, bool> $channelMap
+     * @param  array<string, bool>  $channelMap
      */
     private function mockChannelEnabled(array $channelMap): void
     {
@@ -257,10 +269,6 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * 테스트용 템플릿 생성 헬퍼
-     *
-     * @param string $channel
-     * @param bool $isActive
-     * @return NotificationTemplate
      */
     private function createTemplate(string $channel, bool $isActive = true): NotificationTemplate
     {

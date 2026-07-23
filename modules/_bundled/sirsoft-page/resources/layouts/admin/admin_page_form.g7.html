@@ -103,8 +103,10 @@
                 <span>$t:sirsoft-page.admin.page.form.fields.published</span>
               </label>
               <select data-ref="published_select" value="{{String(_local.form?.published ?? false)}}" disabled="{{_computed.isReadOnly}}" class="">
-                <option value="true">$t:sirsoft-page.admin.page.published_status.published</option>
-                <option value="false">$t:sirsoft-page.admin.page.published_status.unpublished</option>
+                <options>
+                  <option value="true">$t:sirsoft-page.admin.page.published_status.published</option>
+                  <option value="false">$t:sirsoft-page.admin.page.published_status.unpublished</option>
+                </options>
                 <on type="change">
                   <set-state target="local" form.published="{{$event.target.value === 'true'}}"/>
                 </on>

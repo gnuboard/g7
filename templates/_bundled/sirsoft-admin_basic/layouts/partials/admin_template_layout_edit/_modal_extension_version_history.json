@@ -1,6 +1,7 @@
 {
   "layout_name": "modal_extension_version_history",
   "meta": {
+    "is_partial": true,
     "editor_label": "$t:admin.modal_label.admin_template_layout_edit.extension_version_history_modal"
   },
   "id": "extension_version_history_modal",

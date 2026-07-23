@@ -31,6 +31,10 @@ function findJsonFiles(dir) {
       } else if (item.endsWith('.json')) {
         results.push(fullPath);
       }
+      // `.g7.html` 은 여기서 수집하지 않는다 — 아래 dynamic 추출이 JSON.parse 를 전제하기 때문이다.
+      // 대신 `main.css` 가 `@source "../../layouts/**/*.g7.html"` 로 직접 앵커해 정적 클래스는
+      // Tailwind 스캐너가 잡는다. safelist 는 **동적 생성 클래스**(classMap variants·switch-value 등
+      // 스캐너가 문자열로 못 보는 것)만 담당하므로 두 경로의 역할이 갈린다.
     }
   } catch (e) {
     // 디렉토리 접근 실패 시 무시

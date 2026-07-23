@@ -1,0 +1,134 @@
+<partial description="Activity Log List DataGrid">
+  <data-grid data-ref="activity_log_datagrid" data="{{activityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{activityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{activityLogs?.data?.pagination?.last_page ?? 1}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectedIds="{{_global.selectedIds_admin_activity_logs || []}}" selectedCountText="" loading="{{activityLogs?.loading}}" :expandable="true" expandConditionField="has_changes" actionsColumnHeader="$t:common.actions">
+    <expand>
+      <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-4">
+        <div class="flex flex-wrap items-center gap-4 text-sm">
+          <div data-if="{{row.loggable_type_display}}" class="flex-center gap-2">
+            <span class="font-medium text-gray-700 dark:text-gray-300">$t:admin.activity_log.detail.target_label</span>
+            <span class="text-gray-600 dark:text-gray-400">{{row.loggable_type_display}} #{{row.loggable_id}}</span>
+          </div>
+        </div>
+        <div data-if="{{row.changes &amp;&amp; row.changes.length > 0}}">
+          <span class="form-label">$t:admin.activity_log.detail.changes_title</span>
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div class="flex bg-gray-100 dark:bg-gray-800 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+              <span class="flex-1">$t:admin.activity_log.detail.column_field</span>
+              <span class="w-1/3 text-center">$t:admin.activity_log.detail.column_old</span>
+              <span class="w-1/3 text-center">$t:admin.activity_log.detail.column_new</span>
+            </div>
+            <div data-each="change in row.changes" class="flex items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-sm">
+              <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+              <span class="w-1/3 text-center text-red-600 dark:text-red-400 break-all">{{change.old_label ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+              <span class="w-1/3 text-center text-green-600 dark:text-green-400 break-all">{{change.new_label ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-if="{{row.bulk_changes &amp;&amp; row.bulk_changes.length > 0}}">
+          <span class="form-label">$t:admin.activity_log.detail.bulk_changes_title</span>
+          <div class="row-stack">
+            <div data-each="group in row.bulk_changes" class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div class="flex bg-gray-100 dark:bg-gray-800 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                <span class="flex-1">ID: {{group.model_id}}</span>
+                <span class="w-1/3 text-center">$t:admin.activity_log.detail.column_old</span>
+                <span class="w-1/3 text-center">$t:admin.activity_log.detail.column_new</span>
+              </div>
+              <div data-each="change in {{group.changes}}" class="flex items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-sm">
+                <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+                <span class="w-1/3 text-center text-red-600 dark:text-red-400 break-all">{{change.old_label ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                <span class="w-1/3 text-center text-green-600 dark:text-green-400 break-all">{{change.new_label ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </expand>
+    <prop name="rowActions">
+      <item id="delete" label="$t:admin.activity_log.delete.button" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
+    </prop>
+    <column field="number" header="$t:admin.activity_log.table.column.number" width="60px">
+      <cell>
+        <span class="text-label-subtle">{{row.number}}</span>
+      </cell>
+    </column>
+    <column field="log_type" header="$t:admin.activity_log.table.column.log_type" width="90px">
+      <cell>
+        <span class="{{row.log_type === 'admin' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : row.log_type === 'user' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}}">{{row.log_type_label}}</span>
+      </cell>
+    </column>
+    <column field="action" header="$t:admin.activity_log.table.column.action" width="100px">
+      <cell>
+        <span class="text-heading">{{row.action_label}}</span>
+      </cell>
+    </column>
+    <column field="description" header="$t:admin.activity_log.table.column.description" width="250px">
+      <cell>
+        <span class="text-body line-clamp-1">{{row.localized_description ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="target" header="$t:admin.activity_log.table.column.target" width="100px">
+      <cell>
+        <span class="text-label">{{row.loggable_type_display ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="actor" header="$t:admin.activity_log.table.column.actor" width="150px">
+      <cell>
+        <span data-if="{{!row.user}}" class="text-gray-500 dark:text-gray-400">-</span>
+        <action-menu data-if="{{!!row.user}}" position="right">
+          <prop name="items">
+            <item id="view_member" label="$t:admin.activity_log.action.view_member" iconName="user" if="{{!!row.user}}"/>
+            <item id="search_by_actor" label="$t:admin.activity_log.action.search_by_actor" iconName="search"/>
+          </prop>
+          <on event="onItemClick">
+            <switch value="{{$args[0]}}">
+              <case when="view_member">
+                <open-window path="/admin/users/{{row.user.uuid}}"/>
+              </case>
+              <case when="search_by_actor">
+                <set-state target="local" filter.createdBy="{{row.user.uuid}}" actorSearchResults="{{[{ value: row.user.uuid, label: row.user.name, description: row.user.email }]}}"/>
+                <navigate path="/admin/activity-logs" :replace="true" transition_overlay_target="activity_log_datagrid__body">
+                  <query created_by="{{row.user.uuid}}" :page="1"/>
+                </navigate>
+              </case>
+            </switch>
+          </on>
+          <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
+            <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+            <div class="min-w-0 flex-1">
+              <span class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.user.name}}</span>
+              <span data-if="{{!!row.user.email}}" class="text-tertiary truncate block">({{row.user.email}})</span>
+            </div>
+          </div>
+        </action-menu>
+      </cell>
+    </column>
+    <column field="ip_address" header="$t:admin.activity_log.table.column.ip_address" width="130px">
+      <cell>
+        <span class="text-label font-mono">{{row.ip_address ?? '-'}}</span>
+      </cell>
+    </column>
+    <column field="created_at" header="$t:admin.activity_log.table.column.created_at" width="160px">
+      <cell>
+        <span class="text-label">{{row.created_at ?? '-'}}</span>
+      </cell>
+    </column>
+    <on type="change" event="onPageChange">
+      <navigate path="/admin/activity-logs" :replace="true" :mergeQuery="true" transition_overlay_target="activity_log_datagrid__body">
+        <query page="{{$args[0]}}"/>
+      </navigate>
+    </on>
+    <on type="action" event="onSelectionChange">
+      <set-state target="global" selectedIds_admin_activity_logs="{{$args[0]}}"/>
+    </on>
+    <on type="action" event="onRowAction">
+      <switch>
+        <case when="delete">
+          <set-state target="global" modal_data="{{$args[1]}}">
+            <success>
+              <open-modal target="delete_confirm_modal"/>
+            </success>
+          </set-state>
+        </case>
+      </switch>
+    </on>
+  </data-grid>
+</partial>

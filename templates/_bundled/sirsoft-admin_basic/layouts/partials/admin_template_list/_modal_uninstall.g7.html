@@ -1,0 +1,70 @@
+<partial description="템플릿 제거 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_uninstall_modal">
+  <modal data-ref="template_uninstall_modal" title="$t:admin.templates.modals.uninstall_title" size="medium">
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.uninstall_confirm|name={{_global.selectedTemplate.name}}</p>
+      <p class="mt-2 text-label-subtle">$t:admin.templates.modals.uninstall_warning</p>
+    </div>
+    <div data-ref="delete_data_option" class="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div class="flex-start gap-2">
+        <checkbox checked="{{_global.deleteTemplateData || false}}" class="mt-0.5">
+          <on type="change">
+            <set-state target="global" deleteTemplateData="{{$event.target.checked}}"/>
+          </on>
+        </checkbox>
+        <div>
+          <span class="text-body">$t:admin.templates.modals.delete_data_option</span>
+          <p class="form-hint">$t:admin.templates.modals.delete_data_warning</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="extension_directory_section" class="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
+      <span class="text-primary text-sm font-semibold">$t:admin.templates.modals.extension_directory_title</span>
+      <div data-if="{{!_global.templateUninstallInfo}}" class="flex-center justify-center py-4">
+        <icon name="spinner" class="w-5 h-5 animate-spin text-gray-400"/>
+      </div>
+      <div data-if="{{_global.templateUninstallInfo &amp;&amp; _global.templateUninstallInfo.extension_directory}}" class="mt-3">
+        <div class="flex-center gap-2 mb-2">
+          <icon name="folder-open" class="w-4 h-4 text-gray-500"/>
+          <span class="text-body font-medium">$t:admin.templates.modals.extension_directory_section</span>
+          <span class="text-tertiary">($t:admin.templates.modals.tables_total|size={{_global.templateUninstallInfo.extension_directory.size_formatted}})</span>
+        </div>
+        <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+          <div class="flex-between px-3 py-1.5">
+            <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{_global.templateUninstallInfo.extension_directory.path}}</span>
+            <span class="text-tertiary">{{_global.templateUninstallInfo.extension_directory.size_formatted}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="btn btn-secondary" disabled="{{_global.isTemplateUninstalling}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateUninstalling}}">
+        <on type="click">
+          <set-state target="global" :isTemplateUninstalling="true"/>
+          <api-call :auth_required="true" target="/api/admin/templates/uninstall" method="DELETE">
+            <success>
+              <set-state target="global" :isTemplateUninstalling="false"/>
+              <set-state target="global" :selectedTemplate="null" :deleteTemplateData="false"/>
+              <toast type="success" message="$t:admin.templates.uninstall_success"/>
+              <refetch-data-source dataSourceId="templates"/>
+              <reload-extensions/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isTemplateUninstalling="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body template_name="{{_global.selectedTemplate.identifier}}" delete_data="{{_global.deleteTemplateData || false}}"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isTemplateUninstalling}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isTemplateUninstalling ? '$t:admin.templates.uninstalling' : '$t:admin.templates.actions.uninstall'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

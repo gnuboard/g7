@@ -1,0 +1,104 @@
+<partial description="언어팩 설치 모달 (ZIP/GitHub 2-tab) — 모듈 설치 모달 UX 패턴 동일" editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_install_modal">
+  <modal data-ref="language_pack_install_modal" title="$t:admin.language_packs.install_modal.title" size="medium">
+    <div class="flex-start justify-between gap-3 mb-4">
+      <p class="text-secondary">$t:admin.language_packs.install_modal.description</p>
+      <button type="button" class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md">
+        <on event="onClick">
+          <open-modal target="language_pack_manifest_preview_drawer"/>
+        </on>
+        <icon name="fas fa-eye" size="sm"/>
+        <span>$t:admin.language_packs.actions.preview_manifest</span>
+      </button>
+    </div>
+    <div data-if="{{_global.languagePackInstallError}}" class="alert-danger">
+      <div class="form-error-xs">
+        <icon name="triangle-exclamation" class="text-red-500 mt-0.5" size="sm"/>
+        <div>
+          <p class="text-error-strong">{{_global.languagePackInstallError}}</p>
+        </div>
+      </div>
+    </div>
+    <tab-navigation data-ref="language_pack_install_tabs" activeTabId="{{_global.languagePackInstallTab || 'file_upload'}}" variant="underline">
+      <prop name="tabs">
+        <item id="file_upload" label="$t:admin.language_packs.install_modal.tabs.zip" iconName="upload"/>
+        <item id="github" label="$t:admin.language_packs.install_modal.tabs.github" iconName="code-branch"/>
+      </prop>
+      <on type="change" event="onTabChange">
+        <set-state target="global" languagePackInstallTab="{{$args[0]}}" :languagePackInstallError="null" :languagePackInstallErrors="null"/>
+      </on>
+    </tab-navigation>
+    <div data-ref="language_pack_file_upload_tab" data-if="{{!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload'}}" class="mt-4 space-y-4">
+      <div class="row-stack">
+        <div>
+          <label class="form-label">$t:admin.language_packs.install_modal.file_label</label>
+          <file-input accept=".zip" class="{{_global.languagePackInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}" buttonText="$t:common.browse" placeholder="$t:admin.language_packs.install_modal.no_file_selected">
+            <on type="change">
+              <set-state target="global" languagePackUploadFile="{{$event.target.value}}" languagePackUploadFileName="{{$event.target.value?.name}}" :languagePackInstallError="null" :languagePackInstallErrors="null"/>
+            </on>
+          </file-input>
+        </div>
+        <span data-if="{{_global.languagePackInstallErrors?.file}}" class="form-error-xs mt-1">{{Array.isArray(_global.languagePackInstallErrors?.file) ? _global.languagePackInstallErrors.file[0] : _global.languagePackInstallErrors?.file}}</span>
+      </div>
+      <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <div class="flex-start gap-2">
+          <icon name="info-circle" class="text-blue-500 mt-0.5" size="sm"/>
+          <div>
+            <p class="text-info-soft">$t:admin.language_packs.install_modal.file_requirements</p>
+            <p class="mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block">language-pack.json</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="language_pack_github_tab" data-if="{{_global.languagePackInstallTab === 'github'}}" class="mt-4 space-y-4">
+      <div class="row-stack">
+        <div>
+          <label class="form-label">$t:admin.language_packs.install_modal.github_url_label</label>
+          <input type="url" placeholder="https://github.com/username/language-pack-name" value="{{_global.languagePackGithubUrl ?? ''}}" class="{{_global.languagePackInstallErrors?.github_url ? 'input-error' : ''}}">
+            <on type="change">
+              <set-state target="global" languagePackGithubUrl="{{$event.target.value}}" :languagePackInstallError="null" :languagePackInstallErrors="null"/>
+            </on>
+          </input>
+        </div>
+        <span data-if="{{_global.languagePackInstallErrors?.github_url}}" class="form-error-xs mt-1">{{Array.isArray(_global.languagePackInstallErrors?.github_url) ? _global.languagePackInstallErrors.github_url[0] : _global.languagePackInstallErrors?.github_url}}</span>
+      </div>
+      <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <div class="flex-start gap-2">
+          <icon name="info-circle" class="text-blue-500 mt-0.5" size="sm"/>
+          <div>
+            <p class="text-info-soft">$t:admin.language_packs.install_modal.github_requirements</p>
+            <p class="mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block">language-pack.json</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isLanguagePackInstalling}}">
+        <on type="click">
+          <set-state target="global" :languagePackUploadFile="null" :languagePackUploadFileName="null" :languagePackGithubUrl="null" :languagePackInstallError="null" :languagePackInstallErrors="null" languagePackInstallTab="file_upload"/>
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isLanguagePackInstalling || ((!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? !_global.languagePackUploadFile : !_global.languagePackGithubUrl)}}">
+        <on type="click">
+          <set-state target="global" :isLanguagePackInstalling="true" :languagePackInstallError="null" :languagePackInstallErrors="null"/>
+          <api-call :auth_required="true" target="{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? '/api/admin/language-packs/install-from-file' : '/api/admin/language-packs/install-from-github'}}" method="POST" contentType="{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}" body="{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? { file: _global.languagePackUploadFile } : { github_url: _global.languagePackGithubUrl }}}">
+            <success>
+              <set-state target="global" :isLanguagePackInstalling="false" :languagePackUploadFile="null" :languagePackUploadFileName="null" :languagePackGithubUrl="null" :languagePackInstallError="null" :languagePackInstallErrors="null" languagePackInstallTab="file_upload"/>
+              <toast type="success" message="$t:admin.language_packs.messages.install_success"/>
+              <refetch-data-source dataSourceId="language_packs"/>
+              <reload-extensions/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isLanguagePackInstalling="false" languagePackInstallError="{{error.message}}" languagePackInstallErrors="{{error.errors}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{!_global.isLanguagePackInstalling}}" name="download" size="sm"/>
+        <icon data-if="{{_global.isLanguagePackInstalling}}" name="spinner" class="animate-spin" size="sm"/>
+        <span>{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : '$t:admin.language_packs.actions.install'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>
