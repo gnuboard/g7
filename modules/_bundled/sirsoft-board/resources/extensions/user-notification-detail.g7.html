@@ -1,0 +1,42 @@
+<extension target-layout="admin_user_detail" priority="300">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_notification" label="$t:sirsoft-board.admin.users.form.sections.notification_settings" iconName="cubes"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_notification_content" id="ext_notification" class="scroll-mt-32">
+      <div data-ref="section_notification_settings" class="admin-card">
+        <div class="flex-between mb-4">
+          <div class="flex-center gap-2">
+            <icon name="bell" class="text-secondary w-5 h-5"/>
+            <h3 class="section-heading">$t:sirsoft-board.admin.users.form.sections.notification_settings</h3>
+          </div>
+          <extension-badge type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+        </div>
+        <div class="grid-2col-responsive">
+          <div data-ref="field_notify_post_complete">
+            <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.users.form.notifications.post_complete</label>
+            <div class="text-primary text-sm">{{user?.data?.notify_post_complete ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}</div>
+          </div>
+          <div data-ref="field_notify_post_reply">
+            <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.users.form.notifications.post_reply</label>
+            <div class="text-primary text-sm">{{user?.data?.notify_post_reply ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}</div>
+          </div>
+          <div data-ref="field_notify_comment">
+            <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.users.form.notifications.comment</label>
+            <div class="text-primary text-sm">{{user?.data?.notify_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}</div>
+          </div>
+          <div data-ref="field_notify_reply_comment">
+            <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.users.form.notifications.reply_comment</label>
+            <div class="text-primary text-sm">{{user?.data?.notify_reply_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

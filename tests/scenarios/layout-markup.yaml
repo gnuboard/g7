@@ -6,7 +6,7 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7~S9 → S10 설치 재아키텍처).
-  현재 커버 범위는 **S1~S13** 이며(S11 W2 · S12 W3 · S13 W4 effects 등재 완료), 이후 단계가 axes/effects/test_files 를 확장한다.
+  현재 커버 범위는 **S1~S14** 이며(S11 W2 · S12 W3 · S13 W4 · S14 W5 effects 등재 완료), 이후 단계가 axes/effects/test_files 를 확장한다.
 
   용어(PO 정의, D38): **compile = JSON → HTML**(저작 소스 산출), **decompile = HTML → JSON**(설치·검증).
 
@@ -457,6 +457,10 @@ effects:
   - structured_field_placement_follows_handler_manifest
   - blur_sources_accept_item_list
   - structured_value_list_emits_item_tags
+  # W5(S14) — 모듈 웨이브가 드러낸 서빙 게이트 사각. 모듈 레이아웃은 자기 확장이 아니라
+  # 호스트 템플릿의 베이스를 extends 하므로, 확장 밖 부모를 심지 않으면 서빙이
+  # `Parent layout not found` 로 죽는다 = extends 병합이 한 번도 실행되지 않는다.
+  - serving_equivalence_seeds_cross_extension_parent_layouts
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php

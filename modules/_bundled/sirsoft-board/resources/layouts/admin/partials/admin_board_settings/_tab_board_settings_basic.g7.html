@@ -1,0 +1,110 @@
+<partial description="게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)">
+  <div data-ref="basic" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <!-- ========== 섹션 1: 기본 설정 ========== -->
+    <section-layout data-ref="section_basic" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.basic</h3>
+      <div class="card-description">$t:sirsoft-board.admin.settings.sections.basic_description</div>
+      <!-- ========== 페이지 안내 배너 ========== -->
+      <div data-ref="page_info_banner" class="alert-info">
+        <icon name="circle-info" class="text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" size="sm"/>
+        <p class="text-info-soft">$t:sirsoft-board.admin.settings.page_info</p>
+      </div>
+      <div class="row-stack">
+        <div data-ref="field_type" class="">
+          <div class="flex-center gap-4">
+            <div class="flex-1">
+              <div class="flex-center gap-2">
+                <label class="flex-center gap-2 text-heading cursor-pointer">
+                  <input type="checkbox" class="checkbox flex-shrink-0" checked="{{(_local.bulkApplyFields ?? []).includes('type')}}">
+                    <on type="change">
+                      <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('type') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'type') : [...(_local.bulkApplyFields ?? []), 'type']}}"/>
+                    </on>
+                  </input>
+                  <span>$t:sirsoft-board.admin.settings.fields.type</span>
+                </label>
+                <button data-ref="settings_btn_manage_board_types" type="button" variant="ghost" size="sm" class="inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600" disabled="{{_computed.isReadOnly}}">
+                  <on type="click">
+                    <set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="">
+                      <field name="btFormName">
+                        <field name="ko" value=""/>
+                        <field name="en" value=""/>
+                      </field>
+                    </set-state>
+                    <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board-types" method="GET">
+                      <success>
+                        <set-state target="global" boardTypesList="{{response.data}}"/>
+                        <open-modal target="board_type_manage_modal"/>
+                      </success>
+                    </api-call>
+                  </on>
+                  <icon name="gear" size="sm"/>
+                  <span>$t:sirsoft-board.admin.board_types.manage</span>
+                </button>
+              </div>
+              <p class="text-field-hint pl-6">$t:sirsoft-board.admin.settings.fields.descriptions.type</p>
+            </div>
+            <select name="basic_defaults.type" options="{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? $locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_secret_mode" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('secret_mode')}}">
+                <on type="change">
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('secret_mode') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'secret_mode') : [...(_local.bulkApplyFields ?? []), 'secret_mode']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.secret_mode</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.secret_mode</p>
+              </div>
+            </label>
+            <select name="basic_defaults.secret_mode" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="disabled">$t:sirsoft-board.admin.settings.options.secret_mode.disabled</option>
+                <option value="enabled">$t:sirsoft-board.admin.settings.options.secret_mode.enabled</option>
+                <option value="always">$t:sirsoft-board.admin.settings.options.secret_mode.always</option>
+              </options>
+            </select>
+          </div>
+        </div>
+        <div data-ref="field_show_view_count" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('show_view_count')}}">
+                <on type="change">
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('show_view_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'show_view_count') : [...(_local.bulkApplyFields ?? []), 'show_view_count']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.show_view_count</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.show_view_count</p>
+              </div>
+            </label>
+            <toggle name="basic_defaults.show_view_count" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_use_report" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_report')}}">
+                <on type="change">
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_report') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_report') : [...(_local.bulkApplyFields ?? []), 'use_report']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_report</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_report</p>
+              </div>
+            </label>
+            <toggle name="basic_defaults.use_report" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+    </section-layout>
+  </div>
+</partial>

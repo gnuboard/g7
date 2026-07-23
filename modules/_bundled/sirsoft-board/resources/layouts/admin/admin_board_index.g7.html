@@ -1,0 +1,191 @@
+<layout name="admin_board_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description"/>
+  <data-source id="boards" label_key="$t:sirsoft-board.editor.data_source.boards" type="api" endpoint="/api/modules/sirsoft-board/admin/boards" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
+    <params page="{{query.page}}" per_page="{{query.per_page ?? 10}}" search="{{query.search}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <permissions>
+    <permission>sirsoft-board.boards.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>boards</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="board_list_content" class="admin-page-content-responsive-fluid">
+      <page-header data-ref="page_header" title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description">
+        <button data-ref="refresh_button" class="btn-icon" aria-label="$t:common.refresh">
+          <on type="click">
+            <navigate path="/admin/boards" :mergeQuery="false"/>
+          </on>
+          <icon data-ref="refresh_icon" name="refresh" class="w-5 h-5"/>
+        </button>
+        <button data-ref="add_board_button" disabled="{{boards?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <navigate path="/admin/boards/create"/>
+          </on>
+          <icon name="plus" class="w-5 h-5"/>
+          <span>$t:sirsoft-board.admin.board.index.add_board</span>
+        </button>
+      </page-header>
+      <div data-ref="content_area" class="admin-card">
+        <div data-ref="search_area" class="flex justify-end mb-6">
+          <search-bar data-ref="search_bar" name="search" placeholder="$t:sirsoft-board.admin.board.index.search_placeholder" value="{{query.search || ''}}" class="w-64">
+            <on type="submit">
+              <navigate path="/admin/boards" :mergeQuery="true">
+                <query :page="1" search="{{$event.target.search.value}}"/>
+              </navigate>
+            </on>
+          </search-bar>
+        </div>
+        <card-grid data-ref="boards_card_grid" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? 1}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+          <card id="board_card">
+            <div data-ref="card_header_row" class="flex items-start justify-between">
+              <div data-ref="header_left" class="flex items-center gap-3">
+                <status-badge data-ref="board_slug_badge" status="info" label="{{row.slug}}" :showIcon="false"/>
+                <h3 data-ref="board_name" class="section-heading">{{row.name}}</h3>
+                <span data-ref="board_type" class="text-label-subtle">({{row.type}})</span>
+              </div>
+              <div data-ref="header_right" class="flex items-center gap-3">
+                <toggle data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                  <on type="change">
+                    <sequence>
+                      <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/boards/{{row.slug}}" method="PUT">
+                        <success>
+                          <refetch-data-source dataSourceId="boards" :sync="true"/>
+                          <toast type="success" message="{{row.is_active ? '$t:sirsoft-board.admin.board.messages.deactivated' : '$t:sirsoft-board.admin.board.messages.activated'}}"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
+                        <body is_active="{{!row.is_active}}"/>
+                      </api-call>
+                    </sequence>
+                  </on>
+                </toggle>
+                <action-menu data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-h" position="right">
+                  <prop name="items">
+                    <item id="edit" label="$t:sirsoft-board.admin.board.actions.edit" iconName="pencil" disabled="{{row.abilities?.can_update !== true}}"/>
+                    <item id="manage_posts" label="$t:sirsoft-board.admin.board.actions.manage_posts" iconName="list"/>
+                    <item id="copy" label="$t:sirsoft-board.admin.board.actions.copy" iconName="copy" disabled="{{row.abilities?.can_create !== true}}"/>
+                    <item id="delete" label="$t:sirsoft-board.admin.board.actions.delete" iconName="trash" variant="danger" disabled="{{row.abilities?.can_delete !== true}}"/>
+                  </prop>
+                  <on event="onItemClick">
+                    <switch value="{{$args[0]}}">
+                      <case when="edit">
+                        <navigate path="/admin/boards/{{row.slug}}/edit" :mergeQuery="false">
+                          <query/>
+                        </navigate>
+                      </case>
+                      <case when="manage_posts">
+                        <navigate path="/admin/board/{{row.slug}}"/>
+                      </case>
+                      <case when="copy">
+                        <set-state target="global" modal_data="{{row}}">
+                          <success>
+                            <open-modal target="copy_confirm_modal"/>
+                          </success>
+                        </set-state>
+                      </case>
+                      <case when="delete">
+                        <set-state target="global" modal_data="{{row}}">
+                          <success>
+                            <open-modal target="delete_confirm_modal"/>
+                          </success>
+                        </set-state>
+                      </case>
+                    </switch>
+                  </on>
+                </action-menu>
+              </div>
+            </div>
+            <div data-ref="board_meta_row" class="flex-center gap-2 text-label">
+              <span data-ref="post_count_label" class="font-semibold">$t:sirsoft-board.admin.board.index.post_count</span>
+              <span data-ref="post_count_value">{{row?.posts_count ?? 0}}</span>
+              <span data-ref="separator" class="mx-1">·</span>
+              <span data-ref="created_date_label" class="font-semibold">$t:sirsoft-board.admin.board.index.created_at</span>
+              <span data-ref="created_date_value">{{row?.created_at}}</span>
+            </div>
+            <div data-ref="categories_row" data-if="{{row.categories &amp;&amp; row.categories.length > 0}}" class="flex flex-wrap gap-2 items-center">
+              <span data-ref="category_label" class="text-label-subtle">$t:sirsoft-board.admin.board.index.categories_label</span>
+              <status-badge data-ref="category_tag" data-each="category in row.categories" status="default" label="{{category}}" :showIcon="false"/>
+            </div>
+          </card>
+          <on type="change" event="onPageChange">
+            <navigate path="/admin/boards" :mergeQuery="true">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </on>
+        </card-grid>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <modal data-ref="copy_confirm_modal" title="$t:sirsoft-board.admin.modals.copy.title" size="sm">
+      <div data-ref="copy_modal_content" class="row-stack">
+        <p data-ref="copy_board_name" class="text-primary font-medium">$t:sirsoft-board.admin.modals.copy.message|name={{_global.modal_data.name}}</p>
+        <div data-ref="copy_info_box" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3">
+          <p data-ref="copy_info_copied" class="text-label flex items-start gap-2">
+            <span class="text-tertiary">·</span>
+            <span>$t:sirsoft-board.admin.modals.copy.info_copied</span>
+          </p>
+          <p data-ref="copy_info_excluded" class="text-label flex items-start gap-2 mt-1">
+            <span class="text-tertiary">·</span>
+            <span>$t:sirsoft-board.admin.modals.copy.info_excluded</span>
+          </p>
+          <p data-ref="copy_info_slug" class="text-label flex items-start gap-2 mt-1">
+            <span class="text-tertiary">·</span>
+            <span>$t:sirsoft-board.admin.modals.copy.info_slug</span>
+          </p>
+        </div>
+        <div data-ref="copy_button_group" class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button data-ref="copy_cancel_button" class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"><on type="click"><close-modal target="copy_confirm_modal"/></on>$t:common.cancel</button>
+          <button data-ref="copy_confirm_button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"><on type="click"><close-modal target="copy_confirm_modal"/></on><on type="click"><navigate path="/admin/boards/create?copy_id={{_global.modal_data.id}}"/></on>$t:sirsoft-board.admin.board.actions.copy</button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <modal data-ref="delete_confirm_modal" title="$t:sirsoft-board.admin.modals.delete.title" size="sm">
+      <div data-ref="delete_warning" class="row-stack">
+        <p data-ref="delete_board_name" class="text-primary font-semibold text-lg">$t:sirsoft-board.admin.modals.delete.confirm|name={{_global.modal_data.name}}</p>
+        <p data-ref="delete_posts_info" class="text-gray-700 dark:text-gray-300">{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}</p>
+        <alert data-ref="delete_main_alert" type="{{_global.modal_data.posts_count > 0 ? 'error' : 'warning'}}" message="{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.force_delete_warning_with_posts' : '$t:sirsoft-board.admin.modals.delete.force_delete_warning_no_posts'}}"/>
+        <p data-ref="delete_backup_notice" data-if="{{_global.modal_data.posts_count > 0}}" class="text-label">$t:sirsoft-board.admin.modals.delete.backup_notice</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <set-state target="global" :isDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/boards/{{_global.modal_data?.slug}}" method="DELETE">
+              <success>
+                <set-state target="global" :isDeleting="false"/>
+                <set-state target="global" :forceDeleteBoard="false" :modal_data="null"/>
+                <refetch-data-source dataSourceId="boards" :sync="true"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <toast type="success" message="$t:sirsoft-board.admin.board.messages.deleted"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isDeleting="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body/>
+            </api-call>
+          </on>
+          <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.isDeleting ? '$t:sirsoft-board.common.deleting' : '$t:sirsoft-board.common.delete'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

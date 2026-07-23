@@ -1,0 +1,122 @@
+<partial description="게시판 설정 SEO 탭 콘텐츠">
+  <div data-ref="tab_content_seo" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'seo'}}">
+    <div data-ref="meta_settings_header" class="section-header">
+      <h3>$t:sirsoft-board.admin.settings.seo.meta_settings.title</h3>
+      <p>$t:sirsoft-board.admin.settings.seo.meta_settings.description</p>
+    </div>
+    <section-layout data-ref="boards_page_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-board.admin.settings.seo.boards_page.title</h3>
+      <div class="row-stack">
+        <div data-ref="field_boards_title" class="form-group">
+          <label class="form-label">$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title</label>
+          <input type="text" name="seo.meta_boards_title" placeholder="$t:sirsoft-board.admin.settings.seo.boards_page.title_placeholder" class="{{_local.errors?.['seo.meta_boards_title'] ? 'input input-error' : 'input'}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_boards_title']}}" class="form-error">{{_local.errors?.['seo.meta_boards_title']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}</p>
+        </div>
+        <div data-ref="field_boards_description" class="form-group">
+          <label class="form-label">$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description</label>
+          <textarea name="seo.meta_boards_description" :rows="3" class="{{_local.errors?.['seo.meta_boards_description'] ? 'input-error resize-none' : ' resize-none'}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_boards_description']}}" class="form-error">{{_local.errors?.['seo.meta_boards_description']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}</p>
+        </div>
+      </div>
+    </section-layout>
+    <section-layout data-ref="board_page_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-board.admin.settings.seo.board_page.title</h3>
+      <div class="row-stack">
+        <div data-ref="field_board_title" class="form-group">
+          <label class="form-label">$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title</label>
+          <input type="text" name="seo.meta_board_title" placeholder="$t:sirsoft-board.admin.settings.seo.board_page.title_placeholder" class="{{_local.errors?.['seo.meta_board_title'] ? 'input input-error' : 'input'}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_board_title']}}" class="form-error">{{_local.errors?.['seo.meta_board_title']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}</p>
+        </div>
+        <div data-ref="field_board_description" class="form-group">
+          <label class="form-label">$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description</label>
+          <textarea name="seo.meta_board_description" :rows="3" class="{{_local.errors?.['seo.meta_board_description'] ? 'input-error resize-none' : ' resize-none'}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_board_description']}}" class="form-error">{{_local.errors?.['seo.meta_board_description']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {board_description}</p>
+        </div>
+      </div>
+    </section-layout>
+    <section-layout data-ref="post_page_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-board.admin.settings.seo.post_page.title</h3>
+      <div class="row-stack">
+        <div data-ref="field_post_title" class="form-group">
+          <label class="form-label">$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title</label>
+          <input type="text" name="seo.meta_post_title" placeholder="$t:sirsoft-board.admin.settings.seo.post_page.title_placeholder" class="{{_local.errors?.['seo.meta_post_title'] ? 'input input-error' : 'input'}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_post_title']}}" class="form-error">{{_local.errors?.['seo.meta_post_title']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {post_title}</p>
+        </div>
+        <div data-ref="field_post_description" class="form-group">
+          <label class="form-label">$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description</label>
+          <textarea name="seo.meta_post_description" :rows="3" class="{{_local.errors?.['seo.meta_post_description'] ? 'input-error resize-none' : ' resize-none'}}"/>
+          <span data-if="{{_local.errors?.['seo.meta_post_description']}}" class="form-error">{{_local.errors?.['seo.meta_post_description']?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {post_title}</p>
+        </div>
+      </div>
+    </section-layout>
+    <div data-ref="seo_friendly_card" class="admin-card">
+      <h3 data-ref="seo_friendly_title" class="card-title">$t:sirsoft-board.admin.settings.seo.seo_friendly.title</h3>
+      <div data-ref="seo_friendly_description" class="card-description">$t:sirsoft-board.admin.settings.seo.seo_friendly.description</div>
+      <div data-ref="seo_friendly_content" class="row-stack">
+        <label class="form-label">$t:sirsoft-board.admin.settings.seo.seo_friendly.provide_pages</label>
+        <div>
+          <label class="flex-center gap-2 cursor-pointer">
+            <input type="checkbox" name="seo.seo_boards" class="checkbox"/>
+            <span class="text-sm text-secondary">$t:sirsoft-board.admin.settings.seo.seo_friendly.boards</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer">
+            <input type="checkbox" name="seo.seo_board" class="checkbox"/>
+            <span class="text-sm text-secondary">$t:sirsoft-board.admin.settings.seo.seo_friendly.board</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer">
+            <input type="checkbox" name="seo.seo_post_detail" class="checkbox"/>
+            <span class="text-sm text-secondary">$t:sirsoft-board.admin.settings.seo.seo_friendly.post_detail</span>
+          </label>
+        </div>
+        <div data-ref="cache_section">
+          <div>
+            <label class="form-label">$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_management</label>
+            <p class="text-label-subtle">$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_description</p>
+            <button type="button" class="btn btn-danger" disabled="{{_local.clearingCache ?? false}}">
+              <on type="click">
+                <set-state target="local" :clearingCache="true"/>
+                <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
+                  <success>
+                    <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
+                      <success>
+                        <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
+                          <success>
+                            <set-state target="local" :clearingCache="false"/>
+                            <toast type="success" message="$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_success"/>
+                          </success>
+                          <fail>
+                            <set-state target="local" :clearingCache="false"/>
+                            <toast type="error" message="$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error"/>
+                          </fail>
+                          <body layout="board/show"/>
+                        </api-call>
+                      </success>
+                      <fail>
+                        <set-state target="local" :clearingCache="false"/>
+                        <toast type="error" message="$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error"/>
+                      </fail>
+                      <body layout="board/index"/>
+                    </api-call>
+                  </success>
+                  <fail>
+                    <set-state target="local" :clearingCache="false"/>
+                    <toast type="error" message="$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error"/>
+                  </fail>
+                  <body layout="board/boards"/>
+                </api-call>
+              </on>
+              <icon data-if="{{_local.clearingCache ?? false}}" name="circle-notch" class="fa-spin mr-2"/>
+              <span>$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

@@ -18,6 +18,12 @@ import communityExt from '../../../extensions/admin_dashboard_community.json';
 /**
  * 컴포넌트 트리에서 특정 ID 를 가진 노드를 재귀적으로 찾습니다.
  * extension JSON 의 components/children 양쪽을 모두 탐색합니다.
+ *
+ * 반복(iteration) 안의 노드는 id 에 인덱스 보간 접미(`_{{i}}`)가 붙는다 — #421 이
+ * 반복 노드의 정적 id 를 전수 동적화했기 때문이다(같은 리터럴 id 가 행마다 중복돼
+ * React 가 행을 1건으로 합치던 결함). 그래서 리터럴 일치뿐 아니라 **보간 접미 일치**도
+ * 본다. 접미 없이 리터럴만 보면 레이아웃이 정본인데 단언만 낡아 red 가 된다
+ * (admin_basic 은 ㉜ 에서 같은 방식으로 정정했고, 이 모듈 사본만 남아 있었다).
  */
 function findById(node: any, id: string): any | null {
     if (!node) return null;
@@ -30,6 +36,9 @@ function findById(node: any, id: string): any | null {
     }
     if (typeof node !== 'object') return null;
     if (node.id === id) return node;
+    if (typeof node.id === 'string' && /^_\{\{[^}]+\}\}$/.test(node.id.slice(id.length)) && node.id.startsWith(id)) {
+        return node;
+    }
     for (const key of ['components', 'children']) {
         if (node[key] && Array.isArray(node[key])) {
             const found = findById(node[key], id);

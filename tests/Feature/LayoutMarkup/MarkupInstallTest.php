@@ -303,6 +303,8 @@ class MarkupInstallTest extends TestCase
             'sirsoft-admin_basic (template)' => ['templates/_bundled/sirsoft-admin_basic/layouts', 'sirsoft-admin_basic', 'template'],
             // W4 — user 템플릿(sirsoft-basic) + 152파일 실물
             'sirsoft-basic (template)' => ['templates/_bundled/sirsoft-basic/layouts', 'sirsoft-basic', 'template'],
+            // W5 — admin/user 양쪽 레이아웃을 함께 내보내는 모듈(sirsoft-board) + 40파일 실물
+            'sirsoft-board (module)' => ['modules/_bundled/sirsoft-board/resources/layouts', 'sirsoft-board', 'module'],
         ];
     }
 

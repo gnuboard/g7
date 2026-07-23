@@ -1,0 +1,84 @@
+<partial description="게시판 설정 > 권한 탭">
+  <div data-ref="permissions" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div>
+      <section-layout data-ref="section_permissions" class="admin-card">
+        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.permissions</h3>
+        <div class="card-description">$t:sirsoft-board.admin.settings.permissions_table.description</div>
+        <div class="alert-info">
+          <icon name="circle-info" class="text-blue-500 dark:text-blue-400 flex-shrink-0" size="sm"/>
+          <p class="text-info-soft">$t:sirsoft-board.admin.settings.permissions_table.bulk_apply_notice</p>
+        </div>
+        <div data-ref="permissions_admin_section" class="toggle-group mb-6">
+          <label class="section-header-row">
+            <input type="checkbox" class="checkbox flex-shrink-0" checked="{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 &amp;&amp; Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}">
+              <on type="change">
+                <set-state target="local" bulkApplyFields="{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => !k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"/>
+              </on>
+            </input>
+            <icon name="shield" size="sm" class="text-purple-500 dark:text-purple-400"/>
+            <span class="text-base font-semibold text-gray-800 dark:text-gray-100">$t:sirsoft-board.admin.settings.permissions_table.admin_section</span>
+          </label>
+          <div class="divider-list">
+            <div data-each="perm in $computed.adminPermissions ?? []" class="stack-tight list-row-hover {{(_local.bulkApplyFields ?? []).includes(perm?.[0])? 'bg-purple-50 dark:bg-purple-900/20' : ''}}">
+              <label class="flex-start gap-2 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}">
+                  <on type="change">
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"/>
+                  </on>
+                </input>
+                <div class="stack-flush gap-0.5">
+                  <span class="text-body font-medium">$t:sirsoft-board.board.permissions.{{perm?.[0]}}</span>
+                  <span class="text-hint">$t:sirsoft-board.board.permissions.{{perm?.[0]}}_desc</span>
+                </div>
+              </label>
+              <div class="row-content-indent">
+                <tag-input data-ref="perm_tag_admin_{{perm?.[0]}}" value="{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}" placeholder="$t:sirsoft-board.admin.settings.permissions_table.select_roles" class="w-full" defaultVariant="purple" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <set-state target="local" form.basic_defaults.default_board_permissions="{{Object.fromEntries(Object.entries(_local.form.basic_defaults.default_board_permissions ?? {}).map(([k,v]) => k === perm?.[0] ? [k, $event.target.value] : [k, v]))}}" :hasChanges="true"/>
+                  </on>
+                </tag-input>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="permissions_user_section" class="toggle-group">
+          <label class="section-header-row">
+            <input type="checkbox" class="checkbox flex-shrink-0" checked="{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 &amp;&amp; Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}">
+              <on type="change">
+                <set-state target="local" bulkApplyFields="{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"/>
+              </on>
+            </input>
+            <icon name="users" size="sm" class="text-blue-500 dark:text-blue-400"/>
+            <span class="text-base font-semibold text-gray-800 dark:text-gray-100">$t:sirsoft-board.admin.settings.permissions_table.user_section</span>
+          </label>
+          <div class="divider-list">
+            <div data-each="perm in $computed.userPermissions ?? []" class="stack-tight list-row-hover {{(_local.bulkApplyFields ?? []).includes(perm?.[0])? 'bg-blue-50 dark:bg-blue-900/20' : ''}}">
+              <label class="flex-start gap-2 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}">
+                  <on type="change">
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"/>
+                  </on>
+                </input>
+                <div class="stack-flush gap-0.5">
+                  <span class="text-body font-medium">$t:sirsoft-board.board.permissions.{{perm?.[0]}}</span>
+                  <span class="text-hint">$t:sirsoft-board.board.permissions.{{perm?.[0]}}_desc</span>
+                </div>
+              </label>
+              <div class="row-content-indent">
+                <tag-input data-ref="perm_tag_user_{{perm?.[0]}}" value="{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}" placeholder="$t:sirsoft-board.admin.settings.permissions_table.select_roles" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <set-state target="local" form.basic_defaults.default_board_permissions="{{Object.fromEntries(Object.entries(_local.form.basic_defaults.default_board_permissions ?? {}).map(([k,v]) => k === perm?.[0] ? [k, $event.target.value] : [k, v]))}}" :hasChanges="true"/>
+                  </on>
+                </tag-input>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section-layout>
+    </div>
+  </div>
+</partial>

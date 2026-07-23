@@ -321,9 +321,10 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         const content = mainLayout.slots.content[0];
         const stickyHeader = findById(content, 'sticky_header');
         expect(stickyHeader).toBeDefined();
-        // sirsoft-admin_basic 의 .sticky-tab-nav-responsive 자산 사용 (responsive padding 화면 전용 — #408)
-        // 자산 정의: sticky top-0 z-40 -mx-{4,6,8} px-{4,6,8} border-b bg-gray-50 dark:bg-gray-900
-        expect(stickyHeader.props.className).toContain('sticky-tab-nav-responsive');
+        // sirsoft-admin_basic 의 .sticky-section-header 자산 사용 (main.css 정의).
+        // #471 이 `sticky-tab-nav-responsive` 에서 이 자산으로 바꿨는데 단언만 낡아 있었다 —
+        // 레이아웃이 정본이고 자산도 템플릿 CSS 에 실재한다(확인 후 단언을 정정).
+        expect(stickyHeader.props.className).toContain('sticky-section-header');
 
         // 하위 탭 네비게이션이 basic_defaults 탭에서만 표시 (TabNavigationScroll - 스크롤 방식)
         const subTabNav = findById(content, 'sub_tab_navigation');

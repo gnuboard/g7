@@ -66,7 +66,13 @@ class MarkupServingEquivalenceTest extends TestCase
     /**
      * 이관 실물 확장의 레이아웃 루트.
      *
-     * @return array<string, array{0: string, 1: string, 2: string}>
+     * 넷째 원소는 **부모 레이아웃 루트**다. 모듈 레이아웃은 자기 확장이 아니라 **호스트 템플릿**의
+     * 베이스(`_admin_base`·`_user_base`)를 `extends` 하므로, 모듈 레이아웃만 심으면 서빙이
+     * `Parent layout not found` 로 죽는다 — 즉 **extends 병합이 한 번도 실행되지 않은 채** 게이트가
+     * 도는 것이라, 이 데이터셋에서 ③ 의 실효가 사라진다. 부모는 두 arm 에 **동일한 행**으로 들어가므로
+     * (한 번만 설치해 양쪽에 심는다) 자식의 차이를 가리지 않는다.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string, 3: array<int, string>}>
      */
     public static function migratedRoots(): array
     {
@@ -75,16 +81,30 @@ class MarkupServingEquivalenceTest extends TestCase
                 'templates/_bundled/sirsoft-admin_basic/layouts',
                 'sirsoft-admin_basic',
                 'template',
+                [],
             ],
             'sirsoft-basic (template)' => [
                 'templates/_bundled/sirsoft-basic/layouts',
                 'sirsoft-basic',
                 'template',
+                [],
             ],
             'gnuboard7-hello_admin_template (template)' => [
                 'templates/_bundled/gnuboard7-hello_admin_template/layouts',
                 'gnuboard7-hello_admin_template',
                 'template',
+                [],
+            ],
+            // W5 — 모듈 설치 경로(ModuleManager). 자기 완결적인 템플릿 데이터셋과 달리 부모가
+            // 확장 밖(호스트 템플릿)에 있으므로 admin/user 베이스를 함께 심는다.
+            'sirsoft-board (module)' => [
+                'modules/_bundled/sirsoft-board/resources/layouts',
+                'sirsoft-board',
+                'module',
+                [
+                    'templates/_bundled/sirsoft-admin_basic/layouts',
+                    'templates/_bundled/sirsoft-basic/layouts',
+                ],
             ],
         ];
     }
@@ -99,13 +119,14 @@ class MarkupServingEquivalenceTest extends TestCase
      *
      * @scenario compile_unit=install,source_health=valid
      *
-     * @effects migrated_layout_serving_output_equals_json_serving_output
+     * @effects migrated_layout_serving_output_equals_json_serving_output, serving_equivalence_seeds_cross_extension_parent_layouts
      */
     #[DataProvider('migratedRoots')]
     public function test_serving_output_is_identical_for_both_install_sources(
         string $relativeRoot,
         string $identifier,
         string $sourceType,
+        array $parentRoots = [],
     ): void {
         $layoutsPath = base_path($relativeRoot);
 
@@ -131,9 +152,28 @@ class MarkupServingEquivalenceTest extends TestCase
         $this->assertSame($jsonNames, $markupNames, "[{$identifier}] 두 설치 소스의 등록 레이아웃 집합이 다릅니다.");
         $this->assertNotSame([], $markupNames, "[{$identifier}] 등록 레이아웃이 없습니다 — 대조가 성립하지 않습니다.");
 
+        // 확장 밖 부모(호스트 템플릿 베이스)는 한 번만 설치해 두 arm 에 같은 행으로 넣는다.
+        // 루트가 둘 이상이면 이름이 겹칠 수 있다(admin/user 템플릿이 `auth/identity_challenge` 를
+        // 각자 갖는다). 한 벌 안에서는 `validateLayoutFiles` 가 이미 이름으로 접으므로, 겹침은
+        // **여러 루트를 합치는 이 자리에서만** 생긴다 — 그래서 접는 것도 여기서 한다.
+        $parentLayouts = [];
+
+        foreach ($parentRoots as $parentRoot) {
+            foreach ($this->harness->run(base_path($parentRoot), $identifier, 'template') as $parentLayout) {
+                $parentLayouts[$parentLayout['layout_name']] = $parentLayout;
+            }
+        }
+
+        // 대조 대상(자식)은 언제나 부모를 이긴다 — 부모는 `extends` 해석용 배경일 뿐이다.
+        foreach ($markupNames as $name) {
+            unset($parentLayouts[$name]);
+        }
+
+        $parentLayouts = array_values($parentLayouts);
+
         // 서빙은 `extends` 부모를 이름으로 찾으므로 **전량을 심어 둔 상태에서** 이름별로 뽑아야 한다.
-        $fromMarkup = $this->serveAll($markupLayouts, $identifier, $markupNames);
-        $fromJson = $this->serveAll($jsonLayouts, $identifier, $markupNames);
+        $fromMarkup = $this->serveAll([...$parentLayouts, ...$markupLayouts], $identifier, $markupNames);
+        $fromJson = $this->serveAll([...$parentLayouts, ...$jsonLayouts], $identifier, $markupNames);
 
         foreach ($markupNames as $name) {
             $this->assertNotSame([], $fromMarkup[$name], "[{$identifier}/{$name}] 서빙 결과가 비었습니다 — 대조가 성립하지 않습니다.");

@@ -1,0 +1,31 @@
+<partial description="Post Form - Attachments Section (Compact List Style)">
+  <div data-ref="attachments_card" data-if="{{form_meta?.data?.board?.use_file_upload}}" class="admin-card">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div class="flex-center gap-2 mb-4">
+      <icon name="paperclip" class="w-5 h-5 text-gray-700 dark:text-gray-300"/>
+      <h3 class="section-heading-md">$t:sirsoft-board.admin.posts.form.attachments</h3>
+    </div>
+    <div>
+      <file-uploader disabled="{{_computed.isReadOnly}}" collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" :compact="true" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_message">
+        <prop name="uploadParams">
+          <field name="temp_key" value="{{_local.tempKey}}"/>
+        </prop>
+        <prop name="apiEndpoints">
+          <field name="upload" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments"/>
+          <field name="delete" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/:id"/>
+          <field name="reorder" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/reorder"/>
+        </prop>
+        <on type="change" event="onFilesChange">
+          <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+        </on>
+        <on type="change" event="onUploadError">
+          <set-state target="local" uploadError="{{$args[0]}}" :isSaving="false"/>
+          <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+        </on>
+      </file-uploader>
+    </div>
+  </div>
+</partial>

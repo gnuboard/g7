@@ -1,0 +1,76 @@
+<partial description="게시판 설정 > 일괄 적용 섹션">
+  <div data-ref="bulk_apply" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <!-- ========== 섹션 9: 기존 게시판에 일괄 적용 ========== -->
+    <section-layout data-ref="section_bulk_apply" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-board.admin.settings.bulk_apply.title</h3>
+      <div>
+        <div data-if="{{(boards_list?.data?.data ?? []).length > 0}}">
+          <div class="alert-warning">
+            <icon name="triangle-exclamation" class="text-amber-600 dark:text-amber-400 flex-shrink-0" size="sm"/>
+            <p class="text-warning-soft">$t:sirsoft-board.admin.settings.bulk_apply.checked_fields_notice</p>
+          </div>
+          <div data-if="{{!(_local.bulkApplyFields ?? []).length}}" class="flex-center gap-2 px-1">
+            <icon name="circle-exclamation" class="text-amber-600 dark:text-amber-400 flex-shrink-0" size="sm"/>
+            <p class="text-warning-soft">$t:sirsoft-board.admin.settings.bulk_apply.no_fields_selected</p>
+          </div>
+          <div data-if="{{(_local.bulkApplyFields ?? []).length > 0 &amp;&amp; _local.bulkApplyAll === false &amp;&amp; !(_local._bulkApplyBoardIds ?? []).length}}" class="flex-center gap-2 px-1">
+            <icon name="circle-exclamation" class="text-red-500 dark:text-red-400 flex-shrink-0" size="sm"/>
+            <p class="text-sm text-red-600 dark:text-red-400">$t:sirsoft-board.admin.settings.bulk_apply.no_boards_selected</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="no_boards_notice" data-if="{{!(boards_list?.data?.data ?? []).length}}" class="flex-center p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg gap-3">
+        <icon name="circle-info" class="text-gray-500 dark:text-gray-400 flex-shrink-0" size="sm"/>
+        <p class="text-sm text-gray-600 dark:text-gray-300">$t:sirsoft-board.admin.settings.bulk_apply.no_boards_notice</p>
+      </div>
+      <div>
+        <div data-ref="bulk_apply_target" data-if="{{(boards_list?.data?.data ?? []).length > 0}}">
+          <label class="form-label">
+            <span>$t:sirsoft-board.admin.settings.bulk_apply.target_boards</span>
+          </label>
+          <div class="flex-center gap-4">
+            <label class="flex-center gap-2 text-body cursor-pointer">
+              <input type="radio" name="_bulkApplyAll" class="radio" checked="{{_local.bulkApplyAll !== false}}">
+                <on type="change">
+                  <set-state target="local" :bulkApplyAll="true"/>
+                </on>
+              </input>
+              <span>$t:sirsoft-board.admin.settings.bulk_apply.apply_all</span>
+            </label>
+            <label class="flex-center gap-2 text-body cursor-pointer">
+              <input type="radio" name="_bulkApplyAll" class="radio" checked="{{_local.bulkApplyAll === false}}">
+                <on type="change">
+                  <set-state target="local" :bulkApplyAll="false"/>
+                </on>
+              </input>
+              <span>$t:sirsoft-board.admin.settings.bulk_apply.apply_selected</span>
+            </label>
+          </div>
+          <div data-if="{{_local.bulkApplyAll === false}}" class="mt-3">
+            <tag-input value="{{_local._bulkApplyBoardIds ?? []}}" options="{{$computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="w-full" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <set-state target="local" _bulkApplyBoardIds="{{$event.target.value}}"/>
+              </on>
+            </tag-input>
+          </div>
+        </div>
+      </div>
+      <div data-if="{{(boards_list?.data?.data ?? []).length > 0}}" class="flex justify-end">
+        <button type="button" disabled="{{_computed.isReadOnly || !(_local.bulkApplyFields ?? []).length || (_local.bulkApplyAll === false &amp;&amp; !(_local._bulkApplyBoardIds ?? []).length)}}" class="flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 모달 열기 전 현재 _local 상태를 _global 스냅샷에 저장 + 오류 상태 초기화 -->
+            <set-state target="global" bulkApplySnapshot="{{(function() { const fields = _local.bulkApplyFields ?? []; const applyAll = _local.bulkApplyAll !== false; const boardIds = _local._bulkApplyBoardIds ?? []; const tab = _global.activeBoardSettingsTab || 'basic_defaults'; const form = _local.form || {}; return { fields: fields, applyAll: applyAll, boardIds: boardIds, tab: tab, form: form }; })()}}"/>
+            <!-- 이전 오류/롤백 안내 초기화 (모달 재오픈 시 직전 실패 안내 잔존 방지) -->
+            <set-state target="local" :bulkApplySaveError="false" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
+            <open-modal target="bulk_apply_confirm_modal"/>
+          </on>
+          <span>$t:sirsoft-board.admin.settings.bulk_apply.apply_button</span>
+        </button>
+      </div>
+    </section-layout>
+  </div>
+</partial>

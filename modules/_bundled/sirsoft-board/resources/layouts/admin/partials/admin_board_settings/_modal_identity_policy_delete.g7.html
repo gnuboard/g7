@@ -1,0 +1,27 @@
+<partial description="게시판 본인인증 정책 삭제 확인 모달">
+  <modal data-ref="board_identity_policy_delete_modal" title="$t:admin.identity.policies.delete_title" size="sm">
+    <p class="text-gray-700 dark:text-gray-300">$t:admin.identity.policies.delete_confirm</p>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.boardIdentityPolicyDeleting}}"><on type="click"><close-modal target="board_identity_policy_delete_modal"/></on>$t:common.cancel</button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.boardIdentityPolicyDeleting}}">
+        <on type="click">
+          <set-state target="global" :boardIdentityPolicyDeleting="true"/>
+          <api-call :auth_required="true" target="/api/admin/identity/policies/{{_global.boardIdentityPolicyDeleteId}}" method="DELETE">
+            <success>
+              <set-state target="global" :boardIdentityPolicyDeleting="false" :boardIdentityPolicyDeleteId="null"/>
+              <toast type="success" message="$t:admin.identity.policies.delete_success"/>
+              <refetch-data-source dataSourceId="boardIdentityPolicies"/>
+              <close-modal target="board_identity_policy_delete_modal"/>
+            </success>
+            <fail>
+              <set-state target="global" :boardIdentityPolicyDeleting="false"/>
+              <toast type="error" message="{{error.message ?? '$t:admin.identity.policies.delete_failed'}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.boardIdentityPolicyDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.boardIdentityPolicyDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>
